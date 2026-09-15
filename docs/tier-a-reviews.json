@@ -1,0 +1,37 @@
+{
+  "_what_this_is": "The standing rule that a Tier A change is reviewed by a session OTHER than the one that wrote it, made mechanical. Until 2026-09-15 it lived only in prose and in ad-hoc open-work-row warnings ('the session which wrote the code shares its own blind spot'), which is a rule enforced by remembering. Push-gate check 13 (tools/tier_a_review_gate.py) reads this file.",
+  "_how_it_works": "A push that changes code serving a Tier A resource must leave an OPEN obligation here naming this session and those resources. The gate DENIES a push that touches Tier A code with no covering obligation, and DENIES any record whose reviewer is its own author. Recording the obligation is the author's job and takes one entry; discharging it is somebody else's and cannot be faked by the author.",
+  "_what_it_does_NOT_claim": "That a review happened, or that it was any good. It is a record that the obligation EXISTS and was not self-signed. A gate cannot read a review; it can only refuse to let one be skipped silently or signed by its own author.",
+  "_scope": "Tier A resources, derived from docs/CRITICALITY-TIERS.md. Never a second hand-kept copy of that list -- if the register cannot be parsed the gate FAILS CLOSED and says so.",
+  "records": [
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-15T12:39:33Z",
+      "commit": "e442ca86",
+      "resources": [
+        "sc_ar",
+        "sc_claims",
+        "sc_compliance",
+        "sc_credential_scope",
+        "sc_denial",
+        "sc_denial_events",
+        "sc_revenue",
+        "sv_controlled"
+      ],
+      "files": [
+        "api/_resources/extra-actions.test.js",
+        "api/_resources/sairncode.js",
+        "api/sd-data.js",
+        "sairncode.html",
+        "tests/run_tier_a_replaceability_probe.py",
+        "tests/sairncode_gates.js",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "what": "Item 97: SAIRNcode's seven Tier A records moved from a destroying `delete` to `soft_delete`, with a read filter, a handler-level refusal and the client call sites repointed. RECORDED RETROACTIVELY on the day the gate was built -- the commit landed hours before check 13 existed, so nothing refused it, and leaving the first Tier A change under the new rule unrecorded would have been the exact gap the rule is about. The reviewer should look hardest at three things: whether the read filter really excludes marked rows on all seven and only those seven; whether repointing the seven client call sites missed one; and whether SC_TIER_A_SOFT_DELETE_ONLY agreeing with docs/CRITICALITY-TIERS.md is actually enforced in both directions or only one.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    }
+  ]
+}

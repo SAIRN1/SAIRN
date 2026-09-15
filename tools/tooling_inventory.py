@@ -88,6 +88,14 @@ PURPOSES = {
         'it reads language, not intent, and scored roughly 1 in 3 on its first '
         'weight-3 run. A read-list whose count is not a score; zero would mean '
         'deleting comments'),
+    'tier_a_review_gate.py': ('CHECKER',
+        'a change to code serving a Tier A resource that carries no recorded '
+        'independent-review obligation, and a review record signed by its own '
+        'author -- push-gate check 13, BLOCKING. Scoped by diff HUNK and not by '
+        'file: the same question asked per FILE reported 78 Tier A resources '
+        'for a one-line edit to api/sd-data.js, because that file names every '
+        'resource on the platform. It cannot read a review and says so; what it '
+        'refuses is a Tier A change nobody was told about and a self-signed one'),
     'tier_a_replaceability_check.py': ('CHECKER',
         'item 97 -- whether a Tier A resource is the real irreplaceable '
         'artifact or a stand-in: which Tier A resources grant a HARD delete '

@@ -19,11 +19,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**150 files in `tools/`.** By what actually invokes them:
+**151 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 11 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 38 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 96 |
+| CHECKER | 97 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
@@ -75,7 +75,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (10)
+## BLOCKING (11)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -95,6 +95,7 @@ around it. The second exists because the first missed exactly that on
 | `sairn_reachability_check.py` | CHECKER | a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name, and R7 the ACTION -- neither answerable by R4 or R5, because they measure at the ROUTE: /api/sd-data is ONE route carrying 385 registered resources, and 182 individually addressable actions sit behind 27 routes, 19 of them behind api/law-auth.js alone |
 | `sairn_seam_check.py` | CHECKER | an endpoint dropping a field the engine reads (gate check 4) |
 | `sairn_sql_preflight.py` | CHECKER | SQL referencing a column or table the live schema does not have (gate check 3) |
+| `tier_a_review_gate.py` | CHECKER | a change to code serving a Tier A resource that carries no recorded independent-review obligation, and a review record signed by its own author -- push-gate check 13, BLOCKING. Scoped by diff HUNK and not by file: the same question asked per FILE reported 78 Tier A resources for a one-line edit to api/sd-data.js, because that file names every resource on the platform. It cannot read a review and says so; what it refuses is a Tier A change nobody was told about and a self-signed one |
 
 ### The push gate's own numbered checks
 
@@ -115,6 +116,7 @@ the only source that moves when one is added.
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 | 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
+| 13 | THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) |
 
 ---
 
@@ -344,13 +346,13 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      150   git ls-files tools/
+  tools on disk                      151   git ls-files tools/
   hook entries                         8   .claude\settings.json
-  push-gate invocations                8   tools\sairn_push_gate_hook.py
+  push-gate invocations                9   tools\sairn_push_gate_hook.py
   report-only registry                45   report_only_checks.REGISTRY
-  tools invoked by tests/             98   tests/**/*.py, *.js
+  tools invoked by tests/             99   tests/**/*.py, *.js
   recorded NOT-promoted decisions     38   report_only_checks.NOT_PROMOTED
-  numbered gate checks                12   tools\sairn_push_gate_hook.py
+  numbered gate checks                13   tools\sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is

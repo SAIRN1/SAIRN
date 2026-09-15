@@ -1521,6 +1521,78 @@ def main():
         if MODE == 'prepush':
             sys.stderr.write("\n" + guard_note + "\n\n")
 
+    # ── CHECK 13: THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) ───
+    # BLOCKING. Michael's decision: the standing rule that a Tier A change is
+    # reviewed by a session OTHER than the one that wrote it has been real and
+    # unenforced the whole time. It lives in prose on whichever open-work rows
+    # somebody remembered to annotate -- "the reviewer should be someone else",
+    # "the session which wrote the code shares its own blind spot" -- and
+    # NOTHING checked it. 7 of the 77 defect-register records name
+    # `independent-review` as the detection method, so the practice works when
+    # it happens; nothing made it happen.
+    #
+    # WHAT IT REFUSES, and it is deliberately only two things:
+    #   1. Tier A code changed with no obligation recorded, so nobody
+    #      downstream can tell a reviewed change from an unreviewed one.
+    #   2. A record whose reviewer is its own author. That is the one claim the
+    #      rule exists to refuse and the only part of a review a machine can
+    #      check. It CANNOT read a review or judge one, and the tool's own
+    #      header says so rather than implying more reach than it has.
+    #
+    # IT DOES NOT ASK FOR THE REVIEW BEFORE THE PUSH, which would be both
+    # unworkable and wrong -- a reviewer cannot read code that has not been
+    # pushed. It asks the author to RECORD the obligation in the same push, in
+    # one command. Discharging it is somebody else's job and cannot be faked.
+    #
+    # SCOPED BY DIFF HUNK, NOT BY FILE. The first implementation asked whether a
+    # changed FILE names a Tier A resource and reported 78 resources for a
+    # one-line edit, because api/sd-data.js contains every resource name on the
+    # platform. A gate that says "you touched everything" on every push says
+    # nothing. Measured again at hunk granularity, the same commit reports the
+    # seven sc_* resources it actually changed.
+    #
+    # EXIT 2 IS NOT A PASS. If docs/CRITICALITY-TIERS.md cannot be parsed, or
+    # yields zero Tier A rows, the tool refuses rather than returning an empty
+    # set -- an empty set would silently clear every push, which is the quietest
+    # possible way for this to stop working (PR 1.11).
+    if changed:
+        _rev_tool = os.path.join(repo, 'tools', 'tier_a_review_gate.py')
+        if os.path.isfile(_rev_tool):
+            _rev_base = base
+            if not _rev_base:
+                _rev_base = git(repo, 'merge-base', 'origin/main', tip).strip() or None
+            if _rev_base:
+                try:
+                    _rev = subprocess.run(
+                        [sys.executable, _rev_tool, '--diff-range',
+                         '%s..%s' % (_rev_base, tip)],
+                        capture_output=True, text=True, timeout=180, cwd=repo)
+                except Exception as _e:
+                    _rev = None
+                    if MODE == 'prepush':
+                        sys.stderr.write(
+                            "\nTier A review gate COULD NOT RUN (%s: %s). That is not a "
+                            "pass -- run tools/tier_a_review_gate.py by hand.\n\n"
+                            % (type(_e).__name__, _e))
+                if _rev is not None and _rev.returncode == 1:
+                    deny("\n".join([
+                        "Blocked: this push changes code serving a Tier A resource and no",
+                        "independent-review obligation is recorded for it.",
+                        "",
+                        (_rev.stdout or '') + (_rev.stderr or ''),
+                        OVERRIDE_HINT,
+                        "An override nobody mentions is how this gets hollowed out -- and",
+                        "this is the check whose whole subject is somebody not being told.",
+                    ]))
+                if _rev is not None and _rev.returncode == 2 and MODE == 'prepush':
+                    sys.stderr.write(
+                        "\nTier A review gate COULD NOT TELL -- this is NOT a pass:\n"
+                        + (_rev.stderr or _rev.stdout or '') + "\n")
+            elif MODE == 'prepush':
+                sys.stderr.write(
+                    "\nTier A review gate SKIPPED: no base commit resolved, so the range "
+                    "to examine is unknown. Not a pass.\n\n")
+
     # ── CHECK 11: RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) ───
     # PROMOTED FROM REPORT-ONLY ON MICHAEL'S CALL, on a real track record: the
     # 2026-09-10 sweep of 1,624 tracked files found FOUR, and on 2026-09-13 it

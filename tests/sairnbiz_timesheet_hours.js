@@ -536,8 +536,22 @@ const BAD = [
   ['a week that is not a Monday', Object.assign({}, GOOD, { week: '2026-09-08' })],
   ['a week that is not a date', Object.assign({}, GOOD, { week: 'last week' })],
   ['a week that does not exist', Object.assign({}, GOOD, { week: '2026-02-31' })],
+  ['a rolled-over day in a real month', Object.assign({}, GOOD, { week: '2026-09-31' })],
   ['no employee', { week: WEEK, hours: [0, 0, 0, 0, 0, 0] }],
 ];
+
+test('a non-existent date is refused AS a bad date, not as "not a Monday"', async () => {
+  // Found live on 2026-09-15 and it is a refusal-message defect rather than a
+  // hole: `new Date('2026-02-31T00:00:00Z')` parses, rolling over to 3 March,
+  // so an isNaN check alone accepts a day that is not on the calendar. It WAS
+  // refused -- by the Monday check -- which told the operator the wrong thing
+  // about their input and would send them to fix the wrong field.
+  const r = await callHandler(Object.assign({}, GOOD, { week: '2026-02-31' }));
+  assert.strictEqual(r.code, 400);
+  assert.ok(/does not exist on the calendar/.test(r.body.error.message),
+    'the refusal names the wrong reason: ' + r.body.error.message);
+  assert.ok(!r.wrote);
+});
 
 test('a valid timesheet reaches storage', async () => {
   const r = await callHandler(GOOD);

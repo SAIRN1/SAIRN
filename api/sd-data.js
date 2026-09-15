@@ -9761,6 +9761,15 @@ module.exports = async (req, res) => {
       // is the duplicate the deterministic id exists to prevent.
       const wk = new Date(p.week + 'T00:00:00Z');
       if (isNaN(wk.getTime())) { tsBad('week is not a real date: ' + p.week); return; }
+      // ROUND-TRIP, BECAUSE Date SILENTLY ROLLS OVER. `2026-02-31` parses --
+      // to 3 March -- so an isNaN check alone accepts a day that does not
+      // exist. Found live on 2026-09-15: the probe's 2026-02-31 case WAS
+      // refused, but by the Monday check below, so the refusal told the
+      // operator the wrong thing about their input. A refusal that names the
+      // wrong reason sends somebody to fix the wrong field.
+      if (wk.toISOString().slice(0, 10) !== p.week) {
+        tsBad('week is not a real date: ' + p.week + ' does not exist on the calendar'); return;
+      }
       if (wk.getUTCDay() !== 1) { tsBad('week must be the MONDAY that starts the week; ' + p.week + ' is not a Monday'); return; }
       if (!Array.isArray(p.hours) || p.hours.length !== 6) {
         tsBad('hours must be an array of exactly 6 values, Monday to Saturday'); return;

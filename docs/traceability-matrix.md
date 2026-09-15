@@ -36,6 +36,7 @@ Source: the numbered `CHECK n:` blocks in `tools/sairn_push_gate_hook.py`. Deriv
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 | 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
+| 13 | THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) |
 
 ## 3. Enforced report-only
 
@@ -133,6 +134,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The independent-review rule on Tier A code was real and enforced by nothing but remembering &mdash; it is push-gate check 13 now** | **BUILT 2026-09-15 (CC)**, BLOCKING &mdash; `tools/tier_a_review_gate.py`, `docs/tier-a-reviews.json`, check 13 in `tools/sairn_push_gate_hook.py`; `tests/run_tier_a_review_gate_probe.py` all arms pas | `tests/run_tier_a_review_gate_probe.py` |
 | **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
@@ -409,7 +411,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**216 of 424 test files are traced to a stated requirement. 208 are not.**
+**217 of 425 test files are traced to a stated requirement. 208 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -641,12 +643,12 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 424   tests/**, api/*.test.js
-  open-work rows citing a test       198   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 425   tests/**, api/*.test.js
+  open-work rows citing a test       199   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED
-  numbered gate checks                12   sairn_push_gate_hook.py
+  numbered gate checks                13   sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.
