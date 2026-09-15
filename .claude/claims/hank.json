@@ -1803,8 +1803,8 @@
       "task": "independent review of the cross location rollup null not zero rule",
       "claimed_at": "2026-09-15T13:02:49Z",
       "claimed_at_epoch": 1789477369.9023583,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T14:06:57Z"
     },
     {
       "id": "hank-1789480565",
