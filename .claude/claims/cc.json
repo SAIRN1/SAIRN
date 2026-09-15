@@ -1364,6 +1364,16 @@
       "claimed_at_epoch": 1789483738.0774503,
       "status": "released",
       "released_at": "2026-09-15T15:23:11Z"
+    },
+    {
+      "id": "cc-1789485847",
+      "session": "cc",
+      "subject": "cc",
+      "task": "tier a review gate context attribution false positives",
+      "claimed_at": "2026-09-15T15:24:07Z",
+      "claimed_at_epoch": 1789485847.854606,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
