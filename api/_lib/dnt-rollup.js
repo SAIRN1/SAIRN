@@ -71,10 +71,28 @@ const { DEFAULT_LOCATION_ID } = require('./dnt-location');
 // destroy exactly the distinction rule 1 exists to keep.
 const UNASSIGNED = '__unassigned__';
 
-function num(v) {
-  const n = typeof v === 'number' ? v : parseFloat(v);
-  return Number.isFinite(n) ? n : 0;
-}
+// ── RULE 3, ONE LEVEL DOWN (2026-09-15) ────────────────────────────────────
+// The independent review raised this and it was raised as a DISAGREEMENT
+// rather than an oversight, because dnt-rollup.test.js:199 pins the zeroing
+// deliberately and it is right to: a NaN would poison the whole total, which is
+// worse. The objection was narrower. Rule 3 above says of an unreadable
+// RESOURCE: "NEVER 0. Zero is a measurement." An unreadable FIELD was doing
+// exactly that -- `100 + null + '' + '$1,200' + '12abc'` reported
+// `{value:112, rows:5}` with `complete:true`, an authoritative figure short by
+// an unknown amount, positively asserting it was whole.
+//
+// THE FIX IS NOT A CHANGE TO THE ARITHMETIC, which is why the existing arm
+// still passes unchanged: an unreadable amount still contributes 0 and the row
+// is still counted. What changes is that the roll-up now SAYS how many it could
+// not read, per metric, and `complete` goes false when any were.
+//
+// `parseFloat` became `measureNumber` (api/_lib/safe-number.js) in the same
+// edit, and that IS a behaviour change worth naming: parseFloat PARTIALLY
+// PARSES, so `'12abc'` was silently 12 and `'1,200'` was silently 1. A
+// plausible wrong number is worse than an unreadable one, because nothing looks
+// wrong. Both are now counted as unread. `'not a number'` is NaN under both, so
+// the pinned arm is unaffected.
+const { measureNumber } = require('./safe-number');
 
 // A row's location, as recorded. `data` is the jsonb blob every SAIRNdental
 // resource stores; sd-data.js hands rows through with it merged or nested
@@ -150,18 +168,25 @@ function rollup(input) {
     // rather than an absent key a caller would read as 0.
     Object.keys(buckets).forEach((id) => {
       buckets[id].metrics[m.key] = dead
-        ? { value: null, rows: null, unreadable: (set && set.unreadable) || 'resource not supplied' }
-        : { value: 0, rows: 0 };
+        ? { value: null, rows: null, unread: null,
+            unreadable: (set && set.unreadable) || 'resource not supplied' }
+        : { value: 0, rows: 0, unread: 0 };
     });
     if (dead) return;
     set.rows.forEach((row) => {
       const b = touch(locationOf(row));
-      if (!b.metrics[m.key]) b.metrics[m.key] = { value: 0, rows: 0 };
-      b.metrics[m.key].rows += 1;
-      b.metrics[m.key].value += (m.kind === 'sum')
-        ? num(row[m.field] !== undefined ? row[m.field]
-          : (row.data && row.data[m.field]))
-        : 1;
+      if (!b.metrics[m.key]) b.metrics[m.key] = { value: 0, rows: 0, unread: 0 };
+      const cell = b.metrics[m.key];
+      cell.rows += 1;
+      if (m.kind !== 'sum') { cell.value += 1; return; }
+      const raw = row[m.field] !== undefined ? row[m.field]
+        : (row.data && row.data[m.field]);
+      const n = measureNumber(raw);
+      // The row still counts -- it exists, it just carries no readable amount --
+      // and the amount it could not read is now NAMED instead of being an
+      // invisible 0 inside a total that calls itself complete.
+      if (n === null) { cell.unread += 1; return; }
+      cell.value += n;
     });
   });
 
@@ -172,16 +197,21 @@ function rollup(input) {
   const ids = Object.keys(buckets).sort();
   const totals = {};
   metrics.forEach((m) => {
-    let v = 0, rows = 0, suppressed = false;
+    let v = 0, rows = 0, unread = 0, suppressed = false;
     ids.forEach((id) => {
       const cell = buckets[id].metrics[m.key];
       if (!cell || cell.value === null) { suppressed = true; return; }
-      v += cell.value; rows += cell.rows;
+      v += cell.value; rows += cell.rows; unread += (cell.unread || 0);
     });
     totals[m.key] = suppressed
-      ? { value: null, rows: null, unreadable: unreadable[m.resource] || 'suppressed' }
-      : { value: v, rows: rows };
+      ? { value: null, rows: null, unread: null,
+          unreadable: unreadable[m.resource] || 'suppressed' }
+      : { value: v, rows: rows, unread: unread };
   });
+  // Rolled up across metrics so `complete` has one thing to read, and so a
+  // caller can show the count without walking every bucket.
+  const unreadFields = Object.keys(totals).reduce(
+    (n, k) => n + (totals[k] && totals[k].unread ? totals[k].unread : 0), 0);
 
   const unassigned = buckets[UNASSIGNED] || null;
   return {
@@ -195,9 +225,14 @@ function rollup(input) {
     // the per-location figures an incomplete partition of the practice.
     disclosure: {
       complete: Object.keys(unreadable).length === 0
+        && unreadFields === 0
         && !(unassigned && Object.keys(unassigned.metrics).some(
           (k) => unassigned.metrics[k] && unassigned.metrics[k].rows > 0)),
       unreadable: unreadable,
+      // NAMED, because the row count alone is only a mitigation for somebody
+      // who already suspects something. 4 rows against $100 is visible to a
+      // reader who looks; `complete: true` was telling them not to.
+      unread_fields: unreadFields,
       unregistered_location_ids: ids.filter(
         (id) => id !== UNASSIGNED && !buckets[id].registered),
       registry_size: Object.keys(known).length

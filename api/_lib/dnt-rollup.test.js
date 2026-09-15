@@ -222,5 +222,63 @@ check('no ranking, no best-performer, no period change is emitted', () => {
     'a scoreboard is a judgement dressed as a number; this returns figures only');
 });
 
+
+// ── THE UNREAD-FIELD DISCLOSURE, added 2026-09-15 with the fix ──────────────
+// The arm at :199 above pins the ARITHMETIC and is deliberately unchanged: an
+// unreadable amount still contributes 0 and the row is still counted. These
+// pin the half that was missing -- that the roll-up SAYS so.
+check('an unreadable amount is COUNTED as unread, not silently zero', () => {
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 100 },
+      { id: 'C2', location_id: 'LOC-N', amount: '' },
+      { id: 'C3', location_id: 'LOC-N', amount: 'n/a' },
+      { id: 'C4', location_id: 'LOC-N' }] } } }));
+  const cell = loc(out, 'LOC-N').metrics.production;
+  assert.strictEqual(cell.value, 100);
+  assert.strictEqual(cell.rows, 4, 'every row still counts -- it exists');
+  assert.strictEqual(cell.unread, 3, 'and three amounts could not be read');
+});
+
+check('...and complete goes FALSE, so a client is not told to stop looking', () => {
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 100 },
+      { id: 'C2', location_id: 'LOC-N', amount: '' }] } } }));
+  assert.strictEqual(out.disclosure.complete, false);
+  assert.strictEqual(out.disclosure.unread_fields, 1);
+});
+
+check('CONTROL: a clean column still reports complete with unread 0', () => {
+  // Without this, "unread makes complete false" is also satisfied by a module
+  // that never reports complete at all.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 100 },
+      { id: 'C2', location_id: 'LOC-N', amount: 0 }] } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.unread, 0);
+  assert.strictEqual(out.disclosure.unread_fields, 0);
+  assert.strictEqual(out.disclosure.complete, true);
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, 100,
+    'an explicit 0 is a measurement and is summed, not skipped');
+});
+
+check('parseFloat\'s PARTIAL PARSE no longer sneaks a plausible wrong number in', () => {
+  // '12abc' was silently 12 and '1,200' was silently 1 under parseFloat. A
+  // plausible wrong number is worse than an unreadable one.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: '12abc' },
+      { id: 'C2', location_id: 'LOC-N', amount: '1,200' }] } } }));
+  const cell = loc(out, 'LOC-N').metrics.production;
+  assert.strictEqual(cell.value, 0);
+  assert.strictEqual(cell.unread, 2);
+});
+
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

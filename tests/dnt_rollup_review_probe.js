@@ -142,6 +142,28 @@ const amounts = rollup({
 });
 line('production', JSON.stringify(amounts.totals.production));
 line('complete', String(amounts.disclosure.complete));
+
+// ── CLOSED 2026-09-15, AND THE VERDICT IS DERIVED RATHER THAN WRITTEN DOWN ──
+// The prose below describes the behaviour as it was WHEN THIS PROBE WAS
+// WRITTEN, and it is kept because it is the argument that got the fix made.
+// But a narrative that outlives the defect it describes starts contradicting
+// the numbers printed two lines above it -- the same shape as a tool printing
+// a hardcoded "the gap is open" under a line reading "0 of 6". So the closure
+// is MEASURED here, from this run's own output, and this block says which of
+// the two a reader is looking at.
+const f2Closed = amounts.disclosure.complete === false
+  && amounts.totals.production
+  && amounts.totals.production.unread > 0;
+if (f2Closed) {
+  findings -= 1;
+  console.log(`
+  >> CLOSED. Measured on THIS RUN: the total now carries unread=${amounts.totals.production.unread}
+  >> and complete is false. The fix was the one suggested below -- the
+  >> arithmetic is unchanged and dnt-rollup.test.js:199 still passes; what
+  >> changed is that the unread fields are NAMED and complete stops asserting
+  >> wholeness. The narrative that follows is the original finding, kept as the
+  >> record of why, and it no longer describes current behaviour.`);
+}
 console.log(`
   THIS ONE IS A DISAGREEMENT, NOT AN OVERSIGHT, and it has to be raised as
   such: dnt-rollup.test.js:199 has an arm named "a non-numeric amount

@@ -106,6 +106,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-15T15:23:16Z",
+      "resources": [
+        "dnt_charges",
+        "dnt_patients"
+      ],
+      "files": [
+        "api/_lib/dnt-rollup.test.js"
+      ],
+      "what": "dnt_rollup: measureNumber() from the new api/_lib/safe-number.js replaces parseFloat in the sum, and the roll-up now reports unread_fields with complete going false when any amount could not be read. This closes finding 2 of Hank's review (ce7764fa) using the fix HE suggested -- the arithmetic is unchanged and dnt-rollup.test.js:199 still passes. TWO THINGS A REVIEWER SHOULD PUSH ON. (1) I discharged the review on this same file an hour ago, so I am no longer independent of it; Michael directed the fix and that is his call, but the second reader here should be somebody who has done neither. (2) parseFloat -> Number IS a behaviour change beyond the disclosure: '12abc' was silently 12 and '1,200' was silently 1, and both are now counted unread. I believe a plausible wrong number is worse than an unreadable one, but that is a judgement about real dental data I cannot see. FINDING 1 OF THAT REVIEW IS UNTOUCHED and still reproduces -- the missing-cell-read-as-suppressed defect belongs to the author.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
