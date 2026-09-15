@@ -291,10 +291,22 @@ async function claudeProxyHandler(req, res) {
   const claudeLicenceKey = claudeAuthz.startsWith('Bearer ')
     ? claudeAuthz.slice(7).trim() : null;
   let authState = 'absent';
+  // THE TENANT KEY FOR THE SUB-BUDGET (2026-09-15). Hoisted out of the block
+  // below so the rate limiter can be told WHICH customer this is. It is the
+  // license_hash the validator already computed -- never the raw key, which is
+  // a bearer secret and must not reach a log table.
+  //
+  // It stays null on every path where the licence is absent, invalid or
+  // unreadable, and the limiter treats null as "count against the app, do not
+  // sub-budget, and say so". Inventing a tenant for an unauthenticated call
+  // would put one customer's usage on another's budget, which is worse than
+  // not sub-budgeting it at all.
+  let claudeTenantKey = null;
   if (claudeLicenceKey) {
     try {
       const lic = await validateLicenseKey(claudeLicenceKey);
       authState = lic.valid ? (lic.active ? 'valid' : 'inactive') : 'invalid';
+      if (lic.valid && lic.license_hash) claudeTenantKey = lic.license_hash;
     } catch (err) {
       // FAILS OPEN, and says so. An unreachable licence store must not take
       // down every AI feature on the platform -- the same standard every other
@@ -374,7 +386,7 @@ async function claudeProxyHandler(req, res) {
   // only ever existed on the demo path, so a non-demo call was absent from the
   // usage table entirely rather than present with null tokens. Now every call
   // that gets a row gets its cost recorded.
-  const rl = await checkAiRateLimit(app_id);
+  const rl = await checkAiRateLimit(app_id, claudeTenantKey);
   if (!rl.allowed) {
     // The demo contract is preserved exactly for demo callers. A non-demo
     // caller gets a real 429 instead, because telling a paying subscriber they

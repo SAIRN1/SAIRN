@@ -434,6 +434,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
 - `api/_lib/accounting-connector.test.js`
+- `api/_lib/ai-rate-limit-tenant.test.js`
 - `api/_lib/ai-rate-limit.test.js`
 - `api/_lib/ai-usage.test.js`
 - `api/_lib/auth.test.js`

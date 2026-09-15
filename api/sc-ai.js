@@ -242,7 +242,10 @@ module.exports = async (req, res) => {
   }
 
   // ── Layer 22: persistent rate limit (observe mode unless env says enforce) ──
-  const rl = await checkAiRateLimit(APP);
+  // TENANT-SCOPED (2026-09-15). licHash, never the raw key. This endpoint
+  // always has a validated licence, so every SAIRNcode AI call is
+  // sub-budgeted -- unlike api/claude.js, where auth is still observe-mode.
+  const rl = await checkAiRateLimit(APP, licHash);
   if (!rl.allowed) {
     await audit('ai_call_blocked', { feature: feature, reason: 'rate_limit', count: rl.count, limit: rl.limit });
     res.status(429).json({
