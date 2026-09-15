@@ -1853,8 +1853,8 @@
       "task": "skill authoring architectural hardening",
       "claimed_at": "2026-09-15T15:27:58Z",
       "claimed_at_epoch": 1789486078.8528843,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T15:38:12Z"
     }
   ]
 }
