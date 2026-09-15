@@ -1743,8 +1743,8 @@
       "task": "fault probe gate 4 the draws and bids suites must DENY",
       "claimed_at": "2026-09-15T11:24:25Z",
       "claimed_at_epoch": 1789471465.0468721,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T11:40:45Z"
     }
   ]
 }
