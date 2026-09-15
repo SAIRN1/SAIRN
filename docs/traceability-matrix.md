@@ -298,6 +298,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **A LIVE BYPASS: one devtools line opened the paid product, against a function whose own comment says it closes exactly that** | **FIXED 2026-09-15 (Hank)** &mdash; `fd9f0a2c`. `tests/sairncash_entitlement_gate.js` 14 arms, NEW. Measured both ways: **13/1 at origin/main, 14/0 now** | `tests/sairncash_entitlement_gate.js` |
 | **Gate 4 on the app that takes money &mdash; and the webhook HTTP handler had never been invoked by anything** | **BUILT 2026-09-15 (Hank)** &mdash; `497bbf24`, corrected by `3afe8fbd`. `tests/sairncash_fault_probe.py`, 8 mutation arms + 3 controls. **The `fault` column stays 0 and is RIGHT to** &mdash; see next | `tests/sairncash_fault_probe.py` |
 
 ### sairncode
@@ -312,6 +313,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Independent review of `dnt_rollup` (Fourth/Ted) &mdash; a measured figure reported as UNMEASURABLE on an ordinary practice** | **REVIEWED 2026-09-15 (Hank)** &mdash; `ce7764fa`, `tests/dnt_rollup_review_probe.js`, report-only, exit 0. **2 findings, neither fixed by me** | `tests/dnt_rollup_review_probe.js` |
 | ~~The generic `DNT_RESOURCES` write validates `payload.id` and nothing else~~ &mdash; **COMPLETE. Every resource the app writes now has a domain check** | **CLOSED 2026-09-11 (Hank)** &mdash; **15 of 17 validated, and the other two are the deliberately-unwritten pair.** Derived, not counted by hand: 17 members in `DNT_RESOURCES`, 15 with a `resource === | `api/sd-data-dental-ledger-validation.test.js` |
 | ~~A coverage rule cannot be changed or removed once written — `removeCoverageRule()` is local-only and there is no update path~~ | **CLOSED 2026-09-04 (CC)** — an EDIT path exists; removal is still not a delete and the message now says so | `api/sd-data-dental-ledger-validation.test.js`, `tests/sairndental_coverage_edit.js`, `tests/suite_control_backfill_probe.py` |
 | ~~Every write failure was reported as *"server sync not yet enabled for this app"*, which is FALSE — and it was swallowing the refusals added the same day~~ | **CLOSED 2026-09-04 (CC)** for SAIRNdental. **SAIRNlaw (29) and SAIRNlegacy (58) still carry it — see the row below** | `tests/sairndental_write_failure_voice.js` |
@@ -425,7 +427,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**220 of 428 test files are traced to a stated requirement. 208 are not.**
+**222 of 428 test files are traced to a stated requirement. 206 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -550,7 +552,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/composite_context.js`
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`
-- `tests/dnt_rollup_review_probe.js`
 - `tests/dnt_vendor_write_confirmation.js`
 - `tests/entitlement_freshness_control.py`
 - `tests/exec_role_gate.js`
@@ -615,7 +616,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-med-schedule.js`
 - `tests/sairncare/test-op-audit.js`
 - `tests/sairncare/test-payer-routing.js`
-- `tests/sairncash_entitlement_gate.js`
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`
 - `tests/sairndental_unlinked_referral_queue.js`
@@ -658,7 +658,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 428   tests/**, api/*.test.js
-  open-work rows citing a test       207   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       209   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     34   report_only_checks.NOT_PROMOTED
