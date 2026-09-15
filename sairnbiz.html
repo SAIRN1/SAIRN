@@ -594,13 +594,17 @@ textarea{resize:vertical;min-height:80px;}
 <div class="panel" id="panel-timesheet">
   <div class="ph"><div><div class="ptitle">Timesheets</div><div class="psub">Hours tracked &middot; Week of <span id="tsweek"></span></div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('timesheet')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <!-- Billable Hours ("Job-coded") and Utilization Rate were REMOVED 2026-09-15
+       rather than dashed. Neither had anything behind it even in principle:
+       billable was Math.round(total*0.85) in a file with no job-coding model
+       and no other 0.85, and utilization was billable/total, which under that
+       definition can only ever print 85%. See rTS(). -->
   <div class="krow">
-    <div class="kpi"><div class="klbl">Total Hours</div><div class="kval" id="ts-hrs">0</div><div class="kt">This week</div></div>
-    <div class="kpi"><div class="klbl">Overtime Hours</div><div class="kval" id="ts-ot">0</div><div class="kt d">Monitor OT cost</div></div>
-    <div class="kpi"><div class="klbl">Labor Cost (Week)</div><div class="kval" id="ts-cost">$0</div><div class="kt">Reg + OT</div></div>
-    <div class="kpi"><div class="klbl">Billable Hours</div><div class="kval" id="ts-bill">0</div><div class="kt">Job-coded</div></div>
-    <div class="kpi"><div class="klbl">Utilization Rate</div><div class="kval" id="ts-util">0%</div><div class="kt">Billable / Total</div></div>
+    <div class="kpi"><div class="klbl">Total Hours</div><div class="kval" id="ts-hrs">--</div><div class="kt">This week</div></div>
+    <div class="kpi"><div class="klbl">Overtime Hours</div><div class="kval" id="ts-ot">--</div><div class="kt d">Monitor OT cost</div></div>
+    <div class="kpi"><div class="klbl">Labor Cost (Week)</div><div class="kval" id="ts-cost">--</div><div class="kt">Reg + OT</div></div>
   </div>
+  <div id="ts-note" class="psub" style="display:none;margin:-16px 0 20px;"></div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th></tr></thead>
     <tbody id="tstbody"></tbody></table></div>
@@ -2912,17 +2916,77 @@ function saveVendor(){
   st('sb_vends',v);closeVendModal();rVends();toast('Vendor added - '+name);
 }
 
+// ── A WEEK OF HOURS NOBODY EVER ENTERED (2026-09-15) ───────────────────────
+// `td` was eight rows of hours written into the source and indexed by each
+// employee's POSITION in the filtered Active list, with a fallback of
+// [8,8,8,8,8,0] for anyone past the eighth. One line, three defects:
+//
+//   * FIVE KPIs AND EVERY TABLE CELL WERE COMPUTED FROM INVENTED HOURS. The
+//     pay rates are real, so the Labor Cost tile multiplied a real rate by an
+//     invented week -- Guardian Check 0b in its most expensive form, a
+//     plausible wrong dollar figure in a payroll product. Nothing on screen
+//     said where the hours came from.
+//   * POSITION-INDEXING SILENTLY REASSIGNED HOURS BETWEEN PEOPLE. Set E003 to
+//     Inactive and E004 moves to index 2, inheriting E003's 43-hour week and
+//     its 3 hours of overtime in place of its own flat 40. Nobody touched a
+//     timesheet; two employees' weeks swapped, and the app reported both as
+//     fact. Driven in tests/sairnbiz_timesheet_hours.js section 3 against the
+//     pre-fix body, because a fix asserted only against itself proves nothing.
+//   * THE NINTH ACTIVE EMPLOYEE, AND EVERY ONE AFTER, GOT EXACTLY 40 HOURS --
+//     not a placeholder anyone would read as a placeholder, an ordinary full
+//     week. Hire a ninth person and the app invents their timesheet.
+//
+// THE APP ALREADY KNEW. csv() refuses to export this view precisely because
+// the hours are hardcoded -- "exporting it would launder demo figures into a
+// spreadsheet somebody costs a week against". The screen showed the same
+// figures with no disclosure at all, so one half of the app treated them as
+// unfit to export while the other half presented them as the week's payroll.
+//
+// SAME FIX AS THE SAFETY-INCIDENTS TILE (rTrain, below): while nothing writes
+// the hours, the app says so instead of showing a number. Hours now come from
+// `sb_ts` keyed by EMPLOYEE ID, so a record can never attach to the wrong
+// person, and an employee with no record is `--` across the row and excluded
+// from all three figures rather than defaulted to a full week.
+//
+// THE FLAG IS CHECKABLE, NOT DECORATIVE. tests/sairnbiz_timesheet_hours.js
+// counts the real st('sb_ts') writers in this file and fails if this disagrees
+// with it -- the day an entry path lands the dash is replaced by a measurement
+// rather than by somebody remembering to come back here.
+var SB_TS_HAVE_A_WRITE_PATH=false;
 function rTS(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-  var td=[[8,8,8,8,8,0],[8,8,8,8,10,0],[8,8,7,8,8,4],[8,8,8,8,8,0],[8,8,8,8,8,0],[8,8,8,8,8,0],[8,8,8,8,8,0],[0,0,5,0,5,0]];
-  var th=0,tot=0,tc=0,tb=0;
-  $('tstbody').innerHTML=emps.map(function(e,i){
-    var d=td[i]||[8,8,8,8,8,0];var t=d.reduce(function(a,b){return a+b;},0);var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
-    th+=t;tot+=ot;tc+=c;tb+=Math.round(t*0.85);
+  var hrs=ld('sb_ts',{})||{};
+  var th=0,tot=0,tc=0,recorded=0;
+  $('tstbody').innerHTML=emps.map(function(e){
+    var d=hrs[e.id];
+    // A missing record is six dashes and no contribution to any total. It is
+    // NEVER a default week -- that fallback is the defect this replaced.
+    if(!Array.isArray(d)){
+      return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+
+        '<td style="text-align:center;color:var(--muted);">--</td>'.repeat(6)+
+        '<td style="text-align:center;">--</td>'+
+        '<td style="text-align:center;color:var(--muted);">--</td>'+
+        '<td style="text-align:right;">--</td></tr>';
+    }
+    var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
+    var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
+    th+=t;tot+=ot;tc+=c;recorded++;
     return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td></tr>';
   }).join('');
-  $('ts-hrs').textContent=th;$('ts-ot').textContent=tot;$('ts-cost').textContent=fmt(tc);
-  $('ts-bill').textContent=tb;$('ts-util').textContent=th>0?Math.round(tb/th*100)+'%':'0%';
+  var note;
+  if(SB_TS_HAVE_A_WRITE_PATH&&recorded>0){
+    $('ts-hrs').textContent=th;$('ts-ot').textContent=tot;$('ts-cost').textContent=fmt(tc);
+    // An excluded employee is disclosed rather than absorbed. A total drawn
+    // from six of eight people, printed without saying so, is the same class
+    // of quiet wrong number as the hours that used to be invented.
+    var missing=emps.length-recorded;
+    note=missing?recorded+' of '+emps.length+' active employees have hours recorded. The other '+missing+' are excluded from all three figures above.':'';
+  }else{
+    $('ts-hrs').textContent='--';$('ts-ot').textContent='--';$('ts-cost').textContent='--';
+    note='Hours are not recorded in this app yet, so there is nothing to total. These figures are shown as -- rather than 0 because no hours and no way to enter hours are different facts.';
+  }
+  $('ts-note').textContent=note;
+  $('ts-note').style.display=note?'':'none';
 }
 
 // Pre-payroll validation (2026-08-10) -- deterministic checks that run
@@ -4332,9 +4396,12 @@ function csv(type){
   }
   // THE FALLBACK REFUSES AND WRITES NOTHING. Three views legitimately reach it
   // and each is named rather than lumped together:
-  //   timesheet -- rTS() drives its hours from a HARDCODED array in the source
-  //     (`td`), not from a store. Exporting it would launder demo figures into
-  //     a spreadsheet somebody costs a week against. Flagged separately.
+  //   timesheet -- rTS() reads `sb_ts` and NOTHING writes it
+  //     (SB_TS_HAVE_A_WRITE_PATH), so there are no hours to export. Until
+  //     2026-09-15 the reason was worse and is worth keeping on the record:
+  //     the hours were a hardcoded array in the source indexed by employee
+  //     POSITION, and this refusal was the only thing in the app that treated
+  //     them as unfit to leave the screen. The screen showed them anyway.
   //   pl        -- no row set exists; the panel is computed totals.
   //   report    -- "report" is not a data set, it is the panel name.
   // Any future button passing an unhandled key now fails LOUDLY here instead
