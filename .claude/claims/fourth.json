@@ -1453,8 +1453,8 @@
       "task": "transport timeout anchor, dnt_rollup discharge, item 97 sairncode cold review, pinned list drift fresh target, recombination pass",
       "claimed_at": "2026-09-15T14:51:06Z",
       "claimed_at_epoch": 1789483866.4939866,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T15:47:54Z"
     }
   ]
 }
