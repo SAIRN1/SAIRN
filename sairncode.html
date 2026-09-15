@@ -4013,7 +4013,7 @@ How to answer:
             document.getElementById('dne-add-reason').value = '';
             document.getElementById('dne-add-specialty').value = '';
             document.getElementById('dne-add-amount').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial event logged' : 'Denial event logged on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial event logged' : scWriteRefusalText('Denial event logged on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getComplianceItems(){

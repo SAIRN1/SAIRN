@@ -300,6 +300,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **A Tier A medical-billing record took a write from the LICENCE KEY ALONE &mdash; `sc_denial_events` was the seventh, and the gate was a hand-written list of six** | **FIXED 2026-09-15 (CC), measured LIVE first** &mdash; `SC_TIER_A_WRITE_GATED` is now DERIVED from the pinned Tier A list; `tests/sairncode_gates.js` 120/120, mutation control 155/155 with all 29 caug | `tests/sairncode_gates.js` |
 | **28 registered resources, ZERO test files &mdash; and the three server-side gates standing between a licence key and a deleted medical-billing record had never been exercised** | **CLOSED 2026-09-14 (CC)** &mdash; `tests/sairncode_gates.js` (50 arms, driven against the real handler) and `tests/sairncode_gates_mutation_control.js` (8 mutations, all caught). **The POSTURE findin | `tests/sairncode_gates.js`, `tests/sairncode_gates_mutation_control.js` |
 | **The six Tier A billing resources accepted a write from the LICENCE KEY ALONE &mdash; now admin or biller. Reads unchanged** | **DECIDED by Michael and BUILT 2026-09-14 (CC)** after `tests/sairncode_gates.js` measured the posture. `SC_TIER_A_WRITE_ROLES` / `SC_TIER_A_WRITE_GATED` in `api/sd-data.js`; suite grown 50 &rarr; 90  | `tests/sairncode_gates.js` |
 
@@ -651,7 +652,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 425   tests/**, api/*.test.js
-  open-work rows citing a test       203   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       204   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED

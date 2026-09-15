@@ -172,11 +172,37 @@ const SC_RETENTION_FLOOR_YEARS = 10;
 //     coder is expected to create claims, add 'coder' here.
 //   * an `auditor` cannot write sc_compliance. Recording a finding is arguably
 //     the auditor's job; the role is read-shaped by name and is left out.
+// ── THE SEVEN MAY BE HIDDEN, NEVER DESTROYED (2026-09-15, item 97) ─────────
+// IMPORTED, NOT RETYPED. This is the list api/_resources/sairncode.js uses to
+// decide which verb each resource grants, and the two must agree exactly or the
+// envelope gate would accept a verb this branch does not implement -- a 400
+// from an unreachable branch, which is the failure checkEnvelope's own header
+// records having been found the hard way.
+const SC_TIER_A_SOFT_DELETE_ONLY = require('./_resources/sairncode').tierASoftDeleteOnly;
+function scIsSoftDeleteOnly(resource) {
+  return SC_TIER_A_SOFT_DELETE_ONLY.indexOf(resource) !== -1;
+}
 const SC_TIER_A_WRITE_ROLES = ['admin', 'biller'];
-const SC_TIER_A_WRITE_GATED = [
-  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',
-  'sc_credential_scope'
-];
+// ── SIX BECAME SEVEN, AND THE SEVENTH WAS FOUND BY A LIVE PROBE (2026-09-15) ─
+// This was a HAND-WRITTEN list of six, decided 2026-09-14, and the register
+// says SEVEN sc_* resources are Tier A. sc_denial_events was the one missing,
+// and the gap was not theoretical: measured against the deployed function on
+// 2026-09-15, the other six answered 401 NO_SESSION to a write carrying the
+// LICENCE KEY ALONE and sc_denial_events answered 200. A Tier A record --
+// "the event history an appeal is argued from" -- accepted a write from
+// anybody holding the licence string the app documents as not being auth.
+//
+// IT WAS MISSED BECAUSE THE TWO LISTS WERE DECIDED SEPARATELY. The write gate
+// was written from the six resources somebody was looking at; the tier register
+// is the authority on which resources are Tier A. Nothing compared them.
+//
+// SO IT IS DERIVED NOW, not re-typed. This is the same list the removal verbs
+// come from, which tests/sairncode_gates.js pins against
+// docs/CRITICALITY-TIERS.md in BOTH directions -- so a resource tiered A there
+// is write-gated here automatically, and the two can no longer disagree by
+// somebody editing one. A hand-kept copy of a list is exactly the drift item 97
+// was about, one file over.
+const SC_TIER_A_WRITE_GATED = SC_TIER_A_SOFT_DELETE_ONLY;
 // ── ONE PER-RESOURCE EXCEPTION, AND IT IS AN EXCEPTION ON PURPOSE ──────────
 // Michael's call, 2026-09-14, on the two questions the gate above was shipped
 // with open:
@@ -201,16 +227,6 @@ const SC_TIER_A_WRITE_GATED = [
 const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {
   sc_compliance: ['admin', 'biller', 'auditor'],
 };
-// ── THE SEVEN MAY BE HIDDEN, NEVER DESTROYED (2026-09-15, item 97) ─────────
-// IMPORTED, NOT RETYPED. This is the list api/_resources/sairncode.js uses to
-// decide which verb each resource grants, and the two must agree exactly or the
-// envelope gate would accept a verb this branch does not implement -- a 400
-// from an unreachable branch, which is the failure checkEnvelope's own header
-// records having been found the hard way.
-const SC_TIER_A_SOFT_DELETE_ONLY = require('./_resources/sairncode').tierASoftDeleteOnly;
-function scIsSoftDeleteOnly(resource) {
-  return SC_TIER_A_SOFT_DELETE_ONLY.indexOf(resource) !== -1;
-}
 function scTierAWriteRoles(resource) {
   return SC_TIER_A_WRITE_ROLES_BY_RESOURCE[resource] || SC_TIER_A_WRITE_ROLES;
 }

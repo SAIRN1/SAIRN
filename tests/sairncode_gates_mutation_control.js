@@ -320,15 +320,30 @@ const MUTATIONS = [
     replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_claims: ['admin', 'biller', 'coder'],\n};",
   },
   {
+    // ── RE-ANCHORED 2026-09-15, AND THE HARNESS IS WHAT REPORTED IT ───────
+    // Both of these anchored on the SC_TIER_A_WRITE_GATED array literal in
+    // api/sd-data.js. That literal is gone: the write gate is DERIVED from
+    // SC_TIER_A_SOFT_DELETE_ONLY now, because the hand-written list was SIX
+    // while the register said SEVEN, and sc_denial_events accepted a write
+    // with no session at all until a live probe found it. Both arms reported
+    // ANCHOR-0 on the next run -- the stale-anchor failure this harness exists
+    // to make loud, caught minutes after the edit rather than months later on
+    // a probe reporting clean.
+    //
+    // Re-anchored onto the registry, which is where the list lives now, with
+    // SINGLE-LINE anchors because api/_resources/sairncode.js is CRLF in this
+    // working tree while api/sd-data.js is LF.
+    registry: true,
     name: 'sc_coded_items is gated too, so the coder exclusion becomes a '
         + 'lockout rather than a split',
-    find: "  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',\n  'sc_credential_scope'\n];",
-    replace: "  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',\n  'sc_credential_scope', 'sc_coded_items'\n];",
+    find: "  'sc_denial', 'sc_denial_events', 'sc_revenue'",
+    replace: "  'sc_denial', 'sc_denial_events', 'sc_revenue', 'sc_coded_items'",
   },
   {
+    registry: true,
     name: 'one resource is quietly dropped from the gated list',
-    find: "  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',",
-    replace: "  'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',",
+    find: "  'sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',",
+    replace: "  'sc_claims', 'sc_compliance', 'sc_credential_scope',",
   },
   // ── THE CLIENT HALF ────────────────────────────────────────────────────────
   // A refusal the server states and the client renders as "server sync failed,

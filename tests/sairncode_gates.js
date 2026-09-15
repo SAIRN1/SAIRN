@@ -167,6 +167,19 @@ const WRITE_GATED = {
   sc_denial: 'admin|biller',
   sc_compliance: 'admin|biller|auditor',   // the one per-resource override
   sc_credential_scope: 'admin|biller',
+  // ── THE SEVENTH, ADDED 2026-09-15 AFTER A LIVE PROBE FOUND IT OPEN ────────
+  // The 2026-09-14 gate was a hand-written list of SIX and the register says
+  // SEVEN sc_* resources are Tier A. Measured against the deployed function on
+  // 2026-09-15: the other six answered 401 NO_SESSION to a write carrying the
+  // LICENCE KEY ALONE, and sc_denial_events answered 200. "The event history an
+  // appeal is argued from" took a write from anybody holding the licence
+  // string this app documents as not being auth.
+  //
+  // Nothing compared the two lists, which is why nothing noticed. The handler
+  // derives the gate from the pinned Tier A list now, so this table is the
+  // third opinion rather than a second copy -- and it failed the moment the
+  // posture changed, which is the direction that failure should run.
+  sc_denial_events: 'admin|biller',
 };
 // Read from api/sd-data.js rather than retyped, for the same reason
 // SB_VOID_ROLES is read out of sairnbiz.html in tests/sairnbiz_void_not_delete.js:
@@ -178,11 +191,25 @@ const TIER_A_ROLES = (() => {
   assert.ok(m, 'SC_TIER_A_WRITE_ROLES not found in api/sd-data.js');
   return JSON.parse(m[1].replace(/'/g, '"'));
 })();
+// ── IT IS DERIVED NOW, NOT A LITERAL (2026-09-15) ──────────────────────────
+// This used to parse an array literal out of api/sd-data.js. That literal was a
+// HAND-WRITTEN list of six while the register says seven are Tier A, and
+// sc_denial_events -- the one missing -- accepted a write from the LICENCE KEY
+// ALONE on the deployed function while the other six answered 401. Measured
+// live on 2026-09-15, not inferred.
+//
+// The handler now derives the gate from the same pinned list the removal verbs
+// use, so this reads the DERIVATION rather than a copy: if somebody puts a
+// literal back, the regex below stops matching and this suite fails loudly
+// instead of silently checking a list nobody maintains.
 const TIER_A_GATED = (() => {
   const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
-  const m = /const SC_TIER_A_WRITE_GATED = \[([^\]]*)\];/.exec(src);
-  assert.ok(m, 'SC_TIER_A_WRITE_GATED not found in api/sd-data.js');
-  return JSON.parse('[' + m[1].replace(/'/g, '"').replace(/,\s*\]/, ']') + ']');
+  const derived = /const SC_TIER_A_WRITE_GATED = SC_TIER_A_SOFT_DELETE_ONLY;/.test(src);
+  assert.ok(derived,
+    'SC_TIER_A_WRITE_GATED is no longer derived from SC_TIER_A_SOFT_DELETE_ONLY. '
+    + 'It was a hand-written list of six once and the register said seven; '
+    + 'sc_denial_events took a write with no session for a day because of it.');
+  return SC.tierASoftDeleteOnly.slice();
 })();
 // ── THE PER-RESOURCE OVERRIDE (2026-09-14) ─────────────────────────────────
 // Michael added `auditor` to sc_compliance and left `coder` off sc_claims. Both
@@ -668,11 +695,19 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // table is the claim; the handler is the fact; disagreement is a finding
     // either way, and reporting only one direction is how a posture drifts
     // without anybody being told.
-    ok(writeOpen.length === 21,
-       '21 resources still accept an ordinary write with the licence key alone '
-       + '-- the 22 non-billing ones minus sc_auth_requests\' conditional gate, '
-       + 'which is what "the other 22 stay as-is" means measured rather than '
-       + 'asserted (got ' + writeOpen.length + ')');
+    // 21 -> 20 on 2026-09-15. sc_denial_events moved out of this population
+    // into the gated one, after a live probe found it accepting a write with
+    // the LICENCE KEY ALONE while the other six Tier A resources answered 401
+    // NO_SESSION. The number is moved by hand deliberately rather than made
+    // self-adjusting: a count derived from the handler agrees with the handler
+    // by construction and could never report a gate appearing or disappearing,
+    // which is the only thing this arm is for.
+    ok(writeOpen.length === 20,
+       '20 resources still accept an ordinary write with the licence key alone '
+       + '-- the 28 minus the seven Tier A ones and sc_settings, with '
+       + 'sc_auth_requests counted OPEN because its gate is conditional, which '
+       + 'is what "the rest stay as-is" means measured rather than asserted '
+       + '(got ' + writeOpen.length + ')');
     // THE ARM THAT WAS INVERTED BY THE DECISION, and it is left visibly
     // inverted rather than deleted. It used to read "the six named Tier A
     // resources are ALL among the open ones, which is why the row is open".
@@ -701,12 +736,22 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
   // ── 6. THE TIER A BILLING WRITE GATE ─────────────────────────────────────
   // Michael's decision of 2026-09-14, after section 5 measured the posture.
   // Written as its own section because it is a BEHAVIOUR CHANGE ON LIVE DATA,
-  // not a discovery: these six accepted a write from the licence key alone
-  // until now.
-  section('6. the six Tier A billing resources require a role to WRITE');
+  // not a discovery: these accepted a write from the licence key alone until
+  // the gate landed -- six of them on 2026-09-14 and the seventh, which the
+  // hand-written list had missed, on 2026-09-15.
+  section('6. the SEVEN Tier A billing resources require a role to WRITE');
   {
-    ok(TIER_A_GATED.length === 6,
-       'the handler gates exactly six resources -- ' + TIER_A_GATED.join(', '));
+    // SIX -> SEVEN on 2026-09-15. The gate was a hand-written list of six and
+    // the register says seven; sc_denial_events was the one missing, and a live
+    // probe found it answering 200 to a write with the licence key alone while
+    // the other six answered 401 NO_SESSION. The handler derives the list from
+    // the pinned Tier A set now, so this arm is checking the DERIVATION rather
+    // than a copy -- and section 1 is what pins that set to the register.
+    ok(TIER_A_GATED.length === 7,
+       'the handler gates exactly seven resources -- ' + TIER_A_GATED.join(', '));
+    ok(TIER_A_GATED.indexOf('sc_denial_events') !== -1,
+       'sc_denial_events is gated -- it was the seventh Tier A resource and the '
+       + 'hand-written list of six left it open to the licence key alone');
     ok(TIER_A_GATED.every((r) => SC.resources.indexOf(r) !== -1),
        'and every one is a real registered SAIRNcode resource');
     // THE ROLE LIST NAMES ROLES THIS APP ACTUALLY HAS. The same PR 3.4 trap as
@@ -758,9 +803,9 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
         else leaks.push(resource + '/' + role + ' -> ' + r.code + ' (expected 200)');
       }
     }
-    ok(anon401 === 6,
-       'all six answer 401 NO_SESSION to an unsigned write, without touching '
-       + 'storage -- ' + anon401 + '/6');
+    ok(anon401 === TIER_A_GATED.length,
+       'all ' + TIER_A_GATED.length + ' answer 401 NO_SESSION to an unsigned '
+       + 'write, without touching storage -- ' + anon401 + '/' + TIER_A_GATED.length);
     ok(deniedCount === deniedExpected,
        'every role NOT on a resource\'s own list is refused 403 FORBIDDEN, '
        + 'resource by resource -- ' + deniedCount + '/' + deniedExpected);
@@ -796,10 +841,14 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
       if (r.code === 403 && !r.sawUpstream) auditorElsewhere += 1;
       else leaks.push('auditor reached ' + resource + ' -> ' + r.code);
     }
-    ok(auditorElsewhere === 5,
-       'CONTROL: and an auditor is still refused on the other five -- the '
-       + 'exception is an EXCEPTION, not a widened shared list. '
-       + auditorElsewhere + '/5');
+    // Derived from the gated set rather than written as 5, because the set grew
+    // on 2026-09-15 and a literal here would have made a CORRECT widening of
+    // the population look like a broken exception. The exception itself is
+    // still pinned by name above; this arm is about everything that is not it.
+    ok(auditorElsewhere === TIER_A_GATED.length - 1,
+       'CONTROL: and an auditor is still refused on the other '
+       + (TIER_A_GATED.length - 1) + ' -- the exception is an EXCEPTION, not a '
+       + 'widened shared list. ' + auditorElsewhere + '/' + (TIER_A_GATED.length - 1));
     ok(rolesFor('sc_claims').indexOf('coder') === -1,
        'DECIDED: a `coder` CANNOT write sc_claims. Coherent with the split this '
        + 'app already has -- sc_coded_items is the coder\'s own resource and is '
