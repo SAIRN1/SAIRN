@@ -139,8 +139,16 @@ def save_reviews(data):
 
 
 def git(*args):
-    r = subprocess.run(['git'] + list(args), cwd=REPO,
-                       capture_output=True, text=True)
+    # ENCODING IS EXPLICIT, AND THIS IS A REAL DEFECT THAT WAS HERE (2026-09-15).
+    # `text=True` alone decodes with the LOCALE default, which is cp1252 on this
+    # platform -- and this repo's diffs are full of box-drawing characters and
+    # em-dashes. The reader thread raised UnicodeDecodeError, the exception was
+    # printed by the threading machinery, and the call returned with stdout
+    # TRUNCATED rather than failing. A diff-reading gate that silently gets a
+    # short diff under-detects and reports clean, which is the worst direction
+    # for this particular tool to be wrong in.
+    r = subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
+                       text=True, encoding='utf-8', errors='replace')
     return r.stdout if r.returncode == 0 else ''
 
 

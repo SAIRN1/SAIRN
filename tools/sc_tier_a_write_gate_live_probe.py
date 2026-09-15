@@ -179,13 +179,27 @@ def main():
                    'subjects and cleans up after itself, and both need admin.'
                    % body.get('role'))
 
-    # ── 1. NO SESSION IS 401, ON ALL SIX ─────────────────────────────────────
+    # ── 1. NO SESSION IS 401, ON EVERY TIER A RESOURCE ───────────────────────
     # The half that needs no extra credential, and the one the gate was built
-    # for: these six accepted a write from the licence key alone until
-    # 2026-09-14.
-    SIX = ['sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',
-           'sc_credential_scope']
-    print('\n1. a write with the LICENCE KEY ALONE is refused on all six')
+    # for: these accepted a write from the licence key alone until 2026-09-14.
+    #
+    # THIS WAS A HAND-WRITTEN LIST OF SIX WHILE THE REGISTER SAID SEVEN -- the
+    # defect this probe exists to catch, surviving inside the probe itself.
+    # sc_denial_events was missing here for the same reason it was missing from
+    # SC_TIER_A_WRITE_GATED, and the consequence here was worse than the
+    # handler's: "all six refuse" was TRUE and covered six of seven, so a green
+    # run was evidence about a population nobody had checked was the right one.
+    # A verification tool reporting clean over the wrong denominator is the one
+    # failure mode it must not have.
+    #
+    # Found 2026-09-15 by tools/pinned_list_drift_check.py, written that day to
+    # sweep for exactly this shape after it had been found twice by hand -- and
+    # this line was the first row it printed.
+    #
+    # DERIVED FROM THE REGISTRY NOW, like the cleanup verbs below.
+    SIX = sorted(soft_only)
+    print('\n1. a write with the LICENCE KEY ALONE is refused on all %d Tier A '
+          'resources' % len(SIX))
     for res in SIX:
         st, body = post(DATA, {'action': 'write', 'resource': res, 'app_id': 'sairncode',
                                'payload': {'id': 'ZZ-GATE-NOSESSION'}}, key=LICENSE)
@@ -196,7 +210,7 @@ def main():
     # ── 2. READS ARE UNTOUCHED ───────────────────────────────────────────────
     # The other half of the decision, and the half a role gate most easily
     # breaks by accident.
-    print('\n2. and a READ with the licence key alone still works on all six')
+    print('\n2. and a READ with the licence key alone still works on all %d' % len(SIX))
     for res in SIX:
         st, body = post(DATA, {'action': 'read', 'resource': res,
                                'app_id': 'sairncode', 'payload': {}}, key=LICENSE)

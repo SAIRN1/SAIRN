@@ -96,6 +96,14 @@ PURPOSES = {
         'for a one-line edit to api/sd-data.js, because that file names every '
         'resource on the platform. It cannot read a review and says so; what it '
         'refuses is a Tier A change nobody was told about and a self-signed one'),
+    'pinned_list_drift_check.py': ('CHECKER',
+        'a hand-written list of resource names that is a PARTIAL cover of an '
+        'app Tier A set with nothing comparing the two -- the shape that left '
+        'sc_denial_events accepting a write from the licence key alone while a '
+        'gate list of six sat beside a register that said seven. A DERIVED list '
+        'produces no row, which is the fix. A read-list rather than a score: '
+        'its first run gave 12 rows and 1 defect, and the one was inside the '
+        'live probe built to catch this'),
     'tier_a_replaceability_check.py': ('CHECKER',
         'item 97 -- whether a Tier A resource is the real irreplaceable '
         'artifact or a stand-in: which Tier A resources grant a HARD delete '
