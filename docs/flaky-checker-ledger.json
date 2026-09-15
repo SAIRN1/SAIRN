@@ -1025,30 +1025,39 @@
   "metamorphic_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "483f2f20c4a281ea",
+     "err": true,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "483f2f20c4a281ea": "RUNNER-ERROR:TimeoutExpired"
+   }
   },
   "mutation_anchor_check.py": {
    "observations": [
