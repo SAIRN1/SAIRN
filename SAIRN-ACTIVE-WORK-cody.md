@@ -5032,3 +5032,77 @@ holding it lets you do.
 
 Recommended as its own full slot, with the two unclassified secrets resolved
 first.
+
+---
+
+## 2026-09-15 (continued) — the two refusals resolved, and an identity register that found 11 ownerless credentials
+
+### Item 1 — `secrets_inventory.py` generates again
+
+`SAIRN_AI_CONTENTION_FLOOR` and `SAIRN_AI_TENANT_SHARE` classified **TUNING**.
+No live claim covered them; the session that added them had released.
+
+**AND THE ANSWER CHANGED FOR A REASON WORTH RECORDING.** I refused to classify
+these earlier on the grounds that judging somebody else's secret is a judgement
+about what holding it lets you do. **That was right with what I had read and wrong
+once I read the code.** `api/_lib/ai-rate-limit.js` documents both at the switch,
+in its author's own words: the per-tenant sub-budget and the contention floor
+inside the existing per-app AI ceiling, Michael's decision of 2026-09-15. Numeric
+thresholds — they name no secret, grant no access, and their absence falls back
+to a documented default rather than to zero, which the file says explicitly
+because *"a zero share would cap every tenant at nothing the moment the floor is
+crossed."*
+
+So the classification is **derived from the author's own documentation, not
+guessed.** Inventory: **49 variables — 18 CREDENTIAL / 5 ENDPOINT / 8 ADDRESS /
+18 TUNING**, `--check` OK.
+
+### Item 2 — `tools/nhi_register.py` + `docs/NHI-REGISTER.md`
+
+**22 identities**, each with a named owner and a real scope. Keyed on IDENTITY,
+not variable name — an env-var credential appears as *a credential belonging to
+an identity*.
+
+**IT FOUND ELEVEN CREDENTIALS WITH NO RECORDED OWNER ON ITS FIRST RUN**, and that
+is the check working rather than a report about it: `OIDC_CLIENT_SECRET`,
+`QB_CLIENT_SECRET`, `COURTLISTENER_API_TOKEN`, `STABILITY_API_KEY`,
+`SAIRNCASH_FIREBASE_SERVICE_ACCOUNT`, `SAIRNCASH_STRIPE_WEBHOOK_SECRET`,
+`SAIRNCASH_ADMIN_SECRET`, `ALF_PHARMACY_SECRET`, `DENTAL_BI_KEY`, and the two
+rate-limit salts. Each scope taken from `secrets_inventory`'s own description of
+what the variable unlocks.
+
+**Two it is worth knowing are there at all:** `SAIRNCASH_ADMIN_SECRET` **renews a
+trial without paying** — a paywall bypass held as a bearer string; and
+`QB_CLIENT_SECRET` is provisioned while StoneDesk GAP 6 records QuickBooks
+integration as **deliberately held open**, so it may be a credential for work
+nobody is doing.
+
+**Two derived halves make it a check rather than a list**, both refusing rather
+than emitting a blank cell — the `tooling_inventory.py` convention:
+
+1. every `CREDENTIAL` in `secrets_inventory.SECRETS` must be attributed to an
+   identity;
+2. every `create role` in `sql/` must appear. **Minting a login role is the act
+   most likely to happen with nobody recording who owns it** — and the one it
+   finds, `sairn_backup_reader`, carries CC's HIGH finding unfixed: a published
+   placeholder password made permanent by an idempotence guard.
+
+**`SAIRNCASH_STRIPE_WEBHOOK_SECRET` is a separate identity from `stripe-account`
+on purpose.** `secrets_inventory` already flags the near-collision with
+`STRIPE_WEBHOOK_SECRET` — two variables one word apart — and folding them into
+one identity would re-create exactly that confusion.
+
+**A blank `last rotated` means NOBODY KNOWS, not never**, and the document says
+so. No clone holds any of these, so every rotation column is attested; none has
+been attested yet.
+
+**Limits stated in the file:** it cannot see an identity that exists only in a
+console (2 of 22 rows are marked `attested` and cannot be derived), cannot verify
+a credential is live or has the scope claimed, and does not check least privilege.
+
+**The selftest crashed instead of reporting on its first run** — section 4 called
+`render()` bare, so a real finding killed the selftest rather than being reported
+by it. A selftest that dies on a real finding is one nobody can use to fix the
+finding. Guarded; 7 arms, both refusal directions driven.
+
+### Item 3 — held, as instructed

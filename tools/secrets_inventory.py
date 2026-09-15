@@ -70,6 +70,25 @@ SECRETS = {
     'SUPABASE_URL': ('ENDPOINT', 'the one Supabase project every app reads and writes; not permission, but nothing works without it'),
     'SD_AUTH_SECRET': ('CREDENTIAL', 'signs and verifies EVERY app\'s employee session token -- one secret, no per-app key and no overlap window, so a rotation logs everyone out of everything at once'),
     'OIDC_CLIENT_SECRET': ('CREDENTIAL', 'the OIDC client secret; the only one of the four OIDC values whose exposure is a security event rather than a misconfiguration'),
+    # ── CLASSIFIED 2026-09-15, AND WHY THE ANSWER CHANGED ────────────────────
+    # These two blocked this tool from generating for several hours, and I
+    # declined to classify them on the grounds that judging somebody else's
+    # secret is a judgement about what holding it lets you do. THAT WAS RIGHT
+    # WITH WHAT I HAD READ AND WRONG ONCE I READ THE CODE. api/_lib/ai-rate-limit.js
+    # documents both at the switch, in its author's own words: they are the
+    # per-tenant sub-budget and the contention floor inside the existing per-app
+    # AI ceiling, Michael's decision of 2026-09-15. Numeric thresholds. They
+    # name no secret, grant no access, and their absence falls back to a
+    # documented default rather than to zero -- the file says so explicitly,
+    # because "a zero share would cap every tenant at nothing the moment the
+    # floor is crossed".
+    #
+    # So the classification is DERIVED from the author's own documentation, not
+    # guessed, and no live claim covered them when this was written. TUNING is
+    # the same kind OIDC_CLIENT_ID and the Firebase web values carry: wrong
+    # values change behaviour, exposure is not a security event.
+    'SAIRN_AI_TENANT_SHARE': ('TUNING', 'the per-tenant sub-budget inside the per-app daily AI ceiling -- how much of the app limit any ONE licence may hold once contention starts. Optional; defaults to half the app limit. An unparseable value falls back to that default rather than to zero, deliberately, because a zero share would cap every tenant at nothing the moment the floor is crossed'),
+    'SAIRN_AI_CONTENTION_FLOOR': ('TUNING', 'the app-level usage below which no tenant is capped at all -- the sub-budget binds only under contention. Optional; defaults to half the app limit. Ten of the fourteen apps with seeded licences have exactly ONE tenant, so a hard cap below this floor would take capacity from somebody contending with nobody'),
     'OIDC_CLIENT_ID': ('TUNING', 'the OIDC client identifier -- public by design in the OIDC spec, listed because losing it breaks sign-in everywhere'),
     'OIDC_ISSUER_URL': ('ENDPOINT', 'the OIDC provider'),
     'OIDC_REDIRECT_URI': ('ADDRESS', 'where the OIDC provider sends the user back; a wrong value is a sign-in that dead-ends'),

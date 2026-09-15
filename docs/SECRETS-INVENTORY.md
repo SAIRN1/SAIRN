@@ -20,8 +20,8 @@ It looks for a guard naming the variable, in the same file, alongside a refusal.
 | **CREDENTIAL** | 18 | Access to data or money. A leak is an incident; a rotation is a coordinated event |
 | **ENDPOINT** | 5 | Names WHERE something is, not permission to use it -- and nothing works without it |
 | **ADDRESS** | 8 | A URL or address the platform sends to or redirects to |
-| **TUNING** | 16 | A threshold, a mode, a limit. Wrong values change behaviour and cost nothing to disclose |
-| | **47** | |
+| **TUNING** | 18 | A threshold, a mode, a limit. Wrong values change behaviour and cost nothing to disclose |
+| | **49** | |
 
 ## The inventory
 
@@ -40,8 +40,10 @@ Sorted by blast radius, because that is the order in which these matter.
 | `DENTAL_RATE_LIMIT_SALT` | CREDENTIAL | 7 | 2 | refuses | salts the hashed identifiers the dental and StoneDesk public rate limiters key on -- leaking it makes the stored hashes reversible |
 | `ANTHROPIC_API_KEY` | CREDENTIAL | 6 | 3 | refuses | billed AI access for every app that calls Claude |
 | `SAIRNCASH_FIREBASE_DATABASE_URL` | ENDPOINT | 5 | 2 | guarded in 1 of 2 | the SAIRNcash Firebase realtime database |
+| `SAIRN_AI_CONTENTION_FLOOR` | TUNING | 5 | 1 | **NO GUARD FOUND** | the app-level usage below which no tenant is capped at all -- the sub-budget binds only under contention. Optional; defaults to half the app limit. Ten of the fourteen apps with seeded licences have exactly ONE tenant, so a hard cap below this floor would take capacity from somebody contending with nobody |
 | `SAIRN_AI_DAILY_LIMIT` | TUNING | 5 | 1 | **NO GUARD FOUND** | per-licence daily AI call ceiling |
 | `SAIRN_AI_RATE_LIMIT_MODE` | TUNING | 5 | 1 | refuses | whether the AI rate limiter enforces or observes |
+| `SAIRN_AI_TENANT_SHARE` | TUNING | 5 | 1 | **NO GUARD FOUND** | the per-tenant sub-budget inside the per-app daily AI ceiling -- how much of the app limit any ONE licence may hold once contention starts. Optional; defaults to half the app limit. An unparseable value falls back to that default rather than to zero, deliberately, because a zero share would cap every tenant at nothing the moment the floor is crossed |
 | `STRIPE_SECRET_KEY` | CREDENTIAL | 5 | 5 | refuses (via stripe-config.js) | live charge and refund authority on the SAIRNcash Stripe account |
 | `CRON_SECRET` | CREDENTIAL | 4 | 4 | refuses | the bearer every scheduled job checks; possession lets anyone trigger a checkpoint, a sweep or a watchdog run |
 | `SAIRNCASH_FIREBASE_SERVICE_ACCOUNT` | CREDENTIAL | 4 | 1 | refuses | full Firebase admin authority for SAIRNcash |

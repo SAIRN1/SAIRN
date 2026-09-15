@@ -81,6 +81,16 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'nhi_register.py': ('GENERATOR',
+        'every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because '
+        'an env-var scan structurally cannot answer that -- a GitHub PAT, a '
+        'Postgres LOGIN role and four clones credentialed by the Windows '
+        'credential manager are not `process.env` reads. REFUSES when a '
+        'credential secrets_inventory calls a CREDENTIAL belongs to no identity, '
+        'or when sql/ creates a role with no entry. Its first run found ELEVEN '
+        'credentials with no recorded owner. Complements '
+        'docs/SECRETS-INVENTORY.md rather than replacing it: that one answers '
+        'what a variable unlocks, this one answers who owns it'),
     'sabotage.py': ('LIBRARY',
         'the negative-control recombination: plant a defect so that FAILING to '
         'plant it is LOUD. Four approaches already existed here and each was '
