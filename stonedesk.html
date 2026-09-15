@@ -5361,6 +5361,45 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
             <option>Cooktop 36in</option>
             <option>Cooktop 48in</option>
           </select>
+          <!-- PLUMBING CONNECT / DISCONNECT (2026-09-15, Carolyn's requirement).
+               A scheduling and liability question, not a fabrication one, and it
+               did not exist anywhere: the word "plumbing" appeared once in the
+               whole file, inside an installer checklist.
+
+               WHO DISCONNECTS THE OLD SINK AND WHO RECONNECTS THE NEW ONE is the
+               single most common cause of an install crew arriving to a job they
+               cannot start -- and of a shop being blamed for water damage it did
+               not cause. UNANSWERED IS ITS OWN VALUE and is the default: "not
+               discussed" and "customer handles it" lead to different phone calls,
+               and defaulting to either would put an answer on the record that
+               nobody gave. -->
+          <!-- VENDOR / MODEL AUTOCOMPLETE (2026-09-15, Carolyn's requirement).
+               Free-typed with a <datalist>, not a <select>: a rep must still be
+               able to write down a unit the shop has not catalogued yet, and a
+               closed list would make an uncatalogued fixture unrecordable
+               rather than merely unverified.
+
+               EMPTY IS REPORTED, NOT RENDERED AS A BROKEN CONTROL -- see
+               sdRefreshFixturePickers(). An empty autocomplete and a broken one
+               look identical to a rep, so the placeholder says which it is. -->
+          <input id="draw-sink-model" list="draw-sink-models" placeholder="Sink vendor / model (optional)"
+                 oninput="sdOnFixtureTyped('sink')"
+                 style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:12px;font-family:Outfit,sans-serif;outline:none">
+          <datalist id="draw-sink-models"></datalist>
+          <input id="draw-cooktop-model" list="draw-cooktop-models" placeholder="Cooktop vendor / model (optional)"
+                 oninput="sdOnFixtureTyped('cooktop')"
+                 style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:12px;font-family:Outfit,sans-serif;outline:none">
+          <datalist id="draw-cooktop-models"></datalist>
+          <div id="draw-fixture-note" style="font-size:10px;color:var(--muted);line-height:1.5"></div>
+          <select id="draw-plumbing" onchange="if(typeof calcDrawing==='function')calcDrawing()" style="width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:12px;font-family:Outfit,sans-serif;outline:none">
+            <option value="">Plumbing: not discussed yet</option>
+            <option value="none">No plumbing involved (no sink)</option>
+            <option value="customer">Customer arranges disconnect AND reconnect</option>
+            <option value="we_disconnect">We disconnect only — customer reconnects</option>
+            <option value="we_reconnect">Customer disconnects — we reconnect</option>
+            <option value="we_both">We disconnect AND reconnect</option>
+            <option value="plumber_3p">Third-party plumber, scheduled separately</option>
+          </select>
         </div>
 
         <!-- Holes -->
@@ -5926,7 +5965,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       if (ds.jobDetails && ds.jobDetails['draw-material']) rows.push(row('Material', ds.jobDetails['draw-material']));
       if (ds.jobDetails && ds.jobDetails['draw-edge']) rows.push(row('Edge Profile', ds.jobDetails['draw-edge']));
       if (ds.summary && ds.summary.seams) rows.push(row('Seams', ds.summary.seams));
-      if (ds.summary && ds.summary.chamfers) rows.push(row('Chamfered Corners', ds.summary.chamfers));
+      if (ds.summary && ds.summary.chamfers) rows.push(row('Inside Corner Treatment', ds.summary.chamfers));
+      // NO `if` ON THIS ONE, deliberately -- see the summary builder. Every
+      // other row here is conditional because an absent seam or bar means there
+      // is none; an absent plumbing answer means nobody asked.
+      if (ds.summary && ds.summary.fixtures) rows.push(row('Fixtures', ds.summary.fixtures));
+      if (ds.summary && ds.summary.plumbing) rows.push(row('Plumbing', ds.summary.plumbing));
       if (ds.summary && ds.summary.raisedBar) rows.push(row('Raised Bar', ds.summary.raisedBar));
       if (ds.summary && ds.summary.cutouts) rows.push(row('Placed Cutouts', ds.summary.cutouts));
       if (ds.jobDetails && ds.jobDetails['draw-notes']) rows.push(row('Notes', ds.jobDetails['draw-notes']));
@@ -14977,7 +15021,191 @@ function buildRaisedBarArea() {
 // Chamfered corners (2026-08-12): preset-shape inside-corner 45deg chamfers, keyed by
 // shape+corner so switching shapes (or away and back) can't carry stale corner state onto a
 // shape it doesn't apply to. Key absence = square corner (default, unchanged behavior).
-var dcChamferedCorners = {}; // keyed 'lshape-AB' | 'ushape-BackLeft' | 'ushape-BackRight' -> { setbackIn: number }
+// ── THE FIXTURE CATALOGUE (2026-09-15, Carolyn's requirement) ─────────────
+// Sales staff need to pick a REAL sink or cooktop by vendor and model and have
+// the cutout come from that unit's published specification, instead of choosing
+// "Single Bowl 32x19" -- a nominal shape that matches nothing on any truck.
+//
+// WHAT EXISTED BEFORE THIS, measured rather than assumed: SINK_SHAPES, twelve
+// GENERIC shapes with nominal width and depth, no vendor, no model, no
+// cutout-vs-bowl distinction. Cooktops had no dimensions at all -- only a
+// cutout TYPE and a nominal 24/30/36/48in dropdown label. So there was nothing
+// to autocomplete against.
+//
+// ══ IT SHIPS EMPTY, AND THAT IS THE MOST IMPORTANT LINE IN THIS BLOCK ══════
+//
+// A sink's CUTOUT dimension is not its bowl dimension, it is not its overall
+// dimension, and it is not derivable from either -- it is a number the
+// manufacturer publishes per model, and it is the number a slab gets cut to. A
+// wrong one is a destroyed slab.
+//
+// So this platform will NOT seed this catalogue with model numbers and
+// dimensions that nobody verified against a spec sheet. Inventing plausible
+// ones is the fabricated-data defect this codebase polices harder than any
+// other, and it would be worse here than usual: the fabrication is invisible
+// (a model number LOOKS like a fact), and the first person to discover it is
+// the fabricator with the slab already on the saw.
+//
+// The catalogue is therefore populated by the shop, from the spec sheets the
+// shop already has, and the picker says so plainly while it is empty rather
+// than rendering as a broken control.
+//
+// EVERY ENTRY CARRIES ITS SOURCE. `specSource` is where the number came from --
+// a spec sheet URL, a PDF name, "measured in showroom". A cutout dimension with
+// no provenance is the thing this block exists to refuse, so an entry saved
+// without one is recorded as UNVERIFIED and says so at the point of use.
+var SD_FIXTURE_CATALOG_KEY = 'sd_fixture_catalog';
+
+function sdFixtureCatalog() {
+  var rows = sdLoad(SD_FIXTURE_CATALOG_KEY, []);
+  return Array.isArray(rows) ? rows : [];
+}
+
+// kind is 'sink' or 'cooktop'. Returns the shop's entries for that kind only --
+// a cooktop must never autocomplete into a sink cutout.
+function sdFixturesOfKind(kind) {
+  return sdFixtureCatalog().filter(function (r) { return r && r.kind === kind; });
+}
+
+// "Vendor Model" is what a rep types and what a spec sheet is titled, so it is
+// the match key. Deliberately NOT a fuzzy match: a fixture picker that helpfully
+// resolves a near-miss is a fixture picker that silently cuts the wrong hole.
+function sdFixtureLabel(r) {
+  return [r && r.vendor, r && r.model].filter(Boolean).join(' ').trim();
+}
+
+function sdFindFixture(kind, label) {
+  var want = String(label || '').trim().toLowerCase();
+  if (!want) return null;
+  var hit = sdFixturesOfKind(kind).filter(function (r) {
+    return sdFixtureLabel(r).toLowerCase() === want;
+  });
+  return hit.length === 1 ? hit[0] : null;
+}
+
+// The cutout a slab is actually cut to. Returns null rather than a guess when
+// the entry does not carry one -- there is no arithmetic that turns a bowl size
+// into a cutout size, and a picker that produced one would be inventing the
+// single number this whole block exists to protect.
+function sdFixtureCutoutIn(r) {
+  if (!r) return null;
+  var w = parseFloat(r.cutoutWIn), d = parseFloat(r.cutoutDIn);
+  if (!(w > 0) || !(d > 0)) return null;
+  return { wIn: w, dIn: d, verified: !!(r.specSource && String(r.specSource).trim()) };
+}
+
+// Fills a <datalist> for an input. Empty catalogue is reported to the CALLER as
+// a count rather than rendered as an empty dropdown, because an empty
+// autocomplete and a broken autocomplete look identical to a rep.
+function sdFillFixtureDatalist(datalistEl, kind) {
+  if (!datalistEl) return 0;
+  var rows = sdFixturesOfKind(kind);
+  datalistEl.innerHTML = '';
+  rows.forEach(function (r) {
+    var o = document.createElement('option');
+    o.value = sdFixtureLabel(r);
+    var cut = sdFixtureCutoutIn(r);
+    o.label = cut ? (cut.wIn + '" x ' + cut.dIn + '" cutout' + (cut.verified ? '' : ' (UNVERIFIED)'))
+                  : 'no cutout dimension recorded';
+    datalistEl.appendChild(o);
+  });
+  return rows.length;
+}
+
+// Fills both pickers and says, in the note under them, WHICH state the shop is
+// in. Three outcomes and they are deliberately three, not two:
+//   * catalogue empty        -> the feature exists and has nothing in it yet
+//   * a match, with a source -> the cutout is quoted from a spec sheet
+//   * a match, no source     -> the cutout is used and flagged UNVERIFIED
+// Collapsing the last two would be the whole point of the feature thrown away.
+function sdRefreshFixturePickers() {
+  var sinks = sdFillFixtureDatalist(document.getElementById('draw-sink-models'), 'sink');
+  var tops  = sdFillFixtureDatalist(document.getElementById('draw-cooktop-models'), 'cooktop');
+  var note = document.getElementById('draw-fixture-note');
+  if (!note) return;
+  if (sinks + tops === 0) {
+    note.textContent = 'No fixtures catalogued yet. Cutouts fall back to the generic shapes above. '
+      + 'Add real vendor models with their published CUTOUT dimensions to quote from a spec sheet '
+      + 'instead of a nominal size.';
+    return;
+  }
+  note.textContent = sinks + ' sink model(s), ' + tops + ' cooktop model(s) catalogued.';
+}
+
+// Typed-value feedback. Does NOT change any dimension on its own: it reports
+// what the catalogue knows about what was typed, and the rep decides. A picker
+// that silently rewrote the cutout under a half-typed model name would be the
+// worst possible version of this feature.
+function sdOnFixtureTyped(kind) {
+  var inp = document.getElementById(kind === 'sink' ? 'draw-sink-model' : 'draw-cooktop-model');
+  var note = document.getElementById('draw-fixture-note');
+  if (!inp || !note) return;
+  var typed = String(inp.value || '').trim();
+  if (!typed) { sdRefreshFixturePickers(); return; }
+  var row = sdFindFixture(kind, typed);
+  if (!row) {
+    // NOT AN ERROR. An uncatalogued fixture is a normal thing for a rep to
+    // write down, and it travels to the cut sheet as typed text with no
+    // dimension claimed for it.
+    note.textContent = '"' + typed + '" is not in the catalogue — recorded as typed, '
+      + 'no cutout dimension claimed. The generic shape above still drives the cutout.';
+    return;
+  }
+  var cut = sdFixtureCutoutIn(row);
+  if (!cut) {
+    note.textContent = '"' + typed + '" is catalogued but carries NO cutout dimension, '
+      + 'so nothing can be quoted from it. Add the published cutout size to use it.';
+    return;
+  }
+  note.textContent = '"' + typed + '": ' + cut.wIn + '" × ' + cut.dIn + '" cutout'
+    + (cut.verified ? ' (from ' + row.specSource + ')'
+                    : ' ⚠ UNVERIFIED — no spec source recorded for this entry');
+}
+
+// ── RADIUS IS A SECOND CUT TYPE, NOT A SETTING ON THE FIRST (2026-09-15) ──
+// Carolyn's requirement, and the distinction is a fabrication one rather than a
+// cosmetic one: a 45deg chamfer is cut with a straight pass, a radius is cut
+// with a round bit or a CNC arc, and a fabricator quoting from a drawing that
+// says "corner treatment 2in" cannot tell which tool to load. They share this
+// record because they are alternatives at the SAME corner -- a corner is
+// square, chamfered or radiused, never two of them -- and a second parallel
+// store would let a corner be both.
+//
+// `kind` ABSENT MEANS 'chamfer'. Every record written before today has no kind,
+// and inventing a migration for a store that lives in one browser session would
+// be more risk than the field is worth.
+//
+//   kind 'chamfer' -> setbackIn is the 45deg SETBACK along each adjacent run
+//   kind 'radius'  -> setbackIn is the RADIUS, and DC_MIN_INSIDE_RADIUS_IN
+//                     applies. Same field because they are the same geometric
+//                     quantity for both cuts: how far back from the theoretical
+//                     corner point the stone is removed.
+var dcChamferedCorners = {}; // keyed 'lshape-AB' | 'ushape-BackLeft' | 'ushape-BackRight' -> { setbackIn: number, kind?: 'chamfer'|'radius' }
+
+// ── THE 2" INSIDE-CORNER MINIMUM, AND WHY IT IS A FLOOR AND NOT A DEFAULT ──
+// An inside corner is a stress riser: it is where a slab cracks, during
+// fabrication, during transport, or years later under normal thermal movement.
+// The smaller the radius the higher the concentration, and a true square inside
+// corner is the worst case -- which is why a fabricator radiuses or chamfers
+// them at all rather than for looks.
+//
+// 2 INCHES IS CAROLYN'S NUMBER, taken as a requirement and NOT derived here.
+// This app does not compute a safe radius from stone type, thickness or span,
+// and must not appear to: that would be an engineering claim behind a number
+// nobody could reproduce. What it does is refuse to PRODUCE A DRAWING that
+// specifies less, because a cut sheet saying "0.5in radius" is an instruction
+// somebody would follow.
+//
+// IT REFUSES RATHER THAN SILENTLY RAISING. Quietly correcting 0.5 to 2 would
+// change the drawn geometry and the price under a rep who never saw it happen,
+// and the rep is the person who has to tell the customer why the corner looks
+// different from what they asked for.
+var DC_MIN_INSIDE_RADIUS_IN = 2;
+
+function dcCornerKind(cornerKey) {
+  var c = dcChamferedCorners[cornerKey];
+  return (c && c.kind === 'radius') ? 'radius' : 'chamfer';
+}
 // A setback can't exceed this fraction of the shorter adjacent run, or the substituted fill
 // point would pass the run's far end and produce a self-intersecting notch instead of a clean
 // one -- same "flag, don't silently corrupt the geometry" posture as the sink-fit check.
@@ -15061,10 +15289,36 @@ function dcSetChamferSetback(cornerKey, rawVal, cbEl, inputEl) {
     return;
   }
   var finalVal = val;
+  var kind = dcCornerKind(cornerKey);
+  // ── THE MINIMUM IS CHECKED BEFORE THE MAXIMUM, AND REFUSES ───────────────
+  // Order matters on a corner whose adjacent runs are short enough that the
+  // 0.4x clamp lands BELOW the 2in floor. Clamping first would silently produce
+  // a 1.2in radius that passes every later check, which is the number this
+  // refuses to put on a cut sheet. Checking the floor first turns that corner
+  // into a refusal naming the real obstruction -- the runs are too short for a
+  // legal radius here -- instead of a quiet wrong answer.
+  if (kind === 'radius' && val < DC_MIN_INSIDE_RADIUS_IN) {
+    if (typeof showToast === 'function') {
+      showToast('Inside-corner radius must be at least ' + DC_MIN_INSIDE_RADIUS_IN
+        + '" — a tighter inside corner is a stress riser and is where the slab cracks. '
+        + 'Use a chamfer if you need less material removed.');
+    }
+    if (inputEl) inputEl.value = (dcChamferedCorners[cornerKey].setbackIn || '');
+    return;   // the stored value is left ALONE; nothing is drawn or priced from the refused number
+  }
+  if (kind === 'radius' && max > 0 && max < DC_MIN_INSIDE_RADIUS_IN) {
+    if (typeof showToast === 'function') {
+      showToast('These runs are too short for a ' + DC_MIN_INSIDE_RADIUS_IN
+        + '" inside radius (max here is ' + (Math.round(max * 100) / 100).toFixed(2)
+        + '"). Lengthen the runs or chamfer this corner instead.');
+    }
+    if (inputEl) inputEl.value = (dcChamferedCorners[cornerKey].setbackIn || '');
+    return;
+  }
   if (val > max) {
     finalVal = Math.round(max * 100) / 100;
     if (inputEl) inputEl.value = finalVal;
-    if (typeof showToast === 'function') showToast('Chamfer setback clamped to ' + finalVal.toFixed(2) + 'in (max for this corner)');
+    if (typeof showToast === 'function') showToast((kind === 'radius' ? 'Corner radius' : 'Chamfer setback') + ' clamped to ' + finalVal.toFixed(2) + 'in (max for this corner)');
   }
   dcChamferedCorners[cornerKey].setbackIn = finalVal;
   drawCTPreview();
@@ -15073,6 +15327,11 @@ function dcSetChamferSetback(cornerKey, rawVal, cbEl, inputEl) {
 
 // Build edge assignment selectors
 function buildEdgeAssignmentArea() {
+  // The fixture pickers are refreshed from the same hook the edge controls
+  // rebuild on, rather than once at load: the catalogue is editable while the
+  // app is open, and a datalist populated only at startup would silently serve
+  // a stale list to the rep who just added a model.
+  try { if (typeof sdRefreshFixturePickers === 'function') sdRefreshFixturePickers(); } catch (e) {}
   const area = document.getElementById('edge-assignment-area');
   if (!area) return;
   area.innerHTML = '';
@@ -15127,8 +15386,22 @@ function buildEdgeAssignmentArea() {
       cb.type = 'checkbox'; cb.id = 'chamfer-cb-' + chamferKey;
       cb.checked = !!dcChamferedCorners[chamferKey];
       const clbl = document.createElement('label');
-      clbl.textContent = 'Chamfer 45°'; clbl.htmlFor = cb.id;
+      clbl.textContent = 'Ease corner'; clbl.htmlFor = cb.id;
       clbl.style.cssText = 'font-size:10px;color:var(--muted)';
+      // ── THE CUT TYPE, AS A CHOICE RATHER THAN A LABEL (2026-09-15) ───────
+      // A chamfer and a radius are different cuts made with different tooling,
+      // so the drawing has to say which. The select is hidden with the input:
+      // an unchecked corner is square and has no cut type at all.
+      const kindSel = document.createElement('select');
+      kindSel.id = 'corner-kind-' + chamferKey;
+      kindSel.style.cssText = 'background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;padding:3px 5px;color:var(--text);font-size:10px;font-family:Outfit,sans-serif;outline:none';
+      [['chamfer', 'Chamfer 45°'], ['radius', 'Radius']].forEach(function (o) {
+        const opt = document.createElement('option');
+        opt.value = o[0]; opt.textContent = o[1];
+        kindSel.appendChild(opt);
+      });
+      kindSel.value = dcCornerKind(chamferKey);
+      kindSel.style.display = cb.checked ? '' : 'none';
       const sbIn = document.createElement('input');
       sbIn.type = 'number'; sbIn.id = 'chamfer-sb-' + chamferKey; sbIn.step = '0.25'; sbIn.placeholder = 'in';
       sbIn.style.cssText = 'width:52px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:5px;padding:3px 5px;color:var(--text);font-size:10px;font-family:DM Mono,monospace;outline:none';
@@ -15136,19 +15409,38 @@ function buildEdgeAssignmentArea() {
       sbIn.value = cb.checked ? dcChamferedCorners[chamferKey].setbackIn : '';
       cb.onchange = () => {
         if (cb.checked) {
-          dcChamferedCorners[chamferKey] = { setbackIn: 0 };
-          sbIn.style.display = '';
-          sbIn.value = 1.5;
-          dcSetChamferSetback(chamferKey, '1.5', cb, sbIn);
+          dcChamferedCorners[chamferKey] = { setbackIn: 0, kind: kindSel.value };
+          sbIn.style.display = ''; kindSel.style.display = '';
+          const start = kindSel.value === 'radius' ? DC_MIN_INSIDE_RADIUS_IN : 1.5;
+          sbIn.value = start;
+          dcSetChamferSetback(chamferKey, String(start), cb, sbIn);
         } else {
           delete dcChamferedCorners[chamferKey];
-          sbIn.value = ''; sbIn.style.display = 'none';
+          sbIn.value = ''; sbIn.style.display = 'none'; kindSel.style.display = 'none';
           drawCTPreview();
           if (typeof calcDrawing === 'function') calcDrawing();
         }
       };
+      // SWITCHING TO RADIUS RE-VALIDATES THE VALUE ALREADY IN THE BOX rather
+      // than carrying it over unchecked. A 1.5in chamfer setback is legal; the
+      // same 1.5 as a radius is not, and a type switch that quietly kept it
+      // would put an illegal radius on the drawing without anybody typing one.
+      kindSel.onchange = () => {
+        if (!dcChamferedCorners[chamferKey]) return;
+        dcChamferedCorners[chamferKey].kind = kindSel.value;
+        const cur = parseFloat(sbIn.value);
+        if (kindSel.value === 'radius' && !(cur >= DC_MIN_INSIDE_RADIUS_IN)) {
+          sbIn.value = DC_MIN_INSIDE_RADIUS_IN;
+          dcSetChamferSetback(chamferKey, String(DC_MIN_INSIDE_RADIUS_IN), cb, sbIn);
+          if (typeof showToast === 'function') {
+            showToast('Raised to the ' + DC_MIN_INSIDE_RADIUS_IN + '" inside-corner minimum for a radius.');
+          }
+          return;
+        }
+        dcSetChamferSetback(chamferKey, sbIn.value, cb, sbIn);
+      };
       sbIn.oninput = () => dcSetChamferSetback(chamferKey, sbIn.value, cb, sbIn);
-      crow.appendChild(cb); crow.appendChild(clbl); crow.appendChild(sbIn);
+      crow.appendChild(cb); crow.appendChild(clbl); crow.appendChild(kindSel); crow.appendChild(sbIn);
       area.appendChild(crow);
     }
   });
@@ -15489,7 +15781,24 @@ function drawCTPreview() {
       ctx.lineTo(bx+bw,by);
       if (chamferABOffPx > 0) {
         ctx.lineTo(bx+bw, ay-chamferABOffPx);
-        ctx.lineTo(bx+bw+chamferABOffPx, ay);
+        // A RADIUS IS DRAWN AS AN ARC, NOT AS THE CHAMFER'S STRAIGHT CUT
+        // (2026-09-15). The two treatments remove material from the same two
+        // points; what differs is the path between them, and that difference is
+        // the whole reason they are separate cut types. Drawing a radius as a
+        // diagonal would put a chamfer on screen and "2in radius" on the cut
+        // sheet -- two documents disagreeing about the same corner, which is
+        // the class of defect this file already fixed once between the canvas
+        // and the quote total.
+        //
+        // arcTo with the theoretical corner as the control point produces
+        // exactly the fillet a round bit cuts. It is given the SAME clamped
+        // offset the chamfer uses, so a radius can never self-intersect the
+        // fill either.
+        if (dcCornerKind('lshape-AB') === 'radius') {
+          ctx.arcTo(bx+bw, ay, bx+bw+chamferABOffPx, ay, chamferABOffPx);
+        } else {
+          ctx.lineTo(bx+bw+chamferABOffPx, ay);
+        }
       } else {
         ctx.lineTo(bx+bw, ay);
       }
@@ -15589,13 +15898,24 @@ function drawCTPreview() {
       // the "Back front" segment, which runs from rx toward lx+leftW -- i.e. DECREASING x from
       // rx (lx+leftW < rx). The original rx+offBR moved the wrong direction, off the actual
       // edge and into the right leg's own top boundary instead of a valid chamfer cut.
-      ctx.lineTo(rx-offBR, by+backH);
+      // Radius draws the arc; chamfer keeps the straight cut. Same two points,
+      // different path, because they are different tools. See the L-shape
+      // corner above for why the two documents must not disagree.
+      if (dcCornerKind('ushape-BackRight') === 'radius') {
+        ctx.arcTo(rx, by+backH, rx-offBR, by+backH, offBR);
+      } else {
+        ctx.lineTo(rx-offBR, by+backH);
+      }
     } else {
       ctx.lineTo(rx, by+backH);
     }
     if (offBL > 0) {
       ctx.lineTo(lx+leftW+offBL, by+backH);
-      ctx.lineTo(lx+leftW, by+backH+offBL);
+      if (dcCornerKind('ushape-BackLeft') === 'radius') {
+        ctx.arcTo(lx+leftW, by+backH, lx+leftW, by+backH+offBL, offBL);
+      } else {
+        ctx.lineTo(lx+leftW, by+backH+offBL);
+      }
     } else {
       ctx.lineTo(lx+leftW, by+backH);
     }
@@ -16946,8 +17266,42 @@ function dcSeamPricingSummary() {
 // the caller in calcDrawing(), same as seams, so there's exactly one place that owns the rate.
 function dcChamferPricingSummary() {
   const active = dcChamferActiveKeys();
-  const totalDiagLF = active.reduce((sum,k) => sum + (dcChamferEffectiveSetbackIn(k) * Math.SQRT2) / 12, 0);
-  return { count: active.length, totalDiagLF: totalDiagLF };
+  // ── A RADIUS IS A QUARTER-CIRCLE, NOT A HYPOTENUSE (2026-09-15) ──────────
+  // The cut length is what the finished edge is billed by, and the two cuts do
+  // not produce the same length from the same setback: a 45deg chamfer's cut is
+  // the hypotenuse, r x sqrt(2) ~ 1.414r, while a radius is a quarter circle,
+  // (pi/2) x r ~ 1.571r. About 11% more finished edge, every time.
+  //
+  // Using the chamfer figure for both would under-bill every radiused corner --
+  // small per corner, and wrong in the direction that costs the shop rather
+  // than the customer, which is the direction nobody reports.
+  let totalDiagLF = 0, radiusCount = 0, chamferCount = 0;
+  active.forEach(function (k) {
+    const inches = dcChamferEffectiveSetbackIn(k);
+    if (dcCornerKind(k) === 'radius') { radiusCount++; totalDiagLF += (inches * Math.PI / 2) / 12; }
+    else { chamferCount++; totalDiagLF += (inches * Math.SQRT2) / 12; }
+  });
+  return { count: active.length, totalDiagLF: totalDiagLF,
+           chamferCount: chamferCount, radiusCount: radiusCount };
+}
+
+// The per-corner instruction a fabricator actually reads, built from the same
+// effective (re-clamped) value pricing uses so the cut sheet and the quote can
+// never specify different geometry -- the staleness rule chamfer's own final
+// review established, extended rather than re-derived.
+function dcCornerCutInstructions() {
+  return dcChamferActiveKeys().map(function (k) {
+    const inches = dcChamferEffectiveSetbackIn(k);
+    const kind = dcCornerKind(k);
+    return {
+      key: k,
+      kind: kind,
+      inches: inches,
+      text: (kind === 'radius'
+        ? 'Inside corner: ' + inches.toFixed(2) + '" RADIUS (round bit / CNC arc)'
+        : 'Inside corner: ' + inches.toFixed(2) + '" 45' + String.fromCharCode(176) + ' CHAMFER (straight cut)')
+    };
+  });
 }
 
 // Sums the active raised bar's real footprint and new edge length. Filters on ctShape prefix
@@ -17401,7 +17755,7 @@ function dcSnapshotDrawingState() {
       jobDetails[id] = e ? e.value : '';
     });
 
-    var summary = { seams: null, chamfers: null, raisedBar: null, cutouts: null };
+    var summary = { seams: null, chamfers: null, raisedBar: null, cutouts: null, plumbing: null, fixtures: null };
     if (typeof dcSeams !== 'undefined' && dcSeams.length) {
       summary.seams = dcSeams.length + ' — ' + dcSeams.map(function(s){
         return s.label + ' (' + (Math.hypot(s.x2-s.x1,s.y2-s.y1)/12).toFixed(1) + ' LF)';
@@ -17411,11 +17765,56 @@ function dcSnapshotDrawingState() {
       var chamferLabels = { 'lshape-AB':'Inside corner (A-B)', 'ushape-BackLeft':'Inside corner (Back-Left)', 'ushape-BackRight':'Inside corner (Back-Right)' };
       var activeChamfers = dcChamferActiveKeys();
       if (activeChamfers.length) {
+        // THE CUT SHEET NAMES THE CUT (2026-09-15). It said "in chamfer" for
+        // every eased corner, so a radiused corner printed as a chamfer and a
+        // fabricator loading tooling from this line would load the wrong one.
+        // Read from dcCornerKind rather than re-derived, so this and the
+        // pricing summary cannot disagree about the same corner.
         summary.chamfers = activeChamfers.map(function(k){
-          return (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2) + 'in chamfer';
+          var kind = (typeof dcCornerKind === 'function') ? dcCornerKind(k) : 'chamfer';
+          return (chamferLabels[k]||k) + ': ' + dcChamferEffectiveSetbackIn(k).toFixed(2)
+            + (kind === 'radius' ? 'in RADIUS (round bit / CNC arc)'
+                                 : 'in 45° CHAMFER (straight cut)');
         }).join(', ');
       }
     }
+    // PLUMBING RESPONSIBILITY ON THE CUT SHEET (2026-09-15). It belongs on the
+    // sheet the install crew actually carries, and UNANSWERED PRINTS LOUDLY
+    // rather than being omitted: a missing line reads as "nothing to do here",
+    // which is the reading that puts a crew on site with a live supply line and
+    // nobody assigned to it. Omission is how this question gets lost, so the
+    // one state that must never be silent is the one nobody answered.
+    var plumbEl = document.getElementById('draw-plumbing');
+    var plumbVal = plumbEl ? plumbEl.value : '';
+    var PLUMB_LABELS = {
+      none: 'No plumbing involved (no sink)',
+      customer: 'CUSTOMER arranges disconnect and reconnect',
+      we_disconnect: 'WE disconnect only — customer reconnects',
+      we_reconnect: 'Customer disconnects — WE reconnect',
+      we_both: 'WE disconnect AND reconnect',
+      plumber_3p: 'Third-party plumber, scheduled separately'
+    };
+    // THE TYPED FIXTURE TRAVELS AS TEXT, WITH NO DIMENSION CLAIMED FOR IT
+    // unless the catalogue actually carries one. A model name on a cut sheet is
+    // useful on its own -- it tells the fabricator what is arriving -- and it
+    // must never imply a cutout size nobody published.
+    var fx = [];
+    [['sink', 'draw-sink-model'], ['cooktop', 'draw-cooktop-model']].forEach(function (pair) {
+      var el = document.getElementById(pair[1]);
+      var typed = el ? String(el.value || '').trim() : '';
+      if (!typed) return;
+      var row = (typeof sdFindFixture === 'function') ? sdFindFixture(pair[0], typed) : null;
+      var cut = (row && typeof sdFixtureCutoutIn === 'function') ? sdFixtureCutoutIn(row) : null;
+      fx.push(pair[0].charAt(0).toUpperCase() + pair[0].slice(1) + ': ' + typed
+        + (cut
+            ? ' — cutout ' + cut.wIn + '” × ' + cut.dIn + '”'
+              + (cut.verified ? '' : ' ⚠ UNVERIFIED (no spec source)')
+            : ' — not catalogued, no cutout dimension claimed'));
+    });
+    summary.fixtures = fx.length ? fx.join('; ') : null;
+    summary.plumbing = plumbVal
+      ? (PLUMB_LABELS[plumbVal] || plumbVal)
+      : '⚠ NOT DISCUSSED — confirm before scheduling install';
     var barInfo = (typeof dcRaisedBarPricingSummary === 'function') ? dcRaisedBarPricingSummary() : {active:false};
     if (barInfo.active && typeof dcRaisedBar !== 'undefined' && dcRaisedBar) {
       var barEdgeLabel = dcRaisedBar.edgeKey.slice(dcRaisedBar.edgeKey.indexOf(':')+1);
