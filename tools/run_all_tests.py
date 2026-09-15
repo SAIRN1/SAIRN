@@ -230,7 +230,35 @@ def release_lock():
 # A rebase cannot deliver one without the other. Re-measure with
 # `python -c "import sys;sys.path.insert(0,'tools');import run_all_tests as
 # r;js,py,_=r.discover();print(len(js)+len(py))"`.
-MIN_TEST_FILES = 207
+#
+# ── 207 -> 315, MEASURED 2026-09-15 ────────────────────────────────────────
+# A HUNDRED-FILE WINDOW, which is the largest this pin has ever been behind --
+# the 2026-09-10 correction above was written about a gap of seventeen and
+# called it a dead zone. A hundred test files could have been deleted with the
+# guard silent.
+#
+# NOT A MISSED ALARM, AND THAT IS THE PART WORTH READING. The probe printed
+# this on every run, with the number to write, exactly as the paragraph above
+# says it would. Nothing was broken; the housekeeping simply never got done,
+# across five days and four clones, because "housekeeping, not a failure" is
+# advisory and advisory notices are what a busy night drops. The design is a
+# deliberate trade -- friction on every rebase is what gets a gate switched off
+# -- so this is not an argument for restoring equality. It is an argument that
+# the bump has to be somebody's JOB on a cadence, not a line of output everyone
+# has permission to ignore. Whoever reads this next: the gap grows at roughly
+# twenty files a day at the current rate.
+#
+# 307 -> 313 -> 314 BEFORE THIS COMMIT EVEN LANDED, and that is a measurement rather
+# than a joke at my own expense. The value was measured, committed, and then a
+# rebase onto 41 upstream commits from three other clones brought SIX more test
+# files in -- so the number was stale between `git commit` and `git push`.
+# RE-MEASURE AFTER ANY REBASE, IMMEDIATELY BEFORE PUSHING. On a four-clone
+# night "I measured it" has a shelf life of minutes, and this constant is the
+# one place on the platform where that shelf life is the whole point.
+# It then happened AGAIN on the next push attempt -- a second rebase, five
+# more commits, one more test file -- which is how 313 became 314. Two
+# rebases, two stale numbers, inside one hour.
+MIN_TEST_FILES = 315
 
 def discover():
     js, py, unrun = [], [], []

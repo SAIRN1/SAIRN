@@ -372,7 +372,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **Item 83 independent review, pass three &mdash; the COUNTERSIGN half of the witnessing lock is caught by NOTHING, including &ldquo;two person&rdquo; itself** | **REVIEWED 2026-09-14 (Hank), measured not read** &mdash; `tests/failsafe/countersign_coverage_probe.py`, report-only, 6 of 6 mutations MISSED with the control CAUGHT by all three suites. **The lock i | `api/sv-witness.test.js`, `tests/failsafe/countersign_coverage_probe.py` |
+| **Item 83 independent review, pass three &mdash; the COUNTERSIGN half of the witnessing lock is caught by NOTHING, including &ldquo;two person&rdquo; itself** | **CLOSED 2026-09-15 (Cody)** &mdash; `tests/failsafe/witness_countersign.js`, 30 arms, and the probe now measures **0 of 6 MISSED** with the control still CAUGHT by all four suites. Every refusal on t | `api/sv-witness.test.js`, `tests/failsafe/witness_countersign.js` |
 | **Gate 4 closed on the vertical with the MOST resources and no fault probe at all &mdash; the 58-arm controlled-substance suite is now known to DENY** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnvet_fault_probe.py`, 6 mutation arms + 4 controls, all green. MASTER-PLAN `sairnvet` fault 0 &rarr; 1; platform total 8 &rarr; 9 | `tests/sairnvet_audit_and_controlled.js`, `tests/sairnvet_fault_probe.py` |
 | ~~A background probe kept stripping sairnvet.html's corrupt-store guard and leaving a fake exemption entry~~ — **ROOT CAUSE FOUND AND FIXED: two suite runs at once** | **CLOSED 2026-09-09 (Cody)** — `5b8570ce`; `tests/run_suite_lock_probe.py` 19/19, live_mode_probe still VERIFIED, backfill probe still GREEN with every control BITING and all five app files restored b | `tests/run_suite_lock_probe.py` |
 | **The SAIRNvet seed leak was one instance of a class: every app whose `st()` carries a backup hook can push demo data** &mdash; swept, and the invariant is now held by a test | **SWEPT AND HELD 2026-09-10 (Hank)** &mdash; 5 apps in scope, 1 was broken and is fixed, 2 are safe only by absence | `tests/seed_never_syncs_platform.js` |
@@ -409,7 +409,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**216 of 422 test files are traced to a stated requirement. 206 are not.**
+**216 of 423 test files are traced to a stated requirement. 207 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -537,6 +537,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/dnt_vendor_write_confirmation.js`
 - `tests/entitlement_freshness_control.py`
 - `tests/exec_role_gate.js`
+- `tests/failsafe/countersign_coverage_probe.py`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
 - `tests/faults/run_fault_suite_probe.py`
@@ -639,7 +640,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 422   tests/**, api/*.test.js
+  test files on disk                 423   tests/**, api/*.test.js
   open-work rows citing a test       198   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
