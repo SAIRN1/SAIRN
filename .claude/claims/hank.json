@@ -1733,8 +1733,8 @@
       "task": "upgrade audit installed packages and skill mirror versions",
       "claimed_at": "2026-09-15T11:09:55Z",
       "claimed_at_epoch": 1789470595.2534702,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T11:23:59Z"
     }
   ]
 }
