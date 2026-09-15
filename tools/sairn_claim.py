@@ -213,12 +213,35 @@ def word_seq(text):
 
 
 def bigrams(*parts):
-    out = set()
+    """Adjacent significant-word PAIRS, UNORDERED, across the joined parts.
+
+    ── TWO DEFECTS FIXED HERE, BOTH MEASURED LIVE (2026-09-15) ──────────────
+    This used to build ORDERED bigrams WITHIN each part separately, and both
+    halves of that produced false CLEARs on the same afternoon:
+
+      * ORDER. `"CRLF recombination"` and `"recombination crlf"` are the same
+        phrase and produced no match. Word order in a hand-typed task string
+        carries no meaning, so a pair is now a frozenset and matches either way.
+      * THE SUBJECT/TASK BOUNDARY. The CLI takes argv[0] as the SUBJECT and the
+        rest as the TASK, so `check recombination crlf lf false alarm` split one
+        sentence the user typed into `subject="recombination"` +
+        `task="crlf lf ..."` -- and a pair straddling that split could never be
+        seen. The subject had ONE word, so it produced no pairs at all.
+
+    THE LIVE CASE: Hank probed `recombination crlf lf false alarm` against
+    Cody's active `... CRLF recombination ...`. Both `crlf` and `recombination`
+    were shared TOKENS, and the tool still answered CLEAR, because the only
+    phrase evidence it could form was order-sensitive and boundary-bound.
+
+    Joining rather than iterating also means a pair can span a comma, which is
+    right: a claim is a list of subjects separated by commas and the words
+    either side of one are as adjacent as any other pair.
+    """
+    w = []
     for p in parts:
-        w = word_seq(p)
-        for i in range(len(w) - 1):
-            out.add(w[i] + ' ' + w[i + 1])
-    return out
+        w.extend(word_seq(p))
+    return {frozenset((w[i], w[i + 1]))
+            for i in range(len(w) - 1) if w[i] != w[i + 1]}
 
 
 def idents(*parts):
@@ -258,7 +281,36 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
         return 'same file or resource: ' + ', '.join(sorted(shared_ids))
     shared_phrase = bigrams(mine_subj, mine_task) & bigrams(their_subj, their_task)
     if shared_phrase:
-        return 'shared phrase: "%s"' % sorted(shared_phrase)[0]
+        pair = sorted(sorted(shared_phrase, key=lambda p: sorted(p))[0])
+        return 'shared phrase: "%s"' % ' '.join(pair)
+    # ── A RARE-TOKEN RULE WAS WRITTEN HERE, MEASURED, AND REMOVED ──────────
+    # Recorded rather than deleted, so the next person to notice the residual
+    # gap below does not spend the afternoon rediscovering why it is still open.
+    #
+    # THE GAP IS REAL: `triage plan staleness checker` against an active
+    # `triage staleness tool` is the same work and still answers CLEAR. No
+    # adjacent pair exists in either direction -- one intervening word breaks
+    # adjacency, and `checker`/`tool` are synonyms no matcher can know.
+    #
+    # THE OBVIOUS FIX IS WORSE THAN THE DISEASE, AND THAT IS A MEASUREMENT
+    # RATHER THAN AN OPINION. Blocking on a shared token the corpus says is rare
+    # (<= 4 of 593 recorded claims) was implemented and run over 20,000 sampled
+    # cross-session claim pairs:
+    #
+    #     OLD 494 blocked  |  pair fix alone 496  |  pair fix + rare token 570
+    #
+    # The pair fix costs TWO extra blocks and closes a real false CLEAR. The
+    # rare-token rule costs SEVENTY-FOUR more, and reading them shows why:
+    # `instead` (4 claims), `into` (2), `load` (2), `number` (4), `commits` (3),
+    # `cleanup` (4). RARITY IN A 593-CLAIM CORPUS IS NOT DISTINCTIVENESS -- it
+    # is mostly ordinary English that happens not to recur, and STOPWORDS cannot
+    # list every such word. Requiring TWO rare tokens does not rescue it either:
+    # the triage case shares `staleness` (4) and `triage` (17), so only one is
+    # rare, and the case that motivated the rule is the case it still misses.
+    #
+    # A blocking gate that fires on `into` is a gate sessions learn to override,
+    # which is a worse end state than the one open gap. Left open, named here,
+    # and the residual is reported rather than papered over.
     return None
 
 

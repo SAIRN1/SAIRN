@@ -166,5 +166,80 @@ ok = not hasattr(claim, 'blocks_alone')
 fails += 0 if ok else 1
 print('%-5s the old blocks_alone() entry point is gone' % ('ok' if ok else 'FAIL'))
 
+
+print()
+print('=== phrase evidence: unordered, and across the subject/task boundary ===')
+print('    (2026-09-15 -- both halves produced a FALSE CLEAR on a live claim)')
+
+
+def _r(ms, mt, ts, tt):
+    return claim.block_reason(ms, mt, ts, tt)
+
+
+def arm(name, cond, detail=''):
+    global fails
+    fails += 0 if cond else 1
+    print('%-5s %s%s' % ('ok' if cond else 'FAIL', name,
+                         '' if cond else '\n      ' + str(detail)[:300]))
+
+
+# THE LIVE CASE. Hank probed `recombination crlf lf false alarm` against Cody's
+# active `... CRLF recombination ...` and got CLEAR, with BOTH `crlf` and
+# `recombination` shared as tokens. argv[0] is the subject, so the pair that
+# would have matched straddled the subject/task split AND was reversed.
+arm('a reversed phrase matches -- "crlf recombination" vs "recombination crlf"',
+    _r('recombination', 'crlf lf false alarm',
+       'cody', 'date recombination, CRLF recombination, item 78') is not None,
+    'the live false CLEAR of 2026-09-15 is back')
+
+arm('...and specifically as PHRASE evidence, not by some other route',
+    'phrase' in (_r('recombination', 'crlf lf false alarm',
+                    'cody', 'date recombination, CRLF recombination') or ''),
+    _r('recombination', 'crlf lf false alarm', 'cody', 'date recombination, CRLF recombination'))
+
+# The boundary half on its own: one word of subject can form no pair by itself,
+# so a subject+task that reads as one sentence must be joined before pairing.
+arm('a pair spanning the subject/task boundary is seen',
+    _r('soc2', 'readiness', 'cody', 'enforcement audit, SOC2 readiness, incident response') is not None,
+    'the CLI splits one typed sentence into subject+task; pairs must span it')
+
+# A pair may span a comma -- a claim is a comma-separated list of subjects and
+# the words either side are as adjacent as any other pair.
+arm('a pair spanning a comma is seen',
+    _r('alpha', 'beta, gamma delta', 'other', 'beta gamma') is not None)
+
+# ── THE CONTROLS, and these are the ones that matter ──────────────────────
+# A matcher that blocks everything passes every arm above. Measured over 20,000
+# sampled cross-session claim pairs when this shipped: the pair fix moved
+# blocking from 494 to 496 -- two extra, both defensible on a read.
+arm('CONTROL: two unrelated claims sharing ONE ordinary word still do not block',
+    _r('stonedesk', 'drawing tool cutout fix',
+       'sairnvet', 'controlled substance witness fix') is None,
+    'sharing "fix" alone must never block -- that is what six sessions argued with')
+
+arm('CONTROL: sharing two NON-adjacent words still does not block',
+    _r('alpha', 'one two three four', 'beta', 'four nine one') is None,
+    'evidence is an adjacent PAIR, not any two words in common')
+
+arm('CONTROL: a genuinely empty comparison is None, not a match',
+    _r('', '', '', '') is None)
+
+# ── THE RESIDUAL, PINNED AS OPEN ──────────────────────────────────────────
+# `triage plan staleness checker` vs an active `triage staleness tool` is the
+# same work and still answers CLEAR: no adjacent pair exists in either
+# direction, and checker/tool are synonyms no matcher can know.
+#
+# THIS ARM ASSERTS THE GAP IS STILL OPEN, deliberately. The obvious fix --
+# blocking on a corpus-rare shared token -- was implemented, measured and
+# REMOVED: it took blocking from 496 to 570 over the same sample, on words like
+# `instead`, `into`, `load` and `commits`. If somebody closes this gap, this arm
+# goes red and they must read block_reason()'s note and replace it with an arm
+# that pins the NEW rule's false-positive rate. A gap silently closed by a noisy
+# heuristic is how a blocking gate becomes one sessions learn to override.
+arm('KNOWN OPEN: a synonym with an intervening word still reports CLEAR',
+    _r('triage', 'plan staleness checker', 'cody', 'triage staleness tool') is None,
+    'this gap was closed -- read block_reason()s note, then replace this arm '
+    'with one measuring the new rules false-positive rate over the corpus')
+
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)
