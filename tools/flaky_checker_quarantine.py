@@ -55,6 +55,11 @@ ACCURACY   was the code genuinely UNCHANGED between runs? A flip measured
            edit. The tree hash is recorded with every run and a measurement
            spanning two different trees is DISCARDED, not averaged.
 STABILITY  the flip rate itself: distinct verdicts / runs.
+           CORRECTED 2026-09-15: the sentence above was true of the RECORDING
+           and false of the VERDICT. Every observation carried its tree hash and
+           `flip_rate` pooled the lot, so a flake fixed on a later tree stayed
+           quarantined for ever. The verdict now uses this tree's runs when
+           there are any, and a row judged on an older tree says so.
 
 ── MARGIN ────────────────────────────────────────────────────────────────
 The alarm is set TIGHTER than the quarantine threshold: a checker that has
@@ -147,9 +152,52 @@ def save_ledger(led):
         fh.write(json.dumps(led, indent=1, sort_keys=True))
 
 
-def flip_rate(entry):
-    """(rate, runs, distinct). Rate = runs disagreeing with the MODAL verdict."""
+def observations_at(entry, tree=None):
+    """The observations this verdict is ENTITLED to use.
+
+    ── THE DISCARD WAS A SENTENCE, NOT A CODE PATH (found 2026-09-15) ────────
+    This file has printed "Runs from a different tree are discarded rather than
+    averaged" on every run since it was written, and NOTHING DISCARDED THEM.
+    The tree hash was recorded on every observation -- the data was right there
+    -- and `flip_rate` pooled the lot. A tool that STATES a property it does
+    not have is worse than one that never claimed it, because the claim is what
+    a reader checks instead of the code.
+
+    IT WAS FOUND BY TRYING TO CLEAR A QUARANTINE, which is the only way it
+    could have been. comment_sensitivity_check.py sat at QUARANTINE, rate 0.333
+    over 12 runs -- every one of them on tree ab63e6958d6c2fbb, a tree that no
+    longer exists. Its root cause was never its own: literal_drift_check.py
+    sorted a SET of strings by `key=len`, and set iteration order for strings
+    varies with PYTHONHASHSEED, so a tool that DIFFS TWO RUNS inherited the
+    nondeterminism. That was fixed and is now guarded by
+    tests/run_literal_drift_determinism_probe.py, whose own header says
+    "diffing two runs is exactly what comment_sensitivity_check.py does, which
+    is how it surfaced at all". Re-measured on the current tree: six full runs,
+    byte-identical, and all six sub-checkers stable over four runs each.
+
+    So the pooled verdict was a real measurement of code that is gone.
+
+    NO EVIDENCE AT THIS TREE IS NOT STABLE, which is why this returns the
+    reason alongside the rows. Falling back to the old tree silently would be
+    the same defect one layer up; the caller reports WHICH tree it judged on.
+    """
     obs = entry.get('observations', [])
+    if not obs:
+        return [], 'none'
+    if tree is None:
+        return obs, 'pooled'
+    here = [o for o in obs if o.get('tree') == tree]
+    if here:
+        return here, 'this-tree'
+    # Deliberately still judged, and deliberately LABELLED. Discarding outright
+    # would turn every checker measured before the last commit into "no
+    # evidence", which is a different kind of dishonesty.
+    return obs, 'older-tree'
+
+
+def flip_rate(entry, tree=None):
+    """(rate, runs, distinct). Rate = runs disagreeing with the MODAL verdict."""
+    obs, _ = observations_at(entry, tree)
     if not obs:
         return 0.0, 0, 0
     counts = {}
@@ -196,9 +244,9 @@ def flip_rate(entry):
 WATCH_EXPRESSIBLE_AT = int(math.ceil(1.0 / QUARANTINE_AT))
 
 
-def classify(entry):
-    rate, runs, distinct = flip_rate(entry)
-    obs = entry.get('observations', [])
+def classify(entry, tree=None):
+    rate, runs, distinct = flip_rate(entry, tree)
+    obs, _basis = observations_at(entry, tree)
     # ── AN UNRUNNABLE CHECKER IS NOT A STABLE ONE ─────────────────────────
     # A tool that cannot be EXECUTED raises the same exception every run, so
     # every digest matched, so the flip rate was 0.0 and this returned STABLE.
@@ -604,11 +652,19 @@ def main(argv):
                   'weakest-evidence-first. Run again to advance them.')
 
     rows = []
+    # JUDGED AT THIS TREE. Until 2026-09-15 this passed no tree at all, so every
+    # verdict pooled observations across every tree the ledger had ever seen --
+    # while the report printed that other-tree runs were discarded. The basis is
+    # carried through to the row so a verdict from an older tree is legible as
+    # one rather than reading as a measurement of the code in front of you.
+    _tree = tree_hash()
     for tool, e in sorted(led.get('checkers', {}).items()):
-        verdict, rate, runs = classify(e)
+        verdict, rate, runs = classify(e, _tree)
+        _obs, basis = observations_at(e, _tree)
         q = led.get('quarantine', {}).get(tool)
         rows.append({'tool': tool, 'verdict': verdict, 'flip_rate': round(rate, 4),
-                     'runs': runs, 'quarantined': bool(q), 'quarantine': q,
+                     'runs': runs, 'basis': basis,
+                     'quarantined': bool(q), 'quarantine': q,
                      'ready_to_reintroduce': bool(q) and verdict == 'STABLE'
                                              and runs >= REENTRY_RUNS})
 
@@ -858,8 +914,14 @@ def main(argv):
                          r['quarantine'].get('deadline', '(none)')))
         print('')
         print('  A quarantine is NEVER entered on a single red: it needs a measured')
-        print('  flip rate over UNCHANGED code, a named owner, and a deadline. Runs')
-        print('  from a different tree are discarded rather than averaged.')
+        print('  flip rate over UNCHANGED code, a named owner, and a deadline.')
+        print('  RUNS FROM A DIFFERENT TREE ARE NOT AVERAGED IN when this tree has')
+        print('  any of its own -- and until 2026-09-15 that sentence was printed')
+        print('  here while nothing did it. The tree hash was recorded on every')
+        print('  observation and the verdict pooled the lot, so a flake fixed on a')
+        print('  later tree stayed quarantined for ever. A row judged only on an')
+        print('  older tree now says so in its basis column rather than reading as')
+        print('  a measurement of the code in front of you.')
         if not rows:
             print('')
             print('  NO EVIDENCE YET. Run with --measure. An empty ledger is an honest')

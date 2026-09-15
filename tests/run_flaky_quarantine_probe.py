@@ -64,6 +64,44 @@ check('3c  CONTROL: a genuinely stable checker over many runs IS stable -- or 3a
       Q.classify(obs(['a'] * 20))[0] == 'STABLE')
 check('3d  a checker flipping every other run is QUARANTINE',
       Q.classify(obs(['a', 'b'] * 6))[0] == 'QUARANTINE')
+
+# ── THE DISCARD WAS A SENTENCE UNTIL 2026-09-15 ────────────────────────────
+# The tool printed "Runs from a different tree are discarded rather than
+# averaged" on every run, and its module docstring said "a measurement spanning
+# two different trees is DISCARDED, not averaged". NOTHING DID IT: every
+# observation carried its tree hash and flip_rate pooled the lot, so a flake
+# FIXED on a later tree stayed quarantined for ever.
+#
+# It was found by trying to clear one. comment_sensitivity_check.py sat at
+# QUARANTINE on 12 runs, every one at a tree that no longer exists, and its root
+# cause was never its own -- literal_drift_check.py sorted a SET by key=len and
+# set order for strings varies with PYTHONHASHSEED, so a tool that DIFFS TWO
+# RUNS inherited it. Fixed, guarded, and byte-identical over six runs today.
+MIXED = {'observations': [{'digest': 'a', 'tree': 'old'}, {'digest': 'b', 'tree': 'old'}]
+                         + [{'digest': 'c', 'tree': 'new'}] * 6}
+check('a verdict at THIS tree ignores the other tree\'s disagreements',
+      Q.classify(MIXED, 'new')[0] == 'STABLE',
+      Q.classify(MIXED, 'new'))
+check('...and the pooled verdict still sees them, so nothing was deleted',
+      Q.classify(MIXED, None)[0] == 'QUARANTINE', Q.classify(MIXED, None))
+check('the basis is REPORTED as this-tree when this tree has runs',
+      Q.observations_at(MIXED, 'new')[1] == 'this-tree')
+check('NO EVIDENCE AT THIS TREE IS NOT STABLE -- it judges on the older tree '
+      'and SAYS SO, rather than silently falling back',
+      Q.observations_at(MIXED, 'unseen')[1] == 'older-tree'
+      and Q.classify(MIXED, 'unseen')[0] == 'QUARANTINE',
+      Q.observations_at(MIXED, 'unseen')[1])
+check('an empty entry reports basis `none` rather than a clean verdict',
+      Q.observations_at({'observations': []}, 'x')[1] == 'none')
+check('CONTROL: discarding is not a blanket amnesty -- a flip AT THIS TREE '
+      'still quarantines',
+      Q.classify({'observations': [{'digest': 'a', 'tree': 'new'}] * 8
+                  + [{'digest': 'b', 'tree': 'new'}] * 4}, 'new')[0] == 'QUARANTINE')
+check('and the report carries the basis through to its rows, so a reader can '
+      'tell a current measurement from a historical one',
+      "'basis': basis" in io.open(
+          os.path.join(REPO, 'tools', 'flaky_checker_quarantine.py'),
+          encoding='utf-8').read())
 check('3e  the WATCH alarm is TIGHTER than the quarantine bar',
       Q.WATCH_AT < Q.QUARANTINE_AT, '%s < %s' % (Q.WATCH_AT, Q.QUARANTINE_AT))
 

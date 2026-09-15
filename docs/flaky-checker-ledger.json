@@ -5,32 +5,32 @@
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18940189abc421c5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -248,112 +248,112 @@
   "committer_identity_check.py": {
    "observations": [
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "e38accd55970f320",
+     "digest": "5ccd01ceaffdef61",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "e38accd55970f320": "committer identity check this clone commits as : Michael Dibert <mikied68@gmail.com> probe identities found in tests/ : 7 commits already carrying one : 131 (history, NOT rewritten) CLEAN -- this clone will not commit under a probe identity.|exit=0"
+    "5ccd01ceaffdef61": "committer identity check this clone commits as : Michael Dibert <mikied68@gmail.com> probe identities found in tests/ : 8 commits already carrying one : 131 (history, NOT rewritten) CLEAN -- this clone will not commit under a probe identity.|exit=0"
    }
   },
   "completeness_check.py": {
    "observations": [
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "26795a4981fd89d3",
+     "digest": "7fbddf985c8495da",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "26795a4981fd89d3": "COMPLETENESS -- item 38: a rule declared, then not applied everywhere blind lock: 13 synthetic sources classify as written, including the four narrowings each paid for by a real false positive. S1 -- DECLARED AND NEVER CONSULTED: 1 api/sen-portal.js MANAGEMENT_ROLES declared and consulted NOWHERE in its own file -- a rule that gates nothing is either dead or a gate somebody forgot to wire, and the"
+    "7fbddf985c8495da": "COMPLETENESS -- item 38: a rule declared, then not applied everywhere blind lock: 13 synthetic sources classify as written, including the four narrowings each paid for by a real false positive. S1 -- DECLARED AND NEVER CONSULTED: 1 api/sen-portal.js MANAGEMENT_ROLES declared and consulted NOWHERE in its own file -- a rule that gates nothing is either dead or a gate somebody forgot to wire, and the"
    }
   },
   "control_char_check.py": {
    "observations": [
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "99a779c273a63808",
+     "digest": "b1e548905d695dd1",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "99a779c273a63808": "control character check tracked files scanned : 2059 skipped as binary (3, NOT silently): archive/branch-lucid-ptolemy-b73vu0/SAIRN_All_Apps_Deploy.zip, archive/branch-lucid-ptolemy-b73vu0/SAIRN_v6_SAIRNlaw20.zip, archive/branch-lucid-ptolemy-b73vu0/ CLEAN -- no raw control bytes in any tracked text file.|exit=0"
+    "b1e548905d695dd1": "control character check tracked files scanned : 2071 skipped as binary (3, NOT silently): archive/branch-lucid-ptolemy-b73vu0/SAIRN_All_Apps_Deploy.zip, archive/branch-lucid-ptolemy-b73vu0/SAIRN_v6_SAIRNlaw20.zip, archive/branch-lucid-ptolemy-b73vu0/ CLEAN -- no raw control bytes in any tracked text file.|exit=0"
    }
   },
   "criticality_tier_check.py": {
@@ -361,32 +361,32 @@
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "18259847b0c2acf0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -396,75 +396,75 @@
   "defect_register.py": {
    "observations": [
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "eee97aa1b007f376",
+     "digest": "0d8ec8945a346216",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "eee97aa1b007f376": "DEFECT REGISTER -- 77 confirmed record(s) since 2026-09-09 BY LAYER product 32 tooling 25 test 20 BY SEVERITY critical 2 high 44 moderate 25 low 6 BY DETECTION METHOD -- the column that matters code-review 31 mutation-testing 11 fault-injection 12 static-checker 15 independent-review 7 probe-control 1 DISCOVERY LAG -- injection to fix records with an injection commit : 0 of 77 NO LAG DISTRIBUTION "
+    "0d8ec8945a346216": "DEFECT REGISTER -- 77 confirmed record(s) since 2026-09-09 BY LAYER product 32 tooling 25 test 20 BY SEVERITY critical 2 high 44 moderate 25 low 6 BY DETECTION METHOD -- the column that matters code-review 31 mutation-testing 11 fault-injection 12 static-checker 15 independent-review 7 probe-control 1 DISCOVERY LAG -- injection to fix records with an injection commit : 0 of 77 NO LAG DISTRIBUTION "
    }
   },
   "dependency_graph.py": {
    "observations": [
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "7a662831b9315661",
+     "digest": "f10bd67b9b6f7cd0",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "7a662831b9315661": "DEPENDENCY GRAPH -- single points of failure, and pairs (items 88, 53) blind lock: 5 synthetic graphs classify as written, plus the blast-radius and comment-stripping fixtures. Run BEFORE the repo was read. GRAPH A -- our modules only. 151 nodes, 232 edges. GRAPH B -- modules PLUS the environment they read. 200 nodes, 445 edges. Reported separately on purpose: B is dominated by two credentials, wh"
+    "f10bd67b9b6f7cd0": "DEPENDENCY GRAPH -- single points of failure, and pairs (items 88, 53) blind lock: 5 synthetic graphs classify as written, plus the blast-radius and comment-stripping fixtures. Run BEFORE the repo was read. GRAPH A -- our modules only. 152 nodes, 233 edges. GRAPH B -- modules PLUS the environment they read. 201 nodes, 446 edges. Reported separately on purpose: B is dominated by two credentials, wh"
    }
   },
   "discarded_verdict_check.py": {
@@ -472,32 +472,32 @@
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "a7674440405b49b5",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -507,38 +507,38 @@
   "discarded_verdict_crossfile.py": {
    "observations": [
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "db61c7651a95cead",
+     "digest": "4d2bd73d7d1fb40b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "db61c7651a95cead": "VERDICT_SHAPED_EXPORTS:86 BARE_STATEMENT_CROSS_FILE:0 ASSIGNED_NEVER_READ_CROSS_FILE:0 NOTE: a clean run means no hit matched these two SHAPES. It is not a guarantee -- see the limits in this file's header.|exit=0"
+    "4d2bd73d7d1fb40b": "VERDICT_SHAPED_EXPORTS:87 BARE_STATEMENT_CROSS_FILE:0 ASSIGNED_NEVER_READ_CROSS_FILE:0 NOTE: a clean run means no hit matched these two SHAPES. It is not a guarantee -- see the limits in this file's header.|exit=0"
    }
   },
   "div_balance_check.py": {
@@ -546,32 +546,32 @@
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "00d85f94eb6dd69b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -583,32 +583,32 @@
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "91944377dfc7ba8a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -620,32 +620,32 @@
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "8faab1632004247a",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -657,32 +657,32 @@
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "fff7406f78c86caa",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -694,32 +694,32 @@
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "6c684c678caa7a0b",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -731,32 +731,32 @@
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a5320d0182ca9de",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -766,38 +766,38 @@
   "index_duplicate_check.py": {
    "observations": [
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "af129bdd5158e423",
+     "digest": "4ae022918baf2d04",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "af129bdd5158e423": "INDEX DUPLICATE CHECK -- report only, nothing was written rows compared : 487 near-duplicate pairs : 0 (same app, >= 0.92 similar with numbers removed) UNDECLARED : 0 NOTE: numbers are stripped before comparing, on purpose -- a count that has moved is the commonest way one subject becomes two rows. This does NOT check whether a unique row's own number is stale; see the module docstring.|exit=0"
+    "4ae022918baf2d04": "INDEX DUPLICATE CHECK -- report only, nothing was written rows compared : 494 near-duplicate pairs : 0 (same app, >= 0.92 similar with numbers removed) UNDECLARED : 0 NOTE: numbers are stripped before comparing, on purpose -- a count that has moved is the commonest way one subject becomes two rows. This does NOT check whether a unique row's own number is stale; see the module docstring.|exit=0"
    }
   },
   "install_git_hooks.py": {
@@ -805,32 +805,32 @@
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "5a35245695b54220",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -840,38 +840,38 @@
   "invisible_in_pattern_check.py": {
    "observations": [
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "1d7056ddca5b1b3f",
+     "digest": "2c6559566e5a85f9",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "1d7056ddca5b1b3f": "BLIND LOCK -- 10 fixture(s), judged before any real file is opened 10/10 fixtures correct. files scanned : 791 not scanned : archive/ -- the preserved ancestor branch; CLAUDE.md says it must not be run or recreated, and scanning it reports dead 2026-06 snapshots forever not scanned : docs/skill-backups/ -- a stored copy of a third-party skill's bundled asset that nothing here deploys or maintains "
+    "2c6559566e5a85f9": "BLIND LOCK -- 10 fixture(s), judged before any real file is opened 10/10 fixtures correct. files scanned : 800 not scanned : archive/ -- the preserved ancestor branch; CLAUDE.md says it must not be run or recreated, and scanning it reports dead 2026-06 snapshots forever not scanned : docs/skill-backups/ -- a stored copy of a third-party skill's bundled asset that nothing here deploys or maintains "
    }
   },
   "key_collision_check.py": {
@@ -879,32 +879,32 @@
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "c4b3acde64a4a64d",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -916,32 +916,32 @@
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "3a3b4e1fd7b1b864",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -951,75 +951,75 @@
   "master_plan.py": {
    "observations": [
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de643eaa63ca9e10",
+     "digest": "a86d080f6ed22b66",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "de643eaa63ca9e10": "CLOSING ERROR -- docs\\MASTER-PLAN.md derives from 6 source(s): app files 22 git ls-files '*.html' apps owning a resource 17 api/_resources/index.js OWNER_BY_RESOURCE test files on disk 434 tests/**, api/*.test.js tests traced to a requirement 231 traceability_matrix.traced() declared fault probes 26 MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js attested migrations"
+    "a86d080f6ed22b66": "CLOSING ERROR -- docs\\MASTER-PLAN.md derives from 6 source(s): app files 22 git ls-files '*.html' apps owning a resource 17 api/_resources/index.js OWNER_BY_RESOURCE test files on disk 439 tests/**, api/*.test.js tests traced to a requirement 236 traceability_matrix.traced() declared fault probes 27 MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js attested migrations"
    }
   },
   "md_table_check.py": {
    "observations": [
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "de9764e1b33b30bd",
+     "digest": "cadb0d1e82223589",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "de9764e1b33b30bd": "docs/SAIRN-OPEN-WORK-INDEX.md: OK (502/502 rows checked) CLAUDE.md: OK (5/5 rows checked) docs/SAIRN-PROCESS-RULES.md: OK (4/4 rows checked) TOTAL_MALFORMED_ROWS:0 TOTAL_UNCHECKABLE_LINES:0|exit=0"
+    "cadb0d1e82223589": "docs/SAIRN-OPEN-WORK-INDEX.md: OK (509/509 rows checked) CLAUDE.md: OK (5/5 rows checked) docs/SAIRN-PROCESS-RULES.md: OK (4/4 rows checked) TOTAL_MALFORMED_ROWS:0 TOTAL_UNCHECKABLE_LINES:0|exit=0"
    }
   },
   "metamorphic_check.py": {
@@ -1027,32 +1027,32 @@
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "483f2f20c4a281ea",
      "err": true,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -1062,146 +1062,182 @@
   "mutation_anchor_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c78351b88a9e4d5f",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "c78351b88a9e4d5f": "MUTATION ANCHOR CHECK -- report only, nothing was run and nothing written probes with a MUTATIONS list : 7 anchors checked : 83 anchors NOT matching exactly once: 1 could not read : 6 (NOT a pass) tests/dnt_vendor_write_confirmation_probe.py arms=9 bad=0 tests/law_custody_attribution_probe.py arms=9 bad=0 tests/license_trial_gate_probe.py arms=7 bad=1 tests/sairndental_outbound_queue_probe.py arms"
+   }
   },
   "nav_panel_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3c5140c75be81f2d",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "3c5140c75be81f2d": "Traceback (most recent call last): File \"<path>\", line 258, in <module> path = sys.argv[1] ~~~~~~~~^^^ IndexError: list index out of range|exit=1"
+   }
   },
   "npm_audit_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fa55633b0989bb16",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "fa55633b0989bb16": "npm audit check advisories reported : 0 across 0 package(s) CLEAN -- no known advisories against the committed lockfile.|exit=0"
+   }
   },
   "orphan_register_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c2e1834b92d9fa3a",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "c2e1834b92d9fa3a": "REGISTER_ENTRIES:11 DELETED_NAMES:36 DEAD_KEYS:7 OPEN_INDEX_ROWS:193 RESULT:CLEAN -- the register matches the file, and no open index row mentions anything it records as removed. NOTE: only entries carrying a @REGISTER line are visible here, and a row can be stale for reasons this cannot see. A clean run is not a claim that the index is current.|exit=0"
+   }
   },
   "ownership_evidence_drift.py": {
    "observations": [
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "0d6b24a813b5e736",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -1211,174 +1247,219 @@
   "panel_nesting_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "05767b86e99c5c25",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "05767b86e99c5c25": "DETECTED_PANEL_ID_PREFIX:'panel-' TOTAL_PANELS:64 SAFE_SHELL_PARENT_PANELS:64 (any parent shared by 2+ panels) TRAPPED_PANELS (singleton parent, shared by no other panel):0|exit=0"
+   }
   },
   "removal_path_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "7e4c09bb9c06dddc",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "7e4c09bb9c06dddc": "removal path check registered resources : 393 declare delete or soft_delete : 52 shape keyed : 317 shape single-row : 3 shape insert-only : 14 shape UNRESOLVED : 59 append-only by their own registry comment: 16 NO REMOVAL PATH (excl. single-row and append-only): 322 grandfathered in the baseline : 320 shape UNRESOLVED and no removal verb: 31 -- the SHAPE could not be read; these are still judged o"
+   }
   },
   "sairn_dead_button_audit.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "fea59fead1876dd3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "fea59fead1876dd3": "sairn_dead_button_audit.py -- non-functional-button audit for SAIRN apps. Usage: python3 sairn_dead_button_audit.py stonedesk.html [sairnbiz.html ...] Bakes in the two Session 77 corrections plus one from Session 78: 1. Comments are stripped before ANY counting. A `function foo()` written inside an explanatory comment is not a definition. 2. A toast-only function body is NOT a finding until its ca"
+   }
   },
   "sairn_strict_args_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "209d34c907d50ab6",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "209d34c907d50ab6": "clean -- no mutate-then-forward-arguments sites under strict mode in 22 file(s)|exit=0"
+   }
   },
   "schema_snapshot_freshness.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "b4b477a1c888d7f3",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "b4b477a1c888d7f3": "SCHEMA SNAPSHOT FRESHNESS -- report only, nothing was written snapshot captured : <ts> (generated); last committed 2026-09-13 tables in snapshot: 380 tables created in sql/: 455 created in sql/ but ABSENT from the snapshot: 95 of those, also QUERIED by api/ : 28 <- live code expects these of THOSE, NEVER RUN AS OF THE CAPTURE : 27 VERDICTS ARE AS OF THE CAPTURE, 47.1 HOURS AGO -- NOT AS OF NOW. A "
+   }
   },
   "secrets_inventory.py": {
    "observations": [
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
      "digest": "65fe6ab33cd3e673",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
@@ -1388,244 +1469,298 @@
   "soup_register_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "9e3e9fe1e5adce22",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "9e3e9fe1e5adce22": "SOUP register check npm direct dependencies : 3 CDN scripts in root apps: 3 CLEAN -- every running component is in the register, and every register entry is still running.|exit=0"
+   }
   },
   "subprocess_decode_check.py": {
    "observations": [
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "ddaa4c5ab5871f4d",
+     "digest": "33786a1c991e65fd",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "ddaa4c5ab5871f4d": "SUBPROCESS TEXT DECODE -- the locale default here is cp1252 text-mode subprocess calls with NO explicit encoding= : 0 CLEAN. Every text-mode subprocess names its encoding. This is a GATE and not a score: the correct number IS zero, because the fix is one keyword argument, and \"this caller only checks an exit code\" is how a latent fail-open survives. <unknown>:32: SyntaxWarning: \"\\s\" is an invalid "
+    "33786a1c991e65fd": "SUBPROCESS TEXT DECODE -- the locale default here is cp1252 text-mode subprocess calls with NO explicit encoding= : 5 tests/run_rebase_resolve_probe.py 56,25 tools/sairn_rebase_resolve.py 86,185,63 Fix them all: python tools/subprocess_decode_check.py --fix <unknown>:32: SyntaxWarning: \"\\s\" is an invalid escape sequence. Such sequences will not work in the future. Did you mean \"\\\\s\"? A raw string "
    }
   },
   "temporary_state_check.py": {
    "observations": [
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "bb2a0dd3e1d7c01a",
+     "digest": "c770d47b3292cc81",
      "err": false,
-     "tree": "5db1ba681b711008"
+     "tree": "fd60789d03d52434"
     }
    ],
    "samples": {
-    "bb2a0dd3e1d7c01a": "TEMPORARY STATE -- report only, nothing was written files read : 790 declarations found : 3 UNDECLARED candidates : 177 flag-on (145) agent/sairn-agent.js :148 loggedBlocked api/_lib/ai-rate-limit.js :198 tenantArgsUnsupported api/_lib/cron-response.js :124 alerted api/_lib/cron-response.js :129 alerted api/_lib/dental-credentials-endpoint.test.js :336 tablesExist api/_lib/employee-lifecycle.test."
+    "c770d47b3292cc81": "TEMPORARY STATE -- report only, nothing was written files read : 799 declarations found : 3 UNDECLARED candidates : 177 flag-on (145) agent/sairn-agent.js :148 loggedBlocked api/_lib/ai-rate-limit.js :198 tenantArgsUnsupported api/_lib/cron-response.js :124 alerted api/_lib/cron-response.js :129 alerted api/_lib/dental-credentials-endpoint.test.js :336 tablesExist api/_lib/employee-lifecycle.test."
    }
   },
   "tooling_inventory.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "f4ec671fbd2a2915",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "f4ec671fbd2a2915": "CLOSING ERROR -- docs\\TOOLING-INVENTORY.md derives from 7 source(s): tools on disk 157 git ls-files tools/ hook entries 8 .claude\\settings.json push-gate invocations 10 tools\\sairn_push_gate_hook.py report-only registry 46 report_only_checks.REGISTRY tools invoked by tests/ 103 tests/**/*.py, *.js recorded NOT-promoted decisions 40 report_only_checks.NOT_PROMOTED numbered gate checks 14 tools\\sair"
+   }
   },
   "traceability_matrix.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eb554bc49db20e60",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "eb554bc49db20e60": "CLOSING ERROR -- docs\\traceability-matrix.md derives from 7 source(s): app files 22 git ls-files '*.html' test files on disk 439 tests/**, api/*.test.js open-work rows citing a test 219 docs\\SAIRN-OPEN-WORK-INDEX.md GUARD_TESTS entries 5 sairn_push_gate_hook.GUARD_TESTS report-only registry 46 report_only_checks.REGISTRY recorded NOT-promoted decisions 35 report_only_checks.NOT_PROMOTED numbered g"
+   }
   },
   "truthy_sum_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a697a511e25e023",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "5a697a511e25e023": "truthy-sum check not scanned: archive/ (the preserved ancestor branch) and docs/skill-backups/ (a vendored third-party viewer) raw `+ (x || 0)` matches inspected : 141 uncoerced `+ (x || 0)` occurrences : 82 distinct file+field keys : 51 grandfathered : 51 string-literal concatenation, not a fold, so not counted : 59 baselined but no longer present : 1 1 NEW OCCURRENCE(S): - api/audit-checkpoint.j"
+   }
   },
   "vercel_config_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a863d842964ba412",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "a863d842964ba412": "buildCommand length: 92 (limit 256) PASS: vercel.json config within known limits|exit=0"
+   }
   },
   "write_without_readback_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1cb91c7129232d33",
+     "err": false,
+     "tree": "fd60789d03d52434"
     }
-   ]
+   ],
+   "samples": {
+    "1cb91c7129232d33": "SCANNED-BY-NAME: only calls to a wrapper matching \\w*Data( are seen. app writes read declared read set(s) sairnbiz.html 13 13 SB_SYNCED sairnbuild.html 32 32 BLD_SYNCED sairncare.html 9 9 (literal reads only) sairncode.html 28 28 SC_RESOURCE_STORAGE_KEYS sairndental.html 20 20 DNT_SYNC_RESOURCES sairndesign.html 18 18 SDN_SYNC_RESOURCES sairnfreedom.html 35 35 SF_SYNCED sairngrounds.html 30 30 res"
+   }
   }
  },
  "quarantine": {},
