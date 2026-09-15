@@ -277,3 +277,66 @@ So: root cause identified, fix specified, nothing edited.
   probe pair. The 12h rates in §2 are real counts, not projections.
 - **`api/claude`'s own RPC has not been shown to be slow.** It is fast enough
   outside the window; nothing here says it would survive a busier platform.
+
+## 8. Re-measured 2026-09-15T17:12Z — the failure rate is now ZERO, and the last 502 predates one of the two fixes
+
+§5a set the criterion itself and deliberately refused to claim the fix worked on
+one clean firing: *"Three or more consecutive clean firings would."* That is
+discharged, by a much wider margin than three.
+
+**MEASURED, not inferred, from Vercel production runtime logs:**
+
+| Window (back from 2026-09-15T17:12Z) | `send-reminder` 502s | `alf-alerts` 502s |
+|---|---|---|
+| 24h | **0** (of 24 firings) | **0** (of 24 firings) |
+| 26h | **0** | **0** |
+| 28h | **0** | **0** |
+| 30h | 1 | 1 |
+| 48h | 9 | 6 |
+
+Both crons fired **24 of 24** times in the last 24 hours. Across the whole
+project in that window there is **not one 502 and not one log line containing
+`504`** — the only 5xx at all is 2× 503 on `/api/sd-data`.
+
+**THE LAST FAILURE OF EACH IS PINNED TO AN HOUR:** `send-reminder` at
+**12:00Z** and `alf-alerts` at **13:00Z on 2026-09-14** — the same two rows §4a
+already recorded. Nothing since. **28 consecutive clean hours.**
+
+**THE ZERO IS CONTROLLED RATHER THAN ASSERTED, because an empty result and a
+broken filter look identical** — the platform defect this repo names most often.
+Three controls, all run:
+
+- The **same query shape** with the **same `statusCode=502` filter** returns
+  rows at 30h and 48h and zero at 28h. The filter demonstrably works; the
+  boundary is in the data, not in the query.
+- `statusCode=503` returns the 2 known `/api/sd-data` rows.
+- A full-text `failed` query returns 24 `send-reminder` and 48 `cron-watchdog`
+  rows — those are the benign per-run summary line at
+  `send-reminder.js:197` (`... failed 0`), which is what a *successful* firing
+  logs, not a failure.
+
+**ATTRIBUTION IS NOT ESTABLISHED AND THE TIMING IS AWKWARD FOR THE OBVIOUS
+READING.** `43a06d9d` (the `alf-alerts` bound) deployed ~13:26Z and
+`b162c871` (CC's schedule spread to :07/:37) at ~16:14Z. **Both of the last
+failures precede `b162c871` entirely, and `alf-alerts`' last failure precedes
+its own fix by 26 minutes.** So the recovery is *consistent* with both fixes and
+*proven* by neither: a change on the Supabase side at the same time is not
+excluded, and §7's alternative reading survives this measurement unchanged.
+
+**THE PENDING MIGRATION QUESTION, STATED RATHER THAN DECIDED.**
+`sql/dnt_appointments_due_index.sql` and `sql/alf_mar_sweep_index.sql` are
+recorded as NOT RUN, and **I did not verify that against the database — I have
+no route to it from here, so that is a reading of the record, not a check.**
+If they are still unrun, then `send-reminder` has gone 28 hours clean on the
+*same unindexed query*, which weakens the observed-failure-rate justification
+for the index without touching the code fact underneath it: the query in
+`send-reminder.js:128` still carries no matching index, and a table that grows
+will time out again. **The right conclusion is that the index is no longer
+URGENT, not that it is unnecessary** — and if Michael did run them, that is a
+third candidate cause for the recovery and the cleanest one.
+
+**WHAT WOULD SETTLE IT** is the one thing §4b already said: instrument the RPC
+duration. Zero failures gives nothing to correlate, so there is even less signal
+to chase now than there was then. **This section closes the verification
+obligation `43a06d9d` and `b162c871` carried. It does not reopen the
+investigation.**
