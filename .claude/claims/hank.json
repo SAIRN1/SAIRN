@@ -1723,8 +1723,8 @@
       "task": "retainage release repoint the draws panel at wip-accounting",
       "claimed_at": "2026-09-15T00:00:11Z",
       "claimed_at_epoch": 1789430411.3022468,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T11:09:17Z"
     }
   ]
 }
