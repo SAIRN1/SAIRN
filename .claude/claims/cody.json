@@ -1239,6 +1239,16 @@
       "claimed_at_epoch": 1789488425.587785,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789510602",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 18 metamorphic relations generator, item 32 reachability purpose, NHI credential inventory owners, sairnlaw privacy scoping",
+      "claimed_at": "2026-09-15T22:16:42Z",
+      "claimed_at_epoch": 1789510602.7513673,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
