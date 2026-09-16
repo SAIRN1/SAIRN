@@ -3318,7 +3318,7 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
-      "commit": "1bb439fb7999",
+      "commit": "46e3c991a891",
       "date": "2026-09-16",
       "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
       "files": [
