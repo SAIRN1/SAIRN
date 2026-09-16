@@ -3935,7 +3935,7 @@
       "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
     },
     {
-      "commit": "47827e9e6eef",
+      "commit": "2812cdf3fdbf",
       "date": "2026-09-16",
       "subject": "fix(tools): FOURTH instance of the one-spelling blind spot -- three well-guarded probes were being reported UNGUARDED, and the signal was inverted again",
       "files": [
