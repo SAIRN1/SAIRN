@@ -1522,8 +1522,8 @@
       "task": "sb_po sb_recv server side role gate on the write path, land.sh false success sweep, tier a suite controls continued",
       "claimed_at": "2026-09-16T18:25:31Z",
       "claimed_at_epoch": 1789583131.9418604,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T22:21:46Z"
     }
   ]
 }
