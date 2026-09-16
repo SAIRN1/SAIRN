@@ -5129,6 +5129,63 @@
       "recurrence_open": "GUARDS remains a flat list of regexes with no notion of which idiom belongs to which language, so a third language's spelling of any accepted shape would be invisible the same way. The blind lock now carries JS fixtures for the uniqueness and difference shapes, which means the gap is closed for the two languages in this repo and not for the general case."
     },
     {
+      "commit": "798543873912",
+      "date": "2026-09-16",
+      "subject": "fix(test): an arm that PASSED while printing its own refutation",
+      "files": [
+        "tests/app_session_isolation.js",
+        "tests/app_session_isolation_probe.py"
+      ],
+      "lines_added": 209,
+      "lines_removed": 7,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/app_session_isolation.js asserted `out.code !== 401` for \"reachable with the licence alone\". law_trusttx was gated on 2026-09-16 and SD_SESSION_GATED refuses with 403, so the arm stayed GREEN and printed \"law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403\" -- the status code disproving the sentence it was asserting, inside that sentence. A control over attorney IOLTA trust money reported a gate it could no longer see. Separately the harness answered the employee-auth lookup with [], so credentialStillActive refused every correct caller and emptying SD_GATE_APP was silent too",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c98b5d674c76",
+        "date": "2026-09-16",
+        "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is a check that cannot fail. This one could fail and could not fail FOR THIS INPUT, because the predicate ruled out one refusal shape and the subject started answering with the other. The citation is arguable rather than clean: the arm was not vacuous when written, it was outlived.",
+      "contributing_factors": [
+        {
+          "factor": "REACHABILITY WAS ENCODED AS THE NEGATION OF ONE REFUSAL CODE. `out.code !== 401` means \"not refused in one particular way\", not \"got through\", and sd-data has two refusal shapes for no session: 401 NO_SESSION from the generic path and 403 FORBIDDEN from SD_SESSION_GATED. The refusal that arrived was the other one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Reachability is asserted POSITIVELY as 200, and the gated resource moved into its own list asserted as 403 FORBIDDEN."
+        },
+        {
+          "factor": "THE ARM PRINTED THE CODE THAT DISPROVED IT AND WAS STILL COUNTED. Its message interpolates out.code, so the green line read \"is reachable with the LICENCE ALONE -- no session -- and answers 403\". The evidence against the assertion was in the assertion's own output for as long as it was wrong.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/app_session_isolation_probe.py drives the pre-fix classification and requires the suite to fail; the probe is what separates a suite that agrees from one that checks."
+        },
+        {
+          "factor": "THE SAME FILE WARNS ABOUT EXACTLY THIS, SIX LINES ABOVE THE LOOP: \"a silent canary and a healthy canary look identical\". The hazard was understood, written down, and the assertion beside it was still too weak to express it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the fix, because the durable lesson is the shape -- never assert that something got through by ruling out one of the ways it could have been stopped."
+        },
+        {
+          "factor": "THE HARNESS REFUSED CORRECT CALLERS FOR AN UNRELATED REASON, which hid a second defect. credentialStillActive() treats an EMPTY employee-auth result as CREDENTIAL_INACTIVE -- correctly -- and the stub answered every post-licence query with []. So 403-for-the-right-reason and 403-for-the-wrong-one were the same number, and emptying SD_GATE_APP (which reverts the expected app to 'stonedesk' and refuses every signed-in attorney) was SILENT against this suite.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The employee-auth row is modelled present and ACTIVE, and two arms drive the newest gated resource with the RIGHT app session and a FOREIGN one, so the expected app is observable at all."
+        }
+      ],
+      "recurrence_open": "Nothing scans for reachability asserted as `!== <one status code>`, and that shape is not unique to this file. The expectedApp arms cover ONE gated resource -- the newest -- because it is the one whose app is not 'stonedesk'; a future resource gated against a third app would need its own arm and nothing asks for one. And the deeper cause is still open: sd-data answers no-session with 401 in one path and 403 in another, which is what made a negation ambiguous in the first place, and unifying them is a client-visible contract change nobody has decided."
+    },
+    {
       "commit": "ee221abe02e4",
       "date": "2026-09-16",
       "subject": "fix(sairnbiz): a payroll week recorded for an employee who then leaves is reachable again",
