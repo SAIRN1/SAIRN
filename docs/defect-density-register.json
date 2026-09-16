@@ -3066,6 +3066,59 @@
       "recurrence_open": "NOT CLOSED. The guards exist in files. Whether the migrations have been re-run against the deployed database is unverifiable from a clone, and until they have been, every guarded function is guarded only in the repository. tools/advisory_lock_isolation_check.py says so on every run rather than reporting the platform clean."
     },
     {
+      "commit": "0dd8b2fc4d01",
+      "date": "2026-09-16",
+      "subject": "fix(sairnlaw): a Tier A trust-money arm alleged a confidentiality leak that does not exist",
+      "files": [
+        "api/_lib/sairnlaw-trusttx-collision.test.js"
+      ],
+      "lines_added": 29,
+      "lines_removed": 1,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/_lib/sairnlaw-trusttx-collision.test.js was RED on a clean tree, 35/36, on an arm asserting that the TRUSTTX_ID_COLLISION message does not name the other client. The SQL is correct -- sql/sairnlaw_trusttx_functions.sql:187 interpolates p_trusttx_id only. The arm read everything after the FIRST `raise exception` anywhere in the function and asserted v_other_client was absent from it; the function raises at line 149, before the collision branch, so the legitimate assignment `select client_id into v_other_client` at line 179 fell inside the slice. A Tier A arm alleging a client-confidentiality leak that does not exist, on client trust money. Found by running the suite while tracing it, not by reading it.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The arm was correct when written; it broke when a raise was added earlier in sql/sairnlaw_trusttx_functions.sql, and which commit did that is not determinable from the test file. Naming a sha here would be a guess with a hash on it, which the register refuses by design."
+      },
+      "citation_note": "1.3 is the exact rule and the citation is clean in its subject -- an anchor that still matches and no longer points at the right thing. The only stretch is direction: 1.3's worked examples are about a check going quiet, and this one went loud. The mechanism is identical.",
+      "contributing_factors": [
+        {
+          "factor": "The arm located its region with indexOf('raise exception'), which assumes the collision raise is the FIRST raise in the function -- an assumption that was true when written and is not a property the function guarantees",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Scoped to the collision statement itself, located by its own error code and bounded by its own terminator"
+        },
+        {
+          "factor": "A raise was added earlier in the same function, silently moving what indexOf found. The anchor never stopped matching; it started matching something else, which is the half of PR 1.3 that has no symptom",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing can stop an earlier match appearing in a growing function. The defence is scoping the search to the statement rather than to a position, which is what the fix does."
+        },
+        {
+          "factor": "The arm was the only reader of that region and it failed CLOSED, so the red run was correct-looking noise rather than a silent pass -- but nothing distinguished it from a real leak without reading the SQL",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A separate could-not-locate arm was added, so a future slice that finds nothing reports that instead of testing an empty string and passing"
+        },
+        {
+          "factor": "Nothing runs this suite on a cadence that reaches a person; it was found by running it while tracing, not by a report",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Promoting per-app suites to a blocking or report-only cadence is a platform decision with its own timeout budget, already under discussion in the report-only sweep rows. Recorded rather than decided here."
+        }
+      ],
+      "recurrence_open": "Every other arm in this file that locates a region by indexOf of a generic keyword has the same exposure; only the one that went red was corrected, because only it had evidence. Nothing sweeps the repo for position-based slices into source, and a slice that lands on the wrong region while still passing would leave no trace at all."
+    },
+    {
       "commit": "1231c342e643",
       "date": "2026-09-16",
       "subject": "fix(tools): the removal-path burn-down counted two resources that own no table",
