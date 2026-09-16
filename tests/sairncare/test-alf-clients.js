@@ -1,3 +1,7 @@
+// REQUIREMENT: a med_aide or caregiver reads ONLY the residents assigned to
+//   them -- never an unassigned resident and never another aide's -- while
+//   management and broad roles read the whole census
+//
 // Isolated test of the alf_clients four-tier resident privacy gate in
 // api/sd-data.js. Runs the REAL handler (not a reimplementation) with
 // mocked auth/license/fetch so no real Supabase/session infra is needed.

@@ -1,3 +1,8 @@
+// REQUIREMENT: a billing rule with no resolvable authority, an unknown program
+//   or a bogus state is refused, state "US" IS accepted so a federal hospice
+//   rule need not pose as a state one, and an inverted effective range is
+//   refused by pointing at never_in_force rather than being stored
+//
 // Isolated test of the alf_payer_rules / alf_claim_routes handler branches in
 // api/sd-data.js (Phase 1 payer-routing engine). Runs the REAL handler with
 // mocked auth/license/fetch -- not a reimplementation.

@@ -1,3 +1,8 @@
+// REQUIREMENT: a rule taking effect mid-month still governs that whole month,
+//   a never_in_force rule is never selected for any month inside its own
+//   window, and a MISSING tier is refused by naming who actually assigns it
+//   rather than being guessed
+//
 // Isolated test of api/_lib/payer-routing.js, the Phase 1 payer/billing-routing
 // engine. The engine is PURE (no I/O), so every case here runs against the REAL
 // module and the REAL seed file -- not a reimplementation, not a fixture copy.

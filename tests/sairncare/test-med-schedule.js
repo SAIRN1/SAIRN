@@ -1,3 +1,8 @@
+// REQUIREMENT: dosing PROSE IS REFUSED RATHER THAN GUESSED, structured
+//   schedule times always beat free text, invalid stored times are dropped and
+//   flagged rather than trusted, and an empty schedule is reported empty
+//   instead of defaulted
+//
 // Isolated test of api/_lib/med-schedule.js (Phase 3 items 1 + 4).
 // PURE engine, so every case runs against the REAL module.
 'use strict';

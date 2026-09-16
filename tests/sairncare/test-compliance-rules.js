@@ -1,3 +1,8 @@
+// REQUIREMENT: every compliance figure is the one the state's own
+//   administrative code gives, run against the REAL engine and the REAL seed,
+//   with cases that lock in corrections found during verification so an older
+//   wrong working-summary number cannot come back
+//
 // Isolated test of api/_lib/compliance-rules.js (Phase 2). The engine is PURE,
 // so every case runs against the REAL module and the REAL seed -- not a
 // reimplementation, not a fixture copy.

@@ -1,3 +1,8 @@
+// REQUIREMENT: a Vercel cron GET is ACCEPTED while an unauthenticated or
+//   wrong-token GET is still refused, and a facility with NO window policy is
+//   SKIPPED rather than swept against a guessed one -- a late dose with no
+//   alert_email is counted and reported unsent, never silently dropped
+//
 // Isolated test of api/alf-alerts.js's request gating (Phase 3 item 4).
 //
 // THIS FILE EXISTS BECAUSE OF A REAL PRODUCTION DEFECT: the first version of

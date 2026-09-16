@@ -1,3 +1,8 @@
+// REQUIREMENT: every direct-care role CAN file an incident report and none of
+//   them can READ the log -- mandatory reporting is by the witness, and a
+//   witness who can read what others filed is a witness who can align their
+//   account with them
+//
 // Isolated test of the alf_incidents gate in api/sd-data.js. Runs the REAL
 // handler (not a reimplementation) with mocked auth/license/fetch.
 'use strict';

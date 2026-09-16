@@ -1,3 +1,8 @@
+// REQUIREMENT: the food-holding boundaries are exact at 41F and 135F with the
+//   roast exception a genuinely separate threshold, every result declares
+//   whether it used the model default or a facility override, and a
+//   non-numeric temperature is refused rather than coerced
+//
 // Isolated test of Phase 3 item 5: the operational-audit layer.
 // Covers the PURE engine (api/_lib/op-audit.js) and the alf_op_audits handler
 // branches in api/sd-data.js, run against the REAL modules.

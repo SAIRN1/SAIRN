@@ -1,3 +1,8 @@
+// REQUIREMENT: the MAR is reachable by clinical roles only, and a med_aide may
+//   LOG an administration for a resident assigned to them while never creating
+//   a medication order, a reconciliation or an assessment refusal -- those are
+//   clinical decisions and logging a dose is not
+//
 // Isolated test of the alf_mar MAR gate in api/sd-data.js. Runs the REAL
 // handler (not a reimplementation) with mocked auth/license/fetch.
 'use strict';

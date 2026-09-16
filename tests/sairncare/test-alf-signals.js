@@ -1,3 +1,8 @@
+// REQUIREMENT: the signal register is append-only: reusing an entry id is a
+//   409 and never a silent overwrite, an invalid signal type is refused rather
+//   than stored, and a read with zero rows reports its COVERAGE rather than an
+//   empty pass
+//
 // Isolated test of alf_signals (Phase 0 item 3, passive-monitoring signal
 // log) in api/sd-data.js. Runs the REAL handler with mocked auth/license/
 // fetch, not a reimplementation.

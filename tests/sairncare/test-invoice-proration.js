@@ -1,3 +1,8 @@
+// REQUIREMENT: a resident billed across a care-level change is prorated by
+//   real calendar segments -- daysInMonth is not hardcoded to 30, the CURRENT
+//   level is the LAST history entry rather than the first, and a migrated
+//   legacy entry with no effective date covers the whole month as one segment
+//
 // Isolated test of the invoice-retroactivity fix's core logic in sairncare.html:
 // daysInMonth / careHistoryOf / currentCareLevelOf / careLevelLabel / careRateFor /
 // careLevelSegmentsForMonth. Extracted VERBATIM by name from the real file

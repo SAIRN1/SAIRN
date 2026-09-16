@@ -1,3 +1,8 @@
+// REQUIREMENT: a compliance rule with no resolvable authority URL, an unknown
+//   requirement type or a bogus state code is REFUSED rather than stored, and
+//   verified_by is server-stamped -- a rule nobody can trace to an authority
+//   is worse than no rule
+//
 // Isolated test of the alf_compliance_rules / alf_staff_credentials handler
 // branches in api/sd-data.js (Phase 2). Runs the REAL handler with mocked
 // auth/license/fetch. The evaluation MATH is covered separately in

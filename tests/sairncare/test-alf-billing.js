@@ -1,3 +1,8 @@
+// REQUIREMENT: billing is management-only, room and board stay separate fields
+//   from care, a Medicaid HCBS claim carries the care amount and never room
+//   and board, and regenerating the same resident-month invoice UPSERTS rather
+//   than creating a second row
+//
 // Isolated test of the alf_billing gate in api/sd-data.js. Runs the REAL
 // handler (not a reimplementation) with mocked auth/license/fetch.
 'use strict';

@@ -31,7 +31,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 |---|---|---|---|---|---|---|
 | `sairnbiz` | 13 | ✅ | 13 | 13 | 4 | — |
 | `sairnbuild` | 32 | ✅ | 5 | 5 | 1 | — |
-| `sairncare` | 13 | ✅ | 22 | 5 | 3 | — |
+| `sairncare` | 13 | ✅ | 22 | 22 | 3 | — |
 | `sairncash` | 0 | ✅ | 5 | 5 | 1 | — |
 | `sairncode` | 28 | ✅ | 3 | 3 | 1 | — |
 | `sairndental` | 25 | ✅ | 28 | 23 | 4 | — |
@@ -45,16 +45,16 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnmechanical` | 6 | ✅ | 4 | 4 | 1 | — |
 | `sairnroofing` | 27 | ✅ | 29 | 22 | 1 | — |
 | `sairnscape` | 12 | ✅ | 2 | 1 | 1 | — |
-| `sairnsenior` | 15 | ✅ | 11 | 3 | 2 | — |
+| `sairnsenior` | 15 | ✅ | 11 | 4 | 2 | — |
 | `sairnvet` | 41 | ✅ | 10 | 10 | 3 | — |
 | `stonedesk` | 36 | ✅ | 17 | 14 | 2 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 387 resources owned by an app, 171 test files attributed to one, 124 of those traced, 30 fault probes.**
+**Platform totals: 387 resources owned by an app, 171 test files attributed to one, 142 of those traced, 30 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **493** test files on disk in total and **438** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **493** test files on disk in total and **456** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -71,11 +71,11 @@ The table above names every contributor, which is necessary and is not enough: a
 | Contributor | Could be understating by | Direction | What that figure counts |
 |---|---|---|---|
 | `suites` | 322 | UNDER-counts | test files on disk attributed to no single app by path |
-| `traced` | 55 | UNDER-counts | test files no source ties to a stated requirement |
+| `traced` | 37 | UNDER-counts | test files no source ties to a stated requirement |
 | `fault` | 29 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 406.** RSS for context: 328.
+**WORST CASE: 388.** RSS for context: 325.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
@@ -123,7 +123,7 @@ The table above names every contributor, which is necessary and is not enough: a
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
   test files on disk               493   tests/**, api/*.test.js
-  tests traced to a requirement    444   traceability_matrix.traced()
+  tests traced to a requirement    462   traceability_matrix.traced()
   declared fault probes             35   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```

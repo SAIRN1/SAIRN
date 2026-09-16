@@ -1,3 +1,7 @@
+// REQUIREMENT: the facility profile is writable by the management tier only,
+//   because clinical authority is not business authority, and no session at
+//   all answers 401 rather than 403
+//
 // Isolated test of the alf_facility gate in api/sd-data.js. Runs the REAL
 // handler (not a reimplementation) with mocked auth/license/fetch, same
 // harness shape as test-alf-gate.js / test-alf-mar.js / test-alf-billing.js.

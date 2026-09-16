@@ -1,3 +1,8 @@
+// REQUIREMENT: care level is DERIVED from the last history entry rather than
+//   stored independently, changed_by and changed_at are server-stamped, and
+//   rewriting or shortening an existing history is refused rather than
+//   silently accepted
+//
 // Isolated test of alf_clients' care_level_history (Phase 0 item 1) and
 // ccrc_contract_type (Phase 0 item 2) additions in api/sd-data.js. Runs the
 // REAL handler with mocked auth/license/fetch, not a reimplementation.

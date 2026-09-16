@@ -1,3 +1,8 @@
+// REQUIREMENT: only a COMPLETED visit is checkable for EVV readiness --
+//   scheduled, in_progress and unknown statuses report not-checkable rather
+//   than being silently treated as completed -- and each missing federal
+//   element is named against the party it belongs to
+//
 // Isolated test of api/_lib/sen-evv-readiness.js.
 // PURE engine, so every case runs against the REAL module -- no fixtures of
 // the module's own output, no mocks, no infrastructure.

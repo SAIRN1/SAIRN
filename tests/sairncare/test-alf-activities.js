@@ -1,3 +1,7 @@
+// REQUIREMENT: the activities calendar is readable by every role because it is
+//   broad and non-clinical, while writing one is the activities role and the
+//   owner only
+//
 // Isolated test of the alf_activities gate in api/sd-data.js. Runs the
 // REAL handler (not a reimplementation) with mocked auth/license/fetch.
 'use strict';

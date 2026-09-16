@@ -1,3 +1,8 @@
+// REQUIREMENT: clearing a pharmacy order into use is clinical -- a med_aide
+//   cannot accept one and a caregiver is refused before the review gate is
+//   even reached -- reviewed_by is server-stamped, and an ordinary
+//   hand-entered order is unaffected by the gate
+//
 // Isolated test of the Phase 3 server paths in api/sd-data.js:
 //   - the pharmacy-order review gate on alf_mar (item 1)
 //   - derive_charges on alf_billing (item 2)
