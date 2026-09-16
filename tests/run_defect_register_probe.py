@@ -71,13 +71,15 @@ try:
     rc, out = run(wt, '--add', '--commit', 'deadbeefdead', '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('B1 a commit that does not exist is REFUSED', rc, 2)
     check('B2 and it says so', 'no such commit' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
-                  '--method', 'vibes', '--summary', 'nope', '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--method', 'vibes', '--summary', 'nope', '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('B3 an invented detection method is REFUSED', rc, 2)
     check('B4 because the matrix is meaningless with free text',
           '--method must be one of' in out, True)
@@ -85,14 +87,16 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'guesswork', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('B5 an invented layer is REFUSED', rc, 2)
 
     # ── C. it derives rather than trusting what it was told ────────────────
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('C1 a real commit is accepted', rc, 0)
     doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                             encoding='utf-8'))
@@ -109,7 +113,8 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     after = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                   encoding='utf-8'))['records'])
     check('D1 a duplicate is not appended', after, before)
@@ -126,7 +131,8 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a SECOND fixture',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     after2 = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                    encoding='utf-8'))['records'])
     check('D3 one commit CAN carry several distinct defects', after2, before + 1)
@@ -238,7 +244,8 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', '9.99', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '9.99', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('H3 a rule id that is not a section in the rules doc is REFUSED', rc, 2)
     check('H4 and says which document it checked against',
           'SAIRN-PROCESS-RULES' in out, True)
@@ -246,14 +253,16 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('H5 not-citable with NO note is REFUSED -- a bare refusal to cite '
           'is a silence, not a decision', rc, 2)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture', '--rule-note', 'no rule names this')
+                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields', '--rule-note', 'no rule names this')
     check('H6 not-citable WITH a note is accepted', rc, 0)
     doc4 = json.load(io.open(p_reg, encoding='utf-8'))
     hrec = [r for r in doc4['records'] if r['summary'] == 'H fixture'][0]
@@ -393,14 +402,16 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p1',
-                  '--rule', '1.1', '--phase', 'vibes', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'vibes', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('P1 an invented phase is REFUSED', rc, 2)
     check('P2 and it names the vocabulary', '--phase must be one of' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p3',
-                  '--rule', '1.1', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('P3 a MISSING phase is refused, not defaulted -- a field that is '
           'optional at recording time is a field that stays empty', rc, 2)
     check('P4 and it says which field', 'missing --phase' in out, True)
@@ -408,7 +419,8 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p5',
-                  '--rule', '1.1', '--phase', 'unknown', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'unknown', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('P5 a bare `unknown` is REFUSED -- the escape hatch exists so a '
           'record can say no phase fits, not so it can say nothing', rc, 2)
     check('P6 and it says a note is required',
@@ -418,6 +430,7 @@ try:
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p7',
                   '--rule', '1.1', '--phase', 'unknown', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields',
                   '--phase-note', 'none of the four honestly fits this one')
     check('P7 CONTROL: `unknown` WITH a note is accepted -- P5 is not passing '
           'because unknown is banned outright', rc, 0)
@@ -477,7 +490,8 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'static-checker', '--summary', 'r3',
-                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
     check('R3 an automated find with NO tool is refused', rc, 2)
     check('R4 and it offers `unknown` rather than forcing a guess',
           'unknown' in out and '--found-by-tool is required' in out, True)
@@ -486,6 +500,7 @@ try:
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'r5',
                   '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields',
                   '--found-by-tool', 'nav_panel_check.py')
     check('R5 a tool name on a HUMAN find is REFUSED -- a column of plausible '
           'names nobody can check is worse than an empty one', rc, 2)
@@ -494,6 +509,7 @@ try:
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'static-checker', '--found-by-tool', 'unknown', '--summary', 'r6',
                   '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
+                  '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields',
                   '--found-by-tool', 'unknown')
     check('R6 CONTROL: `unknown` IS accepted, so R3 is not passing because the '
           'field is impossible to satisfy', rc, 0)
@@ -512,9 +528,16 @@ try:
 
 
     # -- S. the injection commit, and the lag it exists to build -----------
+    # `--factors-unknown` is carried here for the same reason every call above
+    # carries it: item 75 makes --factors or an explicit unknown-reason
+    # REQUIRED at --add, and this section is about the INJECTION pair. The
+    # injection check runs before the factors check in cmd_add, so S1/S2 below
+    # still fail on the injection flags and not on these.
     base = ['--add', '--commit', real2, '--app', 'stonedesk', '--layer', 'tooling',
             '--severity', 'low', '--method', 'code-review', '--rule', '1.1',
-            '--phase', 'coding']
+            '--phase', 'coding',
+            '--factors-unknown', 'probe fixture -- this section is about the '
+                                 'injection pair, not the factors']
 
     rc, out = run(wt, *(base + ['--summary', 's1']))
     check('S1 NEITHER flag is refused -- silently optional is how '

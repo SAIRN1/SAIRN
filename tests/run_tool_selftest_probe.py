@@ -18,8 +18,11 @@ exists is not a mechanism; a tool that RUNS is"* -- written about
 `sairn_app_map_check.py`, which was built so a seventh correction could not happen
 and then never invoked again until the seventh correction happened.
 
-MEASURED 2026-09-15: THIRTY-SIX tools carrying a `--selftest`, `--fixtures` or
-`--self-check`, NONE of them discovered by the suite. Their criteria were locked
+MEASURED 2026-09-16: FORTY-SIX tools carrying a `--selftest`, `--fixtures` or
+`--self-check`. It was THIRTY-SIX the previous evening -- the set grows by
+several a night across four clones, which is the whole argument for deriving the
+list rather than writing it down. When this file landed, NONE of them was
+discovered by the suite. Their criteria were locked
 against fixtures, their refusals were driven in both directions, and none of it
 would have been noticed going red.
 
@@ -77,7 +80,7 @@ TOOLS = os.path.join(REPO, 'tools')
 # rebase from another clone legitimately ADDS tools, and failing a session that
 # added nothing is how a gate gets switched off out of annoyance. A DROP still
 # fails immediately, which is the half worth protecting.
-MIN_SELFTESTS = 36
+MIN_SELFTESTS = 46
 PER_TOOL_TIMEOUT = 180
 
 # Flags a tool may expose. Ordered by preference: a dedicated selftest first, then

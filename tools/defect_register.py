@@ -251,6 +251,61 @@ ACTION_STATES = (
 )
 
 
+def factor_problems(rec, where_id):
+    """Everything wrong with `rec`'s contributing factors, as a list of strings.
+
+    ── ONE COPY, CALLED FROM BOTH ENDS (item 75, 2026-09-16) ────────────────
+    This was inline in `--check`. It is a function because `--add` now applies
+    the SAME rules at the moment of recording, and two copies of a validation
+    that must agree is how they stop agreeing -- a record accepted by --add and
+    refused by --check would be a register that cannot be both written and read.
+
+    Returns [] when the record carries no factors at all. Whether ABSENCE is
+    acceptable is the caller's decision and deliberately not this function's:
+    --check tolerates it on the old records, --add refuses it on new ones, and
+    that asymmetry is the whole of item 75's remaining half.
+    """
+    cf = rec.get('contributing_factors')
+    if cf is None:
+        return []
+    bad = []
+    if not isinstance(cf, list) or not cf:
+        return ['%s -- contributing_factors is present but not a non-empty list'
+                % where_id]
+    for i, f in enumerate(cf):
+        where = '%s factor %d' % (where_id, i + 1)
+        if not isinstance(f, dict) or not str(f.get('factor') or '').strip():
+            bad.append('%s -- no factor text' % where)
+            continue
+        if f.get('kind') not in FACTOR_KINDS:
+            bad.append('%s -- kind %r is outside %s'
+                       % (where, f.get('kind'), (FACTOR_KINDS,)))
+        st = f.get('action_status')
+        if st not in ACTION_STATES:
+            bad.append('%s -- action_status %r is outside %s'
+                       % (where, st, (ACTION_STATES,)))
+        elif st in ('done', 'planned') and not str(f.get('action') or '').strip():
+            bad.append('%s -- action_status %r with no action. A status without '
+                       'the thing that was done is the CAPA box this field '
+                       'replaces.' % (where, st))
+        elif st in ('declined', 'not-actionable') and not str(
+                f.get('note') or '').strip():
+            bad.append('%s -- action_status %r with no note. Deciding not to '
+                       'act is a decision and gets written down.' % (where, st))
+    # A SINGLE FACTOR IS ALLOWED AND MUST SAY WHY IT IS SINGLE.
+    if len(cf) == 1 and not str(rec.get('single_factor_note') or '').strip():
+        bad.append('%s -- one contributing factor and no single_factor_note. '
+                   'One cause is a CLAIM about a system, not the default shape '
+                   'of one, so it is stated rather than assumed.' % where_id)
+    # AND WHAT THE ACTIONS DO NOT CLOSE.
+    if not str(rec.get('recurrence_open') or '').strip():
+        bad.append('%s -- contributing factors with no recurrence_open. A '
+                   'corrective action is evidence about one contributor and '
+                   'never about recurrence; without this the record reads as '
+                   'closed.' % where_id)
+    return bad
+
+
 def known_rules():
     """Section ids parsed out of the process rules themselves.
 
@@ -395,6 +450,46 @@ def cmd_add(argv):
               'detection_method before it was measured at 1 of 52.'); return 2
     phase = opt('--phase')
     phase_note = opt('--phase-note', required=False)
+    # ── ITEM 75's REMAINING HALF, 2026-09-16 ───────────────────────────────
+    # The validation below `--check` has been right since it was written and
+    # could only ever inspect the records that happened to carry factors: FIVE
+    # of eighty-five. `--add` never asked. This file already says, twice, in
+    # its own words, why that ends one way -- "a field that is optional at the
+    # moment of recording is a field that stays empty, and --check cannot
+    # demand of a record what --add never collected." It was true of --rule at
+    # 54 records and of --phase, and contributing_factors is the third.
+    #
+    # OLD RECORDS STAY EXEMPT AND THAT JUDGEMENT IS NOT BEING REVERSED:
+    # back-filling a cause nobody re-investigated is how a CAPA form fills with
+    # guesses. This asks at the one moment somebody has actually looked.
+    #
+    # THE ESCAPE HATCH IS DELIBERATE, and is the same shape as `--rule
+    # not-citable` and `--phase unknown`: refusing to record a real defect
+    # because the factors are not worked out yet would lose the record, which
+    # is strictly worse than the gap being closed.
+    factors_json = opt('--factors', required=False)
+    factors_unknown = opt('--factors-unknown', required=False)
+    if bool(str(factors_json).strip()) == bool(str(factors_unknown).strip()):
+        print('pass EXACTLY ONE of --factors \'<json list>\' or '
+              '--factors-unknown "<why not yet>". A failure in a system like '
+              'this has contributors, plural; recording none of them is a '
+              'claim and it gets stated rather than left blank.\n'
+              '  each factor: {"factor": "...", "kind": one of %s,\n'
+              '                "action_status": one of %s,\n'
+              '                "action": "..." | "note": "..."}\n'
+              '  with --factors you must also pass --recurrence-open "<what '
+              'the actions do NOT close>",\n'
+              '  and --single-factor-note "<why one>" if you pass exactly one.'
+              % (', '.join(FACTOR_KINDS), ', '.join(ACTION_STATES)))
+        return 2
+    factors = None
+    if str(factors_json).strip():
+        try:
+            factors = json.loads(factors_json)
+        except ValueError as e:
+            print('--factors is not valid JSON: %s' % e); return 2
+    recurrence_open = opt('--recurrence-open', required=False)
+    single_note = opt('--single-factor-note', required=False)
     if phase not in PHASES:
         print('--phase must be one of %s' % (PHASES,)); return 2
     if phase == 'unknown' and not str(phase_note).strip():
@@ -469,6 +564,26 @@ def cmd_add(argv):
         rec['citation_note'] = note
     if phase_note:
         rec['phase_note'] = phase_note
+    if factors is not None:
+        rec['contributing_factors'] = factors
+        if str(recurrence_open).strip():
+            rec['recurrence_open'] = str(recurrence_open).strip()
+        if str(single_note).strip():
+            rec['single_factor_note'] = str(single_note).strip()
+        # THE SAME FUNCTION --check USES, ON THE RECORD ABOUT TO BE WRITTEN.
+        # Validating a different way here is how --add and --check would come
+        # to disagree, and a record that one accepts and the other refuses is a
+        # register that cannot be both written and read.
+        problems = factor_problems(rec, d['commit'])
+        if problems:
+            print('NOT RECORDED -- the contributing factors do not validate. '
+                  'These are the same rules --check applies, so recording it '
+                  'now would only move the refusal to the next --check:')
+            for p in problems:
+                print('  ! %s' % p)
+            return 2
+    else:
+        rec['factors_unknown_reason'] = str(factors_unknown).strip()
     reg['records'].append(rec)
     reg['records'].sort(key=lambda r: (r['date'], r['commit']))
     save(reg)
@@ -710,47 +825,7 @@ def cmd_check(argv=()):
                        'and the record reads as closed while every other '
                        'contributor is still there. Use contributing_factors, '
                        'which is a list.' % r['commit'])
-        cf = r.get('contributing_factors')
-        if cf is not None:
-            if not isinstance(cf, list) or not cf:
-                bad.append('%s -- contributing_factors is present but not a '
-                           'non-empty list' % r['commit'])
-            else:
-                for i, f in enumerate(cf):
-                    where = '%s factor %d' % (r['commit'], i + 1)
-                    if not isinstance(f, dict) or not str(f.get('factor') or '').strip():
-                        bad.append('%s -- no factor text' % where)
-                        continue
-                    if f.get('kind') not in FACTOR_KINDS:
-                        bad.append('%s -- kind %r is outside %s'
-                                   % (where, f.get('kind'), (FACTOR_KINDS,)))
-                    st = f.get('action_status')
-                    if st not in ACTION_STATES:
-                        bad.append('%s -- action_status %r is outside %s'
-                                   % (where, st, (ACTION_STATES,)))
-                    elif st in ('done', 'planned') and not str(f.get('action') or '').strip():
-                        bad.append('%s -- action_status %r with no action. A '
-                                   'status without the thing that was done is '
-                                   'the CAPA box this field replaces.'
-                                   % (where, st))
-                    elif st in ('declined', 'not-actionable') and not str(
-                            f.get('note') or '').strip():
-                        bad.append('%s -- action_status %r with no note. '
-                                   'Deciding not to act is a decision and gets '
-                                   'written down.' % (where, st))
-                # A SINGLE FACTOR IS ALLOWED AND MUST SAY WHY IT IS SINGLE.
-                if len(cf) == 1 and not str(r.get('single_factor_note') or '').strip():
-                    bad.append('%s -- one contributing factor and no '
-                               'single_factor_note. One cause is a CLAIM about '
-                               'a system, not the default shape of one, so it '
-                               'is stated rather than assumed.' % r['commit'])
-                # AND WHAT THE ACTIONS DO NOT CLOSE.
-                if not str(r.get('recurrence_open') or '').strip():
-                    bad.append('%s -- contributing factors with no '
-                               'recurrence_open. A corrective action is '
-                               'evidence about one contributor and never about '
-                               'recurrence; without this the record reads as '
-                               'closed.' % r['commit'])
+        bad.extend(factor_problems(r, r['commit']))
 
     seen = set()
     for r in reg['records']:
@@ -804,11 +879,17 @@ def cmd_check(argv=()):
     # count is printed so the gap is visible rather than absent.
     with_cf = [r for r in reg['records'] if r.get('contributing_factors')]
     n_factors = sum(len(r['contributing_factors']) for r in with_cf)
+    unknown = [r for r in reg['records'] if r.get('factors_unknown_reason')]
     print('    contributing factors: %d of %d record(s) carry them, %d factors '
-          'in total (%.1f per record). NOT required -- back-filling a cause '
-          'nobody re-investigated is how a CAPA form fills with guesses.'
+          'in total (%.1f per record).'
           % (len(with_cf), len(reg['records']), n_factors,
              (n_factors / float(len(with_cf))) if with_cf else 0.0))
+    print('      NOT required of OLD records -- back-filling a cause nobody '
+          're-investigated is how a CAPA form fills with guesses.')
+    print('      REQUIRED of NEW ones since 2026-09-16: --add takes either '
+          '--factors or an explicit --factors-unknown reason, because a field '
+          'that is optional when a record is written is a field that stays '
+          'empty. %d record(s) carry a stated unknown-reason.' % len(unknown))
     cited = sum(1 for r in reg['records'] if r.get('rules'))
     print('OK: %d record(s), every commit resolves and every field is in '
           'vocabulary.%s' % (len(reg['records']),
