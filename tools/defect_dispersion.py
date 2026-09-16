@@ -48,6 +48,7 @@ it is the only real unit available, labelled so nobody reads it as a scorecard.
 import argparse
 import io
 import json
+import math
 import os
 import subprocess
 import sys
@@ -78,6 +79,107 @@ def gini(values):
     for i, x in enumerate(xs, 1):
         cum += i * x
     return (2.0 * cum) / (n * total) - (n + 1.0) / n
+
+
+def dispersion(counts_by_unit, population):
+    """Is this count distribution OVER-DISPERSED, or just sparse?
+
+    Returns (index_of_dispersion, nb_k, verdict, why) -- any of which may be
+    None, and None is never folded into a number.
+
+    ── WHY A GINI IS NOT AN ANSWER TO ITEM 59 ──────────────────────────────
+    77 defects over 1232 commits gives a Gini of 0.97 over the population. So
+    does a PERFECTLY POISSON process at the same rate: with a mean of 0.06
+    defects per commit, almost every commit has zero and a handful have one,
+    which is maximally "unequal" by any concentration index and is not
+    superspreading. **A concentration index measures sparseness at these rates,
+    not clustering.** Quoting one as evidence of a few bad apples is the same
+    error as quoting an accuracy figure built from false positives.
+
+    THE TEST THAT DOES ANSWER IT is the variance relative to the mean.
+      * Poisson (pure chance):        variance == mean, index == 1
+      * over-dispersed (clustered):   variance >  mean, index >  1
+      * under-dispersed (regular):    variance <  mean, index <  1
+    The index is computed OVER THE POPULATION -- zeros included -- because the
+    zeros are most of the distribution and the whole question is their shape.
+
+    AND THE NEGATIVE-BINOMIAL k IS THE EPIDEMIOLOGICAL FORM of the same thing,
+    which is where item 59's framing comes from: k = mean^2 / (variance - mean).
+    Small k means heavy clustering (superspreading); large k approaches Poisson.
+    It is only defined when variance > mean, and it is NOT computed otherwise
+    rather than being clamped -- a clamped k reads as a measurement.
+
+    ── AND THE UNCERTAINTY, WHICH IS THE POINT ─────────────────────────────
+    At these counts the index is NOISE-DOMINATED. The standard error of the
+    index of dispersion for a Poisson sample of n units is approximately
+    sqrt(2/(n-1)), so a spread of a few percent around 1 is indistinguishable
+    from chance. The verdict below is deliberately three-valued and the
+    inconclusive band is wide.
+    """
+    if population is None:
+        return None, None, 'NOT TESTED', \
+            'the population is unknown, so the zeros cannot be counted and the ' \
+            'variance cannot be computed over the real distribution'
+    affected = list(counts_by_unit.values())
+    n = population
+    if n < 2:
+        return None, None, 'NOT TESTED', 'fewer than two units'
+    zeros = max(0, n - len(affected))
+    vals = affected + [0] * zeros
+    total = sum(vals)
+    mean = total / float(n)
+    if mean <= 0:
+        return None, None, 'NOT TESTED', 'no defects, so there is no rate to test'
+    var = sum((v - mean) ** 2 for v in vals) / float(n - 1)
+    index = var / mean
+    # Standard error of the index under the Poisson null.
+    se = math.sqrt(2.0 / (n - 1))
+    # ── NB k IS ONLY EMITTED WHEN OVER-DISPERSION IS ESTABLISHED ─────────
+    # FOUND BY tests/run_dispersion_probe.py, and it is exactly the fabrication
+    # this file was written to avoid. A PURE POISSON sample whose sample
+    # variance lands a hair above the mean yields k = mean^2/(var-mean) = 0.87 --
+    # which in epidemiological terms reads as heavy superspreading, from pure
+    # chance. As (var - mean) approaches zero the expression explodes or
+    # collapses on noise alone.
+    #
+    # So k is computed BELOW, after the verdict, and only when the verdict is
+    # OVER-DISPERSED. A k without an established over-dispersion is not a small
+    # number, it is a meaningless one, and this platform's own history says a
+    # meaningless number gets quoted.
+    # ── UNDERPOWERED IS NOT "INDISTINGUISHABLE" ──────────────────────────
+    # With 3 units, 2*SE is 2.0, so the index would have to exceed 3.0 to
+    # register -- a test that can only ever answer "indistinguishable" is not a
+    # test, and reporting its answer as a finding about the data would be
+    # exactly the vacuous pass this platform keeps removing. When the band is
+    # wider than the null value it is testing against, say so instead.
+    if 2 * se >= 1.0:
+        return index, None, 'NOT TESTED -- UNDERPOWERED', (
+            'index %.3f, but 2 SE is %.3f on only %d units: the band is wider '
+            'than the value being tested against, so this test could only ever '
+            'answer "indistinguishable". That is a fact about the number of '
+            'units, not about the defects.' % (index, 2 * se, n))
+    # THE BAND IS 2 STANDARD ERRORS AND IS DELIBERATELY WIDE. A narrower band
+    # on counts this small would turn noise into a finding, which is the exact
+    # thing this function exists to stop the Gini column doing.
+    k = None
+    if index > 1 + 2 * se:
+        verdict = 'OVER-DISPERSED'
+        k = (mean * mean) / (var - mean) if var > mean else None
+        why = ('variance exceeds the mean by more than 2 standard errors '
+               '(index %.3f, SE %.3f) -- clustering beyond chance' % (index, se))
+    elif index < 1 - 2 * se:
+        verdict = 'UNDER-DISPERSED'
+        why = ('variance is BELOW the mean by more than 2 SE (index %.3f, '
+               'SE %.3f) -- more regular than chance, which is not a defect '
+               'pattern anybody expects and is worth reading twice'
+               % (index, se))
+    else:
+        verdict = 'INDISTINGUISHABLE FROM POISSON'
+        why = ('index %.3f is within 2 SE (%.3f) of 1, so the spread is what '
+               'pure chance at this rate produces. THE GINI COLUMN IS HIGH '
+               'BECAUSE THE DATA IS SPARSE, NOT BECAUSE IT IS CLUSTERED.'
+               % (index, se))
+    return index, k, verdict, why
 
 
 def top_share(counts, frac=0.20):
@@ -111,6 +213,14 @@ def dimension(name, counts_by_unit, population, note):
         row['gini_over_population'] = gini(full)
         row['top20_over_population'] = top_share(full)
         row['zero_units'] = zeros
+    # THE DISPERSION TEST IS THE ANSWER TO ITEM 59; the Gini columns are
+    # context. Reported for every dimension including the ones whose population
+    # is unknown, where it says NOT TESTED rather than producing a figure.
+    idx, k, verdict, why = dispersion(counts_by_unit, population)
+    row['dispersion_index'] = idx
+    row['nb_k'] = k
+    row['dispersion_verdict'] = verdict
+    row['dispersion_why'] = why
     return row
 
 
@@ -191,6 +301,82 @@ def collect():
     return recs, start, dims, sess_by_commit
 
 
+def backward_trace(recs, top_n=3):
+    """From the largest CLUSTERS, back to what they share. Not forward from
+    every case.
+
+    ── WHY BACKWARD, AND WHY IT IS NOT A STYLISTIC CHOICE ──────────────────
+    Item 59's framing is epidemiological and so is this. Forward contact tracing
+    -- take every case and follow it outward -- costs O(cases x contacts) and,
+    in an over-dispersed process, spends almost all of that budget on cases that
+    infected nobody. BACKWARD tracing starts from a KNOWN CLUSTER and asks what
+    its members have in common, which in a superspreading regime finds the
+    common source in one hop. The dispersion test above is what licenses it: on
+    a Poisson-shaped distribution there are no clusters to trace back FROM, and
+    doing it anyway would be reading a pattern into noise.
+    77 records is also small enough that forward tracing every case would be
+    affordable and still wrong -- the point is which question gets answered, not
+    which is cheaper.
+
+    ── WHAT A "COMMON ORIGIN" CAN AND CANNOT BE HERE ───────────────────────
+    The register has no causal graph. What it has is attributes, so a shared
+    attribute is a CANDIDATE origin and never a proven one. Each cluster is
+    reported with the attributes its members share and how unusual that sharing
+    is against the register as a whole -- because "all four are in stonedesk" is
+    not informative if most records are.
+    """
+    from collections import Counter, defaultdict
+
+    # Clusters are defined on the dimension whose over-dispersion is real AND
+    # whose attribution is not inflated. `file` is excluded deliberately: the
+    # tool counts a defect against EVERY file in its commit, so file counts are
+    # correlated by construction and a "file cluster" can be one commit wearing
+    # four hats.
+    clusters = []
+    by_commit = defaultdict(list)
+    for r in recs:
+        c = r.get('commit')
+        if c:
+            by_commit[c].append(r)
+    multi = sorted([(len(v), k, v) for k, v in by_commit.items() if len(v) > 1],
+                   reverse=True)[:top_n]
+
+    # Base rates over the whole register, so "shared" can be judged against
+    # "common". Without this a cluster that shares the most frequent value on
+    # the platform reads as a finding.
+    base = {}
+    for field in ('app', 'layer', 'detection_method', 'injection_phase', 'severity'):
+        base[field] = Counter(r.get(field) for r in recs)
+    total = len(recs)
+
+    for n, commit, members in multi:
+        shared = []
+        for field in ('app', 'layer', 'detection_method', 'injection_phase', 'severity'):
+            vals = {m.get(field) for m in members}
+            if len(vals) == 1:
+                v = vals.pop()
+                rate = base[field].get(v, 0) / float(total) if total else 0.0
+                shared.append({
+                    'field': field, 'value': v,
+                    'register_rate': rate,
+                    # A shared value is only INTERESTING if it is not the norm.
+                    'informative': rate < 0.5,
+                })
+        # Files common to every member of the cluster -- the closest thing the
+        # register has to a shared surface.
+        filesets = [set(m.get('files') or []) for m in members]
+        common_files = sorted(set.intersection(*filesets)) if filesets else []
+        clusters.append({
+            'commit': commit, 'size': n,
+            'date': min((m.get('date') or '') for m in members),
+            'subject': (members[0].get('subject') or '')[:90],
+            'shared': shared,
+            'common_files': common_files[:6],
+            'summaries': [(m.get('summary') or '')[:70] for m in members],
+        })
+    return clusters
+
+
 def fmt(v):
     return '  --  ' if v is None else '%6.3f' % v
 
@@ -212,7 +398,9 @@ def main(argv):
 
     if args.json:
         print(json.dumps({'records': len(recs), 'since': start,
-                          'dimensions': dims, 'could_not_run': cnr}, indent=1))
+                          'dimensions': dims,
+                          'clusters': backward_trace(recs),
+                          'could_not_run': cnr}, indent=1))
         return EXIT_COULD_NOT_RUN if cnr else 0
 
     if not args.quiet:
@@ -230,6 +418,60 @@ def main(argv):
                      fmt(d['gini_among_affected']), fmt(d['gini_over_population']),
                      fmt(d['top20_among_affected']), fmt(d['top20_over_population'])))
         print('')
+        # ── THE DISPERSION TEST: THE COLUMN THAT ANSWERS ITEM 59 ──────────
+        # The Gini columns above are context. This is the test.
+        print('  dimension            disp.index    NB k     verdict')
+        for d in dims:
+            print('  %-20s %-13s %-8s %s'
+                  % (d['dimension'], fmt(d.get('dispersion_index')),
+                     fmt(d.get('nb_k')), d.get('dispersion_verdict') or '--'))
+        print('')
+        print('  A HIGH GINI IS NOT EVIDENCE OF CLUSTERING AT THESE RATES, and')
+        print('  reading it as such is the trap this column exists to close.')
+        print('  77 defects over 1232 commits gives a Gini near 1 under PURE')
+        print('  CHANCE -- almost every commit has zero, which is maximally')
+        print('  "unequal" and is not superspreading. The index is the test:')
+        print('  1 is Poisson, above 1 is clustered, and the band is 2 standard')
+        print('  errors wide because these counts are small. NB k is the')
+        print('  epidemiological form -- small k is heavy clustering.')
+        print('')
+        for d in dims:
+            if d.get('dispersion_why'):
+                print('  %-20s %s' % (d['dimension'], d['dispersion_why']))
+        print('')
+        # ── BACKWARD TRACING, and only because the test licensed it ────────
+        cl = backward_trace(recs)
+        if not cl:
+            print('  NO CLUSTER TO TRACE: no commit carries more than one')
+            print('  confirmed defect, so there is no common origin to look for')
+            print('  and none is invented.')
+        else:
+            print('  BACKWARD TRACE from the largest clusters. Backward, not')
+            print('  forward: on an over-dispersed distribution almost every')
+            print('  case infected nobody, so tracing outward from each spends')
+            print('  the whole budget on the cases that do not matter.')
+            print('  A SHARED ATTRIBUTE IS A CANDIDATE ORIGIN, NEVER A PROVEN')
+            print('  ONE -- the register holds no causal graph. Each is scored')
+            print('  against its rate in the register, because "all of them are')
+            print('  in stonedesk" says nothing if most records are.')
+            print('')
+            for c in cl:
+                print('  %s  %d defects  %s' % (c['commit'], c['size'], c['date']))
+                print('      %s' % c['subject'])
+                inf = [x for x in c['shared'] if x['informative']]
+                dull = [x for x in c['shared'] if not x['informative']]
+                for x in inf:
+                    print('      SHARED  %-16s %-22s (%.0f%% of the register)'
+                          % (x['field'], str(x['value'])[:22], 100 * x['register_rate']))
+                if dull:
+                    print('      shared but COMMON, so not informative: %s'
+                          % ', '.join('%s=%s' % (x['field'], x['value']) for x in dull))
+                if c['common_files']:
+                    print('      files common to every member: %s'
+                          % ', '.join(c['common_files']))
+                for sm in c['summaries']:
+                    print('        - %s' % sm)
+                print('')
         print('  READ THE TWO GINI COLUMNS TOGETHER OR NEITHER.')
         print('  AFFECTED is computed over the units that already have a defect,')
         print('  so every zero is missing and it always looks more uniform than')
