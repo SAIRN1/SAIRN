@@ -57,6 +57,43 @@ const EXPECTED_JOBS = {
   '/api/cron-watchdog': 3600
 };
 
+// The one job this watchdog IS. Taken from the key above rather than retyped,
+// because two spellings of the same route is how a self-exclusion silently
+// stops excluding. It is REPORTED and never ACTED ON -- see the long note in
+// api/_lib/cron-response.js, which was written from four hours of live logs of
+// this job retrying itself into an HTTP 508 and latching itself FAILING.
+const SELF_JOB = '/api/cron-watchdog';
+
+// ── CAN THIS WATCHDOG TELL ANYBODY ANYTHING? ASKED EVERY RUN ───────────────
+// FOUND LIVE 2026-09-15: SAIRN_OPS_EMAIL is not set in production, so every
+// alert this thing has ever planned ended `"nobody was told"`. That was
+// visible only inside a per-job action detail, under a headline reading
+// `checked 4 job(s)` and an HTTP 200 -- so the watchdog looked healthy while
+// being completely unable to notify.
+//
+// This is asked UNCONDITIONALLY, not only when there is something to send.
+// Waiting until a real job fails to discover the channel is dead is the same
+// defect as a backup nobody restores: the moment you need it is the moment you
+// find out. The file's own rule already says a silently inert alerting system
+// is worse than none, "because the existence of a watchdog is itself an
+// assurance" -- this is that rule applied to the channel rather than to a
+// single alert.
+function notifyChannel() {
+  const missing = [];
+  if (!process.env.SAIRN_OPS_EMAIL) missing.push('SAIRN_OPS_EMAIL');
+  if (!process.env.RESEND_API_KEY) missing.push('RESEND_API_KEY');
+  if (!process.env.RESEND_FROM_EMAIL) missing.push('RESEND_FROM_EMAIL');
+  return {
+    configured: missing.length === 0,
+    missing: missing,
+    // SAIRN_ESCALATION_EMAIL is deliberately NOT in `missing`: alertTo() falls
+    // back to SAIRN_OPS_EMAIL for an escalation, so its absence degrades who
+    // gets told rather than whether anybody does. Reported separately so that
+    // distinction is visible instead of inferred.
+    escalation_has_own_address: !!process.env.SAIRN_ESCALATION_EMAIL
+  };
+}
+
 // ── THE ALARM IS TIGHTER THAN THE FAILURE POINT (convention 4) ─────────────
 // A beat lands at the END of a run, so a job on a 1h schedule is normally up to
 // an hour old and that is healthy, not late. LATE is "it has missed one"; DEAD
@@ -205,7 +242,7 @@ async function retryJob(job) {
 async function executeActions(actions) {
   const out = [];
   for (const a of actions) {
-    if (a.action === 'suppressed' || a.action === 'NO_PLAN') {
+    if (a.action === 'suppressed' || a.action === 'NO_PLAN' || a.action === 'self') {
       // Carried through verbatim. `delivered` is deliberately ABSENT rather than
       // true: nothing was delivered, and nothing needed to be -- and a `true`
       // here would make the undelivered count below quietly wrong.
@@ -317,8 +354,9 @@ module.exports = async (req, res) => {
     // migration to run and a second thing to be missing.
     const self = rows.filter(function (r) { return r.job === '/api/cron-watchdog'; })[0];
     const prior = (self && self.detail && self.detail.response_memo) || {};
-    const planned = planResponse(report, prior, nowMs);
+    const planned = planResponse(report, prior, nowMs, SELF_JOB);
     const executed = await executeActions(planned.actions);
+    const channel = notifyChannel();
     // LOGGED, NOT JUST RETURNED -- the same reason every cron here logs its
     // completion: Vercel discards the response body, so a watchdog whose only
     // output was a body would itself be the silent job.
@@ -336,14 +374,36 @@ module.exports = async (req, res) => {
     // reporting `ok` because the DETECTION half worked is exactly how an
     // alerting system ends up silently inert.
     const undelivered = executed.filter(function (a) { return a.delivered === false; });
+    if (!channel.configured) {
+      console.error('cron-watchdog: CANNOT NOTIFY ANYBODY -- missing ' +
+        channel.missing.join(', ') + '. Detection is running; every alert it '
+        + 'plans will end "nobody was told".');
+    }
+    // ── WHICH OUTCOME, AND WHY IT IS NOT `failed` ──────────────────────────
+    // An unconfigured channel is a STANDING CONFIGURATION STATE, not a run that
+    // went wrong, and the difference is load-bearing rather than cosmetic:
+    // writing `failed` here is what made this job read its own row next hour,
+    // call itself FAILING, and alert about itself for ever. `partial` is the
+    // honest word -- it detected correctly and it cannot notify, which is
+    // literally part of the work done. It still is NOT `ok`, because an
+    // alerting system that is silently inert is the defect this file names in
+    // its own header.
+    //
+    // NOTE THE ORDER: an undelivered alert about a REAL job is still `failed`.
+    // Only the "nothing is configured at all" case is downgraded, and only
+    // because that case is now reported on its own axis where an outside reader
+    // can see it standing.
+    const realUndelivered = channel.configured ? undelivered : [];
     await beat({
-      job: '/api/cron-watchdog',
-      outcome: undelivered.length ? 'failed' : (bad.length ? 'partial' : 'ok'),
+      job: SELF_JOB,
+      outcome: realUndelivered.length ? 'failed'
+             : (bad.length || !channel.configured) ? 'partial' : 'ok',
       expected_interval_seconds: 3600,
       detail: {
         checked: report.length,
         not_ok: bad.map(function (x) { return x.job + '=' + x.status; }),
         response_memo: planned.memo,
+        notify_channel: channel,
         undelivered: undelivered.map(function (a) { return a.action + ':' + a.job; })
       }
     });
@@ -352,8 +412,16 @@ module.exports = async (req, res) => {
         ' RESPONSE(S) COULD NOT BE DELIVERED -- ' + JSON.stringify(undelivered));
     }
     res.status(200).json({
-      ok: bad.length === 0 && undelivered.length === 0,
+      // `ok` NOW REQUIRES A USABLE CHANNEL, and that is a deliberate widening.
+      // The independent check outside Vercel reads this field, and a watchdog
+      // that detects perfectly and can tell nobody is not a healthy watchdog --
+      // it is the failure this file's own header calls worse than having none.
+      ok: bad.length === 0 && undelivered.length === 0 && channel.configured,
       checked: report.length, jobs: report,
+      // ON ITS OWN AXIS rather than folded into `ok`, so the outside reader can
+      // say WHICH of the two halves is broken. A boolean that collapses "a job
+      // is down" and "nobody can be told" sends the reader to the wrong place.
+      notify_channel: channel,
       // NAMED SEPARATELY from `jobs`: what was FOUND and what was DONE about it
       // are different questions, and a reader who cannot tell them apart cannot
       // tell a suppressed alert from an alert that was never planned.

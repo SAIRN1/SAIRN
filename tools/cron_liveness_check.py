@@ -9,12 +9,25 @@ that scheduler stops, the watchdog stops with it and reports nothing -- two
 units sharing a failure mode, which is convention 7's exact lesson: a second
 copy is not a second opinion.
 
-THIS RUNS OUTSIDE VERCEL. It is the only thing in the repo that survives a total
-scheduler outage, because a person or a session invokes it. That is a weaker
-guarantee than a hosted uptime check and it is stated as one: a third-party
-monitor pinging the endpoint on its own schedule is what would close the
-remaining gap, and that is a decision about spend and vendors rather than
-something to invent quietly in a file.
+THIS RUNS OUTSIDE VERCEL. It is what survives a total scheduler outage.
+
+── AND SINCE 2026-09-15 IT NO LONGER DEPENDS ON SOMEBODY REMEMBERING ───────
+This file used to say the remaining gap needed "a third-party monitor pinging
+the endpoint on its own schedule", and that this was "a decision about spend
+and vendors rather than something to invent quietly in a file". **That was
+true when written and is now out of date in the cheapest possible direction:**
+`.github/workflows/cron-liveness.yml` runs this tool hourly on GitHub's
+infrastructure, which is a genuinely different scheduler from Vercel's, at no
+spend, using a workflow pattern this repository already runs twice.
+
+The correction is recorded rather than quietly overwritten because the OLD
+sentence was the reason nobody built it, and a future reader who finds only the
+new one cannot tell a decision from an oversight.
+
+**WHAT IS STILL TRUE:** GitHub Actions is not an uptime vendor. Scheduled
+workflows can be delayed under load and are disabled on repositories with no
+activity for 60 days. So this is a second INDEPENDENT scheduler, not a
+guaranteed one, and the workflow says the same thing in its own header.
 
 ── THE RULE THAT MATTERS ───────────────────────────────────────────────────
 **A STATUS DOC THAT CANNOT BE UPDATED MUST NOT KEEP SAYING OK.** Unreachable
@@ -88,10 +101,17 @@ def write_status(state, lines, payload=None):
         '',
         '**WHAT THIS CANNOT SEE.** `api/cron-watchdog.js` runs on the same Vercel',
         'cron scheduler as the jobs it watches, so a total scheduler outage',
-        'silences both. THIS tool runs outside Vercel and is what survives that --',
-        'but only when somebody runs it. A third-party uptime check pinging the',
-        'endpoint on its own schedule is what would close the gap, and that is a',
-        'spend-and-vendor decision rather than a code change.',
+        'silences both. THIS tool runs outside Vercel and is what survives that.',
+        'Since 2026-09-15 it also runs hourly from',
+        '`.github/workflows/cron-liveness.yml` — a genuinely different scheduler,',
+        'at no spend — so it no longer depends on somebody remembering to run it.',
+        '',
+        '**AND WHAT THAT STILL IS NOT.** GitHub Actions is not an uptime vendor:',
+        'scheduled workflows can be delayed under load, and GitHub disables them',
+        'on a repository with no activity for 60 days. A second INDEPENDENT',
+        'scheduler is a real improvement over one; it is not a guaranteed one,',
+        'and the difference is stated here rather than implied by the word',
+        '"automated".',
     ]
     if payload is not None:
         out += ['', '<details><summary>Raw response</summary>', '',
@@ -194,15 +214,51 @@ def main(argv):
                 a.get('job'), a.get('status'), a.get('action'),
                 (a.get('detail') or {}).get('error', 'no reason given')))
 
+    # ── CAN THE WATCHDOG TELL ANYBODY ANYTHING? (added 2026-09-15) ─────────
+    # `undelivered` only appears when there was something to send, so a platform
+    # where every job is healthy and the alert channel is DEAD reported OK here
+    # -- and that is precisely the state production was in on 2026-09-15, with
+    # SAIRN_OPS_EMAIL unset and every planned alert ending "nobody was told".
+    # The channel is now a standing fact on its own axis in the watchdog's
+    # answer, and this reads it. AN ABSENT FIELD IS NOT A PASS: an older
+    # deployment that does not report it is a COULD NOT TELL, because "the
+    # channel is fine" and "this deployment cannot say" are different answers.
+    channel = payload.get('notify_channel')
+    channel_lines = []
+    if channel is None:
+        return cannot_tell([
+            '**The watchdog did not report `notify_channel`.**',
+            '',
+            'That field says whether an alert could reach anybody at all. A',
+            'deployment predating it cannot answer, and a silent alert channel is',
+            'invisible until the day a real job fails -- so this is COULD NOT TELL',
+            'rather than OK. Redeploy `api/cron-watchdog.js`.',
+        ], payload, msg='no notify_channel field.')
+    if not channel.get('configured'):
+        channel_lines = [
+            '', '### The watchdog CANNOT NOTIFY ANYBODY', '',
+            '**Missing: %s.** Detection is running and every alert it plans will'
+            % ', '.join(channel.get('missing') or ['(not stated)']),
+            'end *"nobody was told"*. This is a CONFIGURATION state, not a failed',
+            'run -- it does not clear by itself and it will not announce itself on',
+            'the day it matters.', '']
+
     bad = [j for j in jobs if j.get('status') != 'ok'] + undelivered
-    if bad:
+    if channel_lines:
+        lines += channel_lines
+    if bad or channel_lines:
         lines += ['', '## Not ok', '']
         for j in bad:
             lines.append('- **`%s` — %s**: %s' % (
                 j.get('job'), j.get('status'),
                 MEANING.get(j.get('status'), j.get('why', 'no explanation available'))))
         write_status('NOT OK', lines, payload)
-        print('FINDING: %d job(s) not ok. See %s' % (len(bad), os.path.relpath(DOC, REPO)))
+        print('FINDING: %d job(s) not ok%s. See %s'
+              % (len(bad),
+                 '' if not channel_lines else
+                 (' and the alert channel is DEAD (missing %s)'
+                  % ', '.join(channel.get('missing') or ['?'])),
+                 os.path.relpath(DOC, REPO)))
         return EXIT_FINDING
 
     if not jobs:

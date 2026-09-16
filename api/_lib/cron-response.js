@@ -85,21 +85,77 @@ const RESPONSE = {
   }
 };
 
+// ── A MONITOR DOES NOT ACT ON ITSELF (added 2026-09-15, Hank) ──────────────
+// FOUND IN PRODUCTION, NOT REASONED ABOUT. `/api/cron-watchdog` is in its own
+// EXPECTED_JOBS list -- correctly, because it must leave its own heartbeat for
+// an outside reader. But it was also RESPONDING to itself, and the two live
+// consequences were both bad:
+//
+//  1. THE RETRY WAS THE RUNNING FUNCTION INVOKING ITSELF. Observed
+//     2026-09-15T21:15:29Z: `{"action":"retry","job":"/api/cron-watchdog",
+//     "delivered":false,"detail":{"ok":false,"status":508}}`. 508 is
+//     Vercel's LOOP DETECTED.
+//
+//  2. A LATCH THAT COULD NEVER CLEAR, which is the worse half. An alert that
+//     cannot be delivered degrades this job's own outcome to `failed`. Next
+//     hour it reads its own row, sees `last_outcome: failed`, calls ITSELF
+//     FAILING, plans another alert, fails to deliver it, and writes `failed`
+//     again. Measured over four consecutive hours on 2026-09-15 with all three
+//     REAL jobs reporting ok the whole time: the only thing the watchdog was
+//     reporting was a fault it was causing itself.
+//
+//  AND IT DEFEATED THE ALERT-STORM RULE THROUGH A DOOR NOBODY CHECKED. The
+//  self-status FLAPPED (PARTIAL -> FAILING -> FAILING -> PARTIAL) because the
+//  outcome it wrote depended on what it had just failed to send. `same` was
+//  false on every flap, so the once-per-6h suppression never applied and it
+//  re-alerted every hour -- the exact storm REALERT_SECONDS exists to prevent.
+//
+// THE FIX IS NOT "SKIP THE SELF ROW". It stays in the report and it is still
+// written to the heartbeat, because that row is the ONLY evidence an outside
+// reader has that the watchdog ran at all -- api/cron-watchdog.js says so in
+// its own comment, and tools/cron_liveness_check.py is the reader. What is
+// removed is the watchdog RESPONDING to it. Who responds to a sick watchdog is
+// a question a sick watchdog cannot answer, and the answer has to come from
+// outside: .github/workflows/cron-liveness.yml is the independent second one.
+function selfAction(entry, reason) {
+  return {
+    job: entry.job, status: entry.status, action: 'self',
+    reason: reason,
+    say: 'the watchdog does not alert, retry or escalate on ITSELF -- a monitor '
+       + 'acting on its own verdict is not a second opinion, and the retry was '
+       + 'literally this function invoking itself (HTTP 508). This is REPORTED '
+       + 'so it is visible, and the response comes from the independent check '
+       + 'outside Vercel.'
+  };
+}
+
 /**
  * Decide, without doing anything.
  *
  * @param report   what api/cron-watchdog.js assess() produced
  * @param prior    { job: { status, at_ms, count, escalated } } from the last run
  * @param nowMs    clock, passed in so this is testable without sleeping
+ * @param selfJob  the job id this watchdog IS, or null/absent. When given, that
+ *                 job is REPORTED and never acted on. Optional rather than
+ *                 required only because every existing caller and arm predates
+ *                 it; the one real caller passes it.
  * @returns { actions: [...], memo: {...} }  memo is `prior` for the NEXT run
  */
-function planResponse(report, prior, nowMs) {
+function planResponse(report, prior, nowMs, selfJob) {
   prior = prior || {};
   const actions = [];
   const memo = {};
   for (const entry of report) {
     const status = entry.status;
     if (status === 'ok') continue;                 // and it drops out of memo, which
+    if (selfJob && entry.job === selfJob) {
+      // NOT `continue` before the memo write by accident -- deliberately no
+      // memo entry either. A streak counter on a job nothing acts on is a
+      // number with no consequence, and leaving one would make a later reader
+      // think an escalation was pending.
+      actions.push(selfAction(entry, 'this is the watchdog\'s own job'));
+      continue;
+    }
     const plan = RESPONSE[status];                 // is what resets the streak
     if (!plan) {
       // A STATUS WITH NO PLANNED RESPONSE IS A FINDING ABOUT THIS TABLE, not a

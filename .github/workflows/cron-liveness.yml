@@ -1,0 +1,177 @@
+# .github/workflows/cron-liveness.yml
+#
+# THE SECOND WATCHDOG, AND THE POINT IS THAT IT IS SOMEWHERE ELSE.
+# Item 54, the half that was missing. 2026-09-15.
+#
+# ── WHY A FIRST WATCHDOG IS NOT ENOUGH, MEASURED RATHER THAN ARGUED ────────
+# api/cron-watchdog.js runs on the SAME Vercel cron scheduler as the three jobs
+# it watches. Two units sharing a failure mode is convention 7's exact lesson --
+# a second copy is not a second opinion -- and on 2026-09-15 the shared-fate
+# problem showed up in a sharper form than a scheduler outage:
+#
+#   * The watchdog was RETRYING ITSELF. It is in its own EXPECTED_JOBS list, and
+#     the retry was the running function invoking itself. Vercel answered HTTP
+#     508 LOOP DETECTED at 21:15:29Z.
+#   * It had LATCHED ITSELF FAILING and could never clear. An alert it could not
+#     deliver wrote its own outcome as `failed`; next hour it read that row back
+#     as evidence it was failing, planned another alert, failed to deliver it,
+#     and wrote `failed` again. Four consecutive hours, with all three REAL jobs
+#     reporting ok the entire time.
+#   * SAIRN_OPS_EMAIL was not set, so every alert it had ever planned ended
+#     "nobody was told" -- under an HTTP 200 and a headline reading
+#     `checked 4 job(s)`.
+#
+# Those three are fixed in the endpoint. What CANNOT be fixed in the endpoint is
+# the question underneath them: who notices when the watchdog itself is the sick
+# one? A sick watchdog cannot answer that, so the answer has to arrive from
+# outside. That is this file.
+#
+# ── THE GRADUATED RESPONSE, AND WHY THE SOFT STEP COMES FIRST ──────────────
+#   1. READ. Ask the watchdog how the platform is. Clean -> done, no noise.
+#   2. SOFT. Not clean -> poke the watchdog to run NOW and read a second time.
+#      One hourly sample can catch a job mid-deploy or one slow upstream call,
+#      and failing the build on a single sample is how a monitor earns the
+#      reputation that gets it muted.
+#   3. HARD. Still not clean -> FAIL THE JOB. GitHub mails the repository owner
+#      on a failed scheduled workflow, and that channel is the whole reason this
+#      exists: it does not depend on SAIRN_OPS_EMAIL, on Resend, or on Vercel
+#      running at all -- the three things that were simultaneously broken.
+#
+# THE SOFT STEP IS NOT APPLIED TO EVERYTHING, and that is deliberate. A missing
+# CRON_SECRET, an unreadable answer, or `NOT_PROVISIONED` are not transient and
+# a second attempt cannot fix them -- retrying those only delays the report and
+# makes the log look like flapping. Those fail on the FIRST read.
+#
+# ── WHAT THIS IS NOT ───────────────────────────────────────────────────────
+# GitHub Actions is not an uptime vendor. Scheduled workflows can be delayed
+# under load, and GitHub DISABLES scheduled workflows on a repository with no
+# activity for 60 days. So this is a second INDEPENDENT scheduler, not a
+# guaranteed one. It is a real improvement over one scheduler watching itself
+# and it is not a replacement for a paid monitor, and saying so here is cheaper
+# than somebody later discovering the difference during an outage.
+#
+# ── SECRETS THIS NEEDS ─────────────────────────────────────────────────────
+#   CRON_SECRET          -- the same bearer api/cron-watchdog.js already requires
+#   SAIRN_WATCHDOG_URL   -- optional; defaults to the production URL in the tool
+#
+# WITHOUT CRON_SECRET THIS FAILS RATHER THAN SKIPS. A monitoring workflow that
+# goes green because it was not configured is the precise defect this platform
+# names most often: "could not run" is a third state and is never folded into
+# "passed". tools/cron_liveness_check.py already exits 2 for it; this does not
+# soften that into a skip.
+
+name: cron liveness (independent)
+
+on:
+  schedule:
+    # :45 -- THIRTY MINUTES AFTER the Vercel watchdog's :15, so it reads a
+    # result that is fresh rather than one being written underneath it, and is
+    # nowhere near the :07 and :37 the two real jobs fire on.
+    - cron: '45 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A delayed run plus the next scheduled one must not both poke the watchdog.
+  group: cron-liveness
+  cancel-in-progress: false
+
+jobs:
+  liveness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Refuse to run blind
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "::error title=cron liveness could not run::CRON_SECRET is not set in this repository's Actions secrets, so the watchdog was never asked and NOTHING was checked. This is a failure, not a skip -- a monitor that goes green because it was not configured is worse than no monitor."
+            exit 1
+          fi
+
+      # THE EXIT CODE IS CARRIED, NOT just success/failure. The tool's 1 and 2
+      # mean different things -- a FINDING about the jobs versus COULD NOT TELL
+      # -- and collapsing them into GitHub's `outcome` would lose exactly the
+      # distinction that decides whether a soft attempt is worth making.
+      - name: Read the watchdog
+        id: read1
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SAIRN_WATCHDOG_URL: ${{ secrets.SAIRN_WATCHDOG_URL }}
+        run: |
+          set +e
+          python tools/cron_liveness_check.py
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      # ── THE SOFT ATTEMPT ────────────────────────────────────────────────
+      # ONLY for a FINDING (exit 1): the watchdog answered and something is not
+      # ok, which can be a job caught mid-deploy or one slow upstream call.
+      # Exit 2 is COULD NOT TELL -- no secret, unreachable, unprovisioned, zero
+      # jobs -- and NONE of those get better by asking again. Retrying them only
+      # delays the report, so they fall straight through to the verdict.
+      - name: Soft recovery -- poke the watchdog, then read a second time
+        id: read2
+        if: steps.read1.outputs.code == '1'
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          SAIRN_WATCHDOG_URL: ${{ secrets.SAIRN_WATCHDOG_URL }}
+        run: |
+          set -u
+          URL="${SAIRN_WATCHDOG_URL:-https://sairn.vercel.app/api/cron-watchdog}"
+          echo "Soft attempt: asking the watchdog to run now, then re-reading."
+          # The same call Vercel's scheduler makes. Its HTTP status is
+          # deliberately NOT the verdict: a 200 says the endpoint answered, not
+          # that the platform is healthy, and letting one thing decide is why
+          # the second read below is what counts.
+          curl -sS -o /dev/null -w 'poke -> HTTP %{http_code}\n' \
+               -X POST -H "Authorization: Bearer $CRON_SECRET" \
+               -H 'Content-Type: application/json' -d '{}' "$URL" || true
+          sleep 60
+          set +e
+          python tools/cron_liveness_check.py
+          echo "code=$?" >> "$GITHUB_OUTPUT"
+
+      # ── THE HARD STEP ───────────────────────────────────────────────────
+      # Failing the job IS the notification, and it is the whole reason this
+      # file exists: GitHub mails the repository owner on a failed scheduled
+      # workflow, which depends on neither SAIRN_OPS_EMAIL, nor Resend, nor
+      # Vercel running -- the three things that were broken together.
+      - name: Verdict
+        if: always()
+        env:
+          C1: ${{ steps.read1.outputs.code }}
+          C2: ${{ steps.read2.outputs.code }}
+        run: |
+          set -u
+          if [ "${C1:-}" = "0" ]; then
+            echo "Watchdog clean on the first read. Nothing to report."
+            exit 0
+          fi
+          if [ "${C1:-}" = "" ]; then
+            echo "::error title=cron liveness did not complete::The read step did not record an exit code, so NOTHING was checked. Failing rather than passing: a monitor with no result is not a clean result."
+            exit 1
+          fi
+          if [ "${C2:-}" = "0" ]; then
+            echo "::warning title=cron liveness recovered on the soft attempt::The first read found a problem and the second, after poking the watchdog, was clean. Recorded rather than passed silently -- a fault that clears on a poke is still a fault, and a run of these means something is flapping."
+            exit 0
+          fi
+          echo "Read 1 exit: $C1   Read 2 exit: ${C2:-not attempted}"
+          echo "::error title=CRON LIVENESS FAILED::The watchdog was not clean, and a soft recovery attempt did not fix it (or the failure was one no retry can fix). See the cron-liveness-status artifact. THREE DIFFERENT CAUSES LOOK ALIKE HERE and need different fixes: a JOB is down; the watchdog CANNOT NOTIFY anybody (notify_channel.configured false, alerts end 'nobody was told'); or the watchdog itself is unreachable, unprovisioned, or checked zero jobs."
+          exit 1
+
+      - name: Upload the status document
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cron-liveness-status
+          path: docs/CRON-LIVENESS-STATUS.md
+          if-no-files-found: warn

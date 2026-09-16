@@ -205,15 +205,60 @@ t('an unreadable heartbeat read reports that, rather than a clean sweep', async 
   assert.strictEqual(out.code, 502);
   assert.ok(/nothing was checked/i.test(out.body.error.message));
 });
-t('a healthy table answers ok:true', async () => {
-  const out = await call(async (url) => {
-    if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) {
-      return reply(200, JSON.stringify(ALL_FRESH()));
-    }
-    return reply(201, '');       // the watchdog's own beat
-  });
+// ── `ok` NOW INCLUDES "CAN THIS THING TELL ANYBODY", 2026-09-15 ───────────
+// This arm used to pass with NO alert channel configured, which is how the
+// production instance ran for a day answering 200 while every alert it planned
+// ended "nobody was told". A healthy platform includes a usable channel, so the
+// arm configures one -- and the arm immediately below is the other direction,
+// without which this one would pass just as happily on a widened `ok` that had
+// silently stopped checking anything.
+const CHANNEL_VARS = ['SAIRN_OPS_EMAIL', 'RESEND_API_KEY', 'RESEND_FROM_EMAIL'];
+function withChannel(on, fn) {
+  const saved = CHANNEL_VARS.map((k) => [k, process.env[k]]);
+  for (const k of CHANNEL_VARS) {
+    if (on) process.env[k] = 'set-for-test';
+    else delete process.env[k];
+  }
+  return Promise.resolve()
+    .then(fn)
+    .finally(() => {
+      for (const [k, v] of saved) {
+        if (v === undefined) delete process.env[k];
+        else process.env[k] = v;
+      }
+    });
+}
+const healthy = () => call(async (url) => {
+  if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) {
+    return reply(200, JSON.stringify(ALL_FRESH()));
+  }
+  return reply(201, '');         // the watchdog's own beat
+});
+
+t('a healthy table AND a configured channel answers ok:true', async () => {
+  const out = await withChannel(true, healthy);
   assert.strictEqual(out.code, 200);
   assert.strictEqual(out.body.ok, true, JSON.stringify(out.body));
+  assert.strictEqual(out.body.notify_channel.configured, true);
+});
+t('EVERY JOB HEALTHY BUT NO CHANNEL IS NOT ok -- it can tell nobody', async () => {
+  const out = await withChannel(false, healthy);
+  assert.strictEqual(out.code, 200);
+  assert.strictEqual(out.body.ok, false, JSON.stringify(out.body));
+  assert.strictEqual(out.body.notify_channel.configured, false);
+  // ON ITS OWN AXIS. A reader must be able to tell "a job is down" from
+  // "nobody can be told" -- they send you to completely different places.
+  assert.deepStrictEqual(out.body.jobs.filter((j) => j.status !== 'ok'), []);
+  assert.ok(out.body.notify_channel.missing.indexOf('SAIRN_OPS_EMAIL') !== -1);
+});
+t('the escalation address is reported separately, because its absence is not fatal', async () => {
+  const out = await withChannel(true, healthy);
+  // alertTo() falls back to SAIRN_OPS_EMAIL for an escalation, so a missing
+  // SAIRN_ESCALATION_EMAIL changes WHO is told, not WHETHER anybody is. It
+  // must not appear in `missing` or it would make a working channel read broken.
+  assert.strictEqual(out.body.notify_channel.escalation_has_own_address, false);
+  assert.strictEqual(out.body.notify_channel.missing.length, 0);
+  assert.strictEqual(out.body.notify_channel.configured, true);
 });
 // -- THE FREEZE IS LOAD-BEARING, AND NOTHING PINNED IT UNTIL NOW ------------
 // The arm above builds "fresh" heartbeats relative to the fixed NOW, so it is
@@ -358,6 +403,74 @@ t('A STATUS WITH NO PLAN IS A FINDING, not silence', () => {
 t('two jobs in trouble each get their own action, not one merged alert', () => {
   const p = CR.planResponse([dead('/api/a'), dead('/api/b')], {}, NOW);
   assert.strictEqual(p.actions.filter((a) => a.action === 'alert').length, 2);
+});
+
+// ── 4b-bis. A MONITOR DOES NOT ACT ON ITSELF ───────────────────────────────
+// Added 2026-09-15 from four hours of PRODUCTION logs, not from reading the
+// code. `/api/cron-watchdog` is in its own EXPECTED_JOBS, and it was planning
+// a retry against itself -- the running function invoking itself, answered by
+// Vercel with HTTP 508 LOOP DETECTED at 21:15:29Z -- and latching itself
+// FAILING for ever, because an undelivered alert wrote outcome `failed`, which
+// it then read back next hour as evidence it was failing.
+section('4b-bis. the watchdog does not respond to itself');
+const SELF = '/api/cron-watchdog';
+t('WITH NO selfJob, the old behaviour is unchanged -- alert AND retry', () => {
+  // The control for every arm below. If this one ever goes green for the wrong
+  // reason -- because planResponse stopped acting on ANYTHING -- the three
+  // arms after it would pass while testing nothing at all.
+  const p = CR.planResponse([{ job: SELF, status: 'FAILING' }], {}, NOW);
+  assert.ok(p.actions.some((a) => a.action === 'alert'));
+  assert.ok(p.actions.some((a) => a.action === 'retry'));
+});
+t('THE RETRY AGAINST ITSELF IS GONE -- that call was answered with HTTP 508', () => {
+  const p = CR.planResponse([{ job: SELF, status: 'FAILING' }], {}, NOW, SELF);
+  assert.deepStrictEqual(p.actions.filter((a) => a.action === 'retry'), []);
+  assert.deepStrictEqual(p.actions.filter((a) => a.action === 'alert'), []);
+  assert.deepStrictEqual(p.actions.filter((a) => a.action === 'escalate'), []);
+});
+t('...but it is REPORTED, not silently dropped', () => {
+  const p = CR.planResponse([{ job: SELF, status: 'FAILING' }], {}, NOW, SELF);
+  const self = p.actions.filter((a) => a.action === 'self');
+  assert.strictEqual(self.length, 1);
+  assert.strictEqual(self[0].job, SELF);
+  assert.strictEqual(self[0].status, 'FAILING');
+  assert.ok(self[0].reason, 'a self action with no reason is a silent drop wearing a label');
+});
+t('NO MEMO ENTRY for itself -- a streak counter nothing acts on reads as a pending escalation', () => {
+  const p = CR.planResponse([{ job: SELF, status: 'FAILING' }], {}, NOW, SELF);
+  assert.strictEqual(Object.prototype.hasOwnProperty.call(p.memo, SELF), false,
+    JSON.stringify(p.memo));
+});
+t('THE LATCH IS BROKEN -- five consecutive runs produce no escalation and no growing count', () => {
+  // The production shape exactly: FAILING every hour, for ever, because the
+  // thing it was reporting was its own inability to send the report.
+  let memo = {};
+  for (let i = 0; i < 5; i++) {
+    const p = CR.planResponse([{ job: SELF, status: 'FAILING' }], memo, NOW + i * 3600 * 1000, SELF);
+    assert.deepStrictEqual(p.actions.filter((a) => a.action === 'escalate'), [],
+      'escalated on run ' + i);
+    memo = p.memo;
+  }
+  assert.deepStrictEqual(memo, {});
+});
+t('OTHER JOBS ARE STILL ACTED ON in the same report -- this is not a mute button', () => {
+  const p = CR.planResponse([{ job: SELF, status: 'FAILING' }, dead('/api/alf-alerts')],
+                            {}, NOW, SELF);
+  assert.strictEqual(p.actions.filter((a) => a.action === 'alert').length, 1);
+  assert.strictEqual(p.actions.filter((a) => a.action === 'alert')[0].job, '/api/alf-alerts');
+  assert.ok(p.actions.some((a) => a.action === 'retry' && a.job === '/api/alf-alerts'));
+  assert.ok(p.memo['/api/alf-alerts']);
+});
+t('a HEALTHY self row still produces no self action -- ok drops out before the check', () => {
+  const p = CR.planResponse([{ job: SELF, status: 'ok' }], {}, NOW, SELF);
+  assert.deepStrictEqual(p.actions, []);
+});
+t('the endpoint passes its OWN job id, not a retyped string', () => {
+  // The exclusion is worthless if the endpoint and EXPECTED_JOBS disagree about
+  // how the route is spelled, and a second spelling is exactly how a
+  // self-exclusion silently stops excluding.
+  assert.ok(Object.prototype.hasOwnProperty.call(W.EXPECTED_JOBS, SELF),
+    'EXPECTED_JOBS no longer contains ' + SELF + ' -- the arms above test nothing');
 });
 
 section('4c. delivery, and the rule that an undelivered alert is not handled');

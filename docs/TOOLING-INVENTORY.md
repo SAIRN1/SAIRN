@@ -282,7 +282,7 @@ fixtures. Nothing points them at the real codebase.
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_claim_retype_mutation_control.py` |
-| `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
+| `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
 | `sairn_rebase_resolve.py` | CHECKER | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main | `run_rebase_resolve_probe.py` |
 | `testability_criteria.py` | CHECKER | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything | `run_testability_gate_probe.py` |
 | `testability_gate.py` | CHECKER | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus | `run_testability_gate_probe.py` |
@@ -367,7 +367,7 @@ number, and only one of them is a document.
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                47   report_only_checks.REGISTRY
-  tools invoked by tests/            106   tests/**/*.py, *.js
+  tools invoked by tests/            107   tests/**/*.py, *.js
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

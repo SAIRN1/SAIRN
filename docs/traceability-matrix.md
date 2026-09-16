@@ -139,6 +139,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The cron watchdog was RETRYING ITSELF into an HTTP 508 and had LATCHED ITSELF FAILING &mdash; and it could not notify anybody at all** | **FIXED AND EXTENDED 2026-09-15 (Hank)** on Fourth&rsquo;s items 54/55 &mdash; self-exclusion in `api/_lib/cron-response.js`, `notify_channel` in `api/cron-watchdog.js`, channel read in `tools/cron_li | `api/cron-watchdog.test.js`, `tests/run_cron_liveness_probe.py` |
 | **`comment_sensitivity_check.py` QUARANTINE diagnosed &mdash; the flake was never its own, and the ledger&rsquo;s &ldquo;other-tree runs are discarded&rdquo; was a SENTENCE with no code behind it** | **DIAGNOSED AND THE UNDERLYING TOOL FIXED 2026-09-15 (CC)** &mdash; `tools/flaky_checker_quarantine.py` verdicts are tree-aware now, 7 new probe arms, 0 failed. &#9888; **THE QUARANTINE IS STILL OPEN  | `tests/run_literal_drift_determinism_probe.py` |
 | **The hover auditor's separation is MECHANICAL now &mdash; and both alleged breaches did not happen, while a third, differently-shaped one did** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/hover_auditor_scope_gate.py` (prevent) + `tools/hover_separation_audit.py` (detect, report-only registered), `.githooks/pre-commit`, 72-arm probe `tests/run_ | `tests/run_hover_separation_probe.py` |
 | ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
@@ -445,7 +446,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**233 of 444 test files are traced to a stated requirement. 211 are not.**
+**234 of 445 test files are traced to a stated requirement. 211 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -680,8 +681,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 444   tests/**, api/*.test.js
-  open-work rows citing a test       223   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 445   tests/**, api/*.test.js
+  open-work rows citing a test       224   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                47   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
