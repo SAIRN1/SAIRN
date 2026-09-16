@@ -2970,22 +2970,44 @@ independent reviewer, checking this claim cold rather than taking the
 self-audit's word for it, found the exact failure this gap was named to
 prevent, one level up: **a sentence in a skill file that an LLM reads as
 instructions is still prose, not a mechanical trigger, and prose is
-exactly what R2R's own lesson says is not enough.** The real state, stated
-precisely rather than rounded up: `hover_self_health.py` now DOES have a
-mechanical trigger -- a `SessionStart` hook (`hover_self_health_hook.py`)
-registered in `.claude/settings.local.json` -- but that registration is
-**local-only and untracked** (`.gitignore`d, confirmed), so it fires once
-per session start in whichever clone happens to have it configured, not
-"at the start of every process pass" as originally claimed, does not
-propagate to a fresh clone or machine, and both the tool and the hook live
-entirely OUTSIDE the platform repo's own tracked tree -- there is nothing
-in `git log` that would tell a future reader this mechanism exists at all.
-**This is a real, standing limitation, not a solved problem restated
-carefully:** treat "the self-health check fires automatically" as true
-only for a session that has this specific machine's local settings
-already configured, and false otherwise -- the honest disclosure this
-paragraph should have carried from the start rather than the word
-"FIXED."
+exactly what R2R's own lesson says is not enough.** The mechanical trigger
+this role built in response -- a `SessionStart` hook,
+`hover_self_health_hook.py` -- was itself then found to have the identical
+unpropagated-fix shape one level further in: it was registered only in
+`.claude/settings.local.json`, confirmed `.gitignore`d, so a fresh copy of
+this clone would lose it silently with nothing in `git log` to say it had
+ever existed.
+
+**FIXED PROPERLY, REUSING AN EXISTING CONVENTION RATHER THAN INVENTING A
+SECOND ONE.** `.githooks/pre-push` already solves the identical problem
+for the scope gate: `tools/hover_auditor_scope_gate.py` is invoked
+unconditionally from a script every clone shares, gated internally by
+`.git/sairn-hover-auditor-clone` -- a marker file that lives in `.git/`,
+which is never versioned and never shared between clones, so a build
+clone pays one file check and takes the original path, byte for byte. The
+SessionStart hook now does the same thing: the registration moved into
+the TRACKED, shared `.claude/settings.json` (so `git pull` carries it into
+any future hover clone automatically), and `hover_self_health_hook.py`
+checks the same marker via the same lookup
+(`git rev-parse --git-dir` + a file stat) as its very first action,
+exiting silently with zero output the instant it is not the hover
+auditor's own clone -- confirmed directly: it fires fully in this clone,
+and produces no output at all when run from a directory lacking the
+marker, or from no git repository at all. Hank, CC, Cody and Fourth's
+sessions now see nothing from this hook; a fresh hover clone gets it for
+free from `git pull` the moment the marker file is recreated.
+
+**THE ONE REMAINING, HONESTLY DISCLOSED LIMIT, NARROWER THAN BEFORE, NOT
+CLAIMED AWAY:** the hook command itself is still an absolute path
+(`C:/Users/marsh/.claude/projects/...`), because `hover_self_health.py`
+and the self-log deliberately live OUTSIDE the platform repo (stated
+below, "The self-log") and so cannot be reached through
+`${CLAUDE_PROJECT_DIR}`. This propagates correctly for a fresh instance of
+THIS hover clone recreated at this same path on this same machine -- the
+real, concrete scenario this fix was built for -- but a hover session
+started on a different machine, or at a different path, would need that
+one absolute path edited in `.claude/settings.json` by hand. A real,
+smaller, named residual, not a second silent unpropagated-fix.
 
 ## The self-log
 
