@@ -292,12 +292,25 @@ def main(argv):
     if '--fixtures' in argv:
         return 0
 
-    dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
-                           text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout.strip()
+    # TRACKED dirt only. The refusal exists because this tool WRITES to real
+    # source files and verifies the restore against a baseline -- and an
+    # UNTRACKED file cannot be part of that baseline, because the tool never
+    # writes to one and git never had a version to restore. Refusing on
+    # untracked dirt made the tool unrunnable for anybody with a scratch file
+    # in the clone: measured 2026-09-15, one stray `piac.html` was enough to
+    # report COULD NOT RUN on the whole platform. A refusal that fires on
+    # something it is not protecting against is a refusal people route around.
+    dirty = subprocess.run(['git', 'status', '--porcelain',
+                            '--untracked-files=no'], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace',
+                           cwd=REPO).stdout.strip()
     if dirty:
-        print('  !! THE WORKING TREE IS DIRTY. This tool WRITES to real source files')
-        print('     and verifies the restore against a baseline; it will not run when')
-        print('     that baseline is already modified. Commit or stash first.')
+        print('  !! TRACKED FILES ARE MODIFIED. This tool WRITES to real source')
+        print('     files and verifies the restore against a baseline; it will')
+        print('     not run when that baseline is already modified. Commit or')
+        print('     stash first. Modified:')
+        for line in dirty.split('\n')[:10]:
+            print('       %s' % line.strip())
         return 2
 
     want = None
