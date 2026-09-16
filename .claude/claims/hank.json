@@ -1955,6 +1955,16 @@
       "claimed_at_epoch": 1789526458.3377728,
       "status": "released",
       "released_at": "2026-09-16T02:50:00Z"
+    },
+    {
+      "id": "hank-1789527396",
+      "session": "hank",
+      "subject": "register-backlog",
+      "task": "tier a first sequencing of the defect register backlog",
+      "claimed_at": "2026-09-16T02:56:36Z",
+      "claimed_at_epoch": 1789527396.9023185,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
