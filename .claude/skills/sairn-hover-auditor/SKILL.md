@@ -1692,6 +1692,33 @@ round-robin. Weight attention toward whoever has the highest-stakes work in
 flight -- freshest commits, Tier A proximity -- not toward an even split
 across four agents.
 
+**A third rotation axis, distinct from WHO gets picked and WHEN, added
+2026-09-16: sometimes pick BY BUG CLASS rather than by target.** Target
+rotation (below) and evidence-margin weighting both answer "which agent's
+work gets looked at." This answers a different question: dedicate an
+occasional pass to hunting ONE specific defect CLASS across everything
+recently touched -- an error-swallowing pass, a race-condition pass, a
+silent-truncation pass -- rather than reading one commit end to end. Real
+precedent this platform already has cause to trust: this is exactly
+CodeQL's own framing (querying a codebase's structure for one shape at a
+time) and the recurring-bug-shape rule already in this file's deep-pass
+material, generalized from "notice a shape recurred, write a check for it"
+into "deliberately go looking for a shape before it has recurred twice."
+**Demonstrated on first use, not left theoretical:** an error-swallowing
+pass across every `except Exception` added platform-wide in a 24-hour
+window found 41 candidates by a crude regex; hand-spot-checking the ones
+that LOOKED worst (a DORA-metrics loader, a test-teardown block, a fix this
+role had already deep-passed) found all three correctly handled --
+`records is None` explicitly checked downstream, `pass` on best-effort
+subprocess cleanup in a `finally` block, `pass` before an unrelated
+argparse setup. **A measured zero, reported as one, not silently implied by
+saying nothing** -- the crude classifier's own false-positive rate (3 of 3
+spot-checked) is itself worth recording: a naive six-line lookahead cannot
+tell "swallows a real error" from "harmless cleanup near an unrelated
+except," the identical lesson item 117 already names for regex-over-text
+generally, now confirmed against this platform's own except-block idiom
+specifically.
+
 Four further anti-predictability rules, against the rotation itself becoming
 a pattern a build agent could learn and route around:
 
@@ -3123,6 +3150,71 @@ Building that narrower version would have supplied false confidence that
 token-version trap this evaluation was asked to avoid. This is better
 suited to standing platform infrastructure with continuous production
 access than to an auditor's periodic, on-demand position.
+
+## Two more tools, built 2026-09-16, both instructed directly rather than self-proposed
+
+**Built: a retrospective claim-collision scanner**, at
+`hover-audit-log/claim_collision_scan.py`. The literal ask -- retrospectively
+scan git history for a period a clone's SESSION LOCK showed held by a
+different session -- is not buildable as stated: `session_lock_check.py`'s
+lock files live outside the repo, mutate in place, and are never versioned,
+so there is no history to walk. Named that limit plainly rather than
+building a smaller thing and calling it the same. What IS real and has
+full history: `.claude/claims/<session>.json`, append-only in practice
+(confirmed spanning 2026-08-30 through the current session, all five
+files). The tool detects the claim-system's own analog of the same
+collision shape -- two DIFFERENT sessions holding ACTIVE, TIME-OVERLAPPING
+claims on the same real subject -- in two tiers, not one blended number:
+STRONG (same subject string) and WEAK (different subject, 3+ shared task
+tokens). **Same-subject alone was confirmed too coarse on the tool's own
+first real run**, spot-checked before being trusted: of 3 same-subject
+hits, 2 were unrelated features of the same app (zero shared task tokens)
+and 1 was genuine (`multi location yards GAP7` / `multi location yard
+scoping GAP7`, shared tokens `{gap7, location, multi}`, near-simultaneous
+claim start). Added a `GENUINE` sub-flag requiring task-text overlap too,
+not just the subject bucket -- the exact "spot-check before trusting a
+count" discipline item 117 already names, applied to this tool before its
+own number was trusted rather than after a false one shipped. Real result
+against the full current history: 636 claim intervals, 3 same-subject
+overlaps (1 genuine), 17 weak token-overlap candidates (unclassified,
+flagged for a human read, not asserted). Sabotage-verified before being
+trusted: 6 synthetic fixtures covering both tiers and the GENUINE/not split
+in both directions, and a planted defect (forcing `GENUINE = False`
+unconditionally) was confirmed caught before being reverted.
+
+**Built: a closed-system check for this role's own sabotage tests**, at
+`hover-audit-log/sabotage_closed_system_check.py`. Real gap this closes:
+every sabotage/mutation control this role has ever run (plant a defect,
+confirm the checker catches it, restore) has quietly ASSUMED no other
+session touched the same clone during the plant-run-restore window --
+unverifiable until `tools/session_lock_check.py`'s own liveness fix
+(`a744ceb5`, 2026-09-16) made "who genuinely held this clone, when" a real
+question rather than an assumption. Wraps any command: refuses to run it at
+all if a DIFFERENT session is CONFIRMED live in this clone (reusing
+`owner_state()`'s own ALIVE/DEAD/SELF/UNKNOWN logic exactly, not a
+stricter reinvention -- a stricter rule would refuse on an ordinary
+pre-fix-format lock that represents no real competing session at all,
+which is a different claim than "the system is not closed"), then compares
+the lock's own `claude_pid`/`claude_start` identity before and after the
+wrapped command runs. **Demonstrated live, not just built:** wrapped
+`hover_log_rotation_control.py` for real -- closed system confirmed,
+identity unchanged across the window, the wrapped command's own real
+result (13/13, 0 failed) surfaced through cleanly. **One honest, disclosed
+limit, not silently left untested:** the ALIVE-refusal branch is a thin,
+direct pass-through of `owner_state()`'s own logic, which is separately
+sabotage-verified 19/19 by CC's own `tests/session_lock_liveness_probe.py`
+(independently confirmed in this role's own deep pass on `a744ceb5`) --
+this tool was not separately re-verified against a genuinely long-lived
+competing process, because this harness's own background-process
+lifecycle could not be made to hold one open reliably enough to test it
+within a reasonable effort; named as a real gap rather than papered over
+with an unreliable test that would have looked green either way. **What
+this does NOT close, same discipline as everywhere else in this file:** it
+verifies SAME-CLONE, same-session-identity closure only -- a DIFFERENT
+clone (Hank/CC/Cody/Fourth's own directories) independently touching the
+same file during a sabotage window is the claim system's subject-collision
+problem, not this checker's, and is exactly what
+`claim_collision_scan.py` above is for instead.
 
 ## Three threats to watch in myself
 
