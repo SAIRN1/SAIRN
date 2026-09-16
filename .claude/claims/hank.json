@@ -1943,8 +1943,8 @@
       "task": "service role key sites gate before tier a write, checker kit reuse",
       "claimed_at": "2026-09-16T01:34:06Z",
       "claimed_at_epoch": 1789522446.2635012,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T02:12:13Z"
     }
   ]
 }
