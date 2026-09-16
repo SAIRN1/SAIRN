@@ -3255,7 +3255,7 @@
       "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines"
     },
     {
-      "commit": "f6c5c6296732",
+      "commit": "bfa3fff4c5fc",
       "date": "2026-09-16",
       "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
       "files": [
