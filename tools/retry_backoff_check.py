@@ -6,6 +6,26 @@
 
 Report only. Exit 0 clean, 1 finding, 2 could-not-run.
 
+── WHAT THE 2026-09-16 MERGE CHANGED, AND IT CHANGED THE ANSWER ─────────────
+This file shipped on 2026-09-16 reporting 331 source units and ZERO retry
+loops. Both figures were wrong, and neither was wrong by much in a way that
+showed:
+
+  * `sources()` listed `api/` and `api/_lib/` and NOTHING ELSE, so
+    `api/agent/`, `api/sairncash/`, `api/sairndental/` and `api/_resources/`
+    -- forty non-test .js files -- were never read. The walk is recursive now:
+    371 units.
+  * OUTBOUND held four TRANSPORT patterns and every reported row matched
+    `fetch(`. A loop reaching the model through a named helper was invisible.
+    `callClaude(` and `dispatchAgent(` are merged in from
+    tools/retry_policy_audit.py, the other half of item 81.
+
+WITH BOTH FIXED, THE ANSWER IS NO LONGER ZERO: `api/sd-agent.js:176` runs
+MAX_ITERATIONS `callClaude(` calls back to back with NO delay and NO breaker.
+A clean sweep whose denominator is short reads exactly like a clean sweep whose
+denominator is whole, which is why the two item 81 tools were compared against
+each other rather than each believed on its own.
+
 ── THE QUESTION, AND WHY A TEXT MATCH CANNOT ANSWER IT ──────────────────────
 "Does this platform retry without backoff" is a question about CONTAINMENT: is
 this outbound call inside the body of a loop, and does that same body contain a
@@ -66,6 +86,16 @@ OUTBOUND = (
     re.compile(r'(?<![A-Za-z0-9_$.])XMLHttpRequest\b'),
     re.compile(r'(?<![A-Za-z0-9_$])sairnHttp\s*\('),
     re.compile(r'\.\s*from\s*\(\s*[\'"`]'),
+    # ── MERGED FROM tools/retry_policy_audit.py, 2026-09-16 ────────────────
+    # The four patterns above are all TRANSPORT. Every row this tool reported
+    # before the merge matched `fetch(` -- so a loop that reaches the model
+    # through a named helper was invisible, and `api/sd-agent.js:175` runs
+    # MAX_ITERATIONS `callClaude(...)` calls back to back with no delay and did
+    # not appear at all. A call that leaves the box through a wrapper is still
+    # an outbound call, and an agent turn loop is the one place on this
+    # platform where the pacing question is live today.
+    re.compile(r'(?<![A-Za-z0-9_$.])callClaude\s*\('),
+    re.compile(r'(?<![A-Za-z0-9_$.])dispatchAgent\s*\('),
 )
 
 # A pause between attempts, in any of the spellings used on this tree.
@@ -366,28 +396,43 @@ def analyse(code):
 
 
 def sources():
-    """(label, code, could_not_read) over api/*.js and the app HTML script blocks."""
+    """(label, code, could_not_read) over EVERY api/**.js and the app HTML script blocks.
+
+    ── THE WALK IS RECURSIVE, AND IT WAS NOT (fixed 2026-09-16) ────────────
+    The first version listed `api/` and `api/_lib/` and nothing else, so
+    `api/agent/`, `api/sairncash/`, `api/sairndental/` and `api/_resources/`
+    -- FORTY non-test .js files -- were never read. One of them,
+    `api/agent/poll.js:101`, holds an outbound `fetch(` inside a
+    `while (Date.now() < deadline)` loop, so the headline "331 source units,
+    zero retry loops" was a verdict over a tree with a subtree missing from it.
+
+    THAT IS THE DANGEROUS DIRECTION FOR THIS PARTICULAR TOOL. A scanner that
+    reports a clean sweep is read as clearance, and a clean sweep whose
+    denominator is short reads exactly like a clean sweep whose denominator is
+    whole. Found by comparing this tool's site list against
+    tools/retry_policy_audit.py's, which is the other half of item 81 and
+    scanned the subtree: two tools agreeing on a conclusion and disagreeing on
+    the population is how a scope hole becomes visible at all.
+    """
     from extract_scripts import ScriptExtractor
     out, bad = [], []
-    for f in sorted(os.listdir(os.path.join(REPO, 'api'))):
-        if not f.endswith('.js') or f.endswith('.test.js'):
-            continue
-        p = os.path.join(REPO, 'api', f)
-        try:
-            out.append(('api/' + f, io.open(p, encoding='utf-8', errors='replace').read()))
-        except OSError as e:                                     # noqa: BLE001
-            bad.append(('api/' + f, repr(e)))
-    lib = os.path.join(REPO, 'api', '_lib')
-    if os.path.isdir(lib):
-        for f in sorted(os.listdir(lib)):
+    api_root = os.path.join(REPO, 'api')
+    api_files = []
+    for dirpath, dirnames, filenames in os.walk(api_root):
+        dirnames[:] = [d for d in dirnames if d != 'node_modules']
+        for f in sorted(filenames):
             if not f.endswith('.js') or f.endswith('.test.js'):
                 continue
-            try:
-                out.append(('api/_lib/' + f,
-                            io.open(os.path.join(lib, f), encoding='utf-8',
-                                    errors='replace').read()))
-            except OSError as e:                                 # noqa: BLE001
-                bad.append(('api/_lib/' + f, repr(e)))
+            full = os.path.join(dirpath, f)
+            api_files.append((os.path.relpath(full, REPO).replace(os.sep, '/'), full))
+    for rel, p in sorted(api_files):
+        try:
+            out.append((rel, io.open(p, encoding='utf-8', errors='replace').read()))
+        except OSError as e:                                     # noqa: BLE001
+            bad.append((rel, repr(e)))
+    # The api/_lib block that stood here is gone: os.walk covers it,
+    # and leaving it would read every _lib file twice and double its
+    # findings.
     for f in sorted(os.listdir(REPO)):
         if not f.endswith('.html'):
             continue
@@ -573,7 +618,7 @@ def main(argv):
         return EXIT_FINDING if (bare or unclear) else EXIT_CLEAN
 
     print('RETRY / BACKOFF / BREAKER -- report only, nothing gates on this')
-    print('  %d source unit(s) scanned (api/*.js and every <script> block in '
+    print('  %d source unit(s) scanned (every api/**.js and every <script> block in '
           'the app HTML)' % len(srcs))
     print('  %d outbound call(s) inside a loop; %d read as RETRY, %d as '
           'ITERATION, %d UNCLEAR'

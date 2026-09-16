@@ -737,8 +737,29 @@ module.exports = async (req, res) => {
       // close a yard. Read is gated to match slabs, since the two are read
       // together on every slab screen and a yard list that needs no session
       // while the slabs in it do is a distinction with no meaning.
-      'locations': ['read', 'write']
+      'locations': ['read', 'write'],
+      // ── law_trusttx, 2026-09-16. ATTORNEY IOLTA TRUST MONEY, AND IT HAD
+      //    NO SESSION GATE AT ALL. Both branches dispatched on licHash alone
+      //    -- not a session that had gone stale, which is the deactivated-token
+      //    gap closed on 2026-09-16 one screen up; NO SESSION CHECK EXISTED.
+      //    The licence key, which is shipped to the browser and readable by
+      //    anyone who can open the app, was the whole authorisation.
+      //
+      //    THE ADJACENT FEATURE SHIPPED AROUND IT AND THAT IS THE SHARP PART.
+      //    `law_trust_reconcile` at :11690 reads THE SAME TABLE and verifies a
+      //    session AND a role, forty lines below this one. A reader comparing
+      //    the two would conclude the gate exists; a reader of either alone
+      //    would not think to ask.
+      'law_trusttx': ['read', 'write']
     };
+    // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
+    // The gate below resolved this as "memory follows the caller, everything
+    // else is stonedesk", which was true while every other gated resource was
+    // StoneDesk's. law_trusttx is SAIRNlaw's, and verifying a SAIRNlaw session
+    // against expectedApp 'stonedesk' would refuse every correctly signed-in
+    // attorney -- the same defect this gate already recorded for `memory` on
+    // 2026-09-03, which is why the lesson is applied rather than rediscovered.
+    const SD_GATE_APP = { 'law_trusttx': 'sairnlaw' };
     // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
     // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
     // on license_hash ALONE on read, so `ai_memories` was a single per-licence
@@ -775,7 +796,8 @@ module.exports = async (req, res) => {
       // stubbed this layer away entirely. slabs/profile/locations stay pinned
       // to 'stonedesk' because they ARE StoneDesk's resources; only memory
       // follows the caller.
-      const gateApp = (resource === 'memory') ? memApp : 'stonedesk';
+      const gateApp = (resource === 'memory') ? memApp
+        : (SD_GATE_APP[resource] || 'stonedesk');
       const gateSession = verifySessionToken(tokenFromRequest(req), licHash, gateApp);
       if (!gateSession) {
         res.status(403).json({

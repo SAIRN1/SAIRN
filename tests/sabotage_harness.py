@@ -70,9 +70,19 @@ def _dirty_now():
     return set(l.strip() for l in out.split('\n') if l.strip())
 
 
-def run_probe(suite, mutations, title=''):
+def run_probe(suite, mutations, title='', stage=()):
     """0 when every planted defect was refused, 1 when one was not, 3 when the
-    probe could not run at all -- which is NOT a pass and says so."""
+    probe could not run at all -- which is NOT a pass and says so.
+
+    `stage` names EXTRA files to copy in from this clone alongside the suite.
+    The worktree is at HEAD, so a fix that is not committed yet is not in it and
+    the baseline goes red for a reason that has nothing to do with the subject.
+    Without this a control could only ever run AFTER its fix was pushed, which
+    is the wrong order: the control is what says the suite bites, and a suite
+    that has never refused anything is exactly what a same-hour fix ships with.
+    Every staged file must also be restorable, so they are snapshotted with the
+    mutation targets and hash-checked at the end like everything else.
+    """
     fails, ran = [], []
 
     def check(name, cond, detail=''):
@@ -97,7 +107,10 @@ def run_probe(suite, mutations, title=''):
         return 3
     try:
         try:
-            shutil.copy(os.path.join(REPO, suite), os.path.join(wt, suite))
+            for rel in [suite] + list(stage):
+                dst = os.path.join(wt, rel)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy(os.path.join(REPO, rel), dst)
         except OSError as e:
             print('COULD NOT RUN: the suite would not stage into the worktree '
                   '-- NOTHING WAS VERIFIED. %s' % e)

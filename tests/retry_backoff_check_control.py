@@ -89,6 +89,31 @@ def main():
         not [n for n, s in srcs if R.analyse(R.blank_noise(s))[1]],
         [n for n, s in srcs if R.analyse(R.blank_noise(s))[1]][:5])
 
+    # 0b. THE 2026-09-16 MERGE, GUARDED. Two changes came in from
+    #     tools/retry_policy_audit.py and both revert silently: a recursive
+    #     walk can go back to two listdir calls, and a vocabulary entry can be
+    #     dropped while every other arm keeps passing. Arm 0 above would not
+    #     notice either -- it only asks whether the sweep reaches ANY api file.
+    arm('the api/ walk is RECURSIVE -- api/agent/ is scanned',
+        any(n.startswith('api/agent/') for n in names),
+        'api/agent/poll.js holds an outbound fetch inside a while loop and was '
+        'invisible to this tool until 2026-09-16')
+    for sub in ('api/sairncash/', 'api/sairndental/', 'api/_resources/'):
+        arm('...and so is ' + sub, any(n.startswith(sub) for n in names), sub)
+    lib = [n for n in names if n.startswith('api/_lib/')]
+    arm('...and api/_lib is scanned EXACTLY ONCE -- the old explicit block plus '
+        'the walk would double every finding in it',
+        len(lib) == len(set(lib)), sorted(set(x for x in lib if lib.count(x) > 1)))
+
+    pats = [pat.pattern for pat in R.OUTBOUND]
+    arm('an AI/agent call is an OUTBOUND call -- callClaude is in the vocabulary',
+        any('callClaude' in x for x in pats), pats)
+    arm('...and dispatchAgent', any('dispatchAgent' in x for x in pats), pats)
+    arm('...and the four TRANSPORT patterns survived, so the merge ADDED rather '
+        'than replaced',
+        all(any(k in x for x in pats)
+            for k in ('fetch', 'XMLHttpRequest', 'sairnHttp', 'from')), pats)
+
     # 1. PLANTED INTO REAL SOURCE, the tool must report it.
     for real in ('api/audit-checkpoint.js', 'api/_lib/courtlistener.js',
                  'api/sv-witness.js'):
