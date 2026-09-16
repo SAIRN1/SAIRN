@@ -30,7 +30,13 @@ const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'sairndental.html'), 'utf8')
+// DNT_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Same convention SB_HTML and SV_HTML already carry, rather than a third one
+// being invented. Unset -- every ordinary run, including CI -- this is exactly
+// what it was.
+const html = fs.readFileSync(process.env.DNT_HTML
+  || path.join(__dirname, '..', 'sairndental.html'), 'utf8')
   .replace(/\r\n/g, '\n');
 
 let pass = 0, fail = 0;
@@ -158,8 +164,26 @@ test('a patient who no longer exists leaves the NAME blank and the ID intact', (
   const h = harness();
   h.ctx.patients = () => [];
   h.ctx.exportDataset('charges');
-  const row = h.files[0].body.split('\r\n')[1];
+  const lines = h.files[0].body.split('\r\n');
+  const row = lines[1];
   assert.ok(row.indexOf('P-1') !== -1, 'the id went with the name: ' + row);
+  // ── THE LABEL PROMISED BOTH HALVES AND THE ASSERTION TESTED ONE ──────────
+  // Added 2026-09-16 by tests/sairndental_ledger_export_mutation_control.js,
+  // which changed the Patient column to fall back to `r.patient_id` and WATCHED
+  // THIS ARM PASS. The id was still in the row -- twice -- so the only
+  // assertion here was satisfied by exactly the defect the arm is named after.
+  // A cell headed Patient holding an identifier nobody can resolve looks like
+  // data and is not, which is the whole reason blank is the right answer.
+  //
+  // Split naively on commas, which is sound HERE and is said rather than
+  // assumed: the Patient column is index 2 and the two cells before it are a
+  // date and an id, neither of which can contain a comma in this fixture.
+  const head = lines[0].split(',');
+  const cells = row.split(',');
+  const nameIdx = head.indexOf('Patient');
+  assert.ok(nameIdx !== -1, 'no Patient column in the header: ' + lines[0]);
+  assert.strictEqual(cells[nameIdx], '',
+    'the NAME cell must be BLANK, not an unresolvable identifier: ' + JSON.stringify(cells[nameIdx]));
 });
 
 section('3. the derived ageing export is NOT a substitute, and never was');

@@ -386,6 +386,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-16T22:57:48Z",
+      "resources": [
+        "dnt_charges",
+        "dnt_payments"
+      ],
+      "files": [
+        "tests/sairndental_ledger_export_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL plus a one-assertion fix to the suite it controls. No product code: sairndental.html is untouched and the control asserts byte-identity and asks git. It names dnt_charges and dnt_payments because that is what the export it exercises is about. WHAT A REVIEWER SHOULD CHECK, and it is not the diff: (1) THE SUITE FIX. The arm 'a patient who no longer exists leaves the NAME blank and the ID intact' asserted only that the id was in the row, so changing the Patient column to fall back to the patient id left the id present TWICE and the arm passed on exactly the defect it is named after. I added the blank-name half using a naive comma split, justified in the comment because Patient is column index 2 and the two cells before it cannot contain a comma IN THIS FIXTURE -- check that reasoning rather than the code, since it is the part that could rot if a column is reordered. (2) ARM 7 records a mutation the suite still does NOT catch: the identical defect on the PAYMENTS patient column. Confirm it is genuinely uncovered rather than uncovered because my mutation is wrong. (3) Whether four mutations is the right stopping point for an export registry with nine datasets, or whether the other seven deserve the same treatment.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
