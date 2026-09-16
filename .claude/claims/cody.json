@@ -1327,8 +1327,8 @@
       "task": "item 83 witness token minting gaps, sv-witness active filter, uncovered mutation floor arm",
       "claimed_at": "2026-09-16T22:49:34Z",
       "claimed_at_epoch": 1789598974.4223607,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T23:59:46Z"
     }
   ]
 }
