@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**187 files in `tools/`.** By what actually invokes them:
+**188 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 54 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 54 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 55 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
@@ -34,12 +34,12 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 130 |
+| CHECKER | 131 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
 
-**54 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**55 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -203,7 +203,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (54)
+## DECIDED -- not promoted, on purpose (55)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -233,6 +233,7 @@ is how a reader stops believing the number.
 | `fmea_prediction_check.py` | CHECKER | IT REFUSES TO BE QUOTED BARE, which is exactly what a registry entry would do to it. It prints NO-DRAFT first and carries DO NOT QUOTE THIS ALONE beside the drafted-only figure, because a hit rate over the subset somebody happened to draft an FMEA for is not a hit rate. Promotion would put the unqualified number on every push, which is the one presentation the tool was built to prevent. It is run by the FMEA loop when a register record is added, which is the moment its answer can change. |
 | `idempotency_check.py` | CHECKER | NOT REJECTED -- BLOCKED, and the blocker is specific: it reaches the network, and unlike the two LIVE tools above that dependency looks removable rather than essential. It already has a FIXTURES block, so the blind lock is in place. What it needs before promotion is the network half separated from the static half so the static half can run offline and report a real verdict instead of COULD NOT RUN. That is a code change with an owner, not a decision, and it is deliberately not made here because narrowing somebody else's checker to make it promotable is how a criterion gets loosened to produce a number. |
 | `independence_check.py` | CHECKER | BLOCKED ON A CONTROL PAIR, which is the one thing that cannot be waived. It has FIXTURES and no probe anywhere under tests/ references it, so nothing has ever made it fail on purpose -- and this repo's own record is that literal_drift_check.py was promoted with `verdict: by_exit` and no sys.exit in it, and checkblocks.py exited 0 for months, both of which a control pair would have caught on day one. Write tests/run_independence_probe.py with both directions and a CONTROLS_FOR line, then this is a promotion candidate rather than a judgement call. |
+| `landing_verification.py` | CHECKER | DELIBERATELY NOT ON THE PUSH PATH, and the reason is the check itself rather than a preference. Two of its three sections need the NETWORK -- 22 live route fetches and two package registries -- so on every push it would add roughly a minute, and worse, it would FLAP: a transient DNS failure or a Vercel bot-mitigation challenge is honestly reported as COULD NOT TELL, which is exit 2, which on a push reads as a refusal nobody can act on. A gate that goes amber for reasons outside the repo is how overrides become routine, and this repo already records that costing more than the gate saved. IT IS ALSO ANSWERING THE WRONG QUESTION FOR A PUSH: it asks whether work that ALREADY landed is live, whether the OTHER clones are current, and whether packages have moved -- none of which the diff in front of it can change. The post-push half is already covered for the one route it matters most on by deploy_verify_notify.py. Run it deliberately: at session start, after a push somebody needs to be sure of, and before trusting another clone. tests/run_landing_verification_probe.py is its control and IS on the test path |
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `local_only_collection_check.py` | CHECKER | its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see". |
 | `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
@@ -392,12 +393,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      187   git ls-files tools/
+  tools on disk                      188   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                52   report_only_checks.REGISTRY
-  tools invoked by tests/            132   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     54   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            133   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     55   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

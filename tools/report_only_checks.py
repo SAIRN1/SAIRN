@@ -1561,6 +1561,21 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('landing_verification.py', 'DELIBERATELY NOT ON THE PUSH PATH, and the reason is '
+     'the check itself rather than a preference. Two of its three sections need the '
+     'NETWORK -- 22 live route fetches and two package registries -- so on every push '
+     'it would add roughly a minute, and worse, it would FLAP: a transient DNS failure '
+     'or a Vercel bot-mitigation challenge is honestly reported as COULD NOT TELL, '
+     'which is exit 2, which on a push reads as a refusal nobody can act on. A gate '
+     'that goes amber for reasons outside the repo is how overrides become routine, '
+     'and this repo already records that costing more than the gate saved. IT IS ALSO '
+     'ANSWERING THE WRONG QUESTION FOR A PUSH: it asks whether work that ALREADY '
+     'landed is live, whether the OTHER clones are current, and whether packages have '
+     'moved -- none of which the diff in front of it can change. The post-push half is '
+     'already covered for the one route it matters most on by '
+     'deploy_verify_notify.py. Run it deliberately: at session start, after a push '
+     'somebody needs to be sure of, and before trusting another clone. '
+     'tests/run_landing_verification_probe.py is its control and IS on the test path'),
     # ── THE 2026-09-14 BACKLOG PASS, AND WHAT THE COUNT GOT WRONG FIRST ─────
     # The gap was reported as "23 of 64 check-shaped tools have no recorded
     # decision". Cross-referencing against tooling_inventory.classify() cut it

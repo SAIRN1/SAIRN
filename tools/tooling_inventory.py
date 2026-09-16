@@ -73,6 +73,20 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'landing_verification.py': ('CHECKER',
+        'three things that get ASSUMED rather than measured: (a) whether what '
+        'is PUSHED is actually LIVE, for every route in vercel.json rather '
+        'than the one url deploy_verify_notify.py watches; (b) whether each '
+        "clone's on-disk .claude/skills matches origin/main, plus the repo's "
+        'mirror against the user skill store -- a structurally different '
+        'second opinion, because clones that are all wrong the same way agree '
+        'with each other; (c) whether any npm or pip package has a real '
+        'available upgrade. Report-only and NOT on the push path: it needs the '
+        'network and answers questions the diff in front of a push cannot '
+        'change. The clone list is DISCOVERED, never written down -- CLAUDE.md '
+        'names four and there are five on disk. A Vercel bot challenge is '
+        'UNVERIFIED, never a match; an absent npm is COULD NOT TELL, never '
+        '"nothing outdated"; and CRLF-vs-LF is not drift'),
     'ai_prompt_refusal_check.py': ('CHECKER',
         "an app's own named *_RULE / *_REFUSAL constant is missing from one of "
         "that app's AI call sites, or replaced there by a hand-written rule "
