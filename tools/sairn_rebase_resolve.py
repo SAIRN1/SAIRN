@@ -217,21 +217,37 @@ def check_policy(rel, pol):
     return pol
 
 
-def indent_of(base_text, base_obj, rel):
+def serializer_of(base_text, base_obj, rel):
     """Prove we can rewrite this file in its OWN convention before we write it.
+
+    Returns (indent, ensure_ascii) -- the settings that reproduce the common
+    ancestor byte for byte.
 
     Not cosmetic. These ledgers run to a quarter of a megabyte; a serializer one
     space off reformats every line, and the real merge -- half a dozen records --
     becomes unreadable inside a whole-file diff nobody will check. If no setting
     reproduces the ancestor byte for byte we do not know how to write this file,
     and that is COULD NOT TELL, not a reason to write it anyway.
+
+    ── ensure_ascii IS PROBED, AND THE FIRST VERSION OF THIS DID NOT ────────────
+    It tried ensure_ascii=False only, and it PASSED on the real registers the day
+    it was written -- because both files happened to hold no non-ASCII byte at
+    that moment. The next rebase brought in one commit subject containing an
+    em-dash and the same function refused the register outright. The two ledgers
+    do not even agree with each other: tools/defect_register.py writes with the
+    json default (ensure_ascii=True, so `\\u2014`) and
+    tools/tier_a_review_gate.py writes with False. A check that passes because
+    its input has not yet exercised the difference is the check-that-stopped-
+    checking shape (PR 1.1), arriving before it ever started.
     """
-    for n in range(1, 9):
-        if json.dumps(base_obj, indent=n, ensure_ascii=False) + '\n' == base_text:
-            return n
-    fail('%s: no json.dumps indent in 1..8 reproduces the common-ancestor file '
-         'byte for byte, so this tool cannot write it back without reformatting '
-         'the whole file.' % rel)
+    for ascii_ in (False, True):
+        for n in range(1, 9):
+            if json.dumps(base_obj, indent=n,
+                          ensure_ascii=ascii_) + '\n' == base_text:
+                return (n, ascii_)
+    fail('%s: no json.dumps indent in 1..8, at either ensure_ascii setting, '
+         'reproduces the common-ancestor file byte for byte, so this tool '
+         'cannot write it back without reformatting the whole file.' % rel)
 
 
 def pick(base, a, b):
@@ -262,7 +278,7 @@ def merge_file(rel, pol):
     base = parse(base_text, rel, 'ancestor')
     up = parse(stage(2, rel), rel, 'upstream')
     loc = parse(stage(3, rel), rel, 'local')
-    indent = indent_of(base_text, base, rel)
+    indent, ascii_ = serializer_of(base_text, base, rel)
 
     def records(obj, side):
         recs = obj.get(rk)
@@ -338,7 +354,7 @@ def merge_file(rel, pol):
         return (None, '%s: top-level field(s) changed on both sides, '
                       'differently: %s' % (rel, ', '.join(conflict_keys)))
 
-    return (json.dumps(out, indent=indent, ensure_ascii=False) + '\n',
+    return (json.dumps(out, indent=indent, ensure_ascii=ascii_) + '\n',
             '  MERGE      %-44s %d ancestor + %d upstream-only + %d local-only '
             '= %d' % (rel, len(B), len(U) - len(B), len(L) - len(B), len(merged)))
 
