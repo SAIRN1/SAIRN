@@ -1913,8 +1913,8 @@
       "task": "courtlistener rate limit isolation guard read committed, migration record accuracy checker",
       "claimed_at": "2026-09-16T00:23:51Z",
       "claimed_at_epoch": 1789518231.2398045,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T00:42:50Z"
     }
   ]
 }
