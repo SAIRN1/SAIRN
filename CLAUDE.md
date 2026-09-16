@@ -37,7 +37,27 @@ piecemeal before being named: **PR §1.11**.
 2. **Read all four `SAIRN-ACTIVE-WORK-*.md` files** for the app or subject you
    were sent at. Not for write conflicts — for *"is somebody already doing
    this."*
-3. **Check the claim record**, then claim before you begin:
+3. **Read the shared status registry.** It is handed to you automatically at
+   session start by a `SessionStart` hook, so you should already have it --
+   but if you did not, or you want it again mid-session:
+
+       python tools/sairn_status.py
+
+   It lives at `~/SAIRN-SESSION-LOCKS/status`, **outside every clone**, so it
+   is current without a fetch -- unlike the claim record and the open-work
+   index, which are only as fresh as your last pull. **Write your own row when
+   your work changes:**
+
+       python tools/sairn_status.py set --state working --task "<what>"
+       python tools/sairn_status.py set --state blocked --task "<what>"                                         --blocked-on "<who or what you need>"
+       python tools/sairn_status.py set --state idle
+
+   `blocked` refuses without `--blocked-on`: a blocked row that does not say
+   what it is waiting on is a silence wearing a status. **An empty registry is
+   NOT evidence that nobody is working** -- it is indistinguishable from one
+   nothing writes to, and the tool says so rather than reporting all-clear.
+   Full account: `docs/2026-09-16-shared-status-registry.md`.
+4. **Check the claim record**, then claim before you begin:
 
        python tools/sairn_claim.py check   <app> <task words>
        python tools/sairn_claim.py claim   <app> <task words>
@@ -48,7 +68,7 @@ piecemeal before being named: **PR §1.11**.
    committed is invisible to every other clone (PR §2.2). A block is a claim to
    verify, not a fact — and never reword your task string to slip past the
    matcher (PR §4.3).
-4. **Verify before you report.** A status report is a claim, not a fact, until
+5. **Verify before you report.** A status report is a claim, not a fact, until
    checked against real current state (PR §5).
 
 ## Where things live

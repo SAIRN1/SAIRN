@@ -105,6 +105,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `sairn_status.py` -- NOT A CHECKER AT ALL, which is the reason rather than a technicality: it reports what every agent SAYS it is doing, and there is no state of that report which is a defect in this repo. A session working on something unexpected is not a finding, and a gate that treated it as one would be gating on people rather than on code. It exits 2 only when it genuinely could not read the registry -- the third state -- and on a push that would be an amber nobody can act on. IT IS WIRED SOMEWHERE BETTER: a SessionStart hook, beside the session lock and the claim hook, so every agent is handed the registry at the one moment the answer changes what they do next. That hook FAILS OPEN and says so in its own docstring -- an advisory that can stop work is worse than no advisory, which is the opposite of the rule this registry applies to checks and is deliberate. tests/run_sairn_status_probe.py is its control, 55 arms including a measured concurrency comparison against the rejected shared-file design, and IS on the test path
 - `retry_backoff_check.py` -- NOT ON THE PUSH PATH, ON MEASURED COST. 25 seconds over 362 source units -- every api/**.js plus every <script> block in every app HTML, all of which must be brace-matched into a block tree because the question it asks is CONTAINMENT and containment cannot be grepped. Triaging it is what found it was far worse: `_kind_before()` searched the ENTIRE file prefix once per brace, which is O(n^2) on a 2MB file and took 232 SECONDS. That is fixed and the answer never changed, which is exactly why nothing caught it -- a correct check nobody timed. At 25s it is still nearly twice trend_alarm.py's rejected fourteen. It also has almost nothing to say per run: the platform has TWO true retries and the standing finding -- api/_lib/resilience.js has no importer, so the only breaker cannot fire -- does not move push to push. It belongs on the cadence the SPOF and accepted-risk registers are read on, not in front of somebody waiting to push
 - `suite_control_triage.py` -- NOT ON THE PUSH PATH, SAME MEASUREMENT: 28 seconds, because it parses every probe in tests/ to decide which suites have a negative control and then joins that to the criticality register. AND ITS NUMBER IS A BACKLOG, NOT A GATE. It reports 138 suites with no control; the right value is not zero this week and a figure that cannot move between two pushes is one people stop reading. It is the worklist for a session that has decided to spend an evening on suite controls, which is how it has actually been used every time so far
 - `guard_ablation.py` -- NOT ON THE PUSH PATH: it did not finish in 180 seconds on this tree. Ablation is expensive by construction -- it removes a guard and re-runs what depended on it -- so this is a property of the method rather than an implementation defect, and the number is recorded rather than treated as a bug to fix. Nothing that cannot state its own worst-case runtime belongs on a blocking path
@@ -174,6 +175,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The shared status registry &mdash; what every agent is doing, live, without a push/pull. The gap `session_lock_check.py` named in its own header and put out of scope** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/sairn_status.py`, `tests/run_sairn_status_probe.py` **55 arms**, wired into `SessionStart`, registered NOT-PROMOTED, FAI recorded. `docs/2026-09-16-shared-st | `tests/run_sairn_status_probe.py` |
 | **The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the five were resources that own no table at all** | **RE-DERIVED AND THE TOOL CORRECTED 2026-09-16 (Hank)** &mdash; `removal_path_check.py` gains a DERIVED bucket, counted and named; Tier A **58 &rarr; 56**. One real new arrival, `sb_ts`, left as a liv | `tests/run_removal_path_probe.py` |
 | **What is genuinely open AND unclaimed &mdash; the join nobody was doing, and it caught four of five queued items belonging to a live session** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/dispatch_state.py`, report-only and registered; `tests/run_dispatch_state_probe.py` **38 arms, 0 failures** | `tests/run_dispatch_state_probe.py` |
 | **The measurement substrate was starved, and five tools reported vacuous numbers because of it &mdash; a defect closure can no longer complete without feeding the register** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/register_feed_gate.py`, BLOCKING on pre-push from its requirement date and report-only as `--backlog`; wired in `.githooks/pre-push`. `tests/run_register_fee | `tests/run_register_feed_gate_probe.py` |
@@ -522,15 +524,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 495 of 500 traced, 99.0%.
+For context and not as the headline: 496 of 501 traced, 99.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 501 citations come from
+### Where the 502 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 265 |
+| `index` | 266 |
 | `declared` | 223 |
 | `declared+index` | 6 |
 | `GUARD_TESTS+index` | 5 |
@@ -572,11 +574,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 500   tests/**, api/*.test.js
-  open-work rows citing a test       261   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 501   tests/**, api/*.test.js
+  open-work rows citing a test       262   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                55   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     60   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     61   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

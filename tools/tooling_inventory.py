@@ -73,6 +73,22 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'sairn_status.py': ('REPORTER',
+        'what every agent on this machine says it is doing, RIGHT NOW, without a '
+        'push/pull. The gap tools/session_lock_check.py names in its own header '
+        'and puts out of scope: the lock answers "is somebody else in THIS '
+        'directory", this answers "what is every agent doing". '
+        'tools/dispatch_state.py already joins the open-work index against the '
+        'claims, but both of its inputs are in git, so its answer is only as '
+        'fresh as the last fetch and an unpushed claim is invisible. This is the '
+        'live half: ~/SAIRN-SESSION-LOCKS/status, outside every clone. '
+        'ONE FILE PER AGENT, NOT ONE FILE WITH SECTIONS -- a shared file needs a '
+        'read-modify-write and two interleaved readers silently erase each '
+        'other, which the control measures at 5 of 6 agents lost. Writes are '
+        'atomic (temp + os.replace) with a Windows retry on both sides of the '
+        'rename. Read at SessionStart by a hook that FAILS OPEN. It refuses to '
+        'call two task strings the same work -- that judgement scored 38% with '
+        'five false positives out of five'),
     'landing_verification.py': ('CHECKER',
         'three things that get ASSUMED rather than measured: (a) whether what '
         'is PUSHED is actually LIVE, for every route in vercel.json rather '

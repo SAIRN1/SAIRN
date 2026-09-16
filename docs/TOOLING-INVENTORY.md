@@ -19,13 +19,13 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**189 files in `tools/`.** By what actually invokes them:
+**190 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 57 | runs automatically on every push, never blocks |
-| **ADVISORY** | 1 | session-start or prompt hooks, informational |
+| **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 63 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 22 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
@@ -38,6 +38,7 @@ By what they are, independent of wiring:
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
+| REPORTER | 1 |
 
 **63 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -274,11 +275,12 @@ is how a reader stops believing the number.
 
 ---
 
-## ADVISORY (1)
+## ADVISORY (2)
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_push_verify_probe.py` |
+| `sairn_status.py` | REPORTER | what every agent on this machine says it is doing, RIGHT NOW, without a push/pull. The gap tools/session_lock_check.py names in its own header and puts out of scope: the lock answers "is somebody else in THIS directory", this answers "what is every agent doing". tools/dispatch_state.py already joins the open-work index against the claims, but both of its inputs are in git, so its answer is only as fresh as the last fetch and an unpushed claim is invisible. This is the live half: ~/SAIRN-SESSION-LOCKS/status, outside every clone. ONE FILE PER AGENT, NOT ONE FILE WITH SECTIONS -- a shared file needs a read-modify-write and two interleaved readers silently erase each other, which the control measures at 5 of 6 agents lost. Writes are atomic (temp + os.replace) with a Windows retry on both sides of the rename. Read at SessionStart by a hook that FAILS OPEN. It refuses to call two task strings the same work -- that judgement scored 38% with five false positives out of five | `run_sairn_status_probe.py` |
 
 ---
 
@@ -384,12 +386,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      189   git ls-files tools/
-  hook entries                         8   .claude\settings.json
+  tools on disk                      190   git ls-files tools/
+  hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                55   report_only_checks.REGISTRY
-  tools invoked by tests/            135   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     65   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            136   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     66   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

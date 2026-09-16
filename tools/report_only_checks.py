@@ -1664,6 +1664,21 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('sairn_status.py', 'NOT A CHECKER AT ALL, which is the reason rather than a '
+     'technicality: it reports what every agent SAYS it is doing, and there is no '
+     'state of that report which is a defect in this repo. A session working on '
+     'something unexpected is not a finding, and a gate that treated it as one '
+     'would be gating on people rather than on code. It exits 2 only when it '
+     'genuinely could not read the registry -- the third state -- and on a push '
+     'that would be an amber nobody can act on. IT IS WIRED SOMEWHERE BETTER: a '
+     'SessionStart hook, beside the session lock and the claim hook, so every '
+     'agent is handed the registry at the one moment the answer changes what they '
+     'do next. That hook FAILS OPEN and says so in its own docstring -- an '
+     'advisory that can stop work is worse than no advisory, which is the '
+     'opposite of the rule this registry applies to checks and is deliberate. '
+     'tests/run_sairn_status_probe.py is its control, 55 arms including a '
+     'measured concurrency comparison against the rejected shared-file design, '
+     'and IS on the test path'),
     # ── TRIAGE BATCH 2026-09-16, and every decision below is a MEASURED
     # ── RUNTIME rather than a reading of the tool's docstring.
     # The push path already carries real cost, and a check people wait for is a

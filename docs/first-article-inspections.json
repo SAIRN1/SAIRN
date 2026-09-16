@@ -563,6 +563,81 @@
       ],
       "re_inspected": "2026-09-16",
       "re_inspected_note": "The bytes changed within the hour of the first inspection and the gate said so. Re-verified against the new file rather than re-stamped: the control was re-run green, the --json exit fix made during the first inspection survives the merge, and the claim the merge ADDED now carries its own disposition."
+    },
+    {
+      "artefact": "tools/sairn_status.py",
+      "inspected": "2026-09-16",
+      "inspector": "Hank",
+      "sha256": "a2f4c2abb652987a976d713309f9d66ccd717997b8f65a517a59adc6f658d77a",
+      "report": "docs/2026-09-16-shared-status-registry.md",
+      "suites": [
+        "tests/run_sairn_status_probe.py"
+      ],
+      "author_note": "SELF-INSPECTION, AND IT IS THE WEAKEST KIND OF EVIDENCE IN THIS FILE. I wrote the tool and the control in the same sitting, so the claim-to-arm mapping is the author reading his own header -- exactly the blind spot the independent-review rule exists for. It is recorded because the gate names any artefact first committed on or after the requirement date and leaving it uninspected is worse. It should be re-read by another session, and the concurrency arms in particular deserve a second pair of eyes: a control written by the person who chose the design is the least likely place for that design to be doubted.",
+      "claims": [
+        {
+          "claim": "REPORT ONLY: it reads the registry and this session's own section, and the ONLY thing it ever writes is that one section.",
+          "status": "verified",
+          "by": "'0c and the REAL registry was not touched' (the whole real directory listing is compared across a fixture run), '1c every file holds its OWN agent, never a neighbour's', and '1e no temp file was left behind'"
+        },
+        {
+          "claim": "ONE FILE PER AGENT, NOT ONE FILE WITH SECTIONS ... the two writes cannot interact at the filesystem level at all.",
+          "status": "verified",
+          "by": "the measured pair -- '1a every agent has a file -- NOT ONE WRITE WAS LOST' against '2a the SHARED-FILE design loses writes under the same concurrency' and '2b ...while the per-agent design lost NONE, on the same machine, in the same run'",
+          "note": "THIS IS THE CLAIM EVERYTHING ELSE RESTS ON AND IT IS THE ONE AN ARM CANNOT TEST ALONE. Six writers all surviving passes on any design that happens not to race during one run. So section 2 implements the REJECTED design and drives the same concurrency at it: 5 of 6 agents lost their section. The sleep in that writer WIDENS a real read-modify-write window rather than inventing one, and the arm says so in its own output."
+        },
+        {
+          "claim": "WRITES ARE ATOMIC, SO A READER NEVER SEES HALF A FILE.",
+          "status": "verified",
+          "by": "'4b NOT ONE read was torn or half-written -- which is what os.replace() buys and the only thing it buys', guarded by '4a the reader really got to read DURING the writes, so nothing below is passing on zero attempts', plus '3a the file still parses after four processes raced on it'",
+          "note": "Sabotage-confirmed: replacing the temp+os.replace with a direct write to the final path turns 3a, 3b, 4b and 4d red. The arm measures roughly 1,500 reads taken WHILE four agents write."
+        },
+        {
+          "claim": "Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the other two.",
+          "status": "verified",
+          "by": "'6a an ABSENT registry is exit 2', '6c an EMPTY registry is exit 2, NOT a clean all-clear', '5c and the run is COULD NOT TELL (2), not a clean registry', and the other direction '5d CONTROL: a registry with no corrupt entry exits 0'"
+        },
+        {
+          "claim": "A single unreadable file is an entry with `unreadable` set -- NAMED, never dropped.",
+          "status": "verified",
+          "by": "'5a the corrupt entry is reported UNREADABLE and named' and '5b the healthy entry is STILL reported beside it'",
+          "note": "Sabotage-confirmed: dropping the unreadable entry instead of naming it turns 5a and 5c red."
+        },
+        {
+          "claim": "LIVENESS IS IMPORTED, NEVER REIMPLEMENTED ... a pid alone is not identity, because a dead session's pid can be reissued.",
+          "status": "verified",
+          "by": "'11a a status from a process that does not exist is NOT reported LIVE' and '11b ...and the row is still shown, with the reason'",
+          "note": "The import itself is the stronger evidence and it is structural rather than an arm: session_lock_check.owner_state() is called, not copied, so the recycled-pid defence has one implementation on this platform and not two."
+        },
+        {
+          "claim": "It cannot tell whether two agents' task strings describe the SAME WORK -- candidates, not a verdict.",
+          "status": "verified",
+          "by": "'10a two agents on the same subject are named as candidates', the other direction '10b an unrelated third is NOT paired with either', '10d an IDLE agent raises no overlap candidate', and '10c and the report refuses to call a candidate a verdict'"
+        },
+        {
+          "claim": "The overlap rule is fixture-checked BEFORE anything is classified -- a rule that has stopped working must refuse, not report a quiet platform.",
+          "status": "verified",
+          "by": "'9b an overlap rule that finds NOTHING exits COULD NOT RUN (2), not 0' and '9c ...and names the rule rather than printing a report', guarded by '9a the teeth anchor is present'"
+        },
+        {
+          "claim": "The SessionStart hook FAILS OPEN: a session must start whatever went wrong in here.",
+          "status": "verified",
+          "by": "the four '12 ...: the hook exits 0' arms across a populated, absent, empty and corrupt registry, plus '12 a registry path that is a FILE, not a directory, still exits 0'",
+          "note": "Failing open is the OPPOSITE of the fail-closed rule this repo applies to checks, and the difference is the consequence rather than an inconsistency: a check that cannot run must not report a pass; an advisory that cannot run must not stop the work. The paired arms pin that failing open is not failing SILENT -- an absent or empty registry still emits the sentence saying the answer is unknown."
+        },
+        {
+          "claim": "It cannot see an agent that never writes a status.",
+          "status": "cannot-test",
+          "by": "no arm",
+          "note": "A statement about what is absent from the input. There is nothing to drive: it would require an agent that exists and is shown not to appear, which is the definition of the gap rather than a behaviour. The nearest real arm is 6c/6d, which pin that an EMPTY registry is reported as unknown rather than as nobody-working -- the consequence of this limit, which is testable, and is."
+        },
+        {
+          "claim": "It is machine-local: ~/SAIRN-SESSION-LOCKS is not shared between machines.",
+          "status": "cannot-test",
+          "by": "no arm",
+          "note": "A scope statement about deployment, not behaviour. Testing it would mean asserting the absence of a second machine. Recorded so the limit is in the record rather than only in prose -- it is the same limit the session lock files already have, and it means this registry answers for ONE workstation."
+        }
+      ]
     }
   ]
 }
