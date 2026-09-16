@@ -253,6 +253,38 @@ PURPOSES = {
         'MECHANICAL trigger names a module no runner on this platform '
         'mentions: the signal is PRODUCED and never CONSUMED. RESIDUAL, stated '
         'on every run: it can only pair risks somebody wrote down'),
+    'first_article_inspection.py': ('CHECKER',
+        'item 47 -- a NEW artefact that was SPOT-CHECKED rather than verified '
+        'against every claim its own header makes. Two layers and only one gets '
+        'a verdict: whether the artefact has a suite AT ALL is answered outright '
+        '(zero arms verify zero claims, and knowing that needs no matching), '
+        'while the claim list and the arm list are printed side by side and '
+        'DELIBERATELY NOT MATCHED -- pairing prose to prose is word-overlap '
+        'scoring and that returned 38%% with five false positives out of five '
+        'here, which is why the FAI document says the two lists must not be '
+        'matched automatically. FOUND: 7 of 27 artefacts added on 2026-09-15 '
+        'have no suite, carrying 83 stated claims between them. AND IT '
+        'COMMITTED BOTH OF ITS OWN FAILURE MODES FIRST: hardcoded arm helpers '
+        'read a real suite as ZERO arms because that file names its helper '
+        '`t()`, a top-anchored regex read three shebanged tools as ZERO claims, '
+        'and a loose stem search matched tools/sabotage.py to 34 files. The arm '
+        'dialect is now DISCOVERED per file and an unrecognised one reports '
+        'COULD NOT TELL rather than zero'),
+    'rotation_blast_radius.py': ('CHECKER',
+        'item 61 -- a credential that is rotated but overprivileged, or scoped '
+        'tightly but never rotated. TWO independent columns, never combined '
+        'into a posture score, because the documented failure is treating one '
+        'as the other: rotation shortens the window a leaked secret works and '
+        'does nothing about what it reaches; scope bounds the blast radius and '
+        'says nothing about how long the access lasts. A third list is the '
+        'INTERSECTION, not an average and not a union -- the identities where '
+        'neither control is doing anything. MEASURED over the 22 NHI '
+        'identities: 20 have no attested date and no schedule, 7 hold broad '
+        'standing access, and ZERO record what to do if that credential is '
+        'known to have leaked. Every identity has a PROCEDURE for rotation, '
+        'which says HOW and never WHEN. UNATTESTED IS NOT "NEVER ROTATED" -- no '
+        'clone holds these credentials, so a missing date is the absence of a '
+        'note; what IS a fact is that nothing here would notice either way'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '

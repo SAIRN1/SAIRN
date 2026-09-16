@@ -1736,6 +1736,22 @@ NOT_PROMOTED = [
      'route -- same reason waf_rule_check.py is held out. Its network half is '
      'the point of the tool, so it wants a could-not-tell code before it can '
      'be wired, not just a promotion.'),
+    ('first_article_inspection.py', 'ITS MECHANICAL HALF IS PROMOTABLE AND ITS '
+     'WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong '
+     'one. "Does this new artefact have a suite at all" is a clean verdict; the '
+     'claim-versus-arm worksheet is a HUMAN pass by design and a push notice '
+     'carrying two unmatched lists is a notice nobody reads. It also scans git '
+     'history for a date window, so wiring it needs a decision about what the '
+     'window IS on a push -- since-the-merge-base is not the same question as '
+     'since-today. Split the suite check out, then promote that.'),
+    ('rotation_blast_radius.py', 'IT READS DECLARATIONS, NOT THE WORLD. Every '
+     'figure comes from the scope and rotation TEXT in tools/nhi_register.py; '
+     'no clone holds any of these credentials, so nothing here is measured '
+     'against a live grant. A push notice would put "20 of 22 unrotated" in '
+     'front of people every day, where the number cannot move without a human '
+     'attesting a rotation that this tool cannot verify either. It belongs '
+     'where the accepted-risk and NHI registers are reviewed, on the same '
+     'cadence as those.'),
     ('trend_alarm.py', 'ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an '
      'unarmed measurement into a push notice would put a number in front of '
      'people that nothing has been tuned to interpret -- which is how a '
