@@ -196,6 +196,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-16T02:52:34Z",
+      "resources": [
+        "quotes"
+      ],
+      "files": [
+        "tools/first_article_inspection.py"
+      ],
+      "what": "first_article_inspection.py: added self-test detection (UNWIRED as a distinct state from UNVERIFIED), tightened the self-test flag detector to require comparison against argv, and narrowed the suite matcher so a tool named as a DICTIONARY KEY in an exclusion list no longer counts as covered. The second one matters most for review: it changed which artefacts this tool reports as unverified, and it was wrong in BOTH directions before -- it missed five tools with working self-tests, and it counted a production write path as verified by the one file that deliberately refuses to run it. A reviewer should check the suites() regex against a case I did not think of, because this tool has now been wrong about its own blind spot three times.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
