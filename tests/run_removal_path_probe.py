@@ -330,6 +330,79 @@ _rows = [l for l in out.splitlines() if ' a_left ' in l or ' b_right ' in l]
 check('11D both halves of a shared dispatch are classified keyed',
       len(_rows) == 2 and all('keyed' in l for l in _rows), True)
 
+# ── 12. THE DERIVED EXEMPTION, IN BOTH DIRECTIONS ─────────────────────────
+# derived_labels() exempts a resource whose criticality-register row says it
+# owns no table: there is nothing to delete, so "has no removal path" is a
+# CATEGORY ERROR about it rather than a finding. That is an exemption, and this
+# repo's standing rule is that an exemption is the dangerous direction -- a
+# false finding gets read and argued with, a FALSE EXEMPTION never appears.
+# So the arm that matters is 12b and 12c, not 12a.
+#
+# Written after the fact and said plainly: derived_labels() was added and run
+# against the real register BEFORE any fixture locked its criteria, which is
+# the opposite of the order docs/2026-09-13-cross-domain-disciplines.md
+# requires. This arm is the lock going on late, not the lock working as
+# intended.
+n[0] += 1
+_d = os.path.join(tmp, '%02d-derived' % n[0])
+os.makedirs(os.path.join(_d, 'docs'))
+build(_d, names=['a_rollup', 'b_owns', 'c_sidecol'], extra={},
+      sd_data=(KEYED % ('a_rollup', 'a_rollup')) + (KEYED % ('b_owns', 'b_owns'))
+              + (KEYED % ('c_sidecol', 'c_sidecol')),
+      app_js=APP % "  'a_rollup',\n  'b_owns',\n  'c_sidecol',",
+      baseline={})
+io.open(os.path.join(_d, 'docs', 'CRITICALITY-TIERS.md'), 'w',
+        encoding='utf-8').write(
+    '| Resource | Tier | Worst | Evidence |\n|---|---|---|---|\n'
+    # the real dnt_rollup sentence, shortened
+    '| `a_rollup` | **A** | a comparison is wrong '
+    '| Money, and a DERIVED resource -- it owns no table. Tier A because an '
+    'owner decides from it |\n'
+    # the row IMMEDIATELY BELOW it, which owns a real table and must NOT
+    # inherit its neighbour's exemption
+    '| `b_owns` | **A** | money billed wrongly '
+    '| Money. It owns `t_b`, one row per charge |\n'
+    # DERIVED in one column, "owns no table" in the NEXT -- the phrase is not
+    # about this resource's shape and must not exempt it
+    '| `c_sidecol` | **A** | money billed wrongly '
+    '| Money. Feeds a DERIVED rollup | it owns no table |\n')
+rc, out = run(_d, '--burn-down')
+
+
+def findings_named(out):
+    """The resources on the `  - name (app) why` lines of the FINDING block.
+
+    Parsed, not substring-tested, and that is not tidiness. The first version
+    asked `name in out.split('FINDING')[-1]`, and when a sabotage run exempted
+    EVERYTHING there was no 'FINDING' in the output at all -- so split returned
+    the whole report, the summary's own "DERIVED ... -- a_rollup, b_owns,
+    c_sidecol" line contained the name, and the arm passed while asserting the
+    opposite of the truth. An arm that reads the wrong region is worse than no
+    arm: it reports a check it never performed. Found by arm 12's own sabotage
+    pass, which is what that pass is for.
+    """
+    block, seen = out.split('FINDING(S)')[-1] if 'FINDING(S)' in out else '', []
+    for line in block.splitlines():
+        s = line.strip()
+        if s.startswith('- ') and ' (' in s:
+            seen.append(s[2:].split(' (')[0])
+    return set(seen)
+
+
+_f = findings_named(out)
+check('12a a DERIVED resource owning no table is not a finding',
+      'a_rollup' in _f, False)
+check('12a and the exemption is COUNTED AND NAMED, not silently subtracted',
+      'DERIVED, owning no table (nothing to remove): 1' in out
+      and 'a_rollup' in out.split('nothing to remove)')[1][:60], True)
+check('12b the row BELOW a derived row does not inherit the exemption',
+      (rc, 'b_owns' in _f), (1, True))
+check('12c "owns no table" in a NEIGHBOURING COLUMN does not exempt either',
+      (rc, 'c_sidecol' in _f), (1, True))
+check('12 and exactly the two non-derived resources remain stuck',
+      (_f, 'NO REMOVAL PATH (excl. single-row, append-only and derived): 2'
+       in out), ({'b_owns', 'c_sidecol'}, True))
+
 # ── 10. and the REAL repo is clean, since that is what it is for ──────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
                    text=True, encoding='utf-8', errors='replace')
