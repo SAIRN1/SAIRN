@@ -3214,6 +3214,59 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
     },
     {
+      "commit": "449b8476b206",
+      "date": "2026-09-16",
+      "subject": "feat(control): the Tier A po/recv suite can be made to fail, four ways",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/sairnbiz_po_recv_mutation_control.js",
+        "tests/sairnbiz_po_recv_reach_the_server.js"
+      ],
+      "lines_added": 241,
+      "lines_removed": 11,
+      "app": "sairnbiz",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tests/sairnbiz_po_recv_reach_the_server.js's persistence arm failed for the right reason and reported the wrong thing. With sbEnsureIds's write-back removed, ctx.store.sb_po is undefined and JSON.parse(ctx.store.sb_po) threw a raw SyntaxError: \"undefined\" is not valid JSON out of node. The suite still FAILED -- the safe direction -- but its message was about JSON syntax and named neither purchase orders nor persistence, so a reader would go looking for a broken fixture rather than for a Tier A collection that no longer persists the ids it mints. Found on the first run of the new negative control for this suite.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "sairnbiz_po_recv_mutation_control.js",
+      "injection": {
+        "commit": "20afb1672421",
+        "date": "2026-09-14",
+        "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
+        "lag_days": 2
+      },
+      "citation_note": "1.5 is about a confident line printed after an error. This is the mirror image -- a correct refusal printed in the wrong vocabulary -- so the family is right and the direction is reversed, which is why it is arguable rather than clean. Nothing here was reported as a pass.",
+      "contributing_factors": [
+        {
+          "factor": "The persistence arm parsed the stored value directly -- JSON.parse(ctx.store.sb_po) -- with no assertion that anything had been written first",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "An arm asserting the key is a string was added ahead of the parse, so the absence is named before it is parsed"
+        },
+        {
+          "factor": "The defect it guards produces an ABSENT key rather than a wrong value, and an absent key is the one input that makes JSON.parse throw rather than return something assertable",
+          "kind": "technical",
+          "action_status": "not-actionable",
+          "note": "JSON.parse(undefined) throwing is correct JS behaviour. The arm had to change, not the language."
+        },
+        {
+          "factor": "The suite had never been driven against its own defects, so no reader had ever seen what it says when it fails -- only what it says when it passes",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnbiz_po_recv_mutation_control.js now drives four mutations and asserts on the MESSAGE, not only the exit code; one arm asserts the JSON error is absent"
+        }
+      ],
+      "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
+    },
+    {
       "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
@@ -3887,132 +3940,6 @@
       "single_factor_note": "The whole defect is one missing guard in one function, and svPushOne twenty lines away already had it with a comment explaining why -- so there is no second contributor to find; the guard was simply not copied onto the read path."
     },
     {
-      "commit": "c98b5d674c76",
-      "date": "2026-09-16",
-      "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
-      "files": [
-        "SAIRN-ACTIVE-WORK-fourth.md",
-        "api/sd-data-law-trusttx-session.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/defect-density-register.json",
-        "docs/tier-a-reviews.json",
-        "docs/traceability-matrix.md",
-        "tests/law_trusttx_session_probe.py",
-        "tests/retry_backoff_check_control.py",
-        "tests/sabotage_harness.py",
-        "tools/retry_backoff_check.py"
-      ],
-      "lines_added": 4791,
-      "lines_removed": 381,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "law_trusttx read and write in api/sd-data.js dispatched on licHash alone -- NO session verification on either branch, on an attorney IOLTA client trust ledger. The licence key is shipped to the browser, so it was the whole authorisation. Distinct from the deactivated-token gap closed the same day: that was session STATE going stale, this was no session check existing. Survived three hover-auditor escalations over ten days because law_trust_reconcile reads the same table forty lines below and DOES verify a session and a role.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "ORIGINAL DESIGN rather than a regression. law_trusttx has had no session gate since the branch was written, so naming an injection commit would be naming the commit that introduced the feature and calling it a regression."
-      },
-      "citation_note": "ARGUABLE. 1.11 is written about a check that cannot run reporting a pass; this is a check that does not exist reporting nothing at all. The same shape one layer out -- an absent control is indistinguishable from a present one at every call site -- but the rule's own wording is about tool availability, so the citation is arguable rather than clean.",
-      "phase_note": "The gate was never written for this resource; there is no commit that removed it.",
-      "contributing_factors": [
-        {
-          "factor": "api/sd-data.js's law_trusttx read and write branches dispatched on licHash alone. No session verification existed on either -- this is not a session that went stale, it is the absence of a check.",
-          "kind": "technical",
-          "action": "law_trusttx added to SD_SESSION_GATED for read AND write, with a new per-resource SD_GATE_APP so a SAIRNlaw session is verified against 'sairnlaw' rather than the hardcoded 'stonedesk'.",
-          "action_status": "done"
-        },
-        {
-          "factor": "THE LICENCE KEY IS SHIPPED TO THE BROWSER. It is readable by anyone who can open the app, so it is an identifier and not a credential, and it was the whole authorisation on an attorney IOLTA client trust ledger.",
-          "kind": "latent-condition",
-          "note": "Not closed by this fix and not closable here: the licence key has to reach the client for the app to work. What changes is that it is no longer sufficient on this resource. Every other resource NOT in SD_SESSION_GATED is still in the pre-fix state, and that list is the open question this record points at.",
-          "action_status": "not-actionable"
-        },
-        {
-          "factor": "THE ADJACENT FEATURE SHIPPED AROUND IT. law_trust_reconcile reads the SAME TABLE forty lines below and verifies a session AND a role. A reader comparing the two would conclude the gate exists; a reader of either alone would not think to ask.",
-          "kind": "process",
-          "note": "This is why three auditor escalations over ten days did not move it. No action is recorded because the fix is the gate, not a process change -- but the shape is the reason the finding survived, and it is the reason to distrust 'the neighbouring code does it' as evidence.",
-          "action_status": "not-actionable"
-        },
-        {
-          "factor": "The session gate registry hardcoded expectedApp 'stonedesk', so adding a non-StoneDesk resource to it would have refused every correctly signed-in user of that app -- and the obvious fix for THAT is to remove the resource from the registry again.",
-          "kind": "technical",
-          "action": "the expected app is now per-resource. The same defect was already recorded for `memory` on 2026-09-03; the lesson was applied rather than rediscovered.",
-          "action_status": "done"
-        },
-        {
-          "factor": "Found by the hover auditor on its third escalation, not by any automated check. Nothing on the platform enumerates Tier A resources and asks which of them reach a data branch with no session gate.",
-          "kind": "detection",
-          "note": "Named rather than built. Such a check is constructible -- CRITICALITY-TIERS.md has the Tier A list and SD_SESSION_GATED is a literal -- and is not in scope for this fix.",
-          "action_status": "planned",
-          "action": "a Tier-A-versus-session-gate sweep, proposed here rather than written, so the gap is visible in the register rather than in a worklog."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED FOR THE PLATFORM. This closes law_trusttx. Every resource NOT in SD_SESSION_GATED is still reachable on the licence key alone, and nothing enumerates which Tier A resources those are -- the sweep that would answer it is recorded above as PLANNED, not done. The role question is also open: any signed-in sairnlaw role can now record a trust transaction, which is a firm-workflow judgement deliberately not made here."
-    },
-    {
-      "commit": "d81c75d292eb",
-      "date": "2026-09-16",
-      "subject": "fix(tests): two arms of mine were about my habits, not the register's rules",
-      "files": [
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md",
-        "tests/run_capa_fields_probe.py"
-      ],
-      "lines_added": 65,
-      "lines_removed": 58,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "Two arms in tests/run_capa_fields_probe.py encoded their author's habits as rules and failed another session's correct records: one demanded the literal phrase 'NOT CLOSED' in recurrence_open, the other demanded contributing factors span more than one kind, which tools/defect_register.py does not require. A control that fails a correct record for a rule the tool does not enforce trains authors to copy a string rather than say what is open.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "The arms were introduced with the probe itself on 2026-09-15 and were wrong from the first line, so the injection commit is the commit that added the file -- naming it as a regression point would misdescribe an original-design defect."
-      },
-      "citation_note": "No standing rule names 'a control encoding its author's style as a requirement'. The nearest is the platform's refusal of word lists, which is stated in tool headers rather than in the process rules, so citing a section would be inventing one.",
-      "phase_note": "Both arms were written correct-looking against the only records that existed at the time, which were the author's own.",
-      "contributing_factors": [
-        {
-          "factor": "An arm required the LITERAL string 'NOT CLOSED' in recurrence_open, which is how its author happens to write them. Another session stated the residual in its own words and the probe failed a correct record.",
-          "kind": "technical",
-          "action": "the arm now asserts the PROPERTY -- states a residual, does not dismiss one -- rather than a wording.",
-          "action_status": "done"
-        },
-        {
-          "factor": "A second arm required contributing factors to span more than one KIND. tools/defect_register.py requires no such thing, so the probe was failing another author's record for a rule the TOOL does not enforce.",
-          "kind": "technical",
-          "action": "demoted to a printed count. If single-kind records should be refused, that belongs in cmd_check where every author sees it.",
-          "action_status": "done"
-        },
-        {
-          "factor": "A CONTROL WRITTEN BY ONE AUTHOR AGAINST A SHARED ARTEFACT ENCODES THAT AUTHOR'S HABITS AS RULES. Both arms passed for days because only their author's records existed to test them against; they failed the first time somebody else wrote one.",
-          "kind": "latent-condition",
-          "note": "The class is not closed. Every probe over a shared register or document has the same exposure, and nothing distinguishes 'this is the rule' from 'this is how I write it' at the point the arm is authored. The only thing that surfaced it here was a second author.",
-          "action_status": "not-actionable"
-        },
-        {
-          "factor": "A word list decides nothing correctly in either direction, and this platform refuses word lists everywhere else -- optimistic_success_scan.py has an arm whose entire purpose is that no word list decides whether a message reads as success. The same author wrote a word list into a different control.",
-          "kind": "process",
-          "note": "Recorded because the principle was already written down and applied elsewhere in the same session. Knowing a rule and applying it are separate, and nothing mechanical closes that gap.",
-          "action_status": "not-actionable"
-        }
-      ],
-      "recurrence_open": "NOT CLOSED FOR THE CLASS. Every probe this session wrote over a SHARED artefact -- the register, the inspection record, the open-work index -- has the same exposure: an arm authored against one author's records cannot tell 'this is the rule' from 'this is how I write it', and only a second author writing a record surfaces it."
-    },
-    {
       "commit": "a744ceb5e0eb",
       "date": "2026-09-16",
       "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
@@ -4200,6 +4127,189 @@
         "unknown_reason": "api/sd-data.js gated on the token claim from its first version; there is no commit where a current-state re-check was removed"
       },
       "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it"
+    },
+    {
+      "commit": "c98b5d674c76",
+      "date": "2026-09-16",
+      "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "api/sd-data-law-trusttx-session.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/defect-density-register.json",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/law_trusttx_session_probe.py",
+        "tests/retry_backoff_check_control.py",
+        "tests/sabotage_harness.py",
+        "tools/retry_backoff_check.py"
+      ],
+      "lines_added": 4791,
+      "lines_removed": 381,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "law_trusttx read and write in api/sd-data.js dispatched on licHash alone -- NO session verification on either branch, on an attorney IOLTA client trust ledger. The licence key is shipped to the browser, so it was the whole authorisation. Distinct from the deactivated-token gap closed the same day: that was session STATE going stale, this was no session check existing. Survived three hover-auditor escalations over ten days because law_trust_reconcile reads the same table forty lines below and DOES verify a session and a role.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "ORIGINAL DESIGN rather than a regression. law_trusttx has had no session gate since the branch was written, so naming an injection commit would be naming the commit that introduced the feature and calling it a regression."
+      },
+      "citation_note": "ARGUABLE. 1.11 is written about a check that cannot run reporting a pass; this is a check that does not exist reporting nothing at all. The same shape one layer out -- an absent control is indistinguishable from a present one at every call site -- but the rule's own wording is about tool availability, so the citation is arguable rather than clean.",
+      "phase_note": "The gate was never written for this resource; there is no commit that removed it.",
+      "contributing_factors": [
+        {
+          "factor": "api/sd-data.js's law_trusttx read and write branches dispatched on licHash alone. No session verification existed on either -- this is not a session that went stale, it is the absence of a check.",
+          "kind": "technical",
+          "action": "law_trusttx added to SD_SESSION_GATED for read AND write, with a new per-resource SD_GATE_APP so a SAIRNlaw session is verified against 'sairnlaw' rather than the hardcoded 'stonedesk'.",
+          "action_status": "done"
+        },
+        {
+          "factor": "THE LICENCE KEY IS SHIPPED TO THE BROWSER. It is readable by anyone who can open the app, so it is an identifier and not a credential, and it was the whole authorisation on an attorney IOLTA client trust ledger.",
+          "kind": "latent-condition",
+          "note": "Not closed by this fix and not closable here: the licence key has to reach the client for the app to work. What changes is that it is no longer sufficient on this resource. Every other resource NOT in SD_SESSION_GATED is still in the pre-fix state, and that list is the open question this record points at.",
+          "action_status": "not-actionable"
+        },
+        {
+          "factor": "THE ADJACENT FEATURE SHIPPED AROUND IT. law_trust_reconcile reads the SAME TABLE forty lines below and verifies a session AND a role. A reader comparing the two would conclude the gate exists; a reader of either alone would not think to ask.",
+          "kind": "process",
+          "note": "This is why three auditor escalations over ten days did not move it. No action is recorded because the fix is the gate, not a process change -- but the shape is the reason the finding survived, and it is the reason to distrust 'the neighbouring code does it' as evidence.",
+          "action_status": "not-actionable"
+        },
+        {
+          "factor": "The session gate registry hardcoded expectedApp 'stonedesk', so adding a non-StoneDesk resource to it would have refused every correctly signed-in user of that app -- and the obvious fix for THAT is to remove the resource from the registry again.",
+          "kind": "technical",
+          "action": "the expected app is now per-resource. The same defect was already recorded for `memory` on 2026-09-03; the lesson was applied rather than rediscovered.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Found by the hover auditor on its third escalation, not by any automated check. Nothing on the platform enumerates Tier A resources and asks which of them reach a data branch with no session gate.",
+          "kind": "detection",
+          "note": "Named rather than built. Such a check is constructible -- CRITICALITY-TIERS.md has the Tier A list and SD_SESSION_GATED is a literal -- and is not in scope for this fix.",
+          "action_status": "planned",
+          "action": "a Tier-A-versus-session-gate sweep, proposed here rather than written, so the gap is visible in the register rather than in a worklog."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED FOR THE PLATFORM. This closes law_trusttx. Every resource NOT in SD_SESSION_GATED is still reachable on the licence key alone, and nothing enumerates which Tier A resources those are -- the sweep that would answer it is recorded above as PLANNED, not done. The role question is also open: any signed-in sairnlaw role can now record a trust transaction, which is a firm-workflow judgement deliberately not made here."
+    },
+    {
+      "commit": "d81c75d292eb",
+      "date": "2026-09-16",
+      "subject": "fix(tests): two arms of mine were about my habits, not the register's rules",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/run_capa_fields_probe.py"
+      ],
+      "lines_added": 65,
+      "lines_removed": 58,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "Two arms in tests/run_capa_fields_probe.py encoded their author's habits as rules and failed another session's correct records: one demanded the literal phrase 'NOT CLOSED' in recurrence_open, the other demanded contributing factors span more than one kind, which tools/defect_register.py does not require. A control that fails a correct record for a rule the tool does not enforce trains authors to copy a string rather than say what is open.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The arms were introduced with the probe itself on 2026-09-15 and were wrong from the first line, so the injection commit is the commit that added the file -- naming it as a regression point would misdescribe an original-design defect."
+      },
+      "citation_note": "No standing rule names 'a control encoding its author's style as a requirement'. The nearest is the platform's refusal of word lists, which is stated in tool headers rather than in the process rules, so citing a section would be inventing one.",
+      "phase_note": "Both arms were written correct-looking against the only records that existed at the time, which were the author's own.",
+      "contributing_factors": [
+        {
+          "factor": "An arm required the LITERAL string 'NOT CLOSED' in recurrence_open, which is how its author happens to write them. Another session stated the residual in its own words and the probe failed a correct record.",
+          "kind": "technical",
+          "action": "the arm now asserts the PROPERTY -- states a residual, does not dismiss one -- rather than a wording.",
+          "action_status": "done"
+        },
+        {
+          "factor": "A second arm required contributing factors to span more than one KIND. tools/defect_register.py requires no such thing, so the probe was failing another author's record for a rule the TOOL does not enforce.",
+          "kind": "technical",
+          "action": "demoted to a printed count. If single-kind records should be refused, that belongs in cmd_check where every author sees it.",
+          "action_status": "done"
+        },
+        {
+          "factor": "A CONTROL WRITTEN BY ONE AUTHOR AGAINST A SHARED ARTEFACT ENCODES THAT AUTHOR'S HABITS AS RULES. Both arms passed for days because only their author's records existed to test them against; they failed the first time somebody else wrote one.",
+          "kind": "latent-condition",
+          "note": "The class is not closed. Every probe over a shared register or document has the same exposure, and nothing distinguishes 'this is the rule' from 'this is how I write it' at the point the arm is authored. The only thing that surfaced it here was a second author.",
+          "action_status": "not-actionable"
+        },
+        {
+          "factor": "A word list decides nothing correctly in either direction, and this platform refuses word lists everywhere else -- optimistic_success_scan.py has an arm whose entire purpose is that no word list decides whether a message reads as success. The same author wrote a word list into a different control.",
+          "kind": "process",
+          "note": "Recorded because the principle was already written down and applied elsewhere in the same session. Knowing a rule and applying it are separate, and nothing mechanical closes that gap.",
+          "action_status": "not-actionable"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED FOR THE CLASS. Every probe this session wrote over a SHARED artefact -- the register, the inspection record, the open-work index -- has the same exposure: an arm authored against one author's records cannot tell 'this is the rule' from 'this is how I write it', and only a second author writing a record surfaces it."
+    },
+    {
+      "commit": "e71683cc0ecd",
+      "date": "2026-09-16",
+      "subject": "fix(sabotage-check): the uniqueness guard was Python-only, and the first fix over-credited",
+      "files": [
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 73,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sabotage_control_check.py's uniqueness guard -- the criterion added 2026-09-15 precisely because the tool had been under-crediting its best-written controls -- matched only the Python spelling str.count(old) != 1. JavaScript has no str.count, so the same guard written as s.split(anchor).length - 1 matched nothing, and tests/sairnbiz_po_recv_mutation_control.js was reported UNGUARDED on the day it was written despite guarding three ways: uniqueness, difference, and reading the mutated bytes back off disk. The same inverted signal as the 2026-09-15 finding, recurring in another language. The difference patterns were also lower-case only, so a JS control holding the original in a const named ORIGINAL was invisible.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "f477897f858a",
+        "date": "2026-09-15",
+        "subject": "feat(tooling): the negative-control recombination -- and the tool measuring the class was under-crediting its best members",
+        "lag_days": 1
+      },
+      "citation_note": "1.1 is about a check that stopped checking. This one never checked the JS population at all rather than ceasing to -- it is the same end state reached by never having arrived rather than by decaying, which is why it is recorded as arguable. The nearer relative is the document's own eighth cross-domain discipline about instrument drift, which is not a numbered process rule.",
+      "phase_note": "The criterion was correct and its implementation was one-language. Not a design error -- the design decision (credit a uniqueness count as the strongest guard) is right and unchanged; what was wrong is that it was written as one regex for one language.",
+      "contributing_factors": [
+        {
+          "factor": "The uniqueness criterion was written as a Python idiom (str.count) and JavaScript has no equivalent, so the same guard spelled s.split(anchor).length - 1 matched nothing",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Added the JS spelling, narrowed structurally to a VARIABLE argument so a findings count on a literal is still reported"
+        },
+        {
+          "factor": "The 2026-09-15 pass that added the uniqueness shape was prompted by Python probes and every example it listed was Python, so the population it was checked against could not have exposed the gap",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A criterion added from five Python examples cannot be shown to miss a JS one until a JS one exists. The tool's blind lock had no JS uniqueness fixture because no JS uniqueness control had been written yet."
+        },
+        {
+          "factor": "The first attempt at the fix ALSO accepted == and ===, which credited two probes falsely within seconds -- a restore assertion (after == original) and a guard quoted inside a string literal",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Equality is deliberately not accepted -- it cannot be told from a restore check by any pattern, because they are the same text -- and both shapes are now NEGATIVE fixtures so the over-credit cannot come back"
+        },
+        {
+          "factor": "Nothing makes a guard shape travel with the language it is written in; GUARDS is a flat list of regexes with no notion of which idiom belongs to which file type",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Splitting GUARDS per language would make the tool stricter in a way that is only useful once a third language appears. Recorded rather than built, since inventing structure for a population of two is the over-engineering this platform's own rules warn about."
+        }
+      ],
+      "recurrence_open": "GUARDS remains a flat list of regexes with no notion of which idiom belongs to which language, so a third language's spelling of any accepted shape would be invisible the same way. The blind lock now carries JS fixtures for the uniqueness and difference shapes, which means the gap is closed for the two languages in this repo and not for the general case."
     },
     {
       "commit": "ee221abe02e4",
