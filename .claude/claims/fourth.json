@@ -1483,8 +1483,8 @@
       "task": "cluster 5b98fd27 root cause, item 57 benford, item 51 per-entity baselines",
       "claimed_at": "2026-09-16T00:15:57Z",
       "claimed_at_epoch": 1789517757.5012016,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T01:08:02Z"
     }
   ]
 }
