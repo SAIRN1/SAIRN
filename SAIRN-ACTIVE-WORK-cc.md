@@ -4092,3 +4092,67 @@ as the snapshot loader's leading-underscore rule, found in the same session --
 Nothing this batch. The previous batch's note about the `awk` over-collection
 stands: read the section boundary in the matrix, not the tail, or the phantom
 citations below it look like untraced files.
+
+## 2026-09-16 (continued) -- tracing batches 4-6, and a red Tier A arm found by running one
+
+**69 -> 23 untraced**, in three batches: the `api/sd-data-*` boundary suites,
+SAIRNcare/SAIRNsenior, and the `api/_lib/*-endpoint` family.
+
+### The SAIRNcare batch changed how the work is done
+
+Every one of those seventeen headers says the same thing -- *"Isolated test of
+the alf_X gate in api/sd-data.js. Runs the REAL handler with mocked
+auth/license/fetch."* That is a statement about METHOD. It names no requirement
+at all, so a declaration written from the header would have been an echo with
+extra words. **They were written from the assertion labels instead**, which is
+slower and is the only way the sentence says something the filename does not.
+
+`test-alf-incidents.js` is the one to keep as the example. From its header it is
+a role-gate test. From its arms: **every direct-care role CAN file an incident
+and none of them can READ the log.** Mandatory reporting is by the witness, and
+a witness who can read what others filed can align their account with theirs.
+No header, and no filename, carries that.
+
+### The inserter refused four files and was right to
+
+Batch 6's script asserts line 1 is the file's own path comment before choosing
+an offset. Four SAIRNlaw/StoneDesk files open with a SUBJECT line instead, and
+it **skipped them with the reason rather than inserting at a guessed offset**.
+They were declared in a second pass with the insertion point they actually have.
+A blind insert would have worked in all four cases, which is exactly why the
+refusal is worth having: it would also have worked right up until the file where
+it silently would not.
+
+### THE FINDING: a Tier A trust-money arm was RED and alleging a leak that is not there
+
+`api/_lib/sairnlaw-trusttx-collision.test.js` -- **35/36 on a clean tree**,
+failing "the collision message does NOT name the other client". Found by RUNNING
+the file while tracing it, not by reading it.
+
+**The SQL is correct.** `sql/sairnlaw_trusttx_functions.sql:187` interpolates
+`p_trusttx_id` and nothing else, and carries its own comment explaining that the
+caller is entitled to know their id is taken and not to learn which other client
+of the firm holds it.
+
+**The arm was measuring the wrong region.** It read
+`FN_CODE.slice(FN_CODE.indexOf('raise exception'))` -- everything after the
+FIRST raise anywhere in the function -- and asserted `v_other_client` was absent.
+The function raises at line 149, before the collision branch, so the legitimate
+`select client_id into v_other_client` at 179 sits inside that slice.
+
+**PR 1.3, and the half of it that has no symptom: the anchor never stopped
+matching. It started matching an earlier one.** Now scoped to the collision
+statement, located by its own error code and bounded by its own terminator, with
+a separate could-not-locate arm -- because a slice that finds nothing would
+otherwise test an empty string and report clean. Driven both ways before
+landing. 37/37.
+
+**Why this one mattered more than a red test usually does:** a Tier A arm
+alleging a client-confidentiality leak on client trust money, that does not
+exist, costs the next session the trust-money pass it was going to spend on
+something real. A silent wrong arm wastes nobody's afternoon.
+
+**Recorded openly in the register:** only the arm that went RED was corrected,
+because only it had evidence. Other arms in the same file locate regions the
+same way, and a position-based slice that lands on the wrong region **while
+still passing** leaves no trace at all.
