@@ -3990,3 +3990,64 @@ untraced files for a minute. They are phantom citations -- rows naming a file
 that is not on disk -- which is a different finding with a different fix, and
 the matrix already reports it separately. **Read the section boundary, not the
 tail.**
+
+## 2026-09-16 (continued) -- claim reconciliation: the record was clean, the INDEX was not
+
+**The claim record itself needed nothing, and that is the useful half of the
+answer.** `sairn_claim.py audit` over 635 claims across four session files:
+**6 exact-duplicate groups, all of them BEFORE the guards that cover them, 0
+after**, and **no session holding 4 or more unreleased**. `cc.json` holds 147
+claims and exactly **1 active** -- this session's. There were no stale claims to
+release.
+
+**So the eleven were never claims. They are OPEN-WORK ROWS owned by CC whose
+status opens with a done word** -- `dispatch_state.py --stale-review`, which is
+the tool I wrote for exactly this and which deliberately **refuses the verdict**
+and prints a shortlist instead. Reading the eleven is what settles them, and the
+split is 2 to 9.
+
+### The two that were genuinely finished, and both for the same reason
+
+Neither was "forgotten". Both had their work landed, verified and written up --
+and both stayed in the open list because **the first word of the status was not
+a verdict word**. `FOUND AND FIXED` and `TRACED AND CLOSED` both read as done to
+a human and neither starts with a token `is_open()` recognises.
+
+- **StoneDesk, every Quote Builder delete undoing itself.** Re-verified rather
+  than re-read: `tests/quote_builder_delete_does_not_resurrect.js` is **12/12**,
+  and `key_collision_check.py` carries `stonedesk_quote_history` as an
+  acknowledged collision inside a **RESULT:CLEAN, 0 unacknowledged** run.
+- **StoneDesk, `sd_drawings`' two backing variables.** Same run: 7 collisions,
+  **0 unacknowledged**, `sd_drawings` carrying its hand-written trace.
+
+**That is the convention the tool was built to make visible, catching two of my
+own rows first.** Both rewritten whole, never by splitting on `|` (PR 2.1), and
+`md_table_check` re-run: 566/566 rows OK, 0 malformed. Open rows 157 -> 155.
+
+### The nine that are genuinely open, and none of them is bookkeeping
+
+- **`db/schema_snapshot.json` re-capture** -- recurring, and Michael's, because
+  step 1 is the Supabase SQL editor. Currently **66.6 hours old, 95 tables in
+  `sql/` absent from it, 28 of those queried by live `api/` code.**
+- **Two AWAITING INDEPENDENT VERIFICATION rows** (StoneDesk timesheet pay-rate,
+  SAIRNlaw AI chain of custody). I am the reviewer AND the author of the
+  correction. **These are the rows I am least able to close and that is the
+  point of them** -- closing my own correction on my own review is the exact
+  shape the standard exists to refuse.
+- **Three SAIRNlaw rows and one SAIRNbiz row, all CODE CLOSED / SQL PENDING.**
+  Checked against the snapshot rather than against the cells: `law_matterdocs`,
+  `law_timeentries`, `law_invoices` and `law_optx` are all still **absent**, as
+  are `sb_po` and `sb_recv`. `law_trusttx` is present, which is the one the
+  phase-2 row is about. **Stated with its age:** the snapshot is 66.6 hours old,
+  so this says the migrations had not run AS OF THE CAPTURE, not as of now.
+- **SAIRNlaw phase 2** -- the four bespoke resources including client trust
+  money, untouched.
+- **The two unwired-checker rows.** One carries an explicit NEXT ACTION in its
+  own cell -- **18 Group-B checkers with no probe and no invoker**, three of
+  them named REQUIRED by Guardian or CLAUDE.md. A row with a next action in it
+  is not a row to close.
+
+**The shape worth carrying forward:** eleven rows that read as stale produced
+**two** genuine closures and **nine** pieces of real remaining work, and the two
+closures were both a WORD rather than a task. A sweep that had trusted the done
+word would have closed nine live items, four of them Tier A money paths.
