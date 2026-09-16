@@ -19,38 +19,38 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**177 files in `tools/`.** By what actually invokes them:
+**181 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 52 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 53 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 48 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **DECIDED** | 50 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 37 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 120 |
+| CHECKER | 124 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
 
-**48 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**50 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 21 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 16
+**The number to act on: 22 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 17
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 21, by name, so this is actionable rather than a statistic:
+The 22, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -64,7 +64,7 @@ The 21, by name, so this is actionable rather than a statistic:
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
 | `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
-| `guard_ablation.py` | UNWIRED | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass |
+| `guard_ablation.py` | SUITE-ONLY | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass |
 | `hover_auditor_scope_gate.py` | SUITE-ONLY | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
@@ -73,6 +73,7 @@ The 21, by name, so this is actionable rather than a statistic:
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
 | `sairn_rebase_resolve.py` | SUITE-ONLY | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main |
+| `suite_control_triage.py` | UNWIRED | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low |
 | `testability_criteria.py` | SUITE-ONLY | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything |
 | `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 
@@ -129,7 +130,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (52)
+## REPORT-ONLY (53)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -174,6 +175,7 @@ quiet in practice.
 | `orphan_register_check.py` | 2026-09-10 | an open-work row citing something the register records as removed -- a task pointing at code that is gone |
 | `ownership_evidence_drift.py` | 2026-09-14, the day it was built, report-only and NOT a push-gate block: it reports that nobody has LOOKED, which is not the same as a finding and must never refuse a push | the ownership evidence behind an accepted risk drifting away from the population it was evidence about |
 | `panel_nesting_check.py` | 2026-09-10, after three defects found by running it | a panel that is not a sibling of the others, so the show/hide CSS cannot reach it |
+| `register_feed_gate.py` | 2026-09-15 as --backlog, report-only, ALONGSIDE its BLOCKING pre-push half. The two halves answer different questions: the gate refuses a NEW defect closure that does not feed the register, and this keeps the HISTORICAL gap visible so the requirement date cannot quietly forgive it | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
@@ -199,7 +201,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (48)
+## DECIDED -- not promoted, on purpose (50)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -211,8 +213,10 @@ is how a reader stops believing the number.
 | Tool | Kind | Why not promoted |
 |---|---|---|
 | `accepted_risk_scan.py` | CHECKER | A READ-LIST WHOSE COUNT IS NOT A SCORE, and its own PURPOSES line says so: it reads language, not intent, and scored roughly 1 in 3 on its first weight-3 run. Promoting it would print a list of comments on every push whose correct length is NOT zero -- zero would mean somebody deleted the comments that record accepted risks. A report-only entry implies a number to drive down; this tool has no such number. It belongs where it is, run when the accepted-risk register is reviewed. |
+| `accepted_risk_trigger_check.py` | CHECKER | PROMOTABLE, AND HELD BACK ONE CYCLE ON PURPOSE. It is read-only, fast, and clean as of 2026-09-15 -- AR-1 was its one finding and that is now corrected. The reason to wait is that it has run against exactly ONE register state, and this platform's own rule for promotion is report-only until quiet IN PRACTICE, not until clean once. Promote it after the next accepted risk is added, which is the first time it will be asked a question it has not already answered. |
 | `ai_prompt_refusal_check.py` | CHECKER | ITEM 8, sub-item 7, the no-model-call half. HELD BACK DELIBERATELY AND THE REASON IS ITS OWN OUTPUT: all four of its current findings need a human triage decision that has not been made, and one of them (sairnfreedom bottle-fullness: image in, two-key JSON out) looks DEFENSIBLE rather than wrong. A runner entry today would print the same four rows on every push, three of them awaiting somebody who owns SAIRNlaw and one of them arguably correct as it stands -- which is how a report stops being read. Promote it once the four are triaged and its steady state is silence. Note also what it CANNOT say, because a registry entry would imply otherwise: it checks that refusal WORDS ARE PRESENT in a prompt and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded garak decision. Held by tests/run_ai_prompt_refusal_probe.py, 12 fixtures and 5 mutation controls. |
 | `benford_check.py` | CHECKER | ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the production question needs `--data <export>`, and ledger_entries, ledger_lines and the StoneDesk invoice and quote amounts live in the database where nothing in this repo can read them. The only corpora it CAN reach here are the seed and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries 29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD 0.0260, n=219) is the instrument proving it fires, not a finding about production. Wiring that into a runner would print a could-not-run notice and a known-expected finding on every push for ever, which is how a notice stops being read -- the same argument already recorded for cleanup_residue_check.py above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is not proof in either direction, a conforming distribution is not evidence of honesty, and real datasets fail it innocently every day (a price list, a tier table, anything with a floor). Promote it the day somebody hands it a real export on a cadence -- and even then as report-only, never as a gate. Registered here on 2026-09-14 once the claim collision with Cody cleared; held by tests/run_benford_probe.py, which passes. |
+| `blind_review.py` | CHECKER | IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a human drives, and there is nothing for a push notice to say. A round is opened deliberately and scored when the reviewer has judged; wiring that to a push would either open rounds nobody asked for or report on a round in progress. Promote nothing here. What COULD be wired one day is the agreement rate across completed rounds, once there are enough rounds for a rate to mean anything, and once the score-first arm exists to compare it against -- neither is true yet. |
 | `checker_control_check.py` | CHECKER | THE SAME META-CHECKER SHAPE, one level out: it asks whether every promoted checker has a plant-defect/plant-clean control pair. 31 test files reference it, which is the tell -- it is infrastructure the suite uses to judge other tools, not a check on the codebase. Its finding is always "these N tools still lack a pair", which is a project state rather than a property of the diff in front of it. Promoting it would make every push report the backlog it is measuring. Related and deliberately separate: the two EXPIRED checker-control-registry claims (fourth, 33-53h ago) are the burn-down itself. |
 | `cleanup_residue_check.py` | CHECKER | it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look". |
 | `copy_exactly_check.py` | CHECKER | ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE, not a finding: 0 of 5 identical on 2026-09-14, with 4 differing because the APP was fixed and the must-copy-exactly DOCUMENT was not. Wiring it now means four rows on every push until somebody updates the document -- a notice whose content cannot change by pushing. Promote it the day the documented block and the app agree, because that is the day its output starts varying with what a push actually did. Note its own caveat too: it does NOT answer disciplines item 7, since agreeing bytes are precisely what that section warns is not safety. |
@@ -270,7 +274,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (26)
+## SUITE-ONLY (27)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -286,6 +290,7 @@ fixtures. Nothing points them at the real codebase.
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py`, `run_dispersion_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
+| `guard_ablation.py` | CHECKER | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass | `run_guard_ablation_probe.py` |
 | `hover_auditor_scope_gate.py` | CHECKER | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage | `run_hover_separation_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
@@ -297,7 +302,7 @@ fixtures. Nothing points them at the real codebase.
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
-| `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py` |
+| `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py`, `run_guard_ablation_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_claim_retype_mutation_control.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
 | `sairn_rebase_resolve.py` | CHECKER | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main | `run_rebase_resolve_probe.py` |
@@ -338,7 +343,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
-| `guard_ablation.py` | CHECKER | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
@@ -350,6 +354,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
 | `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
+| `suite_control_triage.py` | CHECKER | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
 
 ---
@@ -380,12 +385,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      177   git ls-files tools/
+  tools on disk                      181   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                50   report_only_checks.REGISTRY
-  tools invoked by tests/            121   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     48   report_only_checks.NOT_PROMOTED
+  report-only registry                51   report_only_checks.REGISTRY
+  tools invoked by tests/            124   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     50   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

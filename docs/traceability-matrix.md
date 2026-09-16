@@ -12,6 +12,7 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 
 | App | Requirement (what it guards) | Proved by | The defect that put it here |
 |---|---|---|---|
+| PLATFORM | the ONLY unhealthy Stripe state visible without calling Stripe still produces a signal, and still produces it in exactly one environment | `api/_lib/stripe-config.test.js` | docs/ACCEPTED-RISKS.md AR-1 is accepted on a trigger, and that trigger IS this module: a `warnings` entry when STRIPE_SECRET_KEY is an sk_test_ key in a production deployment, whose DISAPPEARANCE is the moment the accepted risk becomes live. Found 2026-09-15: the module had NO SUITE AT ALL, so the branch producing that signal could have been edited away and the only consequence would have been an accepted risk's trigger quietly ceasing to exist -- with the register still saying it was monitored. The signal is also LOG-ONLY by design (it must never reach a client), so no checker in this repo can read the signal itself; guarding the PRODUCER is the half that can be held from inside the repo, and AR-1 now says which half is which. The four-cell control is the load-bearing one: a warning that fired in preview as well would be a banner rather than a signal, and AR-1's trigger reads the ABSENCE of it. |
 | PLATFORM | the endpoint forwards every input the deadline engine reads | `api/_lib/deadline-endpoint-inputs.test.js` | The engine grew `service_methods` on 2026-08-27 and api/legal-deadlines.js was never updated, so the field was silently dropped on every live request for five days: Florida returned +5 days and an assumed exclusivity even when the caller sent ["mail","email"], on the shortest answer period in the engine, and Utah's +7 became unreachable. Both per-state suites were green throughout -- 14/14 and 59/59 -- because they call computeDeadline() directly and never traverse the endpoint. |
 | sairncode | each auth endpoint passes the shared helper THE SAME roles its own setup gate enforces | `api/_lib/employee-lifecycle-wiring.test.js` | The shared helper takes PROVISIONING_ROLES as a parameter so each app can pass its own, and the wrong list is invisible in review because it looks like every other app's. CLAUDE.md records the live case: SAIRNcode's is `admin`, not `owner`, and a guard hardcoding `owner` passes it clean forever while checking nothing. |
 | PLATFORM | the fourteen data endpoints still authenticate before they refuse | `api/preauth-envelope-ordering.test.js` | Not redundant with check 7, which scopes to the api/ files THIS push touches. This asserts the ordering across all fourteen from source anchors regardless of what the push contains -- the case where somebody else's commit reorders one and arrives here by rebase. It anchors on CODE and never on message text, because the detector's own boundary regex once matched `verifySessionToken(` inside a header comment and reported two defective files as clean. |
@@ -95,6 +96,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one | `advisory_lock_isolation_check.py` | FIRST RUN 2026-09-15 over 9 advisory-lock functions found THREE unguarded, and the sharpest was law_check_and_insert_disbursement -- attorney IOLTA trust money, where two concurrent disbursements each compute the balance from before the other committed and BOTH pass the sufficiency check. Its sibling law_check_and_void_deposit already DESCRIBED the hazard in a comment and nothing enforced it. All three guarded the same day; 31-arm probe at tests/run_advisory_lock_isolation_probe.py. The blind lock runs on EVERY run, not only --self-check, and its own fixtures caught two real bugs in the first draft before it ever touched sql/ |
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
 | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off | `service_role_tier_a_gate_check.py` | FIRST RUN 2026-09-15: 66 api/ modules read the key; only THREE address a Tier A resource in a write PATH, and all three are correct -- api/sd-data.js GATED, and public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A writes funnel through one gated chokepoint, and the two public endpoints are the declared exceptions. THIS DOES NOT CONTRADICT the open session-gate finding on sd-data.js: this asks whether the MODULE gates, that asks whether a per-resource BRANCH inside it does, and both are true at once. 26-arm probe; three of its eight fixtures exist because the classifier was wrong on a REAL file -- bridge.js (a jsonb key, writes bridge_data), sv-witness.js (killed by the over-correction that fixed bridge.js) and send-reminder.js (writes in helpers above the handler, CRON_SECRET first inside it) |
+| the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it | `register_feed_gate.py` | MEASURED BEFORE IT WAS DESIGNED, and the measurement chose the shape: 66 `fix(` commits touching code since 2026-09-13 and 62 of them citing no record; 422 across all history against 51 distinct commits cited. A gate refusing all of those would refuse essentially every push, and a wall produces overrides -- which this repo already records costing more than the gate saved. Hence a REQUIREMENT DATE, the same mechanism first_article_check.py uses, with the backlog REPORTED rather than forgiven. 27-arm probe at tests/run_register_feed_gate_probe.py, including both failure directions, the boundary day, a bare escape hatch being refused, and an unreadable register DENYING the push |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -137,6 +139,8 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `missing_dom_target_check.py` -- its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress.
 - `local_only_collection_check.py` -- its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".
 - `sairn_app_map_check.py` -- CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion.
+- `blind_review.py` -- IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a human drives, and there is nothing for a push notice to say. A round is opened deliberately and scored when the reviewer has judged; wiring that to a push would either open rounds nobody asked for or report on a round in progress. Promote nothing here. What COULD be wired one day is the agreement rate across completed rounds, once there are enough rounds for a rate to mean anything, and once the score-first arm exists to compare it against -- neither is true yet.
+- `accepted_risk_trigger_check.py` -- PROMOTABLE, AND HELD BACK ONE CYCLE ON PURPOSE. It is read-only, fast, and clean as of 2026-09-15 -- AR-1 was its one finding and that is now corrected. The reason to wait is that it has run against exactly ONE register state, and this platform's own rule for promotion is report-only until quiet IN PRACTICE, not until clean once. Promote it after the next accepted risk is added, which is the first time it will be asked a question it has not already answered.
 - `first_article_inspection.py` -- ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that.
 - `rotation_blast_radius.py` -- IT READS DECLARATIONS, NOT THE WORLD. Every figure comes from the scope and rotation TEXT in tools/nhi_register.py; no clone holds any of these credentials, so nothing here is measured against a live grant. A push notice would put "20 of 22 unrotated" in front of people every day, where the number cannot move without a human attesting a rotation that this tool cannot verify either. It belongs where the accepted-risk and NHI registers are reviewed, on the same cadence as those.
 - `trend_alarm.py` -- ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself.
@@ -150,6 +154,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The measurement substrate was starved, and five tools reported vacuous numbers because of it &mdash; a defect closure can no longer complete without feeding the register** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/register_feed_gate.py`, BLOCKING on pre-push from its requirement date and report-only as `--backlog`; wired in `.githooks/pre-push`. `tests/run_register_fee | `tests/run_register_feed_gate_probe.py` |
 | **Item 40 continued: does anything holding the RLS-BYPASSING key write Tier A data without gating the caller** | **MEASURED AND BUILT 2026-09-15 (Hank)** &mdash; `tools/service_role_tier_a_gate_check.py`, report-only and registered, built THROUGH `checker_kit`. `tests/run_service_role_gate_probe.py` **26 arms, 0 | `tests/run_service_role_gate_probe.py` |
 | **Item 64: the precedence rule for when two of our own checks DISAGREE &mdash; decided in advance instead of ad hoc under pressure** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/check_precedence.py`, report-only and registered as `--self-check`. `tests/run_check_precedence_probe.py` **48 arms, 0 failures**. `docs/2026-09-15-item64-ch | `tests/run_check_precedence_probe.py` |
 | **The cron watchdog was RETRYING ITSELF into an HTTP 508 and had LATCHED ITSELF FAILING &mdash; and it could not notify anybody at all** | **FIXED AND EXTENDED 2026-09-15 (Hank)** on Fourth&rsquo;s items 54/55 &mdash; self-exclusion in `api/_lib/cron-response.js`, `notify_channel` in `api/cron-watchdog.js`, channel read in `tools/cron_li | `api/cron-watchdog.test.js`, `tests/run_cron_liveness_probe.py` |
@@ -161,6 +166,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **ZERO of 22 credentials record what to do if that one leaks &mdash; every identity has a procedure that says HOW and never WHEN** | **MEASURED 2026-09-15 (CC)**, item 61 &mdash; `tools/rotation_blast_radius.py` (report-only, NOT_PROMOTED), `tests/run_rotation_blast_radius_probe.py`, 11 sabotages all caught. Built on Cody&rsquo;s i | `tests/run_rotation_blast_radius_probe.py` |
 | **AR-1 carries the only MECHANICAL trigger on the accepted-risk register, and nothing that runs on this platform consumes it** | **FOUND 2026-09-15 (CC)**, item 53 &mdash; `tools/weakness_combination.py` (report-only, NOT_PROMOTED), `tests/run_weakness_combination_probe.py`, 10 sabotages all caught | `tests/run_weakness_combination_probe.py` |
 | **The traceability headline improves every day while the backlog it is a ratio of grows &mdash; 185 &rarr; 212 untraced over the same 221 readings** | **MEASURED 2026-09-15 (CC)**, item 45 &mdash; `tools/trend_alarm.py` (report-only, NOT_PROMOTED, and NOT ARMED by its own gate), `tests/run_trend_alarm_probe.py`, 9 sabotages all caught | `tests/run_trend_alarm_probe.py` |
+| **&ldquo;83 unverified claims&rdquo; was wrong about five of the seven &mdash; they were UNWIRED, not unverified, and the tool&rsquo;s own blind spot was the finding for the third time** | **CORRECTED AND WIRED 2026-09-15 (CC)** &mdash; `tests/run_selftest_sweep_probe.py` (6 self-tests discovered and RUN, all green), `tests/run_guard_ablation_probe.py` (30 arms), `tools/first_article_in | `tests/run_guard_ablation_probe.py`, `tests/run_selftest_sweep_probe.py` |
+| **AR-1&rsquo;s trigger had TWO halves and only one was fixable here &mdash; the producer had no suite at all, which was worse than the reported problem** | **FIXED AND CORRECTED 2026-09-15 (CC)** &mdash; `api/_lib/stripe-config.test.js` (19 assertions, in `GUARD_TESTS`), `tools/accepted_risk_trigger_check.py`, AR-1 rewritten in `docs/ACCEPTED-RISKS.md` | `api/_lib/stripe-config.test.js` |
+| **Item 79: the reviewer judges BEFORE seeing the score &mdash; and the first real round disagreed on half of it** | **BUILT 2026-09-15 (CC)** &mdash; `tools/blind_review.py` (report-only, NOT_PROMOTED), `tests/run_blind_review_probe.py`, 9 sabotages all caught. First round recorded in `docs/2026-09-15-five-followup | `tests/run_blind_review_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -174,6 +182,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Item 52: the fusion, and the two checkers whose CORRECTOR fails its own sanity check** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/checker_estimate_fusion.py`, `tests/run_estimate_fusion_probe.py` 19 paired arms, green. 46 checkers: 43 FUSED, 1 CORRECTION ONLY, **2 UNCORRECTED** | `tests/run_estimate_fusion_probe.py` |
 | **Item 59: the Gini said 0.971 and it was NOT evidence of clustering &mdash; and my own `k` produced a superspreading figure from pure chance** | **BUILT 2026-09-15 (Fourth)** &mdash; dispersion test + backward tracing in `tools/defect_dispersion.py`, `tests/run_dispersion_probe.py` 18 paired arms, green | `tests/run_dispersion_probe.py` |
 | **Item 51: a per-entity defect baseline &mdash; measured by hand twice, and &ldquo;not yet&rdquo; is a claim with an expiry date nothing was watching** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/entity_baseline_readiness.py`, `tests/run_baseline_readiness_probe.py` 21 arms plus 12 self-check arms, green; registered NOT-PROMOTED | `tests/run_baseline_readiness_probe.py` |
+| **Item 81: rebuilt on call-site STRUCTURE &mdash; and the answer is that almost nothing retries at all** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/retry_policy_audit.py`, `tests/run_retry_policy_probe.py` 14 arms, 16-fixture blind lock both directions; registered NOT-PROMOTED | `tests/run_retry_policy_probe.py` |
+| **Item 75: Cook&rsquo;s CAPA critique &mdash; the register refuses a `root_cause` field by name, and every record with factors must say what is NOT closed** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/defect_register.py` contributing-factor validation, `tests/run_capa_fields_probe.py` 22 arms, 13 mutants (10 refusals + 3 must-pass) | `tests/run_capa_fields_probe.py` |
+| **7 of 154 suites had ever been proven to catch a sabotage; now 10, and closing three found NINE real holes** | **BUILT 2026-09-15 (Fourth)** &mdash; `tests/sabotage_harness.py` + `alf_append_only_probe.py`, `dnt_financial_tier_probe.py`, `sv_witness_probe.py`; 21 mutations, 33 arms | `tests/sabotage_harness.py` |
 | **Cluster `5b98fd27`: both root causes closed at the CLASS level &mdash; the write path that cannot say &ldquo;failed&rdquo;, and the suite nobody has tried to break** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/write_path_fault_scan.py --ratchet` + `tools/write_path_hazard_baseline.json`, `tools/suite_control_coverage.py`, `tests/run_suite_control_coverage_probe.p | `tests/run_suite_control_coverage_probe.py` |
 | **Item 47: First Article Inspection &mdash; the pre-deployment half item 63 flagged as missing, and five stated claims on the freshest tool that nothing checked** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/first_article_check.py`, `docs/first-article-inspections.json`, `tests/run_first_article_probe.py` 22 arms, 20 self-check arms, 6 mutants killed; report `d | `tests/run_first_article_probe.py` |
 | **The conflict-marker incident, verified closed &mdash; and the standing fix is a tool that tells file CLASSES apart instead of a rule to remember** | **FIXED + VERIFIED 2026-09-15 (Fourth)** &mdash; `tools/sairn_rebase_resolve.py`, `tests/run_rebase_resolve_probe.py` 15 arms on REAL rebase conflicts, all pass | `tests/run_rebase_resolve_probe.py` |
@@ -467,9 +478,32 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**245 of 464 test files are traced to a stated requirement. 219 are not.**
+### 218 test files are traced to no stated requirement
+
+**That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
+
+For context and not as the headline: 253 of 471 traced, 53.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
+
+### Where the 259 citations come from
+
+| source | citations |
+|---|---|
+| `index` | 253 |
+| `GUARD_TESTS+index` | 5 |
+| `GUARD_TESTS` | 1 |
+
+**One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
+
+### The two kinds, because they need different fixes
+
+| kind | count | what it means | the fix |
+|---|---|---|---|
+| **bound to a subject, tied to no requirement** | 55 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 163 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 55 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/accounting-connector.test.js`
 - `api/_lib/ai-rate-limit.test.js`
@@ -624,7 +658,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/rootpages.js`
 - `tests/run_accepted_risk_probe.py`
 - `tests/run_bypassed_constant_probe.py`
-- `tests/run_capa_fields_probe.py`
 - `tests/run_citator_freshness_probe.py`
 - `tests/run_cleanup_confirm_probe.py`
 - `tests/run_condition_coverage_probe.py`
@@ -637,7 +670,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_jscomments_probe.py`
 - `tests/run_ownership_drift_probe.py`
 - `tests/run_rate_limit_race_probe.js`
-- `tests/run_retry_policy_probe.py`
 - `tests/run_role_gate_invariants_probe.js`
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
@@ -645,9 +677,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_shape_antipattern_probe.py`
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
+- `tests/run_tool_selftest_probe.py`
+- `tests/run_tool_selftest_probe_control.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/run_uncontrolled_checkers_probe.py`
-- `tests/sabotage_harness.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
 - `tests/sairnbuild_backup_pending.js`
@@ -710,11 +743,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 464   tests/**, api/*.test.js
-  open-work rows citing a test       234   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                50   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     43   report_only_checks.NOT_PROMOTED
+  test files on disk                 471   tests/**, api/*.test.js
+  open-work rows citing a test       241   docs\SAIRN-OPEN-WORK-INDEX.md
+  GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
+  report-only registry                51   report_only_checks.REGISTRY
+  recorded NOT-promoted decisions     45   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

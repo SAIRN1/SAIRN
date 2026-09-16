@@ -44,7 +44,13 @@ print('suite control coverage control -- %d suites, %d controlled\n'
 # construction, so every suite the tool calls controlled must appear here.
 loose = {}
 import glob                                                      # noqa: E402
-for p in sorted(glob.glob(os.path.join(REPO, 'tests', '*.py'))):
+# THE UNIVERSE IS TAKEN FROM THE TOOL, NOT RE-GLOBBED HERE. An earlier version
+# scanned `tests/*.py` only. When the tool learned to recognise a control
+# WRITTEN IN JS, this bound stopped being an upper bound -- it reported the tool
+# over-claiming two suites when the tool was right and the probe's universe was
+# narrower. A bound derived from a different list than the thing it bounds is
+# not a bound.
+for p in sorted(C._default_probes()):
     try:
         src = io.open(p, encoding='utf-8', errors='replace').read()
     except Exception:
