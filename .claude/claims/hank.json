@@ -1993,8 +1993,8 @@
       "task": "phases 2 4 5 canteen events disbursement donations member experience",
       "claimed_at": "2026-09-16T04:01:25Z",
       "claimed_at_epoch": 1789531285.9455352,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:08:23Z"
     }
   ]
 }
