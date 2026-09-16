@@ -177,6 +177,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-16T02:10:50Z",
+      "resources": [
+        "dnt_patients",
+        "invoices",
+        "law_trusttx",
+        "sv_controlled"
+      ],
+      "files": [
+        "tests/run_service_role_gate_probe.py",
+        "tools/service_role_tier_a_gate_check.py"
+      ],
+      "what": "tools/service_role_tier_a_gate_check.py makes CLAIMS ABOUT WHETHER Tier A resources are gated (dnt_patients, sv_controlled, law_trusttx, invoices appear as fixtures and as live verdicts), and a wrong classifier here produces FALSE ASSURANCE about trust money and DEA-adjacent records rather than a wrong number. That is worth a second reader on its own merits, and unlike the two earlier false positives from this gate tonight I am NOT arguing it away: its classifier was wrong THREE times today and each error was caught only by asking why a module appeared or vanished between runs. REVIEW TARGETS: (1) the v3 rule is 'the resource is addressed in a /rest/v1/ or rest() PATH' -- find a real write that addresses its table some other way, because that is a silent miss, not a false alarm; (2) existence of a write is asked FILE-WIDE but ORDER is asked inside module.exports, and a module with no module.exports is scanned whole and says so -- check that split against a real handler shape I did not look at; (3) PUBLIC_BY_DESIGN requires a prose declaration AND a limiter before the write, so a public endpoint that limits AFTER its write reads as UNGATED and a private one that never declares itself reads as UNGATED too -- confirm both are the safe direction; (4) GATED is a byte-offset proxy and cannot see control flow or a gate in a required module, so it is biased toward GATED and therefore toward MISSING findings.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
