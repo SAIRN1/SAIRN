@@ -1525,6 +1525,16 @@
       "claimed_at_epoch": 1789535661.0707219,
       "status": "released",
       "released_at": "2026-09-16T05:41:04Z"
+    },
+    {
+      "id": "fourth-1789537470",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "law_trusttx session gate tier A, item 81 merge recursive walk, G5 controls continued, G7 band 1 factors continued",
+      "claimed_at": "2026-09-16T05:44:30Z",
+      "claimed_at_epoch": 1789537470.0961776,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
