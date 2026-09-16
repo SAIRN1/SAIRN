@@ -201,7 +201,12 @@ section('0. the fixture really is a token, and really is app-bound');
   // would be asserting that nothing works.
   for (const [resource, owner] of GATED) {
     const own = await call(h, resource, null, token(owner));
-    ok(own.code !== 401,
+    // POSITIVELY, not as `!== 401` (corrected 2026-09-16). This is the arm that
+    // licenses every refusal below to mean something, and as a negation it was
+    // satisfied by a 403, a 500 or a harness fault -- each of which is the
+    // owner NOT reaching their own resource, i.e. exactly the state that makes
+    // the refusals underneath it meaningless.
+    ok(own.code === 200,
        'CONTROL: ' + owner + '\'s OWN session reaches ' + resource + ' (' + own.code
        + ') -- so a 401 below is about the app, not the harness');
   }
@@ -235,9 +240,13 @@ section('0. the fixture really is a token, and really is app-bound');
     ok(out.code === invented.code,
        'a SAIRNbiz licence asking for law_invoices answers exactly as an invented name '
        + 'does (' + out.code + ') -- the oracle stays closed even with a valid session');
-    ok(out.code !== 401,
-       '...and it is the LICENCE boundary answering, not the session gate -- two locks, '
-       + 'not one counted twice');
+    // 400 BY NAME, not "anything except 401" (corrected 2026-09-16). The
+    // negation was satisfied by a 500, or by a 403 from the session gate -- and
+    // a 403 here would mean the session gate answered FIRST, which is the exact
+    // thing this arm claims did not happen.
+    ok(out.code === 400,
+       '...and it is the LICENCE boundary answering with ' + out.code + ', not the '
+       + 'session gate -- two locks, not one counted twice');
   }
 
   section('4. THE POSTURE MAP -- where a session gate exists at all');
@@ -349,10 +358,18 @@ section('0. the fixture really is a token, and really is app-bound');
   // obvious repair for THAT is to take the gate off.
   for (const resource of PHASE_2_GATED) {
     const right = await call(h, resource, null, token('sairnlaw'));
-    ok(right.code !== 403,
+    // ── AND THIS ARM WAS `!== 403` WHEN IT WAS WRITTEN, 38 LINES BELOW A
+    //    COMMENT SAYING "Never `!== <one code>` for it got through" ─────────
+    // Corrected 2026-09-16 in the same round that found the original. The class
+    // does not announce itself at the moment of writing: `!== 403` reads as
+    // "not refused by the gate", which is the question -- and it is satisfied
+    // by a 401, a 500, and by the harness throwing. Every one of those is a
+    // SAIRNlaw session failing to reach its own resource, which is precisely
+    // what this arm exists to detect.
+    ok(right.code === 200,
        'a correctly signed-in SAIRNlaw session REACHES ' + resource + ' (' + right.code
-       + ') -- if this is 403 the gate is verifying against the wrong app, which '
-       + 'refuses every legitimate attorney');
+       + ') -- anything but 200 means a legitimate attorney is being turned away, '
+       + 'and if it is 403 the gate is verifying against the wrong app');
     const wrong = await call(h, resource, null, token('sairnbiz'));
     ok(wrong.code === 403,
        '...and a SAIRNbiz session is REFUSED ' + resource + ' (' + wrong.code
