@@ -3035,6 +3035,64 @@
       "phase_note": "The classifier had buckets for single-row and append-only from the start and none for DERIVED. An omitted category in the original design, latent until 2026-09-15 when the first derived Tier A resource was registered."
     },
     {
+      "commit": "1b21ef1fb41e",
+      "date": "2026-09-16",
+      "subject": "fix(loader): the snapshot shrink guard could not see the two tables told to stay",
+      "files": [
+        "tests/run_snapshot_loader_probe.py",
+        "tools/load_schema_snapshot.py"
+      ],
+      "lines_added": 70,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/load_schema_snapshot.py's shrink guard -- the one check whose entire job is that tables must not disappear between the Supabase editor and db/schema_snapshot.json -- classified any key beginning with an underscore as metadata rather than as a table. Two real tables in public begin with one: _anon_grant_baseline_2026_08_26 and _anon_nontable_baseline_2026_08_26, created by sql/anon_authenticated_grant_revoke_2026-08-26.sql, and the hardening handoff that created them says in terms that they must stay. A capture that lost either loaded clean. Measured by ablation, not argued: with the old name rule a candidate dropping one produces 0 problems, with the value-shape rule it produces 1 and refuses. Found by reading the loader while assembling the re-capture hand-over, before the query was sent.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "1fc4a480d2ca",
+        "date": "2026-09-13",
+        "subject": "feat(process,tools): first coordination health check -- and the relay class that failed three times gets a gate",
+        "lag_days": 3
+      },
+      "citation_note": "1.7 is written about a fixed-size window or truncation exempting what it does not reach. The exemption here is by NAME rather than by size, so it is the same shape -- a scan that covered 380 of 382 and reported clean -- arriving by a different route. Recorded as arguable rather than clean because the rule's own example is a character window and this is a classification predicate.",
+      "phase_note": "The name rule was a deliberate choice with its limitation written down beside it. What failed was the premise attached to it -- that no such table was in a capture -- which was true when written and never re-referenced against the capture that arrived afterwards.",
+      "contributing_factors": [
+        {
+          "factor": "The population was classified by NAME (a leading underscore) rather than by the value's shape, and two real Postgres tables in public are named with a leading underscore",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "tables() now counts any key whose value is a list of column names; the only genuine metadata the capture query emits is _constraints (an object) and _generated_at (a string)"
+        },
+        {
+          "factor": "The docstring NAMED this exact risk and then dismissed it with a claim that was true when written and never re-checked -- it cited the 2026_08_25 baselines as never having appeared in a capture, while the 2026_08_26 pair had been in every capture since",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The corrected docstring names the two tables that are actually in the capture and cites the sql/ file that creates them, so the claim can be checked against a source rather than against the sentence"
+        },
+        {
+          "factor": "The probe's section 7 asserted the wrong classification. Its fixture was an underscore-named key holding a column LIST -- structurally identical to the two real baselines -- and it demanded that NOT be counted as a table, so the test suite actively held the defect in place",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section 7 rewritten to demand both directions, and the correction states in the file that the FIXTURE was wrong rather than the tool's output"
+        },
+        {
+          "factor": "Nothing ties the shrink guard's population to the list of tables somebody has written down as must-not-disappear; the 2026-08-26 handoff says both baselines must stay and no mechanism reads that sentence",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "A must-stay register the guard reads would be a real improvement and is a change to how schema evidence is recorded, not to this loader. Recorded here rather than bolted on, because inventing a second register during a bug fix is how two registers start disagreeing."
+        }
+      ],
+      "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
+    },
+    {
       "commit": "25f2194d16ab",
       "date": "2026-09-16",
       "subject": "fix(tools): third confirmed instance of the one-spelling blind spot -- the decode checker could not see an aliased subprocess import",
