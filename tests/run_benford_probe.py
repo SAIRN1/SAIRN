@@ -82,6 +82,38 @@ def main():
     fewvals = B.report_corpus('d', [199.0, 2999.0, 49999.0] * 200, 'f')
     check('TOO FEW DISTINCT VALUES', fewvals.get('skipped'), 'TOO FEW DISTINCT VALUES')
 
+    # CAPPED sits in the GAP BETWEEN the two guards either side of it, so this
+    # fixture is built to clear both of them and be catchable only by the mode
+    # guard: a copay pinned at 50 for 60% of rows, with the other 40% spread
+    # over three decades. Distinct share lands at 0.40 (over MIN_DISTINCT_SHARE
+    # of 0.30) and 50 is not a multiple of 100 (under MAX_ROUND_SHARE).
+    capped = [50.0] * 600 + [10.0 + 7.3 * i for i in range(400)]
+    capped_row = B.report_corpus('c', capped, 'f')
+    check('CAPPED OR DEFAULTED', capped_row.get('skipped'), 'CAPPED OR DEFAULTED')
+    # CONTROL ON THAT FIXTURE: if it were being caught by one of its neighbours
+    # the arm above would pass while the new guard did nothing.
+    _pos = [v for v in capped if v > 0]
+    check('...and the capped fixture CLEARS the distinct-share bar, so the '
+          'refusal is the mode guard and not its neighbour',
+          len(set(_pos)) / float(len(_pos)) > B.MIN_DISTINCT_SHARE, True)
+    check('...and CLEARS the round-share bar too',
+          sum(1 for v in _pos if v == int(v) and int(v) % 100 == 0)
+          / float(len(_pos)) <= B.MAX_ROUND_SHARE, True)
+    check('...and the reason names the value and its share, not a bare label',
+          '50' in capped_row['why'] and '60%' in capped_row['why'], True)
+    # THE OTHER DIRECTION: a spread column with no pile-up must NOT be refused,
+    # or the guard is just refusing everything.
+    spread = B.report_corpus('cs', [10.0 + 7.3 * i for i in range(1000)], 'f')
+    check('a column with NO pile-up is not refused as CAPPED',
+          spread.get('skipped') != 'CAPPED OR DEFAULTED', True)
+    # ORDER, ASSERTED RATHER THAN ASSUMED: three values repeated trips the mode
+    # guard too (33% > 25%), and the more informative answer is the distinct
+    # one. Without this arm the ordering could be reversed and only the wording
+    # of an unrelated arm would change.
+    check('a three-value column is reported as TOO FEW DISTINCT, not CAPPED -- '
+          'the more informative of the two reasons wins',
+          fewvals.get('skipped'), 'TOO FEW DISTINCT VALUES')
+
     # ── 4. THE REFUSALS DO NOT SWALLOW GOOD DATA ─────────────────────────────
     # Without this the pre-check could be refusing everything and arms 1-3 would
     # all still pass. It is the same argument the metamorphic harness makes for

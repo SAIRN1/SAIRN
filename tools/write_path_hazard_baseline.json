@@ -1,0 +1,28 @@
+{
+ "counts": {
+  "sairnbiz.html": 1,
+  "sairnbuild.html": 3,
+  "sairncare.html": 0,
+  "sairncash.html": 0,
+  "sairncode.html": 1,
+  "sairndental-book.html": 0,
+  "sairndental-complaint.html": 0,
+  "sairndental.html": 0,
+  "sairndesign.html": 2,
+  "sairnfreedom.html": 1,
+  "sairngrounds.html": 2,
+  "sairnlaw.html": 1,
+  "sairnlegacy.html": 1,
+  "sairnmechanical.html": 3,
+  "sairnroofing.html": 0,
+  "sairnscape.html": 1,
+  "sairnsenior.html": 2,
+  "sairnvet.html": 0,
+  "stonedesk-catalog.html": 0,
+  "stonedesk-hr.html": 0,
+  "stonedesk-intake.html": 0,
+  "stonedesk.html": 7
+ },
+ "note": "OPEN AND UNREAD, not accepted. Each count is write call sites in that app whose result is read on the SUCCESS PATH ONLY or not at all -- the shape that made a dropped socket silent in SAIRNdental (cluster 5b98fd27). Recorded so the class cannot GROW while the existing sites stand. Lowering a number requires --rebaseline, which is a deliberate act visible in a diff; raising one fails the ratchet. An app absent from this file counts as zero, so a new app with a blind write fails.",
+ "recorded": "2026-09-15"
+}

@@ -1,0 +1,122 @@
+{
+ "note": "First Article Inspection records (item 47). An FAI verifies EVERY claim an artefact's own header makes, exhaustively, before the artefact is trusted -- a different question from the adversarial review, which asks whether a hostile reader can find a bug. The claim-to-arm mapping in each record was made BY READING. It is not generated and must not be: word-overlap scoring of prose claims against prose arm labels returned 38% with five false positives out of five on this platform (2026-09-14). tools/first_article_check.py verifies that a mapping exists, disposes of every claim, and still describes the bytes on disk -- not that the arm somebody named tests the claim they named it for.",
+ "required_from": "2026-09-16",
+ "required_from_note": "Forward only, and the date is the day AFTER the requirement was written on purpose. 22 tools were first committed on 2026-09-15 by four sessions working in parallel; none of them could have followed a rule that did not exist yet, and reporting them as findings would make the gate's first run a wall of noise about work nobody did wrong. A rule starts when it is announced. The tools that pre-date it are uninspected and that debt is real -- the COUNT is printed on every run rather than written here, because a count in prose goes stale the first week and nothing makes it fail. tools/entity_baseline_readiness.py pre-dates the requirement too and is inspected anyway: it is the first article.",
+ "dispositions": {
+  "verified": "a named arm exercises the claim",
+  "accepted-risk": "the claim states a limit that cannot have a test; recorded in docs/ACCEPTED-RISKS.md",
+  "cannot-test": "the claim is about provenance, scope or intent rather than behaviour, and no arm could settle it",
+  "unverified": "no arm, and no reason it could not have one. THIS FAILS THE CHECK."
+ },
+ "inspections": [
+  {
+   "artefact": "tools/entity_baseline_readiness.py",
+   "inspected": "2026-09-15",
+   "inspector": "Fourth",
+   "sha256": "7f669eda5896a1a9a5f312e1819d36b424a45cd931a6f85d0f8185c6e441264f",
+   "report": "docs/2026-09-15-first-article-entity-baseline-readiness.md",
+   "suites": [
+    "tools/entity_baseline_readiness.py",
+    "tests/run_baseline_readiness_probe.py"
+   ],
+   "claims": [
+    {
+     "claim": "Exit 0 when at least one entity is ready.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 0 when at least one entity is ready\": it really does' and '...and on the --json path too, which returns separately'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested the not-ready side only, so the tool could have returned 1 unconditionally and passed. Closed by this inspection."
+    },
+    {
+     "claim": "Exit 1 when no entity is ready.",
+     "status": "verified",
+     "by": "probe: 'with nothing ready the exit code is 1, not 0' and 'the TEXT run also exits 1 when nothing is ready'"
+    },
+    {
+     "claim": "Exit 2 when the question could not be answered.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2 when the question could not be answered\": an unreadable register is COULD-NOT-RUN, not \"nothing is ready\"'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Nothing exercised it, so an unreadable register could have been reported as a finding -- a could-not-run folded into 'nothing is ready', which is the PR 1.11 shape exactly. Closed by this inspection."
+    },
+    {
+     "claim": "REPORT ONLY -- nothing gates on this.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"report only, nothing gates on this\": it is NOT in the report-only RUNNER registry', '...and it IS recorded as a deliberate NOT-PROMOTED decision', '...and the push gate does not invoke it'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Stated in the header and enforced nowhere, though it is mechanically checkable. Closed by this inspection."
+    },
+    {
+     "claim": "It does not compute a baseline; it answers whether computing one would mean anything.",
+     "status": "cannot-test",
+     "by": "a claim about SCOPE. There is no baseline code path to assert the absence of, and an arm asserting that some future field is missing would pass forever on any tool that never grew one. Held by review, not by an arm."
+    },
+    {
+     "claim": "This re-answers the question from the register on every run, so the day it flips, something says so.",
+     "status": "verified",
+     "by": "probe: '%s: the unit count matches an independent Counter', '%s: the record count matches' and '%s: the largest unit matches', each run over all three dimensions against the real register"
+    },
+    {
+     "claim": "The bar is MIN_RECORDS_PER_UNIT and it is A JUDGEMENT, PRE-REGISTERED AND STATED AS ONE, printed with every verdict.",
+     "status": "verified",
+     "by": "self-check: 'the bar is pre-registered at the LOW end of the stated 20-30 judgement'; probe: '...and the bar it applied is published in the output, not just printed' and '...and names the bar it applied in the text, not only in the JSON'"
+    },
+    {
+     "claim": "Nothing here derives the bar.",
+     "status": "cannot-test",
+     "by": "a claim about PROVENANCE. No arm can show a number was not fitted to the data; it is held by the constant being a literal with its rationale beside it, and by the 2026-09-14 findings document the 20-30 range comes from."
+    },
+    {
+     "claim": "A baseline needs a MEASURABLE DENOMINATOR; without exposure it is a COUNT wearing a rate.",
+     "status": "verified",
+     "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY', '...and its volume bar is recorded as PASSED', '...and it says waiting will not fix it'; probe: 'layer clears the record bar and is STILL not ready'"
+    },
+    {
+     "claim": "A dimension that clears bar 1 and fails bar 2 is NOT ready.",
+     "status": "verified",
+     "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY'; probe: 'layer clears the record bar and is STILL not ready -- no denominator, which time does not fix'"
+    },
+    {
+     "claim": "PLATFORM is excluded by name and the exclusion is PRINTED, because a silent exclusion is a different tool from a declared one.",
+     "status": "verified",
+     "by": "self-check: 'the PLATFORM bucket does not make a dimension ready', '...and its 200 records are reported as EXCLUDED, not silently dropped', '...and it is not counted as a unit'; probe: 'counted + excluded accounts for every record that has the field' and 'CLAIM \"the exclusion is PRINTED\": the excluded count appears in the text output, not only in the JSON'",
+     "note": "HALF UNVERIFIED WHEN THE INSPECTION STARTED. The exclusion COUNT was asserted; that it reaches the printed page was not, and 'PRINTED' is the load-bearing word in the claim. Closed by this inspection."
+    },
+    {
+     "claim": "One ready unit is not a comparison, and a baseline is one.",
+     "status": "verified",
+     "by": "self-check: 'one ready unit is not enough -- a baseline needs a comparison'; probe: 'CLAIM \"one unit is not a comparison\": a register where exactly ONE app clears the bar is NOT ready' and '...and it is the VOLUME verdict, so the reason given is the true one'",
+     "note": "BEHAVIOURALLY UNVERIFIED WHEN THE INSPECTION STARTED. The self-check asserted the CONSTANT was >= 2. A constant is not a behaviour: the comparison could have been written >= 1 and that arm would not have noticed. Closed by this inspection."
+    },
+    {
+     "claim": "The catch-all bucket is excluded by name, never by a rule that could quietly grow to cover a real app.",
+     "status": "verified",
+     "by": "self-check: '...and it is not counted as a unit'; NOT_AN_ENTITY is a literal tuple of names with no pattern matching, and the probe's 'counted + excluded' identity would move the moment the exclusion widened"
+    }
+   ]
+  },
+  {
+   "artefact": "api/audit-checkpoint.js",
+   "inspected": "2026-09-14",
+   "inspector": "Hank",
+   "sha256": "5933926186e36db58624c4348153a85bac0cc321150b3b2ef711648f6e0b55f3",
+   "report": "docs/2026-09-14-first-article-inspection.md",
+   "summary": {
+    "claims_total": 8,
+    "unverified": 0,
+    "transcribed": true,
+    "note": "Transcribed from the published report, NOT re-derived here. The per-claim mapping lives in that document and is not itemised in this record, so this row is reported as RECORDED, NOT ITEMISED rather than being flattened into the same shape as an inspection whose mapping is present."
+   }
+  },
+  {
+   "artefact": "api/cron-watchdog.js",
+   "inspected": "2026-09-14",
+   "inspector": "Hank",
+   "sha256": "4031b4bb19c201fdfa078fb135a4ee8a0cf7a8ba9f84205cd3d4c9c6c41add7a",
+   "report": "docs/2026-09-14-first-article-inspection.md",
+   "summary": {
+    "claims_total": 6,
+    "unverified": 0,
+    "transcribed": true,
+    "note": "As above. One claim was routed to AR-4 in docs/ACCEPTED-RISKS.md rather than to an arm -- the watchdog shares a scheduler with the jobs it watches, which is a limit no arm can cover."
+   }
+  }
+ ]
+}

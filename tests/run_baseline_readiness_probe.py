@@ -121,6 +121,79 @@ fat = [{'app': 'a%d' % (i % 3), 'layer': 'product',
 check('a register where three apps each clear the bar IS ready',
       R.assess(fat, 'app')['verdict'] == 'READY', R.assess(fat, 'app'))
 
+# ── 6. THE CLAIMS THE FIRST ARTICLE INSPECTION FOUND UNVERIFIED ────────────
+# Added 2026-09-15 by the FAI on this tool (docs/2026-09-15-first-article-
+# entity-baseline-readiness.md). Each arm below exists because the tool's own
+# header states something and nothing checked it. An adversarial read had
+# already passed over this file; FAI asks the different question -- is every
+# STATED requirement verified -- and these five are what it returned.
+import io as _io                                                 # noqa: E402
+import json as _json                                             # noqa: E402
+import tempfile                                                  # noqa: E402
+
+# CLAIM: "Exit 0 when at least one entity is ready". Every exit-code arm above
+# tests the NOT-ready side, so the tool could have returned 1 unconditionally.
+_tmpdir = tempfile.mkdtemp(prefix='fai_baseline_')
+_ready_reg = os.path.join(_tmpdir, 'ready-register.json')
+_io.open(_ready_reg, 'w', encoding='utf-8').write(_json.dumps({'records': fat}))
+_real_reg = R.REGISTER
+try:
+    R.REGISTER = _ready_reg
+    check('CLAIM "exit 0 when at least one entity is ready": it really does',
+          R.main([]) == 0, 'expected exit 0 on a register where app is READY')
+    check('...and on the --json path too, which returns separately',
+          R.main(['--json']) == 0, 'expected exit 0')
+finally:
+    R.REGISTER = _real_reg
+
+# CLAIM: "2 when the question could not be answered". Nothing exercised it, so
+# an unreadable register could have been reported as "nothing is ready" -- a
+# could-not-run folded into a finding, which is the PR 1.11 shape exactly.
+try:
+    R.REGISTER = os.path.join(_tmpdir, 'no-such-register.json')
+    check('CLAIM "exit 2 when the question could not be answered": an '
+          'unreadable register is COULD-NOT-RUN, not "nothing is ready"',
+          R.main([]) == 2, 'expected exit 2')
+finally:
+    R.REGISTER = _real_reg
+
+# CLAIM: "excluded by name and the exclusion is PRINTED, because a silent
+# exclusion is a different tool from a declared one". The exclusion COUNT was
+# asserted; that it reaches the page was not.
+check('CLAIM "the exclusion is PRINTED": the excluded count appears in the '
+      'text output, not only in the JSON',
+      'excluded as a catch-all bucket' in t.stdout
+      and str(rows['app']['excluded_records']) in t.stdout,
+      t.stdout[:400])
+
+# CLAIM: "one unit is not a comparison, and a baseline is one". MIN_READY_UNITS
+# was asserted to be >= 2 as a CONSTANT. A constant is not a behaviour: the
+# comparison could have been written `>= 1` and the arm would not have noticed.
+_one = [{'app': 'solo', 'layer': 'product', 'detection_method': 'code-review'}
+        for _ in range(90)]
+check('CLAIM "one unit is not a comparison": a register where exactly ONE app '
+      'clears the bar is NOT ready',
+      R.assess(_one, 'app')['verdict'] != 'READY', R.assess(_one, 'app'))
+check('...and it is the VOLUME verdict, so the reason given is the true one',
+      R.assess(_one, 'app')['verdict'] == 'NOT READY -- VOLUME',
+      R.assess(_one, 'app')['verdict'])
+
+# CLAIM: "REPORT ONLY -- nothing gates on this". Stated in the header and
+# nowhere enforced. It is mechanically checkable, so it is checked.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _ROC                                # noqa: E402
+_reg_names = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
+check('CLAIM "report only, nothing gates on this": it is NOT in the report-only '
+      'RUNNER registry', 'entity_baseline_readiness.py' not in _reg_names,
+      _reg_names[:5])
+check('...and it IS recorded as a deliberate NOT-PROMOTED decision rather than '
+      'simply forgotten',
+      'entity_baseline_readiness.py' in [x[0] for x in _ROC.NOT_PROMOTED])
+_gate = _io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                 encoding='utf-8', errors='replace').read()
+check('...and the push gate does not invoke it',
+      'entity_baseline_readiness' not in _gate)
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

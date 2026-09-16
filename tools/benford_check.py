@@ -39,7 +39,9 @@ and names what to look at. It never says fabricated, and nothing gates on it.
 ── THE SHAPE PRE-CHECK IS MOST OF THIS FILE, AND THAT IS THE POINT ─────────
 Applying Benford to a dataset that cannot satisfy it produces a confident false
 positive every single time, and a checker that cries wolf is one nobody reads.
-Five refusals, each with the measured number printed beside it:
+The refusals, each with the measured number printed beside it -- NOT counted
+here, because a count in prose goes stale the day a sixth is added and nothing
+makes it fail; `shape_refusal()` is the only place the set is stated:
 
   TOO FEW VALUES      under MIN_N. The expected count for digit 9 is 4.6% of n;
                       below ~100 a single value moves a whole bin.
@@ -51,6 +53,12 @@ Five refusals, each with the measured number printed beside it:
   TOO ROUNDED         a high share of values that are exact multiples of 100 or
                       1000. Rounding concentrates leading digits and is a
                       property of the recording convention, not of the data.
+  CAPPED OR DEFAULTED a pile-up on ONE value above MAX_MODE_SHARE. A copay
+                      capped at 50, a deductible floored at 0: the pile-up is
+                      the business rule and it drives the leading digit by
+                      itself. This one sits in the gap between the two guards
+                      either side of it -- a column that is 60% one value still
+                      clears both the distinct-share and the round-share bars.
   TOO FEW DISTINCT    a small number of repeated values -- a tier table or a
                       standard rate wearing a large n.
   ASSIGNED, NOT MEASURED   values in a band that looks like ids, years or
@@ -96,6 +104,7 @@ MIN_N = 100
 MIN_DECADES = 2.0
 MAX_ROUND_SHARE = 0.50       # share that are exact multiples of 100
 MIN_DISTINCT_SHARE = 0.30    # distinct values / n
+MAX_MODE_SHARE = 0.25        # share held by the single commonest value
 ID_BAND = (1900, 2100)       # years; a whole corpus inside this is a counter
 
 # Nigrini's conformity bands for the mean absolute deviation.
@@ -187,6 +196,27 @@ def shape_refusal(values):
         return ('TOO FEW DISTINCT VALUES',
                 '%d distinct in %d values (%.0f%%), bar is %.0f%%'
                 % (distinct, n, 100.0 * distinct / n, 100 * MIN_DISTINCT_SHARE))
+    # CAPPED OR DEFAULTED -- a pile-up on ONE value, which the two guards above
+    # both miss. A copay pinned at 50 for 60% of rows leaves distinct share at
+    # 0.40 (over the bar) and 50 is not a multiple of 100 (under the round bar),
+    # so without this the column is scored and the cap -- a business rule, not
+    # an anomaly -- drives the leading digit on its own. Found by comparing two
+    # independent implementations of this same pre-check on 2026-09-15; neither
+    # had it, and only the comparison surfaced it.
+    #
+    # DELIBERATELY LAST OF THE THREE REPETITION GUARDS. A column of three values
+    # repeated trips this one too, and "TOO FEW DISTINCT VALUES" is the more
+    # informative thing to tell somebody about it -- a cap is a claim about ONE
+    # value, and on a three-value column that claim is not the story.
+    counts = {}
+    for v in pos:
+        counts[v] = counts.get(v, 0) + 1
+    mode_v, mode_n = max(counts.items(), key=lambda kv: kv[1])
+    if mode_n / float(n) > MAX_MODE_SHARE:
+        return ('CAPPED OR DEFAULTED',
+                'the single value %g is %d of %d values (%.0f%%), bar is %.0f%% '
+                '-- a cap, a floor or a default, not a distribution'
+                % (mode_v, mode_n, n, 100.0 * mode_n / n, 100 * MAX_MODE_SHARE))
     if all(ID_BAND[0] <= v <= ID_BAND[1] and v == int(v) for v in pos):
         return ('ASSIGNED, NOT MEASURED',
                 'every value is an integer in %d-%d -- years or a counter' % ID_BAND)

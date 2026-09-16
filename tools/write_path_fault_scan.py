@@ -39,6 +39,7 @@ standing tools/sairn_reachability_probe.py gives itself.
 """
 import bisect
 import io
+import json
 import os
 import re
 import subprocess
@@ -282,7 +283,101 @@ def scan(path):
     return counts, lines, timeout_state(src)
 
 
+BASELINE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'write_path_hazard_baseline.json')
+
+
+def ratchet(argv):
+    """--ratchet: the hazard COUNT per app may fall and must never rise.
+
+    ── WHY A RATCHET AND NOT A FIX ──────────────────────────────────────────
+    This scan has been a pointer since 2026-09-10 and the portfolio total has
+    not moved: reading 25 sites and deciding which are genuinely unsafe is
+    real work, and a wrapper whose caller inspects the promise is counted here
+    and may be perfectly safe. What a pointer CANNOT do is stop the 26th being
+    written, and that is the half that closes the root cause behind cluster
+    5b98fd27 -- a write path with one success shape and no representation for
+    failure. The existing sites stay open and are recorded as OPEN AND UNREAD.
+    They are not cleared, not accepted, and not an amnesty.
+
+    ── WHAT THIS RATCHET CANNOT DO, said here rather than discovered later ──
+      * It counts per app, not per site, because line numbers move on every
+        edit and a line-keyed baseline would false-alarm on a reformat. So
+        FIXING ONE SITE AND ADDING ANOTHER IN THE SAME APP PASSES. It stops
+        the class growing; it does not pin any individual site.
+      * A count that FALLS is reported and does NOT silently re-baseline. A
+        tool that rewrites its own criteria on every run cannot be used as
+        evidence about what changed -- re-baseline with --rebaseline, which is
+        a deliberate act that shows up in a diff.
+      * An app absent from the baseline is treated as zero, so a NEW app
+        arriving with a blind write site fails. That is the intent.
+    """
+    targets = apps([a for a in argv if not a.startswith('-')])
+    try:
+        with io.open(BASELINE, encoding='utf-8') as fh:
+            base = json.load(fh)
+    except Exception as e:                                       # noqa: BLE001
+        print('COULD NOT RUN: the baseline %s is missing or unreadable (%s: %s).'
+              % (os.path.basename(BASELINE), type(e).__name__, e))
+        print('A ratchet with no baseline cannot tell a regression from a')
+        print('first run, so it refuses rather than recording whatever it')
+        print('happens to see today as the standard.')
+        return 2
+
+    counts_by_app = base.get('counts', {})
+    rose, fell, now = [], [], {}
+    for t in sorted(targets):
+        counts, _lines, _ts = scan(t)
+        blind = counts['then-no-catch'] + counts['fire-and-forget']
+        now[t] = blind
+        was = counts_by_app.get(t, 0)
+        if blind > was:
+            rose.append((t, was, blind))
+        elif blind < was:
+            fell.append((t, was, blind))
+
+    if '--rebaseline' in argv:
+        with io.open(BASELINE, 'w', encoding='utf-8') as fh:
+            json.dump({'note': base.get('note', ''), 'recorded': base.get('recorded'),
+                       'counts': now}, fh, indent=1, sort_keys=True)
+            fh.write('\n')
+        print('REBASELINED to the counts measured now. This is a deliberate act')
+        print('and shows up in the diff, which is the only reason it is allowed.')
+        return 0
+
+    print('WRITE-PATH HAZARD RATCHET -- the count per app may fall, never rise.')
+    print('  baseline recorded %s, total %d site(s) OPEN AND UNREAD'
+          % (base.get('recorded', '?'), sum(counts_by_app.values())))
+    print('  measured now: %d' % sum(now.values()))
+    print('')
+    print('  THE BASELINE IS NOT AN AMNESTY. Every site in it is a write whose')
+    print('  result is read on the success path only or not at all, and none')
+    print('  of them has been read and cleared. The ratchet stops the class')
+    print('  growing while they stand.')
+    if fell:
+        print('')
+        for t, was, is_ in fell:
+            print('  IMPROVED  %-26s %d -> %d' % (t, was, is_))
+        print('  Re-record with --rebaseline so the gain cannot be given back.')
+    if rose:
+        print('')
+        for t, was, is_ in rose:
+            print('  REGRESSION %-25s %d -> %d' % (t, was, is_))
+        print('')
+        print('  A NEW then-only or fire-and-forget write site. This is the exact')
+        print('  shape that made a dropped socket silent in SAIRNdental: the')
+        print('  handler is right there and looks complete, and a rejection')
+        print('  skips it entirely. Read the site the scan names and give the')
+        print('  path a way to represent failure.')
+        return 1
+    print('')
+    print('  No app exceeds its baseline.')
+    return 0
+
+
 def main(argv):
+    if '--ratchet' in argv or '--rebaseline' in argv:
+        return ratchet(argv)
     targets = apps([a for a in argv if not a.startswith('-')])
     print('WRITE-PATH FAULT HAZARDS -- a pointer, not a verdict. Read every site.')
     print('')

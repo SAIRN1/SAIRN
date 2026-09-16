@@ -236,6 +236,87 @@ for app, fn in (('sairnvet.html', 'svPushOne'), ('sairndental.html', 'dntPushOne
           m is not None and W.classify(src, m) == 'handled',
           'the push helper is still being reported as the hazard it fixes')
 
+# ── THE RATCHET, BOTH DIRECTIONS (2026-09-15) ──────────────────────────────
+# The scan has been a pointer since 2026-09-10 and the portfolio total has not
+# moved. A pointer cannot stop the 26th site being written, and that is the half
+# that closes the root cause behind cluster 5b98fd27: a write path with one
+# success shape and no representation for failure. A ratchet that never fires is
+# indistinguishable from a clean portfolio, so both directions are here.
+print('\n--- the ratchet ---')
+
+import io                                                        # noqa: E402
+import json                                                      # noqa: E402
+import tempfile                                                  # noqa: E402
+
+
+def run_ratchet(baseline_doc=None):
+    """Exit code with the shipped baseline, or with one written for this arm."""
+    real = W.BASELINE
+    tmp = None
+    try:
+        if baseline_doc is not None:
+            fd, tmp = tempfile.mkstemp(suffix='.json')
+            os.close(fd)
+            with io.open(tmp, 'w', encoding='utf-8') as fh:
+                json.dump(baseline_doc, fh)
+            W.BASELINE = tmp
+        return W.ratchet([])
+    finally:
+        W.BASELINE = real
+        if tmp and os.path.exists(tmp):
+            os.remove(tmp)
+
+
+check('the shipped baseline PASSES today -- a ratchet that fails on a clean '
+      'tree is one somebody turns off', run_ratchet() == 0, 'expected exit 0')
+
+with io.open(W.BASELINE, encoding='utf-8') as _fh:
+    _shipped = json.load(_fh)
+_worst = max(_shipped['counts'], key=lambda k: _shipped['counts'][k])
+
+# A baseline one lower for a single app is exactly what "somebody added a new
+# blind write site" looks like to this tool.
+_tightened = dict(_shipped['counts'])
+_tightened[_worst] -= 1
+check('a NEW blind write site FAILS the ratchet -- it can fire',
+      run_ratchet({'recorded': 'fixture', 'counts': _tightened}) == 1,
+      'expected exit 1 with %s tightened to %d' % (_worst, _tightened[_worst]))
+
+# The other direction: a count that FELL must not be reported as a regression.
+_loosened = dict(_shipped['counts'])
+_loosened[_worst] += 5
+check('a count that FELL is not a regression',
+      run_ratchet({'recorded': 'fixture', 'counts': _loosened}) == 0,
+      'expected exit 0')
+
+# A MISSING baseline must REFUSE rather than record today as the standard.
+# "Could not run" is a third state and is never folded into "passed" (PR 1.11).
+_real = W.BASELINE
+try:
+    W.BASELINE = os.path.join(REPO, 'tools', 'no_such_baseline_file.json')
+    check('a MISSING baseline is COULD-NOT-RUN (exit 2), never a silent first run',
+          W.ratchet([]) == 2, 'expected exit 2')
+finally:
+    W.BASELINE = _real
+
+# An app ABSENT from the baseline counts as zero, so a new app arriving with a
+# blind write fails rather than being grandfathered in.
+_partial = dict((k, v) for k, v in _shipped['counts'].items() if k != _worst)
+check('an app ABSENT from the baseline counts as zero, so a new app with a '
+      'blind write fails',
+      run_ratchet({'recorded': 'fixture', 'counts': _partial}) == 1,
+      'expected exit 1 with %s removed from the baseline' % _worst)
+
+# Without this, an app could drop out of the scan entirely and its hazards would
+# leave the total silently -- a shrinking number that reads as an improvement.
+check('the baseline records every app the scan measures, so none is invisible',
+      set(_shipped['counts']) == set(W.apps([])),
+      'baseline %d apps, scan %d' % (len(_shipped['counts']), len(W.apps([]))))
+
+check('the baseline is declared OPEN AND UNREAD, not accepted',
+      'OPEN AND UNREAD' in _shipped.get('note', ''), _shipped.get('note', '')[:120])
+
+
 print('\n' + ('%d ARM(S) FAILED: %s' % (len(fails), ', '.join(fails))
               if fails else 'ALL ARMS PASS'))
 sys.exit(1 if fails else 0)
