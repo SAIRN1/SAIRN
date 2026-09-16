@@ -1473,8 +1473,8 @@
       "task": "item 52 complementary measurement fusion, item 59 superspreading dispersion analysis",
       "claimed_at": "2026-09-15T22:39:48Z",
       "claimed_at_epoch": 1789511988.1596768,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T00:04:21Z"
     }
   ]
 }
