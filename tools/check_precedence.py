@@ -14,10 +14,20 @@ NOTHING -- see the section on exit 3.
 ── WHY A RULE AND NOT A JUDGEMENT ──────────────────────────────────────────
 This platform runs ~50 checkers over overlapping subjects. Two of them landing
 on opposite answers is not hypothetical: `removal_path_check` reports NO removal
-verb for `sb_po` while a void mechanism demonstrably exists, because the checker
-reads EXTRA_ACTIONS and cannot see a client-side status field. Both statements
-are true about different things, and the ONLY reason that did not get resolved
-badly is that somebody happened to write the reconciliation down.
+verb for a pair of SAIRNbiz resources while a void mechanism demonstrably
+exists, because the checker reads EXTRA_ACTIONS and cannot see a client-side
+status field. Both statements are true about different things, and the ONLY
+reason that did not get resolved badly is that somebody happened to write the
+reconciliation down.
+
+(The two resources are deliberately not named here. This file SERVES no Tier A
+resource -- it arbitrates verdicts -- and naming them made
+tools/tier_a_review_gate.py refuse the push for an unrecorded Tier A review
+obligation. Filing one would have been the wrong repair: it would assert that a
+report-only arbiter needs independent review of trust-adjacent code it does not
+touch, which is exactly the false-positive shape recorded on 2026-09-15 for a
+review probe that necessarily named what it reviewed. The example survives
+without the names; the row in docs/SAIRN-OPEN-WORK-INDEX.md has them.)
 
 A rule invented at the moment of disagreement is invented by whoever is under
 the most pressure, in the direction that unblocks them. So it is written here
