@@ -474,14 +474,56 @@ section('10. the mutations this file claims to kill are the ones the probe lists
 // The two files have to agree or one of them is lying about coverage. This
 // reads the probe's own mutation list rather than restating it, so adding a
 // mutation there without an arm here is VISIBLE instead of silently uncovered.
+//
+// ── THE COMMENT ABOVE WAS FALSE AS WRITTEN UNTIL 2026-09-16 ─────────────────
+// This arm asserted `listed >= 6`. An independent reviewer added a SEVENTH
+// mutation to the probe with no matching section here, and the arm STAYED
+// GREEN and the suite exited 0 -- the probe can grow indefinitely and a floor
+// never notices. A cross-check that cannot see the thing it exists to see is
+// worse than none, because its comment tells the next reader they are covered.
+//
+// FIXED AS A NAME CROSS-WALK RATHER THAN A BUMPED COUNT, and the difference
+// matters: `strictEqual(listed, 6)` would also have caught the seventh, but it
+// says only THAT the numbers disagree. This says WHICH mutation has no arm,
+// and it keeps working when one is renamed rather than reordered.
+//
+// The contract between the two files is the LEADING TOKEN of each probe
+// mutation -- `SAME_PERSON`, `ALREADY_COUNTERSIGNED`, `EXPIRED`, and so on --
+// which must appear in a `section(...)` line here. That is a fact about both
+// files rather than a number either can drift past.
 t('every mutation in countersign_coverage_probe.py has a section here', () => {
   const probe = fs.readFileSync(
     path.join(__dirname, 'countersign_coverage_probe.py'), 'utf8');
-  const listed = (probe.match(/^\s{4}\('([^']+)/gm) || []).length;
-  assert.ok(listed >= 6,
-    'the probe lists at least the six mutations this suite was built for; '
-    + 'found ' + listed + ' -- if the probe grew, this suite has to grow with it');
+  const listed = (probe.match(/^ {4}\('([^']+)/gm) || [])
+    .map((l) => l.replace(/^ {4}\('/, ''));
+  assert.ok(listed.length >= 6,
+    'the probe lists fewer than the six mutations this suite was built for; '
+    + 'found ' + listed.length + ' -- a SHRINKING probe is also a finding');
+
   const self = fs.readFileSync(__filename, 'utf8');
+  const sections = (self.match(/^section\('[^']*'\);$/gm) || []).join('\n');
+
+  // The identifying token of a mutation is its first word-ish run: the refusal
+  // code for the four code mutations, and the descriptive opening for the two
+  // boundary ones. Matched case-insensitively against the section titles.
+  const uncovered = listed.filter((desc) => {
+    const key = (desc.match(/^[A-Za-z_]+/) || [''])[0];
+    if (!key) return true;
+    if (new RegExp(key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i').test(sections)) {
+      return false;
+    }
+    // The two boundary mutations are titled by what they do rather than by a
+    // code, so they are matched on the word BOUNDARY plus their path.
+    if (/boundary/i.test(desc)) {
+      return !(/countersign/i.test(desc) ? /COUNTERSIGN BOUNDARY/i.test(sections)
+                                         : /SPEND-PATH BOUNDARY/i.test(sections));
+    }
+    return true;
+  });
+  assert.deepStrictEqual(uncovered, [],
+    'THESE PROBE MUTATIONS HAVE NO SECTION IN THIS SUITE, so this file claims '
+    + 'coverage it does not have:\n  ' + uncovered.join('\n  '));
+
   ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'].forEach((m) => {
     assert.ok(new RegExp('section\\(\'\\d+\\. ' + m + ' ').test(self),
       m + ' must have its own section, keyed to the mutation it kills');
