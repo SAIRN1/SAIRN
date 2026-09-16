@@ -2005,6 +2005,16 @@
       "claimed_at_epoch": 1789532257.8058956,
       "status": "released",
       "released_at": "2026-09-16T04:31:19Z"
+    },
+    {
+      "id": "hank-1789533363",
+      "session": "hank",
+      "subject": "sairnvet-audit",
+      "task": "dosing audit trail reader export sv_audit_log",
+      "claimed_at": "2026-09-16T04:36:03Z",
+      "claimed_at_epoch": 1789533363.9695077,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
