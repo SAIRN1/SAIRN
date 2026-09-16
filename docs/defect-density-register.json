@@ -2254,6 +2254,152 @@
    "severity": "high",
    "subject": "feat(tools): item 40 -- and it found a LIVE unauthenticated route into a customer's billing",
    "summary": "api/sairncash/portal.js returns a Stripe Billing Portal URL -- card on file, invoice history, the power to cancel -- to an UNAUTHENTICATED POST carrying only a subscription id, which Stripe puts in dashboards, webhooks, emails and CSV exports and never treated as a secret. The file refuses a cus_ id for exactly this reason and then accepts a sub_ id of comparable entropy. NOT EXPLOITABLE TODAY and the reason is an accident, not a control: production's STRIPE_SECRET_KEY is present but is an EXPIRED sk_test_ key, so every call dies before reaching a customer. The day a working key is installed, nothing announces it -- the same re-read-trigger failure that left the SOUP register claiming the key was unset"
+  },
+  {
+   "commit": "5d0f4459b552",
+   "date": "2026-09-15",
+   "subject": "fix(cron): the watchdog was retrying ITSELF into an HTTP 508 and had latched itself FAILING -- plus the second scheduler item 54 was missing",
+   "files": [
+    ".github/workflows/cron-liveness.yml",
+    "api/_lib/cron-response.js",
+    "api/cron-watchdog.js",
+    "api/cron-watchdog.test.js",
+    "docs/2026-09-15-item54-second-watchdog.md",
+    "docs/MASTER-PLAN.md",
+    "docs/SAIRN-OPEN-WORK-INDEX.md",
+    "docs/TOOLING-INVENTORY.md",
+    "docs/traceability-matrix.md",
+    "tests/run_cron_liveness_probe.py",
+    "tools/cron_liveness_check.py"
+   ],
+   "lines_added": 964,
+   "lines_removed": 35,
+   "app": "PLATFORM",
+   "layer": "product",
+   "severity": "high",
+   "detection_method": "live-verification",
+   "summary": "api/cron-watchdog.js is in its own EXPECTED_JOBS and was RESPONDING to its own row, not merely recording it. Two live consequences over four consecutive hours on 2026-09-15 with all three real jobs reporting ok: (1) the planned retry was the running function invoking itself, answered by Vercel with HTTP 508 LOOP DETECTED at 21:15:29Z; (2) an alert it could not deliver wrote its own outcome as failed, which it then read back next hour as evidence it was FAILING -- a latch that could never clear, so one delivery failure made it permanently FAILING regardless of the platform's actual health. The flapping self-status also defeated the 6-hour alert-storm suppression, which is conditioned on the status being unchanged.",
+   "rules": [],
+   "citation_confidence": "not-citable",
+   "injection_phase": "design",
+   "phase_confidence": "inferred",
+   "found_by_tool": null,
+   "injection": {
+    "commit": "3d40c7d548a1",
+    "date": "2026-09-14",
+    "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+    "lag_days": 1
+   },
+   "citation_note": "The nearest standing rule is the alert-storm rule inside cron-response.js itself, which this defect defeats rather than violates: the suppression is conditioned on the status being the SAME, and the self-status flapped. A rule the defect routes around is not a rule the defect cites.",
+   "phase_note": "The self-entry in EXPECTED_JOBS is deliberate and documented -- the watchdog must leave its own heartbeat for an outside reader. What was never decided is that it should also RESPOND to that row. An omission in the design of the response table, not a coding error."
+  },
+  {
+   "commit": "5d0f4459b552",
+   "date": "2026-09-15",
+   "subject": "fix(cron): the watchdog was retrying ITSELF into an HTTP 508 and had latched itself FAILING -- plus the second scheduler item 54 was missing",
+   "files": [
+    ".github/workflows/cron-liveness.yml",
+    "api/_lib/cron-response.js",
+    "api/cron-watchdog.js",
+    "api/cron-watchdog.test.js",
+    "docs/2026-09-15-item54-second-watchdog.md",
+    "docs/MASTER-PLAN.md",
+    "docs/SAIRN-OPEN-WORK-INDEX.md",
+    "docs/TOOLING-INVENTORY.md",
+    "docs/traceability-matrix.md",
+    "tests/run_cron_liveness_probe.py",
+    "tools/cron_liveness_check.py"
+   ],
+   "lines_added": 964,
+   "lines_removed": 35,
+   "app": "PLATFORM",
+   "layer": "product",
+   "severity": "high",
+   "detection_method": "live-verification",
+   "summary": "SAIRN_OPS_EMAIL is not set in production, so every alert api/cron-watchdog.js has ever planned ended 'nobody was told' -- visible only inside a per-job action detail. The watchdog's own header calls a silently inert alerting system worse than having none, because the existence of a watchdog is itself an assurance somebody is relying on. Fixed by asking the channel question unconditionally every run and surfacing notify_channel on its own axis; setting the variable remains Michael's.",
+   "rules": [
+    "1.11"
+   ],
+   "citation_confidence": "arguable",
+   "injection_phase": "config",
+   "phase_confidence": "stated",
+   "found_by_tool": null,
+   "injection": {
+    "commit": "3d40c7d548a1",
+    "date": "2026-09-14",
+    "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+    "lag_days": 1
+   },
+   "citation_note": "PR 1.11 is about a check that cannot run reporting a pass it never performed. This is the alerting half of the same shape: detection ran and the result reached nobody, under an HTTP 200 and a headline reading 'checked 4 job(s)'. Cited as arguable rather than clean because 1.11 is written about checks, not channels.",
+   "phase_note": "The endpoint's own log line names the missing variable. Nothing in the code is wrong; the deployment never set SAIRN_OPS_EMAIL."
+  },
+  {
+   "commit": "bb325f88b9f6",
+   "date": "2026-09-15",
+   "subject": "fix(sql,tools): both stale-migration landmines, and the SUPERSEDED rule had the wrong predicate",
+   "files": [
+    "sql/sairn_ai_rate_limit_consume_fn.sql",
+    "sql/sairn_ai_usage_columns_2026-09-02.sql",
+    "tests/run_advisory_lock_isolation_probe.py",
+    "tools/advisory_lock_isolation_check.py"
+   ],
+   "lines_added": 200,
+   "lines_removed": 66,
+   "app": "PLATFORM",
+   "layer": "tooling",
+   "severity": "high",
+   "detection_method": "static-checker",
+   "summary": "Two SQL files still created sairn_ai_rate_limit_consume(text,integer,integer) after sql/sairn_ai_tenant_subbudget_2026-09-15.sql explicitly DROPPED that signature and replaced it with a 6-argument form carrying defaults. Re-running either -- and one of them is named for its COLUMNS, which is what somebody would re-run it for -- puts both in the catalogue, so a 3-arg call matches BOTH and Postgres refuses it entirely with 'function is not unique': a hard outage on every AI call, which is precisely the state the tenant work's own comment says dropping rather than overloading avoided. Both files now ABORT when the newer form is installed.",
+   "rules": [],
+   "citation_confidence": "not-citable",
+   "injection_phase": "design",
+   "phase_confidence": "inferred",
+   "found_by_tool": "advisory_lock_isolation_check.py",
+   "injection": {
+    "commit": "69668db57db0",
+    "date": "2026-09-15",
+    "subject": "chore(docs): regenerate MASTER-PLAN and the traceability matrix after the tenant sub-budget landed",
+    "lag_days": 0
+   },
+   "citation_note": "No standing rule covers 'an older migration file silently undoing a newer one'. The repo's rules are about checks, gates and documents going stale; this is an executable artefact whose age is invisible at the moment somebody runs it.",
+   "phase_note": "The tenant migration correctly DROPPED the 3-arg form and said why. What nobody did was retire the two older files that still create it -- a gap in the migration process rather than in either file's code."
+  },
+  {
+   "commit": "cac3edd5c19f",
+   "date": "2026-09-15",
+   "subject": "fix(sairnlaw,platform): the advisory lock was doing nothing under REPEATABLE READ -- on attorney trust money, and in two other places",
+   "files": [
+    "docs/2026-09-15-advisory-lock-isolation-sweep.md",
+    "docs/MASTER-PLAN.md",
+    "docs/SAIRN-OPEN-WORK-INDEX.md",
+    "docs/TOOLING-INVENTORY.md",
+    "docs/traceability-matrix.md",
+    "sql/cl_rate_limit_consume_fn_2026-09-04.sql",
+    "sql/sairnlaw_trusttx_functions.sql",
+    "tests/run_advisory_lock_isolation_probe.py",
+    "tools/advisory_lock_isolation_check.py",
+    "tools/report_only_checks.py"
+   ],
+   "lines_added": 990,
+   "lines_removed": 22,
+   "app": "sairnlaw",
+   "layer": "product",
+   "severity": "critical",
+   "detection_method": "static-checker",
+   "summary": "law_check_and_insert_disbursement holds an advisory lock while summing the trust balance and then inserting, with nothing requiring READ COMMITTED. pg_advisory_xact_lock serialises ACQUISITION and not the SNAPSHOT, so under REPEATABLE READ two concurrent disbursements against one client each sum a balance from before the other committed, both pass the sufficiency check, and both insert -- an overdrawn IOLTA client trust ledger with the lock held correctly throughout. Not exploitable on the current deployment, which uses the default isolation; one ALTER ROLE statement away, and that statement reads as a hardening change.",
+   "rules": [],
+   "citation_confidence": "not-citable",
+   "injection_phase": "design",
+   "phase_confidence": "inferred",
+   "found_by_tool": "advisory_lock_isolation_check.py",
+   "injection": {
+    "commit": "a7787be15bc4",
+    "date": "2026-09-02",
+    "subject": "refactor(sairnlaw): one file defines the trust functions -- the silent-revert trap is gone because the duplicate text is gone",
+    "lag_days": 13
+   },
+   "citation_note": "No standing rule covers 'a correctness precondition that lives in another file's configuration'. The nearest, PR 1.11, is about a CHECK failing closed when a tool is absent; this is a lock that works perfectly while the guarantee it is presumed to give is void. Forcing 1.11 would manufacture agreement the matcher would then score.",
+   "phase_note": "Read from the function body: the lock, the aggregate and the insert are all present and correct; what is absent is the isolation precondition they rest on. A design-time omission, not a coding slip."
   }
  ],
  "started": "2026-09-09"
