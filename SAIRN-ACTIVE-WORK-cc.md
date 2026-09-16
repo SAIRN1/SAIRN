@@ -4156,3 +4156,74 @@ something real. A silent wrong arm wastes nobody's afternoon.
 because only it had evidence. Other arms in the same file locate regions the
 same way, and a position-based slice that lands on the wrong region **while
 still passing** leaves no trace at all.
+
+## 2026-09-16 (continued) -- the tracing burn-down closes, and two more Tier A suites are proved
+
+### Tracing: 23 -> 0
+
+**489 test files, every one tied to a stated requirement.** Bound-to-subject 0
+as well, so nothing moved across on a filename.
+
+**What the zero does NOT mean, written down because a zero invites the wrong
+reading.** A declaration is the WEAKEST of the three citing sources and the
+matrix labels it so: nothing outside the file corroborates it, and a test can
+declare a requirement it does not actually test. What 0 means is that an auditor
+can read what every test file is FOR. It does not mean every test proves it.
+
+### The probe arm that named the probe and measured the whole tree
+
+`tests/hover_separation_ci_probe.py` arm 7 asserted the clone had NO tracked
+file modified, under the label *"this clone has no tracked file modified by the
+probe."* Two different questions that agree only on a clean tree. Run mid-session
+it went red on sixteen unrelated edits and attributed them to the probe.
+
+Fails closed, so nothing shipped -- **and that is also why it could persist: a
+red arm naming a plausible cause reads as a finding rather than as a defect in
+the arm.** Now measured as a DIFFERENCE from a baseline taken before the probe
+starts; a pre-dirty tree is a printed note, not a failure and not a silence.
+Driven both ways on a real file, restore verified by sha256.
+
+### Two Tier A suites converted from green to PROVED
+
+**SAIRNbiz sb_po/sb_recv** -- four mutations, and the one that matters is the
+minted id becoming the PO NUMBER: `po_num` is a per-device counter, so two
+workstations both raise PO-2026-001 and the second overwrites the first through
+merge-duplicates. One row, two real purchase orders, no error.
+
+**SAIRNvet seed suppression** -- three mutations against the suite guarding the
+worst thing that has actually happened on this platform: opening a panel on a
+fresh device pushed invented Ketamine, Butorphanol and Fentanyl balances into a
+DEA-relevant register, additive-only, with no delete path anywhere in the
+product. 18/18 green said nothing about whether it would notice that returning.
+
+Triage moved **17 -> 19 controlled**. Both plant into a temp COPY: the SAIRNvet
+suite gained an `SV_HTML` override **copied from the SB_HTML affordance the
+SAIRNbiz suite already had**, rather than a second convention invented for the
+occasion. That removes the mid-run residue class rather than managing it.
+
+### THE SHAPE THAT REPEATED THREE TIMES TONIGHT, IN THREE DIFFERENT TOOLS
+
+A measuring tool keys on a house convention, and a correct artefact written in
+another style reads as an ABSENT one:
+
+- `sabotage_control_check.py` credited the uniqueness guard only in its Python
+  spelling, so a JS control that guarded three ways read as unguarded;
+- `suite_control_coverage.survey()` credits a control only when it declares
+  `MUTATIONS =`, so the po/recv control -- written as four inline plants --
+  left its suite in the UNCONTROLLED Tier A list after the control existed;
+- `load_schema_snapshot.tables()` classified by NAME, so two real tables were
+  invisible to the guard whose entire job is that tables must not disappear.
+
+**All three under-count, which is the safe direction and is exactly why none of
+them was noticed.** An over-count would have been argued with.
+
+### Found and NOT closed, stated rather than left
+
+`tools/mutation_anchor_check.py` sweeps MUTATIONS tables for anchor uniqueness
+repo-wide and its population is **PYTHON ONLY** -- 14 probes, all `.py`.
+Neither JS control is in it, including the pre-existing
+`sairnbiz_void_mutation_control.js`. Both guard uniqueness inline and refuse
+loudly, so nothing is unguarded; what is missing is the repo-wide sweep seeing
+them. A regex JS object-literal parser is a fragile thing to add to cover two
+files that already check themselves, so this is a measurement handed on rather
+than a fix.
