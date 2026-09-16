@@ -165,17 +165,6 @@ PURPOSES = {
         'byte compare reports 11 diverged, the true answer is 0. Does NOT '
         'migrate the 52 -- it exists so the next one is not a 53rd '
         'implementation'),
-    'ai_action_approval_audit.py': ('CHECKER',
-        'an AI-PROPOSED action that reaches storage with no human approval -- '
-        'the mechanical half of a rule that is currently only written down. '
-        'Measured 2026-09-15: 74 AI call sites across all 17 apps, 39 gated BY '
-        'CONSTRUCTION (render-only), 14 that write in the same handler, and '
-        'ZERO carrying an explicit approval gate. A LOCATOR, not a detector: a '
-        'chat-transcript write reads the same as an invoice write, and a '
-        'confirm() one function away reads as absent. Its first real run was '
-        'WRONG TWICE and both are recorded in its header -- it missed ten apps '
-        'that hold the proxy URL in a constant, and it counted the AI call\'s '
-        'own POST as a data write, inflating the headline from 14 to 59'),
     'accepted_risk_scan.py': ('CHECKER',
         'a risk somebody deliberately ACCEPTED in a comment and recorded '
         'nowhere central -- the shape that got api/sairncash/portal.js read as '
@@ -229,27 +218,6 @@ PURPOSES = {
         'budget would punish looking, since the app audited hardest looks '
         'worst. Report-only and must stay so -- a gate here would reward not '
         'citing a rule'),
-    'defect_budget_policy.py': ('CHECKER',
-        'item 20 -- a defect budget that FORBIDS rather than informs, and the '
-        'ways that gate quietly stops forbidding anything: a band that flips on '
-        'noise at a boundary (held inside a 3-point margin, in BOTH directions, '
-        'because declaring recovery early is the tempting half), a decision '
-        'recorded without the number that produced it (every stamp carries the '
-        'criteria version and a digest of the register CONTENTS, so a later '
-        'reader can separate "the number changed" from "the reading was '
-        'wrong"), a recount silently reversing a recorded decision (it raises '
-        'REVISIT and rewrites nothing), a binary in-or-out budget that forbids '
-        'everything the day it flips (four graduated bands), and an override '
-        'used habitually (counted at the top of every run; past 3 in a window '
-        'the MECHANISM is reported failed, and the override is still accepted, '
-        'because a policy that cannot be overridden in an emergency gets '
-        'disabled entirely). ROLLING vs PERMANENT aging is a REAL OPEN '
-        'QUESTION, deliberately not defaulted: both numbers are printed, '
-        'nothing is gated until --decide records a choice with a reason. On its '
-        'first run both windows read zero remaining and the most extreme band, '
-        'which the tool reads as the BUDGET being wrong rather than the platform '
-        'being in crisis -- it reports UNCALIBRATED and prints the observed rate '
-        'instead of tuning BUDGET_PER_WINDOW until the output flatters the corpus'),
     'trend_alarm.py': ('CHECKER',
         'item 45 -- the two things a THRESHOLD cannot see, because a threshold '
         'is the P term of a controller and nothing else: a metric parked '

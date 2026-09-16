@@ -154,6 +154,58 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    {
+        'tool': 'ai_action_approval_audit.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only. 3 seconds, and its number moves '
+                    'the moment an AI call site is added or a confirm step is '
+                    'removed -- which is precisely the change nobody announces.',
+        'catches': 'a handler that receives a model answer and WRITES it with '
+                   'no human approval step between',
+        'why_it_matters': 'the count is a READ-LIST, not a score, and the tool '
+                          'says so in its own first two lines. Its value is the '
+                          'partition: RENDER_ONLY is gated BY CONSTRUCTION '
+                          'because the save is a separate click, so the only '
+                          'rows that need a human judgement are the ungated '
+                          'writers. A single number would hide that',
+        'evidence': 'REAL RUN 2026-09-16: 74 AI call sites across 17 app files. '
+                    '14 WRITES_UNGATED, 0 GATED_IN_BODY, 39 RENDER_ONLY, 21 '
+                    'NO_WRITE. The zero is the striking figure -- not one call '
+                    'site on this platform has an explicit confirm between the '
+                    'model answer and the write -- and the 39 are safe for a '
+                    'structural reason rather than a checked one. Named rows '
+                    'include sairnbuild.html aiAsk and two sairngrounds '
+                    'handlers',
+    },
+    {
+        'tool': 'defect_budget_policy.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only, AND IT IS REGISTERED WHILE ITS '
+                    'OWN BUDGET IS WRONG, which is the reason to register it. '
+                    '0.1 seconds. It recomputes from the register, so its '
+                    'answer changes on every --add -- and a budget nobody '
+                    'watches drift cannot be calibrated.',
+        'catches': 'the defect rate crossing the declared budget, on both a '
+                   'rolling 30-day window and a permanent count',
+        'why_it_matters': 'a defect budget is the one number that says whether '
+                          'to keep building or stop and fix. Two windows are '
+                          'reported rather than one because they disagree in a '
+                          'way that matters: a rolling window forgives an old '
+                          'burst, a permanent count never does, and which is '
+                          'right is a judgement nobody has made yet',
+        'evidence': 'REAL RUN 2026-09-16: 118 records, digest 1e3f40bf761b9730, '
+                    'BOTH windows at 0.0% remaining -> ALL HANDS. THE TOOL '
+                    'REFUSES TO READ THAT AS A CRISIS and says so: "Both '
+                    'windows read the most extreme band on the first reading, '
+                    'which means the budget is wrong rather than the platform '
+                    'being in crisis." BUDGET_PER_WINDOW is 60; the OBSERVED '
+                    'rate is 198.9 weighted defects per 30 days over 40 days of '
+                    'register. Registered UNCALIBRATED and gating nothing, '
+                    'because the calibration needs readings across pushes and '
+                    'there is no other way to get them',
+    },
     # ── TRIAGE BATCH 2026-09-16. Three promoted, each on a run that was READ
     # ── rather than on its docstring, and each timed against the same standard
     # ── the not-promoted rows below are held to.
@@ -1664,6 +1716,54 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    # ── TRIAGE BATCH 2026-09-16, SECOND PASS. These close the last of the
+    # ── untriaged CHECKER tools; each was RUN and its output read.
+    ('condition_coverage.py', 'IT MUTATES SOURCE, and that alone decides it. The tool '
+     'flips operands in a real file, re-runs the suite, and restores -- its own output '
+     'carries a RESTORED column. That is correct alone and wrong on a push path, where '
+     'two runs can overlap: this platform has already lost a guard overnight because run '
+     'A snapshotted a clean file, run B snapshotted A\'s mutation as its "original", and '
+     'B\'s restore put the mutation back. Nothing that writes to a tracked file belongs '
+     'on every push. Its findings are real -- 44 operands on the ledger engine, 12 '
+     'surviving -- and belong to a session that has decided to spend time on them'),
+    ('checker_confidence.py', 'ITS EXIT 2 IS STRUCTURAL, NOT TRANSIENT. It reports COULD '
+     'NOT RUN whenever a registered checker has not yet been measured on both signals, '
+     'and new checkers are registered constantly -- so a by_exit entry would report a '
+     'refusal on essentially every push, which is the shape that teaches people to '
+     'ignore a verdict. THIS IS NOT A JUDGEMENT ON ITS VALUE: it is the tool that found '
+     'the nine dead CONTROLS_FOR declarations on 2026-09-16, by rating a checker LOW '
+     'while its control sat beside it. It belongs on the cadence the registers are read '
+     'on, where a partial answer is read by a person rather than parsed by a gate'),
+    ('checker_estimate_fusion.py', 'SAME STRUCTURAL EXIT 2, different cause: it reports '
+     '"no usable continuous signal" for eight registered checkers, and a checker with no '
+     'continuous signal is the normal case rather than a fault. Fusing two estimates is '
+     'only meaningful where both exist, so the population it can speak about is a subset '
+     'it does not control'),
+    ('defect_dispersion.py', 'IT REFUSES THE VERDICT ON PURPOSE, in its own words: "THIS '
+     'IS A DESCRIPTION, NOT A VERDICT. No threshold is applied, nothing is flagged, and '
+     'no number here says anybody did anything wrong." A registry whose verdict is '
+     'by_exit needs a tool willing to say pass or fail; this one deliberately is not, '
+     'and wiring it in would manufacture a threshold its author declined to set'),
+    ('ooda_phases.py', 'ITS ANSWER BARELY MOVES. It reports which of the four OODA '
+     'boundaries the register can actually timestamp -- today ACT alone, with OBSERVE, '
+     'ORIENT and DECIDE all missing a field -- and that changes only when a new field is '
+     'added to the register schema, which is a handful of times a year. A push notice '
+     'repeating the same four lines daily is one people stop reading, and by then it has '
+     'stopped being able to tell them anything'),
+    ('html_script_check.py', 'IT IS A CLI THAT TAKES INPUT, not a sweep. Run with no '
+     'argument it exits 2 with "empty stdin and no file argument. Nothing was checked." '
+     '-- correctly. A registry entry would have to invent a target for it, and a check '
+     'pointed at a file somebody chose once is not a platform sweep'),
+    ('deploy_verify_notify.py', 'ALREADY WIRED, and later than this registry runs. It is '
+     'a PostToolUse hook filtered to git push, which waits for the deploy to land and '
+     'compares origin/main against the live site. Its question -- did what I pushed '
+     'actually reach production -- cannot be asked at push time, which is the only time '
+     'this registry runs'),
+    ('testability_criteria.py', 'NOT A CHECKER. It is the criteria and the locked '
+     'fixtures that tools/testability_gate.py consumes, and that gate REFUSES to judge '
+     'any real requirement until every fixture here classifies correctly. Running this '
+     'file produces nothing by design. The gate is registered; registering its rulebook '
+     'as well would be the same claim in two places'),
     ('sairn_status.py', 'NOT A CHECKER AT ALL, which is the reason rather than a '
      'technicality: it reports what every agent SAYS it is doing, and there is no '
      'state of that report which is a defect in this repo. A session working on '
@@ -1685,18 +1785,24 @@ NOT_PROMOTED = [
     # check people route around. `trend_alarm.py` is recorded below as
     # not-promoted partly for taking fourteen seconds, so that is the standard
     # these were held to rather than a number invented for them.
-    ('retry_backoff_check.py', 'NOT ON THE PUSH PATH, ON MEASURED COST. 25 seconds over 362 '
-     'source units -- every api/**.js plus every <script> block in every app HTML, all of '
-     'which must be brace-matched into a block tree because the question it asks is '
-     'CONTAINMENT and containment cannot be grepped. Triaging it is what found it was '
-     'far worse: `_kind_before()` searched the ENTIRE file prefix once per brace, which '
-     'is O(n^2) on a 2MB file and took 232 SECONDS. That is fixed and the answer never '
-     'changed, which is exactly why nothing caught it -- a correct check nobody timed. '
-     'At 25s it is still nearly twice trend_alarm.py\'s rejected fourteen. It also has '
-     'almost nothing to say per run: the platform has TWO true retries and the standing '
-     'finding -- api/_lib/resilience.js has no importer, so the only breaker cannot fire '
-     '-- does not move push to push. It belongs on the cadence the SPOF and accepted-risk '
-     'registers are read on, not in front of somebody waiting to push'),
+    ('retry_backoff_check.py', 'NOT ON THE PUSH PATH, ON MEASURED COST -- AND THE COST IS '
+     'MOVING. 35.4 seconds over 362 source units, re-measured 2026-09-16 before landing '
+     'this entry, which first said 25s a few hours earlier. THE FIGURE IS RE-MEASURED '
+     'RATHER THAN CARRIED because a runtime written down once is a runtime nobody checks '
+     'again, and this one grew by 40% inside a session as the tree grew and 8e03757a '
+     'taught it to read a budget as a breaker. Every api/**.js plus every <script> block '
+     'in every app HTML has to be brace-matched into a block tree, because the question '
+     'it asks is CONTAINMENT and containment cannot be grepped. Triaging it is what found '
+     'it had been far worse: `_kind_before()` searched the ENTIRE file prefix once per '
+     'brace, which is O(n^2) on a 2MB file and took 232 SECONDS. Fixed, and the answer '
+     'never changed -- which is exactly why nothing caught it, a correct check nobody had '
+     'timed. At 35s it is two and a half times trend_alarm.py\'s rejected fourteen, and '
+     'the trend is the argument rather than the number. It also has almost nothing to say '
+     'per run: both true retries now read OK -- api/agent/poll.js has a delay and '
+     'api/sd-agent.js has a breaker since 8e03757a -- leaving one standing finding, that '
+     'api/_lib/resilience.js has no importer, which does not move push to push. It '
+     'belongs on the cadence the SPOF and accepted-risk registers are read on, not in '
+     'front of somebody waiting to push'),
     ('suite_control_triage.py', 'NOT ON THE PUSH PATH, SAME MEASUREMENT: 28 seconds, '
      'because it parses every probe in tests/ to decide which suites have a negative '
      'control and then joins that to the criticality register. AND ITS NUMBER IS A '
