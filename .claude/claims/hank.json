@@ -2063,8 +2063,8 @@
       "task": "independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
       "claimed_at": "2026-09-16T16:07:50Z",
       "claimed_at_epoch": 1789574870.6798556,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T18:27:06Z"
     }
   ]
 }
