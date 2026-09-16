@@ -1289,6 +1289,16 @@
       "claimed_at_epoch": 1789525623.24359,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789526601",
+      "session": "cody",
+      "subject": "cody",
+      "task": "tool selftest probe suite discovery item 47 ast parser",
+      "claimed_at": "2026-09-16T02:43:21Z",
+      "claimed_at_epoch": 1789526601.6453626,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
