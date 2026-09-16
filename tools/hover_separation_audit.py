@@ -128,11 +128,17 @@ def load_commits():
     if code != 0:
         return None, 'git log failed: ' + err.strip()
     commits, cur = [], None
-    for chunk in out.split('\x00'):
-        pass
-    # Parsed line-wise rather than by the NUL split above, because a commit
-    # SUBJECT may itself contain anything; the NUL prefix marks the header line
+    # PARSED LINE-WISE, NOT BY SPLITTING ON NUL, because a commit SUBJECT may
+    # itself contain anything; the NUL PREFIX marks the header line
     # unambiguously and the rest of that line is split only twice.
+    #
+    # A `for chunk in out.split('\x00'): pass` sat here until 2026-09-16 -- the
+    # abandoned first attempt, left behind when the loop below replaced it. It
+    # split the ENTIRE multi-megabyte log into a list and threw it away on
+    # every run, and the comment above it ("the NUL split above") was the only
+    # thing still pointing at it. Guardian check 0d: dead code that reads as
+    # intent, and a comment that describes a mechanism the file no longer has
+    # is worse than no comment. Found by an independent review of this file.
     for line in out.split('\n'):
         if line.startswith('\x00'):
             parts = line[1:].split('\x00', 2)
