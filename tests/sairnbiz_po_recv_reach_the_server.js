@@ -193,6 +193,18 @@ function idCtx() {
   ok(rows.every((r) => typeof r.id === 'string' && r.id.length > 0),
      'every pre-existing PO now carries an id');
   ok(rows[0].id !== rows[1].id, 'and the ids are distinct');
+  // THE ABSENCE IS CHECKED BEFORE THE PARSE, and that is not defensive
+  // padding -- it is the difference between this arm naming a defect and
+  // crashing next to one. Found 2026-09-16 by
+  // tests/sairnbiz_po_recv_mutation_control.js: with the write-back removed,
+  // `ctx.store.sb_po` is undefined and `JSON.parse(undefined)` threw a raw
+  // `SyntaxError: "undefined" is not valid JSON` out of node. The suite still
+  // FAILED, which is the safe direction, but its message was about JSON
+  // syntax and said nothing about purchase orders -- so a reader would go
+  // looking for a broken fixture rather than a collection that no longer
+  // persists its ids.
+  ok(typeof ctx.store.sb_po === 'string',
+     'the ids were WRITTEN BACK at all -- without this the parse below throws a JSON error instead of naming the defect');
   ok(JSON.parse(ctx.store.sb_po)[0].id === rows[0].id,
      'the ids are PERSISTED, so the next load does not mint different ones and back the same PO up twice');
 }
