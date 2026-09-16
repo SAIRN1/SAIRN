@@ -5352,3 +5352,92 @@ reusable core; choosing a group size for the live register is a real decision
 with whoever owns that table.
 
 ### Item 86 — not started
+
+---
+
+## 2026-09-16 — item 86 built, and three items measured rather than assumed
+
+### Item 86 — `tools/bypass_log.py`, wired into both override sites
+
+**What the override was before this: `SAIRN_SEED_GATE=off` returns from the hook
+before a single check runs** — the seed gate, the Tier A review gate, the
+generated-document check, all of them — **and nothing recorded that it
+happened.** A switch labelled for one purpose that disables ten, with no log.
+
+The three battleshort requirements, and one of them was already satisfied:
+
+- **(a) a NAMED check, never all-safety-off** — the blanket form is now recorded
+  as its own, worse category, and `KNOWN_CHECKS` names the eleven real gates so a
+  named bypass has somewhere to land. **The blanket form is NOT deleted, and that
+  is deliberate**: a battleshort exists because sometimes you must ship, and
+  removing the only escape hatch from a blocking gate pushes the next emergency
+  into `--no-verify`, **which nothing logs at all.**
+- **(b) time-bounded, self-reverting** — *already true and not "fixed"*.
+  `SAIRN_SEED_GATE=off git push …` is a shell assignment scoped to ONE COMMAND;
+  it cannot outlive it, so there is no switch left flipped, and a timer would be
+  strictly weaker. The clock is enforced only on a **standing** bypass — the one
+  shape that genuinely can be left on — where **no `expires_at` is INVALID rather
+  than permanent**, because that is the switch nobody flips back.
+- **(c) its own log, so repeats become a pattern** — this is the half that changes
+  behaviour. **`PATTERN_AT = 3`, low on purpose**: a threshold high enough to feel
+  safe is one nothing reaches. And the output says the thing that matters —
+  *a check people legitimately need to bypass is MIS-SPECIFIED; the action is to
+  fix the check, not to ask whoever keeps bypassing it to try harder.*
+
+**Driven end to end, not asserted.** A real `SAIRN_SEED_GATE=off git push` payload
+through the real hook wrote a real row and still exited 0. **The synthetic row was
+then deleted** — a fake entry in an audit log is worse than an empty one.
+
+**And the fail-safe is proven, not claimed.** I replaced `bypass_log.py` with
+`raise ImportError` and re-drove the hook: **exit 0, no stdout noise.** A blocking
+gate that refused a push because its own *logging* failed would turn bookkeeping
+into an outage. The cost is a missing row, which is why the reporter states that
+**an empty log is evidence about the HOOK, not about the platform** — `--no-verify`
+and a direct API push never reach it.
+
+Control: with no override, the gate still runs and produces output.
+
+**AND THE WIRING WAS POLLUTING THE AUDIT LOG, caught from the staged diff.**
+`tests/push_gate/refspec_and_override_probe.py` drives the real hook with a real
+`SAIRN_SEED_GATE=off` payload — correctly; that is its job — so wiring the logger
+into the override site meant **every suite run appended a row.** Within a few runs
+the log would be mostly probe rows and **`PATTERN_AT=3` would fire on `ALL` from
+the probe alone: a pattern detector reporting its own test harness as the
+pattern.**
+
+Found by `git diff --cached --numstat` showing **1 insertion in a file I had just
+deleted** — the same check that caught the overwrite two rounds ago.
+
+**Fixed as a REDIRECT, not a suppression.** The log path is env-overridable and
+the probe points it at a throwaway file, so the write really happens and lands
+somewhere that is not the audit record. **Skipping the write under test would
+leave the wiring never actually exercised**, which is the fail-open shape.
+Verified both ways: a full probe run leaves the real log absent, and a redirected
+drive still writes.
+
+### Items 72, 74, 26 — not built, and each for a different real reason
+
+**Item 72 (practitioner validation) — the named prerequisite does not exist.**
+`sairn-onboarding-designer` is in neither the repo's 33 mirrored skills nor the 61
+in the user store. The task says to *point it at* a new purpose; there is nothing
+to point. And the substance is not code: getting a real veterinarian, nurse,
+funeral director, attorney or dentist to use these apps is a **recruitment and
+scheduling act**, and nothing I build can substitute for it. **A click-through by
+me is exactly the substitute the item says not to accept.**
+
+**Item 74 (schedule-pressure cross-check) — no deferral record exists to check.**
+Nothing on this platform records *why* a check was skipped. The push gate logs
+overrides only as of today (above); `run_all_tests.py` reports SKIPPED but not a
+reason; and the defect register has no deferral field. **The honest first step is
+that the bypass log built today is the beginning of the data item 74 needs** — a
+bypass carries a `reason`, and once there are reasons there is something to
+cross-check against defect timing. Building the cross-check first would be
+building a query over an empty table.
+
+**Item 26 phase 2 (tiering re-check + Copy-Exactly sweep) — not started**, and
+the honest note is that `copy_exactly_check.py` already exists with a recorded
+decision NOT to promote it, because its output is a known-open state a push cannot
+change: 0 of 5 identical on 2026-09-14, four differing because the APP was fixed
+and the must-copy-exactly DOCUMENT was not. **Wiring an automatic sweep onto a
+checker whose current output is four stale rows would fire on every confirmed
+defect and say nothing.** The document and the app agreeing is the precondition.

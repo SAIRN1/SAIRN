@@ -27,6 +27,15 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_push_gate_hook as H  # noqa: E402
 
+# ── DO NOT WRITE TO THE REAL BYPASS LOG (added 2026-09-16) ─────────────
+# This probe drives the hook with a real SAIRN_SEED_GATE=off payload, which
+# is its job. Since item 86 wired override logging into that site, an
+# un-redirected run appends a row to docs/BYPASS-LOG.jsonl on every suite
+# run -- and PATTERN_AT would then fire on `ALL` from this probe alone.
+# Redirected rather than suppressed, so the logging is still exercised.
+os.environ['SAIRN_BYPASS_LOG'] = os.path.join(
+    tempfile.mkdtemp(prefix='bypass-probe-'), 'log.jsonl')
+
 FAIL = []
 
 

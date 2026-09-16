@@ -81,6 +81,17 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'bypass_log.py': ('CHECKER',
+        'item 86, the battleshort pattern -- every push-gate override recorded in '
+        'its OWN log, and a REPEATEDLY bypassed check reported as a defect in the '
+        'CHECK rather than a discipline problem in whoever keeps bypassing it. '
+        'Until this, SAIRN_SEED_GATE=off returned from the hook before a single '
+        'check ran and NOTHING recorded that it happened. Both override sites now '
+        'record, FAIL-SAFE: a push is never blocked because its logging failed, '
+        'proven by driving the hook with the logger deliberately broken. A '
+        'STANDING bypass with no expires_at is INVALID rather than permanent -- '
+        'that is the switch nobody flips back. An empty log is evidence about the '
+        'HOOK, not the platform: --no-verify never reaches it'),
     'ooda_phases.py': ('CHECKER',
         'item 67 -- WHICH OODA phase is the bottleneck, and it refuses to '
         'publish an aggregate because three of the four boundaries are not '

@@ -496,6 +496,35 @@ OVERRIDE_RE = re.compile(
     re.IGNORECASE)
 
 
+# ── ITEM 86: EVERY OVERRIDE IS RECORDED, IN ITS OWN LOG ─────────────────────
+# The battleshort pattern. `SAIRN_SEED_GATE=off` returns from this hook before a
+# single check runs -- the seed gate, the Tier A review gate, the generated-
+# document check, all of them -- and until now NOTHING RECORDED THAT IT HAPPENED.
+#
+# The requirement that changes behaviour rather than paperwork: a REPEATED bypass
+# of the same check is a defect in the CHECK, not a discipline problem in whoever
+# keeps bypassing it. A gate that fires on work people legitimately need to ship
+# is mis-specified, and the only way anybody learns that is if the bypasses are
+# counted somewhere they cannot be counted by remembering.
+#
+# FAIL-SAFE, DELIBERATELY AND LOUDLY. This is a BLOCKING hook. A push refused
+# because its own LOGGING failed would turn bookkeeping into an outage, so every
+# failure here is swallowed and the override proceeds. The cost is that a failed
+# write is a MISSING ROW, which is why tools/bypass_log.py reports its own line
+# count rather than implying completeness, and why it says in its own output that
+# an empty log is evidence about the hook rather than about the platform.
+def _record_bypass(check, reason, command=None, tip=None):
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__))))
+        import bypass_log
+        bypass_log.record(check, reason, command=command, tip=tip)
+    except Exception:
+        # Never block a push on a logging failure. Never print either: this hook's
+        # stdout is read by the harness, and a stray line from the logger would be
+        # indistinguishable from a gate verdict.
+        pass
+
+
 def override_in_command(cmd):
     """Is `SAIRN_SEED_GATE=off` set as a real shell assignment in this command?
 
@@ -637,6 +666,12 @@ def main():
         # Checked BEFORE any work so an override costs nothing and behaves
         # exactly like the env var does in prepush mode.
         if override_in_command(cmd):
+            # RECORDED BEFORE THE EXIT, so an override that crashes the hook
+            # afterwards is still on the record.
+            _record_bypass('ALL', 'SAIRN_SEED_GATE=off on a Bash git push -- the '
+                                  'BLANKET form, which disables every check in '
+                                  'this hook rather than a named one',
+                           command=cmd)
             sys.exit(0)
         local = None
 
@@ -2198,6 +2233,8 @@ if __name__ == '__main__':
         if '--pre-push' in sys.argv:
             MODE = 'prepush'
         if os.environ.get('SAIRN_SEED_GATE', '').lower() == 'off':
+            _record_bypass('ALL', 'SAIRN_SEED_GATE=off in the environment '
+                                  '(prepush mode) -- the BLANKET form')
             sys.exit(0)
         main()
     except Exception:
