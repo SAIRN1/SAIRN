@@ -330,6 +330,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **The Timesheets panel reported a week of hours nobody ever entered, and two KPI tiles had nothing behind them at all** | **CLOSED 2026-09-15 (CC), both halves** &mdash; the fabricated hours removed (`200aaba8`), then the real entry path built on Michael&rsquo;s decision: `saveTimesheet()`, `sb_ts` registered and synced, | `tests/sairnbiz_server_backup.js`, `tests/sairnbiz_timesheet_hours.js` |
+| **A timesheet recorded for an employee who is then DEACTIVATED is unreachable through the product &mdash; it cannot be edited, zeroed or removed** | **FOUND 2026-09-16 (Hank) &mdash; NOT FIXED.** Recorded as an `ASSESSED` entry in `tools/removal_path_baseline.json`, with the residual gap written out rather than folded into the clearance. **The dec | `tests/run_removal_path_probe.py` |
 | **Gate 4 on the densest suite on the platform &mdash; and the probe found a guard nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnbiz_fault_probe.py`, 8 mutation arms + 5 controls; `tests/sairnbiz_bill_cannot_settle_unmatched.js` gained section 8 (5 arms, 42 &rarr; 47). MASTER-PLAN | `tests/sairnbiz_bill_cannot_settle_unmatched.js`, `tests/sairnbiz_fault_probe.py` |
 | **`sb_po` and `sb_recv` reached a server as Tier A with NO WAY TO CORRECT A WRONG ROW &mdash; now VOIDABLE, never deletable** | **FOUND 2026-09-14 (CC)** by `tools/removal_path_check.py` in the post-work sweep. **MECHANISM BUILT 2026-09-14 (CC)** on Michael&rsquo;s decision. **COMMITTED, NOT YET PUSHED &mdash; so NOT LIVE-VERI | `tests/functional_core_is_pure.js`, `tests/sairnbiz_void_mutation_control.js`, `tests/sairnbiz_void_not_delete.js` |
 | **The three-way match shipped with BOTH of its documents local-only &mdash; `sb_po` and `sb_recv` reached no server at all** | **BUILT 2026-09-14 (CC)** &mdash; `sql/sairnbiz_po_recv_migration.sql` written and **NOT YET RUN**; held by `tests/sairnbiz_po_recv_reach_the_server.js` (28 arms, four mutation controls). Registered,  | `tests/sairnbiz_po_recv_reach_the_server.js` |
@@ -346,7 +347,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **Gate 4 on the vertical with the MOST resources and no probe &mdash; 32 resources, four green suites, none ever observed red** | **BUILT 2026-09-15 (Hank)** &mdash; `tests/sairnbuild_fault_probe.py`, 11 mutation arms + 4 controls, green after one real coverage gap was closed. MASTER-PLAN `sairnbuild` fault 0 &rarr; 1 | `tests/sairnbuild_fault_probe.py`, `tests/sairnbuild_server_backup.js` |
 | **Competitive-gap B2 &mdash; retainage could be held and never released, and the board printed a lifetime accrual under a current-balance label** | **BUILT 2026-09-15 (Hank)** &mdash; `e2624577`. `wip` + `release_retainage` on `bld_draws`, `api/_lib/sairnbuild-retainage-endpoint.test.js` 29 arms. **Every refusal live-verified; the HAPPY PATH IS N | `api/_lib/sairnbuild-retainage-endpoint.test.js` |
-| **`tests/faults/transport_timeout_sweep.js` is RED on a clean tree &mdash; a string anchor that rotted against a CORRECT refactor** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED** | `tests/faults/transport_timeout_sweep.js` |
+| **`tests/faults/transport_timeout_sweep.js` ~~is RED on a clean tree~~ &mdash; **GREEN, fixed the same day** &mdash; a string anchor that rotted against a CORRECT refactor** | **FOUND AND FIXED 2026-09-15 (Fourth)** &mdash; re-anchored to `bldDataRaw` in `a40065e9`; **VERIFIED GREEN 2026-09-16 (Hank): 81/81 arms across 15 apps, exit 0** | `tests/faults/transport_timeout_sweep.js` |
 | ~~AI Budget Early Warning: `f072765` fixed 5 review findings and was never independently re-reviewed~~ | **CLOSED 2026-09-04 (Cody)** in `1fc666ec` — reviewed, one real defect found and fixed, two reported for decision | `tests/sairnbuild_budget_early_warning.js` |
 
 ### sairncare
@@ -709,7 +710,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 482   tests/**, api/*.test.js
-  open-work rows citing a test       253   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       254   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     49   report_only_checks.NOT_PROMOTED
