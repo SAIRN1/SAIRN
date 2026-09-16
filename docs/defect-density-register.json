@@ -3119,6 +3119,62 @@
       "recurrence_open": "Every other arm in this file that locates a region by indexOf of a generic keyword has the same exposure; only the one that went red was corrected, because only it had evidence. Nothing sweeps the repo for position-based slices into source, and a slice that lands on the wrong region while still passing would leave no trace at all."
     },
     {
+      "commit": "0eb9ef7efd2f",
+      "date": "2026-09-16",
+      "subject": "fix(tools): nine CONTROLS_FOR declarations parsed to nothing, so nine real controls counted for nothing",
+      "files": [
+        "tests/run_checker_control_probe.py",
+        "tests/run_sairnlaw_rate_limit_probe.js",
+        "tests/run_subprocess_decode_probe.py",
+        "tools/checker_control_check.py"
+      ],
+      "lines_added": 113,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "Nine of seventy CONTROLS_FOR declarations parsed to an empty set, so nine real negative controls counted for nothing and their checkers scored as never having been shown to fire",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/checker_confidence.py",
+      "injection": {
+        "unknown_reason": "The pattern predates both the path form and the JS controls; it was correct for the only shape that existed when written and went wrong as callers wrote forms it was never widened to accept. No single commit introduced the mismatch."
+      },
+      "citation_note": "Adjacent rather than exact. PR 1.11 names a check that could not run being folded into a pass; here the DECLARATION could not be read, so a checker with a working control scored as uncontrolled. Same family -- a mechanism whose failure is indistinguishable from the absence of the thing it measures -- but the rule does not name the declaration case.",
+      "contributing_factors": [
+        {
+          "factor": "NAME_RE matched a bare filename pattern that rejects a path separator, so the five declarations written as tools/x.py matched nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The pattern accepts a path and .js, and names normalise to a basename -- which is what every consumer already compares against."
+        },
+        {
+          "factor": "The pattern could not match .js at all, so a JavaScript checker could not be declared as controlled under any spelling. Four JS controls existed and none of them counted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Same pattern change, verified against all four real files."
+        },
+        {
+          "factor": "A declaration that does not parse produces NO ERROR. The author writes the line, sees it in the file, and every downstream signal reports the checker as never shown to fire. Nothing compared the number of CONTROLS_FOR lines against the number that resolved.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tests/run_checker_control_probe.py now asserts EVERY CONTROLS_FOR under tests/ parses to at least one subject, and names the ones that do not."
+        },
+        {
+          "factor": "It was found by following a finding about a DIFFERENT tool rather than by anything watching this one. checker_confidence rated subprocess_decode_check LOW while its control was driving it in both directions, and the discrepancy was visible only to somebody who already knew the control existed.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Nothing joins a checker confidence score to the existence of a control file that names it. The tool already reports those candidates, so the join is available and not made."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS. The new arm covers CONTROLS_FOR under tests/ only. Every other declared-metadata convention here -- MUTATIONS blocks, report_only_checks REGISTRY fields, criteria version stamps -- is read by a pattern somewhere, and nothing asserts that what an author wrote is what a parser resolved. Third instance this session of a detector that knows one spelling reporting every other as absent."
+    },
+    {
       "commit": "1231c342e643",
       "date": "2026-09-16",
       "subject": "fix(tools): the removal-path burn-down counted two resources that own no table",
