@@ -3005,322 +3005,6 @@
       "recurrence_open": "NOT CLOSED. The guards exist in files. Whether the migrations have been re-run against the deployed database is unverifiable from a clone, and until they have been, every guarded function is guarded only in the repository. tools/advisory_lock_isolation_check.py says so on every run rather than reporting the platform clean."
     },
     {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "The dosing audit trail rendered an UNPROVISIONED server as a legitimately-empty DEA record. api/sd-data.js answers a missing table with {ok:true,data:[],provisioned:false} and its own comment says the flag exists so the client can tell nothing-saved-yet from not-set-up; svData() discarded it, so the reader took the empty branch and printed 'this is the correct answer -- it is not a failed read' while the entries sat unread on the device. COULD-NOT-READ folded into a pass, on a controlled-substance record.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "svData() returned d.data and dropped the provisioned flag the server deliberately sends, so the one fact distinguishing not-set-up from nothing-recorded never reached any of its 41 callers.",
-          "action_status": "done",
-          "action": "a fourth wantEnvelope parameter returns {data, provisioned}; the bare return is unchanged so no other caller moved."
-        },
-        {
-          "kind": "detection",
-          "factor": "The reader was built against svData's BEHAVIOUR as its author understood it, not against api/sd-data.js. The server comment saying why the flag exists was never read from the client side.",
-          "action_status": "done",
-          "action": "section C0 of the suite drives the REAL svData against a fake fetch and pins the contract in both modes, so the client and server halves can no longer disagree silently."
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "An unprovisioned table and an empty table are indistinguishable at the HTTP layer by design -- both are 200 with an empty array -- so every consumer of this transport is one dropped field away from the same false statement.",
-          "action_status": "planned",
-          "action": "the other 40 sv_* resources have not been audited for the same assumption; svHydrateAll carries a comment asserting the same wrong belief and survives only because it early-returns on an empty array."
-        }
-      ],
-      "recurrence_open": "Nothing stops the next reader of a sv_* resource making the same read. The flag is opt-in, so a caller that does not ask for it gets the old behaviour, and only this one screen now asks."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "A dosing-audit read still IN FLIGHT rendered as a confirmed-empty trail. One keystroke in a date or text filter during a 15s read printed 'it is not a failed read' under a banner still saying Loading -- the same false statement as the unprovisioned case, reached with no misconfiguration at all.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "_svAuditRows initialises to [] and the filter inputs call the table renderer directly, so an outstanding read and a genuinely empty trail were the same state.",
-          "action_status": "done",
-          "action": "_svAuditLoaded makes IN FLIGHT a third state with its own sentence in both the table and the count."
-        },
-        {
-          "kind": "process",
-          "factor": "The test double handed svData a SYNCHRONOUS thenable, so no arm could ever observe the in-flight state. A control that cannot reach a state cannot fail there.",
-          "action_status": "done",
-          "action": "the harness is async and section C2 drives a promise that never settles, then calls the table renderer the way a keystroke does."
-        }
-      ],
-      "recurrence_open": "Any future panel that splits a READ from a RENDER and leaves filters live inherits the same three-state problem; nothing checks for it."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "The one test arm defending the failed-read-is-not-empty claim COULD NOT FAIL. It asserted !/correct answer/ on the banner element; that string only exists in the tbody template, so rewriting the failed-read branch to say literally 'the trail is empty' still passed it.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "detection",
-          "factor": "The arm defending the headline claim asserted on doseaudit-source.innerHTML for a string that only ever appears in the TBODY template, so it tested an element that could never hold it.",
-          "action_status": "done",
-          "action": "asserted on the tbody, and a sabotage pass confirmed it now goes red."
-        },
-        {
-          "kind": "process",
-          "factor": "The suite was never negative-controlled. Every arm was written as expect-this-text and none was ever run against a broken build, which is the asymmetry sabotage_control_check.py exists to measure.",
-          "action_status": "done",
-          "action": "five sabotage directions were run and their red counts recorded in the commit: 3, 2, 3, 1, 1."
-        }
-      ],
-      "recurrence_open": "The repo has no check that an assertion reads an element capable of containing the string it tests for; this one was found by a human reading it."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "A present-but-unparseable timestamp was silently dropped by every date filter on the dosing audit trail, directly contradicting the comment above the code. The row that vanished in the reproduction was a controlled_log_blocked -- a refusal, the entry an inspector is most likely asking about.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The date filter guarded a MISSING timestamp (ts &&) but not an UNPARSEABLE one, three lines under a comment claiming both. Sept 15 2026 slices to Sept 15 2 and compares lexically against an ISO day.",
-          "action_status": "done",
-          "action": "svAuditDayPrefix() returns empty for anything not YYYY-MM-DD-shaped, and empty means KEEP; the undated count now uses the same predicate."
-        },
-        {
-          "kind": "detection",
-          "factor": "No arm fed the filter a malformed timestamp, so the half of the comment that was false was never exercised.",
-          "action_status": "done",
-          "action": "section E drives a Sept 15 2026 entry through both a from- and a to-filter and asserts it survives and is counted."
-        }
-      ],
-      "recurrence_open": "Reachability today is via a row written or altered outside this app, which the panel itself says is possible. Nothing validates timestamps on the way in."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "The exported dosing-audit CSV carried none of the provenance the panel is built on, so a file handed to an inspector was indistinguishable between the full server record and a capped local copy taken after a failed read.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "exportTableCSV serialises the <table> only, and every provenance sentence the panel was designed around -- which copy, the cap, the filters in force, append-only, not-tamper-evident -- lives outside it.",
-          "action_status": "done",
-          "action": "svExportDoseAudit() writes all of it above the header row; the generic exporter is unchanged for every other table."
-        },
-        {
-          "kind": "process",
-          "factor": "The panel review checked what the SCREEN says and never what the exported FILE says, although the file is the artefact that leaves the building.",
-          "action_status": "done",
-          "action": "section G asserts six provenance lines are present in the exporter."
-        }
-      ],
-      "recurrence_open": "Every other exportTableCSV call site on the platform has the same gap; none was audited here."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "Dosing entries written while a backup was refused or timed out exist only on the device and were absent from the server view with nothing saying so, while the banner framed local as the smaller copy.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The reader shows the server rows verbatim, and entries written while a push was refused or timed out are never marked backed and exist only on the device.",
-          "action_status": "done",
-          "action": "the count of device-only entries is derived by id and DISCLOSED in the banner with why, and omitted when zero."
-        },
-        {
-          "kind": "process",
-          "factor": "The banner framed local as a subset of server -- the server copy is not capped, this device holds N -- which is exactly inverted during an offline backlog, and nothing in the design review asked what happens when the assumption reverses.",
-          "action_status": "done",
-          "action": "the inverted case now has its own sentence rather than being covered by the subset framing."
-        }
-      ],
-      "recurrence_open": "The two copies are still not merged and a device-only entry is still not VIEWABLE, only counted. Whether to show it is a product decision nobody has made."
-    },
-    {
-      "commit": "769667475cb5",
-      "date": "2026-09-16",
-      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "lines_added": 452,
-      "lines_removed": 43,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "The dosing-audit read had no hang guard. svFetchTimeoutSignal() returns undefined on an engine without AbortSignal.timeout, on which the read never settles and the panel shows Loading with an empty table indefinitely -- while svPushOne twenty lines away races a timer for exactly this reason.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "fbae89ebbb59",
-        "date": "2026-09-16",
-        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
-        "lag_days": 0
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "svFetchTimeoutSignal() is feature-detected and returns undefined without AbortSignal.timeout; on such an engine the read neither resolves nor rejects and the panel sat on Loading for ever with an empty table and no error.",
-          "action_status": "done",
-          "action": "a Promise.race hang guard, the same shape svPushOne already uses and documents, with a message that says it timed out rather than that the trail is empty."
-        }
-      ],
-      "recurrence_open": "Every other svData caller in the file is still unguarded on an engine without AbortSignal.timeout; only the write path and this one read now race a timer.",
-      "single_factor_note": "The whole defect is one missing guard in one function, and svPushOne twenty lines away already had it with a comment explaining why -- so there is no second contributor to find; the guard was simply not copied onto the read path."
-    },
-    {
       "commit": "1231c342e643",
       "date": "2026-09-16",
       "subject": "fix(tools): the removal-path burn-down counted two resources that own no table",
@@ -3647,6 +3331,322 @@
       "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines"
     },
     {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "The dosing audit trail rendered an UNPROVISIONED server as a legitimately-empty DEA record. api/sd-data.js answers a missing table with {ok:true,data:[],provisioned:false} and its own comment says the flag exists so the client can tell nothing-saved-yet from not-set-up; svData() discarded it, so the reader took the empty branch and printed 'this is the correct answer -- it is not a failed read' while the entries sat unread on the device. COULD-NOT-READ folded into a pass, on a controlled-substance record.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "svData() returned d.data and dropped the provisioned flag the server deliberately sends, so the one fact distinguishing not-set-up from nothing-recorded never reached any of its 41 callers.",
+          "action_status": "done",
+          "action": "a fourth wantEnvelope parameter returns {data, provisioned}; the bare return is unchanged so no other caller moved."
+        },
+        {
+          "kind": "detection",
+          "factor": "The reader was built against svData's BEHAVIOUR as its author understood it, not against api/sd-data.js. The server comment saying why the flag exists was never read from the client side.",
+          "action_status": "done",
+          "action": "section C0 of the suite drives the REAL svData against a fake fetch and pins the contract in both modes, so the client and server halves can no longer disagree silently."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "An unprovisioned table and an empty table are indistinguishable at the HTTP layer by design -- both are 200 with an empty array -- so every consumer of this transport is one dropped field away from the same false statement.",
+          "action_status": "planned",
+          "action": "the other 40 sv_* resources have not been audited for the same assumption; svHydrateAll carries a comment asserting the same wrong belief and survives only because it early-returns on an empty array."
+        }
+      ],
+      "recurrence_open": "Nothing stops the next reader of a sv_* resource making the same read. The flag is opt-in, so a caller that does not ask for it gets the old behaviour, and only this one screen now asks."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "A dosing-audit read still IN FLIGHT rendered as a confirmed-empty trail. One keystroke in a date or text filter during a 15s read printed 'it is not a failed read' under a banner still saying Loading -- the same false statement as the unprovisioned case, reached with no misconfiguration at all.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "_svAuditRows initialises to [] and the filter inputs call the table renderer directly, so an outstanding read and a genuinely empty trail were the same state.",
+          "action_status": "done",
+          "action": "_svAuditLoaded makes IN FLIGHT a third state with its own sentence in both the table and the count."
+        },
+        {
+          "kind": "process",
+          "factor": "The test double handed svData a SYNCHRONOUS thenable, so no arm could ever observe the in-flight state. A control that cannot reach a state cannot fail there.",
+          "action_status": "done",
+          "action": "the harness is async and section C2 drives a promise that never settles, then calls the table renderer the way a keystroke does."
+        }
+      ],
+      "recurrence_open": "Any future panel that splits a READ from a RENDER and leaves filters live inherits the same three-state problem; nothing checks for it."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "The one test arm defending the failed-read-is-not-empty claim COULD NOT FAIL. It asserted !/correct answer/ on the banner element; that string only exists in the tbody template, so rewriting the failed-read branch to say literally 'the trail is empty' still passed it.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "detection",
+          "factor": "The arm defending the headline claim asserted on doseaudit-source.innerHTML for a string that only ever appears in the TBODY template, so it tested an element that could never hold it.",
+          "action_status": "done",
+          "action": "asserted on the tbody, and a sabotage pass confirmed it now goes red."
+        },
+        {
+          "kind": "process",
+          "factor": "The suite was never negative-controlled. Every arm was written as expect-this-text and none was ever run against a broken build, which is the asymmetry sabotage_control_check.py exists to measure.",
+          "action_status": "done",
+          "action": "five sabotage directions were run and their red counts recorded in the commit: 3, 2, 3, 1, 1."
+        }
+      ],
+      "recurrence_open": "The repo has no check that an assertion reads an element capable of containing the string it tests for; this one was found by a human reading it."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "A present-but-unparseable timestamp was silently dropped by every date filter on the dosing audit trail, directly contradicting the comment above the code. The row that vanished in the reproduction was a controlled_log_blocked -- a refusal, the entry an inspector is most likely asking about.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The date filter guarded a MISSING timestamp (ts &&) but not an UNPARSEABLE one, three lines under a comment claiming both. Sept 15 2026 slices to Sept 15 2 and compares lexically against an ISO day.",
+          "action_status": "done",
+          "action": "svAuditDayPrefix() returns empty for anything not YYYY-MM-DD-shaped, and empty means KEEP; the undated count now uses the same predicate."
+        },
+        {
+          "kind": "detection",
+          "factor": "No arm fed the filter a malformed timestamp, so the half of the comment that was false was never exercised.",
+          "action_status": "done",
+          "action": "section E drives a Sept 15 2026 entry through both a from- and a to-filter and asserts it survives and is counted."
+        }
+      ],
+      "recurrence_open": "Reachability today is via a row written or altered outside this app, which the panel itself says is possible. Nothing validates timestamps on the way in."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "The exported dosing-audit CSV carried none of the provenance the panel is built on, so a file handed to an inspector was indistinguishable between the full server record and a capped local copy taken after a failed read.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "exportTableCSV serialises the <table> only, and every provenance sentence the panel was designed around -- which copy, the cap, the filters in force, append-only, not-tamper-evident -- lives outside it.",
+          "action_status": "done",
+          "action": "svExportDoseAudit() writes all of it above the header row; the generic exporter is unchanged for every other table."
+        },
+        {
+          "kind": "process",
+          "factor": "The panel review checked what the SCREEN says and never what the exported FILE says, although the file is the artefact that leaves the building.",
+          "action_status": "done",
+          "action": "section G asserts six provenance lines are present in the exporter."
+        }
+      ],
+      "recurrence_open": "Every other exportTableCSV call site on the platform has the same gap; none was audited here."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "Dosing entries written while a backup was refused or timed out exist only on the device and were absent from the server view with nothing saying so, while the banner framed local as the smaller copy.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The reader shows the server rows verbatim, and entries written while a push was refused or timed out are never marked backed and exist only on the device.",
+          "action_status": "done",
+          "action": "the count of device-only entries is derived by id and DISCLOSED in the banner with why, and omitted when zero."
+        },
+        {
+          "kind": "process",
+          "factor": "The banner framed local as a subset of server -- the server copy is not capped, this device holds N -- which is exactly inverted during an offline backlog, and nothing in the design review asked what happens when the assumption reverses.",
+          "action_status": "done",
+          "action": "the inverted case now has its own sentence rather than being covered by the subset framing."
+        }
+      ],
+      "recurrence_open": "The two copies are still not merged and a device-only entry is still not VIEWABLE, only counted. Whether to show it is a product decision nobody has made."
+    },
+    {
+      "commit": "769667475cb5",
+      "date": "2026-09-16",
+      "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "lines_added": 452,
+      "lines_removed": 43,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "The dosing-audit read had no hang guard. svFetchTimeoutSignal() returns undefined on an engine without AbortSignal.timeout, on which the read never settles and the panel shows Loading with an empty table indefinitely -- while svPushOne twenty lines away races a timer for exactly this reason.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "svFetchTimeoutSignal() is feature-detected and returns undefined without AbortSignal.timeout; on such an engine the read neither resolves nor rejects and the panel sat on Loading for ever with an empty table and no error.",
+          "action_status": "done",
+          "action": "a Promise.race hang guard, the same shape svPushOne already uses and documents, with a message that says it timed out rather than that the trail is empty."
+        }
+      ],
+      "recurrence_open": "Every other svData caller in the file is still unguarded on an engine without AbortSignal.timeout; only the write path and this one read now race a timer.",
+      "single_factor_note": "The whole defect is one missing guard in one function, and svPushOne twenty lines away already had it with a comment explaining why -- so there is no second contributor to find; the guard was simply not copied onto the read path."
+    },
+    {
       "commit": "bfa3fff4c5fc",
       "date": "2026-09-16",
       "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
@@ -3713,6 +3713,59 @@
         "unknown_reason": "api/sd-data.js gated on the token claim from its first version; there is no commit where a current-state re-check was removed"
       },
       "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it"
+    },
+    {
+      "commit": "ee221abe02e4",
+      "date": "2026-09-16",
+      "subject": "fix(sairnbiz): a payroll week recorded for an employee who then leaves is reachable again",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_timesheet_hours.js",
+        "tools/removal_path_baseline.json"
+      ],
+      "lines_added": 255,
+      "lines_removed": 18,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A timesheet week recorded for an employee who was later DEACTIVATED became unreachable through the product -- not editable, not zeroable, not removable, and invisible in every panel -- while the row stayed in sb_ts, on the server and in the backup. rTS() rendered only status === Active and openTsModal() refused independently, so the documented removal path (correcting a week is a re-save) existed exactly as long as the employee did. Tier A payroll data in the one store the criticality register says has no other copy.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "a3c44c24ed6a",
+        "date": "2026-09-15",
+        "subject": "feat(sairnbiz): the timesheet gets a real way to record real hours -- the second half of the fix",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "One status check was doing two jobs. rTS() and openTsModal() both asked status === Active, which correctly refuses RECORDING a new week for a departed employee and incorrectly refuses CORRECTING a week already on the books.",
+          "action_status": "done",
+          "action": "sbTsRoster() splits the two: a non-active employee appears for a week if and only if a row already exists for that employee and that week, and saveTimesheet() re-checks the same rule on the write path."
+        },
+        {
+          "kind": "process",
+          "factor": "The removal answer was written as a property of the WRITE PATH -- correcting a week is a re-save -- and never traced through the only UI that can reach that write path. The sentence was true about saveTimesheet and false about the product.",
+          "action_status": "done",
+          "action": "the criticality-register claim is now backed by 11 arms that drive the real panel, not only the writer."
+        },
+        {
+          "kind": "detection",
+          "factor": "tools/removal_path_check.py reads EXTRA_ACTIONS in api/_resources/*.js and structurally cannot see a client-side reachability condition, so it reported sb_ts accurately and could never have surfaced this.",
+          "action_status": "not-actionable",
+          "note": "Giving the checker a view of client reachability would make it a second source of truth for what the UI does and would be wrong far more often than right. The gap is real and stays; it is named in the sb_ts baseline entry so the next reader does not mistake the checker CLEAN for coverage."
+        }
+      ],
+      "recurrence_open": "Nothing checks that a record a product can WRITE stays reachable after the entity it is keyed to changes state. sb_ts is fixed; the same question has not been asked of any other keyed resource whose UI filters by employee, patient or vendor status."
     }
   ],
   "started": "2026-09-09"
