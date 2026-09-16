@@ -1995,6 +1995,16 @@
       "claimed_at_epoch": 1789531285.9455352,
       "status": "released",
       "released_at": "2026-09-16T04:08:23Z"
+    },
+    {
+      "id": "hank-1789532257",
+      "session": "hank",
+      "subject": "dispatch-state",
+      "task": "current state verification claims cross referenced against open work registry",
+      "claimed_at": "2026-09-16T04:17:37Z",
+      "claimed_at_epoch": 1789532257.8058956,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
