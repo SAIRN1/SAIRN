@@ -3601,9 +3601,9 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
     },
     {
-      "commit": "3ab0417801e1",
+      "commit": "fb1984fdf4c0",
       "date": "2026-09-16",
-      "subject": "chore(claims): cc releases cc",
+      "subject": "fix(audit-checkpoint): both refusal paths beat -- and the NEVER_BEAT I reported was my own stale read",
       "files": [
         ".claude/claims/cc.json"
       ],
@@ -5401,7 +5401,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
