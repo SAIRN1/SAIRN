@@ -76,8 +76,22 @@ src = io.open(crit, encoding='utf-8').read()
 # which evaluates to the ORIGINAL tuple: a no-op that made the lock look broken
 # when it was fine. A control that does not actually break the target tests
 # nothing, which is the lesson this whole file is about.
+# ── AND THE ANCHOR IS ASSERTED UNIQUE BEFORE IT IS USED (2026-09-16) ────────
+# The paragraph above records that the FIRST version of this sabotage was a
+# no-op that made the lock look broken when it was fine. The remedy for that
+# was a better replacement; what was still missing is a check that the anchor
+# is there AT ALL and there ONCE. `tools/sabotage_control_check.py` reported
+# this probe UNGUARDED for exactly that.
+_ANCHOR = "VAGUE = ("
+_hits = src.count(_ANCHOR)
+check('2z  the sabotage anchor %r appears exactly once in the criteria file '
+      '(found %d)' % (_ANCHOR, _hits), _hits == 1,
+      'at 0 nothing is planted and 2a below measures an UNMUTATED gate; above '
+      '1 it plants in whichever came first')
 io.open(crit, 'w', encoding='utf-8', newline='\n').write(
-    src.replace("VAGUE = (", "VAGUE = ()\n_SABOTAGED_VAGUE = (", 1))
+    src.replace(_ANCHOR, "VAGUE = ()\n_SABOTAGED_VAGUE = (", 1))
+check('2z2 ...and the file written really differs from the original',
+      io.open(crit, encoding='utf-8').read() != src)
 p = subprocess.run([sys.executable, os.path.join(tmp, 'tools', 'testability_gate.py')],
                    capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=tmp)
 both = (p.stdout or '') + (p.stderr or '')

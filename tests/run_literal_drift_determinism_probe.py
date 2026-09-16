@@ -98,7 +98,22 @@ check(FIXED in src, 'the shipped tool carries the total-order sort')
 # stranded copy is obvious rather than plausible.
 broken = os.path.join(REPO, 'tools', 'zz_tmp_broken_literal_drift.py')
 try:
-    io.open(broken, 'w', encoding='utf-8', newline='').write(src.replace(FIXED, OLD))
+    # ── THE REVERT IS ASSERTED TO HAVE APPLIED (2026-09-16) ────────────────
+    # tools/sabotage_control_check.py reported this probe UNGUARDED. It is the
+    # mildest case of the three fixed today, because the `sanity` arm two lines
+    # below catches a no-op BY BEHAVIOUR -- an unreverted copy reports zero
+    # pairs. But that arm then fails saying "the reverted COPY actually runs",
+    # which sends the reader to the wrong file. UNIQUENESS, so a FIXED string
+    # that starts matching twice cannot silently revert only the first.
+    _hits = src.count(FIXED)
+    check(_hits == 1,
+          'the revert anchor appears exactly once in the checker (found %d) -- '
+          'at 0 nothing is reverted and the sanity arm below would be measuring '
+          'the FIXED tool; above 1 only the first site is reverted' % _hits)
+    _reverted = src.replace(FIXED, OLD)
+    check(_reverted != src, '...and the reverted copy really differs from the '
+                            'shipped one')
+    io.open(broken, 'w', encoding='utf-8', newline='').write(_reverted)
     sanity = run(broken, APPS[0], '1')
     check(pair_count(sanity) > 0,
           'the reverted COPY actually runs -- it reports %d pair(s), so a '

@@ -80,10 +80,24 @@ try:
     # exact failure CLAUDE.md records against a generated gate.
     gate = os.path.join(wt, 'tools', 'sairn_push_gate_hook.py')
     original = io.open(gate, 'rb').read()
-    io.open(gate, 'wb').write(original.replace(
-        b'GUARD_TESTS = [',
+    # ── THE SABOTAGE IS ASSERTED TO HAVE APPLIED (2026-09-16) ──────────────
+    # tools/sabotage_control_check.py reported this probe UNGUARDED: it
+    # replaced an anchor and never checked the anchor was there. UNIQUENESS
+    # rather than presence, because `GUARD_TESTS = [` matching twice would
+    # inject into whichever came first and B1 below would be asserting about a
+    # list nobody chose.
+    _anchor = b'GUARD_TESTS = ['
+    _hits = original.count(_anchor)
+    check('B0 the sabotage anchor appears exactly once in the push gate '
+          '(found %d) -- at 0 nothing is planted and B1 measures an unmutated '
+          'file' % _hits, _hits, 1)
+    _mutated = original.replace(
+        _anchor,
         b"GUARD_TESTS = [\n    ('tests/zz_probe_guard.js', 'a probe requirement',"
-        b" 'a probe defect'),", 1))
+        b" 'a probe defect'),", 1)
+    check('B0b ...and the mutated bytes really differ from the original',
+          _mutated != original, True)
+    io.open(gate, 'wb').write(_mutated)
     rc, out = run(wt, '--check')
     check('B1 a NEW guard test makes --check fail', rc, 1)
     check('B2 and it says the document no longer matches its sources',

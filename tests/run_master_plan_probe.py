@@ -189,8 +189,26 @@ try:
                         timeout=900)
     check(rc.returncode == 0, 'it passes on the committed document (got %d)'
           % rc.returncode)
+    # ── THE SABOTAGE IS ASSERTED TO HAVE APPLIED (2026-09-16) ──────────────
+    # `tools/sabotage_control_check.py` reported this probe UNGUARDED: it
+    # replaced an anchor and never checked the anchor was there. The failure
+    # mode is not silent here -- a rotted anchor makes the next arm report "a
+    # hand-edited row makes it FAIL (got 0)" -- but that is a CONFUSING red
+    # about the wrong thing, and a reader chasing it looks at master_plan.py
+    # rather than at this line. UNIQUENESS rather than mere presence, because
+    # an anchor matching twice would mutate whichever came first and this arm
+    # would be asserting about a row nobody chose.
+    ANCHOR = '| `sairnbiz` |'
+    hits = original.count(ANCHOR)
+    check(hits == 1, 'the sabotage anchor %r appears exactly once in the '
+                     'document (found %d) -- at 0 nothing is planted and the '
+                     'arm below would be measuring an unmutated file; above 1 '
+                     'it plants in whichever came first'
+                     % (ANCHOR, hits))
     io.open(path, 'w', encoding='utf-8', newline='').write(
-        original.replace('| `sairnbiz` |', '| `sairnbiz` MUTATED |', 1))
+        original.replace(ANCHOR, '| `sairnbiz` MUTATED |', 1))
+    check(io.open(path, encoding='utf-8', newline='').read() != original,
+          '...and the file on disk really differs from what it was')
     rc = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                       'master_plan.py'),
                          '--check'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',

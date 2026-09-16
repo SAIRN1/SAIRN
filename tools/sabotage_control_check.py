@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-16.1'
+CRITERIA_VERSION = '2026-09-16.2'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -148,6 +148,47 @@ GUARDS = (
     # already rests on, expressed structurally rather than through a variable
     # name.
     re.compile(r"\.split\(\s*[A-Za-z_$][\w$.]*\s*\)\.length\s*-\s*1"),
+    # ── THE ABSENCE-AND-REFUSE SHAPE, ADDED 2026-09-16, AND IT IS THE FOURTH
+    # ── TIME THIS TOOL HAS UNDER-CREDITED A WELL-WRITTEN CONTROL ───────────
+    # Reported UNGUARDED while carrying a guard the vocabulary could not see:
+    #
+    #   run_invisible_in_pattern_probe.py  if anchor not in s:
+    #                                          raise AssertionError('the
+    #                                          SABOTAGE did not land: ...')
+    #   run_new_checker_probe.py           the same, twice, on two anchors
+    #   run_selftest_independence_probe.py if old not in ORIG: check(...
+    #                                          'ANCHOR MISSING -- ... That is a
+    #                                          could-not-tell and is not a pass')
+    #
+    # All three REFUSE on a missing anchor and say so in the language this
+    # platform uses for a third state. `assert old in src` was already
+    # accepted; `if old not in src: raise` is the same assertion written the
+    # way a probe that wants a READABLE MESSAGE has to write it -- and the
+    # better a probe's error message, the less likely it was to use `assert`.
+    #
+    # THE SIGNAL WAS INVERTED IN EXACTLY THE WAY THE 2026-09-15 NOTE ABOVE
+    # DESCRIBES, for the same reason, in a third spelling. Recording it here
+    # rather than only fixing it: a detector that knows one spelling reports
+    # every other spelling as ABSENT, and absent reads as unguarded.
+    #
+    # NARROW ON PURPOSE, AND THE BLIND LOCK FORCED THE NARROWING. The first
+    # version was `not\s+in\s+[\w.\[\]']+` followed by a refusal, and its own
+    # negative fixture refused it: `if 'x' not in os.environ: raise
+    # SystemExit(...)` is a CONFIG CHECK, matched that pattern, and guards no
+    # sabotage at all. The criteria failed their own fixtures and nothing was
+    # scanned, which is the lock doing exactly what it is for.
+    #
+    # BOTH OPERANDS MUST BE PLAIN IDENTIFIERS. An anchor guard reads `if anchor
+    # not in s` or `if old not in ORIG` -- a name for the needle, a name for the
+    # buffer. A config check reads `if 'x' not in os.environ`: a STRING LITERAL
+    # on the left, a DOTTED ATTRIBUTE on the right. Neither can be a bare
+    # identifier pair, so the distinction is structural rather than a guess
+    # about what the names mean.
+    #
+    # And the refusal must follow within one line: `if x not in y: continue` is
+    # control flow, and the second negative fixture holds that line.
+    re.compile(r"\b[A-Za-z_]\w*\s+not\s+in\s+[A-Za-z_]\w*\s*:\s*\n?"
+               r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\()", re.I),
 )
 
 
@@ -322,6 +363,35 @@ FIXTURES = [
      "open(p,'w').write(\n    src.replace('a','b'))\n", False),
     ('CONTROL: a path built with replace, parsed, then written is not judged',
      "doc = json.load(open(REG.replace('/', os.sep)))\n" "open(p,'w').write(json.dumps(doc))\n", None),
+    # ── THE ABSENCE-AND-REFUSE SHAPE, BOTH DIRECTIONS (2026-09-16.2) ──────
+    # The two positives are the real idioms from the three probes this tool was
+    # under-crediting. The two negatives are the whole narrowing: `not in`
+    # followed by control flow, or asked about something that is not the
+    # anchor, guards nothing and must stay reported.
+    ('an anchor checked with `not in` and a RAISE is guarded -- the spelling a '
+     'probe uses when it wants a readable message instead of a bare assert',
+     's = open(p).read()\n'
+     'if anchor not in s:\n'
+     "    raise AssertionError('the SABOTAGE did not land')\n"
+     "open(p,'w').write(s.replace(anchor,'b'))\n", True),
+    ('...and with a failing CHECK instead of a raise, which is how a probe '
+     'that reports rather than crashes writes it',
+     's = open(p).read()\n'
+     'if old not in ORIG:\n'
+     "    check('ANCHOR MISSING -- not a pass', False, old)\n"
+     "open(p,'w').write(s.replace(old,'b'))\n", True),
+    ('NEGATIVE: `not in` followed by CONTINUE is control flow and guards '
+     'nothing -- this is the line the narrowing rests on',
+     's = open(p).read()\n'
+     'if anchor not in s:\n'
+     '    continue\n'
+     "open(p,'w').write(s.replace(anchor,'b'))\n", False),
+    ('NEGATIVE: a `not in` about something OTHER than the anchor, with the '
+     'write still unguarded',
+     's = open(p).read()\n'
+     "if 'x' not in os.environ:\n"
+     "    raise SystemExit('config missing')\n"
+     "open(p,'w').write(s.replace('a','b'))\n", False),
     ('a GUARD IN A COMMENT does not count -- the check must be in the code',
      "# assert old in src\nsrc = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n", False),
     # ── ADDED 2026-09-16 WITH THE JS UNIQUENESS SHAPE AND THE CASE FIX ─────
