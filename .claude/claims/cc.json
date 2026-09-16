@@ -1494,6 +1494,16 @@
       "claimed_at_epoch": 1789566909.113009,
       "status": "released",
       "released_at": "2026-09-16T14:32:59Z"
+    },
+    {
+      "id": "cc-1789569431",
+      "session": "cc",
+      "subject": "cc",
+      "task": "tracing final 23, tier a suite controls continued",
+      "claimed_at": "2026-09-16T14:37:11Z",
+      "claimed_at_epoch": 1789569431.4335055,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
