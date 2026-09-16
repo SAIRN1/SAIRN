@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**176 files in `tools/`.** By what actually invokes them:
+**177 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 52 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 53 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 47 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 119 |
+| CHECKER | 120 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -129,7 +129,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (52)
+## REPORT-ONLY (53)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -174,6 +174,7 @@ quiet in practice.
 | `orphan_register_check.py` | 2026-09-10 | an open-work row citing something the register records as removed -- a task pointing at code that is gone |
 | `ownership_evidence_drift.py` | 2026-09-14, the day it was built, report-only and NOT a push-gate block: it reports that nobody has LOOKED, which is not the same as a finding and must never refuse a push | the ownership evidence behind an accepted risk drifting away from the population it was evidence about |
 | `panel_nesting_check.py` | 2026-09-10, after three defects found by running it | a panel that is not a sibling of the others, so the show/hide CSS cannot reach it |
+| `register_feed_gate.py` | 2026-09-15 as --backlog, report-only, ALONGSIDE its BLOCKING pre-push half. The two halves answer different questions: the gate refuses a NEW defect closure that does not feed the register, and this keeps the HISTORICAL gap visible so the requirement date cannot quietly forgive it | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
@@ -379,11 +380,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      176   git ls-files tools/
+  tools on disk                      177   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                50   report_only_checks.REGISTRY
-  tools invoked by tests/            120   tests/**/*.py, *.js
+  report-only registry                51   report_only_checks.REGISTRY
+  tools invoked by tests/            121   tests/**/*.py, *.js
   recorded NOT-promoted decisions     47   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

@@ -38,11 +38,32 @@ GITDIR=$(git rev-parse --git-dir)
 # the existing push gate with an empty stdin -- and sairn_push_gate_hook.py
 # treats no ref lines as nothing to check. That would have silently disabled
 # all six of its checks in exchange for adding one.
+# ── STDIN IS READ ONCE, UP FRONT, AND REPLAYED TO EVERY GATE ───────────────
+# Three things now read these ref lines, and a stream is consumed by its first
+# reader. Reading it once here is not tidiness: it is the only shape in which
+# adding a gate cannot silently disable an existing one.
+REFS=$(cat)
+
+# ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
+# The marker is in .git/, so it is not versioned and no build clone inherits it.
 if [ -f "$GITDIR/sairn-hover-auditor-clone" ]; then
-    REFS=$(cat)
     printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --pre-push || exit 1
-    printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/sairn_push_gate_hook.py" --pre-push
-    exit $?
 fi
 
-exec "$PY" "$ROOT/tools/sairn_push_gate_hook.py" --pre-push
+# ── THE REGISTER FEED GATE (item 41's pattern, on the measurement substrate) ─
+# A defect closure cannot complete without feeding the defect register. Runs in
+# EVERY clone, because the starvation it exists for was platform-wide: measured
+# 2026-09-15, 422 `fix(` commits touching code across all history and only 51
+# distinct commits cited by any record.
+#
+# IT CARRIES A REQUIREMENT DATE, so it cannot refuse work that predates the
+# rule -- the same mechanism tools/first_article_check.py uses, for the same
+# reason. Its own --backlog reports the historical gap rather than letting the
+# date forgive it.
+printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/register_feed_gate.py" --pre-push || exit 1
+
+# NOT `| exec ...`: inside a pipeline that replaces the SUBSHELL, not this
+# script, and the hook's exit status is what git acts on. Plain pipeline, then
+# exit with its status.
+printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/sairn_push_gate_hook.py" --pre-push
+exit $?

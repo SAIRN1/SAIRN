@@ -95,6 +95,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one | `advisory_lock_isolation_check.py` | FIRST RUN 2026-09-15 over 9 advisory-lock functions found THREE unguarded, and the sharpest was law_check_and_insert_disbursement -- attorney IOLTA trust money, where two concurrent disbursements each compute the balance from before the other committed and BOTH pass the sufficiency check. Its sibling law_check_and_void_deposit already DESCRIBED the hazard in a comment and nothing enforced it. All three guarded the same day; 31-arm probe at tests/run_advisory_lock_isolation_probe.py. The blind lock runs on EVERY run, not only --self-check, and its own fixtures caught two real bugs in the first draft before it ever touched sql/ |
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
 | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off | `service_role_tier_a_gate_check.py` | FIRST RUN 2026-09-15: 66 api/ modules read the key; only THREE address a Tier A resource in a write PATH, and all three are correct -- api/sd-data.js GATED, and public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A writes funnel through one gated chokepoint, and the two public endpoints are the declared exceptions. THIS DOES NOT CONTRADICT the open session-gate finding on sd-data.js: this asks whether the MODULE gates, that asks whether a per-resource BRANCH inside it does, and both are true at once. 26-arm probe; three of its eight fixtures exist because the classifier was wrong on a REAL file -- bridge.js (a jsonb key, writes bridge_data), sv-witness.js (killed by the over-correction that fixed bridge.js) and send-reminder.js (writes in helpers above the handler, CRON_SECRET first inside it) |
+| the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it | `register_feed_gate.py` | MEASURED BEFORE IT WAS DESIGNED, and the measurement chose the shape: 66 `fix(` commits touching code since 2026-09-13 and 62 of them citing no record; 422 across all history against 51 distinct commits cited. A gate refusing all of those would refuse essentially every push, and a wall produces overrides -- which this repo already records costing more than the gate saved. Hence a REQUIREMENT DATE, the same mechanism first_article_check.py uses, with the backlog REPORTED rather than forgiven. 27-arm probe at tests/run_register_feed_gate_probe.py, including both failure directions, the boundary day, a bare escape hatch being refused, and an unreadable register DENYING the push |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -149,6 +150,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The measurement substrate was starved, and five tools reported vacuous numbers because of it &mdash; a defect closure can no longer complete without feeding the register** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/register_feed_gate.py`, BLOCKING on pre-push from its requirement date and report-only as `--backlog`; wired in `.githooks/pre-push`. `tests/run_register_fee | `tests/run_register_feed_gate_probe.py` |
 | **Item 40 continued: does anything holding the RLS-BYPASSING key write Tier A data without gating the caller** | **MEASURED AND BUILT 2026-09-15 (Hank)** &mdash; `tools/service_role_tier_a_gate_check.py`, report-only and registered, built THROUGH `checker_kit`. `tests/run_service_role_gate_probe.py` **26 arms, 0 | `tests/run_service_role_gate_probe.py` |
 | **Item 64: the precedence rule for when two of our own checks DISAGREE &mdash; decided in advance instead of ad hoc under pressure** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/check_precedence.py`, report-only and registered as `--self-check`. `tests/run_check_precedence_probe.py` **48 arms, 0 failures**. `docs/2026-09-15-item64-ch | `tests/run_check_precedence_probe.py` |
 | **The cron watchdog was RETRYING ITSELF into an HTTP 508 and had LATCHED ITSELF FAILING &mdash; and it could not notify anybody at all** | **FIXED AND EXTENDED 2026-09-15 (Hank)** on Fourth&rsquo;s items 54/55 &mdash; self-exclusion in `api/_lib/cron-response.js`, `notify_channel` in `api/cron-watchdog.js`, channel read in `tools/cron_li | `api/cron-watchdog.test.js`, `tests/run_cron_liveness_probe.py` |
@@ -466,7 +468,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**245 of 458 test files are traced to a stated requirement. 213 are not.**
+**246 of 459 test files are traced to a stated requirement. 213 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -703,10 +705,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 458   tests/**, api/*.test.js
-  open-work rows citing a test       234   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 459   tests/**, api/*.test.js
+  open-work rows citing a test       235   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                50   report_only_checks.REGISTRY
+  report-only registry                51   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     42   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

@@ -1469,6 +1469,47 @@ REGISTRY = [
                     'send-reminder.js (writes in helpers above the handler, '
                     'CRON_SECRET first inside it)',
     },
+    {
+        'tool': 'register_feed_gate.py',
+        'mode': 'once',
+        'args': ['--backlog'],
+        'verdict': by_exit,
+        'promoted': '2026-09-15 as --backlog, report-only, ALONGSIDE its '
+                    'BLOCKING pre-push half. The two halves answer different '
+                    'questions: the gate refuses a NEW defect closure that does '
+                    'not feed the register, and this keeps the HISTORICAL gap '
+                    'visible so the requirement date cannot quietly forgive it',
+        'catches': 'the defect register starving -- a `fix(` commit touching '
+                   'code that no register record cites. The blocking half '
+                   'applies only from its requirement date; this one counts '
+                   'everything before it',
+        'why_it_matters': 'A RECORDING TOOL WITH NO STRUCTURAL REQUIREMENT THAT '
+                          'REAL ACTIVITY FEEDS IT REPORTS A VACUOUS NUMBER '
+                          'FOREVER, however much real work is happening. That '
+                          'was diagnosed FIVE separate times on 2026-09-15 '
+                          'before this existed: the FMEA loop at 0% because '
+                          'every draft postdated every defect; the claim- '
+                          'provenance chain at three records by one author '
+                          'inside 24 seconds; spread-skill calibration and '
+                          "Cohen's kappa with no paired reviewer verdicts at "
+                          'all; and item 99 calling its own rule "stated and '
+                          'UNENFORCEABLE, because the fact it depends on is not '
+                          'recorded". Five tools, one root cause, and the fix '
+                          'is not another reminder -- it is putting the '
+                          'requirement where the work already has to pass',
+        'evidence': 'MEASURED BEFORE IT WAS DESIGNED, and the measurement chose '
+                    'the shape: 66 `fix(` commits touching code since '
+                    '2026-09-13 and 62 of them citing no record; 422 across all '
+                    'history against 51 distinct commits cited. A gate refusing '
+                    'all of those would refuse essentially every push, and a '
+                    'wall produces overrides -- which this repo already records '
+                    'costing more than the gate saved. Hence a REQUIREMENT '
+                    'DATE, the same mechanism first_article_check.py uses, with '
+                    'the backlog REPORTED rather than forgiven. 27-arm probe at '
+                    'tests/run_register_feed_gate_probe.py, including both '
+                    'failure directions, the boundary day, a bare escape hatch '
+                    'being refused, and an unreadable register DENYING the push',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
