@@ -2055,6 +2055,16 @@
       "claimed_at_epoch": 1789562204.8911374,
       "status": "released",
       "released_at": "2026-09-16T14:58:54Z"
+    },
+    {
+      "id": "hank-1789574870",
+      "session": "hank",
+      "subject": "item83-review",
+      "task": "independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
+      "claimed_at": "2026-09-16T16:07:50Z",
+      "claimed_at_epoch": 1789574870.6798556,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
