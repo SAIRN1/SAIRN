@@ -35,7 +35,7 @@
 
 ## Open warnings carried on an identity
 
-- **sairn_backup_reader** -- sql/backup_reader_role.sql mints it with the literal password REPLACE_ME_BEFORE_RUNNING inside an idempotence guard, so running the file un-edited produces a LOGIN role with BYPASSRLS whose password is a PUBLISHED STRING -- and re-running the corrected file changes nothing, because the role already exists. CC finding, HIGH, 2026-09-14. UNFIXED
+- **sairn_backup_reader** -- THE SCRIPT IS FIXED -- Fourth's e40e146b raises while the placeholder password is present and rotates unconditionally on an existing role, so the file can no longer mint or preserve a published credential. WHAT IS STILL OPEN IS NARROWER AND IS NOT RESOLVABLE FROM SOURCE: the role is confirmed to EXIST in the live project, and whether it currently holds the placeholder or the rotated password is UNKNOWN. No clone has database access, so no check here can answer it -- it needs one query by somebody who can connect. Register entry 101. LIVE-PASSWORD-STATE UNKNOWN, not script-unfixed
 
 ## What this register cannot tell you
 

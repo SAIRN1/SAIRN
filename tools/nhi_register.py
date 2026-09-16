@@ -92,12 +92,29 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'alter role ... password. No automation',
         'last_rotated': '',
-        'warning': 'sql/backup_reader_role.sql mints it with the literal '
-                   'password REPLACE_ME_BEFORE_RUNNING inside an idempotence '
-                   'guard, so running the file un-edited produces a LOGIN role '
-                   'with BYPASSRLS whose password is a PUBLISHED STRING -- and '
-                   're-running the corrected file changes nothing, because the '
-                   'role already exists. CC finding, HIGH, 2026-09-14. UNFIXED',
+        # ── CORRECTED 2026-09-15, AND THE STALE VERSION WAS MINE ─────────────
+        # This row shipped saying the script-level finding was UNFIXED. It is
+        # not, and I verified the correction rather than accepting it: Fourth's
+        # `e40e146b` added a guard that RAISES while the literal placeholder is
+        # present (sql/backup_reader_role.sql:97) and an UNCONDITIONAL
+        # `alter role ... with password` (:117), so a re-run of the corrected
+        # file ROTATES rather than no-opping on an existing role. Independently
+        # re-verified twice by the auditor (entries 58 and 108).
+        #
+        # Carrying "UNFIXED" forward into the document that is now meant to be
+        # the reliable source is exactly the staleness this register exists to
+        # remove, and it was the THIRD time that claim resurfaced.
+        'warning': 'THE SCRIPT IS FIXED -- Fourth\'s e40e146b raises while the '
+                   'placeholder password is present and rotates unconditionally '
+                   'on an existing role, so the file can no longer mint or '
+                   'preserve a published credential. WHAT IS STILL OPEN IS '
+                   'NARROWER AND IS NOT RESOLVABLE FROM SOURCE: the role is '
+                   'confirmed to EXIST in the live project, and whether it '
+                   'currently holds the placeholder or the rotated password is '
+                   'UNKNOWN. No clone has database access, so no check here can '
+                   'answer it -- it needs one query by somebody who can connect. '
+                   'Register entry 101. LIVE-PASSWORD-STATE UNKNOWN, not '
+                   'script-unfixed',
     },
     {
         'id': 'postgres',

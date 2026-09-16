@@ -5106,3 +5106,73 @@ by it. A selftest that dies on a real finding is one nobody can use to fix the
 finding. Guarded; 7 arms, both refusal directions driven.
 
 ### Item 3 — held, as instructed
+
+---
+
+## 2026-09-15 — a register correction, and I OVERWROTE ANOTHER SESSION'S TOOL
+
+### I destroyed Fourth's item-80 implementation and restored it
+
+**The worst thing I did tonight, and it is first because it should be.** I wrote
+`tools/reliability_growth.py` from scratch without checking whether it existed.
+**It did** — Fourth built it in `dbfb4282`, and my Write replaced 356 lines with
+318. Caught only because `git diff --cached --numstat` showed **deletions on a
+file I believed was new**; the Write tool said "updated", not "created", and I
+read past it.
+
+**Restored from HEAD, byte-identical, and their blind lock runs.**
+
+**THEIRS IS BETTER AND THAT IS THE PART TO KEEP.** It implements BOTH fitters
+(Goel-Okumoto and Musa-Okumoto), **locks them against synthetic series generated
+from KNOWN parameters and requires them to be recovered** — so its refusal is a
+statement about the DATA rather than possibly a broken tool — and its admissibility
+gate is three declared criteria with `MIN_DENOMINATOR`, a Spearman trend test, and
+an `EFFORT_RECORDED = False` constant. Its own header records a defect the blind
+lock caught before any real data was read: an `a_min` clamp copied across two
+models with different semantics, correct for Goel-Okumoto's asymptote and wrong for
+Musa-Okumoto's unbounded rate scale — the byte-identical-is-not-safe-in-context
+shape. My version fitted no curve at all.
+
+**Check 0e is the rule I already know and I ran it for item 18 and not for this
+one.** The lesson is not "be careful": it is that `git status` before a Write on
+any `tools/` path is the check, and reading the Write tool's own verb is the
+second one.
+
+**Item 84's event tree also already exists** — `tools/pra_event_tree.py`, and it
+already refuses a frequency: *"UNKNOWN, and deliberately not estimated… six days
+is not a rate"*, reporting end state and consequence tier separately and never
+multiplying them. That was item 6 on the queue.
+
+### The NHI register's backup-reader warning was stale, and it was mine
+
+Corrected, and **verified rather than accepted**: `e40e146b` raises while the
+placeholder is present (`sql/backup_reader_role.sql:97`) and rotates
+**unconditionally** on an existing role (`:117`). Read both lines.
+
+The row now says what is actually open: **the role exists live and whether it
+holds the placeholder or the rotated password is UNKNOWN — not resolvable from
+source, no clone has database access.** Register entry 101.
+
+### Item 66 — BLOCKED, and the prerequisite is only half met
+
+`injection_phase` did land: **77/77**. But an IBNR development triangle needs a
+discovery LAG, which needs an injection DATE — and **only 4 of 77 records carry an
+injection commit.** The other 73 say so themselves: *"NOT backfilled by blame:
+reconstructing an injection point afterwards…"*, a deliberate refusal. Four points
+is not a triangle, and blame-backfilling is the one thing the register declines to
+do.
+
+### Item 81 — NOT MEASURED, and I will not quote the number I got
+
+A first pass reported 24 of 25 `api/` files with retry logic and no backoff.
+Spot-checking three killed it: `sv-witness.js:462` is the word "retry" in a
+comment, `safe-number.js:30` is my own comment about a retry count, and that
+file's "backoff" hits were my own citations of `cron-jitter.js`. **The figure is
+prose.** Same shape as the AI-approval audit's 59→14, caught the same way.
+
+### Items 67 and 70 — not started
+
+70 needs a decision I cannot make: it deliberately breaks a live scheduled job,
+and `api/cron-watchdog.js` alerts by email **only if** `RESEND_API_KEY` and
+`RESEND_FROM_EMAIL` are set, which no clone can verify. **Killing a cron to test a
+watchdog that may not be able to alert is a real outage with no observer.**
