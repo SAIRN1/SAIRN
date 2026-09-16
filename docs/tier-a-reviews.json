@@ -369,6 +369,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-16T22:14:37Z",
+      "resources": [
+        "sb_po",
+        "sb_recv"
+      ],
+      "files": [
+        "api/sd-data-sb-void-role.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "PRODUCT CHANGE, and it was recorded by NOBODY until now -- see the note below. api/sd-data.js now refuses a VOID TRANSITION on sb_po/sb_recv to any role but owner/manager, server-side. Until this, Michael's 2026-09-14 decision lived only in sairnbiz.html's SB_VOID_ROLES, and the endpoint's gate is a SESSION gate, so any signed-in employee could POST a voided row past it. Held by api/sd-data-sb-void-role.test.js, 18 assertions. WHAT A REVIEWER SHOULD CHECK: (1) that the SESSION gate is genuinely not widened -- raising a PO and logging a receipt must stay ordinary work for staff, and section 3 is the arm that would catch a regression; (2) the CLEAR direction, which needs a read-before-write: confirm the read is filtered to the row and that a failed read refuses with VOID_STATE_UNREADABLE rather than allowing, and that a 404 stays NOT_PROVISIONED; (3) whether treating an incoming Void as always-privileged is right -- it means an owner-voided row's REASON cannot be corrected by staff, which I judged correct and is a real behaviour choice. AND THE GATE FINDING THAT MADE THIS ENTRY NECESSARY: this push was NOT blocked, because an obligation for sb_po/sb_recv was already open from a TEST-ONLY change whose own text says 'no product code changed'. The gate is satisfied per RESOURCE, not per CHANGE, so a product change rode in on a control's record. That is a decision about a blocking gate and is not made here.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

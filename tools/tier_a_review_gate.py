@@ -694,14 +694,40 @@ def check(diff_text, verbose=True):
     return 1, lines
 
 
-def cmd_open(why):
+def cmd_open(why, rng=None):
     resources = tier_a_resources()
-    text = working_diff()
-    base = git('merge-base', 'origin/main', 'HEAD').strip()
-    if base:
-        # Unpushed commits count. The obligation is about the work being SENT,
-        # not only about whatever happens to be uncommitted when --open runs.
-        text += '\n' + range_diff(base, 'HEAD')
+    if rng:
+        # ── RECORDING AN OBLIGATION FOR WORK ALREADY PUSHED (2026-09-16) ────
+        # Without this there is no way to open an accurate record after the
+        # fact, and that is not a hypothetical gap: the gate is satisfied
+        # PER RESOURCE, so a push carrying a real product change to sb_po and
+        # sb_recv went through on an OPEN obligation whose own text reads "NEW
+        # NEGATIVE CONTROL, no product code changed". The change was recorded
+        # by nobody. The honest repair needs a range, because by the time you
+        # notice, the working diff and the unpushed range are both empty.
+        #
+        # This does NOT change what the gate blocks on, and deliberately so --
+        # whether an obligation should be per-CHANGE rather than per-RESOURCE
+        # is a decision about a blocking gate and belongs in its own change.
+        left, _, right = rng.partition('..')
+        if not left or not right:
+            sys.stderr.write('--range takes A..B, e.g. origin/main~1..origin/main\n')
+            return 1
+        text = range_diff(left, right)
+        if not text.strip():
+            sys.stderr.write('That range has no diff, so there is nothing to '
+                             'record about it. An empty range is not an '
+                             'obligation with no resources -- it is a range '
+                             'that names no change.\n')
+            return 1
+    else:
+        text = working_diff()
+        base = git('merge-base', 'origin/main', 'HEAD').strip()
+        if base:
+            # Unpushed commits count. The obligation is about the work being
+            # SENT, not only about whatever happens to be uncommitted when
+            # --open runs.
+            text += '\n' + range_diff(base, 'HEAD')
     hits = touched_tier_a(text, resources)
     if not hits:
         sys.stderr.write('Nothing in this change names a Tier A resource, so there '
@@ -821,8 +847,16 @@ def main(argv):
             sys.stderr.write('--open needs a sentence saying what changed. An entry '
                              'nobody can read is not a record.\n')
             return 1
+        rng = None
+        if '--range' in argv:
+            j = argv.index('--range')
+            rng = argv[j + 1] if len(argv) > j + 1 else ''
+            if not rng.strip():
+                sys.stderr.write('--range needs A..B\n')
+                return 1
+            rng = rng.strip()
         try:
-            return cmd_open(why.strip())
+            return cmd_open(why.strip(), rng)
         except CouldNotTell as e:
             sys.stderr.write('COULD NOT TELL: %s\n' % e)
             return 2
