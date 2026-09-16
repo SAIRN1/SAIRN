@@ -1482,8 +1482,8 @@
       "task": "hover settings hook propagation, tracing continued, schema snapshot query",
       "claimed_at": "2026-09-16T13:23:02Z",
       "claimed_at_epoch": 1789564982.9152393,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T13:51:29Z"
     }
   ]
 }
