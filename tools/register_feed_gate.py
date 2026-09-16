@@ -187,6 +187,132 @@ def outgoing_range(stdin_text):
     return None, ''          # deletes only; nothing to check
 
 
+
+# -- RISK SEQUENCING FOR THE BACKLOG ----------------------------------------
+# 422 unrecorded closures cannot be worked in commit order, and working them in
+# ANY order without a stated rule is how the easy ones get done and the
+# trust-money one stays open. The bands are read from
+# docs/CRITICALITY-TIERS.md's own "what goes wrong" column rather than from a
+# list invented here: the register already treats that document as the
+# authority on what Tier A means, and a second opinion about criticality is the
+# thing that produces two.
+#
+# BAND 1 IS NOT SIMPLY "TIER A" -- it is Tier A SPLIT BY WHAT THE ROW SAYS GOES
+# WRONG, because the queue's whole purpose is that the sharpest end is worked
+# first:
+#   1a  MONEY or REGULATED   trust accounts, controlled substances, billing
+#   1b  PII / PHI            patient, member and employee records
+#   1c  other Tier A
+# BAND 2 is server-side code touching no Tier A resource; BAND 3 is tooling and
+# tests. A commit lands in the HIGHEST band any of its files reaches.
+RISK_WORDS = (
+    ('1a', ('money', 'regulated', 'dea', 'iolta', 'controlled', 'trust')),
+    ('1b', ('phi', 'pii', 'patient', 'medical', 'personal')),
+)
+TIER_A_ROW = re.compile(
+    r'^\|\s*`(\w+)`\s*\|\s*\*\*A\*\*\s*\|([^|]*)\|([^|]*)', re.M)
+REST_PATH = re.compile(r"(?:/rest/v1/|rest\(\s*['\"])(\w+)")
+
+
+def tier_a_bands():
+    """{resource: band} read from the tiers document. (dict, problem)."""
+    path = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
+    try:
+        src = io.open(path, encoding='utf-8').read()
+    except OSError as exc:
+        return None, str(exc)
+    rows = {}
+    for m in TIER_A_ROW.finditer(src):
+        blob = (m.group(2) + ' ' + m.group(3)).lower()
+        band = '1c'
+        for b, words in RISK_WORDS:
+            if any(w in blob for w in words):
+                band = b
+                break
+        rows[m.group(1)] = band
+    return rows, ''
+
+
+def by_risk(cited):
+    bands, problem = tier_a_bands()
+    if bands is None:
+        print('COULD NOT RUN: the tiers document is unreadable (%s), so no '
+              'commit can be banded -- and an unbanded queue is not a queue.'
+              % problem)
+        return EXIT_COULD_NOT_RUN
+    rows = commits_in('--all')
+    if rows is None:
+        print('COULD NOT RUN: git log failed')
+        return EXIT_COULD_NOT_RUN
+    _o, _e, backlog = judge(rows, cited)
+    out = []
+    # ── BAND BY THE DIFF, NOT BY THE FILE, AND THE FIRST VERSION GOT THIS
+    # ── WRONG IN THE WORST POSSIBLE DIRECTION.
+    # Scanning each changed FILE for Tier A resource names put 54 commits in
+    # band 1a, every one of them reporting the identical three resources --
+    # because `api/sd-data.js` addresses EVERY resource on the platform and
+    # nearly every fix touches it. The band was therefore a property of one
+    # file's size, not of the change.
+    #
+    # A SEQUENCER THAT PUTS EVERYTHING IN THE TOP BAND IS WORSE THAN NO
+    # SEQUENCER: it looks like a priority order and is a fabricated one, which
+    # is the defect this repo polices hardest. Only ADDED and REMOVED lines are
+    # read now, so the band reflects what the commit actually changed.
+    for sha, date, subject in backlog:
+        code, diff, _e2 = git('show', '--format=', '--unified=0', sha)
+        band, hits = '3', set()
+        if code == 0:
+            for line in diff.split(chr(10)):
+                if line.startswith('+++ ') or line.startswith('--- '):
+                    continue
+                if line.startswith('diff --git'):
+                    for f in line.split():
+                        if f.startswith(('a/api/', 'b/api/', 'a/sql/', 'b/sql/')) \
+                                and band == '3':
+                            band = '2'
+                    continue
+                if not line[:1] in ('+', '-'):
+                    continue
+                for r in set(REST_PATH.findall(line)) & set(bands):
+                    hits.add(r)
+        if hits:
+            band = min(bands[r] for r in hits)
+        out.append((band, date, sha, subject, sorted(hits)[:3]))
+    out.sort(key=lambda r: (r[0], r[1]))
+    counts = {}
+    for r in out:
+        counts[r[0]] = counts.get(r[0], 0) + 1
+    print('DEFECT-REGISTER BACKLOG, SEQUENCED BY REAL RISK')
+    print('  %d unrecorded closures before %s' % (len(out), REQUIREMENT_DATE))
+    for b, label in (('1a', 'Tier A -- MONEY or REGULATED'),
+                     ('1b', 'Tier A -- PII / PHI'),
+                     ('1c', 'Tier A -- other'),
+                     ('2', 'server-side, no Tier A resource'),
+                     ('3', 'tooling and tests')):
+        print('    band %-3s %-34s %d' % (b, label, counts.get(b, 0)))
+    print('')
+    print('  A COMMIT LANDS IN THE HIGHEST BAND ANY OF ITS FILES REACHES, and')
+    print('  the band comes from the tiers document rather than from a list')
+    print('  invented here.')
+    print('')
+    for b, date, sha, subject, hits in out:
+        if b.startswith('1'):
+            print('  %-3s %s  %s  %s' % (b, date, sha, subject[:52]))
+            if hits:
+                print('        via %s' % ', '.join(hits))
+    print('')
+    print('  ONLY THE TIER A BANDS ARE PRINTED. Bands 2 and 3 are counted above')
+    print('  and deliberately not listed: a 400-line list nobody reads is how a')
+    print('  queue becomes a wall.')
+    print('')
+    print('  WHAT THIS CANNOT SEE, and it is the same limit the gate checker')
+    print('  self-reported: a file addressing its table any way OTHER than a')
+    print('  /rest/v1/ or rest() path -- a variable, a helper, a generic')
+    print('  dispatcher, an RPC. That UNDER-bands rather than over-bands, so a')
+    print('  band-1 list is a FLOOR and band 2 is not a clearance.')
+    return EXIT_OK
+
+
 def deny(owed, escaped):
     print('')
     print('Blocked: this push closes a defect and does not feed the register.')
@@ -246,6 +372,9 @@ def main(argv):
         print('checked anything, and "could not tell" is never folded into')
         print('"passed" -- which is the entire subject of this gate.')
         return EXIT_COULD_NOT_RUN
+
+    if '--by-risk' in argv:
+        return by_risk(cited)
 
     if '--backlog' in argv:
         rows = commits_in('--all')
