@@ -1462,8 +1462,8 @@
       "task": "sairn_claim duplicate claim bug, stale status word sweep, bound-to-subject sabotage coverage, credentialStillActive live verification handoff",
       "claimed_at": "2026-09-16T05:34:03Z",
       "claimed_at_epoch": 1789536843.4483955,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:17:43Z"
     }
   ]
 }
