@@ -1513,8 +1513,8 @@
       "task": "G5 suite negative controls tier A continued, G7 contributing factors on existing records, item 65 backup band artifact",
       "claimed_at": "2026-09-16T04:09:07Z",
       "claimed_at_epoch": 1789531747.4063272,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:56:14Z"
     }
   ]
 }
