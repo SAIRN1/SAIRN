@@ -81,6 +81,16 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'ooda_phases.py': ('CHECKER',
+        'item 67 -- WHICH OODA phase is the bottleneck, and it refuses to '
+        'publish an aggregate because three of the four boundaries are not '
+        'recorded anywhere. Measured 2026-09-15: detect-to-fix is SAME DAY on '
+        '73 of 73 resolvable records, so the only phase this repo times is '
+        'already as fast as it can be and every second of real exposure lives '
+        'in a phase nothing times -- the cron incident, silent 24 hours, and '
+        'send-reminder.js returning 500 hourly FOR MONTHS. A negative duration '
+        'is reported as an ANOMALY rather than averaged away. Needs the same '
+        'injection-date field item 66 is blocked on; the two are one field apart'),
     'nhi_register.py': ('GENERATOR',
         'every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because '
         'an env-var scan structurally cannot answer that -- a GitHub PAT, a '

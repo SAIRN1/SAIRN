@@ -5176,3 +5176,88 @@ prose.** Same shape as the AI-approval audit's 59→14, caught the same way.
 and `api/cron-watchdog.js` alerts by email **only if** `RESEND_API_KEY` and
 `RESEND_FROM_EMAIL` are set, which no clone can verify. **Killing a cron to test a
 watchdog that may not be able to alert is a real outage with no observer.**
+
+---
+
+## 2026-09-15 — the Money type, item 67 measured, and a bug class that now has a name
+
+### Check 0e ran FIRST this time, on all three, and it caught one
+
+Item 2 (**item 38, completeness checking**) is **ALREADY BUILT** —
+`tools/completeness_check.py`, and its own header already states the exact
+scoping the brief asked for: *"the pair of item 90 rather than a copy… item 90
+makes a class impossible to WRITE… IT CANNOT REACH legacy code that never had a
+boundary, and it cannot reach external input BEFORE it is parsed."* Three shapes,
+each narrowed by a real false positive. Runs, exits 1 report-only.
+
+Seventh already-built item. **Not rebuilt**, and this time 0e ran before a Write
+rather than after a numstat.
+
+### Item 1 — `api/_lib/money.js`, item 90's constructive half. 31/31
+
+`shape_antipattern_check.py` (Hank, live) already **detects** the shape and names
+`Number(payload.amount)` at `api/sd-data.js:11796` among others. This is the type
+that makes it unwritable.
+
+**Two holes in three lines, and the platform has paid for both:**
+`Number('')` / `Number(null)` / `Number([])` are all **0**, so an absent field
+becomes a real number; and **`amount <= 0` CANNOT SEE NaN** — every comparison
+against NaN is false — while `!(amount > 0)` can. That second one was a **live
+hole on attorney trust money**. §3 of the suite *demonstrates* both on raw numbers
+beside the typed version, so the comparison is on the record and not only in a
+comment.
+
+**The mechanism that makes it structural rather than advisory: `valueOf`,
+`toString` and `toJSON` all THROW.** `money + 1`, `money > 0`, `` `${money}` ``
+and `JSON.stringify(money)` each fail **at the line that did it**, because every
+one of those is a path back into unchecked arithmetic. Plus: construction is a
+parse that returns `{ok,…}` with no constructor that takes your word for it; the
+brand is a **Symbol** so an object literal cannot forge one; the object is frozen;
+and arithmetic accepts only Money, so `plus(5)` throws.
+
+Integer cents throughout. **`'3828.47'` and `3828.47` produce the same integer** —
+the 4.5e-13 case that refused a correct bill, with an arm named for it. Dollars
+scale **on the string**, because `12.34 * 100` is `1233.9999999999998`. Reuses
+`safe-number.js`'s `measureNumber` rather than re-deciding the parse. No currency,
+no locale parsing, **no `divide()`** — splitting money is a decision about who
+gets the remainder cent.
+
+### Item 3 — `tools/ooda_phases.py`, and the measurement is the finding
+
+**73 of 73 resolvable records were fixed the SAME DAY they were recorded.
+Detect-to-fix is zero across the whole register.**
+
+So the only phase this repo times is already as fast as it can be, and **every
+second of real exposure lives in a phase nothing times.** The aggregate would show
+a platform with no problem. The one real Observe-phase number anybody has is the
+cron incident — **silent 24 hours** — and its worse sibling, `send-reminder.js`
+returning 500 **every hour for months** on an env-var name mismatch: an Observe
+phase in months against an Act phase in minutes.
+
+It **publishes no aggregate**, deliberately — three of four boundaries are
+unrecorded, and one-of-four components is the denominator-over-the-subset error.
+It reports the one `-25 day` record as an **ANOMALY** (the cited commit is not the
+fix) rather than averaging a negative duration away.
+
+**Item 66 and item 67 are blocked on ONE field** — an injection date. 4 of 77
+records have one. Worth knowing before either is scheduled again.
+
+### A recurring class that now has a name, because it bit FOUR times today
+
+**A TEXT MATCH COUNTS A WORD'S APPEARANCE IN PROSE THE SAME AS ITS APPEARANCE IN
+LOGIC — and the better the prose explains the absence, the more likely the
+checker reports the thing as present.**
+
+1. QR suite — "no PII" arm fired on the feature's own copy, *"no patient or
+   practice data"*;
+2. Tier A gate — the fail-open arm fired on a docstring quoting the old line;
+3. `money.test.js` — "no `divide()`" fired on the comment saying why there is
+   none;
+4. `ooda_phases.py` — "no mean" fired on its own printed sentence *"a mean hides
+   it"*.
+
+**It is distinct from the already-logged "quoting old code in a comment" variant**,
+which is a special case of it. The defence is to assert on a **structure prose
+cannot contain** — an arithmetic mean needs a division by a count, so look for
+`/ len(`, not for the word. Both fixes now carry a CONTROL asserting the prose
+still contains the word, so the strip stays load-bearing.
