@@ -2583,15 +2583,38 @@ function cmCaptureGps(){
 // deliberate actions, not per-shot telemetry, and the forty other writes in
 // this file all derive their message from the result.
 //
-// THE MESSAGE IS RAISED HERE rather than in the three callers, because toast()
-// is `textContent = m` -- a later message REPLACES an earlier one. So the
-// optimistic "Point captured" still appears immediately, and is replaced by the
-// honest one when the push resolves. Reporting from the callers instead would
-// mean making removeCoursePoint() and an AR `.then` callback async for no gain.
-// The promise is returned as well, so a future caller can await it.
+// THE MESSAGE IS RAISED HERE as well as in the callers. It was raised ONLY
+// here until 2026-09-15, on this reasoning: toast() is `textContent = m`, so a
+// later message REPLACES an earlier one, and the optimistic "Point captured"
+// would be replaced by the honest one when the push resolved.
+//
+// ── THAT REASONING IS WRONG, AND THE CASE IT MISSES IS NOT AN EDGE ONE ─────
+// A MESSAGE THAT CORRECTS AN EARLIER MESSAGE ONLY CORRECTS IT IF IT IS THE NEXT
+// MESSAGE. Capturing course points is inherently a SEQUENCE -- tee, pin, each
+// hazard -- and addCoursePoint() awaits a GPS fix that can take up to 8s, so a
+// second capture routinely starts before the first push has resolved. The real
+// interleaving is then:
+//
+//     capture 1 -> toast "Point captured"   (push 1 still pending)
+//     capture 2 -> toast "Getting GPS fix..."   <- push 1's honest message is
+//     push 1 fails -> toast "saved on this device only"
+//     capture 2 -> toast "Point captured"   <- ...and now it is gone again
+//
+// The user ends on "Point captured" holding two points, one of which never
+// reached the server. The correction was overwritten by the next optimistic
+// claim, which is the same false-success the fix was for, arriving one toast
+// later.
+//
+// SO THE SUCCESS CLAIM NOW DEPENDS ON THE RESULT. Both callers that make one
+// AWAIT this and only announce success when it succeeded; the honest failure
+// message stays here so no caller has to re-word it, and there is exactly one
+// message per capture either way. removeCoursePoint() awaits too -- it makes no
+// success claim, but a removal that did not sync should not be reported by a
+// toast racing whatever the user does next.
+//
 // `async`/`await` rather than a `.then` chain, to match the forty other writes
 // in this file verbatim. The local write and re-render still run synchronously
-// before the first await, so the three callers are unaffected.
+// before the first await, so a failed push never loses the point locally.
 async function cmSavePoints(z){
   var zones=ld('grd_golf_zones',[]).map(function(x){return x.id===z.id?z:x;});
   st('grd_golf_zones',zones);rGolf();
@@ -2610,16 +2633,20 @@ async function addCoursePoint(){
   if(!gps){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
   var pt={id:'CMP-'+Date.now(),type:type,label:label,lat:gps.lat,lng:gps.lng,accuracy_m:gps.accuracy_m,source:'manual',created_at:new Date().toISOString()};
   z.points=(z.points||[]).concat([pt]);
-  cmSavePoints(z);
+  // The promise is TAKEN, not awaited yet: cmSavePoints() does the local write
+  // and rGolf() synchronously before its first await, so the table below still
+  // redraws immediately. Only the CLAIM waits for the server.
+  var pending=cmSavePoints(z);
   renderCoursePointsTable(z.points);
   $('cmptlabel').value='';
-  toast('Point captured (±'+Math.round(gps.accuracy_m)+'m)');
+  if(await pending)toast('Point captured (±'+Math.round(gps.accuracy_m)+'m)');
 }
-function removeCoursePoint(index){
+async function removeCoursePoint(index){
   var z=cmCurrentZone();if(!z)return;
   z.points=(z.points||[]).filter(function(p,i){return i!==index;});
-  cmSavePoints(z);
+  var pending=cmSavePoints(z);
   renderCoursePointsTable(z.points);
+  await pending;
 }
 // Attaches "Map with AR Camera" into #cm-ar-zone, same feature-detect
 // discipline as Design Walk's installDesignARZone (item 6) -- no button at
@@ -2656,9 +2683,9 @@ window.installCourseARZone=async function(){
           source:'ar',created_at:new Date().toISOString()
         }]);
       }
-      cmSavePoints(z);
+      var pending=cmSavePoints(z);
       renderCoursePointsTable(z.points);
-      toast(elements.length+' point(s) placed via AR');
+      if(await pending)toast(elements.length+' point(s) placed via AR');
     });
   };
 };

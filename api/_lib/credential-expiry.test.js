@@ -1,4 +1,8 @@
 // api/_lib/credential-expiry.test.js
+// REQUIREMENT: the shared expiry primitives answer the same way for every credential
+//   engine, so two apps cannot disagree about whether the same credential
+//   has lapsed
+//
 // Run: node api/_lib/credential-expiry.test.js
 //
 // The primitives three credential engines share. Extracted 2026-09-02 on the

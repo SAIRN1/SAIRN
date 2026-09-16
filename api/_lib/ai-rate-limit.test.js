@@ -1,4 +1,8 @@
 // api/_lib/ai-rate-limit.test.js
+// REQUIREMENT: the per-app daily AI limit is enforced from persistent storage rather
+//   than process memory, so it survives a cold start instead of resetting to
+//   zero
+//
 //
 // Proves the limiter is atomic under CONCURRENCY, not just correct
 // sequentially -- the whole point of the 2026-09-02 fix.

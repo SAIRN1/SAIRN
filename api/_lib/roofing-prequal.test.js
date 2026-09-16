@@ -1,4 +1,8 @@
 // api/_lib/roofing-prequal.test.js
+// REQUIREMENT: bonding capacity reports WHICH CONDITIONING REGIME its headroom figure
+//   came from, because the same formula is well-posed mid-range and
+//   ill-conditioned near the aggregate limit where the answer is acted on
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/roofing-prequal.test.js
 //

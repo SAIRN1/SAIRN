@@ -161,14 +161,54 @@ def build_worksheet(sample):
     return '\n'.join(L) + '\n', '\n'.join(B) + '\n'
 
 
+def completed_rounds():
+    """Every round that has been submitted and scored. Returns [] when the file
+    does not exist yet, which is a real empty and not a read failure."""
+    if not os.path.exists(ROUNDS):
+        return []
+    try:
+        d = json.load(io.open(ROUNDS, encoding='utf-8'))
+    except ValueError:
+        return None
+    return d.get('rounds', []) if isinstance(d, dict) else d
+
+
+def already_judged(rounds):
+    """Commits a reviewer has already seen the answer to.
+
+    A SECOND ROUND OVER THE SAME RECORDS MEASURES NOTHING. Once the reveal has
+    happened, the reviewer knows the recorded severity for those records, and
+    re-judging them is a memory test wearing a blind round's clothes -- which is
+    the exact contamination this whole flow exists to prevent, arriving by the
+    back door.
+    """
+    out = set()
+    for r in rounds or []:
+        for row in r.get('rows', []):
+            if row.get('commit'):
+                out.add(row['commit'])
+    return out
+
+
 def start(n):
     recs = load_records()
     if recs is None:
         return 2, 'the defect register could not be read, so no round started'
-    usable = [r for r in recs if r.get(WITHHELD) and r.get('subject')]
+    rounds = completed_rounds()
+    if rounds is None:
+        return 2, ('%s exists and is not readable JSON, so this cannot tell '
+                   'which records have already been revealed. That is a refusal '
+                   'and not a fresh start.' % os.path.relpath(ROUNDS, REPO))
+    seen = already_judged(rounds)
+    usable = [r for r in recs
+              if r.get(WITHHELD) and r.get('subject') and r.get('commit') not in seen]
     if len(usable) < 3:
-        return 2, ('only %d usable record(s); a round of fewer than 3 measures '
-                   'nothing' % len(usable))
+        return 2, ('only %d usable UNJUDGED record(s); a round of fewer than 3 '
+                   'measures nothing. %d record(s) have already been revealed '
+                   'in %d completed round(s) and are excluded, because '
+                   're-judging a record whose answer you have seen is a memory '
+                   'test, not a blind one.'
+                   % (len(usable), len(seen), len(rounds)))
     n = max(3, min(n, len(usable)))
     # Deterministic from the register's own content, so two clones starting a
     # round from the same register get the same sample and the results can be
@@ -176,6 +216,8 @@ def start(n):
     seed = hashlib.sha256(
         json.dumps([r.get('commit') for r in usable], sort_keys=True)
         .encode('utf-8')).hexdigest()
+    # Derived from the UNJUDGED population, so round two draws a different
+    # sample than round one by construction rather than by luck.
     rnd = random.Random(seed)
     picked = rnd.sample(usable, n)
     sample = [{'id': 'R%02d' % (i + 1), 'record': r}
@@ -377,9 +419,82 @@ def main(argv):
         print('  is an agreement rate measured under a BLIND ordering, which')
         print('  is the only kind that means anything.')
         print('')
-        print('  AND ONE ROUND MEASURES NOTHING ABOUT AUTOMATION BIAS. The')
-        print('  experiment is this number against the same reviewers under a')
-        print('  SCORE-FIRST ordering, and that second arm does not exist yet.')
+        # THE ROUND IS RECORDED HERE, AFTER THE REVEAL, and that is the only
+        # place it can be: before the reveal there is nothing to record, and
+        # recording it makes these records ineligible for a future round.
+        prior = completed_rounds()
+        if prior is None:
+            print('  WARNING: %s is unreadable, so this round was NOT recorded '
+                  'and its records could be drawn again.'
+                  % os.path.relpath(ROUNDS, REPO))
+        else:
+            prior.append({
+                'criteria_version': CRITERIA_VERSION,
+                'started_at': res['sealed'].get('started_at'),
+                'scored_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+                'withheld_field': WITHHELD,
+                'judged': len(rows), 'agreed': len(agree),
+                'rows': [{'id': r['id'], 'commit': r['commit'],
+                          'mine': r['mine'], 'recorded': r['recorded'],
+                          'agree': r['agree'], 'defeater': r['defeater']}
+                         for r in rows],
+            })
+            io.open(ROUNDS, 'w', encoding='utf-8', newline='\n').write(
+                json.dumps({'rounds': prior}, indent=2, ensure_ascii=False) + '\n')
+            done = sum(x['judged'] for x in prior)
+            ag = sum(x['agreed'] for x in prior)
+            print('  ACROSS %d ROUND(S): %d of %d judged blind agreed with the '
+                  'recorded %s.' % (len(prior), ag, done, WITHHELD))
+            # ── THE DIRECTION SPLIT, WHICH IS WHAT A SECOND ROUND BUYS ──────
+            # One round gives a rate. Two give a SHAPE, and the shape decides
+            # what the disagreement means:
+            #   mostly one direction -> a calibration offset between two
+            #                           reviewers using the same scale
+            #   evenly split         -> DISPERSION. The same reviewer applying
+            #                           an undefined vocabulary inconsistently,
+            #                           which is a problem with the vocabulary
+            #                           and not with either judgment.
+            # Those need opposite fixes, and a bare agreement rate cannot tell
+            # them apart however many rounds it averages.
+            rank = {v: i for i, v in enumerate(VOCAB)}   # critical=0 .. low=3
+            up = dn = 0
+            for x in prior:
+                for row in x['rows']:
+                    if row['agree']:
+                        continue
+                    a, b = rank.get(row['mine']), rank.get(row['recorded'])
+                    if a is None or b is None:
+                        continue
+                    if a < b:
+                        up += 1     # judged MORE severe than recorded
+                    else:
+                        dn += 1
+            if up or dn:
+                print('  OF THE %d DISAGREEMENTS: %d judged MORE severe than '
+                      'recorded, %d less.' % (up + dn, up, dn))
+                if abs(up - dn) <= max(1, (up + dn) // 4):
+                    print('  THAT IS EVENLY SPLIT, so it is NOT a calibration '
+                          'offset -- it is')
+                    print('  DISPERSION, and dispersion is a property of the '
+                          'vocabulary rather')
+                    print('  than of either reviewer. A one-sided split would '
+                          'mean the opposite')
+                    print('  and would need the opposite fix.')
+                else:
+                    print('  THAT IS ONE-SIDED, which reads as a calibration '
+                          'offset between')
+                    print('  two reviewers on the same scale rather than an '
+                          'unclear scale.')
+                print('')
+            print('  These records are now excluded from future rounds -- '
+                  're-judging')
+            print('  one whose answer you have seen is a memory test, not a '
+                  'blind one.')
+            print('')
+        print('  AND ROUNDS UNDER ONE ORDERING MEASURE NOTHING ABOUT AUTOMATION')
+        print('  BIAS, however many of them there are. The experiment is this')
+        print('  number against the same reviewers under a SCORE-FIRST')
+        print('  ordering, and that second arm does not exist yet.')
         return 1 if len(agree) != len(rows) else 0
 
     print(__doc__.strip().splitlines()[0])

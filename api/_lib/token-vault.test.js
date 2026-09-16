@@ -1,4 +1,7 @@
 // api/_lib/token-vault.test.js
+// REQUIREMENT: a third-party OAuth token is unreadable at rest, and a tampered
+//   ciphertext is REFUSED rather than silently decrypted to garbage
+//
 // Plain node:assert tests. Run: node api/_lib/token-vault.test.js
 //
 // This is security-critical code whose worst failure is SILENT: a token stored

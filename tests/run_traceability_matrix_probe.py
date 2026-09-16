@@ -21,6 +21,8 @@ CONTROLS_FOR = ['traceability_matrix.py']
 
 import io
 import os
+import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -99,8 +101,18 @@ try:
 
     # ── C. the gaps are reported, not hidden ───────────────────────────────
     doc = io.open(os.path.join(wt, OUT.replace('/', os.sep)), encoding='utf-8').read()
-    check('C1 it reports how many tests are UNTRACED',
-          'test files are traced to a stated requirement' in doc, True)
+    # THE ANCHOR MOVED ON 2026-09-15 AND THIS ARM CAUGHT IT, which is the arm
+    # working. Section 5 used to lead with the RATIO; it now leads with the
+    # ABSOLUTE COUNT, because the ratio improved for five days while the count
+    # rose. The arm follows the headline rather than pinning the old sentence.
+    check('C1 it reports how many tests are UNTRACED, as the HEADLINE',
+          re.search(r'###\s+\d+ test files are traced to no stated requirement',
+                    doc) is not None, True)
+    check('C1b and the ratio appears BELOW it, marked as context rather than '
+          'the figure -- leading with a ratio is what let the page improve '
+          'while the backlog grew',
+          doc.find('are traced to no stated requirement')
+          < doc.find('For context and not as the headline'), True)
     check('C2 and lists them', doc.count('\n- `tests/') > 20, True)
     check('C3 and reports citations pointing at a file that does not exist',
           'Citations pointing at a file that does not exist' in doc, True)
@@ -130,6 +142,66 @@ try:
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)
     git(REPO, 'worktree', 'prune')
+
+# ── THE THIRD CITING SOURCE (2026-09-15) ────────────────────────────────────
+# A declared REQUIREMENT in a test file's own header. It is the WEAKEST of the
+# three -- nothing outside the file corroborates it -- so the arms that matter
+# are the ones proving it cannot be satisfied by writing nothing.
+# Loaded from THIS CLONE by path, under its own module name. The worktree copy
+# is already in sys.modules by now and its directory has been removed, so a
+# plain import would hand back a module whose REPO points at a path that no
+# longer exists -- and the failure would look like a defect in the rule rather
+# than in the loading.
+import importlib.util                                            # noqa: E402
+_spec = importlib.util.spec_from_file_location(
+    'tm_live', os.path.join(REPO, 'tools', 'traceability_matrix.py'))
+tm_live = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(tm_live)
+
+_REAL_ALL = tm_live.all_tests
+_REAL_REPO = tm_live.REPO
+_TMP = tempfile.mkdtemp(prefix='trace-req-probe-')
+try:
+    GOOD = ('a money value can never be built from a non-number, so nothing '
+            'reaches a ledger coerced from a string')
+    cases = {
+        'good.test.js': '// good.test.js\n// REQUIREMENT: ' + GOOD + '\n',
+        'short.test.js': '// short.test.js\n// REQUIREMENT: tests money\n',
+        'echo.test.js': '// echo.test.js\n// REQUIREMENT: echo\n',
+        'none.test.js': '// none.test.js\n// just a test file\n',
+        'buried.test.js': ('// buried.test.js\n' + ('// filler\n' * 500)
+                           + '// REQUIREMENT: ' + GOOD + '\n'),
+    }
+    for _n, _body in cases.items():
+        io.open(os.path.join(_TMP, _n), 'w', encoding='utf-8',
+                newline='\n').write(_body)
+    tm_live.REPO = _TMP
+    tm_live.all_tests = lambda: sorted(cases)
+    got = dict(tm_live.declared_requirements())
+finally:
+    tm_live.REPO = _REAL_REPO
+    tm_live.all_tests = _REAL_ALL
+    shutil.rmtree(_TMP, ignore_errors=True)
+
+check('R1 a substantive declaration is a citation', 'good.test.js' in got, True)
+check('R2 CONTROL a declaration too short to state anything is NOT',
+      'short.test.js' in got, False)
+check('R3 CONTROL a declaration that is only the filename back again is NOT -- '
+      'that is an echo and not a requirement', 'echo.test.js' in got, False)
+check('R4 CONTROL a file with no declaration is NOT', 'none.test.js' in got, False)
+check('R5 CONTROL a declaration buried past the header is NOT -- a file\'s '
+      'requirement belongs where a reader meets the file',
+      'buried.test.js' in got, False)
+check('R6 exactly one of the five qualifies, so the rule discriminates',
+      len(got), 1)
+check('R7 the three sources carry DISTINCT labels, so a reader can see which '
+      'files rest on the weakest one',
+      sorted(set(x for v in tm_live.traced().values() for x in v)),
+      ['GUARD_TESTS', 'declared', 'index'])
+check('R8 the declared source is not carrying the whole figure -- if it were, '
+      'the metric would have been moved rather than closed',
+      len([1 for v in tm_live.traced().values() if v == ['declared']])
+      < len(tm_live.traced()) // 2, True)
 
 check('Z1 the worktree was cleaned up', os.path.exists(wt), False)
 check('Z2 and this clone is exactly as it was',

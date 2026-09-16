@@ -70,7 +70,7 @@ function section(t) { tests.push([t, null]); }
 // function it is testing proves only that the harness works.
 function ctxFor(opts) {
   opts = opts || {};
-  const state = { warns: [], toasts: [], fetches: 0 };
+  const state = { warns: [], toasts: [], fetches: 0, renders: 0 };
   const ctx = {
     JSON, Object, Array, String, Number, Date, Math, Promise,
     setTimeout, clearTimeout,
@@ -114,6 +114,17 @@ function ctxFor(opts) {
   K.vm.runInContext(K.grab(SRC, 'function grdFetchTimeoutSignal(', ''), ctx);
   K.vm.runInContext(K.grab(SRC, 'async function grdData(', ''), ctx);
   K.vm.runInContext(K.grab(SRC, 'async function cmSavePoints(', ''), ctx);
+  // THE CALLER, loaded for real. Until 2026-09-15 this suite drove
+  // cmSavePoints() alone and asserted "the caller owns the good news" -- while
+  // nothing anywhere asserted that the caller only GIVES good news when it is
+  // good. The gap was exactly the shape of the original defect, one level up.
+  ctx.$ = (id) => ({ value: (opts.label === undefined ? 'Tee' : opts.label) });
+  ctx.cmCurrentZone = () => ctx.__zone;
+  ctx.cmCaptureGps = () => Promise.resolve(
+    opts.noGps ? null : { lat: 1, lng: 2, accuracy_m: 4 });
+  ctx.renderCoursePointsTable = () => { state.renders += 1; };
+  ctx.__zone = { id: 'Z1', points: [] };
+  K.vm.runInContext(K.grab(SRC, 'async function addCoursePoint(', ''), ctx);
   return ctx;
 }
 
@@ -244,6 +255,101 @@ test('the local write happens BEFORE the push, not after it', async () => {
   assert.ok(stAt > 0 && pushAt > stAt,
     'the local write no longer precedes the server push, so a failed push could '
     + 'lose the point entirely');
+});
+
+section('addCoursePoint -- the SUCCESS CLAIM must depend on the result');
+
+test('a refused push produces the honest message and NO "Point captured"',
+  async () => {
+    const ctx = ctxFor({ mode: 'refused' });
+    await ctx.addCoursePoint();
+    assert.strictEqual(ctx.__state.toasts.length, 2,
+      'expected exactly the GPS notice and one outcome message, got: '
+      + JSON.stringify(ctx.__state.toasts));
+    assert.ok(!/Point captured/.test(ctx.__state.toasts.join(' | ')),
+      'a point that never reached the server is still announced as captured: '
+      + JSON.stringify(ctx.__state.toasts));
+    assert.ok(/did not\s+sync to the server/.test(ctx.__state.toasts[1]),
+      'the outcome message does not name the failure: ' + ctx.__state.toasts[1]);
+  });
+
+test('...and a HANG behaves the same, because a timeout arrives as a refusal',
+  async () => {
+    const ctx = ctxFor({ mode: 'timeout' });
+    await ctx.addCoursePoint();
+    assert.ok(!/Point captured/.test(ctx.__state.toasts.join(' | ')),
+      JSON.stringify(ctx.__state.toasts));
+  });
+
+test('CONTROL: a SUCCESSFUL push does say "Point captured", with the accuracy',
+  async () => {
+    // A caller that never announces success is not a fix, it is a deleted
+    // feature -- and it would pass every arm above.
+    const ctx = ctxFor({});
+    await ctx.addCoursePoint();
+    assert.ok(/Point captured/.test(ctx.__state.toasts.join(' | ')),
+      'the good path stopped confirming anything: '
+      + JSON.stringify(ctx.__state.toasts));
+    assert.ok(/4m/.test(ctx.__state.toasts.join(' | ')),
+      'the accuracy was dropped from the confirmation');
+  });
+
+test('THE INTERLEAVING THAT MADE THIS A DEFECT: two captures, one failing, and '
+  + 'the user must not end on a success claim', async () => {
+    // toast() is textContent = m, so a correction only corrects if it is the
+    // NEXT message. Capturing course points is a SEQUENCE -- tee, pin, hazards
+    // -- so a second capture routinely starts before the first push resolves.
+    // With the claim raised optimistically, the honest message for capture 1
+    // was overwritten by capture 2's "Point captured".
+    const ctx = ctxFor({ mode: 'refused' });
+    await ctx.addCoursePoint();
+    await ctx.addCoursePoint();
+    const last = ctx.__state.toasts[ctx.__state.toasts.length - 1];
+    assert.ok(!/Point captured/.test(last),
+      'the LAST thing the user sees after two failed captures is a success '
+      + 'claim: ' + JSON.stringify(ctx.__state.toasts));
+    assert.strictEqual(
+      ctx.__state.toasts.filter((t) => /did not\s+sync/.test(t)).length, 2,
+      'one of the two failures was never reported: '
+      + JSON.stringify(ctx.__state.toasts));
+  });
+
+test('the table still redraws BEFORE the push resolves -- the fix must not '
+  + 'make the UI wait on the network', async () => {
+    // The promise is taken and awaited only for the CLAIM. A caller that
+    // awaited first would block the redraw for up to the 15s timeout.
+    const ctx = ctxFor({ mode: 'hang' });
+    const running = ctx.addCoursePoint();
+    await new Promise((r) => setTimeout(r, 0));
+    assert.strictEqual(ctx.__state.renders, 1,
+      'the points table did not redraw until the server answered');
+    void running;
+  });
+
+test('no caller of cmSavePoints drops its promise', () => {
+  // Structural, and it is the arm that survives a refactor: the original defect
+  // was not inside cmSavePoints at all, it was three call sites ignoring what
+  // it returned.
+  const code = SRC.replace(/\/\/[^\n]*/g, '');
+  // `function ` is excluded or the DECLARATION counts as a dropped call -- and
+  // it would, every time, making the arm fail whatever the call sites do. An
+  // arm that cannot pass is as useless as one that cannot fail.
+  const re = /(function\s+|\w+\s*=\s*|await\s+|return\s+)?cmSavePoints\s*\(/g;
+  let m; const dropped = [];
+  while ((m = re.exec(code)) !== null) {
+    if (!m[1]) dropped.push(code.slice(Math.max(0, m.index - 60), m.index + 20));
+  }
+  assert.deepStrictEqual(dropped, [],
+    'a call site ignores the result again: ' + JSON.stringify(dropped));
+});
+
+test('CONTROL: that structural arm can actually fail', () => {
+  const fake = 'function f(){ cmSavePoints(z); }';
+  const re = /(function\s+|\w+\s*=\s*|await\s+|return\s+)?cmSavePoints\s*\(/g;
+  let m, dropped = 0;
+  while ((m = re.exec(fake)) !== null) { if (!m[1]) dropped += 1; }
+  assert.strictEqual(dropped, 1,
+    'the dropped-promise detector does not detect a dropped promise');
 });
 
 section('the two deliberate no-toast sites, asserted as decisions not oversights');

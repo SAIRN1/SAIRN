@@ -47,6 +47,46 @@ REG = os.path.join('docs', 'defect-density-register.json')
 LAYERS = ('product', 'tooling', 'test')
 SEVERITIES = ('critical', 'high', 'moderate', 'low')
 
+# ── WHAT THE FOUR WORDS MEAN (added 2026-09-15, and the evidence is measured)
+# `layer` and `injection_phase` each carry a paragraph explaining what they are.
+# SEVERITY CARRIED NOTHING -- four words and no definitions -- and two blind
+# review rounds measured what that costs.
+#
+# tools/blind_review.py withholds the recorded severity, takes a reviewer's own
+# judgment first, and only then reveals. Across two rounds, 14 records:
+# **6 AGREED, 8 DID NOT -- and the 8 split 4 MORE severe and 4 LESS.**
+#
+# THE SPLIT IS THE FINDING, NOT THE RATE. A one-sided split would be a
+# CALIBRATION OFFSET -- two people using the same scale from different places,
+# fixed by agreeing an anchor. An even split is DISPERSION: the same scale
+# applied inconsistently because it has no definition to be consistent with.
+# Those need opposite fixes and an agreement rate alone cannot tell them apart.
+#
+# So the definitions below are written against CONSEQUENCE IF THE DEFECT
+# REACHES A USER, which is the question every other tier on this platform asks:
+#
+#   critical  Money moves wrongly, a record is destroyed with no recovery, or
+#             an unauthorised party reaches data. Reachable on a real
+#             deployment by a real caller, not only in principle.
+#   high      A silent failure that shows SUCCESS, a control that does not
+#             refuse what it exists to refuse, or a platform-wide defect whose
+#             trigger is a condition that really occurs. Recoverable, but the
+#             user is not told.
+#   moderate  A visible wrong answer, a refusal a user cannot act on, or a
+#             control that stopped testing what it claims to test. Somebody
+#             notices.
+#   low       A cosmetic or documentation defect, or a wrong number in a report
+#             nobody gates on.
+#
+# ── THE 85 RECORDS THAT PREDATE THIS ARE **NOT** RE-TIERED ─────────────────
+# Stated because it matters to anything that reads the field: every record
+# before 2026-09-15 was assigned with no definition to assign against, so the
+# corpus is MIXED. tools/defect_budget_policy.py weights by severity, which
+# means its numbers span two vocabularies. Re-tiering 85 records is a
+# governance decision with a real cost either way and is not one a definition
+# comment gets to make silently.
+SEVERITY_DEFINED_FROM = '2026-09-15'
+
 # ── WHERE THE DEFECT WAS INJECTED (item 77, added 2026-09-14) ──────────────
 # `detection_method` records how a defect was REMOVED. This records where it
 # was PUT IN. Two different questions, and only both together make an

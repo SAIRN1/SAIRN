@@ -27,8 +27,8 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 53 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 50 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 37 | nothing runs these at all |
+| **SUITE-ONLY** | 29 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -274,7 +274,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (27)
+## SUITE-ONLY (29)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -295,9 +295,10 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
+| `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | `run_selftest_independence_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
-| `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py` |
+| `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_selftest_independence_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
@@ -306,12 +307,13 @@ fixtures. Nothing points them at the real codebase.
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_claim_retype_mutation_control.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
 | `sairn_rebase_resolve.py` | CHECKER | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main | `run_rebase_resolve_probe.py` |
+| `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | `run_sc_tier_a_live_probe_probe.py` |
 | `testability_criteria.py` | CHECKER | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything | `run_testability_gate_probe.py` |
 | `testability_gate.py` | CHECKER | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus | `run_testability_gate_probe.py` |
 
 ---
 
-## UNWIRED (37)
+## UNWIRED (35)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -344,7 +346,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
-| `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `ooda_phases.py` | CHECKER | item 67 -- WHICH OODA phase is the bottleneck, and it refuses to publish an aggregate because three of the four boundaries are not recorded anywhere. Measured 2026-09-15: detect-to-fix is SAME DAY on 73 of 73 resolvable records, so the only phase this repo times is already as fast as it can be and every second of real exposure lives in a phase nothing times -- the cron incident, silent 24 hours, and send-reminder.js returning 500 hourly FOR MONTHS. A negative duration is reported as an ANOMALY rather than averaged away. Needs the same injection-date field item 66 is blocked on; the two are one field apart | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
@@ -352,7 +353,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
-| `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `suite_control_triage.py` | CHECKER | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
@@ -389,7 +389,7 @@ number, and only one of them is a document.
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                51   report_only_checks.REGISTRY
-  tools invoked by tests/            124   tests/**/*.py, *.js
+  tools invoked by tests/            126   tests/**/*.py, *.js
   recorded NOT-promoted decisions     50   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

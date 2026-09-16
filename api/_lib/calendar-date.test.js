@@ -1,4 +1,8 @@
 // api/_lib/calendar-date.test.js
+// REQUIREMENT: one module owns what a calendar date is and how two compare, so no app
+//   reimplements date arithmetic and reaches a different answer about the
+//   same two days
+//
 //
 // Run:  node api/_lib/calendar-date.test.js
 //

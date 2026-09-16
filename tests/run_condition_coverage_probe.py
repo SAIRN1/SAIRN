@@ -17,6 +17,10 @@ its findings. They are about whether it can be trusted to put the file back:
   * and the harness must find a PLANTED gap: an operand added to a copy of an
     engine with no test covering it must come back SURVIVED.
 """
+# REQUIREMENT: condition coverage counts each sub-condition of a compound test
+#   separately, so a branch that is never exercised on one operand is not
+#   reported as covered
+#
 import io
 import os
 import shutil

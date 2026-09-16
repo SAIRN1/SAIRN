@@ -478,19 +478,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 219 test files are traced to no stated requirement
+### 200 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 253 of 472 traced, 53.6%.
+For context and not as the headline: 274 of 474 traced, 57.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 259 citations come from
+### Where the 280 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 253 |
+| `declared` | 21 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 1 |
 
@@ -500,20 +501,15 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 56 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 163 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 35 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 165 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 56 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 35 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/accounting-connector.test.js`
-- `api/_lib/ai-rate-limit.test.js`
 - `api/_lib/ai-usage.test.js`
-- `api/_lib/auth.test.js`
-- `api/_lib/biometric-consent.test.js`
-- `api/_lib/calendar-date.test.js`
 - `api/_lib/claude.test.js`
 - `api/_lib/courtlistener-rate-limit.test.js`
-- `api/_lib/credential-expiry.test.js`
 - `api/_lib/deadline-alabama.test.js`
 - `api/_lib/deadline-arkansas.test.js`
 - `api/_lib/deadline-cross-appeal.test.js`
@@ -549,23 +545,16 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/dental-credentials-endpoint.test.js`
 - `api/_lib/dental-credentials.test.js`
 - `api/_lib/dental-gfe.test.js`
-- `api/_lib/dental-photo-validation.test.js`
 - `api/_lib/dental-public.test.js`
 - `api/_lib/dental-reminder-copy.test.js`
 - `api/_lib/dental-reminder-window.test.js`
 - `api/_lib/dnt-location.test.js`
 - `api/_lib/dnt-rollup-endpoint.test.js`
-- `api/_lib/dnt-rollup.test.js`
-- `api/_lib/employee-lifecycle.test.js`
 - `api/_lib/job-risk.test.js`
 - `api/_lib/law-trust-reconcile-endpoint.test.js`
-- `api/_lib/law-trust-reconcile.test.js`
 - `api/_lib/location-scope.test.js`
 - `api/_lib/mech-assets.test.js`
 - `api/_lib/mech-credentials.test.js`
-- `api/_lib/money.test.js`
-- `api/_lib/record-parity.test.js`
-- `api/_lib/resilience.test.js`
 - `api/_lib/roofing-agreements-endpoint.test.js`
 - `api/_lib/roofing-agreements.test.js`
 - `api/_lib/roofing-asset-registry.test.js`
@@ -579,7 +568,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/roofing-damage-assessment.test.js`
 - `api/_lib/roofing-locations-endpoint.test.js`
 - `api/_lib/roofing-locations.test.js`
-- `api/_lib/roofing-prequal.test.js`
 - `api/_lib/roofing-programs-endpoint.test.js`
 - `api/_lib/roofing-programs.test.js`
 - `api/_lib/roofing-safety.test.js`
@@ -601,9 +589,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/stonedesk-public.test.js`
 - `api/_lib/stonedesk-remnant-publishing.test.js`
 - `api/_lib/style-profile.test.js`
-- `api/_lib/subcontractor-compliance.test.js`
-- `api/_lib/token-vault.test.js`
-- `api/_lib/wip-accounting.test.js`
 - `api/claude-cost-controls.test.js`
 - `api/dnt-bi.test.js`
 - `api/fail-open-triage-2026-09-04.test.js`
@@ -661,22 +646,19 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_bypassed_constant_probe.py`
 - `tests/run_citator_freshness_probe.py`
 - `tests/run_cleanup_confirm_probe.py`
-- `tests/run_condition_coverage_probe.py`
-- `tests/run_defect_budget_policy_probe.py`
-- `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_invisible_in_pattern_probe.py`
-- `tests/run_jscomments_probe.py`
 - `tests/run_ownership_drift_probe.py`
 - `tests/run_rate_limit_race_probe.js`
 - `tests/run_role_gate_invariants_probe.js`
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
+- `tests/run_sc_tier_a_live_probe_probe.py`
 - `tests/run_schema_verdict_probe.py`
+- `tests/run_selftest_independence_probe.py`
 - `tests/run_shape_antipattern_probe.py`
-- `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
 - `tests/run_tool_selftest_probe.py`
 - `tests/run_tool_selftest_probe_control.py`
@@ -744,7 +726,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 472   tests/**, api/*.test.js
+  test files on disk                 474   tests/**, api/*.test.js
   open-work rows citing a test       241   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                51   report_only_checks.REGISTRY

@@ -1,4 +1,8 @@
 // api/_lib/wip-accounting.test.js
+// REQUIREMENT: earned revenue is derived from the EXACT completion ratio and never from
+//   the rounded percentage a human reads, and the reported position states
+//   which basis produced it
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/wip-accounting.test.js
 //

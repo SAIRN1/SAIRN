@@ -1,4 +1,8 @@
 // api/_lib/biometric-consent.test.js
+// REQUIREMENT: a biometric consent cannot be manufactured, back-dated or inferred by
+//   this module, and the notice-purpose-release sequence is checked in ORDER
+//   rather than for presence
+//
 //
 // Run:  node api/_lib/biometric-consent.test.js
 //

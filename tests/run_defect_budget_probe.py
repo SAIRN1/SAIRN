@@ -6,6 +6,10 @@ The arm that earns its place first is 2c: changing the threshold must change the
 answer. A budget tool whose output is the same at 3 and at 10 is not applying a
 budget, and on day one -- when one rule dominates -- that is easy to miss.
 """
+# REQUIREMENT: the defect-density ranking is per RULE and not per app, because a
+#   per-app budget punishes looking and the app audited hardest would score
+#   worst
+#
 import contextlib
 import io as _io
 import os

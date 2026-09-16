@@ -21,6 +21,10 @@ duplicating them here would create the second copy of something that this repo
 keeps recording as the root cause of its own surprises. All this does is make
 the suite execute them.
 """
+# REQUIREMENT: comment stripping removes comments without touching a string or a regex
+#   literal that merely looks like one, because a scanner fed mangled source
+#   reports confident nonsense
+#
 import os
 import subprocess
 import sys

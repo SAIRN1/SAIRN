@@ -1,4 +1,8 @@
 // api/_lib/auth.test.js
+// REQUIREMENT: a session token cannot be forged or replayed past expiry, and a PIN is
+//   verified against a one-way hash rather than compared, for every app that
+//   shares this module
+//
 // ---------------------------------------------------------------------------
 // Plain node:assert tests — no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.js's own header).

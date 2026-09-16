@@ -1,4 +1,8 @@
 // api/_lib/record-parity.test.js
+// REQUIREMENT: two records that should agree are compared on their CONTENT rather than
+//   their representation, so a formatting difference is never reported as a
+//   data difference
+//
 //
 // Run:  node api/_lib/record-parity.test.js
 //

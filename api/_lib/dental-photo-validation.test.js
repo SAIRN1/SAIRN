@@ -1,4 +1,7 @@
 // api/_lib/dental-photo-validation.test.js
+// REQUIREMENT: a clinical photo requirement actually REFUSES when the photo is absent,
+//   rather than recording an unmet requirement as met
+//
 // Plain node:assert tests -- no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).
 // Run: node api/_lib/dental-photo-validation.test.js

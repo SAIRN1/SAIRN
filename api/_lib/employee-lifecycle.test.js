@@ -1,4 +1,8 @@
 // api/_lib/employee-lifecycle.test.js
+// REQUIREMENT: a deactivated employee cannot act, the last administrator cannot be
+//   removed, and nobody can deactivate themselves -- in every app that
+//   shares this module
+//
 // Isolation suite for the shared credential-deactivation lifecycle.
 //
 // Run:  node --test api/_lib/employee-lifecycle.test.js

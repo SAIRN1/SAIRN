@@ -1,4 +1,8 @@
 // api/_lib/money.test.js
+// REQUIREMENT: a money value can never be constructed from a non-number, so no amount
+//   reaches storage or a ledger having been coerced from a string, null or
+//   NaN
+//
 //
 // Run:  node api/_lib/money.test.js
 //

@@ -1,4 +1,8 @@
 // api/_lib/resilience.test.js
+// REQUIREMENT: a call to something this platform does not control is bounded and
+//   degrades to a stated outcome, rather than hanging or failing in a way
+//   the caller cannot distinguish from success
+//
 //
 // Run:  node api/_lib/resilience.test.js
 //

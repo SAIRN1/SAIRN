@@ -1,4 +1,8 @@
 // api/_lib/law-trust-reconcile.test.js
+// REQUIREMENT: an attorney trust reconciliation cannot report balanced while a client
+//   ledger is overdrawn, because trust-account arithmetic is a regulatory
+//   obligation and not a report
+//
 //
 // Run: node api/_lib/law-trust-reconcile.test.js
 //

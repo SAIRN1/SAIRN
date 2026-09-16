@@ -1,4 +1,8 @@
 // api/_lib/subcontractor-compliance.test.js
+// REQUIREMENT: a subcontractor whose compliance documents have lapsed cannot be
+//   scheduled as compliant, so an expired certificate does not pass as a
+//   current one
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention (see api/_lib/auth.test.js, dental-photo-validation.test.js).
 // Run: node api/_lib/subcontractor-compliance.test.js

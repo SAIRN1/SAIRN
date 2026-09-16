@@ -261,9 +261,28 @@ def traced():
     rule is to eliminate duplication at the SOURCE rather than to copy more
     carefully, so there is one function and both documents call it.
 
-    Two citing sources, in the same order as this file's own authority list:
+    THREE citing sources, in the same order as this file's own authority list:
     GUARD_TESTS in the push gate (a requirement with a recorded defect behind
-    it), and any open-work row that names a test file.
+    it), any open-work row that names a test file, and -- added 2026-09-15 -- a
+    REQUIREMENT declared in the test file's own header.
+
+    ── WHY THE THIRD ONE, AND WHY IT IS NOT CO-LOCATION ────────────────────
+    Measured 2026-09-15: 243 of 248 citations came from the open-work index and
+    5 from GUARD_TESTS, so this figure tracked how diligently rows were written
+    rather than how well tested the repo was. And 120 of the 213 untraced files
+    were `foo.test.js` sitting beside `foo.js`.
+
+    COUNTING THAT CO-LOCATION WAS REFUSED, and this is the opposite of it. A
+    filename says WHAT a test covers; it cannot say WHY that coverage is
+    required, and moving 55 files into this column on a naming convention would
+    have been the measure-gaming section 5 was rewritten to stop.
+
+    A declared REQUIREMENT is a sentence somebody WROTE, one per file, saying
+    what the file exists to hold. That is the same act as writing an index row
+    -- it just lives next to the test, where it cannot go stale relative to it.
+    It is the WEAKEST of the three and is labelled `declared` so a reader can
+    see which files rest on it: nothing outside the file corroborates it, and a
+    test can declare a requirement it does not actually test.
     """
     cited = {}
     for t, _guards, _why in guard_tests():
@@ -271,7 +290,46 @@ def traced():
     for _app, _item, _status, ts in rows_citing_tests():
         for t in ts:
             cited.setdefault(t, []).append('index')
+    for t, _req in declared_requirements():
+        cited.setdefault(t, []).append('declared')
     return cited
+
+
+# A declaration has to SAY something. The floor is deliberately not a keyword
+# list: "REQUIREMENT: tests money.js" satisfies any keyword check, names the
+# subject the filename already names, and states no requirement at all.
+MIN_REQUIREMENT_CHARS = 60
+REQUIREMENT_RX = re.compile(r'^\s*(?://|#)\s*REQUIREMENT:\s*(.+)$', re.M)
+
+
+def declared_requirements():
+    """[(test file, requirement)] for every test whose HEADER declares one.
+
+    Header-only, on purpose: a declaration buried beside one assertion is a
+    comment about that assertion. The file's requirement belongs where a reader
+    meets the file.
+    """
+    out = []
+    for t in all_tests():
+        p = os.path.join(REPO, t)
+        try:
+            head = io.open(p, encoding='utf-8', errors='replace').read(4000)
+        except OSError:
+            continue
+        m = REQUIREMENT_RX.search(head)
+        if not m:
+            continue
+        req = m.group(1).strip()
+        base = os.path.basename(t).rsplit('.', 1)[0]
+        # A declaration that is only the filename back again is not a
+        # requirement, it is an echo.
+        if len(req) < MIN_REQUIREMENT_CHARS:
+            continue
+        if req.lower().replace('-', ' ').replace('_', ' ').strip(' .') \
+                == base.lower().replace('-', ' ').replace('_', ' '):
+            continue
+        out.append((t, req))
+    return out
 
 
 def build():

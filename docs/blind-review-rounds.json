@@ -1,0 +1,136 @@
+{
+  "rounds": [
+    {
+      "criteria_version": "2026-09-15.1",
+      "started_at": "2026-09-16T02:35:33Z",
+      "scored_at": "2026-09-16T03:17:16Z",
+      "withheld_field": "severity",
+      "judged": 6,
+      "agreed": 3,
+      "rows": [
+        {
+          "id": "R01",
+          "commit": "d6b3f6e929ec",
+          "mine": "high",
+          "recorded": "high",
+          "agree": true,
+          "defeater": "Wrong if the write actually reached storage and only the toast was false, or if the stamp call could not realistically fail -- then this is a misleading-message defect rather than a lost save."
+        },
+        {
+          "id": "R02",
+          "commit": "72fa70003224",
+          "mine": "moderate",
+          "recorded": "low",
+          "agree": false,
+          "defeater": "Wrong if that tripwire was the only control standing between a shipping money path and a regression -- a control that silently stops testing is high when nothing else covers what it covered."
+        },
+        {
+          "id": "R03",
+          "commit": "bfe591a24c6a",
+          "mine": "high",
+          "recorded": "moderate",
+          "agree": false,
+          "defeater": "Wrong if some caller already verified the write independently, or if no provisioned tenant uses course points -- then the false success announcement has no live victim."
+        },
+        {
+          "id": "R04",
+          "commit": "8dfde7be2b1b",
+          "mine": "high",
+          "recorded": "high",
+          "agree": true,
+          "defeater": "Wrong if tools/sairn_sql_preflight.py cannot be absent in any real clone, which would make the fail-open branch unreachable and this a latent rather than a live gap."
+        },
+        {
+          "id": "R05",
+          "commit": "d85b98efecb8",
+          "mine": "high",
+          "recorded": "high",
+          "agree": true,
+          "defeater": "Wrong if any independent signal would have shown a zero-app sweep -- a run time, a count, a log line -- because then the clean report was not actually indistinguishable from a real one."
+        },
+        {
+          "id": "R06",
+          "commit": "3ffb0603784b",
+          "mine": "low",
+          "recorded": "moderate",
+          "agree": false,
+          "defeater": "Wrong if the inflated 19 had already been quoted into a plan and diverted real work, or if the same bug also UNDER-counted somewhere, since over-counting is the safe direction and under-counting is not."
+        }
+      ]
+    },
+    {
+      "criteria_version": "2026-09-15.1",
+      "started_at": "2026-09-16T03:17:24Z",
+      "scored_at": "2026-09-16T03:18:34Z",
+      "withheld_field": "severity",
+      "judged": 8,
+      "agreed": 3,
+      "rows": [
+        {
+          "id": "R01",
+          "commit": "5d0f4459b552",
+          "mine": "high",
+          "recorded": "high",
+          "agree": true,
+          "defeater": "Wrong if some other channel independently surfaced the same failures -- a dashboard somebody actually reads, or GitHub mailing the owner -- because then the inert email channel is redundancy lost rather than detection lost."
+        },
+        {
+          "id": "R02",
+          "commit": "8f9a727f008c",
+          "mine": "high",
+          "recorded": "high",
+          "agree": true,
+          "defeater": "Wrong toward CRITICAL if a hung fetch is common rather than pathological on the networks these apps run on: 12 apps and ~260 call sites is the widest blast radius in the register, and only trigger-rarity keeps it off critical. Wrong toward moderate if every affected write also persisted locally, so the user loses a message rather than the record."
+        },
+        {
+          "id": "R03",
+          "commit": "a7103a30fb94",
+          "mine": "critical",
+          "recorded": "high",
+          "agree": false,
+          "defeater": "Wrong if rf_claim_photos was never reachable by a real licensed tenant, or if a downstream human review independently re-verified evidence before any claim was acted on -- then this is a broken control rather than a claim that could be paid on evidence that does not exist."
+        },
+        {
+          "id": "R04",
+          "commit": "e414b563f0f9",
+          "mine": "moderate",
+          "recorded": "moderate",
+          "agree": true,
+          "defeater": "Wrong toward HIGH if MAX_TOOL_USES_CEILING is large, or if the endpoint can be reached without a licence -- the shape is a spend guardrail failing OPEN on garbage input, and only the small bounded ceiling keeps the consequence modest."
+        },
+        {
+          "id": "R05",
+          "commit": "f98c1b08d3fc",
+          "mine": "critical",
+          "recorded": "high",
+          "agree": false,
+          "defeater": "Wrong if a sub_ id is in practice as hard to obtain as a secret, or if Stripe itself re-authenticates the holder before showing billing -- but the record says Stripe puts it in dashboards, webhooks, emails and CSV exports and never treated it as a secret, and the only thing stopping exploitation today is an expired key nobody chose."
+        },
+        {
+          "id": "R06",
+          "commit": "cac3edd5c19f",
+          "mine": "high",
+          "recorded": "critical",
+          "agree": false,
+          "defeater": "Wrong toward CRITICAL if any deployment already runs REPEATABLE READ, because then an overdrawn IOLTA client trust ledger is live rather than one ALTER ROLE away -- and an overdraft on attorney trust money is a reportable event, not an accounting error."
+        },
+        {
+          "id": "R07",
+          "commit": "5b98fd27209b",
+          "mine": "moderate",
+          "recorded": "high",
+          "agree": false,
+          "defeater": "Wrong toward HIGH if the two callers with no handler sit on a write a clinic depends on rather than a vendor convenience -- a dropped socket with no toast is the platform's worst class, and only the narrow scope holds this down."
+        },
+        {
+          "id": "R08",
+          "commit": "a58af8caae0b",
+          "mine": "moderate",
+          "recorded": "high",
+          "agree": false,
+          "defeater": "Wrong toward LOW if a user could work around the refusal, and toward HIGH if anybody responded to the unactionable message by disabling the three-way match itself -- the failure is in the safe direction but the message showed two identical figures and refused, which is how a control gets switched off."
+        }
+      ]
+    }
+  ]
+}

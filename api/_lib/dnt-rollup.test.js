@@ -1,4 +1,7 @@
 // api/_lib/dnt-rollup.test.js
+// REQUIREMENT: a rollup total equals the sum of the rows it claims to summarise, so a
+//   dropped or double-counted row cannot hide inside an aggregate
+//
 //
 // Run: node api/_lib/dnt-rollup.test.js
 //
