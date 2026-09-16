@@ -1484,6 +1484,16 @@
       "claimed_at_epoch": 1789564982.9152393,
       "status": "released",
       "released_at": "2026-09-16T13:51:29Z"
+    },
+    {
+      "id": "cc-1789566909",
+      "session": "cc",
+      "subject": "cc",
+      "task": "master_plan fault probe counter js, tracing continued, schema snapshot query handover",
+      "claimed_at": "2026-09-16T13:55:09Z",
+      "claimed_at_epoch": 1789566909.113009,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
