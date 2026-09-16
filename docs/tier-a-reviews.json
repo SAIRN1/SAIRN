@@ -293,6 +293,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-16T05:39:35Z",
+      "resources": [
+        "rf_claim_photos",
+        "rf_claims"
+      ],
+      "files": [
+        "tests/roofing_claim_gate_probe.py"
+      ],
+      "what": "tests/roofing_claim_gate_probe.py is a NEGATIVE CONTROL over the SAIRNroofing claim assignment gate (rf_claims, rf_claim_photos). It plants seven defects in api/rf-auth.js in a throwaway worktree and requires tests/roofing_claim_gate_single_source.js to go red. WHAT A REVIEWER SHOULD TRY TO BREAK RATHER THAN READ: (1) I WITHDREW ONE OF MY OWN MUTANTS AS EQUIVALENT -- 'session = session || {}' in place of 'if (!session) return false' changes nothing because MANAGEMENT_ROLES[undefined] is falsy. Check whether any of the remaining six is equivalent too; that is the failure mode this probe is most exposed to, and I found one of them only by running it in node. (2) The new seesAllRows() arm I added to the suite asserts it refuses null ON ITS OWN, because api/sd-data.js:5656 calls it directly rather than through ownsRow. Try to write a seesAllRows that passes that arm and still admits a sessionless caller somewhere. (3) ownsRow reads the STORED row, never the caller payload -- construct a call site where the stored row is attacker-influenced and the gate still reads correct.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
