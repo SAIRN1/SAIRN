@@ -152,6 +152,10 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The hover auditor's separation is MECHANICAL now &mdash; and both alleged breaches did not happen, while a third, differently-shaped one did** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/hover_auditor_scope_gate.py` (prevent) + `tools/hover_separation_audit.py` (detect, report-only registered), `.githooks/pre-commit`, 72-arm probe `tests/run_ | `tests/run_hover_separation_probe.py` |
 | ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
 | **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
+| **83 stated claims across 7 artefacts shipped today have NO suite at all &mdash; and the tool that found it read a real 24-arm suite as ZERO first** | **MEASURED 2026-09-15 (CC)**, item 47 &mdash; `tools/first_article_inspection.py` (report-only, NOT_PROMOTED), `tests/run_first_article_inspection_probe.py`, 10 sabotages all caught. `docs/2026-09-15- | `api/_lib/safe-number.test.js`, `tests/run_first_article_inspection_probe.py` |
+| **ZERO of 22 credentials record what to do if that one leaks &mdash; every identity has a procedure that says HOW and never WHEN** | **MEASURED 2026-09-15 (CC)**, item 61 &mdash; `tools/rotation_blast_radius.py` (report-only, NOT_PROMOTED), `tests/run_rotation_blast_radius_probe.py`, 11 sabotages all caught. Built on Cody&rsquo;s i | `tests/run_rotation_blast_radius_probe.py` |
+| **AR-1 carries the only MECHANICAL trigger on the accepted-risk register, and nothing that runs on this platform consumes it** | **FOUND 2026-09-15 (CC)**, item 53 &mdash; `tools/weakness_combination.py` (report-only, NOT_PROMOTED), `tests/run_weakness_combination_probe.py`, 10 sabotages all caught | `tests/run_weakness_combination_probe.py` |
+| **The traceability headline improves every day while the backlog it is a ratio of grows &mdash; 185 &rarr; 212 untraced over the same 221 readings** | **MEASURED 2026-09-15 (CC)**, item 45 &mdash; `tools/trend_alarm.py` (report-only, NOT_PROMOTED, and NOT ARMED by its own gate), `tests/run_trend_alarm_probe.py`, 9 sabotages all caught | `tests/run_trend_alarm_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -456,7 +460,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**237 of 454 test files are traced to a stated requirement. 217 are not.**
+**242 of 454 test files are traced to a stated requirement. 212 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -540,7 +544,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/roofing-supplement.test.js`
 - `api/_lib/roofing-supplier-match.test.js`
 - `api/_lib/roofing-warranties.test.js`
-- `api/_lib/safe-number.test.js`
 - `api/_lib/sairncash-trial.test.js`
 - `api/_lib/sairnlaw-grounded-drafting.test.js`
 - `api/_lib/sairnlaw-trust-void-race.test.js`
@@ -618,14 +621,12 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
-- `tests/run_first_article_inspection_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_invisible_in_pattern_probe.py`
 - `tests/run_jscomments_probe.py`
 - `tests/run_ownership_drift_probe.py`
 - `tests/run_rate_limit_race_probe.js`
 - `tests/run_role_gate_invariants_probe.js`
-- `tests/run_rotation_blast_radius_probe.py`
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
 - `tests/run_schema_verdict_probe.py`
@@ -633,9 +634,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
 - `tests/run_traceability_matrix_probe.py`
-- `tests/run_trend_alarm_probe.py`
 - `tests/run_uncontrolled_checkers_probe.py`
-- `tests/run_weakness_combination_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
 - `tests/sairnbuild_backup_pending.js`
@@ -698,7 +697,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 454   tests/**, api/*.test.js
-  open-work rows citing a test       227   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       231   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                49   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED

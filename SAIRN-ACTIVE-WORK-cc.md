@@ -3394,3 +3394,121 @@ constant to change.
 `removal_path_check` CLEAN.
 
 **NOT PUSHED, SO NOT LIVE-VERIFIED.** A clean commit is not proof (PR &sect;3.2).
+
+---
+
+## 2026-09-15 (continued) -- seven items in one batch, and four of them were already built
+
+**Items 20, 45, 47, 50, 53, 55, 58, 61.** Pushed as `c39fe04f` (item 20),
+`c2efc41c` (45 and 53) and `59fb6638` (47 and 61), each verified present on
+origin by SHA equality. Write-up: `docs/2026-09-15-seven-item-sweep.md`.
+
+### The split is the first finding
+
+Three needed building, three were already done and needed VERIFYING, and one
+does not exist as a registry entry at all. Every "already built" verdict was
+checked against the code rather than against a summary -- the open-work index
+opens by saying every row is a claim and not a fact, and four of these were.
+
+| item | verdict |
+|---|---|
+| 20 | BUILT -- `tools/defect_budget_policy.py`, reports UNCALIBRATED and refuses to gate |
+| 45 | BUILT -- `tools/trend_alarm.py`; **and there is no item 45 in the registry** |
+| 47 | METHOD EXISTED, NOW MECHANISED -- `tools/first_article_inspection.py` |
+| 50 | ALREADY ANSWERED 2026-09-13; 50b and 50c landed and guarded, 50a deliberately unbuilt |
+| 53 | BUILT -- `tools/weakness_combination.py` |
+| 55 | ALREADY BUILT AND GUARDED BOTH WAYS -- `api/_lib/cron-response.js` |
+| 58 | ALREADY ANSWERED 2026-09-14 -- the audit asks this item's question verbatim |
+| 61 | BUILT -- `tools/rotation_blast_radius.py` |
+
+### What the four new tools found
+
+**ZERO of 22 credentials record what to do if that one leaks.** Every identity
+has a PROCEDURE for rotation -- "Stripe dashboard", "Anthropic console" -- which
+says HOW and never WHEN. 20 of 22 have no attested date and no schedule; 7 hold
+broad standing access; and for five, NEITHER control is doing anything.
+
+**83 stated claims across 7 artefacts shipped today have no suite at all.** 27
+artefacts were added on 2026-09-15 and seven have nothing verifying them.
+
+**AR-1 carries the only MECHANICAL trigger on the accepted-risk register and
+nothing consumes it.** The signal is a `warnings` entry from
+`api/_lib/stripe-config.js` DISAPPEARING; nothing in report_only_checks, the
+push gate, run_all_tests, the hooks or any workflow mentions that module. By the
+register's own rule -- "a trigger nobody watches is not a trigger" -- all four
+entries are unwatched and it believes one of them is not.
+
+**The traceability headline improves while the backlog grows.** Same document,
+same 221 readings: ratio 29.4% -> 52.5% (improving), untraced count 185 -> 212
+(worsening). A threshold on the headline reads better every day for five days.
+
+**Both windows of the defect budget read 0% and the most extreme band on the
+first run.** Read as the BUDGET being wrong rather than the platform being in
+crisis; reports UNCALIBRATED, gates nothing, prints the observed 842.5/30d and
+refuses to tune the threshold to flatter the corpus.
+
+### Three tools found their own defect before they found the platform's
+
+That is the part worth carrying forward, because it happened three times in one
+session and none of them would have been caught by reading the code.
+
+1. **`weakness_combination.py` fired on 6 real pairs out of 6.** "Bound is not a
+   control" is a property of ONE entry that propagates into every pair that
+   entry appears in. A signal that fires on everything is noise with a table.
+   Moved to a per-entry report; three of six now trip.
+2. **`first_article_inspection.py` read a real 24-arm suite as ZERO arms**,
+   because it hardcoded check/ck/test/it and `api/_lib/safe-number.test.js`
+   declares `function t(name, fn)`. Separately, a `#!/usr/bin/env python`
+   shebang put three tools' docstrings out of reach of a top-anchored regex, so
+   they read as ZERO claims. **Both times the tool was reporting a finding about
+   somebody else's work that was a fact about its own regex.** The arm dialect
+   is now DISCOVERED per file and an unrecognised one reports COULD NOT TELL,
+   not zero.
+3. **`rotation_blast_radius.py` read `postgres` -- "Owns all 380-odd objects in
+   public" -- as BOUNDED**, because the criteria had no phrase for ownership.
+   Revised .1 -> .2 with fixtures in both directions. **The direction is why the
+   revision was allowed: it moved a row from BOUNDED to BROAD, i.e. against this
+   platform.** A criteria change that makes the number worse is a correction;
+   one that makes it better needs the scrutiny the corpus rule exists to apply.
+
+### Mutation testing found what the probes did not
+
+**49 sabotages across five probes, all caught in the end -- six survived the
+first pass and every one was a real gap, not harness noise.**
+
+- The NO_MECHANISM guard was never exercised because no fixture had an entry
+  saying MECHANICAL and "nothing mechanical" at once. It is now scoped to the
+  TRIGGER field rather than the whole entry.
+- An "ordinary word is not a mechanism" arm used a word that was not in
+  backticks -- while the real register says `warnings` in exactly that way.
+- A git-failure arm asserted `x is None or isinstance(x, list)`, which is always
+  true.
+- An intersection was recomputed inside the probe rather than calling the tool,
+  so a union in the tool passed. It is now a named function both sides use.
+- A register-failure arm tested the healthy path; the realistic failure is not
+  an ImportError but a refactor leaving IDENTITIES gone while the module still
+  loads.
+
+### Corrections made to what I was told
+
+- **`sql/backup_reader_role.sql` is NOT an open finding.** I reported it as one;
+  it was fixed by Fourth in `e40e146b` and independently re-verified twice.
+  What IS open is narrower: whether the LIVE role was created before or after
+  that fix landed, which needs a live connection and not a code read.
+- **Cody's eleven ownerless credentials were closed in the same commit that
+  found them** (`014184f1`), not left open. The register now runs clean at 22
+  identities, every one with a named owner.
+
+### Verified
+
+All five probes green: `run_defect_budget_policy_probe.py`,
+`run_trend_alarm_probe.py`, `run_weakness_combination_probe.py`,
+`run_first_article_inspection_probe.py`, `run_rotation_blast_radius_probe.py`.
+`md_table_check` 0 malformed over 524 rows, `index_duplicate_check` 0
+near-duplicate pairs. All three generated documents regenerated after every
+rebase rather than merged by hand; the suite floor re-measured after each rebase
+rather than carried forward.
+
+**Two pushes needed a rebase mid-flight** (another clone landed while this one
+was working) and both times all conflicts were in GENERATED documents -- resolved
+by taking upstream and regenerating, never by merging hunks of a derived file.
