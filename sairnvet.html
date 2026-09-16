@@ -1198,7 +1198,7 @@
 <p class="panel-desc">Every controlled-substance dose calculated, refused, signed off or witnessed &mdash; the record an inspector asks for</p>
 </div>
 <div class="panel-actions">
-<button class="btn btn-sm" onclick="exportTableCSV('panel-doseaudit-table','dosing-audit-trail')">Export CSV</button>
+<button class="btn btn-sm" onclick="svExportDoseAudit()">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 <button class="btn btn-secondary btn-sm" onclick="svRenderDoseAudit()">Reload from server</button>
 </div>
@@ -1208,11 +1208,19 @@
      looking at is worse than one that refuses to load. -->
 <div id="doseaudit-source" class="card" style="margin-bottom:12px"></div>
 <div class="card"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">
-<input type="date" id="doseaudit-from" onchange="svRenderDoseAuditTable()" title="From date">
-<input type="date" id="doseaudit-to" onchange="svRenderDoseAuditTable()" title="To date">
-<input type="text" id="doseaudit-q" placeholder="Filter: drug, patient, type…" oninput="svRenderDoseAuditTable()">
+<input type="date" id="doseaudit-from" onchange="svRenderDoseAuditTable()" title="From date, compared against the UTC day in the When column — not your local day">
+<input type="date" id="doseaudit-to" onchange="svRenderDoseAuditTable()" title="To date, compared against the UTC day in the When column — not your local day">
+<input type="text" id="doseaudit-q" placeholder="Filter by value: a drug, a patient, an event type…" oninput="svRenderDoseAuditTable()">
 <button class="btn btn-secondary btn-sm" onclick="svClearDoseAuditFilters()">Clear filters</button>
 </div>
+<!-- THE DATES ARE UTC AND THE SCREEN NOW SAYS SO. The timestamps are written
+     with toISOString() and the column header has always read "When (UTC)", but
+     the two date pickers said only "From date"/"To date" -- so a US-Eastern
+     practice filtering a single day loses every evening dose after 20:00 local
+     to the next UTC day and gains the previous evening's. Naming the basis is
+     the honest fix; converting to local time is a product decision about what a
+     "day" means on a controlled-substance record, and it has not been made. -->
+<div style="font-size:12px;opacity:.75;margin-bottom:8px">Dates filter on the <strong>UTC</strong> day shown in the When column, not on your local day. An entry dosed late in the evening local time belongs to the next UTC day.</div>
 <div id="doseaudit-count" style="font-size:13px;opacity:.85;margin-bottom:8px"></div>
 <div class="sv-tw"><table id="panel-doseaudit-table">
 <thead><tr><th>When (UTC)</th><th>Event</th><th>Drug</th><th>Patient</th><th>Witness</th><th>Detail</th><th>Id</th></tr></thead>
@@ -8782,42 +8790,122 @@ function askAI(){
 // says the read failed and the empty case says the trail is empty.
 var _svAuditRows = [];
 var _svAuditSource = '';
+// THREE STATES, NOT TWO, and the third is why this variable exists. Until a
+// read settles, `_svAuditRows` is an empty array that means NOTHING YET -- and
+// the date and text filters are live the whole time and call the table
+// renderer directly. Typing one character during a 15s read used to print
+// "No entries ... it is not a failed read" under a banner still reading
+// "Loading", which is the same false statement as the unprovisioned case
+// reached by a path that needs no misconfiguration at all. Found by
+// independent review, 2026-09-16.
+var _svAuditLoaded = false;
 
 function svDoseAuditLocal(){
   try{ var a = JSON.parse(localStorage.getItem(SV_AUDIT_KEY) || '[]'); return Array.isArray(a) ? a : []; }
   catch(e){ return []; }
 }
 
+// How many entries this device holds that the SERVER copy does not.
+//
+// The banner used to frame local as a subset of server -- "the server copy is
+// not capped; this device holds N" -- which is the design's assumption and is
+// exactly INVERTED during an offline backlog: entries written while a push was
+// refused or timed out live only on the device, `svPushOne` resolves null and
+// they are never marked backed. A clinic that dosed through an outage would
+// see the server count, not the doses. Disclosed rather than shown, because
+// merging two copies into one table would invent a record neither holds.
+function svAuditLocalOnly(local, server){
+  var have = {};
+  (server || []).forEach(function(e){ if(e && e.id) have[String(e.id)] = 1; });
+  return (local || []).filter(function(e){ return e && e.id && !have[String(e.id)]; }).length;
+}
+
 function svRenderDoseAudit(){
   var box = document.getElementById('doseaudit-source');
+  _svAuditLoaded = false;
+  _svAuditRows = [];
   if(box) box.innerHTML = '<strong>Loading…</strong> reading the trail from the server.';
+  svRenderDoseAuditTable();
   var done = function(rows, source, note){
     _svAuditRows = rows || [];
     _svAuditSource = source;
+    _svAuditLoaded = true;
     if(box) box.innerHTML = note;
     svRenderDoseAuditTable();
   };
   var local = svDoseAuditLocal();
-  var p = (typeof svData === 'function') ? svData('read', SV_AUDIT_KEY, {}) : null;
+  var localNote = ' The local copy is capped at ' + SV_AUDIT_CAP
+    + ' entries and may be incomplete. Do not treat it as the full record.';
+  var p = (typeof svData === 'function') ? svData('read', SV_AUDIT_KEY, {}, true) : null;
   if(!p || typeof p.then !== 'function'){
     done(local, 'local',
-      '<strong>Showing this device only.</strong> The server could not be asked, so this is the local copy, which is capped at '
-      + SV_AUDIT_CAP + ' entries and may be incomplete. Do not treat it as the full record.');
+      '<strong>Showing this device only.</strong> The server could not be asked, so this is the local copy.' + localNote);
     return;
   }
-  p.then(function(rows){
-    if(rows === null || rows === undefined){
-      // NOT an empty trail -- the read failed. Fall back to local and SAY SO.
+  // A HANG GUARD, because svFetchTimeoutSignal() is FEATURE-DETECTED and
+  // returns undefined on an engine without AbortSignal.timeout -- on which
+  // this read neither resolves nor rejects and the panel sits on "Loading"
+  // for ever with an empty table and no error. svPushOne races a timer for
+  // exactly this reason and says so; the reader had no equivalent.
+  var settled = false;
+  var TIMED_OUT = {};
+  var timed = new Promise(function(res){
+    setTimeout(function(){ if(!settled) res(TIMED_OUT); }, SV_FETCH_TIMEOUT_MS + 2000);
+  });
+  var call = p.then(function(v){ settled = true; return v; },
+                    function(){ settled = true; return null; });
+  Promise.race([call, timed]).then(function(env){
+    if(env === TIMED_OUT){
       done(local, 'local',
-        '<strong>The server read failed.</strong> Showing the local copy from this device, which is capped at '
-        + SV_AUDIT_CAP + ' entries and may be incomplete. This is not the full record; use “Reload from server” once connectivity is back.');
+        '<strong>The server did not answer in ' + Math.round((SV_FETCH_TIMEOUT_MS + 2000) / 1000)
+        + 's.</strong> Showing the local copy from this device. This is not a statement that the trail is empty — the read never completed.' + localNote);
       return;
     }
-    if(!Array.isArray(rows)) rows = [];
+    if(env === null || env === undefined){
+      // NOT an empty trail -- the read failed. Fall back to local and SAY SO.
+      done(local, 'local',
+        '<strong>The server read failed.</strong> Showing the local copy from this device.' + localNote
+        + ' This is not the full record; use “Reload from server” once connectivity is back.');
+      return;
+    }
+    // NOT SET UP IS NOT EMPTY. `provisioned:false` means the table does not
+    // exist, which the server returns as an empty array with the flag beside
+    // it. Reading that as "this practice has dosed nothing" is the false
+    // statement this whole branch exists to stop.
+    if(env.provisioned === false){
+      done(local, 'local',
+        '<strong>The dosing trail is NOT SET UP on the server.</strong> Its table does not exist, so the server '
+        + 'has no copy of anything — this is NOT a statement that nothing was dosed. Showing the local copy from '
+        + 'this device, which holds ' + local.length + ' entr' + (local.length === 1 ? 'y' : 'ies') + '.' + localNote
+        + ' Run <code>sql/sairnvet_data_schema.sql</code> to provision it; until then nothing recorded here is backed up.');
+      return;
+    }
+    var rows = Array.isArray(env.data) ? env.data : [];
+    var only = svAuditLocalOnly(local, rows);
     done(rows, 'server',
       '<strong>Showing the server record</strong> — ' + rows.length + ' entr' + (rows.length === 1 ? 'y' : 'ies')
-      + '. The server copy is not capped; this device holds ' + local.length + '.');
+      + '. The server copy is not capped; this device holds ' + local.length + '.'
+      + (only ? ' <strong>' + only + ' entr' + (only === 1 ? 'y is' : 'ies are') + ' on this device and NOT on the server</strong>'
+              + ' — written while a backup was refused or timed out. They are not in the table below.' : ''));
   });
+}
+
+// The `YYYY-MM-DD` day this entry belongs to, or '' when it has none that can
+// be compared. '' means KEEP IT -- the filters treat an unanswerable entry as
+// passing, never as excluded.
+function svAuditDayPrefix(ts){
+  var s = String(ts || '');
+  return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : '';
+}
+
+// Every VALUE in the entry, lowercased, with the keys left out.
+function svAuditHaystack(e){
+  var out = [];
+  Object.keys(e || {}).forEach(function(k){
+    var v = e[k];
+    out.push(typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v));
+  });
+  return out.join(' ').toLowerCase();
 }
 
 function svClearDoseAuditFilters(){
@@ -8840,33 +8928,49 @@ function svRenderDoseAuditTable(){
 
   var rows = (_svAuditRows || []).slice().filter(function(e){
     if(!e || typeof e !== 'object') return false;
-    var ts = String(e.timestamp || '');
     // Date comparison on the ISO PREFIX, not on a parsed Date. An entry whose
     // timestamp is missing or unparseable must not silently drop out of a
     // compliance record because of a filter it cannot answer -- so a blank
     // filter keeps everything and a set filter keeps an undated entry too,
     // which is the fail-visible direction.
-    if(from && ts && ts.slice(0,10) < from) return false;
-    if(to   && ts && ts.slice(0,10) > to)   return false;
+    //
+    // THE CODE USED TO GUARD ONLY THE MISSING HALF OF THAT SENTENCE. `ts &&`
+    // is true for `"Sept 15 2026"`, whose slice(0,10) is `"Sept 15 2"` and
+    // compares LEXICALLY against `"2026-12-31"` -- so a present-but-unparseable
+    // timestamp was dropped by every `to` filter, silently, exactly as the
+    // comment above forbade. logDoseAudit() always writes toISOString(), so the
+    // reachable case is a row written or altered outside this app -- which the
+    // panel's own disclosure says is possible ("anyone with database access
+    // could alter a row"). Found by independent review, 2026-09-16.
+    var ts = svAuditDayPrefix(e.timestamp);
+    if(from && ts && ts < from) return false;
+    if(to   && ts && ts > to)   return false;
     if(q){
-      var hay = JSON.stringify(e).toLowerCase();
-      if(hay.indexOf(q) === -1) return false;
+      // VALUES, NOT KEYS. Searching JSON.stringify(e) matched the field NAMES
+      // too, so the words the placeholder itself suggests -- drug, patient,
+      // type -- matched every single row, and the "N of M shown" count read as
+      // a meaningful narrowing that had not happened.
+      if(svAuditHaystack(e).indexOf(q) === -1) return false;
     }
     return true;
   });
   rows.sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });
 
   if(cnt){
-    var undated = rows.filter(function(e){ return !e.timestamp; }).length;
-    cnt.textContent = rows.length + ' of ' + (_svAuditRows||[]).length + ' entries shown'
-      + (_svAuditSource ? ' (source: ' + _svAuditSource + ')' : '')
-      + (undated ? ' — ' + undated + ' with no timestamp, kept rather than filtered out' : '');
+    var undated = rows.filter(function(e){ return !svAuditDayPrefix(e.timestamp); }).length;
+    cnt.textContent = !_svAuditLoaded
+      ? 'Reading the trail from the server…'
+      : rows.length + ' of ' + (_svAuditRows||[]).length + ' entries shown'
+        + (_svAuditSource ? ' (source: ' + _svAuditSource + ')' : '')
+        + (undated ? ' — ' + undated + ' with no usable timestamp, kept rather than filtered out' : '');
   }
   if(!rows.length){
     tb.innerHTML = '<tr><td colspan="7" style="opacity:.75">'
-      + ((_svAuditRows||[]).length
-          ? 'No entries match these filters.'
-          : 'No entries. On a practice that has recorded no controlled-substance dosing this is the correct answer — it is not a failed read; the banner above says which copy was consulted.')
+      + (!_svAuditLoaded
+          ? 'Still reading the trail from the server — this is not yet an answer about whether anything was recorded.'
+          : (_svAuditRows||[]).length
+            ? 'No entries match these filters.'
+            : 'No entries. On a practice that has recorded no controlled-substance dosing this is the correct answer — it is not a failed read; the banner above says which copy was consulted.')
       + '</td></tr>';
     return;
   }
@@ -8898,6 +9002,57 @@ function svRenderDoseAuditTable(){
       + '<td style="font-family:monospace;font-size:11px">' + idCell + '</td>'
       + '</tr>';
   }).join('');
+}
+
+// THE PROVENANCE HAS TO LEAVE THE BUILDING WITH THE ROWS.
+//
+// `exportTableCSV` serialises the <table> and nothing else. On the dosing
+// trail the source banner, the cap warning, the filters in force, the
+// shown-of-total count and the append-only / not-tamper-evident disclosure all
+// live OUTSIDE that table, so a `dosing-audit-trail.csv` handed to an inspector
+// was indistinguishable between the full server record and a capped local copy
+// taken after a failed read. This app has already made the opposite call once
+// and been right: SAIRNbiz's `csv()` refused to export a view it could not
+// stand behind, because "exporting it would launder demo figures into a
+// spreadsheet somebody costs a week against". Refusing is not the answer here
+// -- an inspector asking for this record should get it -- so the answer is that
+// every sentence on the screen goes into the file above the header row. Found
+// by independent review, 2026-09-16.
+function svExportDoseAudit(){
+  var table = document.getElementById('panel-doseaudit-table');
+  if(!table){ showToast('Nothing to export','error'); return; }
+  var text = function(id){
+    var el = document.getElementById(id);
+    return el ? String(el.textContent || '').replace(/\s+/g,' ').trim() : '';
+  };
+  var val = function(id){ var el = document.getElementById(id); return (el && el.value) || ''; };
+  var q = function(s){ return '"' + String(s).replace(/"/g,'""') + '"'; };
+  var lines = [
+    [q('SAIRNvet dosing audit trail — exported ' + new Date().toISOString())],
+    [q('WHICH COPY: ' + (text('doseaudit-source') || 'not stated on screen'))],
+    [q('ROWS IN THIS FILE: ' + (text('doseaudit-count') || 'not stated on screen'))],
+    [q('FILTERS IN FORCE: from=' + (val('doseaudit-from') || '(none)')
+       + ' to=' + (val('doseaudit-to') || '(none)')
+       + ' text=' + (val('doseaudit-q') || '(none)')
+       + ' — dates are compared against the UTC day in the timestamp column')],
+    [q('THIS RECORD IS APPEND-ONLY AND IS NOT TAMPER-EVIDENT. Entry ids are a '
+       + 'transport key, not a hash chain; anyone with database access could alter a '
+       + 'row and neither the screen nor this file would know.')],
+    [q('')]
+  ];
+  var csv = lines.map(function(r){ return r.join(','); }).join('\n') + '\n';
+  table.querySelectorAll('tr').forEach(function(row){
+    var rowData = [];
+    row.querySelectorAll('th,td').forEach(function(cell){ rowData.push(q(cell.textContent)); });
+    csv += rowData.join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'dosing-audit-trail.csv';
+  a.click();
+  showToast('Exported dosing-audit-trail.csv','success');
 }
 
 function exportTableCSV(tableId,filename){
@@ -9493,7 +9648,27 @@ function svFetchTimeoutSignal(){
     return AbortSignal.timeout(SV_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
-function svData(action, resource, payload) {
+// `wantEnvelope` RETURNS `{data, provisioned}` INSTEAD OF BARE `data`, and it
+// exists because throwing the flag away produced a real false statement on a
+// compliance screen (independent review, 2026-09-16).
+//
+// api/sd-data.js answers a MISSING TABLE with `{ok:true, data:[],
+// provisioned:false}` -- deliberately, and its own comment there says the
+// point is "so the client can tell 'nothing saved yet' from [not set up]".
+// This function then returned `d.data`, so the flag never reached any caller
+// and an app whose migration had never been run was indistinguishable from an
+// app with nothing recorded. On the dosing audit trail that rendered as *"No
+// entries. On a practice that has recorded no controlled-substance dosing this
+// is the correct answer -- it is not a failed read"*, on a DEA record, with
+// entries sitting unread on the device.
+//
+// FOURTH PARAMETER RATHER THAN A CHANGED RETURN TYPE. Forty-one resources call
+// this and every one of them is written against a bare `data` or `null`;
+// changing the shape for all of them to fix one screen is the blast radius
+// sairn-differential-review exists to refuse. `null` still means THE READ
+// FAILED in both modes, so the failed-vs-empty distinction every caller
+// already relies on is untouched.
+function svData(action, resource, payload, wantEnvelope) {
   var lic = svLoad('license', '');
   if (!lic) return Promise.resolve(null);
   return fetch(SV_DATA_API, {
@@ -9504,7 +9679,10 @@ function svData(action, resource, payload) {
   }).then(function(r) {
     return r.json().then(function(d) {
       if (!r.ok || !d || !d.ok) { console.warn('svData ' + resource + ' failed (' + r.status + '):', (d && d.error && (d.error.code || d.error.message)) || 'unknown'); return null; }
-      return d.data;
+      // `provisioned` is only FALSE when the server said so. An absent flag is
+      // UNKNOWN, not false -- several branches in api/sd-data.js do not set it,
+      // and reading silence as "not provisioned" would invent a refusal.
+      return wantEnvelope ? { data: d.data, provisioned: d.provisioned } : d.data;
     });
   }).catch(function(e) { console.warn('svData network error:', e.message); return null; });
 }
