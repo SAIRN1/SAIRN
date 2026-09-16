@@ -175,6 +175,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The separation audit trail becomes a DOCUMENT somebody can be shown, and a CSV they can check it against** | **BUILT 2026-09-16 (Hank)** &mdash; `--report` and `--csv` on the existing `tools/hover_separation_audit.py`; 19 new arms in `tests/run_hover_separation_probe.py` (91 total), 3 sabotages | `tests/run_hover_separation_probe.py` |
 | **The shared status registry &mdash; what every agent is doing, live, without a push/pull. The gap `session_lock_check.py` named in its own header and put out of scope** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/sairn_status.py`, `tests/run_sairn_status_probe.py` **55 arms**, wired into `SessionStart`, registered NOT-PROMOTED, FAI recorded. `docs/2026-09-16-shared-st | `tests/run_sairn_status_probe.py` |
 | **The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the five were resources that own no table at all** | **RE-DERIVED AND THE TOOL CORRECTED 2026-09-16 (Hank)** &mdash; `removal_path_check.py` gains a DERIVED bucket, counted and named; Tier A **58 &rarr; 56**. One real new arrival, `sb_ts`, left as a liv | `tests/run_removal_path_probe.py` |
 | **What is genuinely open AND unclaimed &mdash; the join nobody was doing, and it caught four of five queued items belonging to a live session** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/dispatch_state.py`, report-only and registered; `tests/run_dispatch_state_probe.py` **38 arms, 0 failures** | `tests/run_dispatch_state_probe.py` |
@@ -481,6 +482,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 83 independently reviewed: 96 green arms cover two entry points of the witnessing lock and NEVER ENTER THE THIRD &mdash; the half that MINTS the token** | **REVIEWED 2026-09-16 (independent, commissioned by Michael, reported by Hank) &mdash; NOT FIXED, and deliberately not by the reviewer.** `docs/2026-09-16-item83-independent-review.md`, 3 records in ` | `api/sv-witness.test.js` |
 | **Item 83 independent review, pass three &mdash; the COUNTERSIGN half of the witnessing lock is caught by NOTHING, including &ldquo;two person&rdquo; itself** | **CLOSED 2026-09-15 (Cody)** &mdash; `tests/failsafe/witness_countersign.js`, 30 arms, and the probe now measures **0 of 6 MISSED** with the control still CAUGHT by all four suites. Every refusal on t | `api/sv-witness.test.js`, `tests/failsafe/witness_countersign.js` |
 | **Gate 4 closed on the vertical with the MOST resources and no fault probe at all &mdash; the 58-arm controlled-substance suite is now known to DENY** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnvet_fault_probe.py`, 6 mutation arms + 4 controls, all green. MASTER-PLAN `sairnvet` fault 0 &rarr; 1; platform total 8 &rarr; 9 | `tests/sairnvet_audit_and_controlled.js`, `tests/sairnvet_fault_probe.py` |
 | ~~**The controlled-substance DOSING AUDIT TRAIL has a writer, a 500-entry cap and NO READER anywhere in the product**~~ &mdash; **READER BUILT** | **BUILT 2026-09-16 (Hank)** &mdash; `panel-doseaudit` in `sairnvet.html`, server-first read with a LABELLED local fallback; `tests/sairnvet_dose_audit_reader.js` **32 arms, 0 failures**, negative cont | `tests/sairnvet_dose_audit_reader.js` |
@@ -575,7 +577,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 502   tests/**, api/*.test.js
-  open-work rows citing a test       262   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       264   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                55   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     61   report_only_checks.NOT_PROMOTED

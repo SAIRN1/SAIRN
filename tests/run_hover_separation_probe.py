@@ -33,6 +33,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.dirname(HERE)
@@ -361,6 +362,120 @@ else:
        'rather than hiding it', trunc,
        'if this went red the verifier gained a property -- update the note')
 
+
+# ══ F. THE EVIDENCE DOCUMENT -- the thing somebody is actually shown ═══════
+#
+# Added 2026-09-16. The stdout report answers an engineer at a prompt; this
+# answers "what do I hand to a person who was not here". A document is a
+# stronger artefact than a terminal dump and therefore a more dangerous one:
+# it gets forwarded, quoted and kept long after the run that produced it.
+#
+# SO EVERY ARM HERE IS ABOUT THE DOCUMENT NOT BEING ABLE TO FLATTER. It must
+# carry its own limit ABOVE the numbers, it must list the auditor's commits in
+# FULL rather than summarise them, it must be anchored to a commit and a time,
+# and a violation must reach the verdict rather than being smoothed into prose.
+print('\nF. the evidence document -- it must not be able to flatter')
+_tmpF = tempfile.mkdtemp(prefix='hovertrail-')
+_md = os.path.join(_tmpF, 'trail.md')
+_csv = os.path.join(_tmpF, 'trail.csv')
+rF = run(sys.executable, AUDIT, '--report', _md, '--csv', _csv, cwd=REPO)
+ok('F1 --report and --csv run and write both files',
+   rF.returncode in (0, 1, 2) and os.path.exists(_md) and os.path.exists(_csv),
+   rF.stderr[-300:])
+doc = io.open(_md, encoding='utf-8').read() if os.path.exists(_md) else ''
+
+# THE LIMIT COMES FIRST. A reader who takes only the headline away must take
+# the caveat with it.
+ok('F2 the "cannot prove the negative" limit appears BEFORE the attribution '
+   'table', 'cannot prove the negative' in doc
+   and doc.index('cannot prove the negative') < doc.index('## Attribution'),
+   'the numbers precede the caveat')
+ok('F3 the UNATTRIBUTED share is stated as a number, not omitted',
+   'UNATTRIBUTED' in doc and '%' in doc, doc[:200])
+ok('F4 the document says UNATTRIBUTED is not a sixth agent',
+   'not a sixth agent' in doc, '')
+
+# ANCHORED. A separation claim with no tip and no time is a claim about an
+# unstated moment, and this history moves every few minutes.
+_code, _tip, _ = A.git('rev-parse', 'HEAD')
+ok('F5 the document names the exact commit it was generated from',
+   _tip.strip()[:12] in doc, _tip.strip()[:12])
+ok('F6 ...and the UTC time it was generated', 'UTC' in doc and 'Generated' in doc)
+ok('F7 ...and the command that regenerates it, so it is reproducible',
+   '--report' in doc and '--csv' in doc)
+
+# THE AUDITOR'S COMMITS IN FULL. This is the claim under test; a count is a
+# summary of the proof and cannot be checked.
+_commits, _err = A.load_commits()
+_hov = [k for k in (_commits or []) if A.attribute(k)[0] == 'hover']
+_listed = sum(1 for k in _hov if k['sha'][:8] in doc)
+ok('F8 EVERY auditor commit is listed in the document, not a sample',
+   _listed == len(_hov), '%d of %d listed' % (_listed, len(_hov)))
+ok('F9 ...and there is at least one to list, so F8 is not passing on an empty '
+   'set', len(_hov) > 0, len(_hov))
+
+# THE CSV IS WHAT MAKES THE DOCUMENT CHECKABLE RATHER THAN BELIEVABLE.
+_rows = io.open(_csv, encoding='utf-8').read().strip().split('\n')
+ok('F10 the CSV carries EVERY commit, one row each, plus a header',
+   len(_rows) == len(_commits or []) + 1,
+   '%d rows for %d commits' % (len(_rows), len(_commits or [])))
+ok('F11 ...and each row carries the attribution METHOD, so a reader can see '
+   'which rows rest on nothing',
+   'attribution_method' in _rows[0] and 'unattributed' in '\n'.join(_rows),
+   _rows[0])
+
+# ── THE ARM THAT MATTERS: A VIOLATION MUST REACH THE VERDICT ───────────────
+# Every arm above is satisfied by a document that can only ever say "clean".
+# This drives write_report() with a fabricated out-of-scope auditor commit and
+# requires the document to say so, in the verdict, in words.
+_viol_trail = [{'sha': 'deadbeefcafe0001', 'ts': 1757000000, 'who': 'hover',
+                'how': 'signature-only', 'subject': 'a fabricated violation',
+                'n_files': 2, 'outside': ['api/sd-data.js']}]
+_viol_hov = [{'sha': 'deadbeefcafe0001', 'ts': 1757000000,
+              'subject': 'a fabricated violation',
+              'files': ['.claude/skills/sairn-hover-auditor/SKILL.md',
+                        'api/sd-data.js']}]
+_bad = os.path.join(_tmpF, 'violation.md')
+A.write_report(_bad, _viol_trail, Counter({'hover': 1}), _viol_hov,
+               [('git', 'deadbeef', 'a fabricated violation', ['api/sd-data.js'])],
+               [], {}, 1)
+_vdoc = io.open(_bad, encoding='utf-8').read()
+ok('F12 A VIOLATION REACHES THE VERDICT, in words',
+   'SEPARATION VIOLATION' in _vdoc, _vdoc[-600:])
+ok('F13 ...and the offending path is named, not just counted',
+   'api/sd-data.js' in _vdoc, _vdoc[-600:])
+# SPLIT ON THE SECTION BREAK, NOT ON '---'. The first version split on the bare
+# string and the markdown TABLE SEPARATOR row (`|---|---|`) contains it, so the
+# region ended before any data row and the arm read an empty table. An arm that
+# reads the wrong region reports a check it never performed -- the fourth
+# instance of that shape in this session, and the reason each one is written
+# down where it was found.
+_sec = _vdoc.split('## The auditor')[1].split('\n---\n')[0]
+ok('F14 ...and the auditor-commit ROW marks it rather than showing a bare 0',
+   'VIOLATION' in _sec, _sec[:400])
+ok('F15 CONTROL: the real document\'s auditor rows show 0 out of scope, so '
+   'F14 is discriminating',
+   'VIOLATION' not in doc.split('## The auditor')[1].split('\n---\n')[0], '')
+ok('F16 CONTROL: the real document does NOT say violation, so F12 is '
+   'discriminating rather than matching any document',
+   'SEPARATION VIOLATION' not in doc, '')
+
+# A COULD-NOT-RUN MUST NOT READ AS CLEAN IN THE DOCUMENT EITHER.
+_cnr = os.path.join(_tmpF, 'cnr.md')
+A.write_report(_cnr, _viol_trail[:0] or [{'sha': 'a' * 40, 'ts': 1757000000,
+                                          'who': 'hank', 'how': 'bookkeeping',
+                                          'subject': 's', 'n_files': 1}],
+               Counter({'hank': 1}), [], [],
+               ['self-log cross-reference: the log was unreadable'], {}, 2)
+_cdoc = io.open(_cnr, encoding='utf-8').read()
+ok('F17 a partial run says "not a clean bill" rather than reporting clean',
+   'not a clean bill' in _cdoc and 'part of the check did' in _cdoc,
+   _cdoc[-500:])
+ok('F18 ...and an unreadable self-log is named as COULD NOT RUN, not omitted',
+   'COULD NOT RUN' in _cdoc, _cdoc[-700:])
+
+shutil.rmtree(_tmpF, ignore_errors=True)
+ok('F19 the scratch directory is gone', not os.path.isdir(_tmpF))
 
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))

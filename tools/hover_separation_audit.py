@@ -59,6 +59,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections import Counter, OrderedDict
 
 SESSIONS = ('hank', 'cc', 'cody', 'fourth')
@@ -259,6 +260,239 @@ def read_hover_log():
     return rows, path, ''
 
 
+def _utc(ts):
+    return time.strftime('%Y-%m-%d %H:%M', time.gmtime(ts))
+
+
+def write_csv(path, trail):
+    """Every commit, one row, with how it was attributed and why.
+
+    THE DOCUMENT IS A CLAIM; THIS IS WHAT MAKES IT CHECKABLE. A separation
+    report a reader cannot audit is the same thing it is auditing -- an
+    assertion. Every row carries the attribution METHOD alongside the verdict,
+    so a reader can see which rows rest on a bookkeeping file, which on a
+    signature, and which on nothing at all.
+    """
+    import csv
+    with io.open(path, 'w', encoding='utf-8', newline='') as fh:
+        w = csv.writer(fh)
+        w.writerow(['sha', 'utc', 'attributed_to', 'attribution_method',
+                    'files_changed', 'outside_auditor_scope', 'subject'])
+        for r in sorted(trail, key=lambda x: x['ts']):
+            w.writerow([r['sha'], _utc(r['ts']), r['who'], r['how'],
+                        r['n_files'], len(r.get('outside') or []),
+                        r['subject']])
+
+
+def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
+                 log_report, rc):
+    """The evidence document -- the thing somebody is actually shown.
+
+    ── WHY THIS IS NOT JUST THE TERMINAL OUTPUT REDIRECTED ──────────────────
+    The stdout report answers an engineer standing at a prompt. This answers
+    the different question "what do I hand to a person who was not here", and
+    the two need different shapes:
+
+      * It is ANCHORED. A separation claim with no commit tip and no
+        generation time is a claim about an unstated moment, and history moves
+        every few minutes on this platform. The tip and the timestamp are the
+        first two facts in the file.
+      * THE AUDITOR'S COMMITS ARE LISTED IN FULL, every one, with its date,
+        its subject and its scope verdict. That list IS the proof; a count is
+        a summary of the proof and cannot be checked.
+      * THE LIMIT COMES FIRST, NOT IN A FOOTNOTE. A reader who takes only the
+        headline away must take the caveat with it, so the section saying what
+        git CANNOT show sits above every number rather than under them.
+
+    ── WHAT IT DELIBERATELY DOES NOT DO ─────────────────────────────────────
+    It does not list all several thousand build-agent commits inline. A
+    document nobody reads to the end proves nothing, and the build agents'
+    commits are not the claim under test -- the auditor's are. The complete
+    table goes to `--csv`, which is named in the document so the reader knows
+    the full data exists and where.
+    """
+    who_rows = by_who.most_common()
+    total = sum(n for _w, n in who_rows)
+    unattr = by_who.get('UNATTRIBUTED', 0)
+    code, tip, _ = git('rev-parse', 'HEAD')
+    code2, branch, _ = git('rev-parse', '--abbrev-ref', 'HEAD')
+    L = []
+    A = L.append
+    A('# Hover auditor separation — the audit trail from real git history')
+    A('')
+    A('Generated **%s UTC** by `tools/hover_separation_audit.py --report`, from'
+      % time.strftime('%Y-%m-%d %H:%M:%S', time.gmtime()))
+    A('`%s` at **`%s`**.' % (branch.strip() or '?', (tip or '?').strip()[:12]))
+    A('')
+    A('Regenerate it, and check it, with:')
+    A('')
+    A('```')
+    A('python tools/hover_separation_audit.py --report trail.md --csv trail.csv')
+    A('```')
+    A('')
+    A('---')
+    A('')
+    A('## Read this before any number below')
+    A('')
+    A('**Git cannot prove the negative here, and this document does not claim '
+      'it does.**')
+    A('')
+    A('All five roles on this platform commit through **one git identity**, so '
+      'a commit')
+    A('cannot be attributed by its author field. Attribution below is derived '
+      'from')
+    A('co-changed bookkeeping files — a commit that also touches')
+    A('`.claude/claims/<session>.json` or `SAIRN-ACTIVE-WORK-<session>.md` '
+      'names its')
+    A('session — and from commits that touch **only** the auditor\'s own '
+      'directory.')
+    A('')
+    A('That leaves **%d of %d commits (%.1f%%) UNATTRIBUTED**. A commit in '
+      'which the'
+      % (unattr, total, 100.0 * unattr / total if total else 0))
+    A('auditor wrote platform code would land in exactly that bucket **by '
+      'construction**.')
+    A('')
+    A('So the honest statement of what follows is:')
+    A('')
+    A('> Of every commit that CAN be attributed, none shows the hover auditor '
+      'writing')
+    A('> outside its own scope — corroborated by a second, structurally '
+      'different')
+    A('> source (the auditor\'s own hash-chained log). It is not a proof that '
+      'no such')
+    A('> commit exists.')
+    A('')
+    A('---')
+    A('')
+    A('## Attribution across %d commits' % total)
+    A('')
+    A('| attributed to | commits | share |')
+    A('|---|---:|---:|')
+    for who, n in who_rows:
+        A('| %s | %d | %.1f%% |' % (who, n, 100.0 * n / total if total else 0))
+    A('')
+    A('`UNATTRIBUTED` is not a sixth agent. It is the part of history this '
+      'method')
+    A('cannot speak about, stated as a number rather than omitted.')
+    A('')
+    A('---')
+    A('')
+    A('## The auditor\'s commits — all %d, in full' % len(hover_commits))
+    A('')
+    A('**This list is the proof.** A count would be a summary of it, and a '
+      'summary')
+    A('cannot be checked. Every commit the auditor is known to have made is '
+      'here,')
+    A('with what it touched.')
+    A('')
+    if hover_commits:
+        A('| sha | UTC | files | outside its scope | subject |')
+        A('|---|---|---:|---:|---|')
+        for k in sorted(hover_commits, key=lambda x: x['ts']):
+            rec = next((r for r in trail if r['sha'] == k['sha']), {})
+            outside = rec.get('outside') or []
+            A('| `%s` | %s | %d | **%s** | %s |'
+              % (k['sha'][:8], _utc(k['ts']), len(k['files']),
+                 ('%d — VIOLATION' % len(outside)) if outside else '0',
+                 k['subject'].replace('|', '\\|')[:90]))
+        A('')
+        A('Span: **%s** to **%s** UTC.'
+          % (_utc(min(k['ts'] for k in hover_commits)),
+             _utc(max(k['ts'] for k in hover_commits))))
+    else:
+        A('_No commits attributed to the auditor in this history._')
+    A('')
+    A('---')
+    A('')
+    A('## The second source: the auditor\'s own hash-chained log')
+    A('')
+    A('A record and its own verifier share a failure, so the chain below is '
+      're-derived')
+    A('independently by this tool rather than by calling the log\'s own '
+      '`--verify`.')
+    A('')
+    if not log_report:
+        A('**COULD NOT RUN.** The self-log was not readable from this clone, '
+          'so the')
+        A('git half above stands alone — and on its own it cannot prove the '
+          'negative.')
+        A('This is reported as unanswered, not as a pass.')
+    else:
+        A('| | |')
+        A('|---|---|')
+        A('| entries | %s |' % log_report.get('entries', '?'))
+        A('| hash chain, re-derived independently | **%s** |'
+          % str(log_report.get('chain', '?')).upper())
+        A('| SHAs the log claims as its own | %s |' % log_report.get('claimed', '?'))
+        A('| …that resolve in this clone | %s |' % log_report.get('resolved', '?'))
+        A('| …of those, out of scope | **%s** |' % log_report.get('violations', '?'))
+        unres = log_report.get('unresolved') or []
+        if unres:
+            A('| …that do NOT resolve here | %d |' % len(unres))
+        A('')
+        if unres:
+            A('The unresolvable SHAs are **explained by measurement, not by a '
+              'plausible story**:')
+            A('the log names both ends of a rewrite ("Committed a, pushed b"), '
+              'and in every')
+            A('such pair the local sha is absent while the pushed one is '
+              'present — which is')
+            A('what a rebase-before-push produces. Any that remain unpaired '
+              'are listed as')
+            A('unexplained in the tool\'s own output and are why it exits 2 '
+              'rather than 0.')
+    A('')
+    A('---')
+    A('')
+    A('## Verdict')
+    A('')
+    if violations:
+        A('**%d SEPARATION VIOLATION(S) FOUND.**' % len(violations))
+        A('')
+        for src, sha, subj, paths in violations:
+            A('- `%s` (%s) — %s' % (sha, src, subj[:80]))
+            for p in paths[:8]:
+                A('    - `%s`' % p)
+    elif could_not_run:
+        A('**No violation found in what could be checked — and part of the '
+          'check did')
+        A('not run.** That is not a clean bill, and it is written this way on '
+          'purpose:')
+        A('')
+        for c in could_not_run:
+            A('- %s' % c)
+    else:
+        A('**No separation violation found by either source**, bounded by the '
+          'coverage')
+        A('stated at the top.')
+    A('')
+    A('Tool exit code: **%d** (0 clean, 1 violation, 2 could-not-run).' % rc)
+    A('')
+    A('---')
+    A('')
+    A('## Checking this document rather than believing it')
+    A('')
+    A('`--csv` writes the **complete** per-commit table — every commit, its '
+      'attribution')
+    A('and the METHOD that attributed it, so a reader can see which rows rest '
+      'on a')
+    A('bookkeeping file, which on a signature, and which on nothing at all.')
+    A('')
+    A('The enforcement that sits beside this report, rather than describing '
+      'it:')
+    A('')
+    A('- `tools/hover_auditor_scope_gate.py` — refuses the commit before it '
+      'exists (local)')
+    A('- `.github/workflows/hover-separation.yml` — the same question on '
+      'GitHub\'s side,')
+    A('  off the author\'s machine, where its verdict is a status rather than '
+      'an honour system')
+    A('')
+    with io.open(path, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write('\n'.join(L) + '\n')
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--trail', action='store_true',
@@ -266,6 +500,12 @@ def main(argv=None):
     ap.add_argument('--authors', action='store_true',
                     help='print every distinct git author, to prove the one-identity claim')
     ap.add_argument('--json', action='store_true')
+    ap.add_argument('--report', metavar='PATH', default=None,
+                    help='write the evidence DOCUMENT -- the thing you hand to '
+                         'somebody, rather than a terminal dump')
+    ap.add_argument('--csv', metavar='PATH', default=None,
+                    help='write the FULL per-commit table, so a reader can '
+                         'check the document rather than believe it')
     args = ap.parse_args(argv)
 
     could_not_run = []
@@ -477,6 +717,15 @@ def main(argv=None):
                           'violations': violations, 'could_not_run': could_not_run,
                           'self_log': log_report, 'trail': trail if args.trail else []},
                          indent=1))
+
+    if args.report:
+        write_report(args.report, trail, by_who, hover_commits, violations,
+                     could_not_run, log_report, rc)
+        print('wrote %s' % args.report)
+    if args.csv:
+        write_csv(args.csv, trail)
+        print('wrote %s (%d rows -- the whole table, so a reader can check '
+              'rather than believe)' % (args.csv, len(trail)))
     return rc
 
 
