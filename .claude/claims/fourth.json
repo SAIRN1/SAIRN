@@ -1535,6 +1535,16 @@
       "claimed_at_epoch": 1789537470.0961776,
       "status": "released",
       "released_at": "2026-09-16T13:55:39Z"
+    },
+    {
+      "id": "fourth-1789567217",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "LAW_RECONCILE_ROLES missing role mapping, sd-agent callClaude loop breaker, G5 controls, G7 factors, rebase resolve tool",
+      "claimed_at": "2026-09-16T14:00:17Z",
+      "claimed_at_epoch": 1789567217.4485605,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
