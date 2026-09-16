@@ -402,6 +402,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-16T22:56:07Z",
+      "resources": [
+        "sc_credential_scope"
+      ],
+      "files": [
+        "tests/sc_credentials_probe.py"
+      ],
+      "what": "A negative control on api/sc-credentials.test.js, the suite guarding sc_credential_scope -- SAIRNcode's Tier A service-credential store. Six mutations take the lost-update fix apart one property at a time; five were caught and ONE WAS NOT, which is the part needing an independent read: `clear` is implemented TWICE, once on the main path and once in applyChange() on the conflict-retry path, and no arm drove `clear` through a conflict, so wiping the entire credential blob in the retry copy left the suite green. An arm now forces the conflict and asserts retried===true. What a reviewer should check independently: (1) that the new arm really reaches the retry path rather than passing on the non-retry one, (2) that mutation 3b is not an equivalent mutant, and (3) that no THIRD copy of the change exists that neither arm reaches. No production code changed -- only the suite and the probe.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

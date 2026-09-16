@@ -216,6 +216,33 @@ test('clear removes only the named service', async () => {
   assert.ok(ROW.data.other_service, 'unrelated blob content is not');
 });
 
+// ── `clear` IS IMPLEMENTED TWICE AND ONLY ONE COPY HAD AN ARM ──────────────
+// Added 2026-09-16, after a negative control changed the RETRY copy of the
+// change to wipe the whole blob and this suite stayed GREEN. The handler
+// applies the change in two places on purpose -- once on the main path, and
+// once in applyChange(), so a retry re-applies THIS request's change to a
+// freshly-read blob rather than re-sending a stale merge. That is the right
+// design and it means the deletion is written twice, and the arm above never
+// conflicts, so it only ever reached one of them.
+//
+// This is the same shape as the defect the whole file exists for: a write that
+// silently loses another administrator's credential, arriving on the path that
+// runs only when another administrator was actually there.
+test('clear survives the CONFLICT RETRY -- the second copy of the change is '
+  + 'reached only when another admin won the race', async () => {
+    reset();
+    ROW = { data: { stedi: { enc: 'e1' }, other_service: { enc: 'e2' } }, updated_at: 'T0' };
+    ON_BEFORE_WRITE = () => { ROW = { data: ROW.data, updated_at: 'T1' }; };
+    const out = await call({ action: 'clear', service: 'stedi' });
+    assert.strictEqual(out.code, 200, JSON.stringify(out.body));
+    assert.strictEqual(out.body.retried, true,
+      'the fixture did not force the retry path, so this arm proves nothing '
+      + 'the arm above does not already prove');
+    assert.ok(!ROW.data.stedi, 'the named service is removed');
+    assert.ok(ROW.data.other_service,
+      'unrelated blob content did not survive the RETRY copy of the change');
+  });
+
 test('status never writes', async () => {
   reset();
   ROW = { data: { stedi: { enc: 'e1', last4: '1234' } }, updated_at: 'T0' };
