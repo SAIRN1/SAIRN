@@ -3512,3 +3512,88 @@ rather than carried forward.
 **Two pushes needed a rebase mid-flight** (another clone landed while this one
 was working) and both times all conflicts were in GENERATED documents -- resolved
 by taking upstream and regenerating, never by merging hunks of a derived file.
+
+---
+
+## 2026-09-15 (continued) -- five follow-ups, and my own tool was the finding twice
+
+Pushed as `bf827650`, verified on origin by SHA equality. Write-up:
+`docs/2026-09-15-five-followups.md`.
+
+### The thing worth carrying forward
+
+**TWICE IN ONE SESSION, `first_article_inspection.py` reported a fact about its
+own regex as a fact about somebody else's work** -- and that is now the third
+and fourth instance of the class in this session.
+
+1. It reported seven artefacts as having NO SUITE AT ALL. **Five had working
+   `--selftest` entry points, 48 arms between them.** `run_all_tests.py`
+   discovers `tests/**` and `*.test.js`; a self-test lives inside the tool and
+   is invisible to it. **UNVERIFIED and UNWIRED are different states** and the
+   corrected figure is 1 artefact with nothing, not 7.
+2. Its suite matcher then counted `sc_tier_a_write_gate_live_probe.py` --
+   a PRODUCTION write-and-delete path -- as covered by
+   `tests/run_selftest_sweep_probe.py`, **which names it only as a declared
+   EXCLUSION with a reason for refusing to run it.** The one file that
+   deliberately will not touch it, reported as the file that verifies it.
+
+Both fixes had to be narrowed after over-correcting. The self-test detector now
+requires the flag to be compared against `argv` (a bare substring search
+enrolled the tool itself, because its source contains the flag inside a regex
+that detects OTHER tools' self-tests). The suite matcher first required an
+invocation token on the same line, which dropped two tools whose probes name
+them in prose and cover them fine; the shipped fix is narrow -- a
+dictionary-key mention does not count.
+
+### The other four
+
+**THE TRACEABILITY ROOT CAUSE:** `traced()` counts a test when GUARD_TESTS or an
+open-work row names it. **243 of 248 citations come from the index, 5 from
+GUARD_TESTS.** So the figure moves with how diligently the index is written.
+And **120 of the 213 untraced are `*.test.js` beside their module** -- the
+strongest subject binding here, deliberately invisible to `traced()`.
+**Counting it would move 55 files across overnight with not one more
+requirement written anywhere**, so the definition was NOT widened; the absolute
+count now leads, the ratio follows with the divergence stated, and the untraced
+split into 55 bound-to-a-subject and 158 with no binding. **The count itself is
+unchanged and that is not closed.**
+
+**COMPROMISE PROCEDURES** for the five identities where neither control was
+doing anything. The sharpest is `session-signing`: **the containment IS the
+disruption** -- one secret, no overlap window, so rotating logs everyone out of
+everything at once mid-shift including the incident responder. Drafted, NOT
+rehearsed, NOT verified; the console steps cannot be checked from a clone. **A
+procedure is a THIRD control and fixes neither of the first two.**
+
+**AR-1's TRIGGER:** the signal is log-only by design, so nothing here can read
+it -- correct behaviour, not a gap. The fixable half was worse than the reported
+problem: **the module had no suite at all**, so the branch producing the trigger
+could have been deleted while the register still said it was monitored.
+`api/_lib/stripe-config.test.js`, 19 assertions, now in GUARD_TESTS.
+
+**ITEM 79, `tools/blind_review.py`:** evidence first, score second, and every
+judgment must carry a DEFEATER. **First real round: 3 of 6 agree.** R03 is the
+one to read -- a write that never reached the server, announced to the user as
+captured, recorded `moderate` and judged `high`. **One round measures nothing
+about automation bias**; the score-first arm does not exist.
+
+### Criteria revisions, and the direction each one moved
+
+- `rotation_blast_radius` `.2 -> .3`: TRIGGER went **0 -> 5**, which is the
+  direction that needs scrutiny. The figure improved because procedures were
+  WRITTEN, not because the test was loosened, and a fixture proves an empty or
+  thin field still does not count.
+- The `_watched` rule widened so a mechanism counts as watched when a runner
+  names the SUITE that guards it. Four fixtures both ways, and the tool states
+  that **a suite is not a consumer**.
+
+### Verified
+
+Six probes green plus 19 node assertions. 10 sabotages, all caught. Two Tier A
+review obligations now recorded rather than assumed -- the gate refused the
+push until one existed, and it was right to: the tool it guards had been wrong
+in both directions inside the same session.
+
+**The tier-a-reviews register conflicted on rebase and was MERGED, not
+overwritten** -- another clone's obligation and mine were both kept. Taking
+either side would have silently discharged somebody else's.

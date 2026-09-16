@@ -165,6 +165,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **ZERO of 22 credentials record what to do if that one leaks &mdash; every identity has a procedure that says HOW and never WHEN** | **MEASURED 2026-09-15 (CC)**, item 61 &mdash; `tools/rotation_blast_radius.py` (report-only, NOT_PROMOTED), `tests/run_rotation_blast_radius_probe.py`, 11 sabotages all caught. Built on Cody&rsquo;s i | `tests/run_rotation_blast_radius_probe.py` |
 | **AR-1 carries the only MECHANICAL trigger on the accepted-risk register, and nothing that runs on this platform consumes it** | **FOUND 2026-09-15 (CC)**, item 53 &mdash; `tools/weakness_combination.py` (report-only, NOT_PROMOTED), `tests/run_weakness_combination_probe.py`, 10 sabotages all caught | `tests/run_weakness_combination_probe.py` |
 | **The traceability headline improves every day while the backlog it is a ratio of grows &mdash; 185 &rarr; 212 untraced over the same 221 readings** | **MEASURED 2026-09-15 (CC)**, item 45 &mdash; `tools/trend_alarm.py` (report-only, NOT_PROMOTED, and NOT ARMED by its own gate), `tests/run_trend_alarm_probe.py`, 9 sabotages all caught | `tests/run_trend_alarm_probe.py` |
+| **&ldquo;83 unverified claims&rdquo; was wrong about five of the seven &mdash; they were UNWIRED, not unverified, and the tool&rsquo;s own blind spot was the finding for the third time** | **CORRECTED AND WIRED 2026-09-15 (CC)** &mdash; `tests/run_selftest_sweep_probe.py` (6 self-tests discovered and RUN, all green), `tests/run_guard_ablation_probe.py` (30 arms), `tools/first_article_in | `tests/run_guard_ablation_probe.py`, `tests/run_selftest_sweep_probe.py` |
+| **AR-1&rsquo;s trigger had TWO halves and only one was fixable here &mdash; the producer had no suite at all, which was worse than the reported problem** | **FIXED AND CORRECTED 2026-09-15 (CC)** &mdash; `api/_lib/stripe-config.test.js` (19 assertions, in `GUARD_TESTS`), `tools/accepted_risk_trigger_check.py`, AR-1 rewritten in `docs/ACCEPTED-RISKS.md` | `api/_lib/stripe-config.test.js` |
+| **Item 79: the reviewer judges BEFORE seeing the score &mdash; and the first real round disagreed on half of it** | **BUILT 2026-09-15 (CC)** &mdash; `tools/blind_review.py` (report-only, NOT_PROMOTED), `tests/run_blind_review_probe.py`, 9 sabotages all caught. First round recorded in `docs/2026-09-15-five-followup | `tests/run_blind_review_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -471,21 +474,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 216 test files are traced to no stated requirement
+### 213 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 247 of 463 traced, 53.3%.
+For context and not as the headline: 250 of 463 traced, 54.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 253 citations come from
+### Where the 256 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 247 |
-| `GUARD_TESTS+index` | 4 |
-| `GUARD_TESTS` | 2 |
+| `index` | 250 |
+| `GUARD_TESTS+index` | 5 |
+| `GUARD_TESTS` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
 
@@ -493,10 +496,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 57 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 159 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 55 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 158 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 57 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 55 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/accounting-connector.test.js`
 - `api/_lib/ai-rate-limit.test.js`
@@ -648,7 +651,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_jobs_load_failure.js`
 - `tests/rootpages.js`
 - `tests/run_accepted_risk_probe.py`
-- `tests/run_blind_review_probe.py`
 - `tests/run_bypassed_constant_probe.py`
 - `tests/run_citator_freshness_probe.py`
 - `tests/run_cleanup_confirm_probe.py`
@@ -657,7 +659,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
-- `tests/run_guard_ablation_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_invisible_in_pattern_probe.py`
 - `tests/run_jscomments_probe.py`
@@ -667,7 +668,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
 - `tests/run_schema_verdict_probe.py`
-- `tests/run_selftest_sweep_probe.py`
 - `tests/run_shape_antipattern_probe.py`
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
@@ -735,7 +735,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 463   tests/**, api/*.test.js
-  open-work rows citing a test       235   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       238   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                51   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     44   report_only_checks.NOT_PROMOTED
