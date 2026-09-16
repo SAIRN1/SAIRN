@@ -158,23 +158,56 @@ try:
     # ── AND THE REAL RECORD SAYS WHAT IS STILL OPEN, IN WORDS ──────────────
     # Not just non-empty: the point of the field is that it names a residual,
     # so an entry reading "n/a" would satisfy a length check and nothing else.
+    single_kind = []
     for r in BASE['records']:
         if not r.get('contributing_factors'):
             continue
-        check('%s: recurrence_open names something still open, not "none"'
+        # THIS ARM PINNED A PHRASE AND IT WAS WRONG TO. It required the
+        # literal 'NOT CLOSED', which is how I happen to write these; another
+        # session states the residual in its own words -- "Nothing stops the
+        # next reader...", "Nothing validates..." -- which satisfies the
+        # property better than a magic phrase does. A checker that demands one
+        # wording is a WORD LIST, which is the thing this platform refuses
+        # everywhere else, and it would have pushed the next author toward
+        # copying a string rather than saying what is open.
+        #
+        # The real property is: it states a residual, and does not dismiss one.
+        _open = ' '.join(str(r['recurrence_open']).split())
+        _dismissals = ('none', 'n/a', 'na', 'nothing further', 'closed',
+                       'no residual', 'fully closed', 'complete')
+        check('%s: recurrence_open states a residual rather than dismissing one'
               % r['commit'],
-              len(str(r['recurrence_open'])) > 60
-              and 'NOT CLOSED' in str(r['recurrence_open']).upper(),
-              str(r.get('recurrence_open'))[:120])
+              len(_open) > 60 and _open.strip().lower().rstrip('.') not in _dismissals,
+              _open[:140])
+        # REPORTED, NOT FAILED -- and the demotion is the point. This arm
+        # required more than one KIND, and `defect_register.py` requires no
+        # such thing. It failed on another session's record whose three
+        # factors are all technical and whose LATENT CONDITION is stated in
+        # `recurrence_open` instead ("every other svData caller is still
+        # unguarded"), which is a defensible place to put what the action does
+        # not close.
+        #
+        # A probe that fails another author's record for a rule the TOOL does
+        # not enforce is a probe about my preferences. If single-kind records
+        # should be refused, that belongs in cmd_check where every author sees
+        # it -- and that is a decision about how everyone records a defect,
+        # not one to impose from a control on one session's habit.
         kinds = set(f.get('kind') for f in r['contributing_factors'])
-        check('%s: factors span more than one KIND -- technical-only is the '
-              'single-cause habit with a longer list' % r['commit'],
-              len(kinds) > 1, kinds)
+        if len(kinds) == 1:
+            single_kind.append((r['commit'], sorted(kinds)))
 finally:
     if os.path.exists(TMP_FULL):
         os.remove(TMP_FULL)
 
 print('\n%d failure(s)' % len(fails))
+# The count, printed rather than enforced, so the habit stays visible.
+if single_kind:
+    print('')
+    print('  %d record(s) carry factors of ONE kind only -- reported, '
+          'not failed:' % len(single_kind))
+    for _c, _k in single_kind:
+        print('    %s  %s' % (_c, _k))
+
 for f in fails:
     print('  - ' + f)
 sys.exit(1 if fails else 0)

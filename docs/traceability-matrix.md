@@ -17,6 +17,7 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 | sairncode | each auth endpoint passes the shared helper THE SAME roles its own setup gate enforces | `api/_lib/employee-lifecycle-wiring.test.js` | The shared helper takes PROVISIONING_ROLES as a parameter so each app can pass its own, and the wrong list is invisible in review because it looks like every other app's. CLAUDE.md records the live case: SAIRNcode's is `admin`, not `owner`, and a guard hardcoding `owner` passes it clean forever while checking nothing. |
 | PLATFORM | the fourteen data endpoints still authenticate before they refuse | `api/preauth-envelope-ordering.test.js` | Not redundant with check 7, which scopes to the api/ files THIS push touches. This asserts the ordering across all fourteen from source anchors regardless of what the push contains -- the case where somebody else's commit reorders one and arrives here by rebase. It anchors on CODE and never on message text, because the detector's own boundary regex once matched `verifySessionToken(` inside a header comment and reported two defective files as clean. |
 | PLATFORM | no storage wrapper on the platform can fail silently | `tests/st_reports_failure.js` | A write that returns false to nobody and logs nothing is indistinguishable from a write that worked; in SAIRNcare all 28 st() call sites ignored the return and in SAIRNfreedom all 78 did. The bare-catch count is per app and fails ABOVE its number as well as below, so a new silent catch cannot enter a wrapper unnoticed -- it caught exactly that on 2026-09-10 when a server backup added one to SAIRNfreedom. |
+| PLATFORM | the session lock refuses the SECOND live session in a clone, and refuses nobody else | `tests/session_lock_liveness_probe.py` | This became a BLOCKING PreToolUse deny on 2026-09-16, so both ways of being wrong now cost something a warning never did. The under-refusal is the original defect: the SessionStart warning fired correctly on 2026-09-15 and two sessions read it and carried on, because a SessionStart hook cannot deny. The OVER-refusal is the one a bare pid-alive check would have introduced -- pids are recycled, and a dead session whose pid was picked up by something unrelated would lock a clone out permanently with no way for the occupant to tell a ghost from a real collision. Only the start-time comparison separates them, and arm (c2) is the arm most likely to have been left as a comment. The third state is held too: CLAUDE_PID unset or an unreadable process handle must fall back to the 2h staleness rule and block nothing, because failing CLOSED here would brick the session the lock exists to protect. |
 | PLATFORM | every disclosed coverage gap is actually disclosed, in the channel that was decided on | `api/_lib/deadline-coverage-contract.test.js` | JURISDICTION_COVERAGE is the single channel for a disclosed gap, by Michael's decision of 2026-09-01. Two jurisdictions previously asserted their gaps were row-level and an audit measured that claim false -- 2 of Utah's 9 rows and 2 of Nevada's 10 carried any omission note -- so a caller was told through neither channel. |
 
 ## 2. Mechanically enforced at the push gate
@@ -184,6 +185,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#9888; A TOKEN IS A CLAIM ABOUT THE PAST: a deactivated employee kept read and write on every gated resource in `api/sd-data.js` for the rest of a 12h token** | **FIXED 2026-09-16 (CC)** &mdash; `credentialStillActive()` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, wired into the `sd-data.js` session gate; `api/_lib/auth.test.js` **23 arms** including the sab | `api/_lib/auth.test.js`, `api/sd-data-active-credential.test.js` |
 | **`--reseat` treated a DANGLING commit as a good SHA, so the records a rebase orphaned were the exact ones it skipped** | **FIXED 2026-09-16 (CC)** &mdash; `reachable()` and `reseat_base()` in `tools/defect_register.py`; five arms in `tests/run_defect_register_probe.py` building a REAL orphan rather than a stub. **108 ch | `tests/run_defect_register_probe.py` |
 | **The dispatch list is offering CLOSED work: three of four open-and-unowned rows spot-checked were already done** | **MEASURED 2026-09-16 (CC)**, two of them closed with evidence &mdash; 71 &rarr; **69** unowned | `tests/run_snapshot_freshness_probe.py` |
+| **The duplicate-claim defect is FIXED and its evidence is HISTORICAL &mdash; and the record kept re-reporting it, twice** | **MEASURED AND MADE LEGIBLE 2026-09-16 (CC)** &mdash; `sairn_claim.py audit`, `tests/claims/run_claim_audit_probe.py` **18 arms** | `tests/claims/run_claim_audit_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -336,7 +338,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **The Timesheets panel reported a week of hours nobody ever entered, and two KPI tiles had nothing behind them at all** | **CLOSED 2026-09-15 (CC), both halves** &mdash; the fabricated hours removed (`200aaba8`), then the real entry path built on Michael&rsquo;s decision: `saveTimesheet()`, `sb_ts` registered and synced, | `tests/sairnbiz_server_backup.js`, `tests/sairnbiz_timesheet_hours.js` |
-| **A timesheet recorded for an employee who is then DEACTIVATED is unreachable through the product &mdash; it cannot be edited, zeroed or removed** | **FOUND 2026-09-16 (Hank) &mdash; NOT FIXED.** Recorded as an `ASSESSED` entry in `tools/removal_path_baseline.json`, with the residual gap written out rather than folded into the clearance. **The dec | `tests/run_removal_path_probe.py` |
+| ~~**A timesheet recorded for an employee who is then DEACTIVATED is unreachable through the product &mdash; it cannot be edited, zeroed or removed**~~ &mdash; **ACCESS PATH FIXED** | **FIXED 2026-09-16 (Hank)** on Michael&rsquo;s decision &mdash; `sbTsRoster()` in `sairnbiz.html`, plus the same rule re-checked on the WRITE path in `saveTimesheet()`. `tests/sairnbiz_timesheet_hours | `tests/run_removal_path_probe.py`, `tests/sairnbiz_timesheet_hours.js` |
 | **Gate 4 on the densest suite on the platform &mdash; and the probe found a guard nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnbiz_fault_probe.py`, 8 mutation arms + 5 controls; `tests/sairnbiz_bill_cannot_settle_unmatched.js` gained section 8 (5 arms, 42 &rarr; 47). MASTER-PLAN | `tests/sairnbiz_bill_cannot_settle_unmatched.js`, `tests/sairnbiz_fault_probe.py` |
 | **`sb_po` and `sb_recv` reached a server as Tier A with NO WAY TO CORRECT A WRONG ROW &mdash; now VOIDABLE, never deletable** | **FOUND 2026-09-14 (CC)** by `tools/removal_path_check.py` in the post-work sweep. **MECHANISM BUILT 2026-09-14 (CC)** on Michael&rsquo;s decision. **COMMITTED, NOT YET PUSHED &mdash; so NOT LIVE-VERI | `tests/functional_core_is_pure.js`, `tests/sairnbiz_void_mutation_control.js`, `tests/sairnbiz_void_not_delete.js` |
 | **The three-way match shipped with BOTH of its documents local-only &mdash; `sb_po` and `sb_recv` reached no server at all** | **BUILT 2026-09-14 (CC)** &mdash; `sql/sairnbiz_po_recv_migration.sql` written and **NOT YET RUN**; held by `tests/sairnbiz_po_recv_reach_the_server.js` (28 arms, four mutation controls). Registered,  | `tests/sairnbiz_po_recv_reach_the_server.js` |
@@ -503,23 +505,23 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 131 test files are traced to no stated requirement
+### 103 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 356 of 487 traced, 73.1%.
+For context and not as the headline: 388 of 491 traced, 79.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 362 citations come from
+### Where the 394 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 265 |
-| `declared` | 86 |
+| `declared` | 116 |
+| `declared+index` | 6 |
 | `GUARD_TESTS+index` | 5 |
-| `declared+index` | 5 |
-| `GUARD_TESTS` | 1 |
+| `GUARD_TESTS` | 2 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
 
@@ -528,40 +530,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 1 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 130 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 102 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 1 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
-- `api/_lib/ai-usage.test.js`
-- `api/_lib/courtlistener-rate-limit.test.js`
-- `api/_lib/deadline-alabama.test.js`
-- `api/_lib/deadline-arkansas.test.js`
-- `api/_lib/deadline-cross-appeal.test.js`
-- `api/_lib/deadline-delaware.test.js`
-- `api/_lib/deadline-florida-coverage.test.js`
-- `api/_lib/deadline-florida-exclusivity.test.js`
-- `api/_lib/deadline-hawaii.test.js`
-- `api/_lib/deadline-idaho.test.js`
-- `api/_lib/deadline-jurisdiction-labels.test.js`
-- `api/_lib/deadline-kansas.test.js`
-- `api/_lib/deadline-limb-scope.test.js`
-- `api/_lib/deadline-maryland.test.js`
-- `api/_lib/deadline-massachusetts.test.js`
-- `api/_lib/deadline-minnesota.test.js`
-- `api/_lib/deadline-mississippi.test.js`
-- `api/_lib/deadline-missouri.test.js`
-- `api/_lib/deadline-montana.test.js`
-- `api/_lib/deadline-nebraska.test.js`
-- `api/_lib/deadline-nevada.test.js`
-- `api/_lib/deadline-newhampshire.test.js`
-- `api/_lib/deadline-newjersey.test.js`
-- `api/_lib/deadline-newmexico.test.js`
-- `api/_lib/deadline-northcarolina.test.js`
-- `api/_lib/deadline-oklahoma.test.js`
-- `api/_lib/deadline-oregon.test.js`
-- `api/_lib/deadline-southcarolina.test.js`
-- `api/_lib/deadline-trigger-document.test.js`
-- `api/_lib/deadline-virginia.test.js`
 - `api/_lib/deadline-washington.test.js`
 - `api/_lib/deadline-westvirginia.test.js`
 - `api/_lib/deadline-wisconsin.test.js`
@@ -603,6 +575,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/stripe-config.test.js`
 - `tests/claims/run_claim_retype_mutation_control.py`
 - `tests/claims/run_push_verify_probe.py`
+- `tests/defect_register_capa_control.py`
 - `tests/failsafe/countersign_coverage_probe.py`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
@@ -623,6 +596,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_uncontrolled_checkers_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
+- `tests/sairnbiz_timesheet_probe.py`
 - `tests/sairnbuild_backup_pending.js`
 - `tests/sairncare/test-alf-activities.js`
 - `tests/sairncare/test-alf-alerts-endpoint.js`
@@ -683,9 +657,9 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 487   tests/**, api/*.test.js
-  open-work rows citing a test       260   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
+  test files on disk                 491   tests/**, api/*.test.js
+  open-work rows citing a test       261   docs\SAIRN-OPEN-WORK-INDEX.md
+  GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     50   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
