@@ -1493,8 +1493,8 @@
       "task": "benford capped guard, 5b98fd27 two root causes, item 47 FAI gate applied to entity_baseline_readiness",
       "claimed_at": "2026-09-16T01:17:22Z",
       "claimed_at_epoch": 1789521442.4458327,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T02:24:44Z"
     }
   ]
 }
