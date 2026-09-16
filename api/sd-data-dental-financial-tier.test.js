@@ -55,7 +55,19 @@ function loadHandler(fetchImpl) {
   return require('./sd-data.js');
 }
 
-const FINANCIAL = ['dnt_charges', 'dnt_payments', 'dnt_denial', 'dnt_ar', 'dnt_revenue', 'dnt_coverage_rules'];
+// ── EXTENDED 2026-09-15 BY THIS SUITE'S FIRST NEGATIVE CONTROL ────────────
+// tests/dnt_financial_tier_probe.py removed `dnt_gfe` from the gate in
+// api/sd-data.js and this suite STAYED GREEN: the resource had been added to
+// the tier without being added here, so nothing tested it. A good faith
+// estimate is a priced document carrying a named patient and their date of
+// birth under 45 CFR 149.610 -- the same reason dnt_charges is in this tier.
+// dnt_txplans was in the same position.
+//
+// THE LIST IS NOW CHECKED AGAINST THE SOURCE rather than kept in step by hand,
+// because a hand-kept copy of somebody else's list is the thing that just
+// failed. See the reconciliation test below.
+const FINANCIAL = ['dnt_charges', 'dnt_payments', 'dnt_denial', 'dnt_ar',
+  'dnt_revenue', 'dnt_coverage_rules', 'dnt_txplans', 'dnt_gfe'];
 // UPDATED DELIBERATELY 2026-08-27 when provider-scoped patient read shipped.
 // dnt_patients and dnt_referrals MOVED OUT of this list -- they are now
 // patient-scoped, so a provider no longer gets a flat 200 on them. They are
@@ -64,7 +76,29 @@ const FINANCIAL = ['dnt_charges', 'dnt_payments', 'dnt_denial', 'dnt_ar', 'dnt_r
 // The rest are practice CONFIG (no patient in them) and must keep returning 200
 // to every authenticated role -- a gate that swept these up would break the app
 // for providers without protecting anything.
+// NOT EXTENDED, and the reason is worth keeping. The probe swept
+// `dnt_appointments` into the financial tier and this suite stayed green, so
+// the obvious fix was to add it here. THAT WOULD HAVE BEEN WRONG:
+// dnt_appointments is PROVIDER-SCOPED, so a provider gets 403
+// PROVIDER_NOT_LINKED on it, not 200, and adding it turned the baseline red for
+// a reason that had nothing to do with the financial tier. The real defence
+// against a clinical resource being swept in is the reconciliation below, which
+// fails on ANY resource entering the gate that this suite does not test --
+// whatever that resource is.
 const CONFIG_ONLY = ['dnt_providers', 'dnt_operatories', 'dnt_provider_hours', 'dnt_procedure_types'];
+
+// ── THE LIST ABOVE IS RECONCILED AGAINST THE SOURCE, NOT KEPT IN STEP BY HAND.
+// FINANCIAL was a hand-written copy of DNT_FINANCIAL_RESOURCES in
+// api/sd-data.js and it had silently fallen two resources behind. A copy of
+// somebody else's list is a copy that goes stale, and the failure is quiet in
+// the dangerous direction: the tier grows, the suite keeps passing, and the new
+// resources are ungated as far as anything here can tell.
+const GATE_SRC = require('fs').readFileSync(
+  require('path').join(__dirname, 'sd-data.js'), 'utf8');
+const GATE_BLOCK = GATE_SRC.slice(
+  GATE_SRC.indexOf('const DNT_FINANCIAL_RESOURCES = {'),
+  GATE_SRC.indexOf('};', GATE_SRC.indexOf('const DNT_FINANCIAL_RESOURCES = {')));
+const GATE_RESOURCES = (GATE_BLOCK.match(/\bdnt_[a-z_]+(?=\s*:\s*true)/g) || []).sort();
 
 let passed = 0;
 let total = 0;
@@ -134,6 +168,22 @@ async function main() {
       assert.strictEqual(res.body.ok, true);
     });
   }
+
+  // --- 3a. THE LIST ABOVE MATCHES THE GATE, resource for resource ---
+  await test('FINANCIAL matches DNT_FINANCIAL_RESOURCES in api/sd-data.js exactly', () => {
+    assert.ok(GATE_RESOURCES.length > 0,
+      'no resources parsed out of DNT_FINANCIAL_RESOURCES -- the block moved '
+      + 'or was renamed, and a zero here would make this test pass vacuously');
+    const mine = FINANCIAL.slice().sort();
+    const missing = GATE_RESOURCES.filter((r) => mine.indexOf(r) === -1);
+    const extra = mine.filter((r) => GATE_RESOURCES.indexOf(r) === -1);
+    assert.deepStrictEqual(missing, [],
+      'the gate covers resources this suite never tests: ' + missing.join(', ')
+      + ' -- they are gated as far as the code goes and UNVERIFIED as far as '
+      + 'this suite goes, which is how dnt_gfe and dnt_txplans sat unchecked');
+    assert.deepStrictEqual(extra, [],
+      'this suite tests resources the gate does not cover: ' + extra.join(', '));
+  });
 
   // --- 3b. the two gates stay DISTINGUISHABLE ---
   // Both refuse a provider with a 403, and they must never collapse into one

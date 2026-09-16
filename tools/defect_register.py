@@ -174,6 +174,42 @@ METHODS = (
 CONFIDENCES = ('clean', 'arguable', 'not-citable')
 RULES_DOC = os.path.join('docs', 'SAIRN-PROCESS-RULES.md')
 
+# ── ITEM 75: COOK'S CRITIQUE, AND WHY THERE IS NO `root_cause` FIELD ────────
+# "Complex systems contain changing mixtures of failures latent within them...
+# Post-accident attribution to a 'root cause' is fundamentally wrong. Because
+# overt failure requires multiple faults, there is no isolated 'cause' of an
+# accident." -- Richard Cook, How Complex Systems Fail, points 4 and 7.
+#
+# A CAPA form with one ROOT CAUSE box and one CORRECTIVE ACTION box does not
+# merely record less. It ASSERTS that fixing the named thing closes the door,
+# and the closure is the part that is wrong: the other contributors are still
+# there, still latent, and now carry a signed-off record saying the incident is
+# handled. That is the shape this register would have grown into.
+#
+# So: a LIST, never a field. `root_cause` is refused by name in --check rather
+# than merely absent, because absence is a thing somebody adds back.
+#
+# EVERY RECORD WITH FACTORS ALSO STATES WHAT IS STILL OPEN. A corrective action
+# is evidence about one contributor; it is not evidence about recurrence, and
+# the register must not be readable as if it were.
+#
+# A SINGLE FACTOR IS ALLOWED and must say why it is single. Cook's point is not
+# that every defect has three causes -- it is that a one-line cause is a claim
+# and claims get stated, not assumed. Forcing a second factor would fabricate
+# one, which is worse.
+FACTOR_KINDS = (
+    'technical',            # the code did the wrong thing
+    'process',              # the way the work was done allowed it
+    'detection',            # why nothing caught it, given it was there
+    'latent-condition',     # a standing condition that made it possible
+)
+ACTION_STATES = (
+    'done',                 # something changed; `action` says what
+    'planned',              # named, not yet done
+    'declined',             # deliberately not acted on; `note` says why
+    'not-actionable',       # no action would address it; `note` says why
+)
+
 
 def known_rules():
     """Section ids parsed out of the process rules themselves.
@@ -626,6 +662,56 @@ def cmd_check(argv=()):
                     if rid not in known:
                         bad.append('%s -- cites %r, which is not a section in %s'
                                    % (r['commit'], rid, RULES_DOC))
+        # ── ITEM 75: THE CONTRIBUTING FACTORS, AND WHAT IS STILL OPEN ────
+        if 'root_cause' in r:
+            bad.append('%s -- carries a `root_cause` field. There is no single '
+                       'root cause of a failure in a system like this, and a '
+                       'field with that name asserts one: fix the named thing '
+                       'and the record reads as closed while every other '
+                       'contributor is still there. Use contributing_factors, '
+                       'which is a list.' % r['commit'])
+        cf = r.get('contributing_factors')
+        if cf is not None:
+            if not isinstance(cf, list) or not cf:
+                bad.append('%s -- contributing_factors is present but not a '
+                           'non-empty list' % r['commit'])
+            else:
+                for i, f in enumerate(cf):
+                    where = '%s factor %d' % (r['commit'], i + 1)
+                    if not isinstance(f, dict) or not str(f.get('factor') or '').strip():
+                        bad.append('%s -- no factor text' % where)
+                        continue
+                    if f.get('kind') not in FACTOR_KINDS:
+                        bad.append('%s -- kind %r is outside %s'
+                                   % (where, f.get('kind'), (FACTOR_KINDS,)))
+                    st = f.get('action_status')
+                    if st not in ACTION_STATES:
+                        bad.append('%s -- action_status %r is outside %s'
+                                   % (where, st, (ACTION_STATES,)))
+                    elif st in ('done', 'planned') and not str(f.get('action') or '').strip():
+                        bad.append('%s -- action_status %r with no action. A '
+                                   'status without the thing that was done is '
+                                   'the CAPA box this field replaces.'
+                                   % (where, st))
+                    elif st in ('declined', 'not-actionable') and not str(
+                            f.get('note') or '').strip():
+                        bad.append('%s -- action_status %r with no note. '
+                                   'Deciding not to act is a decision and gets '
+                                   'written down.' % (where, st))
+                # A SINGLE FACTOR IS ALLOWED AND MUST SAY WHY IT IS SINGLE.
+                if len(cf) == 1 and not str(r.get('single_factor_note') or '').strip():
+                    bad.append('%s -- one contributing factor and no '
+                               'single_factor_note. One cause is a CLAIM about '
+                               'a system, not the default shape of one, so it '
+                               'is stated rather than assumed.' % r['commit'])
+                # AND WHAT THE ACTIONS DO NOT CLOSE.
+                if not str(r.get('recurrence_open') or '').strip():
+                    bad.append('%s -- contributing factors with no '
+                               'recurrence_open. A corrective action is '
+                               'evidence about one contributor and never about '
+                               'recurrence; without this the record reads as '
+                               'closed.' % r['commit'])
+
     seen = set()
     for r in reg['records']:
         k = (r['commit'], r['summary'])
@@ -671,6 +757,18 @@ def cmd_check(argv=()):
               'vocabulary is unknown. This is not a pass.'
               % (could_not_check, RULES_DOC))
         return 2
+    # ── ITEM 75 COVERAGE, PRINTED AND NOT ENFORCED ─────────────────────────
+    # The field is new, so requiring it on all 77 records would mean
+    # back-filling contributing factors for defects nobody is going to
+    # re-investigate -- which is how a CAPA form fills up with guesses. The
+    # count is printed so the gap is visible rather than absent.
+    with_cf = [r for r in reg['records'] if r.get('contributing_factors')]
+    n_factors = sum(len(r['contributing_factors']) for r in with_cf)
+    print('    contributing factors: %d of %d record(s) carry them, %d factors '
+          'in total (%.1f per record). NOT required -- back-filling a cause '
+          'nobody re-investigated is how a CAPA form fills with guesses.'
+          % (len(with_cf), len(reg['records']), n_factors,
+             (n_factors / float(len(with_cf))) if with_cf else 0.0))
     cited = sum(1 for r in reg['records'] if r.get('rules'))
     print('OK: %d record(s), every commit resolves and every field is in '
           'vocabulary.%s' % (len(reg['records']),

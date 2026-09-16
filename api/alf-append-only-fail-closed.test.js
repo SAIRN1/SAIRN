@@ -91,12 +91,38 @@ function main() {
 
   test('the helper refuses on a failed read AND on a non-array body', () => {
     assert.match(SRC, /async function appendOnlyExisting\(res, r, what\)/);
-    assert.match(SRC, /INTEGRITY_CHECK_FAILED/);
     assert.match(SRC, /so nothing was written/,
       'the message must say nothing was written -- a caller that retries blindly is the risk');
     assert.match(SRC, /if \(!Array\.isArray\(rows\)\)/);
     assert.match(SRC, /append-only check failed \(' \+ what \+ '\), HTTP/,
       'the log must name WHICH check died -- there are six of them');
+
+    // ── ADDED 2026-09-15 BY THIS SUITE'S FIRST NEGATIVE CONTROL ──────────
+    // tests/alf_append_only_probe.py planted `if (false)` in place of the
+    // `if (!r.ok)` branch and this test STAYED GREEN. Every assertion above
+    // matched text NEAR the guard -- the function signature, the message, the
+    // log line -- and none of them matched the guard's own condition, so the
+    // fail-open branch could be disabled with the suite reporting clean.
+    //
+    // That is the test-layer half of defect cluster 5b98fd27, reproduced in a
+    // different file: an assertion that does not depend on the thing the
+    // mutation changed. The fix is to assert on the CONDITION, in its own
+    // function body rather than anywhere in a 400KB file.
+    const FN_START = SRC.indexOf('async function appendOnlyExisting');
+    const FN = SRC.slice(FN_START, SRC.indexOf('\n}', FN_START));
+    assert.match(FN, /if \(!r\.ok\) \{/,
+      'the helper must TEST r.ok -- matching the message or the signature '
+      + 'leaves the branch itself unasserted, which is how it can be disabled '
+      + 'with this suite green');
+
+    // And the code is asserted INSIDE the function too. `INTEGRITY_CHECK_FAILED`
+    // appears twice there; a whole-file match is satisfied by whichever one was
+    // not changed, so the probe's arm 6 also passed on a broken build.
+    const codes = FN.match(/code: '([A-Z_]+)'/g) || [];
+    assert.strictEqual(codes.length, 2,
+      'expected both refusal paths to carry a code, found ' + codes.length);
+    codes.forEach((c) => assert.strictEqual(c, "code: 'INTEGRITY_CHECK_FAILED'",
+      'both refusals must carry INTEGRITY_CHECK_FAILED, found ' + c));
   });
 
   test('the helper returns null so a caller cannot mistake a refusal for an empty result', () => {

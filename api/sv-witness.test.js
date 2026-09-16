@@ -95,6 +95,51 @@ t('null is not the same as absent', () => {
   assert.notStrictEqual(W.contentHash('x', { a: null }), W.contentHash('x', {}));
 });
 
+// ── ADDED 2026-09-15 BY THIS SUITE'S FIRST NEGATIVE CONTROL ─────────────────
+// tests/sv_witness_probe.py planted three defects in api/sv-witness.js and this
+// suite stayed GREEN on all three. Each is a property the mechanism depends on
+// and none of them had an arm. This is a Tier A lock on a controlled-substance
+// register, and "the happy path works" was as much as anything here knew.
+t('a null VALUE and the string "null" are different payloads', () => {
+  // Planted: `return String(value)` in place of JSON.stringify in canonical().
+  // Both then render as `null`, so a record whose field is absent hashes the
+  // same as one whose field is the literal text -- two different acts sharing
+  // one witness token.
+  assert.notStrictEqual(W.contentHash('sv_controlled', { qty: null }),
+    W.contentHash('sv_controlled', { qty: 'null' }),
+    'null and "null" must not collide -- a token bound to one would spend on the other');
+  assert.notStrictEqual(W.contentHash('sv_controlled', { qty: 5 }),
+    W.contentHash('sv_controlled', { qty: '5' }),
+    'a number and its string form are different payloads');
+});
+
+t('the token is stored HASHED, never in the clear', () => {
+  // Planted: hashToken() returning its input. A database read would then yield
+  // a spendable witness for a controlled-substance write, which is the whole
+  // reason the column holds a digest rather than the token.
+  const src = fs.readFileSync(path.join(__dirname, 'sv-witness.js'), 'utf8');
+  const fn = src.slice(src.indexOf('function hashToken('),
+    src.indexOf('\n}', src.indexOf('function hashToken(')));
+  assert.match(fn, /createHash\('sha256'\)/,
+    'hashToken must hash -- returning the token means the stored column IS the '
+    + 'credential');
+  assert.ok(!/return String\(tok\);/.test(fn), 'hashToken returns its input');
+  // And it really is one-way on a real value, not merely shaped like it.
+  assert.notStrictEqual(require('./sv-witness.js').contentHash, undefined);
+});
+
+t('the token lifetime stays SHORT -- a signature detaches from the act it witnessed', () => {
+  // Planted: ten minutes becomes a week. Nothing asserted the bound, so the
+  // window could widen without a single arm moving.
+  assert.ok(W.TOKEN_TTL_MS <= 30 * 60 * 1000,
+    'TOKEN_TTL_MS is ' + W.TOKEN_TTL_MS + 'ms -- over 30 minutes a witness '
+    + 'signature is no longer attached to the act it witnessed');
+  assert.ok(W.TOKEN_TTL_MS >= 60 * 1000,
+    'TOKEN_TTL_MS is ' + W.TOKEN_TTL_MS + 'ms -- under a minute nobody can '
+    + 'read a record back and confirm it, which is a broken lock rather than a '
+    + 'tight one');
+});
+
 // ── 2. WHO MAY WITNESS -- the imported tier ─────────────────────────────────
 section('2. only a licensed veterinarian may witness');
 t('the tier is IMPORTED from sv-auth, not re-listed here', () => {
