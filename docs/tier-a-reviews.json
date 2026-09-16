@@ -309,6 +309,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-16T12:01:40Z",
+      "resources": [
+        "sb_recv",
+        "sb_ts"
+      ],
+      "files": [
+        "tests/sairnbiz_timesheet_probe.py"
+      ],
+      "what": "tests/sairnbiz_timesheet_probe.py -- a new negative control proving tests/sairnbiz_timesheet_hours.js catches three real defects against sb_ts (Tier A payroll hours). It plants into a throwaway git worktree via tests/sabotage_harness.py and touches nothing in the clone. ALSO IN THIS PUSH: tools/defect_register.py --add now requires --factors or an explicit --factors-unknown (item 75's collection half), with tests/defect_register_capa_control.py; and the selftest floor moved 36 -> 46. REVIEW FOCUS: whether the three planted mutations are the ones that matter for sb_ts, and whether making a register field required at --add is the right call given old records stay exempt.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
