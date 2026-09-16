@@ -1903,8 +1903,8 @@
       "task": "cron watchdog self retry 508 loop and self failing latch, independent second watchdog",
       "claimed_at": "2026-09-15T23:02:06Z",
       "claimed_at_epoch": 1789513326.3830838,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T00:14:50Z"
     }
   ]
 }
