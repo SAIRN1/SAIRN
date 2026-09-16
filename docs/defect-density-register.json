@@ -3601,55 +3601,6 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
     },
     {
-      "commit": "fb1984fdf4c0",
-      "date": "2026-09-16",
-      "subject": "fix(audit-checkpoint): both refusal paths beat -- and the NEVER_BEAT I reported was my own stale read",
-      "files": [
-        ".claude/claims/cc.json"
-      ],
-      "lines_added": 2,
-      "lines_removed": 2,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/audit-checkpoint.js refused SILENTLY on both of its refusal paths. NOT_PROVISIONED (the checkpoint table is absent) and WINDOW_INCOMPLETE (a window could not be read in full) each answered 503 and returned WITHOUT a heartbeat, while the success path and the generic catch both beat. cron-watchdog classifies a job with no heartbeat row as NEVER_BEAT and its own message offers both readings because it cannot tell them apart -- so a job firing daily and refusing daily would have been indistinguishable from a job that never fires at all. Found by reading the file while investigating a NEVER_BEAT report that turned out to be historical.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "3d40c7d548a1",
-        "date": "2026-09-14",
-        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
-        "lag_days": 2
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The NOT_PROVISIONED and WINDOW_INCOMPLETE early returns answered 503 and returned without calling beat(), while the success path and the generic catch both beat.",
-          "action_status": "done",
-          "action": "both refusal paths now beat with outcome failed and a detail carrying refused and retry_helps."
-        },
-        {
-          "kind": "detection",
-          "factor": "Four existing arms already drove both refusal paths and every one asserted the 503 and the error CODE -- the response, which Vercel throws away on a cron invocation. The heartbeat is the only thing that leaves the function and nothing asserted it.",
-          "action_status": "done",
-          "action": "four new arms assert the beat itself, two of them controls so the arms are not satisfied by a handler that beats unconditionally."
-        },
-        {
-          "kind": "process",
-          "factor": "The test harness modelled the checkpoint table and not sairn_cron_heartbeat, so beats fell through to the stub default, beat() swallowed the result by design, and no arm COULD have observed one.",
-          "action_status": "done",
-          "action": "the heartbeat table is modelled and every beat is captured on db.heartbeats."
-        }
-      ],
-      "recurrence_open": "Nothing sweeps for cron endpoints whose refusal paths return without beating. api/audit-checkpoint.js is fixed; the same question has not been asked of /api/alf-alerts, /api/sairndental/send-reminder or /api/cron-watchdog, all of which use the same beat() helper and all of which have early returns."
-    },
-    {
       "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
@@ -4750,6 +4701,113 @@
       "recurrence_open": "The checker covers ONE allow-list in ONE file. Every other role literal on the platform is still unchecked, and a sweep would have to guess which app each one is gated on, which is not derivable from the literal. Nothing yet prevents the next copied key."
     },
     {
+      "commit": "798543873912",
+      "date": "2026-09-16",
+      "subject": "fix(test): an arm that PASSED while printing its own refutation",
+      "files": [
+        "tests/app_session_isolation.js",
+        "tests/app_session_isolation_probe.py"
+      ],
+      "lines_added": 209,
+      "lines_removed": 7,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/app_session_isolation.js asserted `out.code !== 401` for \"reachable with the licence alone\". law_trusttx was gated on 2026-09-16 and SD_SESSION_GATED refuses with 403, so the arm stayed GREEN and printed \"law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403\" -- the status code disproving the sentence it was asserting, inside that sentence. A control over attorney IOLTA trust money reported a gate it could no longer see. Separately the harness answered the employee-auth lookup with [], so credentialStillActive refused every correct caller and emptying SD_GATE_APP was silent too",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c98b5d674c76",
+        "date": "2026-09-16",
+        "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is a check that cannot fail. This one could fail and could not fail FOR THIS INPUT, because the predicate ruled out one refusal shape and the subject started answering with the other. The citation is arguable rather than clean: the arm was not vacuous when written, it was outlived.",
+      "contributing_factors": [
+        {
+          "factor": "REACHABILITY WAS ENCODED AS THE NEGATION OF ONE REFUSAL CODE. `out.code !== 401` means \"not refused in one particular way\", not \"got through\", and sd-data has two refusal shapes for no session: 401 NO_SESSION from the generic path and 403 FORBIDDEN from SD_SESSION_GATED. The refusal that arrived was the other one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Reachability is asserted POSITIVELY as 200, and the gated resource moved into its own list asserted as 403 FORBIDDEN."
+        },
+        {
+          "factor": "THE ARM PRINTED THE CODE THAT DISPROVED IT AND WAS STILL COUNTED. Its message interpolates out.code, so the green line read \"is reachable with the LICENCE ALONE -- no session -- and answers 403\". The evidence against the assertion was in the assertion's own output for as long as it was wrong.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/app_session_isolation_probe.py drives the pre-fix classification and requires the suite to fail; the probe is what separates a suite that agrees from one that checks."
+        },
+        {
+          "factor": "THE SAME FILE WARNS ABOUT EXACTLY THIS, SIX LINES ABOVE THE LOOP: \"a silent canary and a healthy canary look identical\". The hazard was understood, written down, and the assertion beside it was still too weak to express it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the fix, because the durable lesson is the shape -- never assert that something got through by ruling out one of the ways it could have been stopped."
+        },
+        {
+          "factor": "THE HARNESS REFUSED CORRECT CALLERS FOR AN UNRELATED REASON, which hid a second defect. credentialStillActive() treats an EMPTY employee-auth result as CREDENTIAL_INACTIVE -- correctly -- and the stub answered every post-licence query with []. So 403-for-the-right-reason and 403-for-the-wrong-one were the same number, and emptying SD_GATE_APP (which reverts the expected app to 'stonedesk' and refuses every signed-in attorney) was SILENT against this suite.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The employee-auth row is modelled present and ACTIVE, and two arms drive the newest gated resource with the RIGHT app session and a FOREIGN one, so the expected app is observable at all."
+        }
+      ],
+      "recurrence_open": "Nothing scans for reachability asserted as `!== <one status code>`, and that shape is not unique to this file. The expectedApp arms cover ONE gated resource -- the newest -- because it is the one whose app is not 'stonedesk'; a future resource gated against a third app would need its own arm and nothing asks for one. And the deeper cause is still open: sd-data answers no-session with 401 in one path and 403 in another, which is what made a negation ambiguous in the first place, and unifying them is a client-visible contract change nobody has decided."
+    },
+    {
+      "commit": "7bb6eb2a8e8f",
+      "date": "2026-09-16",
+      "subject": "fix(test): my own probe was emitting four FALSE anchor-zeros at the platform check",
+      "files": [
+        "tests/active_credential_gate_probe.py"
+      ],
+      "lines_added": 28,
+      "lines_removed": 10,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "tests/active_credential_gate_probe.py hoisted four mutation anchors into module constants, and tools/mutation_anchor_check.py reads MUTATIONS with ast rather than importing (because importing a probe runs it), so it cannot resolve a NAME -- reporting four arms as ANCHOR-0, \"this anchor matches nothing\", against a probe whose seven mutations were all being refused. False findings in an anchor checker get its output skimmed, which is the same end state as a checker that finds nothing",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "mutation_anchor_check.py",
+      "injection": {
+        "commit": "ab36e93f3193",
+        "date": "2026-09-16",
+        "subject": "test(G5): a negative control on the active-credential gate -- the only CRITICAL record in the register",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is about a check that cannot fail. This is the inverse: a check that failed on something that was not wrong. Cited because the consequence is the same -- an output that stops being read -- and because no section covers a false positive in a meta-checker.",
+      "contributing_factors": [
+        {
+          "factor": "THE ANCHORS WERE HOISTED INTO MODULE CONSTANTS AND THE CHECKER READS WITH ast, NOT BY IMPORTING. It refuses to import a probe because importing one RUNS it -- the right call, recorded in its own docstring -- and the cost is that a tuple element which is a NAME cannot be resolved at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Anchors written inline. Implicit string concatenation is fine because ast folds it into one literal; a name is not."
+        },
+        {
+          "factor": "THE PROBE ITSELF PASSED THE WHOLE TIME, so nothing in the work that introduced this could have revealed it. All seven mutations were planted and refused; the only thing that noticed was a platform-wide check nobody runs during a fix.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Found by running the platform check against my own new files before reporting the work, rather than only the suites they guard."
+        },
+        {
+          "factor": "FOUR FALSE ZEROS ARE AS USELESS AS NO CHECK AT ALL. An anchor checker whose output contains confident false findings gets skimmed, which is the same end state as one that finds nothing -- the same harm as a checker walking past its own class, arriving from the noise direction rather than the silence direction.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No mechanism proposed. Making the checker resolve module constants means evaluating probe source without importing it, which is either a partial interpreter or the import it refuses to do. Writing anchors as literals is the cheaper contract and it is now stated in the file."
+        }
+      ],
+      "recurrence_open": "Nothing stops the next probe hoisting an anchor into a constant -- the contract is a comment in one file, not a check. mutation_anchor_check reports ANCHOR-0 identically for \"the code was refactored\" and \"the anchor is a name I cannot read\", and those are different problems with different fixes."
+    },
+    {
       "commit": "8e03757afb09",
       "date": "2026-09-16",
       "subject": "fix(retry-backoff): a budget that stops the loop is a breaker, if its answer is read",
@@ -5352,63 +5410,6 @@
       "recurrence_open": "GUARDS remains a flat list of regexes with no notion of which idiom belongs to which language, so a third language's spelling of any accepted shape would be invisible the same way. The blind lock now carries JS fixtures for the uniqueness and difference shapes, which means the gap is closed for the two languages in this repo and not for the general case."
     },
     {
-      "commit": "798543873912",
-      "date": "2026-09-16",
-      "subject": "fix(test): an arm that PASSED while printing its own refutation",
-      "files": [
-        "tests/app_session_isolation.js",
-        "tests/app_session_isolation_probe.py"
-      ],
-      "lines_added": 209,
-      "lines_removed": 7,
-      "app": "sairnlaw",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/app_session_isolation.js asserted `out.code !== 401` for \"reachable with the licence alone\". law_trusttx was gated on 2026-09-16 and SD_SESSION_GATED refuses with 403, so the arm stayed GREEN and printed \"law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403\" -- the status code disproving the sentence it was asserting, inside that sentence. A control over attorney IOLTA trust money reported a gate it could no longer see. Separately the harness answered the employee-auth lookup with [], so credentialStillActive refused every correct caller and emptying SD_GATE_APP was silent too",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "c98b5d674c76",
-        "date": "2026-09-16",
-        "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
-        "lag_days": 0
-      },
-      "citation_note": "1.1 is a check that cannot fail. This one could fail and could not fail FOR THIS INPUT, because the predicate ruled out one refusal shape and the subject started answering with the other. The citation is arguable rather than clean: the arm was not vacuous when written, it was outlived.",
-      "contributing_factors": [
-        {
-          "factor": "REACHABILITY WAS ENCODED AS THE NEGATION OF ONE REFUSAL CODE. `out.code !== 401` means \"not refused in one particular way\", not \"got through\", and sd-data has two refusal shapes for no session: 401 NO_SESSION from the generic path and 403 FORBIDDEN from SD_SESSION_GATED. The refusal that arrived was the other one.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Reachability is asserted POSITIVELY as 200, and the gated resource moved into its own list asserted as 403 FORBIDDEN."
-        },
-        {
-          "factor": "THE ARM PRINTED THE CODE THAT DISPROVED IT AND WAS STILL COUNTED. Its message interpolates out.code, so the green line read \"is reachable with the LICENCE ALONE -- no session -- and answers 403\". The evidence against the assertion was in the assertion's own output for as long as it was wrong.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/app_session_isolation_probe.py drives the pre-fix classification and requires the suite to fail; the probe is what separates a suite that agrees from one that checks."
-        },
-        {
-          "factor": "THE SAME FILE WARNS ABOUT EXACTLY THIS, SIX LINES ABOVE THE LOOP: \"a silent canary and a healthy canary look identical\". The hazard was understood, written down, and the assertion beside it was still too weak to express it.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Stated in the fix, because the durable lesson is the shape -- never assert that something got through by ruling out one of the ways it could have been stopped."
-        },
-        {
-          "factor": "THE HARNESS REFUSED CORRECT CALLERS FOR AN UNRELATED REASON, which hid a second defect. credentialStillActive() treats an EMPTY employee-auth result as CREDENTIAL_INACTIVE -- correctly -- and the stub answered every post-licence query with []. So 403-for-the-right-reason and 403-for-the-wrong-one were the same number, and emptying SD_GATE_APP (which reverts the expected app to 'stonedesk' and refuses every signed-in attorney) was SILENT against this suite.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The employee-auth row is modelled present and ACTIVE, and two arms drive the newest gated resource with the RIGHT app session and a FOREIGN one, so the expected app is observable at all."
-        }
-      ],
-      "recurrence_open": "Nothing scans for reachability asserted as `!== <one status code>`, and that shape is not unique to this file. The expectedApp arms cover ONE gated resource -- the newest -- because it is the one whose app is not 'stonedesk'; a future resource gated against a third app would need its own arm and nothing asks for one. And the deeper cause is still open: sd-data answers no-session with 401 in one path and 403 in another, which is what made a negation ambiguous in the first place, and unifying them is a client-visible contract change nobody has decided."
-    },
-    {
       "commit": "ee221abe02e4",
       "date": "2026-09-16",
       "subject": "fix(sairnbiz): a payroll week recorded for an employee who then leaves is reachable again",
@@ -5460,6 +5461,55 @@
         }
       ],
       "recurrence_open": "Nothing checks that a record a product can WRITE stays reachable after the entity it is keyed to changes state. sb_ts is fixed; the same question has not been asked of any other keyed resource whose UI filters by employee, patient or vendor status."
+    },
+    {
+      "commit": "fb1984fdf4c0",
+      "date": "2026-09-16",
+      "subject": "fix(audit-checkpoint): both refusal paths beat -- and the NEVER_BEAT I reported was my own stale read",
+      "files": [
+        ".claude/claims/cc.json"
+      ],
+      "lines_added": 2,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/audit-checkpoint.js refused SILENTLY on both of its refusal paths. NOT_PROVISIONED (the checkpoint table is absent) and WINDOW_INCOMPLETE (a window could not be read in full) each answered 503 and returned WITHOUT a heartbeat, while the success path and the generic catch both beat. cron-watchdog classifies a job with no heartbeat row as NEVER_BEAT and its own message offers both readings because it cannot tell them apart -- so a job firing daily and refusing daily would have been indistinguishable from a job that never fires at all. Found by reading the file while investigating a NEVER_BEAT report that turned out to be historical.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The NOT_PROVISIONED and WINDOW_INCOMPLETE early returns answered 503 and returned without calling beat(), while the success path and the generic catch both beat.",
+          "action_status": "done",
+          "action": "both refusal paths now beat with outcome failed and a detail carrying refused and retry_helps."
+        },
+        {
+          "kind": "detection",
+          "factor": "Four existing arms already drove both refusal paths and every one asserted the 503 and the error CODE -- the response, which Vercel throws away on a cron invocation. The heartbeat is the only thing that leaves the function and nothing asserted it.",
+          "action_status": "done",
+          "action": "four new arms assert the beat itself, two of them controls so the arms are not satisfied by a handler that beats unconditionally."
+        },
+        {
+          "kind": "process",
+          "factor": "The test harness modelled the checkpoint table and not sairn_cron_heartbeat, so beats fell through to the stub default, beat() swallowed the result by design, and no arm COULD have observed one.",
+          "action_status": "done",
+          "action": "the heartbeat table is modelled and every beat is captured on db.heartbeats."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for cron endpoints whose refusal paths return without beating. api/audit-checkpoint.js is fixed; the same question has not been asked of /api/alf-alerts, /api/sairndental/send-reminder or /api/cron-watchdog, all of which use the same beat() helper and all of which have early returns."
     },
     {
       "commit": "fda7627c647b",
