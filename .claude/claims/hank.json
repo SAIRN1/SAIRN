@@ -1953,8 +1953,8 @@
       "task": "defect register entry required at push for fix commits, prevent by construction",
       "claimed_at": "2026-09-16T02:40:58Z",
       "claimed_at_epoch": 1789526458.3377728,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T02:50:00Z"
     }
   ]
 }
