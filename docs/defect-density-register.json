@@ -2384,7 +2384,28 @@
       ],
       "severity": "high",
       "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
-      "summary": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce"
+      "summary": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce",
+      "contributing_factors": [
+        {
+          "factor": "THE GUARD WAS WRITTEN AS `total !== null && total !== rows.length`, so the ABSENCE of the thing it checks disabled it. A response with no Content-Range header, or `0-0/*`, made the first clause false and the completeness check was skipped entirely rather than refused.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The read now REFUSES with WINDOW_INCOMPLETE when it cannot establish the total, rather than treating an unknown total as a satisfied comparison."
+        },
+        {
+          "factor": "THE FAILURE PRODUCES A CHECKPOINT THAT VERIFIES CLEANLY FOREVER. A digest over the first page of a busy day is stable and reproducible and covers a fraction of the window, so every subsequent verification agrees with it -- the file's own header names that as the one thing it must never produce.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the shape in the header rather than only as a fixed line, because the next paged digest on this platform will be written by somebody who reads the header."
+        },
+        {
+          "factor": "IT WAS FOUND BY INDEPENDENT REVIEW AND NOT BY THE SUITE. The suite drove the guard with a well-formed Content-Range in every arm, which is the shape the API returns in normal operation, so no arm ever presented the input that disarmed it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/audit-checkpoint.test.js gained arms that present a MISSING and a `0-0/*` Content-Range, which is the state the original arms could not reach."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS WIDER THAN THIS GUARD: any check written as `x !== null && <predicate on x>` fails open when x is absent, and nothing on this platform scans for that shape. The bounded 14-window re-verification is also still a bound -- it is reported as `full:false` in every response rather than hidden, but a rewritten checkpoint older than the bound is caught only by the cheap prev_digest link, not by a re-digest."
     },
     {
       "app": "sairnbiz",
@@ -2570,7 +2591,28 @@
       "rules": [],
       "severity": "high",
       "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
-      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one"
+      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one",
+      "contributing_factors": [
+        {
+          "factor": "THE THRESHOLD WAS CHOSEN FOR A DIFFERENT FAILURE THAN THE ONE ITS COMMENT NAMES. A backup role without BYPASSRLS produces approximately a SCHEMA-ONLY dump, and the same comment states a schema-only dump is well over 100 KB -- so it passes a 50 KB floor. The number and the stated purpose were never checked against each other.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The comment no longer claims the floor detects the BYPASSRLS loss; the restore plus the coherence checker is named as the detector that actually does."
+        },
+        {
+          "factor": "THE HARM IS TO A READER, NOT TO A RUN. The real detector works, and every night it works -- so nothing fails, nothing is logged, and the only damage is that somebody auditing this pipeline counts TWO independent detectors where there is one. Redundancy that is believed and absent is worse than redundancy that was never claimed.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the record and in the file, because this is the kind of defect only a reader can hit and only a reader can be warned about."
+        },
+        {
+          "factor": "A COMMENT IS NOT EXECUTED, SO NOTHING COMPARES IT TO THE CODE BESIDE IT. The floor's claim and the floor's value sat two lines apart and disagreed, and no check on this platform reads a threshold's justification.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "No mechanism is proposed. A checker that reads prose and decides whether it matches the number beside it is the grep-cannot-tell-code-from-text class pointed at itself, and it would produce confident findings about English. The honest control here is independent review, which is what found it."
+        }
+      ],
+      "recurrence_open": "NOTHING PREVENTS THE NEXT THRESHOLD FROM BEING JUSTIFIED BY A COMMENT NOBODY RE-DERIVES. The fix corrects one comment; it does not establish that any other numeric guard in the backup pipeline detects what it claims, and the sibling record on the same commit -- a published placeholder password behind an `if not exists` guard that makes re-running the corrected file a no-op -- is evidence that this file was read less carefully than it was written."
     },
     {
       "app": "sairnvet",
@@ -4587,7 +4629,34 @@
       "injection": {
         "unknown_reason": "api/sd-data.js gated on the token claim from its first version; there is no commit where a current-state re-check was removed"
       },
-      "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it"
+      "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it",
+      "contributing_factors": [
+        {
+          "factor": "THE PREVIOUS FIX WAS APP-SHAPED AND THE DEFECT WAS NOT. 9fef0f35 closed the deactivated-credential gap for api/sc-auth.js's own roster and set_active, and api/_lib/employee-lifecycle.js carried the same re-check for the apps that share it. The DATA path shared neither, so a fix that read as a class fix left thirteen apps' gated resources open for another three weeks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "credentialStillActive() lives in api/_lib/auth.js, beside the thing that MINTS the token, and is awaited at the sd-data session gate immediately after verifySessionToken and before any resource handler -- one place both paths reach rather than a second copy of the rule."
+        },
+        {
+          "factor": "A SIGNED TOKEN CARRIES ROLE AS A CLAIM. Verifying it proves the claim was minted and says nothing about whether it is still true, and nothing in the gate distinguished those two questions -- so 'the session is valid' silently meant 'the employee is still employed'.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The sabotage arm signs ONE token, verifies it, flips the row behind it, and requires the same byte-identical token to be refused 403 CREDENTIAL_INACTIVE -- which is the only form of proof that separates the two questions."
+        },
+        {
+          "factor": "NOTHING OBSERVABLE DISTINGUISHED THE TWO STATES. Every request from a deactivated employee succeeded, raised no error and wrote no log, and the window closed on its own when the token expired up to twelve hours later. There was no failing request for anyone to notice, and deactivation is the one control an owner has for somebody who has just left.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-active-credential.test.js holds that sd-data calls it, AWAITS it, in the right ORDER, refuses only on CREDENTIAL_INACTIVE, and cannot be broken by its own logging."
+        },
+        {
+          "factor": "THE APP-TO-TABLE MAP HAS NO RULE. Fifteen apps: sd, sb, grd and scp use a prefix, the rest the full app name, and sairncare's table is not alf_* though its endpoint is. A derived map would have been wrong for at least five apps and wrong SILENTLY, because a missing table reads as 'no active row' and would refuse every caller in that app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The map is DECLARED, never derived, and stonedesk_sub is deliberately absent with NO_ACTIVE_CHECK as its answer because subcontractors key on sub_id."
+        }
+      ],
+      "recurrence_open": "THE THIRD STATE LETS THE REQUEST THROUGH ON PURPOSE. NO_ACTIVE_CHECK continues when the app has no employee table or the lookup itself fails, because a transport failure is not a deactivation and refusing every user whenever the database blinks is the worse failure. That trade is right and it means a sustained database fault RE-OPENS this gap for as long as it lasts; only the log makes it visible and nothing alarms on a run of them. The declared table map is hand-kept for the same good reason, so a sixteenth app added without an entry answers NO_ACTIVE_CHECK and is unprotected, silently."
     },
     {
       "commit": "c98b5d674c76",
@@ -4874,6 +4943,57 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
+    },
+    {
+      "commit": "1bb439fb7999",
+      "date": "2026-09-16",
+      "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
+      "files": [
+        "tests/rebase_resolve_merge_control.py",
+        "tools/sairn_rebase_resolve.py"
+      ],
+      "lines_added": 63,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_rebase_resolve.py's serializer round-trip proof searched indents at ensure_ascii=False ONLY, and passed on both real registers because neither held a non-ASCII byte that day. tools/defect_register.py writes its register with the json default (ensure_ascii=True), so the first rebase carrying an em-dash made the tool refuse the larger of the two ledgers it was written to merge",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c6d07088ee85",
+        "date": "2026-09-16",
+        "subject": "fix(rebase): the two JSON registers get a real 3-way merge, not a side taken",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 covers a check that cannot fail. This one COULD fail and did not, because the input space it was validated against was accidentally narrower than the input space it would meet -- the same green, reached from the other side, so the citation is arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "THE PROBE WAS WRITTEN AGAINST THE FILES AS THEY WERE THAT HOUR, AND THEY HAPPENED TO BE PURE ASCII. Both registers round-tripped at ensure_ascii=False, so the single-setting search was indistinguishable from a correct one until a commit subject with an em-dash arrived on the next rebase.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "serializer_of() returns (indent, ensure_ascii) and searches both settings; a14 in the control drives a non-ASCII ledger written the escaped way."
+        },
+        {
+          "factor": "THE TWO LEDGERS DISAGREE WITH EACH OTHER AND NOTHING SAYS SO. tools/defect_register.py writes with the json default (ensure_ascii=True); tools/tier_a_review_gate.py passes False. A reader of either writer alone would conclude the platform has one convention.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not unified. Changing either writer would reformat that whole ledger in one commit -- the exact whole-file-diff harm the round-trip proof exists to prevent -- and the merge tool now reads the convention from the file rather than assuming one."
+        },
+        {
+          "factor": "THE SABOTAGE ARM FOR THE ROUND-TRIP PROOF DID NOT COVER THIS HALF. Removing the ensure_ascii search leaves a12 green, because a ledger that round-trips at False still round-trips at False -- so the existing guard-is-load-bearing evidence said nothing about the part that was wrong.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A SEPARATE sabotage entry pins the ensure_ascii half against a14, rather than widening a12's, so each half has its own failing witness."
+        }
+      ],
+      "recurrence_open": "The probe now covers two settings and eight indents. It still cannot reproduce a ledger written by anything other than json.dumps -- a sort_keys pass, a custom separator, or a hand-edit -- and in every one of those cases it refuses rather than reformats, which is the right answer and is also a tool that has stopped being useful without anyone being told why."
     }
   ],
   "started": "2026-09-09"
