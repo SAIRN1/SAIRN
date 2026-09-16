@@ -1475,6 +1475,16 @@
       "claimed_at_epoch": 1789511988.1596768,
       "status": "released",
       "released_at": "2026-09-16T00:04:21Z"
+    },
+    {
+      "id": "fourth-1789517757",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "cluster 5b98fd27 root cause, item 57 benford, item 51 per-entity baselines",
+      "claimed_at": "2026-09-16T00:15:57Z",
+      "claimed_at_epoch": 1789517757.5012016,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
