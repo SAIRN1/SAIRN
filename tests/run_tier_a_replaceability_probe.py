@@ -225,6 +225,50 @@ check('tier_rows reads a tier cell wrapped in asterisks',
 check('tier_rows ignores a row with no tier',
       t.tier_rows('| a | b | c | d |\n') == [], 'non-tier row was read as one')
 
+
+# -- 7. THE WINDOW ITSELF IS A CONTROL, NOT ONLY THE PATTERN (2026-09-16) ----
+# Found while discharging CC's 2026-09-15T14:23:47Z obligation, which asked a
+# reviewer to "check whether the +/-300 window is the right narrowness".
+#
+# The ATTESTATION regex already has an import-time positive control, added
+# after it shipped with a literal backspace and reported zero platform-wide.
+# THE WINDOW HAD NONE. Its value was chosen by a real measurement -- at +/-1200
+# it fired on 55 resources, mostly adjacency in a 2MB file -- and then never
+# pinned. A measured constant with no control is one nobody notices being
+# widened, and widening it back to 1200 restores exactly the false-positive
+# behaviour the measurement rejected.
+#
+# BOTH DIRECTIONS, because a window can fail either way: too wide and every
+# neighbour in a 2MB file is an attestation, too narrow and a real writer four
+# lines from its own signature field is missed.
+print(chr(10) + '7. the +/-300 attestation window keeps near and drops far')
+
+_NEAR = "list.push({ resource: 'zz_probe_res', signer: signer, typed: typed })"
+_FAR = ("x = 'zz_probe_res'" + (' ' * 800)
+        + "list.push({ signer: signer })")
+
+
+def _window_hits(body, term='zz_probe_res', radius=300):
+    import re as _re
+    for m in _re.finditer(r'(?<![A-Za-z0-9_])' + _re.escape(term)
+                          + r'(?![A-Za-z0-9_])', body):
+        if t.ATTEST.search(body[max(0, m.start() - radius):m.start() + radius]):
+            return True
+    return False
+
+
+check('a signer on the SAME construct is inside the window', _window_hits(_NEAR))
+check('CONTROL: a signer 800 characters away is OUTSIDE it',
+      not _window_hits(_FAR))
+# AND THE FAR CASE IS ONLY OUT BECAUSE OF THE WIDTH, not because the pattern
+# cannot see it at all. Without this arm the control above passes equally well
+# against an ATTEST regex that had gone dead -- which is the exact failure this
+# tool already had once.
+check('...and it IS found at the +/-1200 the measurement rejected, so the arm '
+      'above is about the WIDTH and not a dead pattern',
+      _window_hits(_FAR, radius=1200))
+
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
