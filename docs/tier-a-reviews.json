@@ -417,6 +417,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-16T23:59:45Z",
+      "resources": [
+        "dnt_coverage_rules"
+      ],
+      "files": [
+        "tests/sairndental_coverage_edit_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL plus a DNT_HTML override on the suite it controls. No product code: sairndental.html is untouched and the control asserts byte-identity and asks git. It names dnt_coverage_rules because that is what the edit path it exercises writes. WHAT A REVIEWER SHOULD CHECK: (1) that mutation 1 really restores the ORIGINAL defect rather than something adjacent -- it changes id:cvEditId||newId('CV') to id:newId('CV'), and the claim is that this makes the server INSERT rather than upsert; confirm that is what the write path does rather than taking my word. (2) that four mutations covers the right four of this function's behaviours -- it also validates payer, procedure and percent, and I did not mutate those because the suite's subject is the EDIT path, which is a scoping judgement rather than a fact. (3) mutation 3 deletes the vanished-rule guard entirely; check the suite fails on the RESURRECTION rather than on some incidental consequence of the deletion.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

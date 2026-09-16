@@ -23,7 +23,13 @@ const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
 
-const html = fs.readFileSync(path.join(__dirname, '..', 'sairndental.html'), 'utf8').replace(/\r\n/g, '\n');
+// DNT_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Same convention SB_HTML, SV_HTML and this app's ledger-export suite already
+// carry. Unset -- every ordinary run, including CI -- this is exactly what it
+// was.
+const html = fs.readFileSync(process.env.DNT_HTML
+  || path.join(__dirname, '..', 'sairndental.html'), 'utf8').replace(/\r\n/g, '\n');
 
 let pass = 0, fail = 0;
 const queue = [];
