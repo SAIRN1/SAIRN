@@ -1,4 +1,9 @@
 // tests/run_rate_limit_race_probe.js
+// REQUIREMENT: the race model violates the cap when requests overlap AND holds
+//   when only one is in flight -- either half alone is satisfied by a model
+//   that always returns the same verdict -- and its exhaustive enumeration is
+//   checked against independently computed schedule counts
+//
 //
 // Run:  node tests/run_rate_limit_race_probe.js
 //

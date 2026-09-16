@@ -32,6 +32,11 @@ reading the right thing:
 
 Run: python tests/seam_check/run_ref_probe.py
 """
+# REQUIREMENT: the push gate reads the seam at a REVISION rather than at the
+#   working tree, because a suite mutating files in flight leaves bytes that
+#   are nobody's code -- and they denied three legitimate pushes over a field
+#   that exists in no commit
+#
 import io
 import os
 import re

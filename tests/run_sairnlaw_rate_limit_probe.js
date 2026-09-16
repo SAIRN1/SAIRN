@@ -1,4 +1,9 @@
 // tests/run_sairnlaw_rate_limit_probe.js
+// REQUIREMENT: the two SAIRNlaw rate limiters REFUSE rather than allow when
+//   the window cannot be read, because the limit is a promise to somebody
+//   else's server and a permissive answer from a call that did not complete is
+//   a request we actually send
+//
 //
 // Run:  node tests/run_sairnlaw_rate_limit_probe.js
 //

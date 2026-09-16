@@ -1,4 +1,8 @@
 // tests/faults/faultkit.js -- the shared harness for FAULT INJECTION.
+// REQUIREMENT: the fault harness itself is proved to inject, because a library
+//   that merely defines and exits 0 is counted as a PASSING test file -- and if
+//   `throw` did not reject or `hang` settled, every fault suite built on this
+//   would pass while injecting nothing
 //
 // A DIFFERENT LAYER FROM MUTATION TESTING, and the distinction is the whole
 // point. Mutation testing breaks the LOGIC and asks whether a test notices.

@@ -1,4 +1,9 @@
 // tests/sb_sync_badge_honesty.js
+// REQUIREMENT: SAIRNbiz's Synced badge reflects whether the CURRENT roster
+//   reached the server rather than whether this install ever synced -- a
+//   failed manual sync left it green, and a failed save-triggered sync said
+//   nothing at all
+//
 //
 // Run:  node tests/sb_sync_badge_honesty.js
 //

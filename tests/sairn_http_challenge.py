@@ -17,6 +17,11 @@ These assertions exist so neither can come back quietly. They are offline: no
 assertion here touches the network, because a test that needs a live challenge
 to fail is a test that only works during an outage.
 """
+# REQUIREMENT: a Vercel bot-mitigation 403 is reported as UNVERIFIED and never
+#   swallowed into a clean pass, and the tooling does not identify itself as
+#   automated -- asserted offline, because a test that needs a live challenge
+#   to fail only works during an outage
+#
 import os
 import sys
 import urllib.error

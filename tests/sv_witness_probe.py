@@ -27,6 +27,11 @@ makes the code SIMPLER and reads as a tidy-up:
     witnessed;
   * the locked-resource set empties, so the lock exists and locks nothing.
 """
+# REQUIREMENT: api/sv-witness.test.js can be MADE TO REFUSE, because a lock
+#   that cannot be made to refuse is decorative -- and this is the platform's
+#   first hard lock on an irreversible write, SAIRNvet's controlled-substance
+#   register
+#
 import os
 import sys
 

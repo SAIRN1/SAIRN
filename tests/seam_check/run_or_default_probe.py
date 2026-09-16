@@ -17,6 +17,10 @@ that it started saying something TRUE:
 
 Run: python tests/seam_check/run_or_default_probe.py
 """
+# REQUIREMENT: the seam check READS an `x = record || {}` alias rather than
+#   merely ceasing to say CANNOT TELL about it, proved by planting an
+#   unforwarded input through that same alias and requiring it to be caught
+#
 import io
 import os
 import re

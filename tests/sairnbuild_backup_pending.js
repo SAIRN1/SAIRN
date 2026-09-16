@@ -1,4 +1,8 @@
 // tests/sairnbuild_backup_pending.js
+// REQUIREMENT: a SAIRNbuild record its server backup failed to send is queued
+//   and reported rather than dropped, covering the async half where the queue
+//   is written from the push promise's callback
+//
 //
 // Run:  node tests/sairnbuild_backup_pending.js
 //

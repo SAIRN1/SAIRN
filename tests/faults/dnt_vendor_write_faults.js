@@ -1,4 +1,9 @@
 // tests/faults/dnt_vendor_write_faults.js
+// REQUIREMENT: SAIRNdental's vendor write path stays honest when the WORLD
+//   fails and not only when the server declines -- a then-callback handles a
+//   refusal and is blind to a rejection by construction, so throw, hang and
+//   partial are driven as separate shapes
+//
 //
 // Run:  node tests/faults/dnt_vendor_write_faults.js
 //

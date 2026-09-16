@@ -4051,3 +4051,44 @@ own rows first.** Both rewritten whole, never by splitting on `|` (PR 2.1), and
 **two** genuine closures and **nine** pieces of real remaining work, and the two
 closures were both a WORD rather than a task. A sweep that had trusted the done
 word would have closed nine live items, four of them Tier A money paths.
+
+## 2026-09-16 (continued) -- tracing, batch 3: the probes, the fault suites, and one file I nearly refused to declare
+
+**86 -> 69 untraced.** Seventeen more, all read before being written: the three
+`seam_check` probes, `sql_preflight/constraint_probe.py`, `sv_witness_probe.py`,
+the two fault suites, the three `run_*_probe` control pairs, the two
+`sairn_http` guards, the SAIRNbiz timesheet control, the SAIRNdesign/SAIRNgrounds
+fault probe, `sairnbuild_backup_pending.js` and `sb_sync_badge_honesty.js`.
+
+### The one worth recording is `tests/faults/faultkit.js`
+
+I had it in the skip list with a reason I was ready to write down: **it is a
+shared harness, not a test, and declaring a "requirement" for a library to move
+it into the traced column is precisely the measure-gaming the matrix's section 5
+was rewritten to stop.** That reasoning was sound and the premise was wrong, and
+the only thing that found the difference was opening the file.
+
+`faultkit.js` carries a `require.main === module` block with four real arms, and
+the comment above it is the argument I was about to make in reverse:
+
+> *a library gets executed whether or not it is a test. A library that merely
+> defines and exits 0 would be counted as a PASSING test file -- a vacuous green
+> in the suite ... So running it proves the HARNESS works: if `throw` did not
+> reject or `hang` settled, every fault suite built on it would pass while
+> injecting nothing.*
+
+So it has a genuine requirement, and a sharp one -- **it is the file every other
+fault suite's credibility rests on.** Declared.
+
+**The general form, and it cuts against the fast version of this work:** the
+shortcut here is classifying a file from its NAME and its directory. `faultkit`
+reads as a library, sits among suites, and would have been skipped with a
+principled-sounding justification attached. That is the same predicate failure
+as the snapshot loader's leading-underscore rule, found in the same session --
+**a name is not a shape, and the only way to tell is to open the thing.**
+
+### Still deliberately not declared
+
+Nothing this batch. The previous batch's note about the `awk` over-collection
+stands: read the section boundary in the matrix, not the tail, or the phantom
+citations below it look like untraced files.

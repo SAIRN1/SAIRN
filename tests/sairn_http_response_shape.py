@@ -23,6 +23,11 @@ compares equal to the plain tuple it used to be.
 
 Offline: nothing here touches the network.
 """
+# REQUIREMENT: `in` against a sairn_http fetch result cannot be silently False
+#   -- a membership test against a 2-tuple answered False for seven minutes
+#   across 20 polls and reported a shipped fix absent while the deploy had been
+#   READY the whole time
+#
 import os
 import sys
 import urllib.error

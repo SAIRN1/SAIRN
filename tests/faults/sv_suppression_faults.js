@@ -1,4 +1,8 @@
 // tests/faults/sv_suppression_faults.js
+// REQUIREMENT: SAIRNvet's backup-suppression flag is cleared by a `finally`,
+//   so a throw inside a saver cannot silence the server backup for the rest of
+//   the session while the surrounding empty catch swallows the evidence
+//
 //
 // Run:  node tests/faults/sv_suppression_faults.js
 //

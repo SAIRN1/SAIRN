@@ -503,20 +503,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 86 test files are traced to no stated requirement
+### 69 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 403 of 489 traced, 82.4%.
+For context and not as the headline: 420 of 489 traced, 85.9%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 409 citations come from
+### Where the 426 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 263 |
-| `declared` | 134 |
+| `declared` | 151 |
 | `GUARD_TESTS+index` | 5 |
 | `declared+index` | 5 |
 | `GUARD_TESTS` | 2 |
@@ -528,7 +528,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 86 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 69 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -571,16 +571,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sd-data-slab-reserve.test.js`
 - `api/sd-sub-data-auth-ordering.test.js`
 - `api/stripe-config.test.js`
-- `tests/faults/dnt_vendor_write_faults.js`
-- `tests/faults/faultkit.js`
-- `tests/faults/sv_suppression_faults.js`
-- `tests/run_rate_limit_race_probe.js`
-- `tests/run_role_gate_invariants_probe.js`
-- `tests/run_sairnlaw_rate_limit_probe.js`
-- `tests/sairn_http_challenge.py`
-- `tests/sairn_http_response_shape.py`
-- `tests/sairnbiz_timesheet_probe.py`
-- `tests/sairnbuild_backup_pending.js`
 - `tests/sairncare/test-alf-activities.js`
 - `tests/sairncare/test-alf-alerts-endpoint.js`
 - `tests/sairncare/test-alf-billing.js`
@@ -601,22 +591,15 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`
 - `tests/sairndental_unlinked_referral_queue.js`
-- `tests/sairndesign_sairngrounds_fault_probe.py`
 - `tests/sairndesign_server_backup.js`
 - `tests/sairngrounds_server_backup.js`
 - `tests/sairnscape_memory.js`
 - `tests/sairnsenior/test-evv-readiness.js`
-- `tests/sb_sync_badge_honesty.js`
-- `tests/seam_check/run_delegation_probe.py`
-- `tests/seam_check/run_or_default_probe.py`
-- `tests/seam_check/run_ref_probe.py`
 - `tests/slab_reserve_client.js`
 - `tests/slab_scan_labels.js`
-- `tests/sql_preflight/constraint_probe.py`
 - `tests/stonedesk_locations.js`
 - `tests/stonedesk_remake_causes.js`
 - `tests/style_profile_parity.js`
-- `tests/sv_witness_probe.py`
 - `tests/thh_material_rates.js`
 
 ### Citations pointing at a file that does not exist

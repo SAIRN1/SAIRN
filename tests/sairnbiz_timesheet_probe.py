@@ -37,6 +37,11 @@ the only kind worth planting:
     recorded week stays on one workstation and the panel goes on looking
     correct. Section 9 asserts the hours reach a server.
 """
+# REQUIREMENT: the 682-line sb_ts timesheet suite is proved to catch something,
+#   because a week of somebody's hours has neither a customer copy nor a vendor
+#   copy to reconstruct it from, and nothing about 682 lines says any assertion
+#   depends on what it names
+#
 import os
 import sys
 

@@ -325,6 +325,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-16T13:48:57Z",
+      "resources": [
+        "sb_ts"
+      ],
+      "files": [
+        "tests/sairnbiz_timesheet_probe.py"
+      ],
+      "what": "COMMENT-ONLY. Added a '# REQUIREMENT:' declaration to the header of tests/sairnbiz_timesheet_probe.py so the traceability matrix can tie it to a stated requirement. The declaration names sb_ts because that is what the probe's own docstring already says it guards; no assertion, no fixture and no executable line changed -- the diff is one wrapped comment block. The gate is RIGHT to fire under its stated design (comments count, deliberately: a hunk discussing a resource was written by somebody thinking about it), and its own header already carries the open question this instance is an example of -- whether a comment in a CHECKER should count the way a comment in a handler does. Recording rather than overriding, and rather than rewording the declaration to slip past the matcher (PR 4.3). A reviewer can discharge this by reading the one-hunk diff.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

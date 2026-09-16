@@ -11,6 +11,11 @@ snapshot with no constraint data at all. The last two must report
 COULD-NOT-CHECK rather than clean -- "the checker said nothing" and "the
 checker could not look" must never be the same output.
 """
+# REQUIREMENT: a CHECK constraint the database enforces and the schema file no
+#   longer states is reported as drift, and an absent constraint, an absent
+#   table or a snapshot with no constraint data reports COULD-NOT-CHECK -- said
+#   nothing and could not look must never be the same output
+#
 import json
 import os
 import sys

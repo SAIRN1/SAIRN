@@ -1,4 +1,9 @@
 // tests/run_role_gate_invariants_probe.js
+// REQUIREMENT: each role-gate invariant is planted separately and paired with
+//   a correct set, because the tool reports zero violations against the real
+//   tree and a checker nobody has seen fire looks exactly like a codebase that
+//   is always correct
+//
 //
 // Run:  node tests/run_role_gate_invariants_probe.js
 //

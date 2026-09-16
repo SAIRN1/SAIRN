@@ -22,6 +22,11 @@ expensive way on 2026-09-10.
 
 Run: python tests/sairndesign_sairngrounds_fault_probe.py
 """
+# REQUIREMENT: both server-backup suites can be made to DENY, and specifically
+#   that the Tier A by-name arm catches a money resource removed from the
+#   registry, the client and the schema together -- the three lists then agree
+#   perfectly and only the tier register can see the loss
+#
 import io
 import os
 import shutil

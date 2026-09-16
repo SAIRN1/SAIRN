@@ -23,6 +23,11 @@ Restores with targeted `git checkout --`, never a reset, and asserts each
 restore actually happened. (A `--hard` on a dirty tree destroyed six edits
 during an earlier probe on 2026-09-01; that is why this is the house style.)
 """
+# REQUIREMENT: the seam check follows a delegated call exactly one level, names
+#   the unforwarded field it finds there, and reports CANNOT TELL rather than
+#   clean when the delegate is unreadable -- inheriting a delegate's blindness
+#   as a pass is the vacuous pass it exists to refuse
+#
 import os
 import re
 import subprocess
