@@ -19,27 +19,27 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**172 files in `tools/`.** By what actually invokes them:
+**175 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 51 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 52 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 45 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 24 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 38 | nothing runs these at all |
+| **DECIDED** | 47 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 36 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 115 |
+| CHECKER | 118 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
 
-**45 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**47 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -128,7 +128,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (51)
+## REPORT-ONLY (52)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -178,6 +178,7 @@ quiet in practice.
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
 | `secrets_inventory.py` | 2026-09-14, and --check rather than the bare report: the bare run prints a ranking and exits 0 whatever it finds, which in a runner that is silent on a clean run means it would never say anything at all | docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved |
+| `service_role_tier_a_gate_check.py` | 2026-09-15, report-only. It reports CLEAN today, which is exactly when a checker is worth the least -- so it is registered to be READ rather than to gate, and its own population figures are printed above every verdict | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off |
 | `soup_register_check.py` | 2026-09-12 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running |
 | `subprocess_decode_check.py` | 2026-09-15, report-only on its first day. The correct number IS zero -- unlike every read-list in this registry it is a gate, not a score -- but it is registered rather than made blocking on day one, on the same staging this file uses everywhere: a week of pushes says whether it is quiet, and a check nobody has watched be quiet should not be able to refuse a push | a text-mode subprocess call with no explicit encoding=, which decodes the child output with the LOCALE default (cp1252 on this platform) rather than UTF-8 |
 | `temporary_state_check.py` | 2026-09-14, report-only and deliberately NOT wired into the push gate. What it reports is state that LOOKS temporary, and it cannot read intent -- a long-expiry session token and a leaked suppression flag are the same shape. The only thing --check FAILS on is a declaration naming a scope the vocabulary has no word for, because that needs no threshold and no policy | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING |
@@ -197,7 +198,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (45)
+## DECIDED -- not promoted, on purpose (47)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -219,6 +220,7 @@ is how a reader stops believing the number.
 | `entitlement_freshness_check.py` | CHECKER | ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE THAT A PUSH CANNOT CHANGE, the same reasoning as copy_exactly_check.py below. It exits 1 today because `plan`, `trial_ends_at`, `stripe_subscription_id` and their neighbours have readers across api/_lib/license.js, api/_lib/sd-store.js, api/sd-data.js and api/sd-render.js and NO IN-REPO WRITER. That is not a defect somebody introduced and it is not fixable by editing this repo: THE WRITER IS STRIPE, and the whole point of item 100 is that the remedy must not depend on the counterparty. Wiring it report-only would print the same unchanging block on every push by every session until a revocation path is BUILT -- a notice whose content cannot vary with what a push did, which is how a gate gets read past and then ignored. IT IS NOT UNWIRED: it is SUITE-ONLY and runs with tools/entitlement_freshness_control.py, so its criteria are exercised and its sabotage is verified on every suite run. What is being declined is PROMOTION TO REPORT-ONLY, not execution. PROMOTE IT THE DAY A REVOCATION PATH EXISTS -- an in-repo writer that can clear an entitlement without Stripe cooperating -- because that is the day its answer starts varying with what the code does, and the day a regression in it would be a real finding rather than a restatement of a known gap. Until then the right home for the gap is the open-work index, where a standing unbuilt thing belongs, and not a per-push notice. |
 | `entity_baseline_readiness.py` | CHECKER | ITEM 51, and it must not be promoted while its answer cannot change on a push. It exits 1 -- NOT READY -- and will keep doing so until the register grows by roughly a factor of three on the `app` dimension, which is months of sessions away, so a runner entry would print the same notice on every push until nobody read it. That is the same argument already recorded for reliability_growth.py above. THE REASON IT IS A TOOL AT ALL is that item 51 had been measured BY HAND twice -- 2026-09-14 at 68 records and 2026-09-15 at 77 -- and both times the answer was NOT YET, which is a claim with an expiry date that nothing was watching. Promote it the day it exits 0, because that is the day its output starts varying and the day a baseline becomes worth building. AND ONE OF ITS REFUSALS WILL NEVER CLEAR BY WAITING: `layer` already clears the record bar and is still not ready, because product/tooling/test is a classification and not a surface, so there is no exposure to divide by; held by tests/run_baseline_readiness_probe.py. |
 | `first_article_check.py` | CHECKER | ITEM 47, AND THE RESTRAINT IS THE POINT. It passes today with three inspections recorded and nothing since the requirement date missing one, so a runner entry would be silent -- but the reason it is not promoted is not that it is quiet. THE CLAIM-TO-ARM MAPPING IS HUMAN AND MUST STAY HUMAN: word-overlap scoring of prose claims against prose arm labels returned 38% with five false positives out of five on 2026-09-14, and the session that measured that refused to promote its extractor for exactly this reason. A gate that can only check the BOOKKEEPING around a judgement should not be able to refuse a push on the judgement itself. Promote it the day the push gate should start requiring an inspection record for new tools, which is a policy decision about how much a new tool costs to ship and is Michael's to make, not a tool's. Held by tests/run_first_article_probe.py. |
+| `first_article_inspection.py` | CHECKER | ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that. |
 | `fmea_prediction_check.py` | CHECKER | IT REFUSES TO BE QUOTED BARE, which is exactly what a registry entry would do to it. It prints NO-DRAFT first and carries DO NOT QUOTE THIS ALONE beside the drafted-only figure, because a hit rate over the subset somebody happened to draft an FMEA for is not a hit rate. Promotion would put the unqualified number on every push, which is the one presentation the tool was built to prevent. It is run by the FMEA loop when a register record is added, which is the moment its answer can change. |
 | `idempotency_check.py` | CHECKER | NOT REJECTED -- BLOCKED, and the blocker is specific: it reaches the network, and unlike the two LIVE tools above that dependency looks removable rather than essential. It already has a FIXTURES block, so the blind lock is in place. What it needs before promotion is the network half separated from the static half so the static half can run offline and report a real verdict instead of COULD NOT RUN. That is a code change with an owner, not a decision, and it is deliberately not made here because narrowing somebody else's checker to make it promotable is how a criterion gets loosened to produce a number. |
 | `independence_check.py` | CHECKER | BLOCKED ON A CONTROL PAIR, which is the one thing that cannot be waived. It has FIXTURES and no probe anywhere under tests/ references it, so nothing has ever made it fail on purpose -- and this repo's own record is that literal_drift_check.py was promoted with `verdict: by_exit` and no sys.exit in it, and checkblocks.py exited 0 for months, both of which a control pair would have caught on day one. Write tests/run_independence_probe.py with both directions and a CONTROLS_FOR line, then this is a promotion candidate rather than a judgement call. |
@@ -233,6 +235,7 @@ is how a reader stops believing the number.
 | `restore_coherence_check.js` | LIVE | THE BLOCKER I NAMED WAS WRONG, AND THE REAL ONE IS DIFFERENT. Corrected 2026-09-14 after reading the probe instead of the tool description. I wrote that this needs the network, so a gate carrying it would make every push depend on the outside world. BOTH HALVES OF THAT ARE FALSE: tests/run_restore_coherence_probe.js already spins up an http.createServer on 127.0.0.1:0, points SAIRN_TARGET_URL at it and passes 26 arms, so measuring this tool needs no external network at all; and with no target the tool already exits 2 -- COULD NOT RUN, with the words "nothing was checked, and that is not the same as nothing being wrong" -- so a report-only entry would print an honest could-not-run rather than a failure or a network call. TARGET_URL is a plain env var and every read goes through one fetch helper, which is why the mock was easy. **I asserted a blocker from the tool's description without checking whether it was true, inside the triage whose entire purpose was to replace vague blockers with specific ones.** Recorded rather than reworded. THE REAL BLOCKER IS THAT ITS SUBJECT DOES NOT EXIST AT PUSH TIME. There is no restored database to point at on an ordinary push; the tool is for the hand restore somebody performs at 3am from whatever copy exists, which its own header states. Pointing it at production instead would check production's own audit chain -- a different question, and one that WOULD make every push talk to the live database. So a registry entry would report could-not-run on every push for a reason no push can fix, which is a log line rather than a check. That is the same reasoning schema_provisioning_check.py is held out under, and unlike the network claim it is verified: `node tools/restore_coherence_check.js` with no env set exits 2 today. PROMOTE IT if a restore ever becomes a scheduled, pointable-at artefact -- on Supabase free tier there are no automated backups, which is why there is nothing to point at. |
 | `rf_claim_gate_live_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `rf_roundtrip_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `rotation_blast_radius.py` | CHECKER | IT READS DECLARATIONS, NOT THE WORLD. Every figure comes from the scope and rotation TEXT in tools/nhi_register.py; no clone holds any of these credentials, so nothing here is measured against a live grant. A push notice would put "20 of 22 unrotated" in front of people every day, where the number cannot move without a human attesting a rotation that this tool cannot verify either. It belongs where the accepted-risk and NHI registers are reviewed, on the same cadence as those. |
 | `sabotage_control_check.py` | CHECKER | A BURN-DOWN, AND A BURN-DOWN IS NOT A PASS/FAIL. It measures how many of THIS REPO'S OWN negative controls verify that their sabotage applied -- 16 of 39 when it was written, 20 of 30 later the same week. That figure moves as other people fix their probes, so a push-time entry would report somebody else's unfinished work as this push's finding, on every push, for weeks. It is the meta-checker equivalent of the flaky-checker ledger and wants the same treatment: measured on a cadence, read by a person, never gating. |
 | `sairn_ai_fact_scan.py` | CHECKER | a READ-LIST, not a gate. Its own output says "every one is a candidate to READ, not a confirmed defect: a legitimate default (role || 'user') and a fabricated one (city || 'Westlake') are the same shape and only a human can tell them apart." 14 hits today. |
 | `sairn_app_map_check.py` | LIVE | CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion. |
@@ -265,7 +268,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (24)
+## SUITE-ONLY (26)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -287,10 +290,12 @@ fixtures. Nothing points them at the real codebase.
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
+| `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
+| `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_claim_retype_mutation_control.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
 | `sairn_rebase_resolve.py` | CHECKER | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main | `run_rebase_resolve_probe.py` |
@@ -299,7 +304,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (38)
+## UNWIRED (36)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -334,11 +339,9 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
-| `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | &mdash; |
 | `ooda_phases.py` | CHECKER | item 67 -- WHICH OODA phase is the bottleneck, and it refuses to publish an aggregate because three of the four boundaries are not recorded anywhere. Measured 2026-09-15: detect-to-fix is SAME DAY on 73 of 73 resolvable records, so the only phase this repo times is already as fast as it can be and every second of real exposure lives in a phase nothing times -- the cron incident, silent 24 hours, and send-reminder.js returning 500 hourly FOR MONTHS. A negative duration is reported as an ANOMALY rather than averaged away. Needs the same injection-date field item 66 is blocked on; the two are one field apart | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
-| `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
@@ -374,12 +377,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      172   git ls-files tools/
+  tools on disk                      175   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                49   report_only_checks.REGISTRY
-  tools invoked by tests/            115   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     45   report_only_checks.NOT_PROMOTED
+  report-only registry                50   report_only_checks.REGISTRY
+  tools invoked by tests/            120   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     47   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

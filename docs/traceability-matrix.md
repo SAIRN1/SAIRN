@@ -94,6 +94,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify | `hover_separation_audit.py` | 2026-09-15 first run: 5,241 commits, 20 auditor commits, 0 violations; self-log 105 entries, chain INTACT, 33 SHAs claimed, 16 resolve and all 16 in scope. 15 of 15 "Committed a, pushed b" pairs have the local sha absent and the pushed one present, which is what explains 15 of the 17 that do not resolve here rather than a plausible story doing it. EXIT 2 TODAY, not 0, on the remaining 2 |
 | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one | `advisory_lock_isolation_check.py` | FIRST RUN 2026-09-15 over 9 advisory-lock functions found THREE unguarded, and the sharpest was law_check_and_insert_disbursement -- attorney IOLTA trust money, where two concurrent disbursements each compute the balance from before the other committed and BOTH pass the sufficiency check. Its sibling law_check_and_void_deposit already DESCRIBED the hazard in a comment and nothing enforced it. All three guarded the same day; 31-arm probe at tests/run_advisory_lock_isolation_probe.py. The blind lock runs on EVERY run, not only --self-check, and its own fixtures caught two real bugs in the first draft before it ever touched sql/ |
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
+| a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off | `service_role_tier_a_gate_check.py` | FIRST RUN 2026-09-15: 66 api/ modules read the key; only THREE address a Tier A resource in a write PATH, and all three are correct -- api/sd-data.js GATED, and public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A writes funnel through one gated chokepoint, and the two public endpoints are the declared exceptions. THIS DOES NOT CONTRADICT the open session-gate finding on sd-data.js: this asks whether the MODULE gates, that asks whether a per-resource BRANCH inside it does, and both are true at once. 26-arm probe; three of its eight fixtures exist because the classifier was wrong on a REAL file -- bridge.js (a jsonb key, writes bridge_data), sv-witness.js (killed by the over-correction that fixed bridge.js) and send-reminder.js (writes in helpers above the handler, CRON_SECRET first inside it) |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -135,6 +136,8 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `missing_dom_target_check.py` -- its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress.
 - `local_only_collection_check.py` -- its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".
 - `sairn_app_map_check.py` -- CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion.
+- `first_article_inspection.py` -- ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that.
+- `rotation_blast_radius.py` -- IT READS DECLARATIONS, NOT THE WORLD. Every figure comes from the scope and rotation TEXT in tools/nhi_register.py; no clone holds any of these credentials, so nothing here is measured against a live grant. A push notice would put "20 of 22 unrotated" in front of people every day, where the number cannot move without a human attesting a rotation that this tool cannot verify either. It belongs where the accepted-risk and NHI registers are reviewed, on the same cadence as those.
 - `trend_alarm.py` -- ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself.
 - `weakness_combination.py` -- IT REPORTS PAIRS AND REFUSES THE VERDICT, on purpose -- whether two accepted risks compound is a judgement about consequences. A push notice implies a number to drive to zero and the right number of shared-property pairs is not zero; a register of four risks that shared nothing would mean the register was too small, not that the platform was safe. Its one genuinely mechanical half -- whether a trigger claimed as MECHANICAL is watched by anything that runs -- COULD be promoted on its own, and should be split out first rather than promoting the judgement half alongside it.
 
@@ -146,12 +149,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 40 continued: does anything holding the RLS-BYPASSING key write Tier A data without gating the caller** | **MEASURED AND BUILT 2026-09-15 (Hank)** &mdash; `tools/service_role_tier_a_gate_check.py`, report-only and registered, built THROUGH `checker_kit`. `tests/run_service_role_gate_probe.py` **26 arms, 0 | `tests/run_service_role_gate_probe.py` |
 | **Item 64: the precedence rule for when two of our own checks DISAGREE &mdash; decided in advance instead of ad hoc under pressure** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/check_precedence.py`, report-only and registered as `--self-check`. `tests/run_check_precedence_probe.py` **48 arms, 0 failures**. `docs/2026-09-15-item64-ch | `tests/run_check_precedence_probe.py` |
 | **The cron watchdog was RETRYING ITSELF into an HTTP 508 and had LATCHED ITSELF FAILING &mdash; and it could not notify anybody at all** | **FIXED AND EXTENDED 2026-09-15 (Hank)** on Fourth&rsquo;s items 54/55 &mdash; self-exclusion in `api/_lib/cron-response.js`, `notify_channel` in `api/cron-watchdog.js`, channel read in `tools/cron_li | `api/cron-watchdog.test.js`, `tests/run_cron_liveness_probe.py` |
 | **`comment_sensitivity_check.py` QUARANTINE diagnosed &mdash; the flake was never its own, and the ledger&rsquo;s &ldquo;other-tree runs are discarded&rdquo; was a SENTENCE with no code behind it** | **DIAGNOSED AND THE UNDERLYING TOOL FIXED 2026-09-15 (CC)** &mdash; `tools/flaky_checker_quarantine.py` verdicts are tree-aware now, 7 new probe arms, 0 failed. &#9888; **THE QUARANTINE IS STILL OPEN  | `tests/run_literal_drift_determinism_probe.py` |
 | **The hover auditor's separation is MECHANICAL now &mdash; and both alleged breaches did not happen, while a third, differently-shaped one did** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/hover_auditor_scope_gate.py` (prevent) + `tools/hover_separation_audit.py` (detect, report-only registered), `.githooks/pre-commit`, 72-arm probe `tests/run_ | `tests/run_hover_separation_probe.py` |
 | ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
 | **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
+| **83 stated claims across 7 artefacts shipped today have NO suite at all &mdash; and the tool that found it read a real 24-arm suite as ZERO first** | **MEASURED 2026-09-15 (CC)**, item 47 &mdash; `tools/first_article_inspection.py` (report-only, NOT_PROMOTED), `tests/run_first_article_inspection_probe.py`, 10 sabotages all caught. `docs/2026-09-15- | `api/_lib/safe-number.test.js`, `tests/run_first_article_inspection_probe.py` |
+| **ZERO of 22 credentials record what to do if that one leaks &mdash; every identity has a procedure that says HOW and never WHEN** | **MEASURED 2026-09-15 (CC)**, item 61 &mdash; `tools/rotation_blast_radius.py` (report-only, NOT_PROMOTED), `tests/run_rotation_blast_radius_probe.py`, 11 sabotages all caught. Built on Cody&rsquo;s i | `tests/run_rotation_blast_radius_probe.py` |
+| **AR-1 carries the only MECHANICAL trigger on the accepted-risk register, and nothing that runs on this platform consumes it** | **FOUND 2026-09-15 (CC)**, item 53 &mdash; `tools/weakness_combination.py` (report-only, NOT_PROMOTED), `tests/run_weakness_combination_probe.py`, 10 sabotages all caught | `tests/run_weakness_combination_probe.py` |
+| **The traceability headline improves every day while the backlog it is a ratio of grows &mdash; 185 &rarr; 212 untraced over the same 221 readings** | **MEASURED 2026-09-15 (CC)**, item 45 &mdash; `tools/trend_alarm.py` (report-only, NOT_PROMOTED, and NOT ARMED by its own gate), `tests/run_trend_alarm_probe.py`, 9 sabotages all caught | `tests/run_trend_alarm_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -458,7 +466,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**239 of 454 test files are traced to a stated requirement. 215 are not.**
+**245 of 458 test files are traced to a stated requirement. 213 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -520,6 +528,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/mech-assets.test.js`
 - `api/_lib/mech-credentials.test.js`
 - `api/_lib/money.test.js`
+- `api/_lib/record-parity.test.js`
 - `api/_lib/resilience.test.js`
 - `api/_lib/roofing-agreements-endpoint.test.js`
 - `api/_lib/roofing-agreements.test.js`
@@ -542,7 +551,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/roofing-supplement.test.js`
 - `api/_lib/roofing-supplier-match.test.js`
 - `api/_lib/roofing-warranties.test.js`
-- `api/_lib/safe-number.test.js`
 - `api/_lib/sairncash-trial.test.js`
 - `api/_lib/sairnlaw-grounded-drafting.test.js`
 - `api/_lib/sairnlaw-trust-void-race.test.js`
@@ -633,9 +641,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
 - `tests/run_traceability_matrix_probe.py`
-- `tests/run_trend_alarm_probe.py`
 - `tests/run_uncontrolled_checkers_probe.py`
-- `tests/run_weakness_combination_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
 - `tests/sairnbuild_backup_pending.js`
@@ -697,11 +703,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 454   tests/**, api/*.test.js
-  open-work rows citing a test       229   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 458   tests/**, api/*.test.js
+  open-work rows citing a test       234   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                49   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
+  report-only registry                50   report_only_checks.REGISTRY
+  recorded NOT-promoted decisions     42   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 
