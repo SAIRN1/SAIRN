@@ -1144,7 +1144,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "8f9a727f008c",
+      "commit": "22270df7c3de",
       "date": "2026-09-11",
       "detection_method": "static-checker",
       "files": [
@@ -1193,7 +1193,7 @@
     {
       "app": "sairnscape",
       "citation_confidence": "clean",
-      "commit": "8f9a727f008c",
+      "commit": "22270df7c3de",
       "date": "2026-09-11",
       "detection_method": "code-review",
       "files": [
@@ -1241,7 +1241,7 @@
     {
       "app": "sairnmechanical",
       "citation_confidence": "clean",
-      "commit": "8f9a727f008c",
+      "commit": "22270df7c3de",
       "date": "2026-09-11",
       "detection_method": "code-review",
       "files": [
@@ -1289,7 +1289,7 @@
     {
       "app": "stonedesk",
       "citation_confidence": "clean",
-      "commit": "d77321dfbe21",
+      "commit": "a3d8c8551fe5",
       "date": "2026-09-11",
       "detection_method": "static-checker",
       "files": [
@@ -1320,7 +1320,7 @@
       "app": "PLATFORM",
       "citation_confidence": "arguable",
       "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping",
-      "commit": "d77321dfbe21",
+      "commit": "a3d8c8551fe5",
       "date": "2026-09-11",
       "detection_method": "mutation-testing",
       "files": [
@@ -1383,7 +1383,7 @@
     {
       "app": "stonedesk",
       "citation_confidence": "clean",
-      "commit": "dd95a5cf6c0e",
+      "commit": "34583678b347",
       "date": "2026-09-11",
       "detection_method": "static-checker",
       "files": [
@@ -1437,7 +1437,7 @@
       "app": "PLATFORM",
       "citation_confidence": "arguable",
       "citation_note": "four push-gate checks had no probe asserting a deny, so nothing had ever proven they refuse -- unproven rather than stopped",
-      "commit": "101b9e374748",
+      "commit": "373fc356e699",
       "date": "2026-09-12",
       "detection_method": "code-review",
       "files": [
@@ -1464,7 +1464,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "101b9e374748",
+      "commit": "373fc356e699",
       "date": "2026-09-12",
       "detection_method": "mutation-testing",
       "files": [
@@ -1492,7 +1492,7 @@
     {
       "app": "sairncare",
       "citation_confidence": "clean",
-      "commit": "978df7ae8d27",
+      "commit": "dd0fc32f14ae",
       "date": "2026-09-12",
       "detection_method": "code-review",
       "files": [
@@ -1521,7 +1521,7 @@
       "app": "PLATFORM",
       "citation_confidence": "arguable",
       "citation_note": "checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so a wiring on exit code would have read a finding as clean",
-      "commit": "9d5c85e205fd",
+      "commit": "6a765c030c26",
       "date": "2026-09-12",
       "detection_method": "code-review",
       "files": [
@@ -1553,7 +1553,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "9d5c85e205fd",
+      "commit": "6a765c030c26",
       "date": "2026-09-12",
       "detection_method": "static-checker",
       "files": [
@@ -1587,7 +1587,7 @@
       "app": "PLATFORM",
       "citation_confidence": "arguable",
       "citation_note": "the inventory did not read NOT_PROMOTED, so six recorded reasons were outside the window it looked at",
-      "commit": "9d5c85e205fd",
+      "commit": "6a765c030c26",
       "date": "2026-09-12",
       "detection_method": "code-review",
       "files": [
@@ -1619,7 +1619,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "102cb926bd74",
+      "commit": "f43979822284",
       "date": "2026-09-13",
       "detection_method": "code-review",
       "files": [
@@ -1650,7 +1650,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "102cb926bd74",
+      "commit": "f43979822284",
       "date": "2026-09-13",
       "detection_method": "mutation-testing",
       "files": [
@@ -2005,7 +2005,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "d66a87e64fc7",
+      "commit": "11496400286e",
       "date": "2026-09-13",
       "detection_method": "static-checker",
       "files": [
@@ -2132,7 +2132,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "e6130cf81728",
+      "commit": "fa19ec3e75bf",
       "date": "2026-09-13",
       "detection_method": "fault-injection",
       "files": [
@@ -2241,7 +2241,7 @@
       "app": "PLATFORM",
       "citation_confidence": "not-citable",
       "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "commit": "4ba885d99f42",
+      "commit": "4ba885d9082d",
       "date": "2026-09-14",
       "detection_method": "fault-injection",
       "files": [
@@ -2341,7 +2341,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "72fa70003224",
+      "commit": "268fb809848c",
       "date": "2026-09-14",
       "detection_method": "mutation-testing",
       "files": [
@@ -2373,7 +2373,7 @@
     {
       "app": "PLATFORM",
       "citation_confidence": "clean",
-      "commit": "72fa70003224",
+      "commit": "268fb809848c",
       "date": "2026-09-14",
       "detection_method": "code-review",
       "files": [
@@ -2453,7 +2453,7 @@
       "app": "sairnbiz",
       "citation_confidence": "arguable",
       "citation_note": "1.11 is written about a CHECK that fails open when a tool is absent; this is a GATE that fails the other way -- it refused a correct bill -- so the citation is the fail-direction principle rather than the literal case",
-      "commit": "a58af8caae0b",
+      "commit": "f6544a43b84d",
       "date": "2026-09-14",
       "detection_method": "independent-review",
       "files": [
@@ -2565,7 +2565,7 @@
       "app": "sairnlaw",
       "citation_confidence": "arguable",
       "citation_note": "the fail-closed rule generalised to a prompt-level refusal: a stated rule absent on one surface produces output indistinguishable from output the rule governed, and nothing downstream could tell them apart -- this explainer had neither the rule nor a citation check, so a fabricated professional-conduct citation had no state between refused and shown",
-      "commit": "e71bcba001de",
+      "commit": "0e2bc432f578",
       "date": "2026-09-14",
       "detection_method": "static-checker",
       "files": [
@@ -2591,7 +2591,7 @@
       "app": "sairnlaw",
       "citation_confidence": "arguable",
       "citation_note": "same third-state shape one level down: the Anchored badge covers source_span and NOT the model's own claim text, so an unverified citation displayed beside verified-looking badges reads as checked when nothing checked it -- could-not-tell rendered as passed",
-      "commit": "e71bcba001de",
+      "commit": "0e2bc432f578",
       "date": "2026-09-14",
       "detection_method": "static-checker",
       "files": [
@@ -2617,7 +2617,7 @@
       "app": "PLATFORM",
       "citation_confidence": "arguable",
       "citation_note": "the checker reports a prompt-level absence identically whether a downstream mechanical control enforces the same property or nothing does -- so its finding cannot be read as a severity, which is the could-not-tell-folded-into-a-verdict shape applied to a checker's own output",
-      "commit": "e71bcba001de",
+      "commit": "0e2bc432f578",
       "date": "2026-09-14",
       "detection_method": "code-review",
       "files": [
@@ -2642,7 +2642,7 @@
     {
       "app": "sairnvet",
       "citation_confidence": "clean",
-      "commit": "e7927872775e",
+      "commit": "53e5c88b7867",
       "date": "2026-09-14",
       "detection_method": "independent-review",
       "files": [
@@ -2774,7 +2774,7 @@
       "phase_note": "The endpoint's own log line names the missing variable. Nothing in the code is wrong; the deployment never set SAIRN_OPS_EMAIL."
     },
     {
-      "commit": "bb325f88b9f6",
+      "commit": "5b4410f103f7",
       "date": "2026-09-15",
       "subject": "fix(sql,tools): both stale-migration landmines, and the SUPERSEDED rule had the wrong predicate",
       "files": [
