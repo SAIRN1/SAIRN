@@ -1432,8 +1432,8 @@
       "task": "R03 fire-and-forget write path sairngrounds, untraced 55 bound-to-subject, sc_tier_a_write_gate_live_probe suite, independent coverage for sabotage line_endings nhi_register, item 79 second round",
       "claimed_at": "2026-09-16T03:09:17Z",
       "claimed_at_epoch": 1789528157.5492463,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T03:45:41Z"
     }
   ]
 }
