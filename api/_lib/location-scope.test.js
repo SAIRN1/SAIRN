@@ -66,19 +66,42 @@ test('C. THE CONSOLIDATION HOLDS -- exactly one module defines the constant', ()
     'weeks before anybody counted them');
 });
 
-test('...and both former owners delegate rather than re-implementing', () => {
+test('...and both former owners take the constant from here', () => {
   for (const f of ['dnt-location.js', 'roofing-locations.js']) {
     const src = fs.readFileSync(path.join(LIB, f), 'utf8');
     assert.ok(/require\(['"]\.\/location-scope['"]\)/.test(src),
       f + ' no longer requires the shared module');
-    assert.ok(!/function stampLocation\s*\(/.test(src),
-      f + ' has re-grown its own stampLocation');
+    assert.ok(/DEFAULT_LOCATION_ID\s*=\s*locationScope\.DEFAULT_LOCATION_ID/.test(src),
+      f + ' has stopped taking the constant from the shared module');
   }
 });
 
-test('...and every caller still gets the same function object, not a copy', () => {
-  assert.strictEqual(dnt.stampLocation, L.stampLocation);
-  assert.strictEqual(rf.stampLocation, L.stampLocation);
+// ── THE STAMP IS DUPLICATED ON PURPOSE AND THIS IS WHAT PAYS FOR IT ─────────
+// The first version of this migration moved stampLocation() into the shared
+// module too. tools/sairn_seam_check.py then reported COULD NOT TELL on
+// api/sairndental/public-book.js -> dnt-location.js -- "makes no direct
+// `payload.field` reads" -- because its model reads an engine's dependencies
+// as payload accesses in the engine's OWN body, and a delegating body has
+// none. Measured both ways: 82 clean / 0 could-not-tell before, 81 / 1 after.
+//
+// TRADING A VERIFIED SEAM FOR FOUR DEDUPLICATED LINES IS THE WRONG DIRECTION,
+// so the logic stayed and the constant moved. What makes that safe rather than
+// merely accepted is THIS arm: three implementations, one table of cases, and
+// any divergence goes red here.
+test('...and all three stamps agree on every case, which is what makes the ' +
+     'duplication safe rather than merely accepted', () => {
+  const cases = [undefined, null, {}, { location_id: '' }, { location_id: '  ' },
+                 { location_id: 12345 }, { location_id: {} },
+                 { location_id: 'YARD-2' }, { location_id: ' YARD-2 ' },
+                 { location_id: 'x'.repeat(65) },
+                 { location_id: 'x'.repeat(64) }];
+  for (const c of cases) {
+    const want = L.stampLocation(c).location_id;
+    assert.strictEqual(dnt.stampLocation(c).location_id, want,
+      'dnt-location diverged on ' + JSON.stringify(c));
+    assert.strictEqual(rf.stampLocation(c).location_id, want,
+      'roofing-locations diverged on ' + JSON.stringify(c));
+  }
   assert.strictEqual(dnt.DEFAULT_LOCATION_ID, L.DEFAULT_LOCATION_ID);
   assert.strictEqual(rf.DEFAULT_LOCATION_ID, L.DEFAULT_LOCATION_ID);
 });

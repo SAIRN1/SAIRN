@@ -62,7 +62,17 @@ function str(v) { return typeof v === 'string' ? v.trim() : ''; }
 // absent, blank, non-string or over-length falls back to the default rather
 // than being rejected -- a job must never fail to save because of an optional
 // attribution field.
-const stampLocation = locationScope.stampLocation;
+// THE STAMP STAYS HERE, THE CONSTANT DOES NOT -- see the long note in
+// api/_lib/dnt-location.js. Delegating the body makes tools/sairn_seam_check.py
+// report COULD NOT TELL, because its model reads an engine's dependencies as
+// `payload.<field>` accesses in the engine's own body. Four duplicated lines
+// are cheaper than a seam that stops being verified.
+function stampLocation(payload) {
+  const out = Object.assign({}, payload || {});
+  const given = str(out.location_id);
+  out.location_id = (given && given.length <= MAX_ID_LEN) ? given : DEFAULT_LOCATION_ID;
+  return out;
+}
 
 function validateLocation(payload) {
   const problems = [];

@@ -65,7 +65,30 @@ const MAX_LOCATIONS = 50;
 // designed. The declaration lives here, next to the contract it describes,
 // rather than in the tool -- a stale exception is then visible in the diff of
 // the file it excuses.
-const stampLocation = locationScope.stampLocation;
+// THE STAMP STAYS HERE, AND THE CONSTANT DOES NOT. That split is not where
+// this migration started -- the first version moved stampLocation() into
+// api/_lib/location-scope.js too, and it cost a verified seam.
+//
+// MEASURED BOTH WAYS. tools/sairn_seam_check.py reads 82 clean / 0
+// could-not-tell on the tree before this change. With the body delegating --
+// whether as an alias or as a one-line wrapper -- it reads 81 clean / 1
+// COULD NOT TELL: "stampLocation() makes no direct `payload.field` reads".
+// The tool's model is that an engine's dependencies are visible as
+// `payload.<field>` reads in its own body, and a delegating body has none.
+//
+// SO THE LOGIC STAYS AND THE CONSTANT MOVES. Four lines are duplicated between
+// this file and api/_lib/roofing-locations.js; the thing that was spread
+// across 30+ sites in four apps was the LITERAL, and that is now defined once.
+// Trading a verified seam for four lines would be paying real coverage for a
+// tidiness win, which is the wrong direction -- and pretending the wrapper
+// reads a field it does not would be worse than either.
+function stampLocation(payload) {
+  const out = Object.assign({}, payload || {});
+  const raw = out.location_id;
+  const clean = (typeof raw === 'string') ? raw.trim() : '';
+  out.location_id = (clean && clean.length <= MAX_LOCATION_ID_LEN) ? clean : DEFAULT_LOCATION_ID;
+  return out;
+}
 
 // Validates dnt_settings.data.locations -- the minimal registry. Kept in
 // settings rather than a new dnt_locations table on purpose: a new table
