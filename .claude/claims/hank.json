@@ -1933,8 +1933,8 @@
       "task": "precedence rule when two independent checks disagree conflict verdict",
       "claimed_at": "2026-09-16T01:01:11Z",
       "claimed_at_epoch": 1789520471.9623413,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T01:19:17Z"
     }
   ]
 }
