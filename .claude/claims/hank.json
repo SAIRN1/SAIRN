@@ -1975,6 +1975,16 @@
       "claimed_at_epoch": 1789528543.515475,
       "status": "released",
       "released_at": "2026-09-16T03:42:46Z"
+    },
+    {
+      "id": "hank-1789530804",
+      "session": "hank",
+      "subject": "stonedesk-gaps",
+      "task": "stonedesk competitive gap rederivation against head",
+      "claimed_at": "2026-09-16T03:53:24Z",
+      "claimed_at_epoch": 1789530804.6705966,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
