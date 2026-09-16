@@ -243,6 +243,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-16T04:45:19Z",
+      "resources": [
+        "sv_audit_log"
+      ],
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js"
+      ],
+      "what": "sv_audit_log: the controlled-substance dosing trail now has a READER in the product (panel-doseaudit). This is a NEW READ PATH on a DEA-relevant Tier A record, and the read is the point -- it is what a practice hands an inspector. FOUR REVIEW TARGETS, and the first two are where a reader lies rather than breaks. (1) COMPLETENESS: the banner claims the server copy is uncapped while this device holds N. Verify that claim against api/_resources/sairnvet.js and the generic SV_RESOURCES read branch -- if the server read is paginated, truncated, or bounded by MAX_PAYLOAD_BYTES anywhere, the banner is asserting completeness the transport does not deliver, and that is worse than showing nothing. (2) FAILED vs EMPTY: svData() answers null on every refusal AND every network error, so the reader cannot distinguish 'refused' from 'unreachable'. Both currently fall back to the local copy with the same wording. Decide whether a 401 or a 403 should fall back at all, or refuse -- falling back on an AUTH refusal shows a trail to somebody the server just declined. (3) The date filter compares ISO string PREFIXES, not parsed dates; an entry whose timestamp is present but malformed will compare lexically and may be excluded by a range it should match. Undated entries are deliberately kept; malformed ones are not distinguished from valid ones. (4) The detail column serialises every unnamed field with JSON.stringify -- confirm no call site of logDoseAudit() can put a credential, a licence key or free-text PII into an entry that this panel then prints and exports to CSV.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
