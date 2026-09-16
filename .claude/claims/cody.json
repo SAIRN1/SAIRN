@@ -1309,6 +1309,16 @@
       "claimed_at_epoch": 1789561520.2233818,
       "status": "released",
       "released_at": "2026-09-16T13:32:21Z"
+    },
+    {
+      "id": "cody-1789571124",
+      "session": "cody",
+      "subject": "cody",
+      "task": "tool promotion triage remaining thirteen, and the seven UNGUARDED probes that do not verify their own sabotage applied -- NOT suite negative controls, which cc and fourth are on",
+      "claimed_at": "2026-09-16T15:05:24Z",
+      "claimed_at_epoch": 1789571124.5460603,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
