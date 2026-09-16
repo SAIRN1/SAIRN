@@ -36,7 +36,12 @@
 const fs = require('fs');
 const path = require('path');
 
-const HTML = path.join(__dirname, '..', 'sairnvet.html');
+// SV_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Same convention tests/sairnvet_seed_never_syncs.js took from SB_HTML rather
+// than a second one being invented. Unset -- every ordinary run, including CI
+// -- this is exactly what it was.
+const HTML = process.env.SV_HTML || path.join(__dirname, '..', 'sairnvet.html');
 const src = fs.readFileSync(HTML, 'utf8');
 
 let pass = 0, fail = 0;
