@@ -81,8 +81,8 @@ def rec(i, **kw):
     return r
 
 
-def dump(obj, indent):
-    return json.dumps(obj, indent=indent, ensure_ascii=False) + '\n'
+def dump(obj, indent, ascii_=False):
+    return json.dumps(obj, indent=indent, ensure_ascii=ascii_) + '\n'
 
 
 def write(tmp, rel, text):
@@ -94,7 +94,7 @@ def write(tmp, rel, text):
 
 
 def scenario(base, upstream, local, validator_exit=0, tool=TOOL,
-             write_validator=True, dry=False):
+             write_validator=True, dry=False, ascii_=False):
     """Real repo, real rebase, real conflict. Returns (exit, output, tmpdir)."""
     tmp = tempfile.mkdtemp(prefix='rrmc_')
     TEMPS.append(tmp)
@@ -114,7 +114,7 @@ def scenario(base, upstream, local, validator_exit=0, tool=TOOL,
         elif branch == 'main':
             git(tmp, 'checkout', '-q', 'main')
         obj, indent = obj_indent
-        write(tmp, LEDGER, dump(obj, indent))
+        write(tmp, LEDGER, dump(obj, indent, ascii_))
         git(tmp, 'add', LEDGER)
         git(tmp, 'commit', '-q', '-m', msg)
 
@@ -393,10 +393,38 @@ def a13_dry_writes_nothing(tool=TOOL):
     return ok, out, tmp
 
 
+def a14_non_ascii_escaped(tool=TOOL):
+    """The register convention this tool got wrong on its first day.
+
+    tools/defect_register.py writes with the json DEFAULT, ensure_ascii=True, so
+    a commit subject containing an em-dash is stored as `\\u2014`.
+    tools/tier_a_review_gate.py writes the other ledger with False. The
+    serializer probe tried False only and PASSED anyway, because on the day it
+    was written both files happened to hold no non-ASCII byte -- and then
+    refused the register outright the first time a rebase brought one in.
+    """
+    base = ledger([rec(1, what='record one — with an em-dash')])
+    up = ledger([rec(1, what='record one — with an em-dash'), rec(2)])
+    loc = ledger([rec(1, what='record one — with an em-dash'), rec(3)])
+    code, out, tmp = scenario(base, up, loc, tool=tool, ascii_=True)
+    ok = arm('a ledger written with ensure_ascii=TRUE merges, exit 0', code == 0,
+             'exit %d\n%s' % (code, out[-400:]))
+    if code == 0:
+        ids, _obj = ids_on_disk(tmp)
+        ok &= arm('...and the union is complete', ids == ['r1', 'r2', 'r3'], ids)
+        raw = disk_text(tmp)
+        ok &= arm('...and it is written back ESCAPED, in the file\'s own '
+                  'convention, not re-encoded as a literal em-dash',
+                  '\\u2014' in raw and '—' not in raw,
+                  repr(raw[:160]))
+    return ok, out, tmp
+
+
 ARMS = [a1_clean_append, a2_deletion, a3_both_changed, a4_one_side_changed,
         a5_same_id_both_added, a6_validator_missing, a7_validator_rejects,
         a8_policy_changed, a9_unknown_strategy, a10_undeclared_json,
-        a11_identity_missing, a12_indent_not_reproducible, a13_dry_writes_nothing]
+        a11_identity_missing, a12_indent_not_reproducible, a13_dry_writes_nothing,
+        a14_non_ascii_escaped]
 
 
 # ── SABOTAGE: every guard removed, and the matching arm must NOTICE ──────────
@@ -426,6 +454,11 @@ SABOTAGE = [
     ('the serializer round-trip proof', a12_indent_not_reproducible,
      "    fail('%s: no json.dumps indent in 1..8",
      "    return 2  # sabotage\n    fail('%s: no json.dumps indent in 1..8"),
+    # The ensure_ascii half is pinned SEPARATELY, because a12 passes with it
+    # removed: a file that round-trips at ensure_ascii=False still round-trips.
+    # That is the whole reason the original probe looked correct for a day.
+    ('the ensure_ascii half of the serializer probe', a14_non_ascii_escaped,
+     'for ascii_ in (False, True):', 'for ascii_ in (False,):'),
 ]
 
 
