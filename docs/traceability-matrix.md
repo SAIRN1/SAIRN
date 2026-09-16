@@ -17,6 +17,7 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 | sairncode | each auth endpoint passes the shared helper THE SAME roles its own setup gate enforces | `api/_lib/employee-lifecycle-wiring.test.js` | The shared helper takes PROVISIONING_ROLES as a parameter so each app can pass its own, and the wrong list is invisible in review because it looks like every other app's. CLAUDE.md records the live case: SAIRNcode's is `admin`, not `owner`, and a guard hardcoding `owner` passes it clean forever while checking nothing. |
 | PLATFORM | the fourteen data endpoints still authenticate before they refuse | `api/preauth-envelope-ordering.test.js` | Not redundant with check 7, which scopes to the api/ files THIS push touches. This asserts the ordering across all fourteen from source anchors regardless of what the push contains -- the case where somebody else's commit reorders one and arrives here by rebase. It anchors on CODE and never on message text, because the detector's own boundary regex once matched `verifySessionToken(` inside a header comment and reported two defective files as clean. |
 | PLATFORM | no storage wrapper on the platform can fail silently | `tests/st_reports_failure.js` | A write that returns false to nobody and logs nothing is indistinguishable from a write that worked; in SAIRNcare all 28 st() call sites ignored the return and in SAIRNfreedom all 78 did. The bare-catch count is per app and fails ABOVE its number as well as below, so a new silent catch cannot enter a wrapper unnoticed -- it caught exactly that on 2026-09-10 when a server backup added one to SAIRNfreedom. |
+| PLATFORM | the session lock refuses the SECOND live session in a clone, and refuses nobody else | `tests/session_lock_liveness_probe.py` | This became a BLOCKING PreToolUse deny on 2026-09-16, so both ways of being wrong now cost something a warning never did. The under-refusal is the original defect: the SessionStart warning fired correctly on 2026-09-15 and two sessions read it and carried on, because a SessionStart hook cannot deny. The OVER-refusal is the one a bare pid-alive check would have introduced -- pids are recycled, and a dead session whose pid was picked up by something unrelated would lock a clone out permanently with no way for the occupant to tell a ghost from a real collision. Only the start-time comparison separates them, and arm (c2) is the arm most likely to have been left as a comment. The third state is held too: CLAUDE_PID unset or an unreadable process handle must fall back to the 2h staleness rule and block nothing, because failing CLOSED here would brick the session the lock exists to protect. |
 | PLATFORM | every disclosed coverage gap is actually disclosed, in the channel that was decided on | `api/_lib/deadline-coverage-contract.test.js` | JURISDICTION_COVERAGE is the single channel for a disclosed gap, by Michael's decision of 2026-09-01. Two jurisdictions previously asserted their gaps were row-level and an audit measured that claim false -- 2 of Utah's 9 rows and 2 of Nevada's 10 carried any omission note -- so a caller was told through neither channel. |
 
 ## 2. Mechanically enforced at the push gate
@@ -506,11 +507,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 385 of 488 traced, 78.9%.
+For context and not as the headline: 386 of 489 traced, 78.9%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 391 citations come from
+### Where the 392 citations come from
 
 | source | citations |
 |---|---|
@@ -518,7 +519,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | `declared` | 117 |
 | `GUARD_TESTS+index` | 5 |
 | `declared+index` | 5 |
-| `GUARD_TESTS` | 1 |
+| `GUARD_TESTS` | 2 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
 
@@ -654,9 +655,9 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 488   tests/**, api/*.test.js
+  test files on disk                 489   tests/**, api/*.test.js
   open-work rows citing a test       259   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     50   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py

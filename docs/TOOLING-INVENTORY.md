@@ -23,9 +23,9 @@ makes this the one inventory whose staleness is hardest to notice.
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 54 | runs automatically on every push, never blocks |
-| **ADVISORY** | 2 | session-start or prompt hooks, informational |
+| **ADVISORY** | 1 | session-start or prompt hooks, informational |
 | **DECIDED** | 55 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
@@ -84,7 +84,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (12)
+## BLOCKING (13)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -105,6 +105,7 @@ around it. The second exists because the first missed exactly that on
 | `sairn_reachability_check.py` | CHECKER | a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name, and R7 the ACTION -- neither answerable by R4 or R5, because they measure at the ROUTE: /api/sd-data is ONE route carrying 385 registered resources, and 182 individually addressable actions sit behind 27 routes, 19 of them behind api/law-auth.js alone |
 | `sairn_seam_check.py` | CHECKER | an endpoint dropping a field the engine reads (gate check 4) |
 | `sairn_sql_preflight.py` | CHECKER | SQL referencing a column or table the live schema does not have (gate check 3) |
+| `session_lock_check.py` | CHECKER | a second session in the same clone -- warns at SessionStart, and REFUSES Write/Edit/Bash when the other session is confirmed live by CLAUDE_PID plus its process start time. Liveness that cannot be determined falls back to the 2h staleness rule and blocks nothing |
 | `tier_a_review_gate.py` | CHECKER | a change to code serving a Tier A resource that carries no recorded independent-review obligation, and a review record signed by its own author -- push-gate check 13, BLOCKING. Scoped by diff HUNK and not by file: the same question asked per FILE reported 78 Tier A resources for a one-line edit to api/sd-data.js, because that file names every resource on the platform. It cannot read a review and says so; what it refuses is a Tier A change nobody was told about and a self-signed one |
 
 ### The push gate's own numbered checks
@@ -272,12 +273,11 @@ is how a reader stops believing the number.
 
 ---
 
-## ADVISORY (2)
+## ADVISORY (1)
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_push_verify_probe.py` |
-| `session_lock_check.py` | CHECKER | a second session in the same clone, at start and on every prompt | &mdash; |
 
 ---
 
@@ -397,7 +397,7 @@ number, and only one of them is a document.
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                52   report_only_checks.REGISTRY
-  tools invoked by tests/            133   tests/**/*.py, *.js
+  tools invoked by tests/            134   tests/**/*.py, *.js
   recorded NOT-promoted decisions     55   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

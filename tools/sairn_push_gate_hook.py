@@ -275,6 +275,22 @@ GUARD_TESTS = [
      'fails ABOVE its number as well as below, so a new silent catch cannot enter '
      'a wrapper unnoticed -- it caught exactly that on 2026-09-10 when a server '
      'backup added one to SAIRNfreedom.'),
+    ('tests/session_lock_liveness_probe.py',
+     'the session lock refuses the SECOND live session in a clone, and refuses '
+     'nobody else',
+     'This became a BLOCKING PreToolUse deny on 2026-09-16, so both ways of '
+     'being wrong now cost something a warning never did. The under-refusal is '
+     'the original defect: the SessionStart warning fired correctly on '
+     '2026-09-15 and two sessions read it and carried on, because a '
+     'SessionStart hook cannot deny. The OVER-refusal is the one a bare '
+     'pid-alive check would have introduced -- pids are recycled, and a dead '
+     'session whose pid was picked up by something unrelated would lock a clone '
+     'out permanently with no way for the occupant to tell a ghost from a real '
+     'collision. Only the start-time comparison separates them, and arm (c2) '
+     'is the arm most likely to have been left as a comment. The third state is '
+     'held too: CLAUDE_PID unset or an unreadable process handle must fall back '
+     'to the 2h staleness rule and block nothing, because failing CLOSED here '
+     'would brick the session the lock exists to protect.'),
     ('api/_lib/deadline-coverage-contract.test.js',
      'every disclosed coverage gap is actually disclosed, in the channel that '
      'was decided on',
@@ -1513,7 +1529,14 @@ def main():
                 _guard_unrun.append((_t, 'the file does not exist'))
                 continue
             try:
-                _r = subprocess.run(['node', _p], capture_output=True, text=True, encoding='utf-8', errors='replace',
+                # THE RUNNER WAS HARDCODED TO `node` (fixed 2026-09-16). Every
+                # entry happened to be JS, so the assumption was invisible until
+                # the first .py entry -- which did not report "I cannot run
+                # this", it reported a node SyntaxError on the test's own
+                # DOCSTRING and denied the push. A registry that silently
+                # mis-executes a new member is worse than one that refuses it.
+                _interp = sys.executable if _p.endswith('.py') else 'node'
+                _r = subprocess.run([_interp, _p], capture_output=True, text=True, encoding='utf-8', errors='replace',
                                     timeout=120, cwd=repo)
             except Exception as _e:
                 _guard_unrun.append((_t, '%s: %s' % (type(_e).__name__, _e)))

@@ -433,7 +433,7 @@ PURPOSES = {
                                     'fabricated-KPI class, with a shape pre-check that '
                                     'REFUSES any dataset too small, too narrow, too rounded '
                                     'or too repetitive to carry the test'),
-    'session_lock_check.py': ('CHECKER', 'a second session in the same clone, at start and on every prompt'),
+    'session_lock_check.py': ('CHECKER', 'a second session in the same clone -- warns at SessionStart, and REFUSES Write/Edit/Bash when the other session is confirmed live by CLAUDE_PID plus its process start time. Liveness that cannot be determined falls back to the 2h staleness rule and blocks nothing'),
     'sairn_claim_hook.py': ('CHECKER', "another session's active claim on the work about to start"),
     'employee_auth_guard_check.py': ('CHECKER', 'a SQL file writing credential rows with no recoverability guard (gate check 2)'),
     'sairn_sql_preflight.py': ('CHECKER', 'SQL referencing a column or table the live schema does not have (gate check 3)'),

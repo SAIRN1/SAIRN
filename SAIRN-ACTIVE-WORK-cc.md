@@ -3848,3 +3848,119 @@ and the only sign is a console line nobody is watching.
 fires on a diff naming a Tier A RESOURCE on a changed line, and this change
 names an access-control MECHANISM. A real limit of its reach, recorded rather
 than overridden.
+
+## 2026-09-16 (continued) -- the session lock stops asking nicely
+
+**The assignment said kernel-level `flock()`. That was wrong for this
+architecture and the file's own 2026-08-24 header already said why**, in more
+detail than was known when the instruction was written. `flock()` ties a lock's
+lifetime to an open file descriptor held by one continuously-running process.
+`session_lock_check.py` has no such process: every hook firing is a brand-new
+short-lived `python`, which is also exactly why the original design rejected
+PID-based liveness -- `os.getpid()` is a different number on every invocation,
+so there was no stable identity to check and time-based staleness was the only
+honest answer available.
+
+**What changed is not the technique, it is the identity.** `CLAUDE_PID` names
+the Claude Code CLI process itself, is stable for the whole session, and is
+inherited into every hook's environment. Measured 2026-09-16: present in both
+SessionStart and PreToolUse, e.g. `27280`. That is the thing the 2026-08-24
+design correctly said it did not have.
+
+### A bare pid-alive check would have been a worse bug than the one it fixed
+
+Pids are recycled. A dead session's pid picked up by an unrelated process would
+read as "still working here" and lock a clone out permanently, with no way for
+the occupant to tell a real collision from a ghost. The lock therefore stores
+the owner's **process start time** beside its pid and requires BOTH to match.
+`tests/session_lock_liveness_probe.py` arm (c2) is that case, and it is the arm
+most likely to have been left as a comment.
+
+### Reading a start time, twice, on purpose
+
+`ctypes` `OpenProcess`/`GetProcessTimes` is primary at **~20us**; `powershell
+Get-Process` is the fallback at **~600ms**. The fallback exists because the
+primary can fail in ways that are not death, and the cost gap is why it is not
+the primary -- 600ms on every `Write`/`Edit`/`Bash` is a tax the guard cannot
+justify. **They return the same integer, verified against CLAUDE_PID 27280:
+both `134340359245483744`.** That is only true because the PowerShell arm calls
+`.ToFileTime()`; `.Ticks` on the same `DateTime` returns
+`639251447245483744`, a different epoch, and a lock written under one arm would
+then read as a recycled pid under the other. The equality is stated in the file
+and has to be re-verified if either arm changes.
+
+Two cases that look like death and are not, both handled and both easy to miss:
+**ACCESS_DENIED is not evidence of death** (a process we may not query is still
+a process), and on Windows a pid stays queryable while any handle on it is open,
+so `OpenProcess` succeeding is not proof of life either -- a **non-zero exit
+time** is the only thing separating a running process from an unreaped one.
+That second case is not hypothetical here; it is what arm (c1) hits, because the
+probe holds a `Popen` handle on the child it kills.
+
+### THE PART THAT ACTUALLY FAILED WAS NOT THE WARNING
+
+`cmd_start()`'s warning did not malfunction on 2026-09-15. It fired, correctly,
+and twice a session read it and carried on. **Being ignorable is what failed.**
+SessionStart hooks in this codebase's schema cannot deny -- only PreToolUse
+carries `permissionDecision: "deny"`, and `tools/sairn_push_gate_hook.py:290`
+is the working precedent sitting in this same repo. So `guard` is a new
+PreToolUse hook on `Write|Edit|Bash` that genuinely refuses, and the warning
+stays as the first heads-up rather than as the enforcement.
+
+**One consequence of that is not obvious and would have made the whole thing
+inert: `cmd_start()` must NOT reclaim a lock whose owner is confirmed alive.**
+It used to overwrite unconditionally. Had it kept doing so, the second session
+would have stamped its own identity over the live owner's, every later `guard`
+would have read `self`, and the deny would never once have fired. Held by the
+arm "SessionStart does NOT steal a live owner's lock".
+
+### Could-not-determine is a third state, and here it deliberately fails OPEN
+
+`owner_state()` answers SELF / ALIVE / DEAD / UNKNOWN and never folds UNKNOWN
+into either end. UNKNOWN -- `CLAUDE_PID` unset, a lock written before this
+change, a start-time query that errors -- falls back to exactly the
+pre-2026-09-16 behaviour: staleness only, advisory, nothing blocked.
+
+**PR §1.11 says a check that cannot run must fail CLOSED, and this is the
+documented exception rather than an oversight.** Failing closed here means
+denying every tool call in a clone because a process handle was unreadable,
+which bricks the session the lock exists to protect. The refusal is stated on
+stderr instead of being silently assumed, which is the half of §1.11 that still
+applies: "could not run" is visible, it is just not fatal.
+
+The other direction matters as much and is arm (c1)/(c2): a confirmed-DEAD
+owner is reclaimed **immediately** rather than waiting out the two hours. The
+2h timeout is now the fallback for UNKNOWN, not the primary cleanup.
+
+### The probe, and the arm that makes another arm mean something
+
+`tests/session_lock_liveness_probe.py`, **19 arms, 0 failed**. It copies the
+tool into a temp `SAIRN-probeclone` tree, asserts the copy is byte-identical to
+the real file before running anything, and points it at a temp lock directory,
+so the four real clones' locks are untouchable. Arms (a) and (b) use two
+genuinely running child processes; (c1) kills one.
+
+**(c2) is synthetic and says so in the file.** Waiting for Windows to hand a
+specific pid to an unrelated process is not a test, so the recycled case is
+built by storing a live pid beside a start-time signature that is not its own --
+which is bit-for-bit the state recycling produces and the only state the tool
+can read. Substitution stated rather than left to be discovered.
+
+**Arm (e) is the control that makes arm (b) capable of failing.** (b) passing
+proves a deny happened; it does not prove the liveness verdict caused it. (e)
+ablates `owner_state()` to always answer UNKNOWN under (b)'s exact conditions
+and asserts the deny disappears -- and it first asserts that the ablation took
+effect, because a monkeypatch that silently does nothing is the same no-op
+`sabotage_control_check.py` exists to catch. The probe is not counted by that
+tool (it plants fixtures rather than patching a real source), so the guard is
+by construction rather than by its measurement.
+
+### Loose end, flagged not fixed
+
+`C:/Users/marsh/tools/session_lock_check.py` is **orphaned and stale** -- no
+clone's `settings.json` references it (all four use `${CLAUDE_PROJECT_DIR:-.}`),
+and it is still the pre-2026-09-11 version carrying the `os.getcwd()` clone-name
+bug that would make all four clones claim one lock. Left in place because
+deleting a file outside every working tree is a machine-state decision, the same
+call the 2026-08-25 home-checkout row made about that directory. Said in the
+tool's header so the next reader does not revive it.
