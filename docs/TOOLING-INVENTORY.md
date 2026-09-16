@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**184 files in `tools/`.** By what actually invokes them:
+**185 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 53 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 53 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 29 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 127 |
+| CHECKER | 128 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 22 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 17
+**The number to act on: 23 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 18
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 22, by name, so this is actionable rather than a statistic:
+The 23, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -71,6 +71,7 @@ The 22, by name, so this is actionable rather than a statistic:
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
 | `ooda_phases.py` | UNWIRED | item 67 -- WHICH OODA phase is the bottleneck, and it refuses to publish an aggregate because three of the four boundaries are not recorded anywhere. Measured 2026-09-15: detect-to-fix is SAME DAY on 73 of 73 resolvable records, so the only phase this repo times is already as fast as it can be and every second of real exposure lives in a phase nothing times -- the cron incident, silent 24 hours, and send-reminder.js returning 500 hourly FOR MONTHS. A negative duration is reported as an ANOMALY rather than averaged away. Needs the same injection-date field item 66 is blocked on; the two are one field apart |
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
+| `retry_backoff_check.py` | SUITE-ONLY | a loop that calls something we do not control and neither pauses nor trips a breaker between attempts -- the shape that turns a dependency's bad minute into a worse one. Brace-matches every api/*.js and every <script> block in the app HTML into a block tree and asks whether the enclosing construct is a loop, rather than looking for the word "retry" (88 hits in stonedesk.html, almost all comments, user-facing messages and a failed-LOGIN counter). Distinguishes a RETRY from pagination and work-list ITERATION by asking whether the loop rebinds anything the call reads, not by comparing source text. Also reports how many files import api/_lib/resilience.js, because a clean retry sweep on a platform whose only breaker has no callers is not reassurance |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
 | `sairn_rebase_resolve.py` | SUITE-ONLY | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main |
 | `suite_control_triage.py` | UNWIRED | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low |
@@ -277,7 +278,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (29)
+## SUITE-ONLY (30)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -303,6 +304,7 @@ fixtures. Nothing points them at the real codebase.
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_selftest_independence_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
+| `retry_backoff_check.py` | CHECKER | a loop that calls something we do not control and neither pauses nor trips a breaker between attempts -- the shape that turns a dependency's bad minute into a worse one. Brace-matches every api/*.js and every <script> block in the app HTML into a block tree and asks whether the enclosing construct is a loop, rather than looking for the word "retry" (88 hits in stonedesk.html, almost all comments, user-facing messages and a failed-LOGIN counter). Distinguishes a RETRY from pagination and work-list ITERATION by asking whether the loop rebinds anything the call reads, not by comparing source text. Also reports how many files import api/_lib/resilience.js, because a clean retry sweep on a platform whose only breaker has no callers is not reassurance | `retry_backoff_check_control.py` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
@@ -388,11 +390,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      184   git ls-files tools/
+  tools on disk                      185   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                51   report_only_checks.REGISTRY
-  tools invoked by tests/            129   tests/**/*.py, *.js
+  tools invoked by tests/            130   tests/**/*.py, *.js
   recorded NOT-promoted decisions     53   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
