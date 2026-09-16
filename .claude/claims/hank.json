@@ -2013,8 +2013,8 @@
       "task": "dosing audit trail reader export sv_audit_log",
       "claimed_at": "2026-09-16T04:36:03Z",
       "claimed_at_epoch": 1789533363.9695077,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:45:55Z"
     }
   ]
 }
