@@ -3344,7 +3344,7 @@
       ],
       "lines_added": 326,
       "lines_removed": 7,
-      "app": "platform",
+      "app": "PLATFORM",
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
