@@ -1259,6 +1259,16 @@
       "claimed_at_epoch": 1789519734.1873407,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789520825",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 46 parity reconstruction sv_controlled, item 86 battleshort bypass log, item 89 look-elsewhere quarantine threshold",
+      "claimed_at": "2026-09-16T01:07:05Z",
+      "claimed_at_epoch": 1789520825.2350435,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
