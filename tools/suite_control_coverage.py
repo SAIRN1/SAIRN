@@ -65,6 +65,29 @@ in `api/` and a `tests/`-only sweep counted neither, so the tool would have said
 five were controlled while naming three. Widening it also brings in 42 api
 suites that are NOT controlled, which moves the headline the wrong way -- and
 that is the direction a coverage number has to be allowed to move.
+
+── AND THE PROBE UNIVERSE WAS WRONG IN BOTH DIRECTIONS AT ONCE (2026-09-15) ──
+The probe universe was `tests/*.py`. **Not every control on this platform is
+written in Python**, and `docs/MASTER-PLAN.md` already says so in the fault
+census: a probe counts if it declares a parseable `MUTATIONS` block, is named
+`*_fault_probe.py`, **is named `*_mutation_control.js`**, or lives under
+`tests/faults/`. This tool knew only the first spelling, so:
+
+  * `tests/sairncode_gates_mutation_control.js` and
+    `tests/sairnbiz_void_mutation_control.js` -- both real, both declaring
+    `const MUTATIONS = [`, the first asserting its sabotage applied in four
+    parts -- were INVISIBLE as controls, and the suites they control were
+    reported uncontrolled;
+  * worse, being `tests/*.js` they were counted in the SUITE denominator, so
+    each control made the headline look one suite worse instead of one better.
+
+Found on 2026-09-15 by `tools/suite_control_triage.py`, which ranked
+`sairncode_gates_mutation_control.js` as a Tier A suite needing a control -- a
+control needing a control, which is the shape that made it obvious. **A census
+whose universe is one spelling of a thing reports every other spelling as
+absent**, and the miss was in the OVER-claiming direction this file's own
+docstring says it must never fail in: it claimed suites were uncontrolled when
+they were not.
 """
 import argparse
 import ast
@@ -72,6 +95,7 @@ import glob
 import io
 import json
 import os
+import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,16 +136,62 @@ def probe_literals(src, path='<probe>'):
     return has_mutations, lits
 
 
+_JS_STRING = re.compile(r"""'([^'\\\n]*(?:\\.[^'\\\n]*)*)'|"([^"\\\n]*(?:\\.[^"\\\n]*)*)"|`([^`\\]*(?:\\.[^`\\]*)*)`""")
+_JS_MUTATIONS = re.compile(r'\bMUTATIONS\s*=')
+
+
+def js_probe_literals(src, path='<probe>'):
+    """(declares MUTATIONS, {string literals}) for a JavaScript control.
+
+    The Python half of this question is answered by `ast`, which is exact. There
+    is no stdlib JS parser, so this is a lexer-grade approximation and it is
+    deliberately the WEAKER of the two:
+
+      * comments are stripped through `checker_kit.strip_comments`, the
+        canonical implementation, so the `// THE NEGATIVE CONTROL FOR
+        tests/foo.js` header line in every one of these files cannot be mistaken
+        for a live reference -- that is the JS equivalent of the docstring
+        exclusion and it is the same over-claiming risk;
+      * a template literal with `${...}` interpolation is captured whole, so a
+        path built from pieces is not recognised. That under-claims, which is
+        this tool's declared safe direction.
+
+    It is not a parser and does not pretend to be. What it buys is that the two
+    real `*_mutation_control.js` files stop being invisible, which is a larger
+    error than anything this approximation can introduce.
+    """
+    from checker_kit import strip_comments
+    code = strip_comments(src)
+    lits = set()
+    for m in _JS_STRING.finditer(code):
+        for g in m.groups():
+            if g is not None:
+                lits.add(g)
+    return bool(_JS_MUTATIONS.search(code)), lits
+
+
+def _default_probes():
+    """Python probes, plus the JS spellings MASTER-PLAN already counts as probes."""
+    return (sorted(glob.glob(os.path.join(REPO, 'tests', '*.py')))
+            + sorted(glob.glob(os.path.join(REPO, 'tests', '*_mutation_control.js')))
+            + sorted(glob.glob(os.path.join(REPO, 'tests', 'faults', '*.js'))))
+
+
 def survey(suite_paths=None, probe_paths=None):
     """{suite basename: [probe basenames]} plus the probes that were parsed."""
     # BOTH DIRECTORIES. A tests/-only universe silently excluded api/, where
     # two of the controlled suites actually live -- an under-count that reads
     # as "nobody controls api" when in fact nobody LOOKED at api.
+    probes = probe_paths if probe_paths is not None else _default_probes()
+    # A JS CONTROL IS NOT ALSO A SUITE NEEDING ONE. Before this, every
+    # `*_mutation_control.js` was counted in the denominator, so writing a
+    # control moved the headline DOWN. Derived from the probe list rather than
+    # re-globbed, so the two can never disagree about which files are probes.
+    _probe_names = set(os.path.basename(p) for p in probes)
     suites = (suite_paths if suite_paths is not None
-              else (sorted(glob.glob(os.path.join(REPO, 'tests', '*.js')))
-                    + sorted(glob.glob(os.path.join(REPO, 'api', '*.test.js')))))
-    probes = (probe_paths if probe_paths is not None
-              else sorted(glob.glob(os.path.join(REPO, 'tests', '*.py'))))
+              else [s for s in (sorted(glob.glob(os.path.join(REPO, 'tests', '*.js')))
+                                + sorted(glob.glob(os.path.join(REPO, 'api', '*.test.js'))))
+                    if os.path.basename(s) not in _probe_names])
     # Basenames must stay unique across the two directories, or a control on
     # one would be credited to the other. Asserted rather than assumed.
     _seen = {}
@@ -136,7 +206,8 @@ def survey(suite_paths=None, probe_paths=None):
     for p in probes:
         try:
             src = io.open(p, encoding='utf-8', errors='replace').read()
-            has_mut, lits = probe_literals(src, p)
+            reader = js_probe_literals if p.endswith('.js') else probe_literals
+            has_mut, lits = reader(src, p)
         except Exception as e:                                   # noqa: BLE001
             unreadable.append((os.path.basename(p), '%s: %s' % (type(e).__name__, e)))
             continue
@@ -206,6 +277,58 @@ def self_check():
            for l in probe_literals(f['docstring_only'])[1]))
     ck('a suite named in a subprocess argument counts, not only a SUITE constant',
        controls('inline_literal'), f['inline_literal'])
+
+    # ── THE JAVASCRIPT READER, both directions. Added 2026-09-15 with the probe
+    # universe. The comment arm is the JS equivalent of the docstring exclusion
+    # and is the over-claiming direction: EVERY real *_mutation_control.js opens
+    # with `// THE NEGATIVE CONTROL FOR tests/<suite>.js`, so a reader that did
+    # not strip comments would credit a control to a suite on the strength of a
+    # header line -- and would do it for the right suite, which is what makes it
+    # undetectable by eye.
+    def js_controls(src):
+        has_mut, lits = js_probe_literals(src)
+        return has_mut and any(l.endswith('target_suite.js') for l in lits)
+
+    ck('JS: MUTATIONS plus the suite in a real literal COUNTS',
+       js_controls("const MUTATIONS = [{a:1}];\n"
+                   "const SUITE = 'tests/target_suite.js';\n"))
+    ck('JS: no MUTATIONS does not count, however it names the suite',
+       not js_controls("const SUITE = 'tests/target_suite.js';\n"
+                       "run(SUITE);\n"))
+    ck('JS: a suite named only in a COMMENT does not count -- the over-claiming '
+       'direction, and the shape every real control actually has',
+       not js_controls("// THE NEGATIVE CONTROL FOR tests/target_suite.js\n"
+                       "const MUTATIONS = [{a:1}];\n"
+                       "const SUITE = 'tests/other_suite.js';\n"))
+    ck('JS: ...and that probe is still recognised as HAVING mutations, so the '
+       'exclusion is the comment and not the whole file',
+       js_probe_literals("// controls tests/target_suite.js\n"
+                         "const MUTATIONS = [{a:1}];\n")[0] is True)
+    ck('JS: a double-quoted literal is read too, not only single',
+       js_controls('const MUTATIONS = [];\nrun("tests/target_suite.js");\n'))
+    ck('JS: a block comment naming the suite does not count either',
+       not js_controls("/* tests/target_suite.js */\nconst MUTATIONS = [];\n"))
+
+    # AND THE REAL FILES, because a correct reader pointed at the wrong universe
+    # reports the same numbers as no reader at all -- which is exactly what was
+    # wrong before today.
+    for real_ctl, real_suite in (
+            ('sairncode_gates_mutation_control.js', 'sairncode_gates.js'),
+            ('sairnbiz_void_mutation_control.js', 'sairnbiz_void_not_delete.js')):
+        rp = os.path.join(REPO, 'tests', real_ctl)
+        if not os.path.isfile(rp):
+            ck('the real control %s is present' % real_ctl, False, rp)
+            continue
+        hm, ls = js_probe_literals(io.open(rp, encoding='utf-8',
+                                           errors='replace').read(), rp)
+        ck('%s declares MUTATIONS and is seen as a probe' % real_ctl, hm)
+        ck('...and it names %s outside a comment' % real_suite,
+           any(l.endswith(real_suite) for l in ls),
+           sorted(l for l in ls if l.endswith('.js'))[:8])
+
+    ck('a *_mutation_control.js is NOT also counted as a suite needing a control',
+       not any(n.endswith('_mutation_control.js') for n in survey()[0]),
+       [n for n in survey()[0] if n.endswith('_mutation_control.js')])
 
     # END TO END through survey(), because the arms above test the parser and a
     # correct parser wired up wrongly reports the same numbers as a broken one.

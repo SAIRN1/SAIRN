@@ -18,20 +18,32 @@ exists is not a mechanism; a tool that RUNS is"* -- written about
 `sairn_app_map_check.py`, which was built so a seventh correction could not happen
 and then never invoked again until the seventh correction happened.
 
-MEASURED 2026-09-15: TWENTY-FIVE tools carrying a `--selftest` or `--fixtures`,
-NONE of them discovered by the suite. Their criteria were locked against
-fixtures, their refusals were driven in both directions, and none of it would
-have been noticed going red.
+MEASURED 2026-09-15: THIRTY-SIX tools carrying a `--selftest`, `--fixtures` or
+`--self-check`, NONE of them discovered by the suite. Their criteria were locked
+against fixtures, their refusals were driven in both directions, and none of it
+would have been noticed going red.
 
-That figure was SEVEN in the first draft of this file, and then TWENTY-THREE, and
-neither number was a measurement -- both were what a regex over the source could
-see. The regex missed three tools that do have a selftest and invented one that
-does not. The count is now taken from the parse; see `discover()` for what the
-difference actually was, because it is the more useful half of this file.
+**THAT NUMBER WAS WRONG THREE TIMES BEFORE IT WAS RIGHT, AND EACH WRONG VERSION
+LOOKED EXACTLY AS CONFIDENT AS THIS ONE.** SEVEN, then TWENTY-THREE, then
+TWENTY-FIVE. None of the three was a measurement of the tools; each was a
+measurement of what the detector could see:
+
+  * a regex over the source counted a GENERATOR's template as live code and
+    missed three tools whose selftests it had no pattern for;
+  * the AST that replaced it recognised `'--selftest' in argv` and could not see
+    `argparse`, so ten more tools -- including `suite_control_coverage.py`, whose
+    `--self-check` runs an end-to-end arm through `survey()` -- were reported as
+    having nothing.
+
+Both misses have the same shape and it is the shape worth carrying away: **a
+detector that knows one spelling reports every other spelling as ABSENT, and
+absent is indistinguishable from clean.** Neither was found by the tool going
+red. Both were found by reading the tools it called empty and noticing one
+plainly was not.
 
 ── WHY IT DERIVES THE LIST INSTEAD OF NAMING THE FILES ──────────────────────
-A hardcoded list of twenty-five would be true today and quietly wrong at
-twenty-six. This parses `tools/*.py` for a tool that ACCEPTS a selftest flag and
+A hardcoded list of thirty-six would be true today and quietly wrong at
+thirty-seven. This parses `tools/*.py` for a tool that ACCEPTS a selftest flag and
 runs each one it finds, so:
 
   * a NEW tool with a selftest is covered the moment it lands, with no edit here;
@@ -50,7 +62,7 @@ execute verifies nothing.
 It does not judge whether a selftest is any GOOD -- a tool whose selftest asserts
 nothing passes here. That is item 47's worksheet half and
 `tools/sabotage_control_check.py`'s job. This answers the narrower question that
-was silently false for all twenty-five: does the thing RUN.
+was silently false for all thirty-six: does the thing RUN.
 """
 import ast
 import io
@@ -65,12 +77,14 @@ TOOLS = os.path.join(REPO, 'tools')
 # rebase from another clone legitimately ADDS tools, and failing a session that
 # added nothing is how a gate gets switched off out of annoyance. A DROP still
 # fails immediately, which is the half worth protecting.
-MIN_SELFTESTS = 25
+MIN_SELFTESTS = 36
 PER_TOOL_TIMEOUT = 180
 
 # Flags a tool may expose. Ordered by preference: a dedicated selftest first, then
-# the blind-lock convention several checkers use instead.
-FLAGS = ('--selftest', '--fixtures')
+# the blind-lock convention several checkers use instead, then the argparse
+# spelling. `--self-check` was ADDED after the first real run reported 25 and the
+# true figure was 35 -- see the note on argparse in selftest_flags().
+FLAGS = ('--selftest', '--fixtures', '--self-check')
 
 
 def _is_argv(node):
@@ -84,8 +98,28 @@ def _is_argv(node):
     return False
 
 
-def _flags_compared_against_argv(tree):
-    """Every string literal that this MODULE's own code tests against argv.
+def _is_add_argument(node):
+    """`p.add_argument(...)` / `parser.add_argument(...)` -- argparse declaring a flag."""
+    return (isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'add_argument')
+
+
+def selftest_flags(tree):
+    """Every flag this MODULE's own code offers: tested against argv, or declared.
+
+    ── TWO SHAPES, AND THE SECOND ONE WAS MISSED ON THE FIRST REAL RUN ──────
+    This first looked only for `'--selftest' in argv`. It reported 25 tools. The
+    true figure is 35: ten tools use `argparse` and never touch `sys.argv`
+    themselves, so a rule written around the manual idiom could not see them --
+    including `tools/suite_control_coverage.py`, whose `--self-check` has an
+    end-to-end arm through `survey()` and had never been run by anything.
+
+    That is the SAME defect this file was already written about, one shape
+    further out: a detector that recognises one spelling of a thing reports the
+    other spelling as absent, and absent is indistinguishable from clean. It was
+    found the only way it could be -- by reading the tools the probe said had no
+    selftest and noticing one plainly did.
 
     ── WHY AN AST AND NOT A REGEX, WHICH IS HOW THIS SHIPPED FIRST ───────────
     The first version matched the text `'--fixtures' in argv` with a regex over
@@ -107,14 +141,19 @@ def _flags_compared_against_argv(tree):
     """
     found = set()
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Compare):
-            continue
-        sides = [node.left] + list(node.comparators)
-        if not any(_is_argv(s) for s in sides):
-            continue
-        for s in sides:
-            if isinstance(s, ast.Constant) and isinstance(s.value, str):
-                found.add(s.value)
+        if isinstance(node, ast.Compare):
+            sides = [node.left] + list(node.comparators)
+            if any(_is_argv(s) for s in sides):
+                for s in sides:
+                    if isinstance(s, ast.Constant) and isinstance(s.value, str):
+                        found.add(s.value)
+        elif _is_add_argument(node):
+            # Only the positional option strings. A keyword like
+            # dest='selftest' is not a flag a caller can type.
+            for a in node.args:
+                if (isinstance(a, ast.Constant) and isinstance(a.value, str)
+                        and a.value.startswith('-')):
+                    found.add(a.value)
     return found
 
 
@@ -141,7 +180,7 @@ def discover():
         except SyntaxError as e:
             unparsed.append((name, 'does not parse: %s' % e))
             continue
-        tested = _flags_compared_against_argv(tree)
+        tested = selftest_flags(tree)
         for flag in FLAGS:
             if flag in tested:
                 out.append((name, flag))
@@ -181,10 +220,21 @@ FIXTURES = (
     ('reversed operands', "if '--selftest' == argv[1]: pass",             True),
     ('assigned',         "only = '--selftest' in argv",                   True),
 
+    # argparse, which ten tools use and the first version could not see at all.
+    ('argparse declared', "p.add_argument('--selftest', action='store_true')", True),
+    ('argparse short+long', "p.add_argument('-s', '--selftest')",          True),
+    # A dest= is not a flag anyone can type, so it must NOT be reported as one.
+    ('argparse dest only', "p.add_argument('--other', dest='--selftest')", False),
+
     # The one that was wrong. A generator EMITS this text; it never runs it.
     ('inside a template', "TPL = '''\\nif '--selftest' in argv: pass\\n'''", False),
     ('prose in a docstring', '"""Run with --selftest to check."""',       False),
-    ('mentioned, never tested', "p.add_argument('--selftest')",           False),
+    # WAS `p.add_argument('--selftest')` until argparse became a recognised
+    # shape, at which point this arm was asserting the OPPOSITE of the rule and
+    # was the only thing that went red. A declared argparse flag IS a flag a
+    # caller can type; "mentioned, never tested" has to be something else, so it
+    # is now a bare string in a message.
+    ('mentioned, never tested', "print('pass --selftest to check')",      False),
     ('a different flag',  "if '--verbose' in argv: pass",                 False),
     ('not argv at all',   "if '--selftest' in flags: pass",               False),
 )
@@ -194,7 +244,7 @@ def run_fixtures():
     wrong = []
     for label, src, should_match in FIXTURES:
         try:
-            got = '--selftest' in _flags_compared_against_argv(ast.parse(src))
+            got = '--selftest' in selftest_flags(ast.parse(src))
         except SyntaxError as e:
             wrong.append('%-24s fixture itself does not parse: %s' % (label, e))
             continue
