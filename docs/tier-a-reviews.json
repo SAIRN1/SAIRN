@@ -3,6 +3,19 @@
   "_how_it_works": "A push that changes code serving a Tier A resource must leave an OPEN obligation here naming this session and those resources. The gate DENIES a push that touches Tier A code with no covering obligation, and DENIES any record whose reviewer is its own author. Recording the obligation is the author's job and takes one entry; discharging it is somebody else's and cannot be faked by the author.",
   "_what_it_does_NOT_claim": "That a review happened, or that it was any good. It is a record that the obligation EXISTS and was not self-signed. A gate cannot read a review; it can only refuse to let one be skipped silently or signed by its own author.",
   "_scope": "Tier A resources, derived from docs/CRITICALITY-TIERS.md. Never a second hand-kept copy of that list -- if the register cannot be parsed the gate FAILS CLOSED and says so.",
+  "merge_policy": {
+    "strategy": "union-by-identity",
+    "records_key": "records",
+    "identity": [
+      "author_session",
+      "opened_at"
+    ],
+    "validator": [
+      "tools/tier_a_review_gate.py",
+      "--list"
+    ],
+    "note": "Read by tools/sairn_rebase_resolve.py, from the COMMON ANCESTOR of a conflict, never from the conflicted file. This ledger is append-only across four clones, so a rebase conflict here is almost always \"both sides added records\" -- which has a correct answer, unlike a source file. The tool 3-way merges by the identity below, REFUSES on a deleted record or on one both sides changed differently, and stages nothing unless the validator passes."
+  },
   "records": [
     {
       "author_session": "cc",

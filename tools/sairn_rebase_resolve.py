@@ -3,9 +3,10 @@
     python tools/sairn_rebase_resolve.py          # classify and resolve what is safe
     python tools/sairn_rebase_resolve.py --dry    # say what it would do, change nothing
 
-Exit 0  every conflicted file was a GENERATED document and is resolved and staged
-       (or there was nothing conflicted)
-Exit 1  at least one conflicted file is SOURCE -- a human has to read it
+Exit 0  every conflicted file was a GENERATED document or a MERGEABLE ledger,
+       is resolved and staged (or there was nothing conflicted)
+Exit 1  at least one conflicted file is SOURCE, or a mergeable ledger holds a
+       difference that is not an append -- a human has to read it
 Exit 2  COULD NOT TELL -- never folded into either of the other two
 
 ── WHY THIS EXISTS, AND IT IS A REAL INCIDENT AND NOT A HYPOTHETICAL ──────────
@@ -47,6 +48,42 @@ generator this repo does not have is COULD NOT TELL -- never "source", because
 guessing in that direction re-creates the incident, and never "generated",
 because running a script named in a conflicted file is worse.
 
+── THE THIRD CLASS, ADDED 2026-09-16: A LEDGER THAT CAN ACTUALLY BE MERGED ────
+GENERATED and SOURCE were the only two classes, and the two JSON registers --
+`docs/defect-density-register.json` and `docs/tier-a-reviews.json` -- were
+correctly refused as SOURCE. Correct, and not good enough: they conflict on
+nearly every rebase, because four clones append records to them independently,
+and "a human reads both sides" for the fiftieth time is how somebody eventually
+reaches for `--theirs` again and silently drops the other clone's records.
+
+Those files are append-only ledgers with a record identity, so both-sides-added
+HAS a right answer, and it is neither side. This class does a real 3-way merge
+against the common ancestor and REFUSES anything that is not an append:
+
+  * a record in the ancestor that is MISSING from either side -- a deletion; a
+    union would silently resurrect it, which is a different wrong answer, not a
+    safer one
+  * a record both sides changed DIFFERENTLY -- no side is taken, ever
+  * the same identity ADDED on both sides with different content -- a genuine
+    collision, not a duplicate
+
+One side changed and the other did not is the case that has a right answer, and
+is the only case that is taken. A discharged review obligation lands that way.
+
+MERGEABILITY IS DECLARED BY THE FILE, like GENERATED -- and read from the
+COMMON ANCESTOR (`git show :1:path`), never from the conflicted working copy,
+because the working copy's own policy block can be inside a conflict hunk. A
+policy that differs between the two sides is COULD NOT TELL: a merge governed
+by a rule that is itself under negotiation is not a merge.
+
+    "merge_policy": {"strategy": "union-by-identity", "records_key": "records",
+                     "identity": ["commit", "summary"],
+                     "validator": ["tools/defect_register.py", "--check"]}
+
+The named validator must EXIST and must PASS on the merged result or nothing is
+staged -- the same fail-closed rule as everywhere else on this platform: a
+validator that is absent means the check DID NOT RUN, which is never a pass.
+
 ── AND THE BACKSTOP, WHICH IS THE PART THAT ACTUALLY SAVES YOU ────────────────
 Classification can be wrong. So NOTHING is staged before every file about to be
 staged is scanned for conflict markers, and a marker anywhere refuses the whole
@@ -54,7 +91,9 @@ run. That check does not depend on the classification being right, which is the
 only reason it is worth having: the incident would have been caught by it even
 with the class decided wrongly.
 """
+import collections
 import io
+import json
 import os
 import re
 import subprocess
@@ -74,6 +113,15 @@ MARKER = re.compile(r'^(?:<{7}|={7}|>{7})(?:\s|$)', re.M)
 # How far into a file the declaration must appear. A generated document says so
 # at the top; a mention halfway down is somebody discussing generation.
 DECLARE_WINDOW = 4000
+
+# The mergeable-ledger declaration. Also read from the file -- from its COMMON
+# ANCESTOR -- and never from a list kept here, for the same reason.
+POLICY_KEY = 'merge_policy'
+STRATEGY = 'union-by-identity'
+
+# Distinguishable from a record that is present and None, which several of these
+# ledgers legitimately carry. `r.get(k)` cannot tell those apart; this can.
+MISSING = object()
 
 
 def fail(msg):
@@ -98,8 +146,214 @@ def read(rel):
         fail('could not read %s: %s' % (rel, e))
 
 
+def stage(n, rel):
+    """Text of `rel` at merge stage n, or None when that stage does not exist.
+
+    1 = the COMMON ANCESTOR, 2 = the branch being rebased ONTO (origin/main),
+    3 = the commit being replayed (mine). During a rebase git calls stage 2
+    "ours" and stage 3 "theirs", which is the inversion that made `--theirs`
+    read like the opposite of what it does and put markers on main. Nothing
+    below uses either word.
+    """
+    r = subprocess.run(['git', '-C', REPO, 'show', ':%d:%s' % (n, rel)],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    return r.stdout if r.returncode == 0 else None
+
+
+def parse(text, rel, side):
+    """A merge stage is a clean blob, never a marker soup -- so this must parse."""
+    try:
+        return json.loads(text, object_pairs_hook=collections.OrderedDict)
+    except ValueError as e:                                     # noqa: BLE001
+        fail('%s: the %s side is not valid JSON (%s). Merge stages come out of '
+             'the object store clean, so this file is not the shape its '
+             'merge_policy claims.' % (rel, side, e))
+
+
+def policy_of(text, rel, side):
+    obj = parse(text, rel, side)
+    return obj, (obj.get(POLICY_KEY) if isinstance(obj, dict) else None)
+
+
+def check_policy(rel, pol):
+    """Validate the ancestor's declaration, and that neither side rewrote it."""
+    def bad(why):
+        fail('%s declares %s and %s' % (rel, POLICY_KEY, why))
+
+    if not isinstance(pol, dict):
+        bad('it is not an object.')
+    if pol.get('strategy') != STRATEGY:
+        bad('its strategy is %r. The only strategy this tool implements is %r; '
+            'a strategy it does not recognise is never approximated with one '
+            'it does.' % (pol.get('strategy'), STRATEGY))
+    rk = pol.get('records_key')
+    if not isinstance(rk, str) or not rk:
+        bad('its records_key is %r, not a field name.' % (rk,))
+    ident = pol.get('identity')
+    if (not isinstance(ident, list) or not ident
+            or not all(isinstance(k, str) and k for k in ident)):
+        bad('its identity is %r, not a non-empty list of field names.' % (ident,))
+    val = pol.get('validator')
+    if (not isinstance(val, list) or not val
+            or not all(isinstance(a, str) for a in val)):
+        bad('its validator is %r, not a non-empty argv list.' % (val,))
+    if not os.path.isfile(os.path.join(REPO, val[0])):
+        fail('%s names %s as the validator of its merged result, and that file '
+             'does not exist in this repo. The check therefore DID NOT RUN, '
+             'which is a third state and is not a pass.' % (rel, val[0]))
+
+    # A policy under negotiation cannot govern the negotiation.
+    for n, side in ((2, 'upstream'), (3, 'local')):
+        text = stage(n, rel)
+        if text is None:
+            fail('%s has no stage %d, so there is no %s side to merge.'
+                 % (rel, n, side))
+        _obj, other = policy_of(text, rel, side)
+        if other != pol:
+            fail('%s: the %s side changes %s itself. The rule for merging this '
+                 'file is part of what is in conflict, so the merge is not '
+                 'this tool\'s to make.' % (rel, side, POLICY_KEY))
+    return pol
+
+
+def indent_of(base_text, base_obj, rel):
+    """Prove we can rewrite this file in its OWN convention before we write it.
+
+    Not cosmetic. These ledgers run to a quarter of a megabyte; a serializer one
+    space off reformats every line, and the real merge -- half a dozen records --
+    becomes unreadable inside a whole-file diff nobody will check. If no setting
+    reproduces the ancestor byte for byte we do not know how to write this file,
+    and that is COULD NOT TELL, not a reason to write it anyway.
+    """
+    for n in range(1, 9):
+        if json.dumps(base_obj, indent=n, ensure_ascii=False) + '\n' == base_text:
+            return n
+    fail('%s: no json.dumps indent in 1..8 reproduces the common-ancestor file '
+         'byte for byte, so this tool cannot write it back without reformatting '
+         'the whole file.' % rel)
+
+
+def pick(base, a, b):
+    """Standard 3-way. Returns MISSING for "deleted", None for a real conflict."""
+    if a == b:
+        return a
+    if a == base:
+        return b
+    if b == base:
+        return a
+    return None
+
+
+def merge_file(rel, pol):
+    """3-way merge the ledger IN MEMORY. Returns (text, summary) or fails.
+
+    Nothing is written here. Every mergeable file is merged before any file is
+    written, so one unmergeable record cannot leave the others half-resolved --
+    a partial resolution is a state somebody finishes by hand under time
+    pressure, which is the same failure wearing a different hat.
+    """
+    rk, ident = pol['records_key'], pol['identity']
+    base_text = stage(1, rel)
+    if base_text is None:
+        fail('%s has no common ancestor -- it was ADDED on both sides. There is '
+             'no third point to merge against, so every difference looks like '
+             'an addition and a deletion is indistinguishable from one.' % rel)
+    base = parse(base_text, rel, 'ancestor')
+    up = parse(stage(2, rel), rel, 'upstream')
+    loc = parse(stage(3, rel), rel, 'local')
+    indent = indent_of(base_text, base, rel)
+
+    def records(obj, side):
+        recs = obj.get(rk)
+        if not isinstance(recs, list):
+            fail('%s: the %s side has no %r list.' % (rel, side, rk))
+        out = collections.OrderedDict()
+        for i, r in enumerate(recs):
+            if not isinstance(r, dict):
+                fail('%s: %s[%d] on the %s side is not an object.'
+                     % (rel, rk, i, side))
+            gone = [k for k in ident if k not in r]
+            if gone:
+                fail('%s: %s[%d] on the %s side is missing %s, so it cannot be '
+                     'matched across sides. Identity is %s.'
+                     % (rel, rk, i, side, ', '.join(gone), ident))
+            k = tuple(json.dumps(r[f], sort_keys=True) for f in ident)
+            if k in out:
+                fail('%s: two records on the %s side share the identity %s. A '
+                     'merge cannot tell them apart, so it will not try.'
+                     % (rel, side, list(k)))
+            out[k] = r
+        return out
+
+    B, U, L = (records(base, 'ancestor'), records(up, 'upstream'),
+               records(loc, 'local'))
+
+    dropped = [(k, s) for k in B
+               for s, S in (('upstream', U), ('local', L)) if k not in S]
+    if dropped:
+        lines = ['%s: %d ancestor record(s) were DELETED, and this is an '
+                 'append-only ledger:' % (rel, len(dropped))]
+        for k, s in dropped[:8]:
+            lines.append('    removed on the %s side: %s' % (s, list(k)))
+        lines.append('A union would put every one of them back, which is a '
+                     'different wrong answer, not a safer one.')
+        return (None, '\n'.join(lines))
+
+    merged, clashes = [], []
+    for k, r in U.items():                       # upstream order is preserved
+        if k not in L:
+            merged.append(r)                     # added upstream only
+            continue
+        c = pick(B.get(k, MISSING), r, L[k])
+        if c is None:
+            fields = sorted(set(r) | set(L[k]))
+            diff = [f for f in fields if r.get(f, MISSING) != L[k].get(f, MISSING)]
+            clashes.append('    %s  -- differs on: %s' % (list(k), ', '.join(diff)))
+        else:
+            merged.append(c)
+    for k, r in L.items():
+        if k not in U:
+            merged.append(r)                     # added locally only
+    if clashes:
+        return (None, '%s: %d record(s) were changed on BOTH sides, differently. '
+                      'No side is taken:\n%s' % (rel, len(clashes),
+                                                 '\n'.join(clashes[:8])))
+
+    # Everything OUTSIDE the records list gets the same 3-way. A prose `note`
+    # edited on one side is an ordinary merge; edited differently on both is not.
+    out, conflict_keys = collections.OrderedDict(), []
+    keys = list(up) + [k for k in loc if k not in up] + [k for k in base
+                                                        if k not in up and k not in loc]
+    for k in keys:
+        if k == rk:
+            out[rk] = merged
+            continue
+        c = pick(base.get(k, MISSING), up.get(k, MISSING), loc.get(k, MISSING))
+        if c is None:
+            conflict_keys.append(k)
+        elif c is not MISSING:
+            out[k] = c
+    if conflict_keys:
+        return (None, '%s: top-level field(s) changed on both sides, '
+                      'differently: %s' % (rel, ', '.join(conflict_keys)))
+
+    return (json.dumps(out, indent=indent, ensure_ascii=False) + '\n',
+            '  MERGE      %-44s %d ancestor + %d upstream-only + %d local-only '
+            '= %d' % (rel, len(B), len(U) - len(B), len(L) - len(B), len(merged)))
+
+
 def classify(rel):
-    """('generated', generator) | ('source', why) | raises via fail()."""
+    """('merge', policy) | ('generated', gen) | ('source', why) | fail()."""
+    base = stage(1, rel)
+    if base is not None:
+        try:
+            anc = json.loads(base, object_pairs_hook=collections.OrderedDict)
+        except ValueError:                                      # noqa: BLE001
+            anc = None
+        if isinstance(anc, dict) and POLICY_KEY in anc:
+            return ('merge', check_policy(rel, anc[POLICY_KEY]))
+
     body = read(rel)
     m = DECLARES.search(body[:DECLARE_WINDOW])
     if not m:
@@ -122,15 +376,27 @@ def main(argv):
         return 0
 
     print('CONFLICTED FILES: %d\n' % len(files))
-    gen_files, src_files = [], []
+    gen_files, src_files, mrg_files = [], [], []
     for rel in files:
         kind, why = classify(rel)
-        if kind == 'generated':
+        if kind == 'merge':
+            mrg_files.append((rel, why))
+        elif kind == 'generated':
             gen_files.append((rel, why))
             print('  GENERATED  %-44s by %s' % (rel, why))
         else:
             src_files.append((rel, why))
             print('  SOURCE     %-44s %s' % (rel, why))
+
+    # ── EVERY MERGE IS COMPUTED BEFORE ANY FILE IS WRITTEN ─────────────────
+    merged_text, merge_refusals = {}, []
+    for rel, pol in mrg_files:
+        text, note = merge_file(rel, pol)
+        if text is None:
+            merge_refusals.append(note)
+        else:
+            merged_text[rel] = text
+            print(note)
     print('')
 
     # ── THE REFUSAL COMES BEFORE ANY WORK ──────────────────────────────────
@@ -149,10 +415,27 @@ def main(argv):
         print('Resolve them by reading both sides, then re-run this.')
         return 1
 
+    if merge_refusals:
+        print('REFUSED: %d mergeable ledger(s) hold a difference that is not an '
+              'append.' % len(merge_refusals))
+        for note in merge_refusals:
+            print(note)
+        print('')
+        print('These files CAN be merged automatically, and that is exactly why')
+        print('this case has to be refused out loud: the one difference a union')
+        print('would swallow silently is the one that was not an append.')
+        return 1
+
     if dry:
-        print('--dry: would regenerate and stage %d document(s). Nothing changed.'
-              % len(gen_files))
+        print('--dry: would merge %d ledger(s) and regenerate and stage %d '
+              'document(s). Nothing changed.' % (len(merged_text), len(gen_files)))
         return 0
+
+    # ── WRITE THE MERGES, ALL OF WHICH ARE ALREADY COMPUTED ────────────────
+    for rel, text in merged_text.items():
+        io.open(os.path.join(REPO, rel), 'w', encoding='utf-8',
+                newline='').write(text)
+        print('  merged %s' % rel)
 
     # ── REGENERATE FROM THE REPO, WHICH IS THE AUTHORITY ───────────────────
     # `--theirs` is not used even here. The point of a generated document is
@@ -169,25 +452,45 @@ def main(argv):
         print('  regenerated %s  (%s)' % (rel, gen))
 
     # ── THE BACKSTOP, AND IT DOES NOT TRUST THE CLASSIFICATION ─────────────
-    left = []
-    for rel, _gen in gen_files:
-        if MARKER.search(read(rel)):
-            left.append(rel)
+    staging = [rel for rel, _gen in gen_files] + list(merged_text)
+    left = [rel for rel in staging if MARKER.search(read(rel))]
     if left:
         print('')
-        print('REFUSED: conflict markers are STILL PRESENT after regeneration:')
+        print('REFUSED: conflict markers are STILL PRESENT after resolution:')
         for rel in left:
             print('    ' + rel)
         print('Nothing was staged. A generator that leaves markers behind did')
-        print('not regenerate the file, whatever its exit code said.')
+        print('not regenerate the file, whatever its exit code said, and a merge')
+        print('that leaves them behind did not merge it.')
         return 2
 
-    add = subprocess.run(['git', '-C', REPO, 'add'] + [r for r, _g in gen_files],
+    # ── AND THE VALIDATOR EACH LEDGER NAMED, ON THE MERGED RESULT ──────────
+    # Existence was checked at classification, so an absent validator has
+    # already refused. This is the run: a merge that produces a file its own
+    # gate rejects is not a resolution, it is a defect with the markers gone.
+    for rel, pol in mrg_files:
+        val = pol['validator']
+        r = subprocess.run([sys.executable, os.path.join(REPO, val[0])] + val[1:],
+                           cwd=REPO, capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')
+        if r.returncode != 0:
+            print('')
+            print('REFUSED: %s merged cleanly, and then its own validator '
+                  'rejected the result:' % rel)
+            print('    %s exited %d' % (' '.join(val), r.returncode))
+            print(((r.stdout or '') + (r.stderr or ''))[-800:])
+            print('')
+            print('NOTHING WAS STAGED. The merged file is on disk unstaged so')
+            print('you can read it; the rebase is still stopped.')
+            return 2
+        print('  validated %s  (%s)' % (rel, ' '.join(val)))
+
+    add = subprocess.run(['git', '-C', REPO, 'add'] + staging,
                          capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         fail('git add failed: ' + (add.stderr or '')[:200])
-    print('\nStaged %d regenerated document(s). Run `git rebase --continue`.'
-          % len(gen_files))
+    print('\nStaged %d regenerated document(s) and %d merged ledger(s). '
+          'Run `git rebase --continue`.' % (len(gen_files), len(merged_text)))
     return 0
 
 

@@ -1,5 +1,18 @@
 {
   "note": "Confirmed defects only. See tools/defect_register.py for why this is not a commit log and why the density is not the signal.",
+  "merge_policy": {
+    "strategy": "union-by-identity",
+    "records_key": "records",
+    "identity": [
+      "commit",
+      "summary"
+    ],
+    "validator": [
+      "tools/defect_register.py",
+      "--check"
+    ],
+    "note": "Read by tools/sairn_rebase_resolve.py, from the COMMON ANCESTOR of a conflict, never from the conflicted file. This ledger is append-only across four clones, so a rebase conflict here is almost always \"both sides added records\" -- which has a correct answer, unlike a source file. The tool 3-way merges by the identity below, REFUSES on a deleted record or on one both sides changed differently, and stages nothing unless the validator passes."
+  },
   "records": [
     {
       "commit": "41b423b209c3",
