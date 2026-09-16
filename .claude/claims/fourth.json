@@ -953,8 +953,8 @@
       "task": "orphan-register dead-button controls and the one-direction tranche",
       "claimed_at": "2026-09-13T10:47:20Z",
       "claimed_at_epoch": 1789296440.2891998,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T13:59:46Z"
     },
     {
       "id": "fourth-1789310929",
