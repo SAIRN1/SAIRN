@@ -115,14 +115,58 @@ check('6c  with a reason it proceeds', rc == 0, 'exit %d' % rc)
 check('6d  and the reason is ECHOED so it reaches the commit message',
       'dropped on purpose' in out)
 
-print('7. metadata keys are not counted as tables')
+# ── SECTION 7 CORRECTED 2026-09-16, AND THE FIXTURE WAS THE THING THAT WAS
+# ── WRONG, NOT THE TOOL'S OUTPUT. SAYING WHICH, BECAUSE THAT IS THE RULE.
+# This section used to add `_probe_metadata_key: ['not', 'a', 'table']` and
+# assert it was NOT counted as a table. That fixture encoded the loader's
+# leading-underscore name rule, and the name rule is what was wrong: TWO REAL
+# TABLES IN `public` BEGIN WITH AN UNDERSCORE AND HAVE BEEN IN THE CAPTURE
+# SINCE 2026-08-26 -- `_anon_grant_baseline_2026_08_26` and
+# `_anon_nontable_baseline_2026_08_26`, created by
+# sql/anon_authenticated_grant_revoke_2026-08-26.sql, and the hardening handoff
+# says in terms that they must stay. Their values are lists of column names,
+# structurally identical to the old fixture, so the fixture was asserting the
+# exact classification that made those two invisible to the shrink guard.
+#
+# The loader now classifies by the VALUE's shape. Both directions are demanded
+# here, because the name rule passed one of them and the point is that it could
+# not pass both.
+print('7. metadata is told from a table by SHAPE, not by a leading underscore')
 meta = dict(base)
 meta['_generated_at'] = NEWER
-meta['_probe_metadata_key'] = ['not', 'a', 'table']
+meta['_constraints'] = {'some_table': {'ck': 'CHECK (true)'}}
 rc, out = run(fixture('meta.json', meta))
-check('7a  adding a metadata key is not reported as a gained table', rc == 0)
-check('7b  and it does not appear in the gained list',
-      '_probe_metadata_key' not in out)
+check('7a  a real metadata key (an object) is not reported as a gained table',
+      rc == 0)
+check('7b  and it does not appear in the gained list', '_constraints' not in out)
+
+under = dict(base)
+under['_generated_at'] = NEWER
+under['_anon_probe_baseline_2026_08_26'] = ['table_name', 'grantee']
+rc, out = run(fixture('underscore-table.json', under))
+check('7c  an underscore-named key holding a COLUMN LIST is a table', rc == 0)
+check('7d  and it IS reported as gained -- the two real baseline tables were '
+      'invisible here until 2026-09-16',
+      '_anon_probe_baseline_2026_08_26' in out, out.strip().splitlines()[-1][:70])
+
+# AND THE ARM THE WHOLE CORRECTION IS FOR, driven against the REAL committed
+# capture rather than a synthetic base: dropping one of the two baseline tables
+# must REFUSE. Under the name rule this was accepted in silence.
+BASELINE = '_anon_grant_baseline_2026_08_26'
+if BASELINE not in base:
+    check('7e  COULD NOT TEST -- %s is no longer in the committed capture, so '
+          'the arm that proves underscore-named tables are guarded has nothing '
+          'to drop. That is a finding about the capture, not a pass' % BASELINE,
+          False)
+else:
+    gone = dict(base)
+    gone['_generated_at'] = NEWER
+    gone.pop(BASELINE)
+    check('7e  the fixture really drops the baseline', BASELINE not in gone)
+    rc, out = run(fixture('lost-baseline.json', gone))
+    check('7f  losing an underscore-named REAL table is REFUSED', rc == 1,
+          'exit %d' % rc)
+    check('7g  and it is named in the refusal', BASELINE in out)
 
 print('8. THE FILE IS NEVER TOUCHED BY A CHECK RUN')
 before = io.open(CURRENT, encoding='utf-8').read()

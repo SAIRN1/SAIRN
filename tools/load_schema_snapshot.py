@@ -89,13 +89,28 @@ def parse_stamp(s):
 
 
 def tables(snap):
-    """Table names only. Leading-underscore keys are metadata, not tables.
+    """Table names only -- classified by the VALUE's shape, not by the name.
 
-    The limit, stated: sql/ declares _grant_baseline_2026_08_25 and
-    _delete_grant_baseline_2026_08_25. Neither has ever been in a capture, so
-    nothing is misclassified today -- but if one ever is, it is dropped here.
+    ── THE LIMIT THIS USED TO HAVE WAS NOT HYPOTHETICAL, 2026-09-16 ─────────
+    This read `not k.startswith('_')`, and its own docstring named the risk:
+    `sql/` declares baseline tables whose names begin with an underscore, and
+    it said none had ever been in a capture. TWO OF THEM ARE, AND HAVE BEEN
+    SINCE THE 2026-08-26 CAPTURE: `_anon_grant_baseline_2026_08_26` and
+    `_anon_nontable_baseline_2026_08_26`. They are real tables in `public`
+    -- created by sql/anon_authenticated_grant_revoke_2026-08-26.sql -- and
+    the hardening handoff that created them says in terms that they MUST STAY.
+    The name rule classified both as metadata, so a truncated capture that
+    lost them would have passed the shrink guard in silence. The one guard
+    whose whole job is "tables must not disappear" could not see the two
+    tables somebody wrote down as must-not-disappear.
+
+    A CAPTURE'S SHAPE ANSWERS THIS AND A NAME CANNOT. Every table entry the
+    query emits is a LIST of column names; the only two genuine metadata keys
+    it emits are `_constraints` (an object) and `_generated_at` (a string).
+    So the list test is both stricter and correct where the name test was
+    neither, and it needs no allowlist to maintain.
     """
-    return {k for k in snap if not k.startswith('_')}
+    return {k for k, v in snap.items() if isinstance(v, list)}
 
 
 def load(path, label):
