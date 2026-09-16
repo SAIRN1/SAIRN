@@ -4979,6 +4979,60 @@
       "recurrence_open": "The dispatch is by file suffix, so it handles .py and .js and nothing else. A third kind -- a shell script, a compiled binary, a .mjs needing a flag -- lands in the same hole, and the registry format still does not record what a test is written in. What changed is that the population now has two kinds instead of one, not that the assumption was removed."
     },
     {
+      "commit": "7b59f73ba28b",
+      "date": "2026-09-16",
+      "subject": "fix(register-gate): a commit wearing another commit's message no longer walks past it",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 202,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/register_feed_gate.py demanded a defect record only when the commit SUBJECT matched ^fix(, so a commit carrying the wrong message escaped every check in it. Proved on origin/main: a8528025 wears 'chore(register): arm 7 attributed somebody else's edits to the probe' -- a message written for a 50-line append to the defect register -- and contains a 232s-to-25s performance fix to tools/retry_backoff_check.py plus three REGISTRY entries. No record cites it. The file's own header anticipated the deliberate version of this and not the accidental one, which is what happened: author date 10:48:38 against commit date 10:57:53, the signature of a rebase. Closed by a CONTENT rule -- two commits sharing a byte-identical subject on file sets that do not intersect -- measured at 3 hits in 807 commits, all three real, against 1,293 overlapping pairs correctly ignored.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "Subject-only keying is how the gate was built rather than something a commit introduced, so naming the commit that created the tool would record a lag that never elapsed."
+      },
+      "citation_note": "1.1 is a check that stopped checking. This one never checked the case at all: it asked a question about the subject and was read as asking one about the change. Same end state by a different route, so arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "Every check in the gate keyed on the commit SUBJECT, which is a claim about the change written by hand and not derived from it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A content check was added: a commit whose subject is byte-identical to another commit's, on a file set that does not intersect it at all, is refused"
+        },
+        {
+          "factor": "The file's own header anticipated only the DELIBERATE version -- somebody wording a subject to avoid the gate -- so nothing was watching for a rebase attaching the wrong message to a changeset by accident",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The accidental route is now the one that is blocked, and the header says which of the two is closed and which is not"
+        },
+        {
+          "factor": "Nothing in the toolchain compares a commit's message to its content, so the mismatch was invisible to every reader downstream -- git log, the register, the review gate all take the subject at face value",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A message is prose and a diff is code; no mechanism can hold them to each other in general. The disjoint-file-set rule works because it compares two MESSAGES that are identical, not a message to a diff."
+        },
+        {
+          "factor": "The escape from a rebase conflict is an editor that keeps the previous message, and the tooling offers no prompt at that moment -- the wrong message is the default outcome of the recovery, not a slip",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Changing how five sessions recover from a rebase is a workflow decision, not a patch to this gate. Recorded so the next person sees the mechanism rather than blaming the individual."
+        }
+      ],
+      "recurrence_open": "A UNIQUE, honestly-typed, WRONG subject still passes -- nothing here can read a message against a diff, and the escape hatch plus a human reader are what that rests on. The window is 14 days, so a message reused against an older commit is invisible and the refusal says so. And the three hits that made the rule are three that have ALREADY happened: a8528025 is now recorded, the other two are not, and nobody has decided whether they need to be."
+    },
+    {
       "commit": "b42d0729ff7f",
       "date": "2026-09-16",
       "subject": "fix(probe): arm 7 named the probe and measured the whole working tree",
@@ -5535,7 +5589,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
