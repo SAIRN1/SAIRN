@@ -49,7 +49,6 @@ import io
 import json
 import os
 import re
-import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -112,25 +111,59 @@ def owners_of(cell):
 
 
 def live_claims():
-    """[(session, task, age_hours)] for every ACTIVE claim. (list, problem)."""
+    """[(session, task, age_hours)] for every ACTIVE claim. (list, problem).
+
+    ── IMPORTED, NOT RE-IMPLEMENTED (2026-09-16) ───────────────────────────
+    This read `.claude/claims/*.json` out of the WORKING TREE and called
+    anything with `status == 'active'` live. `sairn_claim.py` answers the same
+    question two ways differently, and both differences were visible in this
+    tool's own output:
+
+      * IT READS origin/main, not the working tree. A claim another session
+        pushed is only a fact once it is there, and a claim this clone has
+        written and not pushed is invisible to everyone else -- so a local read
+        over-reports here and under-reports them. `sairn_claim.read_origin_
+        claims()` uses `git show`, which cannot write, deliberately: the
+        `git checkout origin/main -- .claude/claims` it replaced STAGED a
+        revert of a claim this clone had already committed (PR 1.4).
+      * IT APPLIES THE 4-HOUR EXPIRY. `is_active()` requires the claim to be
+        inside STALE_HOURS. Measured on 2026-09-16: this panel listed a
+        74.4-hour-old `fourth` claim as ACTIVE while `sairn_claim.py list`
+        did not show it at all. Two tools, one claim record, two answers, and
+        the one a session reads before starting work was the looser of them.
+
+    THAT DIVERGENCE IS WHAT THE DORMANT `import subprocess` AT THE TOP OF THIS
+    FILE WAS FOR. It was left behind by a pass that started making this read
+    the same way and did not finish; nothing in this module ever called it. The
+    resolution is to call the owner rather than to grow a second reader --
+    the same decision `report_only_checks.py` records about the push gate:
+    "THE PUSH GATE IS IMPORTED, NOT COPIED", after a fix reached one copy and
+    not the other. So the import is gone and sairn_claim owns the subprocess
+    calls.
+    """
     if not os.path.isdir(CLAIM_DIR):
         return None, 'no claims directory at ' + CLAIM_DIR
-    import time
+    try:
+        import sairn_claim
+    except Exception as exc:                                     # noqa: BLE001
+        # PR 1.11. A check that depends on another tool fails CLOSED when it is
+        # absent, and says which tool. Returning an empty list here would print
+        # "0 active claims" -- the exact sentence that sends a session into work
+        # somebody else is already doing.
+        return None, ('sairn_claim.py could not be imported (%s), so the claim '
+                      'half of this report did not run' % exc)
+    try:
+        claims = sairn_claim.load_all(from_origin=True)
+    except Exception as exc:                                     # noqa: BLE001
+        return None, 'sairn_claim.load_all failed: %s' % exc
     out = []
-    for fn in sorted(os.listdir(CLAIM_DIR)):
-        if not fn.endswith('.json'):
+    for c in claims:
+        if not sairn_claim.is_active(c):
             continue
-        try:
-            d = json.load(io.open(os.path.join(CLAIM_DIR, fn), encoding='utf-8'))
-        except (OSError, ValueError) as exc:
-            return None, '%s: %s' % (fn, exc)
-        for c in d.get('claims', []):
-            if c.get('status') != 'active':
-                continue
-            age = (time.time() - float(c.get('claimed_at_epoch') or 0)) / 3600.0
-            out.append((d.get('session') or fn[:-5],
-                        '%s: %s' % (c.get('subject', ''), c.get('task', '')),
-                        age))
+        age = (sairn_claim.now() - float(c.get('claimed_at_epoch') or 0)) / 3600.0
+        out.append((c.get('session') or os.path.basename(c.get('_file', ''))[:-5],
+                    '%s: %s' % (c.get('subject', ''), c.get('task', '')),
+                    age))
     return out, ''
 
 
