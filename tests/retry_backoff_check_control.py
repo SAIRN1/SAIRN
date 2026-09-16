@@ -218,8 +218,15 @@ def main():
     subprocess.run([sys.executable, _SUBJECT], cwd=REPO, capture_output=True,
                    text=True, encoding='utf-8', errors='replace',
                    env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+    # IF THIS ARM IS RED, CHECK WHETHER YOU EDITED THE TREE WHILE IT RAN.
+    # It compares `git status --porcelain` across a sweep that takes minutes, so
+    # ANY change to the working tree in that window -- your own commit, a
+    # regenerated document -- is a true observation and a false accusation. It
+    # went red exactly once for that reason on 2026-09-16 and green on a quiet
+    # tree immediately after. Recorded here so the next reader does not chase it.
     arm('6 ...and a real run leaves the WHOLE WORKING TREE unchanged',
-        _tree() == _before, 'the tool mutated the repo')
+        _tree() == _before,
+        'the tool mutated the repo -- OR the tree was edited while this ran')
 
     # 7. THE OTHER TWO THIRDS OF THE EXIT CONTRACT, added by the same First
     #    Article Inspection. The header states "Exit 0 clean, 1 finding, 2

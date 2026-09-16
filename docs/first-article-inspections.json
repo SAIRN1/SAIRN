@@ -504,7 +504,7 @@
       "artefact": "tools/retry_backoff_check.py",
       "inspected": "2026-09-16",
       "inspector": "Hank",
-      "sha256": "5d35cd16cc45d15f20f5bc69fb5c6c9acc46509325b4f662a459eb2c362f3d19",
+      "sha256": "03235a2f5c6ce08dcbc6a1531bc38afed614143e331614db53c8a9106296ac87",
       "report": "docs/2026-09-16-first-article-dispatch-landing-retry.md",
       "suites": [
         "tests/retry_backoff_check_control.py"
@@ -553,8 +553,16 @@
           "status": "verified",
           "by": "'7 UNCLEAR: an outbound call with NO arguments inside a loop reads UNCLEAR, because the tool cannot tell what is called again', '7 ...and UNCLEAR IS NOT A PASS -- it is COULD NOT RUN (2), not a finding and not clean', and '7 ...and --json agrees about THAT too, which it did not before this inspection: it had its own rule and called UNCLEAR a finding'",
           "note": "NO ARM DRIVED THE UNCLEAR PATH BEFORE THIS INSPECTION. The branch was reachable and exercised by nothing, which is exactly where the --json disagreement was hiding."
+        },
+        {
+          "claim": "THE 2026-09-16 MERGE: sources() listed api/ and api/_lib/ and NOTHING ELSE, so forty non-test .js files were never read; the walk is recursive now. And OUTBOUND held four TRANSPORT patterns, so a loop reaching the model through a named helper was invisible -- callClaude( and dispatchAgent( are merged in.",
+          "status": "verified",
+          "by": "the arms that came with the merge -- 'the api/ walk is RECURSIVE -- api/agent/ is scanned', its three siblings over api/sairncash/, api/sairndental/ and api/_resources/, 'an AI/agent call is an OUTBOUND call -- callClaude is in the vocabulary', '...and dispatchAgent', and the paired direction '...and the four TRANSPORT patterns survived, so the merge ADDED rather than replaced'",
+          "note": "ADDED TO THIS RECORD 2026-09-16 ON RE-INSPECTION, not at first inspection. The file's bytes changed after the record was written (Cody's merge of the other half of item 81) and first_article_check.py reported the record STALE, which is the mechanism working exactly as designed -- an FAI is evidence about the bytes it ran on. The docstring gained a claim, so the record gains a disposition rather than being re-stamped over the top of it. The api/_lib arm is the one worth naming: a recursive walk PLUS the old explicit block would have doubled every finding in that directory, and that direction is pinned separately."
         }
-      ]
+      ],
+      "re_inspected": "2026-09-16",
+      "re_inspected_note": "The bytes changed within the hour of the first inspection and the gate said so. Re-verified against the new file rather than re-stamped: the control was re-run green, the --json exit fix made during the first inspection survives the merge, and the claim the merge ADDED now carries its own disposition."
     }
   ]
 }
