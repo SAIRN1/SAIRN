@@ -179,8 +179,17 @@ rg = subprocess.run([sys.executable, SUBJECT, '--self-check'],
                     capture_output=True, text=True, encoding='utf-8',
                     errors='replace', cwd=REPO)
 ok('--self-check exits 0', rg.returncode == 0, rg.stdout[-300:])
-ok('...over every case in the table',
-   rg.stdout.count('-> ') == len(G.CASES), rg.stdout[-400:])
+# ── BOTH TABLES, AND THIS ARM WENT RED WHEN THE SECOND ONE ARRIVED ─────────
+# It read `== len(G.CASES)` and the gate gained REUSE_CASES on 2026-09-16, so
+# the arrow count became 14 against an expected 7. The arm was RIGHT to fail --
+# that is what an "every case is driven" assertion is for -- and the fix is to
+# name both tables rather than to loosen it to a floor. A THIRD table added
+# without touching this line will fail here the same way, which is the property
+# worth keeping.
+ok('...over every case in BOTH rule tables',
+   rg.stdout.count('-> ') == len(G.CASES) + len(G.REUSE_CASES),
+   'arrows=%d cases=%d reuse=%d\n%s'
+   % (rg.stdout.count('-> '), len(G.CASES), len(G.REUSE_CASES), rg.stdout[-300:]))
 
 
 print('\n' + '=' * 66)

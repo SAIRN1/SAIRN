@@ -84,6 +84,54 @@ FIX_RE = re.compile(r'^fix\(', re.I)
 ESCAPE_RE = re.compile(r'^no-defect-record:\s*(.+)$', re.I | re.M)
 MIN_REASON = 30
 
+# ── THE SUBJECT IS NOT THE CHANGE, AND ON 2026-09-16 THAT WAS PROVED ───────
+# Everything above keys on the SUBJECT. `a8528025` is on origin/main carrying
+# `chore(register): arm 7 attributed somebody else's edits to the probe` -- a
+# message written for a 50-line append to docs/defect-density-register.json --
+# and its actual content is a 232s-to-25s performance fix to
+# tools/retry_backoff_check.py plus three REGISTRY entries. FIX_RE did not
+# match, so this gate never asked, and no record cites it. A real fix is on
+# origin/main unrecorded.
+#
+# THE DOCSTRING ABOVE ALREADY ANTICIPATED THE DELIBERATE VERSION -- "a gate
+# people learn to word their commit subjects around". What it did not
+# anticipate is that a rebase can do it BY ACCIDENT, to somebody who was not
+# trying, and that is what happened: author date 10:48:38, commit date
+# 10:57:53, and another session held a claim for "rebase resolve semantic merge
+# for the two json registers" four minutes earlier.
+#
+# ── WHAT A CONTENT CHECK CAN AND CANNOT DO, MEASURED BEFORE IT WAS BUILT ───
+# "Does this diff fix a defect" is NOT mechanically decidable, and the honest
+# thing is to say so rather than ship a classifier that guesses. Two content
+# rules were measured against 807 real commits since 2026-09-13 before this one
+# was chosen:
+#
+#   chore/docs touching code files            27 hits -- 6 of them my own
+#                                             docs(tracing) comment additions
+#   ...restricted to EXECUTABLE line changes  20 hits -- MIN_TEST_FILES bumps,
+#                                             inventory rows, REGISTRY entries;
+#                                             almost all honest chore work
+#
+# A gate that fires twenty times to catch one is a gate people switch off, which
+# this file's own header says in as many words. Both were rejected.
+#
+# ── THE RULE THAT WAS KEPT, AND WHY IT IS PRECISE ─────────────────────────
+# A REUSED MESSAGE leaves a signature: two commits with a BYTE-IDENTICAL
+# subject whose FILE SETS DO NOT INTERSECT AT ALL. Measured over the same 807
+# commits: 1,293 duplicate-subject pairs overlap in files and are not flagged --
+# `chore(claims): cc releases cc` repeats by design and always touches its one
+# claim file -- and exactly THREE pairs are disjoint. All three are real message
+# reuse, including a8528025 and a `chore(claims)` commit whose content is a
+# MASTER-PLAN regeneration rather than a claim.
+#
+# THREE IN EIGHT HUNDRED, AND ALL THREE TRUE. That is a signal worth blocking
+# on. It closes the ACCIDENTAL bypass -- the one that actually happened and
+# that nobody had anticipated. It does NOT close the deliberate one: a unique,
+# honestly-typed, wrong subject still passes, and the escape hatch plus a human
+# reader are what that rests on. Said here rather than left to be discovered.
+SUBJECT_REUSE_DAYS = 14
+REUSE_ESCAPE_RE = re.compile(r'^subject-reuse:\s*(.+)$', re.I | re.M)
+
 EXIT_OK, EXIT_DENY, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 
@@ -168,6 +216,68 @@ def judge(rows, cited):
             continue
         owed.append((sha[:8], date, subject, 'no register record cites it'))
     return owed, escaped, backlog
+
+
+def subject_file_index(days):
+    """{subject: [(sha, frozenset(files))]} over a bounded window. None on
+    failure.
+
+    ONE `git log` call, not one per commit. The per-commit version needed ~800
+    subprocesses over this window, which is not a thing to put in front of a
+    push behind a 150-second timeout.
+
+    THE WINDOW IS BOUNDED AND IS PRINTED ON EVERY RUN (PR 1.7). A reused
+    message older than the window is invisible here, and a sampling window that
+    does not say what it did not look at reads as "checked everything".
+    """
+    code, out, _e = git('log', '--since=%d days ago' % days, '--no-renames',
+                        '--name-only', '--format=%x1e%H%x1f%s')
+    if code != 0:
+        return None
+    index = {}
+    for chunk in out.split('\x1e'):
+        if not chunk.strip():
+            continue
+        head, _, rest = chunk.partition('\n')
+        if '\x1f' not in head:
+            continue
+        sha, _, subject = head.partition('\x1f')
+        files = frozenset(f.strip().replace('\\', '/')
+                          for f in rest.split('\n') if f.strip())
+        index.setdefault(subject, []).append((sha.strip(), files))
+    return index
+
+
+def judge_subject_reuse(rows, index):
+    """[(sha, subject, other_sha)] for outgoing commits wearing a message that
+    an earlier commit already used on a DISJOINT set of files.
+
+    Pure given the index, which is the half worth driving from a rule table.
+    """
+    out = []
+    for sha, _date, subject, body in rows:
+        m = REUSE_ESCAPE_RE.search(body or '')
+        if m and len(m.group(1).strip()) >= MIN_REASON:
+            continue
+        mine = None
+        for s, files in index.get(subject, []):
+            if s == sha:
+                mine = files
+                break
+        if mine is None:
+            continue
+        for s, files in index.get(subject, []):
+            if s == sha:
+                continue
+            # An EMPTY file set is a merge commit or an empty commit; it
+            # intersects nothing by definition and would flag every pair it is
+            # in. Not a reused message, so not judged.
+            if not files or not mine:
+                continue
+            if not (files & mine):
+                out.append((sha[:8], subject, s[:8]))
+                break
+    return out
 
 
 def outgoing_range(stdin_text):
@@ -463,6 +573,44 @@ def main(argv):
     owed, escaped, _backlog = judge(rows, cited)
     if owed:
         return deny(owed, escaped)
+
+    # ── THE CONTENT HALF ────────────────────────────────────────────────────
+    index = subject_file_index(SUBJECT_REUSE_DAYS)
+    if index is None:
+        print('')
+        print('Blocked: the subject-reuse window could not be read, so whether a')
+        print('commit in this push wears another commit\'s message is UNKNOWN.')
+        print('')
+        print('That is the check whose absence let a real fix reach origin/main')
+        print('unrecorded on 2026-09-16, so it refuses rather than passing.')
+        return EXIT_COULD_NOT_RUN
+    reused = judge_subject_reuse(rows, index)
+    if reused:
+        print('')
+        print('Blocked: a commit in this push wears a message ANOTHER commit already')
+        print('used, on a completely different set of files.')
+        print('')
+        for sha, subject, other in reused:
+            print('  %s  %s' % (sha, subject[:66]))
+            print('      the same subject is already on %s, and the two share NO file'
+                  % other)
+        print('')
+        print('THIS IS WHAT A REBASE OR AN --amend LOOKS LIKE WHEN IT PUTS THE WRONG')
+        print('MESSAGE ON A CHANGESET. It matters here because every other check in')
+        print('this gate reads the SUBJECT: on 2026-09-16 a8528025 reached origin/main')
+        print('wearing a chore(register) message while containing a real performance')
+        print('fix, so nothing asked it for a defect record and none cites it.')
+        print('')
+        print('THE FIX IS USUALLY TO REWORD THE SUBJECT so it describes the change.')
+        print('If the reuse is deliberate and correct, say so as a trailer with a real')
+        print('sentence -- at least %d characters:' % MIN_REASON)
+        print('')
+        print('    subject-reuse: <why these are genuinely the same change>')
+        print('')
+        print('WINDOW: the last %d days. A reused message older than that is not'
+              % SUBJECT_REUSE_DAYS)
+        print('visible to this check, which is stated rather than implied.')
+        return EXIT_DENY
     return EXIT_OK
 
 
@@ -481,8 +629,51 @@ CASES = [
 ]
 
 
+# The subject-reuse half, driven with no repository at all. Every case is a
+# hand-built index, and the two CONTROL cases are the ones that matter: a gate
+# that flagged every duplicate subject would satisfy the positives alone, and
+# `chore(claims): cc releases cc` repeats 19 times in a fortnight by design.
+REUSE_CASES = [
+    ('a unique subject', 'fix(x): y', '', {'fix(x): y': [('a' * 40, {'api/x.js'})]}, False),
+    ('the same subject, OVERLAPPING files -- a repeat by design',
+     'chore(claims): cc releases cc', '',
+     {'chore(claims): cc releases cc': [('a' * 40, {'.claude/claims/cc.json'}),
+                                        ('b' * 40, {'.claude/claims/cc.json'})]}, False),
+    ('the same subject, DISJOINT files -- a reused message',
+     'chore(register): x', '',
+     {'chore(register): x': [('a' * 40, {'tools/retry_backoff_check.py'}),
+                             ('b' * 40, {'docs/defect-density-register.json'})]}, True),
+    ('...and a real trailer excuses it',
+     'chore(register): x',
+     'subject-reuse: the register append and its regenerated document, split only '
+     'because the push gate demands two commits',
+     {'chore(register): x': [('a' * 40, {'tools/retry_backoff_check.py'}),
+                             ('b' * 40, {'docs/defect-density-register.json'})]}, False),
+    ('...and a BARE trailer does not',
+     'chore(register): x', 'subject-reuse: same thing',
+     {'chore(register): x': [('a' * 40, {'tools/retry_backoff_check.py'}),
+                             ('b' * 40, {'docs/defect-density-register.json'})]}, True),
+    ('an EMPTY file set is a merge, not a reused message',
+     'chore(x): y', '',
+     {'chore(x): y': [('a' * 40, {'api/x.js'}), ('b' * 40, set())]}, False),
+    ('a subject the index does not know -- nothing to compare against',
+     'fix(z): unseen', '', {}, False),
+]
+
+
 def self_check():
     bad = []
+    for label, subject, body, index, want in REUSE_CASES:
+        idx = dict((k, [(s, frozenset(f)) for s, f in v]) for k, v in index.items())
+        got = bool(judge_subject_reuse([('a' * 40, '2026-09-20', subject, body)], idx))
+        print('    %-58s -> %-7s %s'
+              % (label, 'FLAGGED' if got else 'clean',
+                 'ok' if got == want else 'EXPECTED ' + ('FLAGGED' if want else 'clean')))
+        if got != want:
+            bad.append((label, got, want))
+    print('')
+    print('    subject-reuse window: %d days' % SUBJECT_REUSE_DAYS)
+    print('')
     for label, subject, date, has_record, body, want in CASES:
         sha = 'a' * 40
         cited = {sha[:8]} if has_record else set()
