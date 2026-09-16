@@ -2003,8 +2003,8 @@
       "task": "current state verification claims cross referenced against open work registry",
       "claimed_at": "2026-09-16T04:17:37Z",
       "claimed_at_epoch": 1789532257.8058956,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:31:19Z"
     }
   ]
 }
