@@ -14,7 +14,7 @@ restore actually happened.
 import subprocess, re, sys, os
 
 import subprocess as _sp
-REPO = _sp.run(['git','rev-parse','--show-toplevel'],capture_output=True,text=True).stdout.strip()
+REPO = _sp.run(['git','rev-parse','--show-toplevel'],capture_output=True,text=True, encoding='utf-8', errors='replace').stdout.strip()
 EP = 'api/legal-deadlines.js'
 
 

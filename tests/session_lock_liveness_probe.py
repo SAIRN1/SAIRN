@@ -82,7 +82,7 @@ def run(tool, action, claude_pid, lock_dir):
     else:
         env['CLAUDE_PID'] = str(claude_pid)
     return subprocess.run([sys.executable, tool, action],
-                          capture_output=True, text=True, env=env, timeout=60)
+                          capture_output=True, text=True, encoding='utf-8', errors='replace', env=env, timeout=60)
 
 
 def decision(proc):

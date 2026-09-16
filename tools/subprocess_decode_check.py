@@ -72,10 +72,56 @@ TEXT_KW = ('text', 'universal_newlines')
 ADD = ", encoding='utf-8', errors='replace'"
 
 
-def is_subprocess_call(node):
+def module_bindings(tree):
+    """(names bound to the subprocess MODULE, names bound to its FUNCTIONS).
+
+    ── WHY THIS IS READ AND NOT ASSUMED (2026-09-16) ────────────────────────
+    is_subprocess_call() required the receiver to be the literal Name
+    `subprocess`, so a file that wrote `import subprocess as _sp` was invisible
+    to this checker -- not reported clean, not reported at all.
+
+    MEASURED: `tests/seam_check/run_probe.py` line 17 is
+
+        REPO = _sp.run([...], capture_output=True, text=True).stdout.strip()
+
+    text mode, no encoding, decoded with the cp1252 locale default -- the exact
+    defect the 358-call sweep in e1040ea5 was written to eliminate, in a file
+    whose very next function calls `subprocess.run` WITH the fix. The sweep
+    reported "all of them"; this one was never in the population it swept.
+
+    A DETECTOR THAT KNOWS ONE SPELLING REPORTS EVERY OTHER SPELLING AS ABSENT,
+    and absent reads as clean. Third confirmed instance of that class on this
+    platform: the hover auditor's hardcoded guard vocabulary false-flagged a
+    real guard written differently, tests/run_tool_selftest_probe.py could see
+    `'--selftest' in argv` and not `argparse`, and this.
+
+    So the binding is now READ FROM THE FILE rather than assumed. `import
+    subprocess as X` binds the module to X; `from subprocess import run, Popen`
+    binds the functions directly. Both are resolved from the import statements
+    that are actually there.
+    """
+    mods, funcs = set(), set()
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Import):
+            for a in n.names:
+                if a.name == 'subprocess':
+                    mods.add(a.asname or 'subprocess')
+        elif isinstance(n, ast.ImportFrom) and n.module == 'subprocess':
+            for a in n.names:
+                if a.name in FUNCS:
+                    funcs.add(a.asname or a.name)
+    return mods, funcs
+
+
+def is_subprocess_call(node, mods=('subprocess',), funcs=()):
     f = node.func
-    return (isinstance(f, ast.Attribute) and f.attr in FUNCS
-            and isinstance(f.value, ast.Name) and f.value.id == 'subprocess')
+    if isinstance(f, ast.Attribute) and f.attr in FUNCS:
+        return isinstance(f.value, ast.Name) and f.value.id in mods
+    # `from subprocess import run` -> a bare call. Only counted when the import
+    # is really there: a local helper called `run` is not subprocess.run, and
+    # this checker rewrites source, so a false positive here edits the wrong
+    # line. That is why the binding is read rather than guessed from the name.
+    return isinstance(f, ast.Name) and f.id in funcs
 
 
 def findings_in(src):
@@ -86,8 +132,9 @@ def findings_in(src):
         tree = ast.parse(src)
     except SyntaxError as e:
         raise ValueError('does not parse: %s' % e)
+    mods, funcs = module_bindings(tree)
     for node in ast.walk(tree):
-        if not isinstance(node, ast.Call) or not is_subprocess_call(node):
+        if not isinstance(node, ast.Call) or not is_subprocess_call(node, mods, funcs):
             continue
         kw = {k.arg: k for k in node.keywords if k.arg}
         if 'encoding' in kw:

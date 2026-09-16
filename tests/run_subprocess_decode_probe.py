@@ -181,6 +181,54 @@ for mod in ('sairn_push_gate_hook', 'sairn_claim', 'tier_a_review_gate',
                        encoding='utf-8', errors='replace', timeout=120)
     check('tools/%s.py imports' % mod, r.returncode == 0, (r.stderr or '')[:200])
 
+
+# -- THE MODULE BINDING IS READ, NOT ASSUMED (2026-09-16) -------------------
+# is_subprocess_call() required the receiver to be the literal Name
+# `subprocess`, so a file that aliased the import was invisible to this
+# checker -- not reported clean, not reported at all.
+#
+# MEASURED: tests/seam_check/run_probe.py line 17 used `import subprocess as
+# _sp` and called `_sp.run(..., text=True)` with no encoding. That is the exact
+# defect the 358-call sweep was written to eliminate, in a file whose very next
+# function already calls subprocess.run WITH the fix. The sweep said "all of
+# them"; this call was never in the population it swept.
+#
+# Third confirmed instance of one class on this platform: a detector that knows
+# ONE SPELLING reports every other spelling as ABSENT, and absent reads as
+# clean. The other two: the hover auditor's hardcoded guard vocabulary, and
+# tests/run_tool_selftest_probe.py seeing `'--selftest' in argv` but not
+# argparse.
+print(chr(10) + 'the subprocess module binding is read from the imports')
+
+check('an ALIASED module is seen: import subprocess as _sp',
+      len(d.findings_in("import subprocess as _sp\n"
+                        "_sp.run(['x'], text=True)\n")) == 1)
+check('...and the real shape from run_probe.py line 17',
+      len(d.findings_in(
+          "import subprocess as _sp\n"
+          "REPO = _sp.run(['git','rev-parse'],capture_output=True,"
+          "text=True).stdout.strip()\n")) == 1)
+check('a FROM-import is seen: from subprocess import run',
+      len(d.findings_in("from subprocess import run\n"
+                        "run(['x'], text=True)\n")) == 1)
+check('...and an aliased from-import: from subprocess import run as r',
+      len(d.findings_in("from subprocess import run as r\n"
+                        "r(['x'], text=True)\n")) == 1)
+
+# BOTH DIRECTIONS. Widening a detector is how it starts firing on things that
+# are not its subject, and this checker REWRITES SOURCE -- a false positive
+# here edits the wrong line of somebody's file.
+check('CONTROL: a local helper named run is NOT subprocess.run',
+      not d.findings_in("def run(*a, **k):\n    pass\nrun(['x'], text=True)\n"))
+check('CONTROL: an unrelated module aliased to _sp is not matched',
+      not d.findings_in("import shutil as _sp\n_sp.run(['x'], text=True)\n"))
+check('CONTROL: from-importing a DIFFERENT name does not bind run',
+      not d.findings_in("from subprocess import PIPE\nrun(['x'], text=True)\n"))
+check('CONTROL: an aliased module WITH an encoding is still clean',
+      not d.findings_in("import subprocess as _sp\n"
+                        "_sp.run(['x'], text=True, encoding='utf-8')\n"))
+
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))

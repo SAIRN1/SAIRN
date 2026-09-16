@@ -209,7 +209,7 @@ def _start_sig_powershell(pid):
             ['powershell.exe', '-NoProfile', '-NonInteractive', '-Command',
              '(Get-Process -Id %d -ErrorAction Stop).StartTime.ToFileTime()'
              % int(pid)],
-            capture_output=True, text=True, timeout=15)
+            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=15)
     except Exception as exc:
         return 'unknown', 'powershell did not run: %s' % exc
     text = (out.stdout or '').strip()
