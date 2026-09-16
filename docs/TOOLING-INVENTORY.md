@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**185 files in `tools/`.** By what actually invokes them:
+**186 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 53 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 54 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 53 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 128 |
+| CHECKER | 129 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -131,7 +131,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (53)
+## REPORT-ONLY (54)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -155,6 +155,7 @@ quiet in practice.
 | `dependency_graph.py` | 2026-09-14, registered REPORT-ONLY on its first day and deliberately not wired into the push gate -- its threshold is a policy and a policy has no business refusing a push until somebody has watched it for a while | a component at or above SPOF_THRESHOLD with no row in docs/SPOF-REGISTER.md, a row marked OPEN that is no longer a chokepoint, and -- the sharp one -- a row marked RETIRED while the component is still above the bar |
 | `discarded_verdict_check.py` | 2026-09-10 | a refusal that is computed and then not read -- the gate runs and its answer is thrown away |
 | `discarded_verdict_crossfile.py` | 2026-09-10 | the CROSS-MODULE half: a verdict returned by a required module and dropped in another file |
+| `dispatch_state.py` | 2026-09-16, report-only and it must stay that way: it is a READING aid for whoever is picking work, and a gate that refused a push because the platform has open rows would refuse every push forever | work that is open in docs/SAIRN-OPEN-WORK-INDEX.md AND owned by a session holding a live claim -- the collision a per-item `sairn_claim.py check` structurally cannot show you, because it answers about ONE task string you already thought of and cannot enumerate what else exists |
 | `div_balance_check.py` | 2026-09-10 | an unbalanced <div> tree -- the safe-editing rules say run it after EVERY edit and nothing ever did |
 | `duplicate_global_check.py` | 2026-09-10, after its one real-run finding turned out to be a deliberate wrapper | a second top-level declaration of the same global -- the later one silently wins and the earlier becomes dead code that still reads correctly (Guardian check 13) |
 | `eaten_substitution_check.py` | 2026-09-14, the day it was built, report-only and NOT wired into the push gate: it reports a SHAPE and cannot know a shell caused it, and a check that cannot tell a stray keystroke from an eaten expression has no business refusing a push | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted |
@@ -390,11 +391,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      185   git ls-files tools/
+  tools on disk                      186   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                51   report_only_checks.REGISTRY
-  tools invoked by tests/            130   tests/**/*.py, *.js
+  report-only registry                52   report_only_checks.REGISTRY
+  tools invoked by tests/            131   tests/**/*.py, *.js
   recorded NOT-promoted decisions     53   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

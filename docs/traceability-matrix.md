@@ -97,6 +97,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
 | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off | `service_role_tier_a_gate_check.py` | FIRST RUN 2026-09-15: 66 api/ modules read the key; only THREE address a Tier A resource in a write PATH, and all three are correct -- api/sd-data.js GATED, and public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A writes funnel through one gated chokepoint, and the two public endpoints are the declared exceptions. THIS DOES NOT CONTRADICT the open session-gate finding on sd-data.js: this asks whether the MODULE gates, that asks whether a per-resource BRANCH inside it does, and both are true at once. 26-arm probe; three of its eight fixtures exist because the classifier was wrong on a REAL file -- bridge.js (a jsonb key, writes bridge_data), sv-witness.js (killed by the over-correction that fixed bridge.js) and send-reminder.js (writes in helpers above the handler, CRON_SECRET first inside it) |
 | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it | `register_feed_gate.py` | MEASURED BEFORE IT WAS DESIGNED, and the measurement chose the shape: 66 `fix(` commits touching code since 2026-09-13 and 62 of them citing no record; 422 across all history against 51 distinct commits cited. A gate refusing all of those would refuse essentially every push, and a wall produces overrides -- which this repo already records costing more than the gate saved. Hence a REQUIREMENT DATE, the same mechanism first_article_check.py uses, with the backlog REPORTED rather than forgiven. 27-arm probe at tests/run_register_feed_gate_probe.py, including both failure directions, the boundary day, a bare escape hatch being refused, and an unreadable register DENYING the push |
+| work that is open in docs/SAIRN-OPEN-WORK-INDEX.md AND owned by a session holding a live claim -- the collision a per-item `sairn_claim.py check` structurally cannot show you, because it answers about ONE task string you already thought of and cannot enumerate what else exists | `dispatch_state.py` | FIRST RUN 2026-09-16: 158 open rows of 510, 15 active claims, 55 CONTESTED, 31 waiting on Michael, 72 open and UNOWNED -- and ZERO rows that are open, owned, and whose owner is not currently working. Every named owner was live at that moment, so the only genuinely available work was the unowned bucket. 38-arm probe; the arms lean toward the OPEN direction because the dangerous failure is TOO SHORT a list -- an empty dispatch list looks identical to a finished platform. An unseen status word defaults to OPEN, an absent claims directory is COULD NOT RUN rather than "nothing is claimed", and an always-closed classifier is caught by the blind lock before it can print a tidy, empty and completely wrong report |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -157,6 +158,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **What is genuinely open AND unclaimed &mdash; the join nobody was doing, and it caught four of five queued items belonging to a live session** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/dispatch_state.py`, report-only and registered; `tests/run_dispatch_state_probe.py` **38 arms, 0 failures** | `tests/run_dispatch_state_probe.py` |
 | **The measurement substrate was starved, and five tools reported vacuous numbers because of it &mdash; a defect closure can no longer complete without feeding the register** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/register_feed_gate.py`, BLOCKING on pre-push from its requirement date and report-only as `--backlog`; wired in `.githooks/pre-push`. `tests/run_register_fee | `tests/run_register_feed_gate_probe.py` |
 | **Item 40 continued: does anything holding the RLS-BYPASSING key write Tier A data without gating the caller** | **MEASURED AND BUILT 2026-09-15 (Hank)** &mdash; `tools/service_role_tier_a_gate_check.py`, report-only and registered, built THROUGH `checker_kit`. `tests/run_service_role_gate_probe.py` **26 arms, 0 | `tests/run_service_role_gate_probe.py` |
 | **Item 64: the precedence rule for when two of our own checks DISAGREE &mdash; decided in advance instead of ad hoc under pressure** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/check_precedence.py`, report-only and registered as `--self-check`. `tests/run_check_precedence_probe.py` **48 arms, 0 failures**. `docs/2026-09-15-item64-ch | `tests/run_check_precedence_probe.py` |
@@ -491,15 +493,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 280 of 478 traced, 58.6%.
+For context and not as the headline: 281 of 479 traced, 58.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 286 citations come from
+### Where the 287 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 259 |
+| `index` | 260 |
 | `declared` | 21 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 1 |
@@ -733,10 +735,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 478   tests/**, api/*.test.js
-  open-work rows citing a test       247   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 479   tests/**, api/*.test.js
+  open-work rows citing a test       248   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                51   report_only_checks.REGISTRY
+  report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     48   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

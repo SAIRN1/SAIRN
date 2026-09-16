@@ -1510,6 +1510,49 @@ REGISTRY = [
                     'failure directions, the boundary day, a bare escape hatch '
                     'being refused, and an unreadable register DENYING the push',
     },
+    {
+        'tool': 'dispatch_state.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only and it must stay that way: it is a '
+                    'READING aid for whoever is picking work, and a gate that '
+                    'refused a push because the platform has open rows would '
+                    'refuse every push forever',
+        'catches': 'work that is open in docs/SAIRN-OPEN-WORK-INDEX.md AND '
+                   'owned by a session holding a live claim -- the collision a '
+                   'per-item `sairn_claim.py check` structurally cannot show '
+                   'you, because it answers about ONE task string you already '
+                   'thought of and cannot enumerate what else exists',
+        'why_it_matters': 'TWO SOURCES ANSWER "what should I work on" AND '
+                          'NEITHER ANSWERS IT ALONE. The registry says what is '
+                          'OPEN; the claims say what is BEING WORKED. Reading '
+                          'either alone produces a real failure: pick something '
+                          'a live session is three hours into, or ask about the '
+                          'one item you happened to name. MEASURED ON THE RUN '
+                          'THAT MOTIVATED IT, 2026-09-16: a five-item queue was '
+                          'dispatched to this session and FOUR were another '
+                          "session's live or owned work -- three named verbatim "
+                          'in a claim made SIX MINUTES earlier, the fourth '
+                          'owned by that same active session. It does NOT ask '
+                          'the phrase matcher, whose residual false CLEAR is '
+                          'measured and whose obvious repair cost 74 extra '
+                          'false blocks over 20,000 sampled pairs and was '
+                          'rejected; it joins on the owner column and reports '
+                          'CONTESTED rather than deciding',
+        'evidence': 'FIRST RUN 2026-09-16: 158 open rows of 510, 15 active '
+                    'claims, 55 CONTESTED, 31 waiting on Michael, 72 open and '
+                    'UNOWNED -- and ZERO rows that are open, owned, and whose '
+                    'owner is not currently working. Every named owner was live '
+                    'at that moment, so the only genuinely available work was '
+                    'the unowned bucket. 38-arm probe; the arms lean toward the '
+                    'OPEN direction because the dangerous failure is TOO SHORT '
+                    'a list -- an empty dispatch list looks identical to a '
+                    'finished platform. An unseen status word defaults to OPEN, '
+                    'an absent claims directory is COULD NOT RUN rather than '
+                    '"nothing is claimed", and an always-closed classifier is '
+                    'caught by the blind lock before it can print a tidy, empty '
+                    'and completely wrong report',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
