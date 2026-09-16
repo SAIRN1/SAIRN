@@ -1523,8 +1523,8 @@
       "task": "entity baseline readiness re-inspection, G5 suite controls continued, G7 band 1 factors, optimistic_success_scan FAI",
       "claimed_at": "2026-09-16T05:14:21Z",
       "claimed_at_epoch": 1789535661.0707219,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T05:41:04Z"
     }
   ]
 }
