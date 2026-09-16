@@ -11712,9 +11712,45 @@ module.exports = async (req, res) => {
     if (resource === 'law_trust_reconcile' && action === 'read') {
       const recSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlaw');
       if (!recSess) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const LAW_RECONCILE_ROLES = { owner: true, admin: true };
+      // ── A ROLE THAT CANNOT EXIST (fixed 2026-09-16) ──────────────────
+      // This read `{ owner: true, admin: true }`. SAIRNlaw's roles are
+      // owner / attorney / paralegal -- there is no `admin`, so that key
+      // could never match and trust reconciliation was OWNER-ONLY IN
+      // PRACTICE while the code, the message and every reader said
+      // "management". `admin` is SAIRNcode's vocabulary; it arrived by copy.
+      //
+      // THE ACCIDENT HAD A VISIBLE HALF NOBODY CONNECTED: sairnlaw.html shows
+      // the Trust Accounting tab to EVERY signed-in role, so an attorney
+      // opening the panel the app offers them got a 403 saying the feature is
+      // for management. A dead key in an allow-list does not fail loudly; it
+      // narrows quietly and the narrowing looks like policy.
+      //
+      // WHO SHOULD BE IN THE SET IS NOT DECIDED HERE, AND THAT IS DELIBERATE.
+      // A dead key has two honest repairs and they are not equivalent: narrow
+      // the READING to what the gate has always done, or WIDEN THE GATE. The
+      // second grants a role that has never had it access to IOLTA client
+      // trust money -- the one figure a bar association audits -- and it would
+      // arrive inside a commit whose subject line says "typo". So this takes
+      // the first: `owner` alone, byte-for-byte the behaviour that has been
+      // live, with the message and the comment finally saying so.
+      //
+      // ADDING `attorney` IS THE OPEN QUESTION, not a rejected one. An
+      // attorney is usually a principal on the firm's trust account and the
+      // app already shows them the Trust Accounting tab, so the present
+      // behaviour may well be wrong -- but widening it is a bar-rules
+      // judgement for the firm, and `paralegal` is a separate question again.
+      // Tracked as an open decision; NOT closed by this fix.
+      // THE RECURRENCE IS CAUGHT BEFORE THE PUSH, NOT AT RUNTIME.
+      // tests/law_reconcile_role_vocab_check.py reads this literal and fails if
+      // it names a role ROLES_BY_APP.sairnlaw does not have. A runtime guard
+      // was written first and deleted: `verifySessionToken` already refuses a
+      // token whose role is outside the app's vocabulary, so a phantom key can
+      // never be reached by a request, and a branch that cannot fire is a
+      // branch nobody maintains. The defect is in the CONFIGURATION, and a
+      // configuration defect is visible without a request.
+      const LAW_RECONCILE_ROLES = { owner: true };
       if (!LAW_RECONCILE_ROLES[recSess.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Trust reconciliation is available to firm management only' } });
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Trust reconciliation is available to the firm owner' } });
         return;
       }
       const readLaw = async (table) => {
