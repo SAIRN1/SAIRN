@@ -152,6 +152,66 @@ no_cluster = [{'commit': 'X%d' % i, 'app': 'a', 'layer': 'product',
 check('NO cluster is invented when every commit carries exactly one defect',
       D.backward_trace(no_cluster) == [], D.backward_trace(no_cluster))
 
+# ── 5. A CLUSTER ON A FIX COMMIT IS A REMEDIATION BATCH, AND SAYS SO ───────
+# The largest real cluster (5b98fd27, 5 defects) is a fix commit: those five
+# were CLEARED by it, not caused by it, and reading its shared attributes as a
+# common origin gets the arrow backwards. Both directions, because a labeller
+# that said REMEDIATION unconditionally would pass the first arm alone.
+def _rec(commit, subject, **kw):
+    r = {'commit': commit, 'app': 'a', 'layer': 'product',
+         'detection_method': 'm', 'injection_phase': 'design',
+         'severity': 'moderate', 'files': ['f.js'], 'date': '2026-09-01',
+         'subject': subject, 'summary': 'x'}
+    r.update(kw)
+    return r
+
+
+fix_cluster = D.backward_trace([_rec('F1', 'fix(app): a thing was silent')] * 2
+                               + [_rec('F%d' % i, 'feat(app): built') for i in range(2, 9)])
+check('a cluster on a fix( commit is labelled a REMEDIATION BATCH',
+      fix_cluster and fix_cluster[0]['is_remediation_batch'] is True,
+      fix_cluster[0] if fix_cluster else None)
+
+feat_cluster = D.backward_trace([_rec('G1', 'feat(app): built the thing')] * 2
+                                + [_rec('G%d' % i, 'fix(app): x') for i in range(2, 9)])
+check('...and a cluster on a feat( commit is NOT -- the label discriminates',
+      feat_cluster and feat_cluster[0]['is_remediation_batch'] is False
+      and feat_cluster[0]['commit_kind'] == 'feat',
+      feat_cluster[0] if feat_cluster else None)
+
+blank_cluster = D.backward_trace([_rec('H1', '')] * 2
+                                 + [_rec('H%d' % i, 'fix(a): x') for i in range(2, 9)])
+check('a cluster with NO subject is UNKNOWN, not "not a remediation"',
+      blank_cluster and blank_cluster[0]['is_remediation_batch'] is None,
+      blank_cluster[0] if blank_cluster else None)
+
+# The measured share, and the arm that stops UNKNOWN being folded into either
+# answer -- which is the whole reason it is a third return value.
+share = D.remediation_share([_rec('A', 'fix(a): x'), _rec('B', 'fix(b): y'),
+                             _rec('C', 'feat(c): z'), _rec('D', '')])
+check('remediation_share counts fix, known and unknown separately',
+      share == (2, 3, 1), share)
+check('...so an unknown subject is in NEITHER the numerator nor the denominator',
+      share[0] + (share[1] - share[0]) == share[1] and share[2] == 1, share)
+check('commit_kind is case-insensitive and ignores the scope',
+      (D.commit_kind({'subject': 'FIX(sairndental): x'}) == 'fix'
+       and D.commit_kind({'subject': 'fix: no scope'}) == 'fix'
+       and D.commit_kind({'subject': None}) is None),
+      [D.commit_kind({'subject': 'FIX(sairndental): x'}),
+       D.commit_kind({'subject': 'fix: no scope'})])
+
+# CONTROL ON THE CONTROL: the real register must actually be mostly fix
+# commits, or the caveat above is a warning about a thing that does not happen.
+import io, json                                                  # noqa: E402
+_reg = json.load(io.open(os.path.join(REPO, 'docs',
+                                      'defect-density-register.json'),
+                         encoding='utf-8'))['records']
+_fix, _known, _unk = D.remediation_share(_reg)
+check('the REAL register is mostly recorded against fix commits, so the '
+      'caveat is about something that happens',
+      _known and _fix / float(_known) > 0.5,
+      '%d fix of %d known, %d unknown' % (_fix, _known, _unk))
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

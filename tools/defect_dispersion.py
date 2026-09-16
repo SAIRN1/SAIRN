@@ -37,6 +37,24 @@ causation** -- the register is a record of what has been FOUND, and finding is
 not uniform either. That caveat is printed with the number rather than left for
 a reader to remember, because a Gini quoted bare reads as a fact about quality.
 
+── THE COMMIT FIELD IS WHERE A DEFECT WAS RECORDED, NOT WHERE IT CAME FROM ─
+This column used to be called "originating commit" and that word was wrong.
+`docs/defect-density-register.json` has an `injection` block that is explicitly
+NOT backfilled, so the only commit a record actually carries is the one the work
+landed on -- and for THREE QUARTERS of the register that is the commit where the
+defect was FIXED. The share is measured from the register's own `subject` field
+on every run and printed, rather than described, because the day a backfill
+lands the number moves and a sentence would not.
+
+That makes the largest "cluster" a REMEDIATION BATCH: 5b98fd27 carries five
+records because one fault-injection session found three product defects and two
+defects in its own controls and fixed all five in one commit. What its members
+share -- one app, three files -- is a property of WHERE THE RUN WAS POINTED that
+day, not of where defects come from. A remediation batch is still worth reading;
+the five really do reduce to two root causes, one per layer. It is just not the
+question "are defects concentrated in a few commits" appeared to answer, and the
+trace output now says which of the two it is looking at.
+
 ── THE SESSION DIMENSION IS A PROXY AND IS LABELLED AS ONE ─────────────────
 Every commit carries a `Claude-Session` trailer, so defects can be grouped by
 the session that produced the commit. That is NOT an agent: four clones run many
@@ -278,8 +296,12 @@ def collect():
         return out
 
     dims = [
-        dimension('originating commit', tally(lambda r: r['commit']), commit_pop,
-                  'one record per confirmed defect; a commit can carry several'),
+        dimension('commit (as recorded)', tally(lambda r: r['commit']), commit_pop,
+                  'THE COMMIT A DEFECT IS RECORDED AGAINST IS USUALLY THE ONE '
+                  'THAT FIXED IT, not one that could have caused it -- the '
+                  'measured share is printed below. One record per confirmed '
+                  'defect; a commit can carry several, and when it is a fix '
+                  'commit that says how the remediation was batched'),
         dimension('file', tally(lambda r: [f for f in (r.get('files') or [])]), file_pop,
                   'a defect is counted against EVERY file in its commit, so this '
                   'over-attributes: a one-line fix that also touched three docs '
@@ -324,6 +346,13 @@ def backward_trace(recs, top_n=3):
     reported with the attributes its members share and how unusual that sharing
     is against the register as a whole -- because "all four are in stonedesk" is
     not informative if most records are.
+
+    ── AND MOST CLUSTERS ARE REMEDIATION BATCHES, WHICH IS A DIFFERENT THING ─
+    A cluster whose commit is a `fix(` is not several defects a commit CAUSED,
+    it is several defects one commit CLEARED. What its members share is then a
+    fact about where that day's work was pointed, and reading it as a common
+    origin gets the arrow backwards. Both kinds are reported; the kind is
+    labelled per cluster and never inferred by the reader.
     """
     from collections import Counter, defaultdict
 
@@ -366,15 +395,54 @@ def backward_trace(recs, top_n=3):
         # register has to a shared surface.
         filesets = [set(m.get('files') or []) for m in members]
         common_files = sorted(set.intersection(*filesets)) if filesets else []
+        kind = commit_kind(members[0])
         clusters.append({
             'commit': commit, 'size': n,
             'date': min((m.get('date') or '') for m in members),
             'subject': (members[0].get('subject') or '')[:90],
+            'commit_kind': kind,
+            # None, not False, when the subject is missing: "we cannot tell"
+            # and "it is not a remediation" are different answers and only one
+            # of them licenses reading the shared attributes as an origin.
+            'is_remediation_batch': None if kind is None else (kind == 'fix'),
             'shared': shared,
             'common_files': common_files[:6],
             'summaries': [(m.get('summary') or '')[:70] for m in members],
         })
     return clusters
+
+
+def commit_kind(rec):
+    """The conventional-commit type of the commit a record is filed against.
+
+    Taken from the register's OWN `subject` field rather than from git: the
+    register holds 24 commits that are not reachable on main, and a git lookup
+    would return nothing for them and quietly shrink the denominator. Verified
+    2026-09-15 against `git log -1 --format=%s` on all 53 that ARE reachable --
+    53 agree, 0 disagree -- so the copy is faithful and the offline read is the
+    complete one, not the convenient one.
+    """
+    s = (rec.get('subject') or '').strip()
+    if not s:
+        return None
+    return (s.split('(')[0].split(':')[0].strip().lower()) or None
+
+
+def remediation_share(recs):
+    """(n_fix, n_known, n_unknown) -- how much of the register is filed against
+    the commit that FIXED the defect rather than one that could have caused it.
+    Measured every run. A record whose subject is missing is counted as UNKNOWN
+    and never as either answer."""
+    fix = known = unknown = 0
+    for r in recs:
+        k = commit_kind(r)
+        if k is None:
+            unknown += 1
+            continue
+        known += 1
+        if k == 'fix':
+            fix += 1
+    return fix, known, unknown
 
 
 def fmt(v):
@@ -455,8 +523,31 @@ def main(argv):
             print('  against its rate in the register, because "all of them are')
             print('  in stonedesk" says nothing if most records are.')
             print('')
+            fixn, known, unknown = remediation_share(recs)
+            if known:
+                print('  AND THE ARROW POINTS THE OTHER WAY FOR MOST OF THEM:')
+                print('  %d of %d records whose commit type is known (%.0f%%) are'
+                      % (fixn, known, 100.0 * fixn / known))
+                print('  filed against a fix( commit -- the commit that CLEARED')
+                print('  the defect. The register\'s injection block is expressly')
+                print('  not backfilled, so no record carries a cause. A cluster')
+                print('  on a fix commit is a REMEDIATION BATCH and what it')
+                print('  shares describes where that day\'s work was pointed.')
+                if unknown:
+                    print('  %d further record(s) carry no subject and are counted'
+                          % unknown)
+                    print('  as UNKNOWN in neither direction.')
+                print('')
             for c in cl:
+                if c['is_remediation_batch'] is None:
+                    tag = 'KIND UNKNOWN -- no subject, so neither reading is licensed'
+                elif c['is_remediation_batch']:
+                    tag = 'REMEDIATION BATCH -- defects this commit CLEARED, not caused'
+                else:
+                    tag = 'not a fix commit (%s) -- a shared origin is readable here' % (
+                        c['commit_kind'] or '?')
                 print('  %s  %d defects  %s' % (c['commit'], c['size'], c['date']))
+                print('      %s' % tag)
                 print('      %s' % c['subject'])
                 inf = [x for x in c['shared'] if x['informative']]
                 dull = [x for x in c['shared'] if not x['informative']]
