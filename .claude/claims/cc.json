@@ -1402,8 +1402,8 @@
       "task": "master plan fault probe counter item 20 defect budget item 61 secrets inventory",
       "claimed_at": "2026-09-15T22:44:34Z",
       "claimed_at_epoch": 1789512274.615404,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T01:38:33Z"
     },
     {
       "id": "cc-1789517922",
@@ -1412,8 +1412,8 @@
       "task": "item 45 PID trend alarm, item 47 first article inspection, item 50 condition number, item 53 weakness combination, item 55 pre-planned threshold response, item 58 three-way match, item 61 rotation blast radius",
       "claimed_at": "2026-09-16T00:18:42Z",
       "claimed_at_epoch": 1789517922.0043266,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T01:38:33Z"
     }
   ]
 }
