@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-15.1'
+CRITERIA_VERSION = '2026-09-16.1'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -77,8 +77,31 @@ REPLACES = re.compile(r"\.replace\(")
 # Any of these proves the probe checked its own sabotage landed.
 GUARDS = (
     re.compile(r"assert\s+[\w\.\[\]']+\s+in\s+\w+"),          # assert old in src
-    re.compile(r"!=\s*(src|orig|before|_before|original)\b"),
-    re.compile(r"!==" + r"\s*(src|orig|before|_before|original|s)" + chr(92) + "b"),
+    # ── CASE-INSENSITIVE ONLY, AND THE ATTEMPT TO GO FURTHER IS RECORDED
+    # ── BECAUSE THE BLIND LOCK CAUGHT IT, 2026-09-16 ───────────────────────
+    # These were lower-case-only, so a JS control holding the original in a
+    # CONST -- `const ORIGINAL = fs.readFileSync(...)`, the house idiom for a
+    # value that must not be reassigned -- was invisible. `re.I` fixes that and
+    # is safe: a DIFFERENCE assertion is the guard, and it is always spelled
+    # `!=`.
+    #
+    # THE SAME EDIT ALSO ADDED `==` AND `===`, AND THAT WAS WRONG. It credited
+    # two probes immediately and both credits were false:
+    #
+    #   run_master_plan_probe.py:205   check(after == original, 'the document
+    #                                  is restored byte-identical')
+    #   run_selftest_independence_probe.py:61   '    if out == src:'
+    #
+    # The first is a RESTORE check -- it proves the probe put the file back,
+    # which is the opposite end of the run from proving the sabotage landed.
+    # The second is a STRING LITERAL of the code being sabotaged, not code at
+    # all. An equality against the original cannot be told from a restore
+    # assertion by any pattern, because they are the same text, so the
+    # equality spelling is deliberately NOT accepted. A control that wants
+    # credit for `if (m === ORIGINAL) refuse` has the uniqueness shape below
+    # available and it is stronger anyway.
+    re.compile(r"!=\s*(src|orig|before|_before|original)\b", re.I),
+    re.compile(r"!==" + r"\s*(src|orig|before|_before|original|s)" + chr(92) + "b", re.I),
     # `if (m !== s) write(...)` -- the JS shape, where the SHORT name holds
     # the original. Matching only long names missed every JS probe.
     re.compile(r"if\s*\([^)]*!==[^)]*\)\s*write"),
@@ -109,6 +132,22 @@ GUARDS = (
     re.compile(r"\.count\([^)]*\)\s*(?:!=|==)\s*1"),
     re.compile(r"\bif\s+n\s*!=\s*1\b"),
     re.compile(r"\bassert\s+n\s*==\s*1\b"),
+    # ── THE SAME UNIQUENESS SHAPE IN JAVASCRIPT, ADDED 2026-09-16 ──────────
+    # JS has no `str.count`, so the idiom is `s.split(anchor).length - 1`. The
+    # tool had the Python spelling and not this one, and reported
+    # tests/sairnbiz_po_recv_mutation_control.js -- which guards by uniqueness,
+    # by difference AND by reading the bytes back -- as UNGUARDED on the day it
+    # was written. That is the 2026-09-15 finding recurring in another language.
+    #
+    # THE ARGUMENT IS A VARIABLE, NOT A LITERAL, AND THAT IS THE WHOLE
+    # NARROWING. A probe counting the CHECKER'S FINDINGS writes
+    # `out.split('FINDING').length - 1` -- a literal, because the thing being
+    # counted is known when the probe is written. An anchor guard splits on the
+    # ANCHOR, which is a variable, because the thing being counted is the text
+    # it is about to replace. Same distinction the Python negative fixture
+    # already rests on, expressed structurally rather than through a variable
+    # name.
+    re.compile(r"\.split\(\s*[A-Za-z_$][\w$.]*\s*\)\.length\s*-\s*1"),
 )
 
 
@@ -285,6 +324,37 @@ FIXTURES = [
      "doc = json.load(open(REG.replace('/', os.sep)))\n" "open(p,'w').write(json.dumps(doc))\n", None),
     ('a GUARD IN A COMMENT does not count -- the check must be in the code',
      "# assert old in src\nsrc = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n", False),
+    # ── ADDED 2026-09-16 WITH THE JS UNIQUENESS SHAPE AND THE CASE FIX ─────
+    # Both directions before the real number is believed, exactly as the
+    # 2026-09-15 addition did. The negative one is the load-bearing half: it is
+    # what stops the new pattern from crediting any `.split(...).length - 1`,
+    # including a probe that counts the CHECKER'S output and guards nothing.
+    ('a JS control counting the ANCHOR by split is guarded -- the JS spelling '
+     'of `src.count(old) != 1`',
+     "const s = read(p);\nconst hits = s.split(anchor).length - 1;\n"
+     "if (hits !== 1) throw new Error('stale anchor');\n"
+     "write(p, s.replace(anchor, 'b'));\n", True),
+    ('NEGATIVE: splitting the CHECKER\'S OUTPUT on a LITERAL counts findings, '
+     'guards nothing, and is still reported',
+     "const s = read(p);\nwrite(p, s.replace('a','b'));\n"
+     "const hits = out.split('FINDING').length - 1;\n"
+     "if (hits !== 1) throw new Error('x');\n", False),
+    ('a JS control holding the original in an UPPERCASE const is guarded -- it '
+     'was invisible while the name patterns were lower-case only',
+     "const ORIGINAL = read(p);\nconst m = ORIGINAL.replace(a, b);\n"
+     "if (m !== ORIGINAL) write(p, m);\n", True),
+    # THE TWO NEGATIVES BELOW ARE THE ONES THAT CAUGHT A REAL OVER-CREDIT. The
+    # first draft of the case fix also accepted `==`/`===`, and these two shapes
+    # -- both lifted from probes in this repo -- were credited within seconds.
+    ('NEGATIVE: an EQUALITY against the original is a RESTORE check, at the '
+     'opposite end of the run from proving the sabotage landed',
+     "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n"
+     "after = open(p).read()\ncheck(after == original, 'restored byte-identical')\n",
+     False),
+    ('NEGATIVE: a guard quoted as a STRING LITERAL is not code, the same way a '
+     'guard in a comment is not',
+     "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n"
+     "MUTATIONS = [('    if out == src:', '    if False:')]\n", False),
 ]
 
 
