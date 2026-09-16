@@ -1,4 +1,8 @@
 // api/sd-sub-data-auth-ordering.test.js
+// REQUIREMENT: the subcontractor endpoint validates the LICENCE before its
+//   envelope gate, so an uncredentialled caller cannot use differing refusals
+//   as an oracle for which resources exist and which verbs they accept
+//
 //
 // Run:  node api/sd-sub-data-auth-ordering.test.js
 //

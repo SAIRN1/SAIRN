@@ -1,4 +1,8 @@
 // api/sd-data-rf-supplier.test.js
+// REQUIREMENT: the supplier-document boundary holds -- who may read, who may
+//   write, what is refused -- and in particular that asking whether an invoice
+//   is right never itself records anything
+//
 // Run: node api/sd-data-rf-supplier.test.js
 //
 // SAIRNroofing B6 -- supplier documents and the three-way match. The engine's

@@ -1,4 +1,9 @@
 // api/sd-data-mech-assets.test.js
+// REQUIREMENT: an empty refrigerant charge is stored as NULL rather than
+//   coerced through Number() into a measured zero, because a unit nobody has
+//   weighed would otherwise be reported as BELOW the 40 CFR 82.157 threshold
+//   -- a compliance claim with no evidence behind it
+//
 // Run: node api/sd-data-mech-assets.test.js
 //
 // SAIRNmechanical's site asset registry endpoint -- capability #2 on the

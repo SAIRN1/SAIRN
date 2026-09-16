@@ -1,4 +1,9 @@
 // api/sd-data-dental-provider-scope.test.js
+// REQUIREMENT: an UNLINKED provider sees no patients and is told why with a
+//   fix path, a linked one sees only patients they have an appointment with,
+//   and the provider registry is owner-only to WRITE -- once it carries
+//   linked_employee_id it IS the access-control table for all of that
+//
 // Plain node:assert tests. Run: node api/sd-data-dental-provider-scope.test.js
 //
 // Covers the SAIRNdental provider-scoped patient read added 2026-08-27:

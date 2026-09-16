@@ -1,4 +1,9 @@
 // api/sd-data-locations.test.js
+// REQUIREMENT: the locations branch requires an employee session rather than
+//   the licence key alone, because the write is an upsert on (license_hash,
+//   location_id) and anyone holding the key could rename or close a yard and
+//   silently relabel every slab in it
+//
 // Run: node api/sd-data-locations.test.js
 //
 // StoneDesk GAP 7 -- the 'locations' endpoint boundary. The roll-up itself is

@@ -1,4 +1,9 @@
 // api/sd-data-food-temp-unevaluated.test.js
+// REQUIREMENT: a food-temperature reading is ALWAYS stored and its verdict is
+//   WITHHELD when the facility's own thresholds could not be read, so a
+//   facility with a stricter local limit is never silently graded against the
+//   looser FDA figure and recorded as a pass
+//
 // Run: node api/sd-data-food-temp-unevaluated.test.js
 //
 // SAIRNcare food-temperature records: the reading is ALWAYS stored, and the

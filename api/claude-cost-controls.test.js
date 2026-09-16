@@ -1,4 +1,9 @@
 // api/claude-cost-controls.test.js
+// REQUIREMENT: max_tokens is clamped SERVER-SIDE and the rate limiter runs
+//   OUTSIDE the is_demo branch, because is_demo comes from the caller -- on
+//   the endpoint that spends this platform's own API key and requires no
+//   credential at all to call
+//
 //
 // Run:  node api/claude-cost-controls.test.js
 //

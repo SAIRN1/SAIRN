@@ -1,4 +1,8 @@
 // api/sd-data-mech-credentials.test.js
+// REQUIREMENT: the credential boundary holds: who may read, who may write,
+//   what the endpoint refuses to store, and that a renewal cannot overwrite
+//   the record it renews
+//
 // Run: node api/sd-data-mech-credentials.test.js
 //
 // SAIRNmechanical's FIRST data resource. Until 2026-09-02 the app had complete

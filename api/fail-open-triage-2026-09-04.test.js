@@ -1,4 +1,9 @@
 // api/fail-open-triage-2026-09-04.test.js
+// REQUIREMENT: the twelve fail-open reads fixed on 2026-09-04 cannot quietly
+//   come back, held at SOURCE level because deleting a guard leaves no
+//   fail-open ternary for the shape checker to match -- measured by reverting
+//   three fixes one at a time and watching the count not move
+//
 // Run: node api/fail-open-triage-2026-09-04.test.js
 //
 // The twelve fail-open reads fixed in the 2026-09-04 triage pass, held so they

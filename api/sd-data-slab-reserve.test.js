@@ -1,4 +1,9 @@
 // api/sd-data-slab-reserve.test.js
+// REQUIREMENT: reserving a slab already promised to someone else is REFUSED
+//   rather than upserted -- a blind merge-duplicates write destroyed
+//   `reservedFor`, the only record of who had it, and both quotes then showed
+//   the same physical slab as theirs
+//
 // Plain node:assert tests. Run: node api/sd-data-slab-reserve.test.js
 //
 // THE DOUBLE-SALE. Until 2026-09-02, three places in stonedesk.html did

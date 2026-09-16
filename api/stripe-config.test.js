@@ -1,4 +1,9 @@
 // api/stripe-config.test.js
+// REQUIREMENT: one module answers whether Stripe is configured, reproduces the
+//   two disagreements that actually happened between the five files that used
+//   to answer it independently, and refuses to claim the one thing it cannot
+//   know without calling Stripe
+//
 //
 // Run:  node api/stripe-config.test.js
 //

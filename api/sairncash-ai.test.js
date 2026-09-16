@@ -1,4 +1,8 @@
 // api/sairncash-ai.test.js
+// REQUIREMENT: SAIRNcash's AI checks the subscriber credential SERVER-SIDE and
+//   BEFORE anything is spent -- it has no licence key at all, and it used to
+//   send is_demo:false, which skipped every cost control the shared proxy had
+//
 //
 // Run:  node api/sairncash-ai.test.js
 //

@@ -1,4 +1,9 @@
 // api/sd-data-numeric-guards.test.js
+// REQUIREMENT: a disbursement amount that is not a number is REFUSED, because
+//   every comparison against NaN is false and `Number(payload.amount) <= 0`
+//   reads as a complete guard while letting anything non-numeric straight
+//   through
+//
 //
 // Run:  node api/sd-data-numeric-guards.test.js
 //

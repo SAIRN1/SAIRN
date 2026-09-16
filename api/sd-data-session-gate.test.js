@@ -1,4 +1,9 @@
 // api/sd-data-session-gate.test.js
+// REQUIREMENT: slabs, profile and memory require an employee SESSION and not
+//   the licence key alone -- the key is a bearer credential StoneDesk prints
+//   into a link the shop is told to send customers, and it read the whole slab
+//   inventory, the business profile and the shop's AI memories
+//
 // Plain node:assert tests. Run: node api/sd-data-session-gate.test.js
 //
 // slabs, profile and memory predate per-employee sessions and were reachable

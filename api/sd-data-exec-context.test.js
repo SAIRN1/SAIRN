@@ -1,4 +1,9 @@
 // api/sd-data-exec-context.test.js
+// REQUIREMENT: the Executive Suite's chart of accounts, price book and patent
+//   filing dates reach a browser only through this endpoint's role gate -- the
+//   client-side gate lives in a page served whole to every customer, so the
+//   server is the only place that decision is real
+//
 // Plain node:assert tests. Run: node api/sd-data-exec-context.test.js
 //
 // The Executive Suite advisor prompts carry SAIRN's own chart of accounts, the
