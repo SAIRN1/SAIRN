@@ -3616,6 +3616,59 @@
       "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines"
     },
     {
+      "commit": "56e204d85f12",
+      "date": "2026-09-16",
+      "subject": "fix(dispatch): the claim panel read the working tree and ignored the expiry",
+      "files": [
+        "tools/dispatch_state.py"
+      ],
+      "lines_added": 49,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/dispatch_state.py's ACTIVE CLAIMS panel -- the thing a session reads before starting work -- read .claude/claims from the WORKING TREE and treated any status=='active' entry as live. sairn_claim.py, which owns the claim record, reads origin/main (a claim another session pushed is only a fact once it is there) and applies the 4-hour expiry. Measured 2026-09-16: dispatch_state listed a 74.4-hour-old fourth claim as ACTIVE while sairn_claim.py list did not show it at all. Both differences run in the LOOSE direction, so the panel always looked more informative than the authority. Fixed by calling load_all(from_origin=True) and is_active() rather than by growing a second reader.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "live_claims() was written with a local read from the start, so there is no commit that introduced the divergence -- it is the shape the function was born with. Naming the commit that added the function would record an injection lag that never elapsed."
+      },
+      "citation_note": "2.3 is a fact with a tense needing a read and a number needing a SINGLE SOURCE. The single-source half is exact here -- one claim record, two readers, two answers. The rule's worked examples are about standing documents rather than about two tools, so it is recorded as arguable.",
+      "contributing_factors": [
+        {
+          "factor": "live_claims() re-implemented a read that sairn_claim.py already owned, instead of calling it -- two readers of one record, free to disagree",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "dispatch_state now calls sairn_claim.load_all(from_origin=True) and sairn_claim.is_active(), and the dormant import subprocess it would have needed is gone"
+        },
+        {
+          "factor": "Both differences run in the LOOSE direction -- a local read shows more claims than origin does, and no expiry shows more than the 4-hour rule does -- so the tool always looked more informative than the authority, never less",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A panel that lists MORE active claims reads as more thorough. Nothing about the output invites the question of whether the extra rows are real, which is why a 74-hour-old claim sat in it unremarked."
+        },
+        {
+          "factor": "A dormant `import subprocess` was the only trace that somebody had started this and stopped, and an unused import reads as tidy-up debris rather than as an unfinished change",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The reason it was there is now written at the function it belonged to, so removing it does not erase the finding"
+        },
+        {
+          "factor": "Nothing compares the two tools' answers. They were only ever read separately, and the disagreement was visible for as long as both had existed",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "A cross-tool agreement check is a real idea and a new checker; building one during a bug fix is how a tool gets added with no probe and no inventory entry. Recorded for whoever picks up the claim-tooling work."
+        }
+      ],
+      "recurrence_open": "Nothing compares the two tools' answers, so the next divergence between a reader and the record it reads will be just as quiet. And sairn_claim's own fallback -- working tree when origin cannot be read -- is now inherited here, which is correct and means this panel can still silently narrow to a local view on a fetch failure; it warns on stderr, which a report nobody redirects will show and a captured run may not."
+    },
+    {
       "commit": "5796a85139e2",
       "date": "2026-09-16",
       "subject": "fix(audit,gate): a probe wrote a real override into the real audit log, and the Tier A gate counted resource names inside sentences",
