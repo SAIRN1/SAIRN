@@ -351,6 +351,69 @@ def is_report_only_artefact(path, content):
     return all(a.strip() == '0' for a in exits)
 
 
+# A string literal whose content reads as PROSE rather than as a token: it has
+# at least three whitespace-separated words. `'sb_ts'`,
+# `'sb_ts?license_hash=eq.'` and `'ts_id'` are tokens; "Storage full -- clear
+# old quotes and retry." is a sentence.
+_PROSE = re.compile(r'''(['"`])((?:[^'"`\\\n]|\\.)*?)\1''')
+
+
+def strip_diff_noise(line):
+    """One diff line with comments and PROSE string bodies blanked.
+
+    ── WHY NOT SIMPLY STRIP EVERY STRING (2026-09-16) ──────────────────────
+    Because on this platform the resource name in real serving code IS a string
+    literal. `api/sd-data.js` line 9838 is:
+
+        if (resource === 'sb_ts' && action === 'write') {
+
+    and that is the gate's most important true positive, not an edge case. A
+    blanket string-strip would make the gate blind to exactly the change it
+    exists to catch, and the gate would go quiet rather than noisy -- which is
+    the worse of the two failures and the harder one to notice.
+
+    So the rule is narrower and is about SHAPE, not about quoting:
+
+      * A string body is blanked only when it reads as a SENTENCE -- three or
+        more whitespace-separated words. A handler never references a table
+        from inside a sentence; a checker's fixture and a user-facing message
+        almost always do.
+
+    ── COMMENTS ARE STILL COUNTED, AND THAT IS NOT AN OVERSIGHT ────────────
+    The first version of this stripped comment bodies too. It is the obvious
+    move and it REVERSES A STATED DECISION of this file's own header --
+    "Comments count as naming a resource, deliberately: a hunk that discusses
+    sc_claims was edited by somebody thinking about sc_claims." That decision
+    is defensible and it is not mine to overturn from inside a change whose
+    purpose is fixing false positives I personally hit.
+
+    It was also caught rather than argued: stripping comments made
+    tests/run_tier_a_review_gate_probe.py go red on
+    `a REAL Tier A touch is still exit 1`, whose fixture is a comment line --
+    the probe encoding the design decision exactly as intended.
+
+    Left for whoever owns this gate: whether a comment in a CHECKER should
+    count the way a comment in a handler does. Both false positives that
+    survive today are checkers.
+
+    WHAT THIS DOES NOT FIX, stated rather than left to be discovered: a
+    checker's fixture that contains the BARE token, e.g.
+    `FIXTURE_TIERS = {'dnt_payments': 'A'}` in tools/suite_control_triage.py.
+    That is character-for-character what a handler writes, so no amount of
+    string analysis can separate them -- the difference is what the FILE is,
+    not what the token looks like. Naming it here so the next reader does not
+    re-derive the same dead end.
+    """
+    body = line[1:] if line[:1] in ('+', '-', ' ') else line
+
+    def _blank(m):
+        inner = m.group(2)
+        return m.group(1) + (' ' * len(inner) if len(inner.split()) >= 3
+                             else inner) + m.group(1)
+
+    return _PROSE.sub(_blank, body)
+
+
 def touched_tier_a(diff_text, resources):
     """resource -> [files whose CHANGED HUNKS name it].
 
@@ -467,11 +530,17 @@ def touched_tier_a(diff_text, resources):
         # Demoting a signal is not the same as deleting it.
         if line[:1] not in ('+', '-'):
             continue
+        # COMMENTS AND PROSE STRINGS BLANKED FIRST. Four false positives in two
+        # days came from a resource named in text rather than in code -- a
+        # worklog, a review probe, and two checkers whose fixtures must contain
+        # real resource names to be worth anything. See strip_diff_noise() for
+        # why this is not a blanket string-strip.
+        scanned = strip_diff_noise(line)
         for name in resources:
             # Word-bounded. `sc_ar` must not match `sc_archive`, and this
             # platform has already been bitten once by a substring search --
             # `esign` matching 47 occurrences of `design`.
-            if re.search(r'(?<![a-z0-9_])' + re.escape(name) + r'(?![a-z0-9_])', line):
+            if re.search(r'(?<![a-z0-9_])' + re.escape(name) + r'(?![a-z0-9_])', scanned):
                 fs = hits.setdefault(name, [])
                 if cur not in fs:
                     fs.append(cur)

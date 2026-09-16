@@ -470,11 +470,48 @@ def _hook_body():
     return 0
 
 
+def _test_env():
+    """The environment every spawned test gets, with the audit log redirected.
+
+    ── A PROBE WROTE A REAL OVERRIDE INTO THE REAL AUDIT LOG (2026-09-16) ────
+    `docs/BYPASS-LOG.jsonl` is the record of every time somebody disabled a push
+    gate. It is read to decide whether a repeatedly-bypassed check is itself
+    defective, so a false row there is not untidiness -- it is a fabricated
+    entry in an audit trail, attributed to a real session, for a command nobody
+    ran.
+
+    `tests/push_gate/check9_probe.py` drives the real hook with a real
+    `SAIRN_SEED_GATE=off` payload, correctly, because the override must be
+    exercised rather than described. The hook then did what it is supposed to
+    do and recorded the bypass -- in the live log.
+
+    `tools/bypass_log.py` has had the redirect since it was written and says so
+    in its own header: "The probe sets SAIRN_BYPASS_LOG to a throwaway file, so
+    the write really happens and lands somewhere that is not the audit record."
+    MEASURED: of the 24 test files that drive the hook as a subprocess, exactly
+    ONE set it. The mechanism was right and its use was left to memory.
+
+    So it is set HERE, once, for every child the suite spawns -- including every
+    probe added after today, which is the half a per-probe fix cannot cover.
+    Per-probe redirects still exist for the ones run by hand; this is the floor
+    under them, not a replacement.
+
+    A REDIRECT, NOT A SUPPRESSION, for the reason bypass_log gives: the write
+    must really happen or the wiring is never exercised and the fail-open shape
+    moves one level out.
+    """
+    env = dict(os.environ)
+    env['SAIRN_BYPASS_LOG'] = os.path.join(
+        tempfile.gettempdir(), 'sairn-suite-bypass-%d.jsonl' % os.getpid())
+    return env
+
+
 def _run(js, py, quiet):
     failures, skipped, retried = [], [], []
+    env = _test_env()
     for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
         for rel in files:
-            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env)
             out = (r.stdout or r.stderr or '').strip().splitlines()
             if r.returncode == 3:
                 skipped.append((kind, rel, next((l for l in out if l.startswith('SKIPPED')),
@@ -485,7 +522,8 @@ def _run(js, py, quiet):
                 # it is evidence the file is load-sensitive, which is a fact
                 # about the suite somebody should be able to see accumulating.
                 r2 = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True,
-                                    text=True, encoding='utf-8', errors='replace')
+                                    text=True, encoding='utf-8', errors='replace',
+                                    env=env)
                 if r2.returncode == 0:
                     retried.append((kind, rel, out[-1] if out else '(no output)'))
                     if not quiet:

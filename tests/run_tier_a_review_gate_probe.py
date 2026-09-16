@@ -553,6 +553,53 @@ check('END TO END: the same hunk in a production file DOES raise one',
       'the walker stopped attributing hunks at all, so the arm above passes '
       'for the wrong reason')
 
+
+# -- 9. PROSE STRINGS DO NOT COUNT; TOKEN STRINGS DO (2026-09-16) ------------
+# FOUR false positives in two days came from a resource NAMED IN TEXT rather
+# than referenced in code: a worklog, a review probe, and two checkers whose
+# blind-lock fixtures must contain real resource names to be worth anything.
+#
+# THE OBVIOUS FIX WOULD HAVE BROKEN THE GATE. Stripping every string literal
+# makes api/sd-data.js line 9838 -- the `resource === '<name>'` compare --
+# invisible, and that is the gate's single most important true positive. So the
+# rule is about SHAPE: a string body is ignored only when it reads as a
+# SENTENCE, three or more whitespace-separated words.
+#
+# BOTH DIRECTIONS, because a rule that only suppressed would be satisfied by a
+# gate that had stopped matching altogether.
+print(chr(10) + '9. a resource named in PROSE is not a resource served in code')
+_PROSE_CASES = (
+    ("the sd-data.js string compare -- the gate's key true positive",
+     "if (resource === '%s' && action === 'write') {", True),
+    ('a registry key', "  %s: 'ts_id',", True),
+    ('a postgrest path fragment', "  rest('%s?license_hash=eq.' + enc(h))", True),
+    ('a bare identifier', '  const rows = await read(%s);', True),
+    ('a user-facing sentence',
+     '  throw new Error("Storage full - clear old %s and retry.");', False),
+    ('a docstring sentence',
+     '  """%s is there specifically to assert a substring does not fire."""',
+     False),
+    ('a prose fixture label',
+     "  ('names a Tier A resource and %s must not count here', 1),", False),
+)
+for _label, _tpl, _must in _PROSE_CASES:
+    _line = _tpl % _name
+    _fired = bool(_G.touched_tier_a(diff_for('api/sd-data.js', _line), [_name]))
+    check(('fires: ' if _must else 'ignored: ') + _label, _fired == _must,
+          _line + ' -> fired=' + str(_fired))
+
+# AND THE LIMIT IS STATED AS AN ARM, not left to be rediscovered: a BARE token
+# in a checker's fixture is character-for-character what a handler writes, so
+# no string analysis separates them. This arm exists so the next person finds
+# the dead end already mapped rather than re-deriving it.
+check('a bare fixture token STILL fires -- known, and not fixable by looking '
+      'at the string',
+      bool(_G.touched_tier_a(
+          diff_for('tools/some_checker.py',
+                   "FIXTURE_TIERS = {'" + _name + "': 'A'}"), [_name])),
+      'if this ever goes false the stripper got broader than its own docstring')
+
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))

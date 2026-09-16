@@ -53,9 +53,32 @@ def check(name, cond, detail=''):
         fails.append(name)
 
 
+# ── THIS PROBE WROTE A REAL ROW INTO THE REAL AUDIT LOG (2026-09-16) ────────
+# Arm 3 below drives the hook with a real `SAIRN_SEED_GATE=off` payload, which
+# is correct -- an override must be exercised, not described. The hook then did
+# exactly what it exists to do and RECORDED the bypass, in
+# `docs/BYPASS-LOG.jsonl`: a genuine row, attributed to a real session, for a
+# command no human ever ran. That log is read to decide whether a repeatedly
+# bypassed check is itself defective, so a fabricated row there is not residue,
+# it is a false entry in an audit trail.
+#
+# `tools/bypass_log.py` has carried the redirect since it was written and says
+# so in its own header. This probe simply never set it. Measured on the day it
+# was found: of 24 test files that drive the hook, ONE did.
+#
+# A REDIRECT, NOT A SUPPRESSION. The write still happens, so the wiring is still
+# exercised; it lands in a throwaway file instead of the record.
+_BYPASS_LOG = os.path.join(tempfile.gettempdir(),
+                           'check9-bypass-%d.jsonl' % os.getpid())
+REAL_BYPASS_LOG = os.path.join(REPO, 'docs', 'BYPASS-LOG.jsonl')
+
+
 def hook(cmd='git push origin main'):
+    env = dict(os.environ)
+    env['SAIRN_BYPASS_LOG'] = _BYPASS_LOG
     r = subprocess.run([sys.executable, HOOK], cwd=REPO, capture_output=True,
-                       text=True, encoding='utf-8', errors='replace', input=json.dumps({'tool_input': {'command': cmd}}))
+                       text=True, encoding='utf-8', errors='replace', env=env,
+                       input=json.dumps({'tool_input': {'command': cmd}}))
     try:
         out = json.loads(r.stdout) if r.stdout.strip() else {}
     except ValueError:
@@ -163,9 +186,32 @@ try:
           'Do not raise a count' in a2['reason'], a2['reason'][-400:])
 
     # ── ARM 3: THE OVERRIDE STILL WORKS, and is not silent ──────────────────
+    real_before = (io.open(REAL_BYPASS_LOG, encoding='utf-8').read()
+                   if os.path.isfile(REAL_BYPASS_LOG) else None)
     a3 = hook('SAIRN_SEED_GATE=off git push origin main')
     check('the documented override still gets past it',
           a3['decision'] != 'deny', str(a3)[:200])
+    # THE WRITE REALLY HAPPENED -- redirected, not suppressed. A probe that
+    # merely stopped the logging would leave the hook's own wiring unexercised,
+    # which is the fail-open shape moved one level out.
+    # `ALL`, not `seed-gate`: the inline override is the BLANKET form and
+    # disables every check in the hook rather than one named one. This arm
+    # asserted `seed-gate` first and went red -- which is the arm doing its job,
+    # since a redirect nobody checks is indistinguishable from a suppression.
+    check('...and the bypass was RECORDED, into the throwaway log',
+          os.path.isfile(_BYPASS_LOG)
+          and '"check": "ALL"' in io.open(_BYPASS_LOG, encoding='utf-8').read(),
+          _BYPASS_LOG + ' :: ' + (io.open(_BYPASS_LOG, encoding='utf-8').read()[:200]
+                                  if os.path.isfile(_BYPASS_LOG) else 'NO FILE'))
+    # ...AND NOT INTO THE REAL ONE. This arm is the finding of 2026-09-16 turned
+    # into a check: without it, the next probe to drive an override forgets the
+    # redirect and nothing says so until somebody reads the audit trail and
+    # finds a row for a command nobody ran.
+    real_after = (io.open(REAL_BYPASS_LOG, encoding='utf-8').read()
+                  if os.path.isfile(REAL_BYPASS_LOG) else None)
+    check('...and the REAL audit log was not touched -- a fabricated row in it '
+          'is an audit-integrity defect, not probe residue',
+          real_after, real_before)
 
     # ── ARM 4: A SUITE RUN IN FLIGHT MUST NOT READ AS A FAILURE ────────────
     # The break is STILL PLANTED here. The only difference is the lock, so this

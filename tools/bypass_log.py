@@ -81,6 +81,9 @@ STANDING = os.path.join(REPO, '.claude', 'standing-bypass.json')
 # purpose: three is already a pattern, and a threshold high enough to feel safe is
 # a threshold nothing ever reaches.
 PATTERN_AT = 3
+# The reserved check name a retraction carries. Not in KNOWN_CHECKS on purpose:
+# it is not a check anybody can bypass, it is a statement about another row.
+RETRACTION = '(RETRACTION)'
 # The longest a STANDING bypass may be granted for. A standing bypass is the shape
 # that can be left on, so it is the one that needs a clock.
 MAX_STANDING_HOURS = 24
@@ -160,17 +163,76 @@ def read(path=None):
     return rows
 
 
+def retract(target_at, why, path=None, when=None):
+    """Mark an earlier row as not a real bypass. APPEND-ONLY -- nothing is deleted.
+
+    ── WHY A RETRACTION AND NOT A DELETE (2026-09-16) ──────────────────────
+    `tests/push_gate/check9_probe.py` drove the real hook with a real override
+    payload and never set SAIRN_BYPASS_LOG, so the hook correctly recorded a
+    bypass -- into the live audit log, attributed to a real session, for a
+    command no human ran.
+
+    The row cannot be deleted. This log is the record of what happened to the
+    gates, and a log that quietly loses rows it finds embarrassing is worth less
+    than one with a known-bad row in it -- the same rule the platform already
+    applies to sb_po and sb_recv, where a correction is a new row and never an
+    erasure. So the bad row stays and this one says what it really was.
+
+    ── AND IT HAS TO CHANGE THE READING, NOT JUST THE CONTENTS ─────────────
+    A retraction that only added a line would be a comment. `patterns()` counts
+    rows to decide whether a check is being bypassed so often that the CHECK is
+    the defect -- at PATTERN_AT, which is 3. Three probe artefacts would report
+    a phantom defect in a gate nobody actually bypassed. So a retracted row is
+    excluded from that count, and the exclusion is reported rather than silent.
+    """
+    if not target_at or not isinstance(target_at, str):
+        raise BypassError('a retraction must name the `at` of the row it retracts')
+    if not why or not str(why).strip():
+        raise BypassError('a retraction must carry a reason. A row struck from '
+                          'the record without one is indistinguishable from a '
+                          'row somebody wanted gone.')
+    row = {'at': when or _now(), 'session': session_name(),
+           'check': RETRACTION, 'reason': str(why).strip()[:600],
+           'blanket': False, 'command': None, 'tip': None,
+           'retracts': target_at}
+    p = path or LOG
+    with io.open(p, 'a', encoding='utf-8', newline='\n') as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + '\n')
+    return row
+
+
+def retracted_ats(rows):
+    """The `at` values some later row retracts."""
+    return set(r['retracts'] for r in rows
+               if r.get('check') == RETRACTION and r.get('retracts'))
+
+
 def patterns(rows, at=PATTERN_AT):
-    """Which checks have been bypassed enough times to be the problem."""
+    """Which checks have been bypassed enough times to be the problem.
+
+    A RETRACTED ROW IS NOT COUNTED, and neither is the retraction itself. Both
+    would otherwise inflate the figure that decides whether a check is
+    mis-specified -- see retract() for the row that made this necessary.
+    """
+    struck = retracted_ats(rows)
     counts, by_check = {}, {}
     for r in rows:
+        if r.get('check') == RETRACTION or r.get('at') in struck:
+            continue
         c = r.get('check') or '(none)'
         counts[c] = counts.get(c, 0) + 1
         by_check.setdefault(c, []).append(r)
     return {
         'counts': counts,
         'repeatedly_bypassed': sorted([c for c, n in counts.items() if n >= at]),
-        'blanket_uses': sum(1 for r in rows if r.get('blanket')),
+        # ALSO retraction-aware. This read `sum(... for r in rows)` over every
+        # row and was the half that survived the first fix: patterns() excluded
+        # struck rows from `counts` while the blanket figure beside it still
+        # counted them, so one report said two different things about the same
+        # row. A correction the reporter does not honour is a comment.
+        'blanket_uses': sum(1 for r in rows if r.get('blanket')
+                            and r.get('at') not in struck),
+        'retracted': sorted(struck),
         'unknown_checks': sorted(set(c for c in counts
                                      if c not in KNOWN_CHECKS and c != '(none)')),
         'by_check': by_check,
@@ -265,6 +327,44 @@ def _selftest():
     check_('blanket uses are counted separately', p['blanket_uses'] == 1,
            p['blanket_uses'])
 
+    print('\n4b. a RETRACTED row stops counting, and nothing is deleted')
+    rl = os.path.join(d, 'retract.jsonl')
+    a = record('seed-gate', 'first', path=rl, when='2026-09-16T01:00:00Z')
+    record('seed-gate', 'second', path=rl, when='2026-09-16T02:00:00Z')
+    record('seed-gate', 'third', path=rl, when='2026-09-16T03:00:00Z')
+    check_('three real uses cross PATTERN_AT before any retraction',
+           'seed-gate' in patterns(read(rl))['repeatedly_bypassed'])
+    retract(a['at'], 'confirmed test artefact -- a probe drove the hook',
+            path=rl, when='2026-09-16T04:00:00Z')
+    p = patterns(read(rl))
+    check_('...and after retracting ONE, the pattern no longer fires',
+           'seed-gate' not in p['repeatedly_bypassed'], p['repeatedly_bypassed'])
+    check_('...counted as 2, not 3, and not as 4 either -- the retraction is '
+           'not itself a bypass', p['counts'].get('seed-gate') == 2,
+           p['counts'])
+    # THE ROW IS STILL THERE. That is the whole point: a log that deletes what
+    # embarrasses it is worth less than one with a known-bad row and a note.
+    raw = io.open(rl, encoding='utf-8').read()
+    check_('...and the retracted row is STILL IN THE FILE, not deleted',
+           raw.count('"reason": "first"') == 1, raw[:200])
+    check_('...and the retraction names which row it strikes',
+           any(r.get('retracts') == a['at'] for r in read(rl)))
+    # BOTH DIRECTIONS: an un-retracted row must still count, or the arm above
+    # would pass against a patterns() that counted nothing at all.
+    check_('a row nobody retracted still counts',
+           patterns(read(rl))['counts'].get('seed-gate') == 2)
+    for bad, why in ((None, 'no target'), ('', 'empty target')):
+        try:
+            retract(bad, 'x', path=rl)
+            check_('a retraction with %s is refused' % why, False)
+        except BypassError:
+            check_('a retraction with %s is refused' % why, True)
+    try:
+        retract('2026-09-16T01:00:00Z', '   ', path=rl)
+        check_('a retraction with no reason is refused', False)
+    except BypassError:
+        check_('a retraction with no reason is refused', True)
+
     print('\n5. an UNPARSEABLE line is reported, never skipped')
     with io.open(lg, 'a', encoding='utf-8') as fh:
         fh.write('{not json\n')
@@ -319,9 +419,26 @@ def main(argv):
         return 0
 
     print('BYPASS LOG -- item 86, the battleshort pattern. Report only.')
-    print('  overrides recorded : %d' % len([r for r in rows if not r.get('unparseable')]))
+    real = [r for r in rows if not r.get('unparseable')
+            and r.get('check') != RETRACTION]
+    struck = retracted_ats(rows)
+    print('  overrides recorded : %d   (%d still stand, %d retracted)'
+          % (len(real), len([r for r in real if r.get('at') not in struck]),
+             len(struck)))
     print('  blanket (ALL)      : %d   <- a switch labelled for one purpose that '
           'disables ten' % p['blanket_uses'])
+    if struck:
+        # NAMED, not netted off. A count that silently shrank would be
+        # indistinguishable from rows having been deleted, which is the thing
+        # retraction exists to avoid.
+        print('')
+        print('  RETRACTED (%d) -- still in the file, not counted above:' % len(struck))
+        for r in rows:
+            if r.get('check') == RETRACTION:
+                orig = next((o for o in rows if o.get('at') == r.get('retracts')), None)
+                print('    %s  %s' % (r.get('retracts'),
+                                      (orig or {}).get('command') or '(no command)'))
+                print('      why: %s' % r.get('reason', '')[:200])
     print('')
     if not rows:
         print('  THE LOG IS EMPTY, and that is NOT the same as no overrides.')
