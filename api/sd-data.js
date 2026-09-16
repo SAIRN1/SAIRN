@@ -9918,6 +9918,69 @@ module.exports = async (req, res) => {
           res.status(400).json({ error: { message: resource + ' payload.id is required' } });
           return;
         }
+
+        // ── VOIDING IS A ROLE ACT, ENFORCED HERE (2026-09-16) ──────────────
+        // Michael's 2026-09-14 decision was that Admin/Manager may void a PO
+        // or a receipt. This app has no `admin`, so it is owner and manager.
+        // Until now that decision lived ONLY in sairnbiz.html's SB_VOID_ROLES,
+        // which is a client constant: the gate above is a SESSION gate, so any
+        // signed-in employee of ANY role could POST a voided row straight to
+        // this endpoint. The exclusion was a button, not a control -- it did
+        // not stop an accounting user voiding, only stopped them clicking.
+        // This is the half that makes the decision true.
+        //
+        // THE SESSION GATE ABOVE IS NOT WIDENED. Everything else about these
+        // resources stays licence+session as the block argues: raising a PO
+        // and logging a receipt are ordinary work for any signed-in employee.
+        // Only the VOID TRANSITION is privileged, which is exactly what the
+        // client gates and nothing more.
+        //
+        // BOTH DIRECTIONS, AND THE SECOND ONE IS WHY THIS NEEDS A READ. The
+        // write is a blind upsert of the whole payload, so without checking
+        // the stored row a staff account could UN-VOID by posting the same id
+        // with the status removed. A void anybody can undo is not a void, and
+        // a one-directional lock is the "looks like a control" shape this
+        // platform keeps finding. So the transition is what is gated: setting
+        // Void, and clearing it.
+        //
+        // COULD-NOT-TELL IS A REFUSAL, NOT A PASS (PR 1.11). If the stored row
+        // cannot be read, whether this write clears a void is UNKNOWN, and
+        // allowing it would be the gate quietly not running. 404/400 is
+        // different and is not an error: the table is not provisioned, so
+        // there is no stored row, so no void can be cleared -- the write
+        // itself answers NOT_PROVISIONED a few lines below.
+        const SB_VOIDABLE = { sb_po: 1, sb_recv: 1 };
+        if (SB_VOIDABLE[resource]) {
+          // Named against ROLES_BY_APP so a role that does not exist in this
+          // app cannot be written here by a typo -- the same assertion
+          // sairnbiz.html makes about its own copy of this list.
+          const SB_VOID_ROLES = ['owner', 'manager'].filter(
+            (r0) => ROLES_BY_APP.sairnbiz.indexOf(r0) !== -1);
+          const isVoid = (row) => !!(row && String(row.status) === 'Void');
+          const incomingVoid = isVoid(payload);
+          let storedVoid = false;
+          if (!incomingVoid) {
+            // Only the CLEAR direction needs the stored state. Setting a void
+            // is privileged whatever was there before, so that direction costs
+            // no extra request.
+            const cur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash)
+              + '&' + idCol + '=eq.' + enc(String(payload.id)) + '&select=data'), { headers });
+            if (cur.status === 404 || cur.status === 400) {
+              storedVoid = false;
+            } else if (!cur.ok) {
+              res.status(503).json({ error: { code: 'VOID_STATE_UNREADABLE', message: 'Could not read the stored ' + resource + ' row, so whether this write clears a void is unknown. The write was refused rather than allowed.' } });
+              return;
+            } else {
+              const curRows = await cur.json();
+              storedVoid = isVoid(Array.isArray(curRows) && curRows[0] ? curRows[0].data : null);
+            }
+          }
+          if (incomingVoid !== storedVoid
+              && SB_VOID_ROLES.indexOf(sbBizSession.role) === -1) {
+            res.status(403).json({ error: { code: 'VOID_ROLE_REQUIRED', message: (incomingVoid ? 'Voiding' : 'Un-voiding') + ' a ' + (resource === 'sb_po' ? 'purchase order' : 'receipt') + ' is limited to an Owner or a Manager.' } });
+            return;
+          }
+        }
         const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
           method: 'POST',
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
