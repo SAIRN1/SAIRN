@@ -3955,7 +3955,28 @@
       "injection": {
         "unknown_reason": "addSupply() has dropped the push since it was written; there is no commit where reading the result was removed"
       },
-      "citation_note": "silent failure: the user is told the item was added and nothing ever says otherwise"
+      "citation_note": "silent failure: the user is told the item was added and nothing ever says otherwise",
+      "contributing_factors": [
+        {
+          "factor": "THE FALSE CLAIM WAS THE ONLY THING THE USER EVER SAW. dntPushOne reports a refusal to console.warn and raises NO toast, so 'Supply item added' was the entire user-visible outcome whether or not the record synced. The other instances of this class at least had a truthful message somewhere; this one had none.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The push result is read and the toast conditioned on it."
+        },
+        {
+          "factor": "THE OPERATION REPEATS, SO EVEN A CORRECTION WOULD HAVE BEEN OVERWRITTEN. Supplies are added one after another, and the next item's toast replaces the previous one -- so a later honest message about item three would have been the only record that anything went wrong with item two, and it would have been gone in seconds.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the reason this instance is worse than its siblings rather than filed as another occurrence of one class: a transient channel cannot carry a durable fact."
+        },
+        {
+          "factor": "write_path_fault_scan.py MATCHES THE DATA WRAPPER BY NAME, so a dropped LOCAL ASYNC HELPER is invisible to it. Every one of these calls a helper rather than the wrapper, which is why the apps reported clean while announcing success for writes that never left the device.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/optimistic_success_scan.py, whose rule is STRUCTURAL and uses no word list: a caller that drops a write's promise cannot condition anything on the result, so any later toast in that function is unconditional BY CONSTRUCTION. Message text is printed for a human rather than classified by keywords, which would be wrong in both directions. 14 candidates, 3 real."
+        }
+      ],
+      "recurrence_open": "dntPushOne still reports refusals to console.warn ONLY. Every OTHER caller of it is now the same hazard, and the structural scan finds callers that drop the promise -- not callers that keep it and then ignore what it says. Nothing requires a write helper to have a user-visible failure channel at all."
     },
     {
       "commit": "53b0f9a475c5",
@@ -4029,7 +4050,28 @@
       "injection": {
         "unknown_reason": "the push was fire-and-forget inside the forEach from the start"
       },
-      "citation_note": "silent failure: the message hedged about the email draft and never about the write"
+      "citation_note": "silent failure: the message hedged about the email draft and never about the write",
+      "contributing_factors": [
+        {
+          "factor": "THE PROMISE WAS DROPPED INSIDE A forEach, which cannot await and gives no caller anything to hold. The shape reads as a loop over writes and is a loop over UNOBSERVED writes.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The promises are collected and awaited rather than fired inside the iteration."
+        },
+        {
+          "factor": "THE MESSAGE HEDGED ABOUT THE WRONG THING, WHICH IS WORSE THAN NOT HEDGING. It warned that the EMAIL DRAFT might be blocked and said nothing about whether the purchase-order ARCHIVE reached the server -- so a user who read the caveat carefully came away reassured about the durable record, which was the part at risk.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The two failures are named SEPARATELY, because a blocked pop-up and a lost purchase order are different events with different responses."
+        },
+        {
+          "factor": "write_path_fault_scan.py MATCHES THE DATA WRAPPER BY NAME, so a dropped LOCAL ASYNC HELPER is invisible to it. Every one of these calls a helper rather than the wrapper, which is why the apps reported clean while announcing success for writes that never left the device.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/optimistic_success_scan.py, whose rule is STRUCTURAL and uses no word list: a caller that drops a write's promise cannot condition anything on the result, so any later toast in that function is unconditional BY CONSTRUCTION. Message text is printed for a human rather than classified by keywords, which would be wrong in both directions. 14 candidates, 3 real."
+        }
+      ],
+      "recurrence_open": "A caveat that names one failure mode makes the others less visible, not more, and nothing checks that a hedged message hedges about everything it is covering. The structural scan sees a dropped promise; it cannot see a message that is honest about the wrong risk."
     },
     {
       "commit": "53b0f9a475c5",
@@ -4103,7 +4145,28 @@
       "injection": {
         "unknown_reason": "saveRoomDimensions() returned undefined from its first version; nothing later removed a return value"
       },
-      "citation_note": "silent failure, and the design half is that the helper made honest reporting impossible for every caller"
+      "citation_note": "silent failure, and the design half is that the helper made honest reporting impossible for every caller",
+      "contributing_factors": [
+        {
+          "factor": "THE HELPER REPORTED HONESTLY TO THE USER AND RETURNED UNDEFINED. saveRoomDimensions() did the hard part right and then told its CALLER nothing, so no caller could condition anything on it even if it wanted to. A helper that reports to the user and returns nothing FORCES EVERY CALLER TO BE OPTIMISTIC -- the defect is in the signature, not at the call site.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "saveRoomDimensions() returns whether it synced, so a caller has something to condition on."
+        },
+        {
+          "factor": "TWO HONEST MESSAGES IN SEQUENCE STILL READ AS SUCCESS. The helper's truthful report and the caller's 'Room captured' both appear, and the later one is the one the user acts on. Correct reporting inside a component does not survive being composed with an optimistic caller.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the class: honesty is a property of the COMPOSITION, not of the helper."
+        },
+        {
+          "factor": "write_path_fault_scan.py MATCHES THE DATA WRAPPER BY NAME, so a dropped LOCAL ASYNC HELPER is invisible to it. Every one of these calls a helper rather than the wrapper, which is why the apps reported clean while announcing success for writes that never left the device.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/optimistic_success_scan.py, whose rule is STRUCTURAL and uses no word list: a caller that drops a write's promise cannot condition anything on the result, so any later toast in that function is unconditional BY CONSTRUCTION. Message text is printed for a human rather than classified by keywords, which would be wrong in both directions. 14 candidates, 3 real."
+        }
+      ],
+      "recurrence_open": "Every other write helper on the platform that reports to the user and returns undefined has the same shape, and nothing enumerates them. The structural scan finds dropped promises; a helper returning undefined gives the caller nothing to drop."
     },
     {
       "commit": "53b0f9a475c5",
@@ -4177,7 +4240,28 @@
       "injection": {
         "unknown_reason": "the second toast was there from the first version of the QR scan path"
       },
-      "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines"
+      "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines",
+      "contributing_factors": [
+        {
+          "factor": "THE TRUTHFUL MESSAGE WAS OVERWRITTEN BY AN OPTIMISTIC ONE. markSampleReturned() raised its own honest toast and the caller raised a second one on top, so the user saw the accurate report replaced by the inaccurate one. WORSE THAN A BARE OPTIMISTIC CLAIM: the system detected the failure, said so, and then talked over itself.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The caller no longer raises a second toast over a helper that already reported."
+        },
+        {
+          "factor": "A TOAST CHANNEL HAS NO PRECEDENCE RULE. Last write wins, so the least-informed message in a sequence is the one that survives, and nothing about the API makes that visible to whoever adds the second call.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No mechanism proposed here. Giving the toast channel a precedence rule -- a failure message cannot be replaced by a success message -- is a platform-wide UI change with its own failure modes, and it is a larger decision than this fix."
+        },
+        {
+          "factor": "write_path_fault_scan.py MATCHES THE DATA WRAPPER BY NAME, so a dropped LOCAL ASYNC HELPER is invisible to it. Every one of these calls a helper rather than the wrapper, which is why the apps reported clean while announcing success for writes that never left the device.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/optimistic_success_scan.py, whose rule is STRUCTURAL and uses no word list: a caller that drops a write's promise cannot condition anything on the result, so any later toast in that function is unconditional BY CONSTRUCTION. Message text is printed for a human rather than classified by keywords, which would be wrong in both directions. 14 candidates, 3 real."
+        }
+      ],
+      "recurrence_open": "The structural scan finds callers that DROP a write's promise. This caller did not drop anything -- it added a message -- so the scan that found its three siblings could not have found this one, and it was caught by reading the same file. Nothing looks for a second toast raised over a helper that already reported."
     },
     {
       "commit": "56e204d85f12",
