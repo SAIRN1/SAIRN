@@ -4496,3 +4496,46 @@ commit date 10:57:53 is the signature of a rebase, and four minutes before it
 the operation that produces exactly this shape. **I did not rewrite
 `origin/main` and am not proposing it.** Rewriting shared history is not one
 session's call, and the row says what is owed instead.
+
+## 2026-09-16 (continued) -- the ledger-export control, and an arm that tested half its own label
+
+**SAIRNdental's charge and payment exports** -- Tier A, uncontrolled, and the
+suite guarding them exists because the only billing export used to be `ageing`:
+five derived buckets behind an Export CSV button, which **reads as exported**.
+An auditor asking what was charged cannot be handed five buckets.
+
+Four mutations, each of them silent -- a dropped column produces a CSV that
+still downloads and still totals.
+
+### It found two things on its first run, and a third in itself
+
+**1. THE ARM TESTED HALF ITS OWN LABEL.** *"a patient who no longer exists
+leaves the NAME blank and the ID intact"* asserted only
+`row.indexOf('P-1') !== -1`. Change the Patient column to fall back to the
+patient id and the id is still in the row -- **twice** -- so the only assertion
+was satisfied **by exactly the defect the arm is named after**. The blank-name
+half is now asserted. The naive comma split is justified in the comment rather
+than assumed, because that is the part that rots if a column is reordered.
+
+**2. A MUTATION IT STILL DOES NOT CATCH, kept as an arm rather than deleted.**
+The identical defect on the PAYMENTS patient column changes nothing the suite
+checks -- the missing-patient behaviour is asserted for charges only. **It is an
+ARM and not a comment because a gap written in prose is a gap nobody
+re-measures.** If somebody extends the suite, that arm goes RED and says to
+promote the mutation and delete the section.
+
+**3. AND A DEFECT IN MY OWN CONTROL, caught by the same run.** The `expect` arm
+matched a PASSING run's output, because a green suite prints every arm's own
+label -- so it **credited a mutation the suite had not noticed**. `expect` is
+now evaluated only on a failing run and says so when it is not. **A control that
+can credit a miss is worse than no control**, and this one did it on its first
+execution.
+
+### The shape, three times in one file
+
+The arm label that over-claims relative to its assertion is now the most common
+defect I have found tonight: the SAIRNlaw trusttx arm (measured the wrong
+region), the hover probe's arm 7 (named the probe, measured the tree), the
+void-role arm (label said staff may, assertion said 403), and now this one.
+**Every one of them reads correctly and tests something narrower**, and in three
+of the four the assertion was satisfied by the very defect the label names.
