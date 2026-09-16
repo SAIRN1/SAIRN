@@ -37,7 +37,16 @@ const assert = require('assert');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(ROOT, 'sairnvet.html'), 'utf8').replace(/\r\n/g, '\n');
+// SV_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Added 2026-09-16, copying tests/sairnbiz_po_recv_reach_the_server.js's
+// SB_HTML rather than inventing a second convention. It exists because the
+// alternative is the residue class that denied three legitimate pushes on
+// 2026-09-08: a tracked file modified mid-run is indistinguishable from a real
+// edit to every gate that reads the working tree. Unset -- which is every
+// ordinary run, including every run in CI -- this is exactly what it was.
+const html = fs.readFileSync(process.env.SV_HTML || path.join(ROOT, 'sairnvet.html'),
+                             'utf8').replace(/\r\n/g, '\n');
 
 let pass = 0, fail = 0;
 function test(name, fn) {
