@@ -4114,6 +4114,56 @@
       "recurrence_open": "The dispatch is by file suffix, so it handles .py and .js and nothing else. A third kind -- a shell script, a compiled binary, a .mjs needing a flag -- lands in the same hole, and the registry format still does not record what a test is written in. What changed is that the population now has two kinds instead of one, not that the assumption was removed."
     },
     {
+      "commit": "b42d0729ff7f",
+      "date": "2026-09-16",
+      "subject": "fix(probe): arm 7 named the probe and measured the whole working tree",
+      "files": [
+        "tests/hover_separation_ci_probe.py"
+      ],
+      "lines_added": 40,
+      "lines_removed": 6,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/hover_separation_ci_probe.py's arm 7 asserted the clone had NO tracked file modified at all, under the label 'this clone has no tracked file modified by the probe'. Those are different questions and they agree only on a clean tree. Run mid-session it went red on sixteen unrelated edits and attributed them to the probe. Safe direction -- it fails closed and nothing shipped -- but an arm that names the probe and reports somebody else's edits sends the next reader hunting for residue that was never there. Now measured as a DIFFERENCE from a baseline taken before the probe starts, with a pre-dirty tree printed as an explicit note rather than as a failure or a silence.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "46e77c3f4ca7",
+        "date": "2026-09-16",
+        "subject": "feat(ci): the hover auditor's separation enforced server-side -- and the first version of it could never have fired",
+        "lag_days": 0
+      },
+      "citation_note": "1.5 is a confident line printed after an error. This is the same family with the polarity reversed -- a confident ATTRIBUTION printed with a correct refusal -- so the citation is arguable rather than clean. Nothing here was reported as a pass, which is the half 1.5 is usually about.",
+      "contributing_factors": [
+        {
+          "factor": "The arm measured the ABSOLUTE state of the working tree while its label claimed to measure what the probe had done -- two different questions that give the same answer only on a clean tree",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A baseline is taken before the probe starts and the arm reports the DIFFERENCE, so what it names is what it tests"
+        },
+        {
+          "factor": "Every run before this one happened to be on a clean tree, so the label and the measurement agreed and nothing distinguished them",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A probe written and first run on a clean tree cannot exercise the one condition that separates the two readings. Nothing would have surfaced this before a session ran it mid-work, which is when it surfaced."
+        },
+        {
+          "factor": "It fails CLOSED, so the wrong answer never allowed anything -- which is also why it could persist: a red arm that names a plausible cause reads as a finding rather than as a defect in the arm",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A pre-dirty tree now prints an explicit note naming the condition, so a reader can tell the two cases apart without re-deriving them"
+        }
+      ],
+      "recurrence_open": "Only this arm was corrected. Other probes in tests/ assert on absolute working-tree cleanliness the same way, and nothing sweeps for the pattern; each will read correctly until somebody runs it with work in progress. The baseline shape is cheap enough to copy and is not copied anywhere yet."
+    },
+    {
       "commit": "bfa3fff4c5fc",
       "date": "2026-09-16",
       "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
