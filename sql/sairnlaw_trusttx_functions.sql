@@ -363,3 +363,36 @@ grant execute on function public.law_check_and_void_deposit to service_role;
 -- Then delete the scratch rows. law_trusttx carries no delete grant, so that
 -- cleanup is a SQL-editor statement -- the same constraint every other
 -- live-write verification on this platform has.
+--
+-- ── RE-RUN REQUIRED, 2026-09-15 ────────────────────────────────────────────
+-- The READ COMMITTED guards were added to BOTH functions on 2026-09-15. This
+-- file uses `create or replace`, so RUNNING IT AGAIN IS SAFE AND IS WHAT
+-- INSTALLS THEM. Until it is re-run the deployed functions are the earlier
+-- versions and the REPEATABLE READ hole is open on the live database, on
+-- attorney client trust money. THE REPOSITORY BEING CORRECT IS NOT THE SAME AS
+-- THE DATABASE BEING CORRECT, and this line exists so the two are not
+-- confused.
+--
+-- Verify the guards themselves. THIS IS THE ONE CHECK THAT PROVES THE ADDITION
+-- RATHER THAN THE FUNCTION -- everything above passes equally well against the
+-- unguarded version:
+--
+--   begin;
+--   set transaction isolation level repeatable read;
+--   select public.law_check_and_insert_disbursement(
+--     'SCRATCH-HASH','TX-ISO-1','M1','CLIENT-A',1,'Check',null,'iso',null,null);
+--     -- EXPECTED: ERROR 25000 "law_check_and_insert_disbursement requires
+--     -- READ COMMITTED; this transaction is repeatable read".
+--   rollback;
+--
+--   begin;
+--   set transaction isolation level repeatable read;
+--   select public.law_check_and_void_deposit('SCRATCH-HASH','TX-ISO-1','iso');
+--     -- EXPECTED: ERROR 25000 "law_check_and_void_deposit requires READ
+--     -- COMMITTED; ...".
+--   rollback;
+--
+-- ANY OTHER OUTCOME MEANS THE GUARD IS NOT INSTALLED. A NOT_FOUND, an
+-- INSUFFICIENT_TRUST_BALANCE, or a returned row all mean the function ran --
+-- which is the failure, because the guard is supposed to refuse BEFORE the
+-- first data statement. Both statements roll back and write nothing either way.
