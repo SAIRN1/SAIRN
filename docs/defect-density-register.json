@@ -3035,6 +3035,66 @@
       "phase_note": "The classifier had buckets for single-row and append-only from the start and none for DERIVED. An omitted category in the original design, latent until 2026-09-15 when the first derived Tier A resource was registered."
     },
     {
+      "commit": "25f2194d16ab",
+      "date": "2026-09-16",
+      "subject": "fix(tools): third confirmed instance of the one-spelling blind spot -- the decode checker could not see an aliased subprocess import",
+      "files": [
+        "tests/run_subprocess_decode_probe.py",
+        "tests/seam_check/run_probe.py",
+        "tests/session_lock_liveness_probe.py",
+        "tools/session_lock_check.py",
+        "tools/subprocess_decode_check.py"
+      ],
+      "lines_added": 102,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/subprocess_decode_check.py could not see a subprocess call made through an aliased import, so one text-mode call with no encoding was never in the population the 358-site sweep claimed to have cleared",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/subprocess_decode_check.py",
+      "injection": {
+        "commit": "e1040ea57deb",
+        "date": "2026-09-15",
+        "subject": "fix(tooling): 358 text-mode subprocess calls decoded with the cp1252 locale default -- all of them, with the reproduction first",
+        "lag_days": 1
+      },
+      "citation_note": "Adjacent. PR 1.11 is about a check that could not run being folded into a pass; here the check RAN and the defective call was never in its population, so the clean report was about a smaller set than the one claimed. Same consequence -- a number that reads as coverage it does not have.",
+      "contributing_factors": [
+        {
+          "factor": "is_subprocess_call() required the receiver to be the literal Name subprocess, so import subprocess as _sp made the call invisible to the checker.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "module_bindings() now reads the import statements and resolves what subprocess is actually bound to, including from-imports."
+        },
+        {
+          "factor": "The sweep that fixed 358 call sites reported completeness -- all of them -- on a population defined by the detector rather than by the language. A count of what a detector can see reads identically to a count of what exists.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Eight new arms in run_subprocess_decode_probe.py pin the binding resolution in both directions, so the population is now asserted rather than assumed."
+        },
+        {
+          "factor": "Nothing compared the checker vocabulary against the ways Python can actually bind a module. This is the third confirmed instance of one class on this platform and the first two were found the same way -- by reading what a detector called empty, not by the detector going red.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "A sweep of the other 63 tools carrying a hardcoded string vocabulary was run; the rest are closed schemas or noisy-direction exclusion lists. A standing check that a classifier vocabulary is derived rather than written down does not exist."
+        },
+        {
+          "factor": "The affected file already called subprocess.run correctly three lines later, so the defect was invisible to review as well -- the file looks internally consistent unless you compare line 17 against line 22.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "No mechanism is proposed. A reviewer noticing that two calls in one file disagree is exactly what review is for, and encoding a rule for it would be a checker for the checker."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
+    },
+    {
       "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
