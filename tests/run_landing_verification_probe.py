@@ -28,6 +28,11 @@ THE THREE ARMS THAT CARRY THE TOOL, each pinned to a real incident:
          (PR 3.2); folding it into the pass column is how a deploy watcher goes
          silently blind.
 """
+# REQUIREMENT: landing_verification.py compares a CRLF and an LF copy as EQUAL,
+#   and answers COULD NOT TELL rather than CURRENT when an executable it
+#   depends on is absent -- the fail-closed rule, and a bare byte diff once
+#   reported the whole skill mirror as diverged
+#
 CONTROLS_FOR = ['landing_verification.py']
 
 import importlib.util

@@ -53,6 +53,11 @@ COUNTED rather than merely found, and an anchor that stops matching is REPORTED
 as could-not-test rather than silently skipped -- a mutation that plants
 nothing and is read as covered would be the same lie in the other direction.
 """
+# REQUIREMENT: every refusal in sv-witness.js's countersign action is covered
+#   by some suite, established by deleting each one and asking which suite
+#   notices -- a two-person lock on a DEA-relevant record cannot rest on arms
+#   that never enter the handler
+#
 import io
 import json
 import os

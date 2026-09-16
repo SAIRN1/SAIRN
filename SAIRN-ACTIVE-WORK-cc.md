@@ -3964,3 +3964,29 @@ bug that would make all four clones claim one lock. Left in place because
 deleting a file outside every working tree is a machine-state decision, the same
 call the 2026-08-25 home-checkout row made about that directory. Said in the
 tool's header so the next reader does not revive it.
+
+## 2026-09-16 (continued) -- tracing, batch 2: the checker-checkers
+
+**103 -> 86 untraced, and bound-to-subject back to 0.** Seventeen declarations,
+all of them in one family: the probes that check the CHECKERS. That is the
+family least likely to be described anywhere else, because an open-work row
+gets written about a defect in the product and nobody writes one about a
+control for a control.
+
+Each declaration was written after reading the file, and each says WHY the
+coverage is required rather than what it covers -- the distinction the matrix's
+section 5 exists to hold. `tests/run_tool_selftest_probe_control.py` is the
+clearest case: its subject is obvious from the filename and the requirement is
+not, so the declaration is *"every branch that should make it go RED is driven
+on purpose, because a probe that discovered nothing prints the same green line
+as one that discovered everything and passed."*
+
+**One thing the extraction got wrong and it is worth recording, because the
+next session will hit it too.** Taking the untraced list with `awk` from the
+"two kinds" heading to end-of-file over-collects: it swallows the section
+BELOW it, *"citations pointing at a file that does not exist"*. That is how
+`tests/X_probe.py` and `tests/sairndental_settings_merge_base.js` looked like
+untraced files for a minute. They are phantom citations -- rows naming a file
+that is not on disk -- which is a different finding with a different fix, and
+the matrix already reports it separately. **Read the section boundary, not the
+tail.**

@@ -20,6 +20,10 @@ AND THE ONE THAT MATTERS MOST: arm 4 plants BOTH shapes on throwaway files and
 demands the detector separate them. A detector that answered UNGUARDED to
 everything would satisfy every positive arm above.
 """
+# REQUIREMENT: the detector that measures whether negative controls still break
+#   their target can itself be shown to fire AND to stay quiet, because a
+#   meta-detector that goes silent hides every unguarded control beneath it
+#
 import io
 import os
 import subprocess

@@ -25,6 +25,11 @@ a two-digit one (`+00`). Every stamp parsed as None, every table came back
 what the OLD tool printed, so the regression was invisible in the shape of the
 output. Section 1 is a permanent guard on that.
 """
+# REQUIREMENT: the never-run verdict on an absent table is EARNED from
+#   committed history rather than asserted, and the undecidable case is driven
+#   on a throwaway repo, because all 89 real tables resolve the same way and
+#   cannot distinguish a working rule from a stuck one
+#
 import io
 import os
 import subprocess

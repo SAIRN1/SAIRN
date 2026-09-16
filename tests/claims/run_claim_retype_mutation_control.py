@@ -30,6 +30,11 @@ red; it cannot tell you the arm is aimed at the case that actually happened.
 The mutations are written to a temp copy. tools/sairn_claim.py is never touched,
 and the closing section asserts that.
 """
+# REQUIREMENT: the retyped-task guard in sairn_claim.py is proved by mutation,
+#   with each sabotage verified to have found its anchor exactly once and to
+#   have changed the file, so the control cannot quietly become a no-op against
+#   a subject that still has the defect
+#
 
 import os
 import shutil

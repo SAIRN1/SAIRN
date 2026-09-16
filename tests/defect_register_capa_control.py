@@ -22,6 +22,11 @@ all five real records and requires the same verdict the inline version gave:
 silence. Without it, "the register still checks OK" would be equally true of a
 function that returned [] unconditionally.
 """
+# REQUIREMENT: defect_register.py refuses at the moment of RECORDING a defect
+#   that carries neither contributing factors nor a stated reason for having
+#   none, because a field that is optional when a record is written is a field
+#   that stays empty
+#
 import io
 import json
 import os

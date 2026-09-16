@@ -26,6 +26,11 @@ Those three false positives are why the criterion narrowed twice. They are
 pinned here so the narrowing cannot be undone by somebody widening the pattern
 back out.
 """
+# REQUIREMENT: each shape shape_antipattern_check.py detects is driven
+#   positively AND negatively on its own, because one shape reports zero
+#   against the real tree and a combined arm would be satisfied by a checker
+#   blind to it
+#
 import io
 import os
 import subprocess

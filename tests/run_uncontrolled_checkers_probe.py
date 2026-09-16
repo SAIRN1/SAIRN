@@ -45,6 +45,11 @@ and gated ALL FIVE sections behind it, so on a machine without node the three
 pure-Python controls did not run either and the file reported SKIPPED. Verified
 by grep: `checkblocks.py` is the only tool here that shells out to node.
 """
+# REQUIREMENT: every promoted checker that had no control of its own is driven
+#   in BOTH directions -- plant the defect and it must report, plant clean and
+#   it must stay silent -- because a checker that always reports and one that
+#   never reports each pass half the pair
+#
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
 # inference models were each wrong within an hour of being written.

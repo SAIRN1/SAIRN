@@ -22,6 +22,10 @@ commits, and therefore no stranded PROBE commit of its own.
 
 Run: python tests/push_gate/check9_probe.py
 """
+# REQUIREMENT: push-gate check 9 refuses the real 2026-09-10 break, names the
+#   failing guard test and what it guards, and answers COULD NOT TELL rather
+#   than denying when a suite run in flight has left the working tree modified
+#
 import hashlib
 import io
 import json

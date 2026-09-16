@@ -67,6 +67,11 @@ nothing passes here. That is item 47's worksheet half and
 `tools/sabotage_control_check.py`'s job. This answers the narrower question that
 was silently false for all thirty-six: does the thing RUN.
 """
+# REQUIREMENT: a tool carrying its own --selftest has that selftest RUN by the
+#   suite, because run_all_tests.py discovers tests/** and api/*.test.js and
+#   nothing under tools/, so an internal selftest otherwise runs only when a
+#   human types it
+#
 import ast
 import io
 import os

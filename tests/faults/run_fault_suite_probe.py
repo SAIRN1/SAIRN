@@ -16,6 +16,11 @@ REFUSES A DIRTY TARGET, like every mutation probe here since 2026-09-09: the
 bytes it would snapshot as "original" would not be the original, and the
 restore would bake somebody else's edit in while reporting byte-identical.
 """
+# REQUIREMENT: each fault-injection suite is proved to go RED on the real
+#   defect that shipped, because a fault suite's whole claim is catching what
+#   the logic-level tests could not, and that claim is worth nothing until
+#   somebody has watched it fail
+#
 import hashlib
 import os
 import subprocess

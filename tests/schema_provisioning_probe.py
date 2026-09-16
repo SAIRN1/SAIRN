@@ -19,6 +19,11 @@ collapsing them is exactly how a partial migration reads as an empty database:
 
 Run: python tests/schema_provisioning_probe.py
 """
+# REQUIREMENT: MISSING, REFUSED and CHALLENGED stay three separate answers in
+#   schema_provisioning_check.py, because collapsing them is exactly how a
+#   half-run migration reads as an empty database and a bot-mitigation
+#   challenge reads as verified-good
+#
 import io
 import json
 import os

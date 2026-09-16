@@ -5,6 +5,11 @@ Driven from Python so nothing depends on Bash command text, and every arm
 asserts on the refusal REASON, not just the exit code -- three of tonight's
 probe arms returned the right code for the wrong reason.
 """
+# REQUIREMENT: push-gate check 4 blocks a planted violation and allows a clean
+#   push, and every arm asserts on the refusal REASON rather than on the exit
+#   code alone, because three probe arms once returned the right code for the
+#   wrong reason
+#
 import atexit, subprocess, os, sys, re, tempfile
 
 # ── RUN THIS, DO NOT IMPORT IT (2026-09-11) ────────────────────────────────

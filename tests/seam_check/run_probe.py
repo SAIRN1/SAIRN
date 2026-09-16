@@ -7,6 +7,10 @@ absent from the endpoint payload -- and asserts the tool names it.
 Restores with a targeted `git checkout --`, never a reset, and asserts the
 restore actually happened.
 """
+# REQUIREMENT: the seam checker names the real 2026-08-27 SAIRNlaw defect -- a
+#   field present in the engine and absent from the endpoint payload -- and the
+#   targeted restore afterwards is asserted to have actually happened
+#
 import subprocess, re, sys, os
 
 import subprocess as _sp

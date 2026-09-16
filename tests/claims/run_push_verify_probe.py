@@ -35,6 +35,11 @@ remote and real clones on disk; no network is involved.
 
 The probe is self-contained and leaves nothing behind.
 """
+# REQUIREMENT: a claim that does not reach origin/main is never reported as
+#   CLAIMED, and neither sairn_claim.py nor its session-start hook may write
+#   the working tree while reading claims -- a claim invisible to the other
+#   clones is the exact collision the claim system exists to prevent
+#
 
 import json
 import os

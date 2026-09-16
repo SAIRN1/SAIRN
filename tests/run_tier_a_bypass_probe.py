@@ -10,6 +10,11 @@ false positives. Arm 3 pins the comment stripping that fixed it, and arm 3c
 pins the limit it did NOT fix, so nobody reads a later false positive as a
 regression.
 """
+# REQUIREMENT: tier_a_bypass_check tells a gated handler from an ungated one,
+#   strips comments before matching so prose cannot become a finding, and
+#   refuses when it cannot look -- its first version's only two findings were
+#   both words in prose
+#
 import contextlib
 import io as _io
 import os

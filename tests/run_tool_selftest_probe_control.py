@@ -20,6 +20,10 @@ The last two arms are the pair that matters. A control that only plants defects
 proves the check can fire; one that only runs clean proves it can stay quiet.
 Neither alone says the check DISCRIMINATES, which is the only useful property.
 """
+# REQUIREMENT: every branch that should make run_tool_selftest_probe.py go RED
+#   is driven on purpose, because a probe that discovered nothing prints the
+#   same green line as one that discovered everything and passed
+#
 import io
 import os
 import sys
