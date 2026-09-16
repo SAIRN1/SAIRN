@@ -1307,8 +1307,8 @@
       "task": "bypass log false entry probe write path, tier a review gate string literal stripping, hardcoded vocabulary blind spot sweep",
       "claimed_at": "2026-09-16T12:25:20Z",
       "claimed_at_epoch": 1789561520.2233818,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T13:32:21Z"
     }
   ]
 }
