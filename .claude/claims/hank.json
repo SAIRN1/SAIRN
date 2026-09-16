@@ -1945,6 +1945,16 @@
       "claimed_at_epoch": 1789522446.2635012,
       "status": "released",
       "released_at": "2026-09-16T02:12:13Z"
+    },
+    {
+      "id": "hank-1789526458",
+      "session": "hank",
+      "subject": "register-feed-gate",
+      "task": "defect register entry required at push for fix commits, prevent by construction",
+      "claimed_at": "2026-09-16T02:40:58Z",
+      "claimed_at_epoch": 1789526458.3377728,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
