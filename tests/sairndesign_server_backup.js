@@ -1,4 +1,9 @@
 // tests/sairndesign_server_backup.js
+// REQUIREMENT: every SAIRNdesign resource the registry names has a table AND
+//   every table is reachable from the registry -- checked in both directions,
+//   because three-of-four agreement between the lists has shipped on this
+//   platform before
+//
 //
 // Run:  node tests/sairndesign_server_backup.js
 //

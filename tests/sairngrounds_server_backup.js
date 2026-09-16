@@ -1,4 +1,9 @@
 // tests/sairngrounds_server_backup.js
+// REQUIREMENT: every SAIRNgrounds resource the registry names has a table AND
+//   every table is reachable from the registry -- checked in both directions
+//   across all three schema files, because three-of-four agreement has shipped
+//   on this platform before
+//
 //
 // Run:  node tests/sairngrounds_server_backup.js
 //

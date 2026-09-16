@@ -1,4 +1,9 @@
 // tests/sairndental_outbound_queue.js
+// REQUIREMENT: an UNREACHABLE charge is QUEUED for retry and a REFUSED one is
+//   queued nowhere -- the server already judged it -- and the id the client
+//   generates is stable for the life of the row, because the write upserts on
+//   it
+//
 //
 // Run:  node tests/sairndental_outbound_queue.js
 //

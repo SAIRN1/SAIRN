@@ -1,4 +1,8 @@
 // tests/sairndental_unlinked_referral_queue.js
+// REQUIREMENT: an empty id, an absent key and whitespace all count alike as
+//   unlinked, the note says what the count means, and with nothing unlinked
+//   the note is HIDDEN and emptied rather than left showing a stale number
+//
 //
 // Run:  node tests/sairndental_unlinked_referral_queue.js
 //

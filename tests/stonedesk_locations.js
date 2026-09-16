@@ -1,4 +1,8 @@
 // tests/stonedesk_locations.js
+// REQUIREMENT: each yard carries only its own slabs, a slab with no yard lands
+//   in its OWN row named Unassigned rather than in the first yard, and the
+//   columns add up to the whole inventory with nothing dropped
+//
 // StoneDesk multi-location (yards), competitive-gap audit GAP 7.
 //
 // The audit: "no multi-location support ... caps StoneDesk at single-yard shops

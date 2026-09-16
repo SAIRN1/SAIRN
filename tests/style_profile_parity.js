@@ -1,4 +1,8 @@
 // tests/style_profile_parity.js
+// REQUIREMENT: the client and the server render the SAME style profile from
+//   the same inputs, including under a manager override, and BOTH return empty
+//   below the sample floor rather than one of the two guessing
+//
 //
 // Run:  node tests/style_profile_parity.js
 //

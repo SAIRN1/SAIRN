@@ -1,3 +1,7 @@
+// REQUIREMENT: a part-unit visit is never rounded in either direction, an
+//   unusable unit basis yields zero rather than dividing by nothing, and
+//   SCHEDULED units are counted separately and never folded into delivered
+//
 // SAIRNsenior payer authorisation unit burn-down, driven verbatim from
 // sairnsenior.html.
 //

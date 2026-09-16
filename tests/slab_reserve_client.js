@@ -1,4 +1,9 @@
 // tests/slab_reserve_client.js
+// REQUIREMENT: the blind `status = reserved` assignment and its paired
+//   reservedFor are gone from the WHOLE file, all three reservation sites go
+//   through sdReserveSlab, and the quote is not saved when the reservation is
+//   refused
+//
 //
 // Run:  node tests/slab_reserve_client.js
 //

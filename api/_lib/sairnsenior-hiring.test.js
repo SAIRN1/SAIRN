@@ -1,3 +1,7 @@
+// REQUIREMENT: the retention window is an ARGUMENT rather than a constant
+//   baked into the arithmetic, and the ninety-day mark is INCLUSIVE -- a
+//   completed visit exactly on hire+90 counts as retention
+//
 // SAIRNsenior hiring funnel, driven verbatim from sairnsenior.html.
 //
 // Competitive-gap audit A5. The audit records applicant tracking as BASELINE

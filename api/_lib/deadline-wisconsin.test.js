@@ -1,3 +1,9 @@
+// REQUIREMENT: the Wisconsin rows cite the Legislature and use only the
+//   statewide intersection of ACTUAL closures -- Juneteenth, Columbus Day,
+//   Christmas and Good Friday are absent by evidence rather than by omission,
+//   because a holiday the courts do not observe moves a deadline that should
+//   not move
+//
 // Wisconsin deadline rows -- isolated verification against the REAL engine and
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //

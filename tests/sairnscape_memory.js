@@ -1,4 +1,9 @@
 // tests/sairnscape_memory.js
+// REQUIREMENT: a saved reply comes back out of the cloud loader with the
+//   newest entries first and the store capped, and nothing saved returns an
+//   EMPTY STRING rather than the word undefined reaching a customer-facing
+//   field
+//
 //
 // Run:  node tests/sairnscape_memory.js
 //

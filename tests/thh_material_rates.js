@@ -1,4 +1,9 @@
 // tests/thh_material_rates.js
+// REQUIREMENT: QUARTZITE is matched before QUARTZ -- "quartzite" contains
+//   "quartz", and the wrong order bills the most expensive natural stone the
+//   app handles at 3.5 instead of 4.6, a 24% understatement -- and the rates
+//   are read from the app rather than from a prompt string no shop can change
+//
 //
 // Run:  node tests/thh_material_rates.js
 //

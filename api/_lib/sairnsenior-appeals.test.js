@@ -1,3 +1,8 @@
+// REQUIREMENT: an overturned appeal returns the claim to SUBMITTED rather than
+//   to paid and nothing counts as recovered until it is actually paid, and the
+//   original denial basis survives the outcome patch so the record still says
+//   why it was denied
+//
 // SAIRNsenior denials-and-appeals, driven verbatim from sairnsenior.html.
 //
 // WHY THIS EXISTS. The 2026-08-26 worldwide competitive-gap audit records B2

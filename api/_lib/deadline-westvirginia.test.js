@@ -1,3 +1,8 @@
+// REQUIREMENT: the West Virginia rows are jurisdiction-tagged and computed
+//   against the REAL seed, with civil rows on wv_rcp_6a and appellate rows on
+//   wv_rap_39a -- one state's two rule sets are not interchangeable, and a row
+//   on the wrong one produces a plausible wrong date
+//
 // West Virginia deadline rows -- isolated verification against the REAL engine
 // and the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //

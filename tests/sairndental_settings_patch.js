@@ -1,4 +1,8 @@
 // tests/sairndental_settings_patch.js
+// REQUIREMENT: a 409 SLUG_TAKEN and a 503 SETTINGS_READ_UNAVAILABLE are
+//   surfaced as the server's own refusal rather than swallowed, and a thrown
+//   fetch is a refusal rather than a success
+//
 //
 // Run:  node tests/sairndental_settings_patch.js
 //

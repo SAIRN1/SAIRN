@@ -1,4 +1,8 @@
 // tests/stonedesk_remake_causes.js
+// REQUIREMENT: every recorded remake cause appears with a count and ordered
+//   most-common first, and an unknown reason code falls back to the raw value
+//   rather than vanishing from the chart
+//
 //
 // Run:  node tests/stonedesk_remake_causes.js
 //

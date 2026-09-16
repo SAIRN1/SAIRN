@@ -1,3 +1,8 @@
+// REQUIREMENT: a visit is costed at the wage in force ON ITS OWN DATE with
+//   term dates inclusive at both ends, and a date before any rate resolves to
+//   NOTHING rather than to the earliest rate -- the refusal saying the
+//   caregiver HAS rates on file, and how many
+//
 // SAIRNsenior caregiver pay rates and per-branch gross margin, driven verbatim
 // from sairnsenior.html.
 //

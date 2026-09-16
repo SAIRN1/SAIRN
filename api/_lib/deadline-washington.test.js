@@ -1,3 +1,8 @@
+// REQUIREMENT: the Washington rows compute against the REAL engine and the
+//   REAL seed and calendar on disk, with every expected date worked out BY
+//   HAND from the rule text and RCW 1.16.050 BEFORE the engine was run -- a
+//   date checked against the engine that produced it is not a check
+//
 // Washington deadline rows -- isolated verification against the REAL engine and
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //

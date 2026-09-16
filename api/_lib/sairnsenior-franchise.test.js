@@ -1,3 +1,8 @@
+// REQUIREMENT: denied and appeal-denied claims are excluded from the royalty
+//   base AND REPORTED rather than silently dropped, an appealed claim sits in
+//   its own line rather than in either bucket, and royalty and ad fund are
+//   charged on the included base only
+//
 // SAIRNsenior franchise agreements and royalty statements, driven verbatim
 // from sairnsenior.html.
 //

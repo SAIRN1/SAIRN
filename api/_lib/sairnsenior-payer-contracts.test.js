@@ -1,3 +1,8 @@
+// REQUIREMENT: a visit prices at the contract in force on its SERVICE DATE
+//   even when that contract has since ended, effective and term dates are
+//   inclusive, and a date before either contract began resolves to nothing
+//   rather than to the earliest one
+//
 // SAIRNsenior payer contract rate resolution, driven verbatim from
 // sairnsenior.html.
 //

@@ -1,4 +1,9 @@
 // tests/slab_scan_labels.js
+// REQUIREMENT: a scanned code resolves whatever case, whitespace or SDSLAB:
+//   prefix the scanner adds, and an unknown code resolves to NOTHING rather
+//   than to a nearest guess -- a nearest guess reserves the wrong physical
+//   slab
+//
 //
 // Run:  node tests/slab_scan_labels.js
 //

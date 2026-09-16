@@ -1,3 +1,8 @@
+// REQUIREMENT: every branch on file gets a row before it has anything,
+//   Unassigned is its OWN row and sorts LAST because it is a gap to close
+//   rather than a branch to rank, and the counts add up to every client and
+//   caregiver with none dropped and none double-counted
+//
 // SAIRNsenior multi-branch rollup, driven verbatim from sairnsenior.html.
 //
 // Competitive-gap audit B1, and the enabler for B3 and B5. The audit calls
