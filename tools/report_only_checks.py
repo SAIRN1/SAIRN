@@ -1668,6 +1668,22 @@ NOT_PROMOTED = [
      'route -- same reason waf_rule_check.py is held out. Its network half is '
      'the point of the tool, so it wants a could-not-tell code before it can '
      'be wired, not just a promotion.'),
+    ('trend_alarm.py', 'ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an '
+     'unarmed measurement into a push notice would put a number in front of '
+     'people that nothing has been tuned to interpret -- which is how a '
+     'measurement becomes a threshold by habit. It is also SLOW by construction: '
+     'the series are recovered from git history, 221 `git show` calls per run, '
+     'about 14 seconds. Promote it when a labelled episode exists AND gains are '
+     'recorded, which is the same gate the tool applies to itself.'),
+    ('weakness_combination.py', 'IT REPORTS PAIRS AND REFUSES THE VERDICT, on '
+     'purpose -- whether two accepted risks compound is a judgement about '
+     'consequences. A push notice implies a number to drive to zero and the '
+     'right number of shared-property pairs is not zero; a register of four '
+     'risks that shared nothing would mean the register was too small, not that '
+     'the platform was safe. Its one genuinely mechanical half -- whether a '
+     'trigger claimed as MECHANICAL is watched by anything that runs -- COULD '
+     'be promoted on its own, and should be split out first rather than '
+     'promoting the judgement half alongside it.'),
 ]
 
 

@@ -131,6 +131,8 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `missing_dom_target_check.py` -- its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress.
 - `local_only_collection_check.py` -- its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".
 - `sairn_app_map_check.py` -- CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion.
+- `trend_alarm.py` -- ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself.
+- `weakness_combination.py` -- IT REPORTS PAIRS AND REFUSES THE VERDICT, on purpose -- whether two accepted risks compound is a judgement about consequences. A push notice implies a number to drive to zero and the right number of shared-property pairs is not zero; a register of four risks that shared nothing would mean the register was too small, not that the platform was safe. Its one genuinely mechanical half -- whether a trigger claimed as MECHANICAL is watched by anything that runs -- COULD be promoted on its own, and should be split out first rather than promoting the judgement half alongside it.
 
 ## 4. Requirements traced through the open-work index
 
@@ -448,7 +450,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**235 of 447 test files are traced to a stated requirement. 212 are not.**
+**235 of 449 test files are traced to a stated requirement. 214 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -622,7 +624,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
 - `tests/run_traceability_matrix_probe.py`
+- `tests/run_trend_alarm_probe.py`
 - `tests/run_uncontrolled_checkers_probe.py`
+- `tests/run_weakness_combination_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
 - `tests/sairnbuild_backup_pending.js`
@@ -684,11 +688,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 447   tests/**, api/*.test.js
+  test files on disk                 449   tests/**, api/*.test.js
   open-work rows citing a test       225   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                48   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     37   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 
