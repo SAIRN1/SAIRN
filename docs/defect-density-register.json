@@ -2384,7 +2384,28 @@
       ],
       "severity": "high",
       "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
-      "summary": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce"
+      "summary": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce",
+      "contributing_factors": [
+        {
+          "factor": "THE GUARD WAS WRITTEN AS `total !== null && total !== rows.length`, so the ABSENCE of the thing it checks disabled it. A response with no Content-Range header, or `0-0/*`, made the first clause false and the completeness check was skipped entirely rather than refused.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The read now REFUSES with WINDOW_INCOMPLETE when it cannot establish the total, rather than treating an unknown total as a satisfied comparison."
+        },
+        {
+          "factor": "THE FAILURE PRODUCES A CHECKPOINT THAT VERIFIES CLEANLY FOREVER. A digest over the first page of a busy day is stable and reproducible and covers a fraction of the window, so every subsequent verification agrees with it -- the file's own header names that as the one thing it must never produce.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the shape in the header rather than only as a fixed line, because the next paged digest on this platform will be written by somebody who reads the header."
+        },
+        {
+          "factor": "IT WAS FOUND BY INDEPENDENT REVIEW AND NOT BY THE SUITE. The suite drove the guard with a well-formed Content-Range in every arm, which is the shape the API returns in normal operation, so no arm ever presented the input that disarmed it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/audit-checkpoint.test.js gained arms that present a MISSING and a `0-0/*` Content-Range, which is the state the original arms could not reach."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS WIDER THAN THIS GUARD: any check written as `x !== null && <predicate on x>` fails open when x is absent, and nothing on this platform scans for that shape. The bounded 14-window re-verification is also still a bound -- it is reported as `full:false` in every response rather than hidden, but a rewritten checkpoint older than the bound is caught only by the cheap prev_digest link, not by a re-digest."
     },
     {
       "app": "sairnbiz",
@@ -2570,7 +2591,28 @@
       "rules": [],
       "severity": "high",
       "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
-      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one"
+      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one",
+      "contributing_factors": [
+        {
+          "factor": "THE THRESHOLD WAS CHOSEN FOR A DIFFERENT FAILURE THAN THE ONE ITS COMMENT NAMES. A backup role without BYPASSRLS produces approximately a SCHEMA-ONLY dump, and the same comment states a schema-only dump is well over 100 KB -- so it passes a 50 KB floor. The number and the stated purpose were never checked against each other.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The comment no longer claims the floor detects the BYPASSRLS loss; the restore plus the coherence checker is named as the detector that actually does."
+        },
+        {
+          "factor": "THE HARM IS TO A READER, NOT TO A RUN. The real detector works, and every night it works -- so nothing fails, nothing is logged, and the only damage is that somebody auditing this pipeline counts TWO independent detectors where there is one. Redundancy that is believed and absent is worse than redundancy that was never claimed.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the record and in the file, because this is the kind of defect only a reader can hit and only a reader can be warned about."
+        },
+        {
+          "factor": "A COMMENT IS NOT EXECUTED, SO NOTHING COMPARES IT TO THE CODE BESIDE IT. The floor's claim and the floor's value sat two lines apart and disagreed, and no check on this platform reads a threshold's justification.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "No mechanism is proposed. A checker that reads prose and decides whether it matches the number beside it is the grep-cannot-tell-code-from-text class pointed at itself, and it would produce confident findings about English. The honest control here is independent review, which is what found it."
+        }
+      ],
+      "recurrence_open": "NOTHING PREVENTS THE NEXT THRESHOLD FROM BEING JUSTIFIED BY A COMMENT NOBODY RE-DERIVES. The fix corrects one comment; it does not establish that any other numeric guard in the backup pipeline detects what it claims, and the sibling record on the same commit -- a published placeholder password behind an `if not exists` guard that makes re-running the corrected file a no-op -- is evidence that this file was read less carefully than it was written."
     },
     {
       "app": "sairnvet",
@@ -3276,104 +3318,55 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
-      "commit": "8e03757afb09",
+      "commit": "1bb439fb7999",
       "date": "2026-09-16",
-      "subject": "fix(retry-backoff): a budget that stops the loop is a breaker, if its answer is read",
+      "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
       "files": [
-        "tests/retry_backoff_check_control.py",
-        "tools/retry_backoff_check.py"
+        "tests/rebase_resolve_merge_control.py",
+        "tools/sairn_rebase_resolve.py"
       ],
-      "lines_added": 67,
-      "lines_removed": 2,
+      "lines_added": 63,
+      "lines_removed": 14,
       "app": "PLATFORM",
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "tools/retry_backoff_check.py's BREAKER pattern matched only api/_lib/resilience.js's vocabulary, which has zero importers, so the has-a-breaker branch could never be true of any code that runs",
+      "summary": "tools/sairn_rebase_resolve.py's serializer round-trip proof searched indents at ensure_ascii=False ONLY, and passed on both real registers because neither held a non-ASCII byte that day. tools/defect_register.py writes its register with the json default (ensure_ascii=True), so the first rebase carrying an em-dash made the tool refuse the larger of the two ledgers it was written to merge",
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
       "found_by_tool": null,
       "injection": {
-        "commit": "1821345f4d37",
+        "commit": "c6d07088ee85",
         "date": "2026-09-16",
-        "subject": "feat(tools): item 81 -- the platform has NO retry loops, and the only breaker it has is dormant",
+        "subject": "fix(rebase): the two JSON registers get a real 3-way merge, not a side taken",
         "lag_days": 0
       },
+      "citation_note": "1.1 covers a check that cannot fail. This one COULD fail and did not, because the input space it was validated against was accidentally narrower than the input space it would meet -- the same green, reached from the other side, so the citation is arguable rather than clean.",
       "contributing_factors": [
         {
-          "factor": "The vocabulary was taken from the module that DEFINES breakers rather than from the code that uses one. The tool recorded, in its own output, that resilience.js has zero importers -- and still asked only for those four names.",
+          "factor": "THE PROBE WAS WRITTEN AGAINST THE FILES AS THEY WERE THAT HOUR, AND THEY HAPPENED TO BE PURE ASCII. Both registers round-tripped at ensure_ascii=False, so the single-setting search was indistinguishable from a correct one until a commit subject with an em-dash arrived on the next rebase.",
           "kind": "technical",
           "action_status": "done",
-          "action": "checkAiRateLimit added to BREAKER; the tool's own breaker_importers() arm is kept so the zero stays visible."
+          "action": "serializer_of() returns (indent, ensure_ascii) and searches both settings; a14 in the control drives a non-ASCII ledger written the escaped way."
         },
         {
-          "factor": "An assertion of PRESENCE that can never be satisfied is silent. Every loop simply reported as having no breaker, which is also the correct answer for most of them, so the output looked right.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The control now drives breaker_is_acted_on() in both directions and against the REAL api/sd-agent.js source, rather than only fixtures."
-        },
-        {
-          "factor": "A verdict-style control is not a wrapper-style one, and treating them alike would have replaced a pattern that never matched with one that matches too much: calling checkAiRateLimit and discarding the answer reads as protected and stops nothing.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "breaker_is_acted_on() requires a return or break after the verdict-style call only, so the four wrapper names keep their old meaning."
-        }
-      ],
-      "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
-    },
-    {
-      "commit": "fda7627c647b",
-      "date": "2026-09-16",
-      "subject": "fix(sd-agent): the only AI endpoint on the platform with no budget",
-      "files": [
-        "api/sd-agent-budget.test.js",
-        "api/sd-agent.js",
-        "tests/sd_agent_budget_probe.py"
-      ],
-      "lines_added": 330,
-      "lines_removed": 5,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/sd-agent.js drove up to MAX_ITERATIONS model calls per request with no budget check at all -- the only AI endpoint on the platform not consuming the shared daily limiter",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "286f945f661f",
-        "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
-        "lag_days": 55
-      },
-      "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
-      "contributing_factors": [
-        {
-          "factor": "The limiter is opt-in per endpoint -- each caller requires and calls checkAiRateLimit itself -- so adding an AI endpoint without one produces a working endpoint and no signal of any kind.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "tools/retry_backoff_check.py now treats checkAiRateLimit as breaker vocabulary, so a model-calling loop without one reads as unprotected in the sweep rather than as absent."
-        },
-        {
-          "factor": "The other two AI endpoints are metered, so a reader checking whether the platform meters AI calls finds that it does. Two of three doing the right thing is what made the third invisible.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The budget is consumed PER MODEL CALL here rather than per request, and the test asserts that count, because charging one unit for a request that can cost ten would have reported a healthy day while this endpoint spent ten times its share."
-        },
-        {
-          "factor": "A limiter that fails OPEN is indistinguishable, at the call site, from one that decided to allow. The absence of a decision looks like a decision.",
+          "factor": "THE TWO LEDGERS DISAGREE WITH EACH OTHER AND NOTHING SAYS SO. tools/defect_register.py writes with the json default (ensure_ascii=True); tools/tier_a_review_gate.py passes False. A reader of either writer alone would conclude the platform has one convention.",
           "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not unified. Changing either writer would reformat that whole ledger in one commit -- the exact whole-file-diff harm the round-trip proof exists to prevent -- and the merge tool now reads the convention from the file rather than assuming one."
+        },
+        {
+          "factor": "THE SABOTAGE ARM FOR THE ROUND-TRIP PROOF DID NOT COVER THIS HALF. Removing the ensure_ascii search leaves a12 green, because a ledger that round-trips at False still round-trips at False -- so the existing guard-is-load-bearing evidence said nothing about the part that was wrong.",
+          "kind": "detection",
           "action_status": "done",
-          "action": "`degraded` is carried out on every terminal status and surfaced rather than swallowed, the way api/claude.js surfaces it, and an arm asserts a healthy limiter reports it FALSE so the flag discriminates."
+          "action": "A SEPARATE sabotage entry pins the ensure_ascii half against a14, rather than widening a12's, so each half has its own failing witness."
         }
       ],
-      "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
+      "recurrence_open": "The probe now covers two settings and eight indents. It still cannot reproduce a ledger written by anything other than json.dumps -- a sort_keys pass, a custom separator, or a hand-edit -- and in every one of those cases it refuses rather than reformats, which is the right answer and is also a tool that has stopped being useful without anyone being told why."
     },
     {
       "commit": "25f2194d16ab",
@@ -4215,6 +4208,112 @@
       "single_factor_note": "The whole defect is one missing guard in one function, and svPushOne twenty lines away already had it with a comment explaining why -- so there is no second contributor to find; the guard was simply not copied onto the read path."
     },
     {
+      "commit": "7884c4a571ed",
+      "date": "2026-09-16",
+      "subject": "fix(sairnlaw): LAW_RECONCILE_ROLES named a role SAIRNlaw cannot issue",
+      "files": [
+        "api/sd-data.js",
+        "tests/law_reconcile_role_vocab_check.py",
+        "tests/law_reconcile_role_vocab_control.py"
+      ],
+      "lines_added": 315,
+      "lines_removed": 2,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "law_trust_reconcile's role allow-list named `admin`, a role ROLES_BY_APP.sairnlaw cannot issue, so the gate was owner-only in practice while the code, the 403 and the UI all said management",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "No section of the process rules covers an allow-list entry that can never match. It is adjacent to 1.1 -- a condition that cannot fire is indistinguishable from one that is not there -- but 1.1 is about CHECKS, and widening it to cover authorisation config would blur the one class it actually names.",
+      "contributing_factors": [
+        {
+          "factor": "The allow-list was a literal copied from an app with a different role vocabulary -- SAIRNcode's is admin/coder/biller/auditor -- and nothing in the codebase related the literal to ROLES_BY_APP.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "tests/law_reconcile_role_vocab_check.py reads the literal and the real ROLES_BY_APP entry and fails when they disagree, with a control that runs it against the shipped defect byte-for-byte."
+        },
+        {
+          "factor": "verifySessionToken already refuses any token whose role is outside the app's vocabulary, so NO request could ever reach the dead key. There was no log line, no error and no failing request that could have revealed it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The new check is STATIC for exactly that reason -- a request-driven test of any shape would have stayed green, which is why one was not written."
+        },
+        {
+          "factor": "sairnlaw.html shows the Trust Accounting tab to every signed-in role, so an attorney was offered a panel that 403s. Nobody joined the client's visibility rules to the server's allow-list.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Not fixed here. Aligning the tab with the gate depends on WHICH roles should reconcile, which is an open bar-rules decision for the firm; changing the UI to match a gate that may itself be wrong would harden the wrong answer."
+        },
+        {
+          "factor": "A dead key narrows an allow-list SILENTLY. It does not throw, log, or fail a request, so at every call site the narrowing is indistinguishable from deliberate policy.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated as the class in the fix's own comment and in the checker's docstring, so the next reader meets the shape before they meet the literal."
+        }
+      ],
+      "recurrence_open": "The checker covers ONE allow-list in ONE file. Every other role literal on the platform is still unchecked, and a sweep would have to guess which app each one is gated on, which is not derivable from the literal. Nothing yet prevents the next copied key."
+    },
+    {
+      "commit": "8e03757afb09",
+      "date": "2026-09-16",
+      "subject": "fix(retry-backoff): a budget that stops the loop is a breaker, if its answer is read",
+      "files": [
+        "tests/retry_backoff_check_control.py",
+        "tools/retry_backoff_check.py"
+      ],
+      "lines_added": 67,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/retry_backoff_check.py's BREAKER pattern matched only api/_lib/resilience.js's vocabulary, which has zero importers, so the has-a-breaker branch could never be true of any code that runs",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "1821345f4d37",
+        "date": "2026-09-16",
+        "subject": "feat(tools): item 81 -- the platform has NO retry loops, and the only breaker it has is dormant",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "The vocabulary was taken from the module that DEFINES breakers rather than from the code that uses one. The tool recorded, in its own output, that resilience.js has zero importers -- and still asked only for those four names.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "checkAiRateLimit added to BREAKER; the tool's own breaker_importers() arm is kept so the zero stays visible."
+        },
+        {
+          "factor": "An assertion of PRESENCE that can never be satisfied is silent. Every loop simply reported as having no breaker, which is also the correct answer for most of them, so the output looked right.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The control now drives breaker_is_acted_on() in both directions and against the REAL api/sd-agent.js source, rather than only fixtures."
+        },
+        {
+          "factor": "A verdict-style control is not a wrapper-style one, and treating them alike would have replaced a pattern that never matched with one that matches too much: calling checkAiRateLimit and discarding the answer reads as protected and stops nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "breaker_is_acted_on() requires a return or break after the verdict-style call only, so the four wrapper names keep their old meaning."
+        }
+      ],
+      "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
+    },
+    {
       "commit": "a744ceb5e0eb",
       "date": "2026-09-16",
       "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
@@ -4451,7 +4550,34 @@
       "injection": {
         "unknown_reason": "api/sd-data.js gated on the token claim from its first version; there is no commit where a current-state re-check was removed"
       },
-      "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it"
+      "citation_note": "no standing rule names 'an authorisation claim inside a still-valid token outliving the state it asserts'; the rules are about checks and writes, and stretching 1.11 to cover an auth-lifetime shape would blur it",
+      "contributing_factors": [
+        {
+          "factor": "THE PREVIOUS FIX WAS APP-SHAPED AND THE DEFECT WAS NOT. 9fef0f35 closed the deactivated-credential gap for api/sc-auth.js's own roster and set_active, and api/_lib/employee-lifecycle.js carried the same re-check for the apps that share it. The DATA path shared neither, so a fix that read as a class fix left thirteen apps' gated resources open for another three weeks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "credentialStillActive() lives in api/_lib/auth.js, beside the thing that MINTS the token, and is awaited at the sd-data session gate immediately after verifySessionToken and before any resource handler -- one place both paths reach rather than a second copy of the rule."
+        },
+        {
+          "factor": "A SIGNED TOKEN CARRIES ROLE AS A CLAIM. Verifying it proves the claim was minted and says nothing about whether it is still true, and nothing in the gate distinguished those two questions -- so 'the session is valid' silently meant 'the employee is still employed'.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The sabotage arm signs ONE token, verifies it, flips the row behind it, and requires the same byte-identical token to be refused 403 CREDENTIAL_INACTIVE -- which is the only form of proof that separates the two questions."
+        },
+        {
+          "factor": "NOTHING OBSERVABLE DISTINGUISHED THE TWO STATES. Every request from a deactivated employee succeeded, raised no error and wrote no log, and the window closed on its own when the token expired up to twelve hours later. There was no failing request for anyone to notice, and deactivation is the one control an owner has for somebody who has just left.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-active-credential.test.js holds that sd-data calls it, AWAITS it, in the right ORDER, refuses only on CREDENTIAL_INACTIVE, and cannot be broken by its own logging."
+        },
+        {
+          "factor": "THE APP-TO-TABLE MAP HAS NO RULE. Fifteen apps: sd, sb, grd and scp use a prefix, the rest the full app name, and sairncare's table is not alf_* though its endpoint is. A derived map would have been wrong for at least five apps and wrong SILENTLY, because a missing table reads as 'no active row' and would refuse every caller in that app.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The map is DECLARED, never derived, and stonedesk_sub is deliberately absent with NO_ACTIVE_CHECK as its answer because subcontractors key on sub_id."
+        }
+      ],
+      "recurrence_open": "THE THIRD STATE LETS THE REQUEST THROUGH ON PURPOSE. NO_ACTIVE_CHECK continues when the app has no employee table or the lookup itself fails, because a transport failure is not a deactivation and refusing every user whenever the database blinks is the worse failure. That trade is right and it means a sustained database fault RE-OPENS this gap for as long as it lasts; only the log makes it visible and nothing alarms on a run of them. The declared table map is hand-kept for the same good reason, so a sixteenth app added without an entry answers NO_ACTIVE_CHECK and is unprotected, silently."
     },
     {
       "commit": "c98b5d674c76",
@@ -4580,62 +4706,6 @@
       "recurrence_open": "NOT CLOSED FOR THE CLASS. Every probe this session wrote over a SHARED artefact -- the register, the inspection record, the open-work index -- has the same exposure: an arm authored against one author's records cannot tell 'this is the rule' from 'this is how I write it', and only a second author writing a record surfaces it."
     },
     {
-      "commit": "7884c4a571ed",
-      "date": "2026-09-16",
-      "subject": "fix(sairnlaw): LAW_RECONCILE_ROLES named a role SAIRNlaw cannot issue",
-      "files": [
-        "api/sd-data.js",
-        "tests/law_reconcile_role_vocab_check.py",
-        "tests/law_reconcile_role_vocab_control.py"
-      ],
-      "lines_added": 315,
-      "lines_removed": 2,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "law_trust_reconcile's role allow-list named `admin`, a role ROLES_BY_APP.sairnlaw cannot issue, so the gate was owner-only in practice while the code, the 403 and the UI all said management",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "config",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 1
-      },
-      "citation_note": "No section of the process rules covers an allow-list entry that can never match. It is adjacent to 1.1 -- a condition that cannot fire is indistinguishable from one that is not there -- but 1.1 is about CHECKS, and widening it to cover authorisation config would blur the one class it actually names.",
-      "contributing_factors": [
-        {
-          "factor": "The allow-list was a literal copied from an app with a different role vocabulary -- SAIRNcode's is admin/coder/biller/auditor -- and nothing in the codebase related the literal to ROLES_BY_APP.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "tests/law_reconcile_role_vocab_check.py reads the literal and the real ROLES_BY_APP entry and fails when they disagree, with a control that runs it against the shipped defect byte-for-byte."
-        },
-        {
-          "factor": "verifySessionToken already refuses any token whose role is outside the app's vocabulary, so NO request could ever reach the dead key. There was no log line, no error and no failing request that could have revealed it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The new check is STATIC for exactly that reason -- a request-driven test of any shape would have stayed green, which is why one was not written."
-        },
-        {
-          "factor": "sairnlaw.html shows the Trust Accounting tab to every signed-in role, so an attorney was offered a panel that 403s. Nobody joined the client's visibility rules to the server's allow-list.",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "Not fixed here. Aligning the tab with the gate depends on WHICH roles should reconcile, which is an open bar-rules decision for the firm; changing the UI to match a gate that may itself be wrong would harden the wrong answer."
-        },
-        {
-          "factor": "A dead key narrows an allow-list SILENTLY. It does not throw, log, or fail a request, so at every call site the narrowing is indistinguishable from deliberate policy.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Stated as the class in the fix's own comment and in the checker's docstring, so the next reader meets the shape before they meet the literal."
-        }
-      ],
-      "recurrence_open": "The checker covers ONE allow-list in ONE file. Every other role literal on the platform is still unchecked, and a sweep would have to guess which app each one is gated on, which is not derivable from the literal. Nothing yet prevents the next copied key."
-    },
-    {
       "commit": "e71683cc0ecd",
       "date": "2026-09-16",
       "subject": "fix(sabotage-check): the uniqueness guard was Python-only, and the first fix over-credited",
@@ -4744,6 +4814,56 @@
         }
       ],
       "recurrence_open": "Nothing checks that a record a product can WRITE stays reachable after the entity it is keyed to changes state. sb_ts is fixed; the same question has not been asked of any other keyed resource whose UI filters by employee, patient or vendor status."
+    },
+    {
+      "commit": "fda7627c647b",
+      "date": "2026-09-16",
+      "subject": "fix(sd-agent): the only AI endpoint on the platform with no budget",
+      "files": [
+        "api/sd-agent-budget.test.js",
+        "api/sd-agent.js",
+        "tests/sd_agent_budget_probe.py"
+      ],
+      "lines_added": 330,
+      "lines_removed": 5,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-agent.js drove up to MAX_ITERATIONS model calls per request with no budget check at all -- the only AI endpoint on the platform not consuming the shared daily limiter",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "286f945f661f",
+        "date": "2026-07-23",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "lag_days": 55
+      },
+      "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
+      "contributing_factors": [
+        {
+          "factor": "The limiter is opt-in per endpoint -- each caller requires and calls checkAiRateLimit itself -- so adding an AI endpoint without one produces a working endpoint and no signal of any kind.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "tools/retry_backoff_check.py now treats checkAiRateLimit as breaker vocabulary, so a model-calling loop without one reads as unprotected in the sweep rather than as absent."
+        },
+        {
+          "factor": "The other two AI endpoints are metered, so a reader checking whether the platform meters AI calls finds that it does. Two of three doing the right thing is what made the third invisible.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The budget is consumed PER MODEL CALL here rather than per request, and the test asserts that count, because charging one unit for a request that can cost ten would have reported a healthy day while this endpoint spent ten times its share."
+        },
+        {
+          "factor": "A limiter that fails OPEN is indistinguishable, at the call site, from one that decided to allow. The absence of a decision looks like a decision.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "`degraded` is carried out on every terminal status and surfaced rather than swallowed, the way api/claude.js surfaces it, and an arm asserts a healthy limiter reports it FALSE so the flag discriminates."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     }
   ],
   "started": "2026-09-09"
