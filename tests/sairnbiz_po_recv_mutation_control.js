@@ -105,79 +105,92 @@ function runSuite(htmlPath) {
   return { code: r.status, out: (r.stdout || '') + (r.stderr || '') };
 }
 
+// ── THE MUTATIONS ARE A DECLARED TABLE, NOT FOUR HAND-ROLLED BLOCKS ────────
+// Restructured 2026-09-16, and the reason is that two tools READ this shape.
+// `suite_control_coverage.survey()` credits a suite with a control only when
+// the probe declares `MUTATIONS =`, and `mutation_anchor_check.py` parses the
+// same table to sweep every anchor in the repo for uniqueness. Written as four
+// inline plant() calls, this file was correct and INVISIBLE to both -- the
+// triage went on listing sairnbiz_po_recv_reach_the_server.js among the
+// uncontrolled Tier A suites after its control existed, which is an
+// under-count in the direction that matters.
+//
+// `expect` and `forbid` are per-mutation because they are FACTS ABOUT THE
+// MUTATION, not decoration: which arm of the suite should notice this
+// particular defect, and -- for the persistence one -- which failure shape
+// means the suite crashed beside the defect rather than naming it.
+const MUTATIONS = [
+  {
+    // po_num comes from a per-device counter, so two workstations both raise
+    // PO-2026-001. Keying the upsert on it lets the second device's PO
+    // overwrite the first through resolution=merge-duplicates, with no error
+    // anywhere. This is the defect the suite's section 2 exists for.
+    name: 'the minted id becomes the PO NUMBER -- one row, two real purchase orders',
+    find: "do{id=prefix+Date.now().toString(36)+'-'+(i+n);n++;}while(seen[id]);",
+    replace: "id=String(r.po_num||('zzmut'+i));/*MUTANT-ID-IS-PO-NUM*/",
+    marker: 'MUTANT-ID-IS-PO-NUM',
+    expect: /SHARING A NUMBER|not the PO number/,
+    expectLabel: 'the arm about two POs sharing a number, not somewhere incidental',
+    suites: ['sairnbiz_po_recv_reach_the_server.js']
+  },
+  {
+    // Rows raised before 2026-09-14 carry po_num and no id. sbSyncCollection
+    // SKIPS a record without one, so without minting the old POs back up to
+    // nothing while the newer rows sync. Nothing reports it.
+    name: 'sb_po stops minting at all -- half a collection backs up, no error',
+    find: 'var prefix=SB_ID_PREFIX[key];',
+    replace: "var prefix=(key==='sb_po')?undefined:SB_ID_PREFIX[key];/*MUTANT-NO-MINT*/",
+    marker: 'MUTANT-NO-MINT',
+    expect: /changed sb_po|carries an id/,
+    expectLabel: 'the minting arms specifically',
+    suites: ['sairnbiz_po_recv_reach_the_server.js']
+  },
+  {
+    // Minting without writing back means the next load mints DIFFERENT ids for
+    // the same rows, so one purchase order becomes two server rows and the
+    // three-way match sees a PO it cannot reconcile. The write is deliberately
+    // direct rather than through st(); removing it leaves every in-memory
+    // assertion passing.
+    name: 'the minted ids are never PERSISTED -- the same PO backs up twice',
+    find: 'try{localStorage.setItem(key,JSON.stringify(arr));}catch(e){',
+    replace: 'try{void 0;/*MUTANT-NO-PERSIST*/}catch(e){',
+    marker: 'MUTANT-NO-PERSIST',
+    expect: /WRITTEN BACK|PERSISTED/,
+    expectLabel: 'the persistence arm, which is the one an in-memory test cannot reach',
+    // The suite CRASHED here with a raw node JSON error until 2026-09-16, so
+    // this shape is forbidden as well as the right arm being required.
+    forbid: /is not valid JSON/,
+    forbidLabel: 'it NAMES the defect rather than throwing a raw JSON parse error beside it',
+    suites: ['sairnbiz_po_recv_reach_the_server.js']
+  },
+  {
+    // The drift shape the suite checks BIDIRECTIONALLY: a collection present in
+    // the API, the registry and the schema and absent from the client's own
+    // list backs up nothing forever while three of the four places say it is
+    // covered.
+    name: 'sb_po leaves the synced list -- the four lists stop agreeing',
+    find: "'sb_incidents','sb_po','sb_recv','sb_ts'",
+    replace: "'sb_incidents','sb_recv','sb_ts'/*MUTANT-UNSYNCED*/",
+    marker: 'MUTANT-UNSYNCED',
+    expect: /SB_SYNCED carries sb_po|actually synced by the client/,
+    expectLabel: 'the list that stopped agreeing',
+    suites: ['sairnbiz_po_recv_reach_the_server.js']
+  }
+];
+
 console.log('SAIRNbiz po/recv: the suite can be made to FAIL on what it claims\n');
 
-// ── 1 ───────────────────────────────────────────────────────────────────────
-section('1. the minted id becomes the PO NUMBER -- one row, two real purchase orders');
-// po_num comes from a per-device counter, so two workstations both raise
-// PO-2026-001. Keying the upsert on it lets the second device's PO overwrite
-// the first through resolution=merge-duplicates, with no error anywhere. This
-// is the defect the suite's section 2 exists for, replanted.
-{
-  const f = plant(
-    'id is the po number',
-    "do{id=prefix+Date.now().toString(36)+'-'+(i+n);n++;}while(seen[id]);",
-    "id=String(r.po_num||('zzmut'+i));/*MUTANT-ID-IS-PO-NUM*/",
-    'MUTANT-ID-IS-PO-NUM');
+let idx = 0;
+for (const m of MUTATIONS) {
+  idx += 1;
+  section(idx + '. ' + m.name);
+  const f = plant(m.name, m.find, m.replace, m.marker);
   const r = runSuite(f);
   ok(r.code !== 0, 'the suite FAILS   exit ' + r.code);
-  ok(/SHARING A NUMBER|not the PO number/.test(r.out),
-     'and it fails on the arm about two POs sharing a number, not somewhere incidental');
-}
-
-// ── 2 ───────────────────────────────────────────────────────────────────────
-section('2. sb_po stops minting at all -- half a collection backs up, no error');
-// Rows raised before 2026-09-14 carry po_num and no id. sbSyncCollection SKIPS
-// a record without one, so without minting the old POs back up to nothing while
-// the newer rows sync. Nothing reports it.
-{
-  const f = plant(
-    'sb_po does not mint',
-    'var prefix=SB_ID_PREFIX[key];',
-    "var prefix=(key==='sb_po')?undefined:SB_ID_PREFIX[key];/*MUTANT-NO-MINT*/",
-    'MUTANT-NO-MINT');
-  const r = runSuite(f);
-  ok(r.code !== 0, 'the suite FAILS   exit ' + r.code);
-  ok(/changed sb_po|carries an id/.test(r.out),
-     'and it fails on the minting arms specifically');
-}
-
-// ── 3 ───────────────────────────────────────────────────────────────────────
-section('3. the minted ids are never PERSISTED -- the same PO backs up twice');
-// Minting without writing back means the next load mints DIFFERENT ids for the
-// same rows, so one purchase order becomes two server rows and the three-way
-// match sees a PO it cannot reconcile. The write is deliberately direct rather
-// than through st(); removing it leaves every in-memory assertion passing.
-{
-  const f = plant(
-    'ids are not persisted',
-    'try{localStorage.setItem(key,JSON.stringify(arr));}catch(e){',
-    'try{void 0;/*MUTANT-NO-PERSIST*/}catch(e){',
-    'MUTANT-NO-PERSIST');
-  const r = runSuite(f);
-  ok(r.code !== 0, 'the suite FAILS   exit ' + r.code);
-  ok(/WRITTEN BACK|PERSISTED/.test(r.out),
-     'and it fails on the persistence arm, which is the one an in-memory test cannot reach');
-  ok(!/is not valid JSON/.test(r.out),
-     'and it NAMES the defect rather than throwing a raw JSON parse error beside it -- '
-     + 'the suite crashed here until this control was written');
-}
-
-// ── 4 ───────────────────────────────────────────────────────────────────────
-section('4. sb_po leaves the synced list -- the four lists stop agreeing');
-// The drift shape the suite checks BIDIRECTIONALLY: a collection present in the
-// API, the registry and the schema, and absent from the client's own list, backs
-// up nothing forever while three of the four places say it is covered.
-{
-  const f = plant(
-    'sb_po not synced',
-    "'sb_incidents','sb_po','sb_recv','sb_ts'",
-    "'sb_incidents','sb_recv','sb_ts'/*MUTANT-UNSYNCED*/",
-    'MUTANT-UNSYNCED');
-  const r = runSuite(f);
-  ok(r.code !== 0, 'the suite FAILS   exit ' + r.code);
-  ok(/SB_SYNCED carries sb_po|actually synced by the client/.test(r.out),
-     'and it names the list that stopped agreeing');
+  ok(m.expect.test(r.out), 'and it fails on ' + m.expectLabel);
+  if (m.forbid) {
+    ok(!m.forbid.test(r.out), 'and ' + m.forbidLabel);
+  }
 }
 
 // ── 5 ───────────────────────────────────────────────────────────────────────
