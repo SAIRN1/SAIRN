@@ -1444,6 +1444,16 @@
       "claimed_at_epoch": 1789530964.5164282,
       "status": "released",
       "released_at": "2026-09-16T04:49:41Z"
+    },
+    {
+      "id": "cc-1789534386",
+      "session": "cc",
+      "subject": "cc",
+      "task": "deactivated credential token recheck across auth endpoints, untraced tracing continued, reseat reachability fix, dispatch state next work",
+      "claimed_at": "2026-09-16T04:53:06Z",
+      "claimed_at_epoch": 1789534386.7772465,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
