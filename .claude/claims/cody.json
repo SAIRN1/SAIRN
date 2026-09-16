@@ -1319,6 +1319,16 @@
       "claimed_at_epoch": 1789571124.5460603,
       "status": "released",
       "released_at": "2026-09-16T22:43:44Z"
+    },
+    {
+      "id": "cody-1789598974",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 83 witness token minting gaps, sv-witness active filter, uncovered mutation floor arm",
+      "claimed_at": "2026-09-16T22:49:34Z",
+      "claimed_at_epoch": 1789598974.4223607,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
