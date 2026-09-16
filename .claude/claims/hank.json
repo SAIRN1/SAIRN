@@ -1925,6 +1925,16 @@
       "claimed_at_epoch": 1789519678.5581107,
       "status": "released",
       "released_at": "2026-09-16T00:57:03Z"
+    },
+    {
+      "id": "hank-1789520471",
+      "session": "hank",
+      "subject": "item64",
+      "task": "precedence rule when two independent checks disagree conflict verdict",
+      "claimed_at": "2026-09-16T01:01:11Z",
+      "claimed_at_epoch": 1789520471.9623413,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
