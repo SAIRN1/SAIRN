@@ -1249,6 +1249,16 @@
       "claimed_at_epoch": 1789510602.7513673,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789519734",
+      "session": "cody",
+      "subject": "cody",
+      "task": "money amount parsed type, item 38 completeness detector, item 67 OODA phase timing",
+      "claimed_at": "2026-09-16T00:48:54Z",
+      "claimed_at_epoch": 1789519734.1873407,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
