@@ -52,27 +52,41 @@ from sabotage_harness import run_probe                           # noqa: E402
 SUITE = os.path.join('api', 'sd-data-active-credential.test.js')
 API = os.path.join('api', 'sd-data.js')
 
-CALL = ("      const stillActive = await credentialStillActive(gateSession, "
-        "licHash, rest, headers);")
-REFUSE = ("      if (!stillActive.ok && stillActive.code === "
-          "'CREDENTIAL_INACTIVE') {")
+# ── ANCHORS ARE WRITTEN INLINE, NOT HOISTED INTO CONSTANTS ──────────────────
+# tools/mutation_anchor_check.py reads this list with `ast` rather than by
+# importing it -- deliberately, because importing a probe RUNS it. A tuple
+# element that is a NAME therefore cannot be resolved, and four arms here were
+# reported as ANCHOR-0, "this anchor matches nothing", purely because their
+# anchors were module constants. The probe itself passed the whole time; what
+# went red was the platform check that asks whether every anchor still points at
+# real code -- and an anchor checker emitting four false zeros is exactly as
+# useless as one emitting none. Implicit string concatenation is fine: ast folds
+# it into a single literal. A name is not.
 
 MUTATIONS = [
     ("1. the AWAIT is dropped -- fire and forget. The call is still there and "
      "reads as correct at a glance; the gate now tests a pending promise, whose "
      "`.ok` is undefined, so nothing is ever refused",
-     API, CALL,
-     CALL.replace('await credentialStillActive(', 'credentialStillActive(')),
+     API,
+     "      const stillActive = await credentialStillActive(gateSession, "
+     "licHash, rest, headers);",
+     "      const stillActive = credentialStillActive(gateSession, "
+     "licHash, rest, headers);"),
 
     ("2. the refusal stops being conditioned on CREDENTIAL_INACTIVE, so a "
      "transport failure or an app with no employee table refuses EVERY "
      "employee. The obvious repair for that symptom is to delete the gate",
-     API, REFUSE, "      if (!stillActive.ok) {"),
+     API,
+     "      if (!stillActive.ok && stillActive.code === "
+     "'CREDENTIAL_INACTIVE') {",
+     "      if (!stillActive.ok) {"),
 
     ("3. the refusal is conditioned on the WRONG state -- a deactivated "
      "employee is let through and a could-not-tell is refused. Both answers "
      "inverted, neither visible",
-     API, REFUSE,
+     API,
+     "      if (!stillActive.ok && stillActive.code === "
+     "'CREDENTIAL_INACTIVE') {",
      "      if (!stillActive.ok && stillActive.code === 'NO_ACTIVE_CHECK') {"),
 
     ("4. 403 becomes 401, which reads as a session problem and tells the user "
@@ -98,8 +112,12 @@ MUTATIONS = [
      "has no derivable rule -- four apps use a prefix, the rest the full name, "
      "and sairncare's table is not alf_* -- so a stale local copy answers "
      "NO_ACTIVE_CHECK for whichever app it missed, silently",
-     API, CALL,
-     "      const AUTH_TABLE_BY_APP = { stonedesk: 'sd_employee_auth' };\n" + CALL),
+     API,
+     "      const stillActive = await credentialStillActive(gateSession, "
+     "licHash, rest, headers);",
+     "      const AUTH_TABLE_BY_APP = { stonedesk: 'sd_employee_auth' };\n"
+     "      const stillActive = await credentialStillActive(gateSession, "
+     "licHash, rest, headers);"),
 ]
 
 if __name__ == '__main__':
