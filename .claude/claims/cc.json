@@ -1452,8 +1452,8 @@
       "task": "deactivated credential token recheck across auth endpoints, untraced tracing continued, reseat reachability fix, dispatch state next work",
       "claimed_at": "2026-09-16T04:53:06Z",
       "claimed_at_epoch": 1789534386.7772465,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T05:30:33Z"
     }
   ]
 }
