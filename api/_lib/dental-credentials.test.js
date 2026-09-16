@@ -1,4 +1,7 @@
 // api/_lib/dental-credentials.test.js
+// REQUIREMENT: a lapsed or deactivated dental credential cannot act, the last
+//   administrator cannot be removed, and nobody can deactivate themselves
+//
 // Plain node:assert tests -- no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).
 // Run: node api/_lib/dental-credentials.test.js

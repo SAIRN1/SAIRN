@@ -169,6 +169,21 @@ try:
         'short.test.js': '// short.test.js\n// REQUIREMENT: tests money\n',
         'echo.test.js': '// echo.test.js\n// REQUIREMENT: echo\n',
         'none.test.js': '// none.test.js\n// just a test file\n',
+        # WRAPPED ACROSS LINES, which is how every real one is written at this
+        # repo's 72-column comment width. The first version matched only the
+        # line carrying the keyword and rejected a 160-character requirement
+        # for being under a 60-character floor.
+        'wrapped.test.js': ('// wrapped.test.js\n'
+                            '// REQUIREMENT: a money value can never be built\n'
+                            '//   from a non-number, so nothing reaches a\n'
+                            '//   ledger coerced from a string\n'
+                            '//\n'),
+        # ...and the continuation must STOP at a line that is not one, or the
+        # rest of the header joins the requirement and any short declaration
+        # passes by absorbing the prose under it.
+        'stops.test.js': ('// stops.test.js\n'
+                          '// REQUIREMENT: too short\n'
+                          '// a separate comment line that is not indented\n'),
         'buried.test.js': ('// buried.test.js\n' + ('// filler\n' * 500)
                            + '// REQUIREMENT: ' + GOOD + '\n'),
     }
@@ -192,8 +207,14 @@ check('R4 CONTROL a file with no declaration is NOT', 'none.test.js' in got, Fal
 check('R5 CONTROL a declaration buried past the header is NOT -- a file\'s '
       'requirement belongs where a reader meets the file',
       'buried.test.js' in got, False)
-check('R6 exactly one of the five qualifies, so the rule discriminates',
-      len(got), 1)
+check('R6a a WRAPPED declaration is joined and counted -- the floor must '
+      'measure the whole requirement, not the first line of it',
+      'wrapped.test.js' in got, True)
+check('R6b CONTROL the continuation STOPS at a line that is not one, so a '
+      'short declaration cannot pass by absorbing the prose beneath it',
+      'stops.test.js' in got, False)
+check('R6 exactly two of the seven qualify, so the rule discriminates',
+      len(got), 2)
 check('R7 the three sources carry DISTINCT labels, so a reader can see which '
       'files rest on the weakest one',
       sorted(set(x for v in tm_live.traced().values() for x in v)),

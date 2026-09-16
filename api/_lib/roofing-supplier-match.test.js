@@ -1,4 +1,7 @@
 // api/_lib/roofing-supplier-match.test.js
+// REQUIREMENT: a supplier match is derived from stock really available, so an
+//   unavailable item cannot be matched as fulfilling a requirement
+//
 // Run: node api/_lib/roofing-supplier-match.test.js
 //
 // SAIRNroofing B6 -- the only genuinely open item on the 2026-09-02 re-derived

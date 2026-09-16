@@ -1,4 +1,7 @@
 // api/stonedesk-track.test.js
+// REQUIREMENT: a tracking lookup answers only for the record whose token was presented,
+//   so a guessed or enumerated token cannot reach somebody else's job
+//
 // Run: node api/stonedesk-track.test.js
 //
 // The PUBLIC half of StoneDesk's order-tracking endpoint -- the `view` action,

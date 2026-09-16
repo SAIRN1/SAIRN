@@ -1,4 +1,8 @@
 // api/_lib/roofing-warranties.test.js
+// REQUIREMENT: a contractor cannot register or offer a warranty tier their
+//   certifications do not entitle them to, so the certification gate is what
+//   decides the tier rather than what is asked for
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention (see api/_lib/auth.test.js, subcontractor-compliance.test.js).
 // Run: node api/_lib/roofing-warranties.test.js

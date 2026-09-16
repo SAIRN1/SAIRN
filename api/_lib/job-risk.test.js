@@ -1,4 +1,7 @@
 // api/_lib/job-risk.test.js
+// REQUIREMENT: a job risk score is derived from the materials and conditions really
+//   recorded, so a risk figure cannot be produced for inputs that are absent
+//
 //
 // Run:  node api/_lib/job-risk.test.js
 //

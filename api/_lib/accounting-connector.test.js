@@ -1,4 +1,8 @@
 // api/_lib/accounting-connector.test.js
+// REQUIREMENT: a read-only accounting connection cannot exceed the scope the customer
+//   consented to, and consent is read from the record rather than assumed
+//   from the connection existing
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/accounting-connector.test.js
 //

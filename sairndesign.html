@@ -2135,9 +2135,14 @@ function loadRoomDimsForProject(pjId){
   $('room-length').value=r&&r.length_ft?r.length_ft:'';
   $('room-sqft').textContent=r&&r.width_ft&&r.length_ft?(Math.round(r.width_ft*r.length_ft*10)/10)+' sq ft':'--';
 }
+// RETURNS WHETHER IT REACHED THE SERVER. It used to return undefined, which
+// made it impossible for any caller to condition a success message on the
+// write -- and markRoomARPoint() did exactly that, announcing "Room captured"
+// whatever happened. A helper that reports honestly to the USER and tells its
+// CALLER nothing forces every caller to be optimistic.
 async function saveRoomDimensions(){
   var pjId=$('specproject').value;
-  if(!pjId){toast('Select a project first');return;}
+  if(!pjId){toast('Select a project first');return false;}
   var w=Number($('room-width').value)||0,l=Number($('room-length').value)||0;
   var list=roomDims();
   var rec=list.find(function(x){return x.project_id===pjId;});
@@ -2147,6 +2152,7 @@ async function saveRoomDimensions(){
   $('room-sqft').textContent=w&&l?(Math.round(w*l*10)/10)+' sq ft':'--';
   var syncResult=await sdnData('write','sdn_roomdims',rec);
   if(!syncResult)toast('Room dimensions saved on this device only -- server sync failed, try again with a connection',6000);
+  return !!syncResult;
 }
 function initRoomAR(){
   var wrap=$('room-ar-btn-wrap');if(!wrap)return;
@@ -2207,8 +2213,19 @@ function markRoomARPoint(){
     }else{
       $('room-length').value=feet;
       endRoomAR();
-      saveRoomDimensions();
-      toast('Room captured -- length '+feet+' ft');
+      // THE CLAIM WAITS FOR THE WRITE, the rest does not. saveRoomDimensions()
+      // does its local write and the sq-ft readout before its first await, so
+      // the panel is already correct when this returns.
+      //
+      // IT USED TO DROP THE PROMISE and toast unconditionally -- the same shape
+      // as sairngrounds cmSavePoints(), found 2026-09-16 by
+      // tools/optimistic_success_scan.py. saveRoomDimensions() does raise an
+      // honest toast on failure, and that was not enough: capturing rooms
+      // REPEATS, so the next capture's "Room captured" overwrote the correction
+      // before anybody read it.
+      saveRoomDimensions().then(function(ok){
+        if(ok)toast('Room captured -- length '+feet+' ft');
+      });
       return;
     }
   }else{
@@ -3233,13 +3250,18 @@ async function saveSample(){
   var syncResult=await sdnData('write','sdn_samples',rec);
   toast(syncResult?'Sample saved':'Saved on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
 }
-async function markSampleReturned(id){
+// `okMsg` lets a caller supply its own SUCCESS wording without adding a second
+// toast on top of this one. A caller that toasted afterwards overwrote the
+// failure message here with an unconditional claim -- one message per action,
+// and this function owns it.
+async function markSampleReturned(id,okMsg){
   var list=samples();
-  var s=list.find(function(x){return x.id===id;});if(!s)return;
+  var s=list.find(function(x){return x.id===id;});if(!s)return false;
   s.returned_date=sdnLocalToday();s.checked_out_to='';
   st('sdn_samples',list);rSamples();
   var syncResult=await sdnData('write','sdn_samples',s);
-  toast(syncResult?'Marked returned':'Marked returned on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+  toast(syncResult?(okMsg||'Marked returned'):'Marked returned on this device only -- server sync failed, try again with a connection',syncResult?3000:6000);
+  return !!syncResult;
 }
 function vendorLabel(id){var v=vendors().find(function(x){return x.id===id;});return v?v.name:'--';}
 function rSamples(){
@@ -3306,8 +3328,15 @@ function handleScannedSampleCode(code){
   if(!s){$('qr-result').textContent='No sample matches scanned code: '+H(code);return;}
   stopSampleQRScan();
   if(s.checked_out_to&&!s.returned_date){
-    markSampleReturned(s.id);
-    toast('Returned via QR scan: '+s.name);
+    // markSampleReturned() ALREADY raises its own honest message, so this used
+    // to fire a SECOND toast that overwrote it -- the R03 shape exactly, and
+    // worse than a bare optimistic claim because the truthful message existed
+    // and was destroyed by the one after it. Scanning samples repeats, so the
+    // overwrite is the normal case rather than a race.
+    //
+    // The QR-specific wording is worth keeping, so it is folded into the
+    // success branch instead of being layered on top of both.
+    markSampleReturned(s.id,'Returned via QR scan: '+s.name);
   }else{
     editSample(s.id);
     toast('Scanned "'+s.name+'" -- fill in Checked Out To and Save');

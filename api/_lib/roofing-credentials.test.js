@@ -1,4 +1,8 @@
 // api/_lib/roofing-credentials.test.js
+// REQUIREMENT: a lapsed or deactivated roofing credential cannot act, and the last
+//   administrator cannot be removed, matching the platform lifecycle every
+//   other app enforces
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-dependency
 // convention. Run: node api/_lib/roofing-credentials.test.js
 //

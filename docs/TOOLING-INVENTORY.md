@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**186 files in `tools/`.** By what actually invokes them:
+**187 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 54 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 53 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 54 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
@@ -34,12 +34,12 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 129 |
+| CHECKER | 130 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
 
-**53 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**54 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -203,7 +203,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (53)
+## DECIDED -- not promoted, on purpose (54)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -236,6 +236,7 @@ is how a reader stops believing the number.
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `local_only_collection_check.py` | CHECKER | its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see". |
 | `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
+| `optimistic_success_scan.py` | CHECKER | ITS HIT COUNT IS NOT A DEFECT COUNT AND IT SAYS SO: of 14 on the first sweep, three were real, four were an accepted decision recorded at the site, four were its own branch false positive and three were a rule defect. A push notice reporting eight candidates every time, most of them known-fine, is the shape that gets read as noise and then ignored when a real one appears. Promote it when the branch false positive is closed -- which needs a real JS parser rather than brace matching, and is a different tool. |
 | `pinned_list_drift_check.py` | CHECKER | A READ-LIST WHOSE CORRECT LENGTH IS NOT ZERO, the same shape as accepted_risk_scan.py above and for the same reason. It finds literal lists of resource names that are a PARTIAL cover of an app Tier A set -- the shape that hid sc_denial_events behind a hand-written gate of six while the register said seven. On its first run it produced TWELVE rows and exactly ONE was a defect; the other eleven are partial on purpose with the reason written beside them, and two are already pinned to a BETTER population than Tier A by a test it cannot see. Promoting it would print eleven correct lists on every push forever, which is how a notice stops being read. Its input is the register and the registry rather than the push, so the answer changes when a TIER changes and not when code does. Run it when a tier is assigned or a gate list is written, and read docs/2026-09-15-pinned-list-drift-sweep.md for the triage of the current rows so the next reader does not redo it. |
 | `pra_event_tree.py` | CHECKER | ITEM 84. It is an ANALYSIS, not a check: it enumerates which end state each component failure reaches and has no notion of a finding to report or a pass to give. Wiring it into a runner would print the same 20-row tree on every push, which is how a report stops being read. It is run when the SPOF register or the secrets inventory changes -- both of which ARE checked mechanically -- and its own inputs are what change its answer. Held by tests/run_pra_event_tree_probe.py. |
 | `probe_public_book_guardian.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
@@ -391,12 +392,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      186   git ls-files tools/
+  tools on disk                      187   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                52   report_only_checks.REGISTRY
-  tools invoked by tests/            131   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     53   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            132   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     54   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 

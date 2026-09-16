@@ -1,4 +1,7 @@
 // api/_lib/style-profile.test.js
+// REQUIREMENT: a style profile is built from what the customer actually supplied, so no
+//   preference is invented for a field they left empty
+//
 //
 // Run:  node api/_lib/style-profile.test.js
 //

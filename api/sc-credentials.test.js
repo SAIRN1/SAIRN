@@ -1,4 +1,7 @@
 // api/sc-credentials.test.js
+// REQUIREMENT: a deactivated SAIRNcode credential cannot act on a still-valid token,
+//   and the last administrator cannot be removed
+//
 //
 // Run:  node --test api/sc-credentials.test.js
 //

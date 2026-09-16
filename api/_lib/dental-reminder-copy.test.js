@@ -1,4 +1,7 @@
 // api/_lib/dental-reminder-copy.test.js
+// REQUIREMENT: reminder copy is assembled from the practice's own configured fields and
+//   never invents a clinical detail the record does not carry
+//
 // Plain node:assert tests -- no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).
 // Run: node api/_lib/dental-reminder-copy.test.js

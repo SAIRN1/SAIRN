@@ -6448,10 +6448,24 @@ function addSupply(){
     unit_cost:parseFloat($('sp-add-cost').value)||0,vendor_sku:$('sp-add-sku').value.trim(),
     created_at:dntLocalToday()};
   var list=supplies();list.push(rec);st('dnt_supplies_list',list);
-  dntPushOne('dnt_supplies',rec);
+  // THE PROMISE IS TAKEN, NOT AWAITED YET. The local write above and rSupplies()
+  // below still run immediately, so the panel redraws without waiting on the
+  // network; only the CLAIM waits.
+  //
+  // IT USED TO BE DROPPED, and this is the sairngrounds cmSavePoints() shape --
+  // found 2026-09-16 by tools/optimistic_success_scan.py. Worse here than there:
+  // dntPushOne() reports a refusal to console.warn and raises NO toast, so
+  // "Supply item added" was the ONLY thing the user ever saw, whether or not the
+  // record reached the server. Adding supplies is a repeating action, so a later
+  // correction would have been overwritten by the next item's message anyway.
+  var pending=dntPushOne('dnt_supplies',rec);
   rSupplies();
   ['sp-add-name','sp-add-qty','sp-add-threshold','sp-add-cost','sp-add-sku'].forEach(function(id){$(id).value=id==='sp-add-qty'||id==='sp-add-threshold'?'0':'';});
-  toast('Supply item added');
+  Promise.resolve(pending).then(function(r){
+    if(r)toast('Supply item added');
+    else toast('"'+rec.name+'" saved on this device only -- it did not reach the '
+      +'server, so another device will not see it. Try again with a connection.',7000);
+  });
 }
 function removeSupply(id){
   var list=supplies().filter(function(s){return s.id!==id;});
@@ -6490,6 +6504,7 @@ function vPlaceOrder(){
     return;
   }
   var blockedVendors=[];
+  var pushes=[];
   vendorKeysInCart.forEach(function(vk){
     var vendorItems=items.filter(function(i){return i.vendorKey===vk;});
     var total=vendorItems.reduce(function(s,i){return s+i.effectivePrice*i.qty;},0);
@@ -6506,7 +6521,15 @@ function vPlaceOrder(){
     // ONE RECORD, NOT THE TRIMMED LIST. The 200 cap is a LOCAL storage bound;
     // the server keeps every order, which is the whole point of an archive.
     // Pushing the trimmed array would make the cap look like a deletion.
-    dntPushOne('dnt_vendor_orders',order);
+    //
+    // THE PROMISE IS COLLECTED, not dropped. Found 2026-09-16 by
+    // tools/optimistic_success_scan.py: this was fire-and-forget inside a
+    // forEach, and the message afterwards hedged only about the EMAIL DRAFT
+    // being blocked -- never about whether the order archive reached the
+    // server. A purchase-order archive that silently stayed on one device is
+    // exactly the thing an archive exists to prevent.
+    pushes.push(Promise.resolve(dntPushOne('dnt_vendor_orders',order))
+      .then(function(r){ return r ? null : DNT_VENDORS[vk].name; }));
   });
   // Stock auto-increment, confirm-prompted -- matches StoneDesk's real
   // vendorPlaceOrder() convention exactly (design spec's "Supplies panel"
@@ -6522,8 +6545,22 @@ function vPlaceOrder(){
     if($('panel-supplies')&&$('panel-supplies').classList.contains('on'))rSupplies();
   }
   vCartClear();
-  if(blockedVendors.length)toast('Order(s) recorded, but the email draft may have been blocked by your browser for: '+blockedVendors.join(', ')+'. Check your pop-up blocker.',6000);
-  else toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
+  // THE MESSAGE NAMES BOTH FAILURES SEPARATELY, because they are different
+  // things and only one of them was ever reported. A blocked mail draft is the
+  // user's pop-up blocker; an unsynced order is an archive that exists on one
+  // device. Saying "recorded" while the second happened is the claim this was
+  // fixed for.
+  Promise.all(pushes).then(function(results){
+    var unsynced=results.filter(Boolean);
+    var parts=[];
+    if(unsynced.length)parts.push('NOT saved to the server for '+unsynced.join(', ')
+      +' -- those orders exist on this device only');
+    if(blockedVendors.length)parts.push('the email draft may have been blocked by '
+      +'your browser for '+blockedVendors.join(', ')+' -- check your pop-up blocker');
+    if(parts.length)toast('Order'+(vendorKeysInCart.length>1?'s':'')+' recorded, but '
+      +parts.join('; ')+'.',8000);
+    else toast('Order'+(vendorKeysInCart.length>1?'s':'')+' submitted');
+  });
 }
 
 function init(){

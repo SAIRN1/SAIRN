@@ -1,4 +1,7 @@
 // api/_lib/sairncash-trial.test.js
+// REQUIREMENT: an expired 30-day trial cannot be read as valid, and trial start, verify
+//   and renew all answer from the same expiry logic rather than three copies
+//
 // Plain node:assert tests -- no test framework, matching this
 // directory's existing convention (dental-reminder-window.test.js).
 // Run: node api/_lib/sairncash-trial.test.js

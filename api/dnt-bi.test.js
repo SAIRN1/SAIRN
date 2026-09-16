@@ -1,4 +1,8 @@
 // api/dnt-bi.test.js
+// REQUIREMENT: the dental BI endpoint authenticates before it answers and scopes every
+//   row to the requesting practice, because it authorises a bulk pull out of
+//   a PHI-bearing app
+//
 // Endpoint suite for SAIRNdental B5 -- the open BI / data-warehouse feed.
 //
 // Run:  node --test api/dnt-bi.test.js

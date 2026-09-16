@@ -328,6 +328,23 @@ PURPOSES = {
         'itself reported a genuinely guarded mechanism as unwatched. It says '
         'plainly that a suite is NOT a consumer: this answers whether anything '
         'holds the mechanism, never whether anything reads its signal'),
+    'optimistic_success_scan.py': ('CHECKER',
+        'a write whose promise the caller DROPS, followed by a toast that '
+        'therefore cannot depend on whether the write succeeded. '
+        'write_path_fault_scan.py matches the DATA WRAPPER by name and so '
+        'reported sairngrounds clean while addCoursePoint() announced "Point '
+        'captured" for writes that never left the device -- the fire-and-forget '
+        'had moved one level up, into a LOCAL ASYNC HELPER. The rule is '
+        'structural and uses NO word list: a dropped promise cannot be read in '
+        'that scope, so any later toast is unconditional by construction, and '
+        'the message text is printed for a human. FIRST SWEEP: 14 candidates '
+        '-- THREE REAL AND FIXED (sairndental addSupply and vPlaceOrder, '
+        'sairndesign markRoomARPoint), four an ACCEPTED decision recorded at '
+        'the site, four the branch false positive it names with a measured '
+        'number, and three a rule defect of its own (an element of an awaited '
+        'array takes its result). A CLEAN RUN IS A FLOOR: it follows ONE hop, '
+        'which is the same limit that hid this class from the narrower tool, '
+        'moved further out rather than removed'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '

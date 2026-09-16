@@ -1,4 +1,8 @@
 // api/_lib/roofing-safety.test.js
+// REQUIREMENT: a job hazard assessment and its fall-protection equipment are checked
+//   against the work actually scheduled, so missing or lapsed equipment
+//   cannot read as a completed assessment
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/roofing-safety.test.js
 //

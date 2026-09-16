@@ -1,4 +1,7 @@
 // api/stonedesk-public.test.js
+// REQUIREMENT: the public StoneDesk endpoint refuses before it reads, so an
+//   unauthenticated caller cannot reach a tenant record through it
+//
 // Unit tests for the pure, decidable parts of StoneDesk's public surface --
 // the ones that decide what an anonymous visitor is allowed to see.
 //

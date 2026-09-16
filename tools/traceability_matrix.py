@@ -300,6 +300,14 @@ def traced():
 # subject the filename already names, and states no requirement at all.
 MIN_REQUIREMENT_CHARS = 60
 REQUIREMENT_RX = re.compile(r'^\s*(?://|#)\s*REQUIREMENT:\s*(.+)$', re.M)
+# A CONTINUATION LINE. Declarations wrap -- 72 columns is this repo's comment
+# width -- and the first version matched only the line carrying the keyword.
+# `api/_lib/roofing-warranties.test.js` was then REJECTED for being under the
+# 60-character floor while carrying a 160-character requirement, because the
+# floor was applied to a truncated string. A length rule measuring something
+# other than the thing it claims to measure is the same defect this file's
+# section 5 exists to report.
+CONTINUATION_RX = re.compile(r'^\s*(?://|#)\s{2,}(\S.*)$')
 
 
 def declared_requirements():
@@ -319,7 +327,13 @@ def declared_requirements():
         m = REQUIREMENT_RX.search(head)
         if not m:
             continue
-        req = m.group(1).strip()
+        parts = [m.group(1).strip()]
+        for line in head[m.end():].split('\n')[1:]:
+            c = CONTINUATION_RX.match(line)
+            if not c:
+                break
+            parts.append(c.group(1).strip())
+        req = ' '.join(parts).strip()
         base = os.path.basename(t).rsplit('.', 1)[0]
         # A declaration that is only the filename back again is not a
         # requirement, it is an echo.

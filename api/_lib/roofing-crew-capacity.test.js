@@ -1,4 +1,7 @@
 // api/_lib/roofing-crew-capacity.test.js
+// REQUIREMENT: a crew cannot be double-booked across the schedule, and load is computed
+//   from the jobs really assigned rather than from a stated capacity
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/roofing-crew-capacity.test.js
 //

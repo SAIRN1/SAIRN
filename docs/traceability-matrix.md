@@ -143,6 +143,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `missing_dom_target_check.py` -- its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress.
 - `local_only_collection_check.py` -- its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".
 - `sairn_app_map_check.py` -- CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion.
+- `optimistic_success_scan.py` -- ITS HIT COUNT IS NOT A DEFECT COUNT AND IT SAYS SO: of 14 on the first sweep, three were real, four were an accepted decision recorded at the site, four were its own branch false positive and three were a rule defect. A push notice reporting eight candidates every time, most of them known-fine, is the shape that gets read as noise and then ignored when a real one appears. Promote it when the branch false positive is closed -- which needs a real JS parser rather than brace matching, and is a different tool.
 - `blind_review.py` -- IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a human drives, and there is nothing for a push notice to say. A round is opened deliberately and scored when the reviewer has judged; wiring that to a push would either open rounds nobody asked for or report on a round in progress. Promote nothing here. What COULD be wired one day is the agreement rate across completed rounds, once there are enough rounds for a rate to mean anything, and once the score-first arm exists to compare it against -- neither is true yet.
 - `accepted_risk_trigger_check.py` -- PROMOTABLE, AND HELD BACK ONE CYCLE ON PURPOSE. It is read-only, fast, and clean as of 2026-09-15 -- AR-1 was its one finding and that is now corrected. The reason to wait is that it has run against exactly ONE register state, and this platform's own rule for promotion is report-only until quiet IN PRACTICE, not until clean once. Promote it after the next accepted risk is added, which is the first time it will be asked a question it has not already answered.
 - `first_article_inspection.py` -- ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that.
@@ -489,20 +490,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 198 test files are traced to no stated requirement
+### 164 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 281 of 479 traced, 58.7%.
+For context and not as the headline: 316 of 480 traced, 65.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 287 citations come from
+### Where the 322 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 260 |
-| `declared` | 21 |
+| `declared` | 56 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 1 |
 
@@ -512,14 +513,12 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 34 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
 | **no subject binding either** | 164 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 34 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
-- `api/_lib/accounting-connector.test.js`
 - `api/_lib/ai-usage.test.js`
-- `api/_lib/claude.test.js`
 - `api/_lib/courtlistener-rate-limit.test.js`
 - `api/_lib/deadline-alabama.test.js`
 - `api/_lib/deadline-arkansas.test.js`
@@ -552,41 +551,16 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/deadline-washington.test.js`
 - `api/_lib/deadline-westvirginia.test.js`
 - `api/_lib/deadline-wisconsin.test.js`
-- `api/_lib/dental-bi.test.js`
 - `api/_lib/dental-credentials-endpoint.test.js`
-- `api/_lib/dental-credentials.test.js`
-- `api/_lib/dental-gfe.test.js`
-- `api/_lib/dental-public.test.js`
-- `api/_lib/dental-reminder-copy.test.js`
-- `api/_lib/dental-reminder-window.test.js`
-- `api/_lib/dnt-location.test.js`
 - `api/_lib/dnt-rollup-endpoint.test.js`
-- `api/_lib/job-risk.test.js`
 - `api/_lib/law-trust-reconcile-endpoint.test.js`
-- `api/_lib/location-scope.test.js`
-- `api/_lib/mech-assets.test.js`
-- `api/_lib/mech-credentials.test.js`
 - `api/_lib/roofing-agreements-endpoint.test.js`
-- `api/_lib/roofing-agreements.test.js`
-- `api/_lib/roofing-asset-registry.test.js`
 - `api/_lib/roofing-billing-endpoint.test.js`
 - `api/_lib/roofing-claims-endpoint.test.js`
-- `api/_lib/roofing-claims.test.js`
-- `api/_lib/roofing-consolidation.test.js`
-- `api/_lib/roofing-credentials.test.js`
-- `api/_lib/roofing-crew-capacity.test.js`
 - `api/_lib/roofing-damage-assessment-endpoint.test.js`
-- `api/_lib/roofing-damage-assessment.test.js`
 - `api/_lib/roofing-locations-endpoint.test.js`
-- `api/_lib/roofing-locations.test.js`
 - `api/_lib/roofing-programs-endpoint.test.js`
-- `api/_lib/roofing-programs.test.js`
-- `api/_lib/roofing-safety.test.js`
 - `api/_lib/roofing-supplement-endpoint.test.js`
-- `api/_lib/roofing-supplement.test.js`
-- `api/_lib/roofing-supplier-match.test.js`
-- `api/_lib/roofing-warranties.test.js`
-- `api/_lib/sairncash-trial.test.js`
 - `api/_lib/sairnlaw-grounded-drafting.test.js`
 - `api/_lib/sairnlaw-trust-void-race.test.js`
 - `api/_lib/sairnlaw-trusttx-collision.test.js`
@@ -597,15 +571,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sairnsenior-hiring.test.js`
 - `api/_lib/sairnsenior-pay-rates.test.js`
 - `api/_lib/sairnsenior-payer-contracts.test.js`
-- `api/_lib/stonedesk-public.test.js`
 - `api/_lib/stonedesk-remnant-publishing.test.js`
-- `api/_lib/style-profile.test.js`
 - `api/claude-cost-controls.test.js`
-- `api/dnt-bi.test.js`
 - `api/fail-open-triage-2026-09-04.test.js`
-- `api/greeting.test.js`
 - `api/sairncash-ai.test.js`
-- `api/sc-credentials.test.js`
 - `api/sd-data-dental-provider-scope.test.js`
 - `api/sd-data-exec-context.test.js`
 - `api/sd-data-food-temp-unevaluated.test.js`
@@ -617,8 +586,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sd-data-session-gate.test.js`
 - `api/sd-data-slab-reserve.test.js`
 - `api/sd-sub-data-auth-ordering.test.js`
-- `api/stonedesk-public.test.js`
-- `api/stonedesk-track.test.js`
 - `api/stripe-config.test.js`
 - `tests/ai_auth_wrapper.test.js`
 - `tests/ai_shortcuts_reach_the_chat.js`
@@ -735,11 +702,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 479   tests/**, api/*.test.js
+  test files on disk                 480   tests/**, api/*.test.js
   open-work rows citing a test       248   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     48   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     49   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

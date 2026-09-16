@@ -1928,6 +1928,14 @@ NOT_PROMOTED = [
      'route -- same reason waf_rule_check.py is held out. Its network half is '
      'the point of the tool, so it wants a could-not-tell code before it can '
      'be wired, not just a promotion.'),
+    ('optimistic_success_scan.py', 'ITS HIT COUNT IS NOT A DEFECT COUNT AND '
+     'IT SAYS SO: of 14 on the first sweep, three were real, four were an '
+     'accepted decision recorded at the site, four were its own branch false '
+     'positive and three were a rule defect. A push notice reporting eight '
+     'candidates every time, most of them known-fine, is the shape that gets '
+     'read as noise and then ignored when a real one appears. Promote it when '
+     'the branch false positive is closed -- which needs a real JS parser '
+     'rather than brace matching, and is a different tool.'),
     ('blind_review.py', 'IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a '
      'human drives, and there is nothing for a push notice to say. A round is '
      'opened deliberately and scored when the reviewer has judged; wiring that '

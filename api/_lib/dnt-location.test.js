@@ -1,4 +1,7 @@
 // api/_lib/dnt-location.test.js
+// REQUIREMENT: every dental write captures the location it happened at, so a row cannot
+//   enter storage with no location and be attributed by guess later
+//
 // Plain node:assert, matching api/'s zero-npm-dependency convention.
 // Run: node api/_lib/dnt-location.test.js
 

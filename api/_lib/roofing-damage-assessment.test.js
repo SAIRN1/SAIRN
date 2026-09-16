@@ -1,4 +1,8 @@
 // api/_lib/roofing-damage-assessment.test.js
+// REQUIREMENT: a damage assessment cannot report a threshold as met on material that is
+//   UNAVAILABLE, and the photo requirement actually refuses rather than
+//   recording an unmet requirement as met
+//
 // Plain node:assert tests. Run: node api/_lib/roofing-damage-assessment.test.js
 //
 // The assertion that matters most in this file is the one that proves a

@@ -1,4 +1,8 @@
 // api/_lib/dental-public.test.js
+// REQUIREMENT: the two genuinely UNAUTHENTICATED dental endpoints cannot read or write
+//   anything beyond what a public caller is entitled to, and a failed
+//   booking leaves no patient row behind
+//
 // Run: node api/_lib/dental-public.test.js
 //
 // SAIRNdental's public, unauthenticated surface: booking, availability and

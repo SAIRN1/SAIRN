@@ -1,4 +1,7 @@
 // api/_lib/mech-assets.test.js
+// REQUIREMENT: a mechanical asset is identified by a server-issued id and its service
+//   history cannot be attributed to an asset the record does not name
+//
 // Run: node api/_lib/mech-assets.test.js
 //
 // SAIRNmechanical's site asset registry -- capability #2 on the 2026-08-27

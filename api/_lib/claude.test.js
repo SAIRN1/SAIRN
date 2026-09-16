@@ -1,4 +1,7 @@
 // api/_lib/claude.test.js
+// REQUIREMENT: the model-call guardrails cannot be bought past by malformed input -- a
+//   garbage max_uses resolves to the FLOOR and never to the billed ceiling
+//
 // ---------------------------------------------------------------------------
 // Plain node:assert tests — no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).

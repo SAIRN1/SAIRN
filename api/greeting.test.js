@@ -1,4 +1,7 @@
 // api/greeting.test.js
+// REQUIREMENT: the greeting endpoint returns nothing that identifies a tenant or a
+//   person to an unauthenticated caller
+//
 //
 // Run:  node --test api/greeting.test.js
 //

@@ -233,7 +233,7 @@ def tier_a_bands():
     return rows, ''
 
 
-def by_risk(cited):
+def by_risk(cited, want_band=None, want_limit=25):
     bands, problem = tier_a_bands()
     if bands is None:
         print('COULD NOT RUN: the tiers document is unreadable (%s), so no '
@@ -295,6 +295,26 @@ def by_risk(cited):
     print('  the band comes from the tiers document rather than from a list')
     print('  invented here.')
     print('')
+    # ── A BOUNDED WINDOW INTO A BAND (added 2026-09-15) ────────────────────
+    # Bands 2 and 3 are still not printed in full and the reason below stands.
+    # But a queue nobody can SEE is not a queue either, and band 1 being clear
+    # made band 2 the head with no way to read it. `--band N --limit M` prints
+    # a bounded slice, oldest first, so a session can take a shift off the
+    # front without anybody pasting a 400-line list into a report.
+    if want_band:
+        slice_ = [r for r in out if r[0] == want_band][:want_limit]
+        print('  BAND %s, OLDEST %d OF %d -- a bounded window, not the queue.'
+              % (want_band, len(slice_), counts.get(want_band, 0)))
+        print('  Taking a shift off the front is the intended use. Registering')
+        print('  all %d in one pass is how a queue becomes a wall, which is the'
+              % counts.get(want_band, 0))
+        print('  argument this tool already makes about printing them.')
+        print('')
+        for b, date, sha, subject, hits in slice_:
+            print('  %-3s %s  %s  %s' % (b, date, sha, subject[:60]))
+        print('')
+        return EXIT_OK
+
     for b, date, sha, subject, hits in out:
         if b.startswith('1'):
             print('  %-3s %s  %s  %s' % (b, date, sha, subject[:52]))
@@ -374,7 +394,19 @@ def main(argv):
         return EXIT_COULD_NOT_RUN
 
     if '--by-risk' in argv:
-        return by_risk(cited)
+        band = limit = None
+        if '--band' in argv:
+            i = argv.index('--band')
+            band = argv[i + 1] if len(argv) > i + 1 else None
+            if band not in ('1a', '1b', '1c', '2', '3'):
+                sys.stderr.write('--band takes 1a, 1b, 1c, 2 or 3\n')
+                return EXIT_COULD_NOT_RUN
+            limit = 25
+            if '--limit' in argv:
+                j = argv.index('--limit')
+                if len(argv) > j + 1 and argv[j + 1].isdigit():
+                    limit = int(argv[j + 1])
+        return by_risk(cited, band, limit)
 
     if '--backlog' in argv:
         rows = commits_in('--all')

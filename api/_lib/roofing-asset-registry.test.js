@@ -1,4 +1,7 @@
 // api/_lib/roofing-asset-registry.test.js
+// REQUIREMENT: an asset is identified by a server-issued id and its state transitions
+//   are refused out of order, so a record cannot jump a lifecycle stage
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/roofing-asset-registry.test.js
 //

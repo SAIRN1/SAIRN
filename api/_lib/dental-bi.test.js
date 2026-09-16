@@ -1,4 +1,7 @@
 // api/_lib/dental-bi.test.js
+// REQUIREMENT: a BI export carries only the rows the requesting practice owns, so a
+//   bulk pull out of a PHI-bearing app cannot cross a tenant boundary
+//
 // Isolation suite for SAIRNdental B5 -- the open BI / data-warehouse feed.
 //
 // Run:  node --test api/_lib/dental-bi.test.js

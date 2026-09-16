@@ -1,4 +1,7 @@
 // api/_lib/roofing-locations.test.js
+// REQUIREMENT: a roofing record carries the location it happened at and cannot be read
+//   across locations a caller is not scoped to
+//
 // Isolation suite for Phase 4a -- location attribution and crew scheduling.
 
 'use strict';

@@ -1,4 +1,7 @@
 // api/_lib/roofing-consolidation.test.js
+// REQUIREMENT: consolidating records across entities preserves every source row, so no
+//   line is dropped or double-counted inside a combined figure
+//
 // Plain node:assert tests -- no framework, matching api/'s zero-npm-dependency
 // convention. Run: node api/_lib/roofing-consolidation.test.js
 //

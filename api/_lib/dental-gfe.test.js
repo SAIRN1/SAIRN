@@ -1,4 +1,8 @@
 // api/_lib/dental-gfe.test.js
+// REQUIREMENT: the 45 CFR 149.610(c)(1) Good Faith Estimate completeness check runs on
+//   the SERVER, so a browser that skips it cannot produce an estimate the
+//   rule would reject
+//
 //
 // Run:  node api/_lib/dental-gfe.test.js
 //

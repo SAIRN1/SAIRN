@@ -46,6 +46,7 @@ declared one.
 import argparse
 import io
 import json
+import re
 import os
 import sys
 
@@ -214,8 +215,98 @@ def self_check():
     ck('one ready unit is not enough -- a baseline needs a comparison',
        MIN_READY_UNITS >= 2, MIN_READY_UNITS)
 
+    # ── THE ATTRIBUTION CHECK, BOTH DIRECTIONS ──────────────────────────────
+    # It exists to distinguish a REAL volume shortfall from a FILING one, so a
+    # version that always answers "real" would be as useless as one that always
+    # answered "filing". Both fixtures are built to force one answer each.
+    honest = ([{'app': 'PLATFORM', 'files': ['tools/x.py', 'docs/y.md']}
+               for _ in range(30)]
+              + [{'app': 'sairnvet', 'files': ['sairnvet.html']} for _ in range(5)])
+    a = attribution_check(honest)
+    if a is None:
+        ck('the attribution check could not run, which is COULD-NOT-TELL and '
+           'not a pass', False, 'traceability_matrix could not be imported')
+    else:
+        ck('a catch-all that touches no app file reattributes NOTHING, so the '
+           'shortfall reads as REAL',
+           a['single'] == 0 and a['ready_if_moved'] == a['ready_now'], a)
+        misfiled = ([{'app': 'PLATFORM', 'files': ['sairnvet.html']}
+                     for _ in range(MIN_RECORDS_PER_UNIT)]
+                    + [{'app': 'sairnlaw', 'files': ['sairnlaw.html']}
+                       for _ in range(MIN_RECORDS_PER_UNIT)])
+        b = attribution_check(misfiled)
+        ck('CONTROL: a catch-all that is really single-app work DOES move the '
+           'bar, so the check can answer FILING as well as REAL',
+           b and b['single'] == MIN_RECORDS_PER_UNIT
+           and b['ready_if_moved'] > b['ready_now'], b)
+
     print('\n%d failure(s)' % len(fails))
     return 1 if fails else 0
+
+
+# ── IS THE VOLUME SHORTFALL REAL, OR AN ARTEFACT OF ATTRIBUTION? ────────────
+# The `app` dimension fails on VOLUME, and the tool's own advice for a volume
+# failure is "wait, the register grows". That advice is only right if the
+# records really are spread thin. If most of the catch-all bucket were secretly
+# single-app work filed as PLATFORM, the shortfall would be a FILING problem and
+# waiting would be the wrong remedy entirely.
+#
+# So it is measured rather than assumed, on every run, from the FILES each
+# record already carries. The question it answers is narrow and the answer is
+# either "reattribution would move the bar" or "it would not".
+def attribution_check(recs):
+    """(single, multi, none, largest_now, largest_if_moved) over the catch-all.
+
+    A record counts as single-app when its files name exactly ONE app, using the
+    same app list and prefix aliases docs/traceability-matrix.md derives from --
+    not a second list here that could disagree with that one.
+    """
+    try:
+        import traceability_matrix as _tm
+    except Exception:                                            # noqa: BLE001
+        return None
+    apps = _tm.apps()
+    alias = {k: v[0] for k, v in getattr(_tm, 'APP_ALIASES', {}).items()}
+
+    def apps_of(files):
+        hits = set()
+        for f in files or []:
+            low = str(f).lower()
+            for a in apps:
+                if a in low:
+                    hits.add(a)
+            tok = re.split(r'[-_.]', os.path.basename(str(f)))[0].lower()
+            if tok in alias:
+                hits.add(alias[tok])
+        if len(hits) > 1:
+            hits = {h for h in hits if not any(h != o and h in o for o in hits)}
+        return hits
+
+    bucket = [r for r in recs if r.get('app') in NOT_AN_ENTITY]
+    single, multi, nofile = [], 0, 0
+    for r in bucket:
+        h = apps_of(r.get('files'))
+        if len(h) == 1:
+            single.append(sorted(h)[0])
+        elif h:
+            multi += 1
+        else:
+            nofile += 1
+    now = {}
+    for r in recs:
+        a = r.get('app')
+        if a not in NOT_AN_ENTITY:
+            now[a] = now.get(a, 0) + 1
+    moved = dict(now)
+    for a in single:
+        moved[a] = moved.get(a, 0) + 1
+    return {'bucket': len(bucket), 'single': len(single), 'multi': multi,
+            'nofile': nofile,
+            'ready_now': len([1 for v in now.values() if v >= MIN_RECORDS_PER_UNIT]),
+            'ready_if_moved': len([1 for v in moved.values()
+                                   if v >= MIN_RECORDS_PER_UNIT]),
+            'largest_now': max(list(now.values()) or [0]),
+            'largest_if_moved': max(list(moved.values()) or [0])}
 
 
 def main(argv):
@@ -267,6 +358,31 @@ def main(argv):
                       % ', '.join('%s (%d)' % (u, r['tally'][u])
                                   for u in r['ready_units']))
             print('')
+        print('')
+        att = attribution_check(recs)
+        if att is None:
+            print('  ATTRIBUTION CHECK COULD NOT RUN -- the app list could not be')
+            print('  read, so whether the volume shortfall is real is UNKNOWN')
+            print('  rather than settled.')
+        else:
+            print('  IS THE SHORTFALL REAL, OR A FILING ARTEFACT? Measured, because')
+            print('  "wait, the register grows" is only the right advice if the')
+            print('  records really are spread thin.')
+            print('    catch-all bucket        %d record(s)' % att['bucket'])
+            print('      touching exactly ONE app   %d' % att['single'])
+            print('      touching TWO or more       %d' % att['multi'])
+            print('      touching no app file       %d' % att['nofile'])
+            print('    app units clearing the bar TODAY            %d (largest %d)'
+                  % (att['ready_now'], att['largest_now']))
+            print('    ...IF every single-app record were moved    %d (largest %d)'
+                  % (att['ready_if_moved'], att['largest_if_moved']))
+            if att['ready_if_moved'] == att['ready_now']:
+                print('    REATTRIBUTION WOULD MOVE NOTHING, so the shortfall is')
+                print('    REAL and time is the right remedy. The catch-all is')
+                print('    honest: most of it touches no app file at all.')
+            else:
+                print('    REATTRIBUTION WOULD MOVE THE BAR, so the shortfall is a')
+                print('    FILING problem and waiting is the WRONG remedy.')
         print('  A BASELINE IS A RATE, SO BOTH BARS ARE REQUIRED. A dimension')
         print('  with enough records and no exposure denominator produces a')
         print('  COUNT wearing a rate, and the count is then driven by how much')

@@ -1,4 +1,7 @@
 // api/_lib/roofing-programs.test.js
+// REQUIREMENT: a contractor programme confers only the benefits its tier actually
+//   grants, so an expired or lower tier cannot claim a higher one
+//
 // Isolation suite for Phase 4d -- company-level manufacturer programmes.
 // Every threshold used here is TEST DATA, not a claim about any real
 // manufacturer's terms. Nothing in this repo seeds real programme thresholds,

@@ -1,4 +1,7 @@
 // api/_lib/roofing-supplement.test.js
+// REQUIREMENT: a supplement reconciles against what was actually approved and paid, so
+//   an unapproved line cannot enter the reconciled total
+//
 // Plain node:assert tests. Run: node api/_lib/roofing-supplement.test.js
 //
 // This engine is the one that must be provably deterministic -- a wrong number

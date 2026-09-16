@@ -1,4 +1,7 @@
 // api/_lib/dental-reminder-window.test.js
+// REQUIREMENT: a reminder fires inside the window the practice configured and never
+//   outside it, so a patient is not contacted at a time nobody chose
+//
 // Plain node:assert tests -- no test framework, matching api/'s existing
 // zero-npm-dependency convention (see api/_lib/auth.test.js).
 // Run: node api/_lib/dental-reminder-window.test.js

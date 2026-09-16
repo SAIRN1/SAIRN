@@ -1,4 +1,8 @@
 // api/_lib/roofing-agreements.test.js
+// REQUIREMENT: an agreement cannot be treated as executed without the signature and
+//   dates that make it one, so an unsigned document does not pass as a
+//   contract
+//
 // Isolation suite for the contingency-agreement engine. Every expected date
 // here was worked out by hand from the statute named in the test, not read back
 // off the implementation.

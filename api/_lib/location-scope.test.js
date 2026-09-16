@@ -1,4 +1,7 @@
 // api/_lib/location-scope.test.js
+// REQUIREMENT: one module owns which location a row happened at, so no app reimplements
+//   location scoping and reaches a different answer about the same row
+//
 // ---------------------------------------------------------------------------
 // The shared location stamp, and the arms that stop it being re-forked.
 //

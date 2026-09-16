@@ -1,4 +1,8 @@
 // api/_lib/stonedesk-public.test.js
+// REQUIREMENT: the public StoneDesk surface exposes only what an unauthenticated caller
+//   is entitled to, and a public read cannot reach a tenant it was not
+//   scoped to
+//
 // Run: node api/_lib/stonedesk-public.test.js
 //
 // StoneDesk's public, unauthenticated storefront: the slab and remnant catalog

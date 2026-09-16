@@ -1,4 +1,7 @@
 // api/_lib/mech-credentials.test.js
+// REQUIREMENT: a lapsed or deactivated mechanical credential cannot act, and the last
+//   administrator cannot be removed
+//
 // Run: node api/_lib/mech-credentials.test.js
 //
 // SAIRNmechanical's first data module. The 2026-08-27 competitive research

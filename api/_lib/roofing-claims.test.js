@@ -1,4 +1,8 @@
 // api/_lib/roofing-claims.test.js
+// REQUIREMENT: an insurance claim cannot present as fully evidenced without the photo
+//   evidence the rule requires, and a claim record cannot carry an id the
+//   server never issued
+//
 // Plain node:assert tests. Run: node api/_lib/roofing-claims.test.js
 //
 // The money rule is the thing most worth testing exhaustively: the seven fields
