@@ -243,6 +243,36 @@ t('the first link is the genesis string, not an empty one', async () => {
   await call(db, 'checkpoint', D0 + 2 * DAY);
   assert.strictEqual(db.checkpoints[0].prev_digest, AC.GENESIS);
 });
+// ── THE ARM ABOVE IS SELF-REFERENTIAL AND THESE TWO ARE NOT ────────────────
+// Added 2026-09-16, after a negative control set GENESIS to '' and this suite
+// stayed GREEN. It compares what was written against AC.GENESIS, so changing
+// the constant moves the assertion with it -- the fixture-regenerated shape
+// (PR 1.1): the tripwire now asserts that the current behaviour equals the
+// current behaviour. It is kept, because it is still the right arm for "the
+// value that was written is the genesis one"; what it cannot do is say WHICH
+// value that is, or that the distinction survives.
+t('GENESIS is a specific non-empty literal, pinned HERE rather than read from '
+  + 'the module it is meant to constrain', () => {
+    assert.strictEqual(AC.GENESIS, 'genesis:sairn-audit-checkpoint:v1');
+    assert.ok(AC.GENESIS.length > 0);
+  });
+t('CONTROL: a stored prev_digest of "" is CHAIN_BROKEN, not a genesis link -- '
+  + 'which is the whole reason the constant is a named string', async () => {
+    // A prev_digest that was LOST or never set arrives as an empty string. If
+    // GENESIS were '', that row would verify as a legitimate first link and a
+    // broken chain would read as a new one. This is the behavioural half the
+    // arm above cannot reach.
+    const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] } });
+    await call(db, 'checkpoint', D0 + DAY + 5000);
+    const law = db.checkpoints.filter((c) => c.audit_table === 'sairnlaw_audit_log');
+    assert.strictEqual(law.length, 1, 'fixture did not produce the one checkpoint');
+    law[0].prev_digest = '';
+    const out = await call(db, 'verify', D0 + DAY + 5000);
+    const rep = (out.body.results || []).find((x) => x.table === 'sairnlaw_audit_log');
+    assert.ok(rep, 'no report for the table: ' + JSON.stringify(out.body));
+    assert.strictEqual(rep.ok, false, 'an empty prev_digest verified CLEAN');
+    assert.strictEqual(rep.kind, 'CHAIN_BROKEN', JSON.stringify(rep));
+  });
 t('each checkpoint chains onto the one before it', async () => {
   const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1), row('b', D0 + DAY + 1)] } });
   await call(db, 'checkpoint', D0 + 3 * DAY);
@@ -251,6 +281,40 @@ t('each checkpoint chains onto the one before it', async () => {
     assert.strictEqual(law[i].prev_digest, law[i - 1].digest, 'link ' + i + ' is not chained');
   }
 });
+// ── AND ACROSS RUNS, WHICH IS THE ONLY WAY IT EVER RUNS ────────────────────
+// Added 2026-09-16, after a negative control replaced
+// `let prev = last ? last.digest : GENESIS` with `let prev = GENESIS` and this
+// suite stayed GREEN. Every chain arm above drives ONE invocation, where the
+// loop carries `prev` in a local and `last` is never consulted -- so the
+// resume-from-the-last-checkpoint path, which is what the daily cron does on
+// every day but the first, had no arm at all. The mutation is invisible on day
+// one and breaks the chain on day two, permanently, with no UPDATE grant to
+// repair it.
+t('A SECOND RUN RESUMES FROM THE STORED LAST DIGEST, not from genesis -- the '
+  + 'path the cron takes every day after the first', async () => {
+    const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1), row('b', D0 + DAY + 1)] } });
+    await call(db, 'checkpoint', D0 + DAY + 5000);       // day 0 only
+    const first = db.checkpoints.filter((c) => c.audit_table === 'sairnlaw_audit_log');
+    assert.strictEqual(first.length, 1, 'fixture did not close exactly one window');
+    await call(db, 'checkpoint', D0 + 2 * DAY + 5000);   // day 1, a SEPARATE run
+    const law = db.checkpoints.filter((c) => c.audit_table === 'sairnlaw_audit_log');
+    assert.strictEqual(law.length, 2, 'the second run wrote ' + (law.length - 1));
+    assert.notStrictEqual(law[1].prev_digest, AC.GENESIS,
+      'the second run started a NEW chain from genesis, so the link to day 0 is gone');
+    assert.strictEqual(law[1].prev_digest, law[0].digest,
+      'the second run did not chain onto the stored last digest');
+  });
+t('...and the chain the second run produced VERIFIES, so the arm above is not '
+  + 'just asserting a field it also wrote', async () => {
+    const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1), row('b', D0 + DAY + 1)] } });
+    await call(db, 'checkpoint', D0 + DAY + 5000);
+    await call(db, 'checkpoint', D0 + 2 * DAY + 5000);
+    const out = await call(db, 'verify', D0 + 2 * DAY + 5000);
+    const rep = (out.body.results || []).find((x) => x.table === 'sairnlaw_audit_log');
+    assert.ok(rep, 'no report for the table: ' + JSON.stringify(out.body));
+    assert.strictEqual(rep.ok, true, JSON.stringify(rep));
+    assert.strictEqual(rep.checkpoints, 2);
+  });
 t('AN EMPTY TABLE WRITES NOTHING -- a digest over nothing is a permanent lie', async () => {
   const db = makeDb({ audit: { sairnlaw_audit_log: [] } });
   const out = await call(db, 'checkpoint', D0 + 3 * DAY);
