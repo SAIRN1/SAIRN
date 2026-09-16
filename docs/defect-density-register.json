@@ -1642,7 +1642,28 @@
       ],
       "severity": "high",
       "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail",
-      "summary": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse"
+      "summary": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse",
+      "contributing_factors": [
+        {
+          "factor": "A TOOL WHOSE NAME PROMISES MORE THAN ITS HEADER ADMITS. html_script_check.py reads as a script-block parser and its own header says it is not one, so the check everybody believed was wired was wired to something else.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Check 0a is pointed at the tool that actually parses, and the wiring is asserted rather than assumed."
+        },
+        {
+          "factor": "checkblocks.py PRINTED FAILED_BLOCKS:1 AND EXITED 0. Wiring a gate on its exit code would have reported a CLEAN PASS on a file that does not parse -- a false success arriving from the one signal a gate is built to trust.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The exit code and the printed count are both read, and they are required to agree."
+        },
+        {
+          "factor": "NOTHING ASKS WHETHER A NAMED CHECK IS ACTUALLY REACHED BY ANYTHING. A check that runs nowhere produces no output, and no output is indistinguishable from output with no findings.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The tooling inventory now distinguishes wired from unwired, which is the same question asked once for every checker rather than per incident."
+        }
+      ],
+      "recurrence_open": "Being WIRED is not being CORRECT. The inventory can now say a checker is reached; it cannot say the checker answers the question its name implies, which is the half that failed here. That distinction is still made by reading the tool."
     },
     {
       "app": "PLATFORM",
@@ -1675,7 +1696,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail",
-      "summary": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived"
+      "summary": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived",
+      "contributing_factors": [
+        {
+          "factor": "THE SCANNER MATCHED TEXT THAT DESCRIBES CODE RATHER THAN CODE -- 93 raw against 92 comment-stripped on stonedesk.html. PR 1.2 exactly, in a file whose subject is collisions between keys.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Comments are stripped before the count."
+        },
+        {
+          "factor": "THE VERDICT WAS UNCHANGED, WHICH IS WHY IT SURVIVED. One extra key in a collision scan moved no finding, so there was no wrong answer for anybody to notice -- the defect was in a number nobody was reading, until the number became the evidence for something else.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The raw and stripped counts are both reported, so a difference is visible even when the verdict is not."
+        }
+      ],
+      "recurrence_open": "Comment-stripping is per tool and hand-written. Other scanners on this platform still count raw text, and nothing enumerates which ones strip comments and which do not -- so the next instance is found the same way this one was, by somebody comparing two numbers that should agree."
     },
     {
       "app": "PLATFORM",
@@ -2666,7 +2702,28 @@
       ],
       "severity": "high",
       "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
-      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid"
+      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
+      "contributing_factors": [
+        {
+          "factor": "TWO OF THE THREE DOCUMENTS WERE NEW AND THE THIRD ALREADY SYNCED. The bill was durable in Postgres and its ledger entry with it, so the feature worked end to end in one browser and the half that was missing was invisible from inside that browser.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sb_po and sb_recv were given a table, a resource registration and a place in SB_SYNCED, which is the three places a new document has to appear and the reason a missing one is not obvious from any single file."
+        },
+        {
+          "factor": "THE FAILURE IS DEFERRED AND ARRIVES AS A DIFFERENT ACCUSATION. A browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports NO PURCHASE ORDER EXISTS against a bill that was correctly matched on the day it was paid. The control accuses the record instead of reporting its own data loss.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the shape. The two figures are entered independently by design, which is exactly what makes them unrecoverable once the local copy is gone -- there is nothing to re-derive them from."
+        },
+        {
+          "factor": "IT WAS FOUND BY A STATIC CHECKER AND NOT BY USE. Every manual path passes: create a PO, receive against it, settle the bill. Local-only storage is indistinguishable from synced storage until a second device or a cleared browser asks, and neither happens during a feature walkthrough.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The local-only collection check is the mechanism that found it and it runs over the whole platform, not just this app."
+        }
+      ],
+      "recurrence_open": "The checker finds a collection that is local-only; it cannot say whether a collection SHOULD sync. A document deliberately kept local and a document that forgot to sync look identical to it, so the judgement is still a human's on every new collection, and nothing records which ones have had that judgement made."
     },
     {
       "app": "PLATFORM",
@@ -2690,7 +2747,34 @@
       "rules": [],
       "severity": "high",
       "subject": "feat(spec): item 78 -- the cross-app role gates, stated formally, and 19 of 80 checks are all that can be made",
-      "summary": "tools/role_gate_invariants.js states in its header that 'every app is checked against every invariant over its whole role set', and it implements I3, I4, I5a, I5b and I5c only. I1 (APP ISOLATION) and I2 (DEACTIVATION BINDS) are in docs/spec/RoleGates.tla and have NO checker, and nothing in the output discloses it -- the honest denominator it does print (56 checks, 24 not checkable) is about role SETS that could not be read, not about invariants never evaluated. Both are runtime properties and both ARE covered elsewhere (I1 by tests/app_session_isolation.js, I2 by the deactivated-caller re-check), so the fix is a disclosure naming them and where they are proven, not new code"
+      "summary": "tools/role_gate_invariants.js states in its header that 'every app is checked against every invariant over its whole role set', and it implements I3, I4, I5a, I5b and I5c only. I1 (APP ISOLATION) and I2 (DEACTIVATION BINDS) are in docs/spec/RoleGates.tla and have NO checker, and nothing in the output discloses it -- the honest denominator it does print (56 checks, 24 not checkable) is about role SETS that could not be read, not about invariants never evaluated. Both are runtime properties and both ARE covered elsewhere (I1 by tests/app_session_isolation.js, I2 by the deactivated-caller re-check), so the fix is a disclosure naming them and where they are proven, not new code",
+      "contributing_factors": [
+        {
+          "factor": "THE HEADER MADE A CLAIM THE CODE DID NOT IMPLEMENT, AND THE CODE HAD NO WAY TO CONTRADICT IT. Five invariants are evaluated; the spec states seven. Nothing relates the checker's coverage to the spec's list, so the sentence 'every app is checked against every invariant' was true of the loop it describes and false of the specification.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The output now names I1 and I2, says they have no checker here, and says where each IS proven -- a disclosure rather than new code, because both are runtime properties and both are genuinely covered elsewhere."
+        },
+        {
+          "factor": "THE TOOL PRINTED AN HONEST DENOMINATOR ABOUT A DIFFERENT QUESTION, AND THAT IS WHAT MADE IT CONVINCING. '56 checks, 24 not checkable' is a real, carefully-kept figure about role SETS that could not be read out of an auth module. A reader takes it as the coverage statement, and it is silent about invariants that were never evaluated at all.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The two denominators are printed separately and labelled, so 'could not read the roles' and 'no checker exists' can no longer be read as one number."
+        },
+        {
+          "factor": "A SPEC AND ITS CHECKER ARE WRITTEN TWICE ON PURPOSE -- the TLA+ file states what must be true and the JavaScript reads the real constants -- and nothing mechanically relates the two halves. That is the same drift the two-file design exists to prevent, arriving through COVERAGE rather than through content.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Name each invariant in the checker's output with its status, so a spec edit that adds an eighth shows up as an unimplemented row rather than as nothing."
+        },
+        {
+          "factor": "IT WAS FOUND BY INDEPENDENT REVIEW, not by the author and not by any check. The file is a CHECKER, so the usual instinct -- does its probe pass -- answers a question about the five invariants it does implement.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "No mechanism proposed. A checker that verified another checker's header against its behaviour would need to read prose and decide whether it matches code, which is the grep-cannot-tell-code-from-text class pointed at itself."
+        }
+      ],
+      "recurrence_open": "The disclosure is a SENTENCE, and a sentence goes stale the day a sixth invariant is implemented or a seventh added to the spec. Nothing derives the checker's coverage from the spec's list of invariants, so the next divergence will again be visible only to somebody reading both files side by side."
     },
     {
       "app": "sairnsenior",
