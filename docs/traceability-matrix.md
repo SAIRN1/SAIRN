@@ -177,6 +177,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Item 79: the reviewer judges BEFORE seeing the score &mdash; and the first real round disagreed on half of it** | **BUILT 2026-09-15 (CC)** &mdash; `tools/blind_review.py` (report-only, NOT_PROMOTED), `tests/run_blind_review_probe.py`, 9 sabotages all caught. First round recorded in `docs/2026-09-15-five-followup | `tests/run_blind_review_probe.py` |
 | **A third citing source for traceability &mdash; a REQUIREMENT declared in the test file itself, and co-location still refused** | **BUILT 2026-09-15 (CC)** &mdash; `tools/traceability_matrix.py` `declared_requirements()`, 22 declarations written by hand, 6 new arms in `tests/run_traceability_matrix_probe.py` (30 checks, 0 failed | `tests/run_traceability_matrix_probe.py` |
 | **The last Tier A artefact with no suite, and three whose only check was their own self-test &mdash; now proven to BITE** | **BUILT 2026-09-15 (CC)** &mdash; `tests/run_sc_tier_a_live_probe_probe.py` (30 arms) and `tests/run_selftest_independence_probe.py` (**11 mutants, all caught**) | `tests/run_sc_tier_a_live_probe_probe.py`, `tests/run_selftest_independence_probe.py` |
+| **R03&rsquo;s class swept platform-wide: THREE more live instances, and one of them destroyed a truthful message instead of merely omitting one** | **FIXED 2026-09-16 (CC)** &mdash; `tools/optimistic_success_scan.py` (report-only, NOT_PROMOTED), `tests/run_optimistic_success_probe.py` 25 arms; `sairndental.html` and `sairndesign.html` fixed, four | `tests/run_optimistic_success_probe.py` |
+| **All 55 bound-to-subject test files now declare a requirement &mdash; and the length floor was measuring the first LINE of one** | **CLOSED 2026-09-16 (CC)** &mdash; 34 more declarations; continuation lines joined in `tools/traceability_matrix.py`; `tests/run_traceability_matrix_probe.py` **32 checks, 0 failed**. 213 &rarr; **163 | `tests/run_traceability_matrix_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -504,9 +506,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 261 |
-| `declared` | 56 |
+| `declared` | 55 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 1 |
+| `declared+index` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
 
@@ -704,7 +707,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 481   tests/**, api/*.test.js
-  open-work rows citing a test       249   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       251   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     49   report_only_checks.NOT_PROMOTED

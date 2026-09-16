@@ -3664,3 +3664,62 @@ python probes whose headers gained a declaration re-run green. `md_table_check`
 declaration because the name is re-exported from `locationScope`, so
 `sairn_seam_check.py` cannot read that seam. Pre-existing, correctly reported as
 a third state, and still unverified.
+
+---
+
+## 2026-09-16 -- R03's class swept platform-wide, and three more were live
+
+Pushed as `bd36860c`, verified on origin by SHA equality. The detail lives in
+the tool headers and the commit messages rather than a fifth near-duplicate
+document; the index rows carry the findings.
+
+### The sweep, which is the substance
+
+`tools/optimistic_success_scan.py`. **14 candidates, THREE REAL, all fixed** --
+and a fourth that is sharper than any of them: `handleScannedSampleCode()`
+raised a SECOND toast over `markSampleReturned()`'s own honest message. **The
+truthful message existed and was destroyed by the line after it.** That is a
+silent failure assembled out of two lines each of which looks right.
+
+`sairndental addSupply()` is the worst of the three by consequence: `dntPushOne`
+reports a refusal to `console.warn` and raises NO toast, so "Supply item added"
+was the only thing the user ever saw either way.
+
+`sairndesign saveRoomDimensions()` is the worst by SHAPE: it reported honestly
+to the user and **returned undefined**, so no caller could condition anything on
+the write. **A helper that reports to the USER and tells its CALLER nothing
+forces every caller to be optimistic.**
+
+**The tool found three defects in ITSELF on the first real sweep** -- an element
+of an awaited `Promise.all` and a call passed as an argument both take the
+result, and the first rule said otherwise, firing on the code that had just been
+fixed. Widened, with a fixture each.
+
+### The register, the gate, and a gap worth carrying forward
+
+The feed gate refused my push twice and was right both times. The second refusal
+found something: **`--reseat` moved 25 records and not my four, because it
+treats a SHA that RESOLVES as fine** -- and the pre-rebase SHA still resolved, as
+a DANGLING object. `--check` agrees for the same reason.
+
+**RESOLVABLE IS NOT REACHABLE.** With four clones pushing to one branch a rebase
+is the normal case, so a register keyed on SHAs is routinely pointing at commits
+that exist and are not on the branch. Recorded rather than fixed in `--reseat`:
+changing what `--check` accepts is a change to that tool's contract.
+
+### The other two
+
+**Band 2 could not be READ** -- `--by-risk` prints only the Tier A bands because
+a 400-line list is how a queue becomes a wall. That argument is about LENGTH, so
+`--band N --limit M` prints a bounded window. Six registered, 85 -> 91.
+
+**All 55 bound-to-subject files now declare a requirement**, 213 -> 163 untraced
+-- and the length floor was **measuring the first LINE** of a wrapped
+declaration, rejecting a 160-character requirement for being under 60. A length
+rule measuring something other than what it claims to measure, committed inside
+the mechanism built to report exactly that.
+
+**Item 51 is still not ready and now that is KNOWN rather than assumed:** 43 of
+the 52 PLATFORM records touch no app file at all, and reattributing every
+single-app one moves the largest unit from 9 to 9. The shortfall is real; time
+is the right remedy; and it re-answers itself every run.
