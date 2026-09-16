@@ -5261,3 +5261,94 @@ which is a special case of it. The defence is to assert on a **structure prose
 cannot contain** — an arithmetic mean needs a division by a count, so look for
 `/ len(`, not for the word. Both fixes now carry a CONTROL asserting the prose
 still contains the word, so the strip stays load-bearing.
+
+---
+
+## 2026-09-16 — item 89 answered from arithmetic, item 46 built
+
+### Item 89 — ALREADY BUILT AND CORRECT. The answer is no-and-yes.
+
+**Confirmed from the threshold arithmetic, not from a word search** — which
+mattered, because `chance_expectation()` exists and a text search for
+"Bonferroni" or "look-elsewhere" would have found nothing.
+
+**It DOES account for the trials factor**, and in the right way:
+`chance_expectation(n, runs, per_run_flip)` is computed and **published as a
+number rather than applied as a silent correction**, at three assumed flip
+probabilities (0.005 / 0.01 / 0.02), each labelled **ASSUMED, not measured**. The
+docstring gives the reason it is not calibrated from the ledger: deriving the
+chance rate from the same observations it judges is the validation-eats-its-own-
+subject shape.
+
+Live, right now: **46 checkers** (the fleet grew from 33), typical 6 runs — so
+1.4–5.3 would be expected to show ≥1 disagreement by chance. Observed: **0 with
+exactly one disagreement, 1 with more than one.** The report splits those two
+deliberately, because *multiplicity explains singles and does NOT explain
+repeats*, and carries a cross-check arm because the split is computed from a
+different field than the verdict column.
+
+**But the protection against the worry as posed is a DIFFERENT mechanism, and I
+had to measure to find it.** A corrected threshold is not what stops volume
+quarantining a good checker — `classify()` returns **WATCH whenever
+`disagreements == 1`**, checked *before* the rate comparison, at every run count.
+Measured:
+
+| runs | 1 flip | raw rate | vs QUARANTINE_AT 0.05 | verdict |
+|---|---|---|---|---|
+| 4 | yes | 0.250 | **over** | WATCH |
+| 5 | yes | 0.200 | **over** | WATCH |
+| 10 | yes | 0.100 | **over** | WATCH |
+| 19 | yes | 0.053 | **over** | WATCH |
+
+**Without that branch all four would QUARANTINE.** It is load-bearing, and it is
+pinned by fixtures at the fleet's *actual* run counts (6 and 12) — the exact
+sub-20 window where the raw rate trips the band. `WATCH_EXPRESSIBLE_AT =
+ceil(1/QUARANTINE_AT) = 20` exists to document that boundary.
+
+**Nothing to build.** Volume alone cannot quarantine a checker.
+
+### Item 46 — `api/_lib/record-parity.js`, 25/25
+
+RAID-style single parity over append-only records. **Item 35's hash chain
+DETECTS; this CORRECTS.**
+
+    hash of a row        -> "row 412 is wrong"
+    hash CHAIN           -> "row 412 is wrong, and it starts there"
+    parity over a group  -> "row 412 said EXACTLY THIS"
+
+They compose rather than compete: the chain says *which* row to reconstruct, and
+the digest **verifies the reconstruction** — `recover()` refuses to return bytes
+whose digest does not match the one recorded when the group was built. Parity
+without a digest hands you bytes you cannot check.
+
+**Length is part of the problem, not a detail.** XOR over variable-length records
+loses the lengths, so the parity block is padded to the group width and each
+member's length is stored — the short-record arm proves no padding survives on
+the recovered bytes. Canonical form is `sv-witness.js`'s, reused in spirit: two
+encodings of one record must give the same bytes or a reconstruction fails its own
+digest.
+
+**The refusals are the substance:**
+- **two erasures** → `PARITY_TOO_MANY_MISSING`, naming Reed-Solomon as the real
+  remedy rather than implying it is here;
+- **a changed survivor** → caught *before* it poisons the XOR. This is the
+  sharpest one: a drifted survivor produces nonsense that would pass no check,
+  and only the recorded digest makes it detectable;
+- **a group of ONE** → refused, because **with one member the parity block IS the
+  record** — a second plaintext copy of a controlled-substance entry stored as
+  redundancy;
+- a duplicate member id → refused, because the survivor set becomes ambiguous.
+
+**Three things it does NOT claim, each asserted by an arm so the header cannot
+drift into an overclaim:** it is not a backup (parity beside the rows dies with
+them, and this platform takes no automated backups); it **narrows** the
+creation-time exposure window rather than closing it (parity needs the plaintext
+at write time — there is no way around that; what it removes is needing it *again*
+at recovery); and it is not encryption.
+
+**Not wired into `sv-witness.js` yet** — the library and its control are the
+reusable core; choosing a group size for the live register is a real decision
+(smaller groups survive more loss and cost more parity storage) and it belongs
+with whoever owns that table.
+
+### Item 86 — not started

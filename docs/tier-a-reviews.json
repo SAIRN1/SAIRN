@@ -161,6 +161,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-16T01:41:03Z",
+      "resources": [
+        "sv_controlled"
+      ],
+      "files": [
+        "api/_lib/record-parity.js",
+        "api/_lib/record-parity.test.js"
+      ],
+      "what": "item 46: api/_lib/record-parity.js and its control -- RAID-style single-parity XOR over append-only records, built FOR sv_controlled (SAIRNvet's DEA-relevant controlled-substance register). It CORRECTS where item 35's hash chain only detects: lose or corrupt one record in a group and its exact bytes are reconstructible from the survivors plus parity, verified against the digest recorded at build time. NOT WIRED INTO sv-witness.js -- the library and its control only. WHAT A REVIEWER SHOULD PUSH ON. (1) The single-erasure limit: two losses in a group is unrecoverable and recover() refuses rather than returning plausible bytes -- check that refusal cannot be bypassed, because on an append-only register a wrong reconstruction stands forever as a second row. (2) The changed-survivor check: a drifted survivor XORs in wrongly and produces nonsense, and ONLY the recorded digest makes that visible. Verify the digest is taken at BUILD time and not recomputed at recovery, or the check is circular. (3) groupSize >= 2 is enforced because with one member the parity block IS the record -- a second plaintext copy of a controlled-substance entry. Check that nothing can construct a group of one by another route. (4) The canonical form is reused in spirit from sv-witness.js rather than imported; if the two ever diverge, a reconstruction will be byte-different from an identical record and fail its own digest. That is a real coupling worth an opinion on. (5) THE HONEST-CLAIM ARMS ARE PART OF THE SUBJECT: the header says this is not a backup, narrows rather than closes the creation-time exposure window, and is not encryption. Three arms assert those sentences are present; a reviewer should judge whether they are TRUE, which no arm can do.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
