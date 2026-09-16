@@ -27,16 +27,30 @@ must read all four, not just the shared file.**
 **Every row is a claim, not a fact.** Same standard as a handoff: re-verify
 before you act on one. Rows marked ⚠️ are ones this rebuild could not confirm.
 
-**THERE IS NO ITEM 45, and an item number in a session summary is not a
-registry entry.** Recorded 2026-09-14 after a fresh session was handed a
-work queue naming *"the item 40/41/43/44/45 cluster"* and spent time looking
-for the fifth. `grep -rn "item 45"` over the whole repo returns **zero hits** —
-no row here, nothing in `docs/MASTER-PLAN.md`, nothing in any
-`SAIRN-ACTIVE-WORK-*.md`, and no `items.md` exists anywhere in the tree. The
-number came from a summary of a prior session, which is exactly the kind of
-claim the paragraph above says to re-verify. **This file is the registry. If a
-number is not in it, the item does not exist** — say so and move on rather than
-hunting for it.
+**AN ITEM NUMBER IN A SESSION SUMMARY IS NOT A REGISTRY ENTRY.** Recorded
+2026-09-14 after a fresh session was handed a work queue naming *"the item
+40/41/43/44/45 cluster"* and spent time looking for the fifth. At that moment
+`grep -rn "item 45"` over the whole repo returned **zero hits** — no row here,
+nothing in `docs/MASTER-PLAN.md`, nothing in any `SAIRN-ACTIVE-WORK-*.md`, and
+**no `items.md` has ever existed anywhere in this tree** (still true; re-checked
+2026-09-16). The number came from a summary of a prior session, which is
+exactly the kind of claim the paragraph above says to re-verify. **This file is
+the registry. If a number is not in it, the item does not exist** — say so and
+move on rather than hunting for it.
+
+**AND THE NOTE ITSELF WENT STALE INSIDE A DAY, WHICH IS THE PART WORTH
+KEEPING.** It was written in the present tense — *"returns zero hits"* — about
+a grep, and on 2026-09-15 CC built `tools/trend_alarm.py` under the number and
+filed a real row for it (the traceability-headline/backlog divergence row
+below). So the sentence that made this note checkable became false while the
+note went on asserting it, and a reader running that grep today gets a dozen
+hits and no way to tell which claim is out of date. Corrected 2026-09-16 rather
+than deleted, because the correction is the lesson: **a standing note whose
+evidence is a command output must say WHEN it was run, and this one did not.**
+Same shape as instrument drift — nothing announced the day the sentence stopped
+being true. **Item 45 now EXISTS**, as a registry row, because somebody did the
+work and filed one; what remains true is that it did not exist when it was
+handed to a session as though it did.
 
 ---
 

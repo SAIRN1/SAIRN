@@ -55,18 +55,36 @@ piecemeal before being named: **PR §1.11**.
 
 - **Branch:** `main`. All real work lands there. `master` is stale — re-verify
   independently rather than trusting this line indefinitely.
-- **Four clones**, each a separate clone of `SAIRN1/SAIRN` on `main`:
-  `Documents\SAIRN-hank`, `Documents\SAIRN-cc`, `Documents\SAIRN-cody`,
-  `Documents\SAIRN-fourth`. Handoffs live only in a real clone — never write one
-  to `C:\Users\marsh\` directly.
-- **Active-work log — append only to your own file:**
+- **Clones**, each a separate clone of `SAIRN1/SAIRN` on `main`. **Do not count
+  them from this list — count the directories.** This line said *"Four clones"*
+  and named four for weeks after a fifth existed on disk and was pushing
+  commits; corrected 2026-09-16 when `tools/landing_verification.py` discovered
+  five. The list below is the registry corrected to match real state, which is
+  the direction that correction always runs.
 
-  | Session | Clone | File |
-  |---|---|---|
-  | Hank | `Documents\SAIRN-hank` | `SAIRN-ACTIVE-WORK-hank.md` |
-  | CC | `Documents\SAIRN-cc` | `SAIRN-ACTIVE-WORK-cc.md` |
-  | Cody | `Documents\SAIRN-cody` | `SAIRN-ACTIVE-WORK-cody.md` |
-  | Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
+  | Session | Clone | Active-work file | Claim file | Role |
+  |---|---|---|---|---|
+  | Hank | `Documents\SAIRN-hank` | `SAIRN-ACTIVE-WORK-hank.md` | `.claude/claims/hank.json` | build |
+  | CC | `Documents\SAIRN-cc` | `SAIRN-ACTIVE-WORK-cc.md` | `.claude/claims/cc.json` | build |
+  | Cody | `Documents\SAIRN-cody` | `SAIRN-ACTIVE-WORK-cody.md` | `.claude/claims/cody.json` | build |
+  | Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` | `.claude/claims/fourth.json` | build |
+  | **Hover auditor** | `Documents\SAIRN-hover` | *none — it logs to its own skill, see below* | `.claude/claims/hover.json` | **audit, NOT build** |
+
+  **Append only to your own active-work file.**
+
+  **THE FIFTH IS NOT A FIFTH BUILD AGENT and the difference is structural, not
+  a label.** `Documents\SAIRN-hover` is the hover auditor: it does not build,
+  it adversarially checks what the four build agents built, and it keeps its
+  own tamper-evident record rather than an `SAIRN-ACTIVE-WORK-*.md`. Its scope
+  is `.claude/skills/sairn-hover-auditor/` and nothing else —
+  `tools/hover_auditor_scope_gate.py` (prevent) and
+  `tools/hover_separation_audit.py` (detect) enforce that, and
+  `docs/2026-09-15-hover-auditor-separation-enforcement.md` is the full account.
+  **A build agent must not reach into that clone**, including to arm those
+  gates; that is the same boundary problem running the other way.
+
+  Handoffs live only in a real clone — never write one to `C:\Users\marsh\`
+  directly.
 
 - **Open work:** `docs/SAIRN-OPEN-WORK-INDEX.md`. **Never edit a row by
   splitting on `|`** — rebuild the row whole (PR §2.1).
