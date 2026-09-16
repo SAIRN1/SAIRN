@@ -84,7 +84,31 @@ const HANDLED = (() => {
   return out;
 })();
 const CLIENT_WRITES = [...new Set([...HTML.matchAll(/sdnData\('write','(law_\w+)'/g)].map((m) => m[1]))];
-const BESPOKE = ['law_clients', 'law_matters', 'law_trusttx', 'law_deadlines'];
+// ── BESPOKE WAS A HARDCODED FOUR AND THERE ARE FIVE (fixed 2026-09-16) ──────
+// `law_trust_reconcile` shipped with a real branch at api/sd-data.js and was in
+// neither this list nor HANDLED, so the orphan arm below reported it as
+// "registered with no handler" -- a FALSE FINDING about a resource that works,
+// standing in a suite whose whole subject is resources that do not.
+//
+// The list is now DERIVED from the branches that exist, not kept by hand. A
+// hand-kept list of the things a checker should skip goes stale in exactly one
+// direction: silently, toward false findings, on the day somebody adds the
+// fifth. That is the pinned-list-drift shape this repo has corrected
+// repeatedly, and the fix is never a longer hand-kept list.
+//
+// DERIVING IT WOULD MAKE ONE ARM VACUOUS AND THAT ARM IS EXCLUDED BY NAME.
+// "every bespoke resource still has its branch" cannot be asserted against a
+// list built BY looking for branches -- it would assert that what was found was
+// found. That arm keeps an explicit expectation (BESPOKE_EXPECTED) and this
+// derived set is checked AGAINST it, so a branch that disappears is still a
+// failure and a branch that is ADDED is not a false finding.
+const BESPOKE = [...new Set(
+  [...SRC.matchAll(/resource === '(law_\w+)'/g)].map((m) => m[1])
+)].filter((r) => !HANDLED[r]).sort();
+// What we expect to be there. A name here with no branch is a REGRESSION; a
+// branch here with no name is a new bespoke resource somebody must add.
+const BESPOKE_EXPECTED = ['law_clients', 'law_deadlines', 'law_matters',
+                          'law_trust_reconcile', 'law_trusttx'];
 
 let passed = 0, total = 0;
 async function test(name, fn) {
@@ -132,12 +156,29 @@ async function main() {
     assert.strictEqual(Object.keys(HANDLED).length, 15);
   });
 
-  await test('the four bespoke resources were NOT folded into the generic map', () => {
+  await test('the bespoke resources were NOT folded into the generic map', () => {
     // law_matters and law_trusttx promote real columns (client_id, matter_id,
     // amount, type, status) a generic loop would not populate, and law_trusttx
     // carries a balance guard. Folding them in would drop both.
     BESPOKE.forEach((r) => assert.ok(!HANDLED[r], r + ' was folded into the generic map -- its promoted columns and guard would be lost'));
-    BESPOKE.forEach((r) => assert.ok(SRC.indexOf("resource === '" + r + "'") > 0, r + ' lost its bespoke branch'));
+  });
+
+  await test('every bespoke branch we EXPECT still exists -- asserted against an '
+             + 'explicit list, not against the one derived from the branches', () => {
+    // THIS IS THE ARM THE DERIVATION WOULD HAVE MADE VACUOUS. Asserting that
+    // each name in BESPOKE has a branch, when BESPOKE was built by finding
+    // branches, is "what was found was found" -- green against any codebase,
+    // including one where every branch was deleted. So it is asserted against
+    // BESPOKE_EXPECTED, which a human wrote down.
+    const gone = BESPOKE_EXPECTED.filter((r) => BESPOKE.indexOf(r) === -1);
+    assert.deepStrictEqual(gone, [], 'bespoke branch lost: ' + gone.join(', '));
+    // And the other direction is a PROMPT, not a failure: a new bespoke branch
+    // is ordinary work, and the only thing wrong with it is nobody adding it
+    // here -- which is what left law_trust_reconcile reported as an orphan.
+    const added = BESPOKE.filter((r) => BESPOKE_EXPECTED.indexOf(r) === -1);
+    assert.deepStrictEqual(added, [],
+      'new bespoke branch(es) not yet listed in BESPOKE_EXPECTED: ' + added.join(', ')
+      + ' -- add them, and check whether they also need a session gate');
   });
 
   await test('no law_ resource collides with another app', () => {
@@ -262,19 +303,64 @@ async function main() {
     }
   });
 
-  await test('PHASE 1 BOUNDARY: the four bespoke resources still work WITHOUT a session', async () => {
-    // Deliberate and temporary. They are live today against clients that send
-    // no token, and Vercel ships the page and the endpoint together -- so
-    // flipping them in the same commit would fail a staff member with the app
-    // already open, mid-session, on trust-money writes. Phase 2 flips them
-    // once the fifteen have been writing cleanly for a full working day.
-    // WHEN THAT HAPPENS THIS TEST MUST BE INVERTED, not deleted.
-    for (const r of ['law_clients', 'law_matters', 'law_trusttx', 'law_deadlines']) {
+  // ── PHASE 1 BOUNDARY, PARTIALLY FLIPPED (updated 2026-09-16) ──────────────
+  // The original arm asserted that all FOUR bespoke resources still work
+  // without a session, and carried its own instruction: "WHEN THAT HAPPENS THIS
+  // TEST MUST BE INVERTED, not deleted." It happened -- `law_trusttx` was moved
+  // into SD_SESSION_GATED the same day, because attorney IOLTA trust money had
+  // no session check at all -- and the arm was not inverted, so this suite has
+  // been running 18/20 with a red arm that is CORRECT ABOUT THE CODE and wrong
+  // about the policy. A red arm nobody can act on is read as noise, and the
+  // next genuinely red arm beside it is read the same way.
+  //
+  // THE FLIP IS PER RESOURCE, NOT WHOLESALE. Only law_trusttx moved. The other
+  // three are still live against clients that send no token, and Vercel ships
+  // the page and the endpoint together, so flipping them mid-day would fail a
+  // staff member with the app already open. Two lists, both explicit, because
+  // deriving either from SD_SESSION_GATED would assert that the code equals
+  // itself -- the same vacuous shape as deriving BESPOKE above.
+  const PHASE1_STILL_OPEN = ['law_clients', 'law_matters', 'law_deadlines'];
+  const PHASE2_NOW_GATED = ['law_trusttx'];
+
+  await test('PHASE 1 BOUNDARY: the not-yet-flipped bespoke resources still work '
+             + 'WITHOUT a session', async () => {
+    for (const r of PHASE1_STILL_OPEN) {
       const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
       const res = mockRes();
       await handler(mockReq({ action: 'read', resource: r }, null), res);
       assert.strictEqual(res.statusCode, 200, r + ' -> ' + res.statusCode + ' ' + JSON.stringify(res.body));
     }
+  });
+
+  await test('PHASE 2: law_trusttx is REFUSED without a session -- the inversion '
+             + 'the original arm asked for', async () => {
+    for (const r of PHASE2_NOW_GATED) {
+      const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
+      const res = mockRes();
+      await handler(mockReq({ action: 'read', resource: r }, null), res);
+      // THE REFUSAL IS THE ASSERTION; THE CODE IS PINNED BESIDE IT.
+      // SD_SESSION_GATED answers 403 FORBIDDEN, while the generic fifteen
+      // answer 401 NO_SESSION for the same condition -- two refusal shapes for
+      // "no session" in one endpoint. Noted rather than changed: making them
+      // agree is a client-visible contract change and not this suite's to make.
+      // Both halves are asserted so neither a 200 nor a silent re-coding passes.
+      assert.notStrictEqual(res.statusCode, 200, r + ' answered 200 to a caller '
+        + 'with NO session -- the trust-money gate is gone');
+      assert.strictEqual(res.statusCode, 403, r + ' -> ' + res.statusCode
+        + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'FORBIDDEN');
+    }
+  });
+
+  await test('...and the two phase lists PARTITION the bespoke writable four, so '
+             + 'a resource cannot fall out of both', () => {
+    // The failure this prevents is the quiet one: a resource dropped from the
+    // open list without being added to the gated list disappears from the
+    // boundary entirely, and the suite goes green having stopped asking.
+    const covered = [...PHASE1_STILL_OPEN, ...PHASE2_NOW_GATED].sort();
+    const writable = BESPOKE_EXPECTED.filter((r) => r !== 'law_trust_reconcile').sort();
+    assert.deepStrictEqual(covered, writable,
+      'the phase lists no longer cover exactly the bespoke writable resources');
   });
 
   await test('the client actually SENDS the token it has always held', () => {
