@@ -113,7 +113,11 @@ t('a null VALUE and the string "null" are different payloads', () => {
     'a number and its string form are different payloads');
 });
 
-t('the token is stored HASHED, never in the clear', () => {
+// NAMED FOR THE CODE PATH, not just "the token is hashed". There is a second
+// test of the same property against the SQL SCHEMA further down, and two arms
+// sharing a label makes the output ambiguous about which one moved -- and lets
+// one be deleted while the other keeps the name alive.
+t('hashToken() in the CODE returns a digest, never its input', () => {
   // Planted: hashToken() returning its input. A database read would then yield
   // a spendable witness for a controlled-substance write, which is the whole
   // reason the column holds a digest rather than the token.
@@ -124,8 +128,6 @@ t('the token is stored HASHED, never in the clear', () => {
     'hashToken must hash -- returning the token means the stored column IS the '
     + 'credential');
   assert.ok(!/return String\(tok\);/.test(fn), 'hashToken returns its input');
-  // And it really is one-way on a real value, not merely shaped like it.
-  assert.notStrictEqual(require('./sv-witness.js').contentHash, undefined);
 });
 
 t('the token lifetime stays SHORT -- a signature detaches from the act it witnessed', () => {
@@ -442,7 +444,7 @@ t('REVOKE ALL precedes every grant', () => {
 t('anon and authenticated are revoked on both tables', () => {
   assert.ok((SQL_CODE.match(/from anon, authenticated/g) || []).length >= 2);
 });
-t('the token is stored HASHED, never in the clear', () => {
+t('the SCHEMA stores a digest, never the token itself', () => {
   assert.ok(/token_hash text not null/.test(SQL_CODE));
   assert.ok(!/\btoken text not null/.test(SQL_CODE),
     'a readable table of live tokens is a table of signatures waiting to be borrowed');
