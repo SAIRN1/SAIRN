@@ -5562,7 +5562,7 @@
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     },
     {
-      "commit": "f4b8a81b588f",
+      "commit": "133b0989473d",
       "date": "2026-09-16",
       "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
       "files": [
@@ -5612,7 +5612,7 @@
       "recurrence_open": "The sweep covered the four endpoints that use beat(). Nothing checks this automatically, and any cron endpoint added later can reintroduce it silently -- the defect is an ABSENT call, which no test of the response can see."
     },
     {
-      "commit": "f4b8a81b588f",
+      "commit": "133b0989473d",
       "date": "2026-09-16",
       "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
       "files": [
