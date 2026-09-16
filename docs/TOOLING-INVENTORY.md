@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**188 files in `tools/`.** By what actually invokes them:
+**189 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 54 | runs automatically on every push, never blocks |
 | **ADVISORY** | 1 | session-start or prompt hooks, informational |
 | **DECIDED** | 55 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 131 |
+| CHECKER | 132 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 23 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 18
+**The number to act on: 24 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 19
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 23, by name, so this is actionable rather than a statistic:
+The 24, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -66,6 +66,7 @@ The 23, by name, so this is actionable rather than a statistic:
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
 | `guard_ablation.py` | SUITE-ONLY | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass |
 | `hover_auditor_scope_gate.py` | SUITE-ONLY | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage |
+| `hover_separation_ci.py` | SUITE-ONLY | a commit that touches the HOVER AUDITOR's own skill directory AND code outside its scope, checked on GitHub's side of the push where a local hook cannot be switched off. The ENFORCE layer under the existing PREVENT (hover_auditor_scope_gate.py, a per-clone hook that is silent whenever its marker is absent, --no-verify is used, or the clone was never armed) and DETECT (hover_separation_audit.py). Keys on COMMIT SHAPE, not on attribution: its first version asked "is this the auditor's commit and did it leave scope", which could never fire, because a commit in which the auditor also touches platform code is unattributable by construction -- the exact commit the gate exists to refuse was the one it could not see. Catches the boundary in both directions, including a build agent reaching into the auditor's directory. Cannot see a commit that touches ONLY platform code and says so on every run |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
@@ -281,7 +282,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (30)
+## SUITE-ONLY (31)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -299,6 +300,7 @@ fixtures. Nothing points them at the real codebase.
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
 | `guard_ablation.py` | CHECKER | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass | `run_guard_ablation_probe.py` |
 | `hover_auditor_scope_gate.py` | CHECKER | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage | `run_hover_separation_probe.py` |
+| `hover_separation_ci.py` | CHECKER | a commit that touches the HOVER AUDITOR's own skill directory AND code outside its scope, checked on GitHub's side of the push where a local hook cannot be switched off. The ENFORCE layer under the existing PREVENT (hover_auditor_scope_gate.py, a per-clone hook that is silent whenever its marker is absent, --no-verify is used, or the clone was never armed) and DETECT (hover_separation_audit.py). Keys on COMMIT SHAPE, not on attribution: its first version asked "is this the auditor's commit and did it leave scope", which could never fire, because a commit in which the auditor also touches platform code is unattributable by construction -- the exact commit the gate exists to refuse was the one it could not see. Catches the boundary in both directions, including a build agent reaching into the auditor's directory. Cannot see a commit that touches ONLY platform code and says so on every run | `hover_separation_ci_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
@@ -393,11 +395,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      188   git ls-files tools/
+  tools on disk                      189   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                52   report_only_checks.REGISTRY
-  tools invoked by tests/            134   tests/**/*.py, *.js
+  tools invoked by tests/            135   tests/**/*.py, *.js
   recorded NOT-promoted decisions     55   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

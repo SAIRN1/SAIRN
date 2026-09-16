@@ -1,0 +1,105 @@
+# The hover auditor's separation, checked on GitHub's side of the push.
+#
+# WHY THIS EXISTS WHEN A LOCAL GATE ALREADY DOES.
+# tools/hover_auditor_scope_gate.py refuses the commit before it exists, which
+# is the better half of any control. But it is a local hook armed per clone by
+# a marker inside .git/, so every way it can be absent is a way it is SILENT:
+# the marker missing, --no-verify, a fresh clone nobody armed, or the hook
+# erroring (hooks are written to survive their own failures). None of those
+# leave anything behind that says "the gate did not run".
+#
+# This runs off the author's machine and its verdict is a status, not an
+# honour system.
+#
+# TO MAKE IT UNBYPASSABLE, one setting has to be applied in the repository's
+# branch protection for `main`, and it CANNOT be set from inside this file:
+#
+#   Settings -> Branches -> main -> Require status checks to pass
+#     * add "hover-separation" to the required checks
+#     * tick "Do not allow bypassing the above settings"  (this is the half
+#       that binds administrators too -- without it an admin push skips every
+#       required check and nothing records that it did)
+#
+# Until that is applied this workflow REPORTS and does not BLOCK, which is a
+# weaker thing and is said here rather than assumed.
+#
+# WHAT IT CHECKS, and the claim is narrow on purpose: no commit in the pushed
+# range touches the auditor's own skill directory AND code outside its scope.
+# It does NOT prove the auditor wrote no platform code -- a commit touching
+# only platform code is indistinguishable from any build agent's, because all
+# five roles commit through one git identity. tools/hover_separation_ci.py
+# says so in its own output on every run, including a green one.
+
+name: hover-separation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  hover-separation:
+    name: hover-separation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out with history
+        uses: actions/checkout@v4
+        with:
+          # The check reads a COMMIT RANGE, so a shallow clone would make it
+          # unable to see the commits it is meant to judge -- and "could not
+          # see them" must never come out as a pass.
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Prove the checker can still refuse
+        # THE BLIND LOCK RUNS FIRST, BEFORE THE VERDICT IS BELIEVED. A gate
+        # whose criteria have rotted reports clean exactly like a clean repo,
+        # and this one has already been caught once: its first version keyed on
+        # attribution, and a commit in which the auditor touched platform code
+        # is unattributable BY CONSTRUCTION -- so the check could never have
+        # fired at all. Its own fixtures refused it before it shipped.
+        run: python tools/hover_separation_ci.py --fixtures
+
+      - name: Determine the pushed range
+        id: range
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            tip="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            tip="${{ github.sha }}"
+          fi
+          # A new branch, a force push, or a first push reports an all-zero or
+          # unknown base. Falling back to the root commit checks MORE than the
+          # push contained, never less -- the safe direction. Narrowing it
+          # silently would be how a range becomes empty and the check green.
+          if [ -z "$base" ] || [ "$base" = "0000000000000000000000000000000000000000" ] \
+             || ! git cat-file -e "$base^{commit}" 2>/dev/null; then
+            base="$(git rev-list --max-parents=0 "$tip" | tail -1)"
+            echo "base was unusable; widened to the root commit $base" >&2
+          fi
+          echo "range=$base..$tip" >> "$GITHUB_OUTPUT"
+
+      - name: Hover auditor separation
+        run: python tools/hover_separation_ci.py --range "${{ steps.range.outputs.range }}"
+
+      - name: Audit trail from real history
+        # Report-only and never the gate. It exits 2 by design whenever a
+        # meaningful share of history is unattributed, which is almost always
+        # true and is a fact about git rather than a failure -- so its exit code
+        # is deliberately not this job's verdict. It is here because the trail
+        # is the thing a reader wants when the check above goes red.
+        if: always()
+        run: python tools/hover_separation_audit.py || true
