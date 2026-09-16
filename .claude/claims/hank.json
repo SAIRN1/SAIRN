@@ -2043,8 +2043,8 @@
       "task": "derived exemption fixture arm and sb_ts assessment",
       "claimed_at": "2026-09-16T05:19:52Z",
       "claimed_at_epoch": 1789535992.5734127,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:25:16Z"
     }
   ]
 }
