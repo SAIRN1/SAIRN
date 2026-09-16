@@ -4434,3 +4434,65 @@ somebody opened.
 Changing what a blocking gate REFUSES is a different act from being able to
 record the truth about a change it let through, so the semantics decision is
 stated and left rather than taken on my own initiative.
+
+## 2026-09-16 (continued) -- a8528025 is not land.sh, and my own hover-separation reading was wrong
+
+### RETRACTION, before anything else
+
+My entry above says the `hover-separation` rejection was the rule evaluating the
+CURRENT head while the previous head's run was in flight, and that the fix is to
+**wait and retry**. **That is wrong.** I stated it as a reading of one
+observation needing confirmation; Hank confirmed it and the answer is the
+opposite. A required status check on a branch pushed to DIRECTLY is a
+**deadlock**, not a delay: the check is evaluated against the commit being
+pushed, that commit has no check run, and the workflow that would create one is
+triggered BY the push that is being rejected. **There is no order in which
+retrying succeeds.**
+
+The 26 seconds between my rejection and my success was **the rule being
+removed**, not lag clearing -- which is exactly why it looked like lag. Carrying
+"wait and retry" forward is the dangerous half.
+
+**And my reflog answered the first of Hank's three open questions.** The success
+straight after my rejection landed `5a33f295` at **12:23:11**, with the fetch
+before it at 12:10:59 -- so **the rule was removed before 12:23:11, not merely
+before 14:25:09**, which narrows the window by two hours. No rejection occurred
+after it: every later push from this clone succeeded first time. Added to
+Hank's row rather than left here.
+
+### `a8528025` has nothing to do with `land.sh`
+
+Asked to resolve the discrepancy, and the answer is plain: **that commit does
+not mention `land.sh` and neither does anything else in this repository.** What
+it actually contains is `tools/retry_backoff_check.py` (a bounded window
+replacing an unbounded prefix slice -- its own comment records **232 seconds
+down to 25**), three new REGISTRY entries in `tools/report_only_checks.py`,
+`tools/tooling_inventory.py`, and two regenerated documents.
+
+**What its MESSAGE says is my register entry about arm 7.** The two are
+unrelated. **My own commit is fine and is not this one:** `6f2fa681`, same
+message, 50 lines added to `docs/defect-density-register.json` and nothing else,
+on `origin/main`. Nothing of mine was lost -- the message was REUSED on a later,
+unrelated changeset.
+
+### THE CONSEQUENCE, which is why it is a row and not a curiosity
+
+`tools/register_feed_gate.py` asks for a defect record only when the subject
+matches `^fix\(` (`FIX_RE`, line 83). `a8528025`'s subject is
+`chore(register)`, **so the gate never asked**, and no register record cites it.
+**A real performance fix to a checker is on `origin/main` unrecorded.**
+`8e03757a` is a different, later change to the same file and does carry a
+record; `git log -S` confirms the bounded-window hunk was introduced by
+`a8528025` and only by it, so that record does not cover this.
+
+**A commit wearing the wrong message defeats every gate that reads messages.**
+That file's own header already anticipates the DELIBERATE version -- *"a gate
+people learn to word their commit subjects around"*. This is the ACCIDENTAL
+version, and nobody was watching for it.
+
+**Stated as evidence, not as an accusation:** author date 10:48:38 against
+commit date 10:57:53 is the signature of a rebase, and four minutes before it
+`fourth` claimed *"rebase resolve semantic merge for the two json registers"* --
+the operation that produces exactly this shape. **I did not rewrite
+`origin/main` and am not proposing it.** Rewriting shared history is not one
+session's call, and the row says what is owed instead.
