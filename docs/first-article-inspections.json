@@ -117,6 +117,182 @@
     "transcribed": true,
     "note": "As above. One claim was routed to AR-4 in docs/ACCEPTED-RISKS.md rather than to an arm -- the watchdog shares a scheduler with the jobs it watches, which is a limit no arm can cover."
    }
+  },
+  {
+   "artefact": "tools/assurance_case.py",
+   "report": "docs/2026-09-16-first-article-three-tools.md",
+   "suites": [
+    "tools/assurance_case.py",
+    "tests/run_assurance_case_probe.py"
+   ],
+   "claims": [
+    {
+     "claim": "Exit 0 when every developed goal is SUPPORTED, 1 when one is not.",
+     "status": "verified",
+     "by": "probe: '...and the exit code follows the top verdict', which compares the process exit against the JSON verdict on the real tree"
+    },
+    {
+     "claim": "Exit 2 when the argument could not be evaluated.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2 when the argument could not be evaluated\": an evaluation that raises is COULD NOT RUN, not a refusal'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested 0 and 1, so an evaluation that raised could have been reported as NOT SUPPORTED -- a could-not-run folded into a finding, PR 1.11. Closed by this inspection."
+    },
+    {
+     "claim": "REPORT ONLY -- an assurance case is an ARGUMENT, never a proof.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"report only\": assurance_case.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED, and mechanically checkable three ways. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+    },
+    {
+     "claim": "Every leaf is a COMMAND or an ARTIFACT, run or read on each invocation, so the case cannot rot into a summary.",
+     "status": "verified",
+     "by": "probe: '%s cites %s, which exists on disk' and '%s cites %s, which is registered in PURPOSES or in the runner REGISTRY', run over every leaf; the injected-command arms prove the leaf is executed rather than merely named",
+     "note": "The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+    },
+    {
+     "claim": "A leaf that cannot be evaluated is reported as COULD-NOT-RUN rather than quietly dropped.",
+     "status": "verified",
+     "by": "probe: 'an evidence command that CANNOT RUN is its own state, not a refusal'"
+    },
+    {
+     "claim": "UNDEVELOPED goals are DRAWN rather than omitted.",
+     "status": "verified",
+     "by": "self-check: 'the case DRAWS its undeveloped goals rather than omitting them' and '...and each one says WHY it is undeveloped, at length'; probe: '...and it DRAWS its undeveloped goals'"
+    },
+    {
+     "claim": "A goal is SUPPORTED only if every child is: no partial credit and no weighting.",
+     "status": "verified",
+     "by": "self-check: 'one failing leaf makes its goal NOT SUPPORTED, whatever the siblings do' and '...and an all-passing goal IS supported, so the verdict is not constant'"
+    },
+    {
+     "claim": "An UNDEVELOPED goal is neither supported nor refuted.",
+     "status": "verified",
+     "by": "self-check: 'an UNDEVELOPED goal is neither supported nor unsupported'"
+    },
+    {
+     "claim": "ASSUMPTIONS are named so a reader can reject them.",
+     "status": "verified",
+     "by": "self-check: 'the argument records its ASSUMPTIONS, which are not evidenced'; probe: 'the JSON carries the assumptions'"
+    },
+    {
+     "claim": "NOT a claim that Tier A data is safe, that the evidence is sufficient, or a certification artefact.",
+     "status": "cannot-test",
+     "by": "three SCOPE disclaimers. No arm can show a document is not being read as something it disclaims; they are held by the text and by the tool being registered NOT-PROMOTED so nothing consumes its verdict automatically."
+    }
+   ],
+   "inspected": "2026-09-16",
+   "inspector": "Fourth",
+   "sha256": "8046444f8a3ed24aac808eb73493aba35b45cd4541487f6c721b83da6433597f"
+  },
+  {
+   "artefact": "tools/risk_event_tree.py",
+   "report": "docs/2026-09-16-first-article-three-tools.md",
+   "suites": [
+    "tools/risk_event_tree.py",
+    "tests/run_risk_event_tree_probe.py"
+   ],
+   "claims": [
+    {
+     "claim": "Exit 0 always unless the tree could not be evaluated (2).",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2 when the tree could not be evaluated\": a computation that raises is COULD NOT RUN, not a zero'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
+    },
+    {
+     "claim": "REPORT ONLY.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"report only\": risk_event_tree.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+    },
+    {
+     "claim": "Every per-barrier probability is a JUDGEMENT with a stated basis and a band, never a point.",
+     "status": "verified",
+     "by": "self-check: 'every barrier is a BAND, never a point -- a point would be read as measured', 'every barrier states a BASIS for its band, at length', 'every barrier cites what was actually MEASURED, separately from the judgement'"
+    },
+    {
+     "claim": "The output is a RANGE, and the corner search is exact because the worst state is monotone in every p_fail.",
+     "status": "verified",
+     "by": "probe: 'no sampled point falls OUTSIDE the reported range' and the four 'the worst state is monotone increasing in p_fail[i]' arms, which check the property the exactness rests on"
+    },
+    {
+     "claim": "STABILITY IS MEASURED rather than assumed: the ranking is recomputed at every corner and reported STABLE only if it does not change.",
+     "status": "verified",
+     "by": "probe: '...and its verdict agrees with the number of orders it found' and 'a tree with no uncertainty ranks STABLY -- the check can say yes'"
+    },
+    {
+     "claim": "Item 65's band is READ FROM AN ARTEFACT, so it narrows mechanically rather than by anybody editing a constant.",
+     "status": "verified",
+     "by": "probe: 'with NO artefact the band stays at its widest and says why', 'an artefact that does NOT answer is not treated as a clean result', 'uncovered = 0 NARROWS the band', 'uncovered > 0 moves the band UP, not down', and 'the shipped B4 band matches what backup_band() returns today'"
+    },
+    {
+     "claim": "NOT a frequency, NOT independent, NOT a licence to stop at the first barrier -- the figures are a FLOOR.",
+     "status": "cannot-test",
+     "by": "three claims about INTERPRETATION. The independence assumption is real and is stated in the header and in the output; no arm can show a reader did not treat the floor as an estimate."
+    }
+   ],
+   "inspected": "2026-09-16",
+   "inspector": "Fourth",
+   "sha256": "cf2a1750f17f81a3ffd4528829fbabe0045d055fb1ec4a3bed61335b05fc1b03"
+  },
+  {
+   "artefact": "tools/dora_metrics.py",
+   "report": "docs/2026-09-16-first-article-three-tools.md",
+   "suites": [
+    "tools/dora_metrics.py",
+    "tests/run_dora_metrics_probe.py"
+   ],
+   "claims": [
+    {
+     "claim": "Exit 2 when a metric COULD NOT BE COMPUTED AT ALL.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2 when a metric could not be computed at all\": no git history is COULD NOT RUN, never an empty-but-clean report'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
+    },
+    {
+     "claim": "REPORT ONLY.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"report only\": dora_metrics.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+    },
+    {
+     "claim": "Deployment frequency is reported BOTH ways -- all commits and the subset touching a DEPLOYABLE SURFACE.",
+     "status": "verified",
+     "by": "probe: 'deployment frequency is reported BOTH ways, not just the large one' and 'an independent parse of git agrees on the deployable count'"
+    },
+    {
+     "claim": "Lead time is NOT MEANINGFUL on this topology and is reported as such rather than as an elite-band result.",
+     "status": "verified",
+     "by": "probe: 'lead time is marked NOT MEANINGFUL on this topology' and '...and it carries the reason, so the caveat travels with the number'"
+    },
+    {
+     "claim": "Change failure rate is computed ONLY over records that carry an injection commit, with the coverage printed beside it.",
+     "status": "verified",
+     "by": "probe: 'the change failure rate carries the COVERAGE it was computed over' and '...and that coverage is honest about being partial today'"
+    },
+    {
+     "claim": "The fix-commit ratio is reported SEPARATELY AND LABELLED NOT CFR.",
+     "status": "verified",
+     "by": "probe: 'the fix-commit ratio is present and NOT called the change failure rate' and '...and it is a different number from the CFR, or one of them is wrong'"
+    },
+    {
+     "claim": "NOT a benchmark band: no elite/high/medium/low is printed.",
+     "status": "verified",
+     "by": "probe: 'the output never claims an ELITE / HIGH / MEDIUM / LOW band' and '...and it says WHY no band is printed, rather than just omitting one'"
+    },
+    {
+     "claim": "NOT that a Vercel deployment succeeded -- this reads git, not the platform.",
+     "status": "cannot-test",
+     "by": "a claim about what the DATA SOURCE can see. A commit that failed to build counts as a deployment here; confirming otherwise needs the Vercel deployment API, which is outside this tool by design. Held by the header, and by item 84 barrier G10 of the assurance case carrying the same repository-is-not-the-deployment limit."
+    },
+    {
+     "claim": "NOT a quality measure -- deployment frequency is a measure of BATCH SIZE.",
+     "status": "cannot-test",
+     "by": "a claim about INTERPRETATION. It is why the tool is registered NOT-PROMOTED with the reason \"wiring it into a runner would create pressure on a number that is not a goal\"."
+    }
+   ],
+   "inspected": "2026-09-16",
+   "inspector": "Fourth",
+   "sha256": "d97a0b27f13c89472906d42bc40722f6cf8582e7422197f1fc3c04a3a1d6b3fb"
   }
  ]
 }

@@ -1,0 +1,22 @@
+{
+  "_what_this_is": "The recorded result of verify 2c and 2d in sql/backup_reader_role.sql. COPY THIS FILE to docs/backup-reader-verification.json and fill it from the real query output. tools/risk_event_tree.py reads it and narrows item 65's barrier band mechanically -- the band is not a constant anybody edits after the fact. While the real file is absent the band stays at its widest and the tool says why.",
+
+  "_how_to_produce_it": "Open the Supabase SQL editor on the SAIRN project and run the two queries in docs/2026-09-15-backup-reader-default-acl-verification.md. 2c lists who owns tables in public; 2d returns distinct_owners, uncovered and uncovered_names. Nothing in a clone can run them: there is no route from this repository to the deployed database, and no credentials for one are present.",
+
+  "run_on": "YYYY-MM-DD",
+  "run_by": "who ran it",
+
+  "_2c": "who creates tables on this deployment -- one row per owner",
+  "owners": [
+    {"role": "postgres", "tables_owned": 0, "example_table": ""}
+  ],
+
+  "_2d": "completeness. uncovered MUST be 0. uncovered_names is null when it is.",
+  "distinct_owners": 0,
+  "uncovered": 0,
+  "uncovered_names": null,
+
+  "_notes": "If uncovered > 0 the gap is LIVE: every table those roles create from now on is absent from the backup and the backup will not report it. The fix is already in sql/backup_reader_role.sql -- re-run it (the loop derives the role list from pg_tables rather than hardcoding it), then re-run 2d. Both are idempotent.",
+
+  "_caveat_to_carry": "pg_tables.tableowner is the CURRENT owner, not the creator. They agree unless an ALTER TABLE ... OWNER TO has been run. 2c is therefore the best available proxy for who CREATES tables, not a confirmation; 2d is unaffected, because default ACLs key on current owners."
+}

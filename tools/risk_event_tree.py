@@ -49,6 +49,7 @@ stability are two numbers and never one.
     hour is best spent, not which barriers can be dropped.
 """
 import argparse
+import io
 import itertools
 import json
 import os
@@ -58,6 +59,57 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
 from checker_kit import EXIT_COULD_NOT_RUN                       # noqa: E402
+
+# ── ITEM 65's BAND IS READ FROM AN ARTEFACT, NOT TYPED HERE ────────────────
+# B4 is the widest band in this tree and its width is entirely down to one
+# unanswered question: can the backup reader SEE every Tier A table. Two
+# queries answer it (verify 2c and 2d in sql/backup_reader_role.sql) and
+# nothing in a clone can run them.
+#
+# So the band is not a constant somebody edits after the fact -- it is derived
+# from a RECORDED RESULT. Absent the artefact the band stays wide and the tool
+# says why; present and clean, it narrows mechanically. That is the difference
+# between "we will update this when we know" and a number that updates itself,
+# and this repository has already recorded what happens to the first kind.
+BACKUP_VERIFICATION = os.path.join(REPO, 'docs', 'backup-reader-verification.json')
+
+
+def backup_band():
+    """((low, high), note) for B4, from the recorded 2c/2d result if there is one."""
+    # NARROW, ON PURPOSE. The first version caught bare `Exception` and the
+    # module was missing `import io`, so every call raised NameError, was
+    # swallowed, and returned the no-artefact branch -- a real result would
+    # have been reported as "never run" and nobody would have known. A broad
+    # except around a read is how a programming error becomes a data answer.
+    try:
+        with io.open(BACKUP_VERIFICATION, encoding='utf-8') as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return (0.30, 0.95), ('NO RECORDED RESULT. verify 2c and 2d have never '
+                              'been run, so completeness is unknown and the '
+                              'band stays at its widest. Write the result to '
+                              'docs/backup-reader-verification.json and this '
+                              'narrows without anybody editing a constant.')
+    if doc.get('uncovered') is None or doc.get('run_on') is None:
+        return (0.30, 0.95), ('THE ARTEFACT EXISTS AND DOES NOT ANSWER. It '
+                              'carries no `uncovered` count or no `run_on` '
+                              'date, which is not the same as a clean result '
+                              'and is not treated as one.')
+    if int(doc['uncovered']) > 0:
+        return (0.60, 0.99), ('RUN %s AND IT FOUND A GAP: %s owner role(s) '
+                              'create tables with no default ACL for the '
+                              'backup reader (%s). Every table they create is '
+                              'absent from the backup and the backup does not '
+                              'report it, so the band moves UP, not down.'
+                              % (doc['run_on'], doc['uncovered'],
+                                 doc.get('uncovered_names') or 'names not recorded'))
+    return (0.10, 0.35), ('RUN %s, uncovered = 0: every role that owns a table '
+                          'in public has a default ACL granting the backup '
+                          'reader, so new tables are covered automatically. The '
+                          'residual is what a restore test cannot show -- that '
+                          'the dump is consistent with what the app believed.'
+                          % doc['run_on'])
+
 
 # ── THE BARRIERS ────────────────────────────────────────────────────────────
 # p_fail is the probability the barrier does NOT stop / does NOT reveal / does
@@ -110,7 +162,7 @@ BARRIERS = [
     {
         'id': 'B4', 'item': 'item 65', 'role': 'recover',
         'name': 'the BACKUP restores the state before it',
-        'p_fail': (0.30, 0.95),
+        'p_fail': None,          # filled from backup_band() below
         'basis': 'the nightly job restores the dump it just took and runs a '
                  'coherence check against it, which is a real restore test and '
                  'is why the low end is not higher. THE HIGH END IS 0.95 '
@@ -124,6 +176,14 @@ BARRIERS = [
         'measured': 'restore test runs nightly; default-ACL completeness NEVER RUN',
     },
 ]
+
+# B4's band is DERIVED, so the tree cannot be read without the artefact question
+# having been asked. The note travels with it into every output.
+_b4_band, _b4_note = backup_band()
+for _b in BARRIERS:
+    if _b['id'] == 'B4':
+        _b['p_fail'] = _b4_band
+        _b['verification'] = _b4_note
 
 # End states, read off the four success/failure branches in order.
 # True = the barrier FAILED.
@@ -324,6 +384,8 @@ def main(argv):
                   % (b['id'], b['item'], b['p_fail'][0], b['p_fail'][1],
                      b['name']))
             print('      MEASURED: %s' % b['measured'])
+            if b.get('verification'):
+                print('      VERIFICATION: %s' % b['verification'])
         print('')
         print('  END STATES, at the band midpoint:')
         for k, v in sorted(mid_tree.items(), key=lambda kv: -kv[1]):

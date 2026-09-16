@@ -134,6 +134,37 @@ check('a commit touching a real app IS a deployment',
 check('a mixed commit counts once, as deployable',
       D.deployable(['docs/a.md', 'sairndental.html']))
 
+# ── ADDED 2026-09-16 BY THIS TOOL'S FIRST ARTICLE INSPECTION ────────────────
+# Two claims in the header had no arm. Both are mechanically checkable, so
+# neither is a `cannot-test` -- they were simply unverified, which is the state
+# FAI exists to surface.
+import io as _io                                                 # noqa: E402
+
+_SRC = _io.open(os.path.join(REPO, 'tools', 'dora_metrics.py'), encoding='utf-8').read()
+
+# CLAIM: exit 2 when it could not run. Every exit-code arm above tests 0 and 1.
+_saved_log = D.git_log
+try:
+    D.git_log = lambda *a, **k: []
+    check('CLAIM "exit 2 when a metric could not be computed at all": no git '
+          'history is COULD NOT RUN, never an empty-but-clean report',
+          D.main(['--quiet']) == 2, 'expected exit 2')
+finally:
+    D.git_log = _saved_log
+
+# CLAIM: REPORT ONLY. Stated in the header and enforced nowhere until now.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _ROC                                # noqa: E402
+_RUNNER = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
+check('CLAIM "report only": dora_metrics.py is NOT in the report-only RUNNER registry',
+      'dora_metrics.py' not in _RUNNER, _RUNNER[:4])
+check('...and IS recorded as a deliberate NOT-PROMOTED decision',
+      'dora_metrics.py' in [x[0] for x in _ROC.NOT_PROMOTED])
+_GATE = _io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                 encoding='utf-8', errors='replace').read()
+check('...and the push gate does not invoke it',
+      'dora_metrics' not in _GATE)
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

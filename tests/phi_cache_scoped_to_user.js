@@ -104,16 +104,19 @@ function makeWorld(app) {
 const APPS = [
   { name: 'SAIRNcare', file: 'sairncare.html', prefix: 'alf_', listName: 'ALF_SCOPED_CACHES',
     purgeFn: 'alfPurgeScopedCaches', changedFn: 'alfCacheOwnerChanged',
-    ownerKey: 'alf_cache_owner', phi: 'alf_clients', unscopedName: 'ALF_UNSCOPED_CACHES' },
+    ownerKey: 'alf_cache_owner', phi: 'alf_clients', unscopedName: 'ALF_UNSCOPED_CACHES',
+    enterFn: 'alfEnterApp' },
   { name: 'SAIRNsenior', file: 'sairnsenior.html', prefix: 'sen_', listName: 'SEN_SCOPED_CACHES',
     purgeFn: 'senPurgeScopedCaches', changedFn: 'senCacheOwnerChanged',
-    ownerKey: 'sen_cache_owner', phi: 'sen_clients', unscopedName: 'SEN_UNSCOPED_CACHES' },
+    ownerKey: 'sen_cache_owner', phi: 'sen_clients', unscopedName: 'SEN_UNSCOPED_CACHES',
+    enterFn: 'senEnterApp' },
   // THE SHARPEST OF THE THREE. This one caches the financial resources whose
   // server gate was closed the same day (ddbd1f2c) AND the patient-scoped ones,
   // so the stale cache defeated both at once on a shared operatory tablet.
   { name: 'SAIRNdental', file: 'sairndental.html', prefix: 'dnt_', listName: 'DNT_SCOPED_CACHES',
     purgeFn: 'dntPurgeScopedCaches', changedFn: 'dntCacheOwnerChanged',
     ownerKey: 'dnt_cache_owner', phi: 'dnt_patients_list', unscopedName: 'DNT_UNSCOPED_CACHES',
+    enterFn: 'dntEnterApp',
     roles: ['owner', 'provider'],
     promise: 'only the owner can add a provider or change which sign-in is linked to one' },
   // FOUND BY DERIVING THE LIST, not by noticing a fourth. api/sd-data.js holds
@@ -123,11 +126,44 @@ const APPS = [
   { name: 'SAIRNbuild', file: 'sairnbuild.html', prefix: 'bld_', listName: 'BLD_SCOPED_CACHES',
     purgeFn: 'bldPurgeScopedCaches', changedFn: 'bldCacheOwnerChanged',
     ownerKey: 'bld_cache_owner', phi: 'bld_bids', unscopedName: 'BLD_UNSCOPED_CACHES',
+    enterFn: 'bldEnterApp',
     roles: ['owner', 'field'],
     promise: 'superseded versions stay visible, never overwritten' }
 ];
 
 console.log('The cache is scoped to the person, not just the read\n');
+
+// -- ARM -1: THE GUARD IS WIRED IN, not merely present ---------------------
+// ADDED 2026-09-15 BY THIS SUITE'S FIRST NEGATIVE CONTROL.
+// tests/phi_cache_scope_probe.py replaced the real
+//   if(alfCacheOwnerChanged(d))alfPurgeScopedCaches();
+// with a bare `alfCacheOwnerChanged(d);` -- the guard evaluated, its answer
+// thrown away, the purge never called -- and THIS SUITE STAYED GREEN.
+//
+// The reason is structural and worth stating. makeWorld() builds its own
+//   function enter(d){ if(changed(d)) purge(); }
+// out of the two pieces. That is the right way to drive the MECHANISM in
+// isolation, and it means every arm below proves the two functions work
+// together WITHOUT EVER PROVING THE APP CALLS THEM THAT WAY. The suite was
+// testing a wiring it had written itself.
+//
+// So this arm reads each app's REAL entry function and asserts the guarded
+// call is inside it -- anchored to that function's own body rather than to the
+// file, because a match anywhere in 2MB of HTML is satisfied by the comment
+// block that explains the mechanism.
+APPS.forEach(function (app) {
+  const body = fn(readApp(app.file), 'function ' + app.enterFn + '(');
+  const guarded = new RegExp('if\\s*\\(\\s*' + app.changedFn
+      + '\\s*\\([^)]*\\)\\s*\\)\\s*' + app.purgeFn + '\\s*\\(');
+  ok(app.name + ': ' + app.enterFn + '() calls the purge, GUARDED',
+    guarded.test(body),
+    guarded.test(body) ? '' : 'the two functions can both be perfect and the '
+      + 'roster still survives a second sign-in, because nothing connects them');
+  const discarded = new RegExp('(^|[;{}])\\s*' + app.changedFn + '\\s*\\([^)]*\\)\\s*;');
+  ok(app.name + ': ...and the guard result is not DISCARDED',
+    !discarded.test(body),
+    discarded.test(body) ? app.changedFn + ' is called on its own line' : '');
+});
 
 // -- ARM 0: THE SCOPE ITSELF IS DERIVED, NOT REMEMBERED --------------------
 // api/sd-data.js is the only place that scopes a read to the caller's own

@@ -109,6 +109,106 @@ check('the widest band belongs to the barrier whose evidence was never run',
       == 'item 65',
       [(b['item'], round(b['p_fail'][1] - b['p_fail'][0], 2)) for b in R.BARRIERS])
 
+# ── ADDED 2026-09-16 BY THIS TOOL'S FIRST ARTICLE INSPECTION ────────────────
+# Two claims in the header had no arm. Both are mechanically checkable, so
+# neither is a `cannot-test` -- they were simply unverified, which is the state
+# FAI exists to surface.
+import io as _io                                                 # noqa: E402
+
+_SRC = _io.open(os.path.join(REPO, 'tools', 'risk_event_tree.py'), encoding='utf-8').read()
+
+# CLAIM: exit 2 when it could not run. Every exit-code arm above tests 0 and 1.
+_saved_wcr = R.worst_case_range
+try:
+    R.worst_case_range = lambda *a, **k: (_ for _ in ()).throw(RuntimeError('injected'))
+    check('CLAIM "exit 2 when the tree could not be evaluated": a computation '
+          'that raises is COULD NOT RUN, not a zero',
+          R.main(['--quiet']) == 2, 'expected exit 2')
+finally:
+    R.worst_case_range = _saved_wcr
+
+# CLAIM: REPORT ONLY. Stated in the header and enforced nowhere until now.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _ROC                                # noqa: E402
+_RUNNER = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
+check('CLAIM "report only": risk_event_tree.py is NOT in the report-only RUNNER registry',
+      'risk_event_tree.py' not in _RUNNER, _RUNNER[:4])
+check('...and IS recorded as a deliberate NOT-PROMOTED decision',
+      'risk_event_tree.py' in [x[0] for x in _ROC.NOT_PROMOTED])
+_GATE = _io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                 encoding='utf-8', errors='replace').read()
+check('...and the push gate does not invoke it',
+      'risk_event_tree' not in _GATE)
+
+# ── 6. ITEM 65's BAND IS DERIVED FROM THE ARTEFACT, IN ALL FOUR STATES ─────
+# The band is the whole point of this barrier: it is wide because one question
+# is unanswered, and it must narrow ONLY when that question is answered. A band
+# that narrows on an artefact that exists but says nothing would be the worst
+# of the four outcomes, so every state is driven here.
+import io                                                        # noqa: E402
+import json                                                      # noqa: E402
+import tempfile                                                  # noqa: E402
+
+_real = R.BACKUP_VERIFICATION
+_fd, _tmp = tempfile.mkstemp(suffix='.json')
+os.close(_fd)
+
+
+def band_with(doc):
+    if doc is None:
+        R.BACKUP_VERIFICATION = os.path.join(os.path.dirname(_tmp), 'no-such-file.json')
+    else:
+        # WRITTEN AND CLOSED. The first version left the handle open, so
+        # the file was still buffered when backup_band() read it and every
+        # arm below saw the no-artefact branch -- a probe passing its first
+        # arm for the reason its remaining arms were failing.
+        with io.open(_tmp, 'w', encoding='utf-8') as _fh:
+            _fh.write(json.dumps(doc))
+        R.BACKUP_VERIFICATION = _tmp
+    try:
+        return R.backup_band()
+    finally:
+        R.BACKUP_VERIFICATION = _real
+
+
+try:
+    b, note = band_with(None)
+    check('with NO artefact the band stays at its widest and says why',
+          b == (0.30, 0.95) and 'NEVER' in note.upper() or 'never been run' in note,
+          (b, note[:90]))
+    b2, n2 = band_with({'run_on': '2026-09-16'})
+    check('an artefact that does NOT answer is not treated as a clean result',
+          b2 == (0.30, 0.95) and 'DOES NOT ANSWER' in n2, (b2, n2[:90]))
+    b3, n3 = band_with({'run_on': '2026-09-16', 'uncovered': 0})
+    check('uncovered = 0 NARROWS the band -- the mechanism can move',
+          b3[1] < 0.95 and b3[0] < 0.30, (b3, n3[:90]))
+    b4, n4 = band_with({'run_on': '2026-09-16', 'uncovered': 2,
+                        'uncovered_names': 'supabase_admin, other'})
+    check('uncovered > 0 moves the band UP, not down -- a found gap is worse '
+          'news than an unasked question', b4[0] > 0.30 and 'GAP' in n4.upper(),
+          (b4, n4[:90]))
+    check('...and the names of the uncovered roles travel into the note',
+          'supabase_admin' in n4, n4[:140])
+
+    # AND THE TREE ACTUALLY USES IT. A derived band nothing reads is a constant
+    # with extra steps.
+    check('the shipped B4 band matches what backup_band() returns today',
+          [x for x in R.BARRIERS if x['id'] == 'B4'][0]['p_fail']
+          == R.backup_band()[0],
+          [x for x in R.BARRIERS if x['id'] == 'B4'][0]['p_fail'])
+    check('...and B4 carries the verification note into the output',
+          bool([x for x in R.BARRIERS if x['id'] == 'B4'][0].get('verification')))
+
+    # THE TEMPLATE EXISTS AND IS NOT THE LIVE FILE. A template that is also the
+    # artefact would make the band narrow on an empty form.
+    tpl = os.path.join(REPO, 'docs', 'backup-reader-verification.template.json')
+    check('a fill-in template exists', os.path.exists(tpl), tpl)
+    check('...and it is NOT the file the tool reads, so an unfilled form cannot '
+          'narrow anything', os.path.abspath(tpl) != os.path.abspath(R.BACKUP_VERIFICATION))
+finally:
+    if os.path.exists(_tmp):
+        os.remove(_tmp)
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

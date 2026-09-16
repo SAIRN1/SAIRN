@@ -137,6 +137,37 @@ check('the JSON carries the assumptions, so a consumer sees what the argument '
 check('...and the context that bounds every leaf',
       len(doc.get('context') or []) >= 2, doc.get('context'))
 
+# ── ADDED 2026-09-16 BY THIS TOOL'S FIRST ARTICLE INSPECTION ────────────────
+# Two claims in the header had no arm. Both are mechanically checkable, so
+# neither is a `cannot-test` -- they were simply unverified, which is the state
+# FAI exists to surface.
+import io as _io                                                 # noqa: E402
+
+_SRC = _io.open(os.path.join(REPO, 'tools', 'assurance_case.py'), encoding='utf-8').read()
+
+# CLAIM: exit 2 when it could not run. Every exit-code arm above tests 0 and 1.
+_saved_eval = A.evaluate
+try:
+    A.evaluate = lambda *a, **k: (_ for _ in ()).throw(RuntimeError('injected'))
+    check('CLAIM "exit 2 when the argument could not be evaluated": an '
+          'evaluation that raises is COULD NOT RUN, not a refusal',
+          A.main(['--quiet']) == 2, 'expected exit 2')
+finally:
+    A.evaluate = _saved_eval
+
+# CLAIM: REPORT ONLY. Stated in the header and enforced nowhere until now.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _ROC                                # noqa: E402
+_RUNNER = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
+check('CLAIM "report only": assurance_case.py is NOT in the report-only RUNNER registry',
+      'assurance_case.py' not in _RUNNER, _RUNNER[:4])
+check('...and IS recorded as a deliberate NOT-PROMOTED decision',
+      'assurance_case.py' in [x[0] for x in _ROC.NOT_PROMOTED])
+_GATE = _io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                 encoding='utf-8', errors='replace').read()
+check('...and the push gate does not invoke it',
+      'assurance_case' not in _GATE)
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)
