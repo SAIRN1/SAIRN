@@ -4227,3 +4227,74 @@ loudly, so nothing is unguarded; what is missing is the repo-wide sweep seeing
 them. A regex JS object-literal parser is a fragile thing to add to cover two
 files that already check themselves, so this is a measurement handed on rather
 than a fix.
+
+## 2026-09-16 (continued) -- the trial gate's column, a dormant import that was not debris, and two more Tier A controls
+
+### The trial gate, and the assignment's app name did not survive a read
+
+`trial_ends_at` IS NOT A COLUMN on `public.license_keys`. Measured against the
+2026-09-13 capture: eleven columns, and neither `trial_ends_at` nor
+`subscription_status` is among them. Three handlers carry an identical inline
+copy of the check and each reads a field that does not exist, gets `undefined`,
+and falls through to allowed.
+
+**The brief said SAIRNcash and the evidence says otherwise, so the correction is
+in the file rather than assumed away.** SAIRNcash is a consumer app with **no
+licence key**. Its trial lives in `public.sairncash_trial`, which already
+carries `expires_at`, and `api/sairncash/ai.js` already compares it — its own
+comment reads *"An expired trial is not an active one. Compared here rather than
+trusted."* **That gate works.** The migration touches the shared B2B licence
+table and changes nothing about SAIRNcash. If a SAIRNcash trial change was also
+intended, it is separate work with no evidence behind it yet.
+
+**No backfill, and that is the decision rather than an omission.** A backfill is
+the only way this migration could refuse a real customer and there is nobody to
+expire. Every row keeps NULL, which reads as not-expired — byte-for-byte today's
+behaviour. **What changes is capability. The first row that gets a date is the
+first row that can be refused**, and the file carries the query naming exactly
+who that would be: the licences with no `stripe_subscription_id`, because one
+WITH a subscription id is a cannot-tell and is never refused.
+
+**`subscription_status` deliberately not bundled** — the same gate reads it and
+it is also absent, but **nothing in `api/` writes it**. Adding it would create a
+column that is NULL for ever, change no outcome, and trip its own tripwire for
+nothing. It needs a writer first, which is a Stripe-webhook decision.
+
+**The tripwire is left alone on purpose.** `api/license-trial-gate.test.js`
+reads the live SNAPSHOT, not `sql/`, so it stays green until the migration is
+actually run and the snapshot re-captured. That is the correct sequencing and it
+is why writing the file breaks nothing: 18/18 still pass.
+
+### The dormant import was not debris
+
+`dispatch_state.py` carried an `import subprocess` nothing called. It is what
+the read somebody started and stopped would have needed, and **the divergence
+was visible in the tool's own output**: `live_claims()` read the WORKING TREE
+and called anything `status == 'active'` live, while `sairn_claim.py` reads
+**origin/main** and applies the **4-hour expiry**. This panel listed a
+**74.4-hour-old** `fourth` claim as ACTIVE while `sairn_claim.py list` did not
+show it at all.
+
+**Both differences run in the LOOSE direction, which is why nobody noticed: a
+panel listing MORE active claims reads as more thorough.** Fixed by calling
+`load_all(from_origin=True)` rather than growing a second reader, and the import
+is gone because sairn_claim owns the subprocess calls now. The fail-closed arm
+was DRIVEN — sairn_claim made unimportable, the sabotage verified to have
+applied first — and it returns a refusal naming the tool rather than an empty
+list. An empty list prints *"0 active claims"*, which is the sentence that sends
+a session into work somebody else is already doing.
+
+**And one line of my own commit message was wrong before it was checked:** it
+said `--fixtures` still passes. This tool has no `--fixtures` flag. Measured
+against a stashed clean tree, not assumed.
+
+### Two more Tier A suites proved: 19 -> 20 controlled
+
+**SAIRNvet seed suppression** and **the SAIRNbiz three-way match**. The second
+one's fifth refusal is the part worth keeping: *"no such PO"* has no surgical
+disable — the only one leaves `pos[0]` undefined and the function throws, so the
+suite would go red on a CRASH rather than on the gate being soft. **A mutation
+caught for the wrong reason proves nothing about the arm it was meant to
+exercise**, so it is written at the top of the file rather than quietly skipped.
+An untested branch inside a tested function is exactly what a control should
+surface.
