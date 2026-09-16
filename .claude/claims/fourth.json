@@ -1545,6 +1545,16 @@
       "claimed_at_epoch": 1789567217.4485605,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789570390",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "rebase resolve semantic merge for the two json registers",
+      "claimed_at": "2026-09-16T14:53:10Z",
+      "claimed_at_epoch": 1789570390.5941412,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
