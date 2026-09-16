@@ -69,6 +69,8 @@ function makeDb(opts) {
   const db = {
     audit: audit,                     // table -> rows[]
     checkpoints: [],                  // written rows
+    heartbeats: [],                   // every beat() that reached the wire
+
     missingCheckpointTable: !!opts.missingCheckpointTable,
     shortTotal: opts.shortTotal || 0, // force Content-Range to over-state
     countMode: opts.countMode || 'exact', // 'exact' | 'star' | 'none'
@@ -87,6 +89,15 @@ function makeDb(opts) {
         json: async () => body,
         text: async () => JSON.stringify(body)
       });
+      // THE HEARTBEAT TABLE IS MODELLED so a beat can be OBSERVED rather
+      // than assumed. Without this the stub's fallthrough answered these
+      // POSTs, beat() swallowed the result by design, and an arm could not
+      // tell a job that beat from one that did not -- which is the exact
+      // indistinguishability the fix below exists to remove.
+      if (table === 'sairn_cron_heartbeat') {
+        db.heartbeats.push(JSON.parse(init.body));
+        return json(null, 201);
+      }
       if (table === 'sairn_audit_checkpoint') {
         if (db.missingCheckpointTable) {
           return json({ code: 'PGRST205', message: 'relation does not exist' }, 404);
@@ -458,6 +469,75 @@ t('AN INCOMPLETE WINDOW READ REFUSES -- a short digest is not a digest', async (
   assert.strictEqual(out.body.error.code, 'WINDOW_INCOMPLETE');
   assert.strictEqual(db.checkpoints.length, 0, 'it wrote a partial checkpoint anyway');
 });
+
+// ── THE TWO REFUSALS MUST BEAT, AND UNTIL 2026-09-16 NEITHER DID ──────────
+// The success path beats and the generic catch beats. These two early returns
+// answered 503 and returned, so a job that fires daily and refuses daily was
+// INDISTINGUISHABLE from a job that never fires: cron-watchdog classifies a job
+// with no heartbeat row as NEVER_BEAT, and its own message offers both readings
+// ("it has never completed a run, OR the schema predates it") because it cannot
+// tell them apart.
+//
+// FOUND BY READING THIS FILE WHILE INVESTIGATING A NEVER_BEAT REPORT THAT
+// TURNED OUT TO BE HISTORICAL. The job is healthy today -- cron-watchdog at
+// 2026-09-16T21:15:28Z reports /api/audit-checkpoint=ok -- so this is not the
+// cause of anything that happened. It is the reason the next failure would have
+// been unreadable, and the existing arms below could not have caught it: they
+// assert the 503 and the error code, which is the RESPONSE, and Vercel throws
+// the response body away on a cron invocation.
+t('NOT_PROVISIONED still BEATS -- a daily refusal must not look like silence', async () => {
+  const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] },
+                      missingCheckpointTable: true });
+  const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+  assert.strictEqual(out.code, 503);
+  assert.strictEqual(db.heartbeats.length, 1, 'it refused without beating');
+  const hb = db.heartbeats[0];
+  assert.strictEqual(hb.job, '/api/audit-checkpoint');
+  assert.strictEqual(hb.outcome, 'failed',
+    'a refusal that wrote nothing is not `partial` -- partial means the work was done');
+  assert.strictEqual(hb.detail.refused, 'NOT_PROVISIONED');
+  assert.strictEqual(hb.detail.retry_helps, false,
+    'retrying cannot create a table; the watchdog should not be told to retry');
+});
+
+t('WINDOW_INCOMPLETE still BEATS, and says a retry CAN help', async () => {
+  const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] }, shortTotal: 99 });
+  const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+  assert.strictEqual(out.code, 503);
+  assert.strictEqual(db.heartbeats.length, 1, 'it refused without beating');
+  const hb = db.heartbeats[0];
+  assert.strictEqual(hb.outcome, 'failed');
+  assert.strictEqual(hb.detail.refused, 'WINDOW_INCOMPLETE');
+  assert.strictEqual(hb.detail.retry_helps, true,
+    'a short read is transient -- this one IS worth retrying, and the two '
+    + 'refusals must not be told apart only by their code');
+  assert.strictEqual(db.checkpoints.length, 0, 'it wrote a partial checkpoint anyway');
+});
+
+// THE CONTROLS FOR BOTH, so the arms above are not satisfied by a handler that
+// beats unconditionally or beats the same thing every time.
+t('CONTROL: a CLEAN run beats ok, not failed', async () => {
+  const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] } });
+  const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+  assert.strictEqual(out.code, 200);
+  assert.strictEqual(db.heartbeats.length, 1);
+  assert.strictEqual(db.heartbeats[0].outcome, 'ok');
+  assert.strictEqual(db.heartbeats[0].detail.refused, undefined,
+    'a clean run is reporting a refusal');
+});
+
+t('CONTROL: every beat carries the interval, or the watchdog cannot age it',
+  async () => {
+    for (const opts of [{ missingCheckpointTable: true }, { shortTotal: 99 }, {}]) {
+      const db = makeDb(Object.assign(
+        { audit: { sairnlaw_audit_log: [row('a', D0 + 1)] } }, opts));
+      await call(db, 'checkpoint', D0 + 2 * DAY);
+      assert.strictEqual(db.heartbeats.length, 1, JSON.stringify(opts));
+      assert.strictEqual(db.heartbeats[0].expected_interval_seconds, 86400,
+        JSON.stringify(opts) + ': a beat with no interval is refused by beat() '
+        + 'itself and would leave the job looking silent anyway');
+    }
+  });
 
 t('A WINDOW WHOSE ROW COUNT IS NOT STATED REFUSES TOO -- the guard must not vanish with its input', async () => {
   // FOUND 2026-09-14 BY AN INDEPENDENT REVIEW OF THIS FILE, by DRIVING the

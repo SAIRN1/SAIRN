@@ -185,6 +185,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`audit-checkpoint` refused SILENTLY on both of its two refusal paths &mdash; a job failing daily was indistinguishable from a job that never fired** | **FIXED 2026-09-16 (Hank)** &mdash; `api/audit-checkpoint.js` beats on `NOT_PROVISIONED` and `WINDOW_INCOMPLETE`; 4 new arms in `api/audit-checkpoint.test.js` (46 total), 3 sabotages, all bite | `api/audit-checkpoint.test.js` |
 | **The separation audit trail becomes a DOCUMENT somebody can be shown, and a CSV they can check it against** | **BUILT 2026-09-16 (Hank)** &mdash; `--report` and `--csv` on the existing `tools/hover_separation_audit.py`; 19 new arms in `tests/run_hover_separation_probe.py` (91 total), 3 sabotages | `tests/run_hover_separation_probe.py` |
 | **The shared status registry &mdash; what every agent is doing, live, without a push/pull. The gap `session_lock_check.py` named in its own header and put out of scope** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/sairn_status.py`, `tests/run_sairn_status_probe.py` **55 arms**, wired into `SessionStart`, registered NOT-PROMOTED, FAI recorded. `docs/2026-09-16-shared-st | `tests/run_sairn_status_probe.py` |
 | **The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the five were resources that own no table at all** | **RE-DERIVED AND THE TOOL CORRECTED 2026-09-16 (Hank)** &mdash; `removal_path_check.py` gains a DERIVED bucket, counted and named; Tier A **58 &rarr; 56**. One real new arrival, `sb_ts`, left as a liv | `tests/run_removal_path_probe.py` |
@@ -594,7 +595,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 510   tests/**, api/*.test.js
-  open-work rows citing a test       264   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       265   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                57   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

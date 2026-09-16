@@ -405,7 +405,31 @@ module.exports = async (req, res) => {
       recent_verify_windows: action === 'checkpoint' ? RECENT_VERIFY_WINDOWS : null
     });
   } catch (err) {
+    // ── THESE TWO REFUSALS BEAT TOO, AND THEY DID NOT (fixed 2026-09-16) ────
+    // The success path beats and the generic catch beats. These two early
+    // returns did neither -- they answered 503 and returned.
+    //
+    // WHAT THAT COSTS IS NOT A MISSING LOG LINE. `cron-watchdog` classifies a
+    // job with no heartbeat row as NEVER_BEAT, whose own message reads "it has
+    // never completed a run, or sql/cron_heartbeat_schema.sql predates it". So
+    // a job that fires daily and refuses daily -- because its table is absent,
+    // or because it could not read a whole window -- is INDISTINGUISHABLE from
+    // a job that never fires at all. The one state that most needs telling
+    // apart from silence produced silence.
+    //
+    // `failed` rather than `partial` in both cases, deliberately: `partial` in
+    // this file means the job DID its work and the ANSWER is a finding. Here
+    // nothing was written, so the job did not do its work, and calling that
+    // partial would put a refusal in the same bucket as a completed run that
+    // found something.
     if (isMissingTable(err && err.detail)) {
+      await beat({
+        job: '/api/audit-checkpoint', outcome: 'failed',
+        expected_interval_seconds: 86400,
+        detail: { refused: 'NOT_PROVISIONED',
+                  why: 'sql/audit_checkpoint_schema.sql has not been run',
+                  retry_helps: false }
+      });
       res.status(503).json({
         error: {
           code: 'NOT_PROVISIONED',
@@ -420,6 +444,13 @@ module.exports = async (req, res) => {
       // COULD NOT READ THE WHOLE WINDOW is a third state and must not be filed
       // as either a clean checkpoint or a tampering finding.
       console.error('audit-checkpoint: paging incomplete', err.detail);
+      await beat({
+        job: '/api/audit-checkpoint', outcome: 'failed',
+        expected_interval_seconds: 86400,
+        detail: { refused: 'WINDOW_INCOMPLETE',
+                  why: 'a window could not be read in full, so nothing was written',
+                  retry_helps: true }
+      });
       res.status(503).json({
         error: {
           code: 'WINDOW_INCOMPLETE',

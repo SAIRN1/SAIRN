@@ -3601,6 +3601,55 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
     },
     {
+      "commit": "3ab0417801e1",
+      "date": "2026-09-16",
+      "subject": "chore(claims): cc releases cc",
+      "files": [
+        ".claude/claims/cc.json"
+      ],
+      "lines_added": 2,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/audit-checkpoint.js refused SILENTLY on both of its refusal paths. NOT_PROVISIONED (the checkpoint table is absent) and WINDOW_INCOMPLETE (a window could not be read in full) each answered 503 and returned WITHOUT a heartbeat, while the success path and the generic catch both beat. cron-watchdog classifies a job with no heartbeat row as NEVER_BEAT and its own message offers both readings because it cannot tell them apart -- so a job firing daily and refusing daily would have been indistinguishable from a job that never fires at all. Found by reading the file while investigating a NEVER_BEAT report that turned out to be historical.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The NOT_PROVISIONED and WINDOW_INCOMPLETE early returns answered 503 and returned without calling beat(), while the success path and the generic catch both beat.",
+          "action_status": "done",
+          "action": "both refusal paths now beat with outcome failed and a detail carrying refused and retry_helps."
+        },
+        {
+          "kind": "detection",
+          "factor": "Four existing arms already drove both refusal paths and every one asserted the 503 and the error CODE -- the response, which Vercel throws away on a cron invocation. The heartbeat is the only thing that leaves the function and nothing asserted it.",
+          "action_status": "done",
+          "action": "four new arms assert the beat itself, two of them controls so the arms are not satisfied by a handler that beats unconditionally."
+        },
+        {
+          "kind": "process",
+          "factor": "The test harness modelled the checkpoint table and not sairn_cron_heartbeat, so beats fell through to the stub default, beat() swallowed the result by design, and no arm COULD have observed one.",
+          "action_status": "done",
+          "action": "the heartbeat table is modelled and every beat is captured on db.heartbeats."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for cron endpoints whose refusal paths return without beating. api/audit-checkpoint.js is fixed; the same question has not been asked of /api/alf-alerts, /api/sairndental/send-reminder or /api/cron-watchdog, all of which use the same beat() helper and all of which have early returns."
+    },
+    {
       "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
@@ -5352,7 +5401,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
