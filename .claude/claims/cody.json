@@ -1269,6 +1269,16 @@
       "claimed_at_epoch": 1789520825.2350435,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789524523",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 86 battleshort bypass log, item 72 practitioner validation, item 74 schedule pressure crosscheck, item 26 phase 2 tiering recheck copy exactly sweep",
+      "claimed_at": "2026-09-16T02:08:43Z",
+      "claimed_at_epoch": 1789524523.9357111,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
