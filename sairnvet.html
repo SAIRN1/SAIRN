@@ -271,6 +271,7 @@
 </div>
 <div class="sidebar-section"><div class="sidebar-section-title">Pharmacy &amp; Compliance</div>
 <button class="sidebar-btn" onclick="svNav('panel-controlled')">Controlled Substances</button>
+<button class="sidebar-btn" onclick="svNav('panel-doseaudit')">Dosing Audit Trail</button>
 <button class="sidebar-btn" onclick="svNav('panel-compliance')">Compliance</button>
 </div>
 <div class="sidebar-section"><div class="sidebar-section-title">Business &amp; Practice Mgmt</div>
@@ -1177,6 +1178,51 @@
 <thead><tr><th>Drug</th><th>Schedule</th><th>On Hand</th><th>Last Transaction</th><th>Balance Check</th></tr></thead>
 <tbody id="controlled-tbody"></tbody></table></div></div>
 <div class="card"><h3>Log Controlled Substance Use</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;"><input type="text" id="log-drug" placeholder="Drug name (e.g., Ketamine 100mg/mL)"><input type="text" id="log-schedule" placeholder="Schedule (e.g., III)"><input type="number" id="log-amount" placeholder="Amount used"><input type="text" id="log-patient" placeholder="Patient"><input type="text" id="log-witness" placeholder="Witness (required for Sched II)"><button class="btn" onclick="logControlledUse()">Log Entry</button></div></div>
+</div>
+
+<!-- ── THE DOSING AUDIT TRAIL, AND WHY IT IS A SEPARATE PANEL ──────────────
+     Item 39. logDoseAudit() has written this trail since the app shipped and
+     NOTHING IN THE PRODUCT HAS EVER READ IT. The rows were retrievable by a
+     direct authenticated API call; they were not retrievable THROUGH THE
+     PRODUCT, by the person who would be asked for them, in the situation where
+     they would be asked -- which on a DEA-relevant trail is the only situation
+     that counts.
+     It is NOT folded into Controlled Substances above. That panel is the
+     REGISTER: what is on hand and whether the balance reconciles. This is the
+     TRAIL: what was calculated, refused, signed off and witnessed, including
+     the refusals, which never appear in a balance. Two different questions and
+     two different readers. -->
+<div id="panel-doseaudit" class="panel">
+<div class="panel-header">
+<h1 class="panel-title">Dosing Audit Trail</h1>
+<p class="panel-desc">Every controlled-substance dose calculated, refused, signed off or witnessed &mdash; the record an inspector asks for</p>
+</div>
+<div class="panel-actions">
+<button class="btn btn-sm" onclick="exportTableCSV('panel-doseaudit-table','dosing-audit-trail')">Export CSV</button>
+<button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
+<button class="btn btn-secondary btn-sm" onclick="svRenderDoseAudit()">Reload from server</button>
+</div>
+<!-- THE SOURCE BANNER IS NOT DECORATION. The local copy is capped at 500
+     entries; the server copy is not. A trail shown from the local store may be
+     incomplete, and a compliance record that does not say which copy you are
+     looking at is worse than one that refuses to load. -->
+<div id="doseaudit-source" class="card" style="margin-bottom:12px"></div>
+<div class="card"><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px">
+<input type="date" id="doseaudit-from" onchange="svRenderDoseAuditTable()" title="From date">
+<input type="date" id="doseaudit-to" onchange="svRenderDoseAuditTable()" title="To date">
+<input type="text" id="doseaudit-q" placeholder="Filter: drug, patient, type…" oninput="svRenderDoseAuditTable()">
+<button class="btn btn-secondary btn-sm" onclick="svClearDoseAuditFilters()">Clear filters</button>
+</div>
+<div id="doseaudit-count" style="font-size:13px;opacity:.85;margin-bottom:8px"></div>
+<div class="sv-tw"><table id="panel-doseaudit-table">
+<thead><tr><th>When (UTC)</th><th>Event</th><th>Drug</th><th>Patient</th><th>Witness</th><th>Detail</th><th>Id</th></tr></thead>
+<tbody id="doseaudit-tbody"></tbody></table></div></div>
+<div class="card" style="font-size:13px;opacity:.9">
+<h3 style="margin-top:0">What this record is, and what it is not</h3>
+<p><strong>It is append-only.</strong> Nothing in this product edits or deletes an entry, and the server grants no delete on it.</p>
+<p><strong>It is not tamper-evident.</strong> Entry ids are a transport key, not a hash chain. Anyone with database access could alter a row and this screen would not know. Making the trail tamper-evident is a different piece of work and it has not been done.</p>
+<p><strong>An <code>au&hellip;</code> id was issued at the moment of the event. An <code>ac&hellip;</code> id was computed later</strong>, from what the entry already contained, for entries written before ids existed. The prefix is the only way to tell them apart and it is shown in the table for that reason.</p>
+</div>
 </div>
 
 <div id="panel-compliance" class="panel">
@@ -7691,6 +7737,13 @@ function svNav(panelId){
   // access card and a render function that nothing invoked, so the card stayed
   // empty forever and the gap looked closed.
   if(panelId==='panel-access' && typeof svRenderAccess==='function') svRenderAccess();
+  // THE DOSING TRAIL IS RENDERED ON ARRIVAL FOR THE SAME REASON AS ACCESS, and
+  // the reason is recorded two lines above: a render function nothing invokes
+  // leaves a panel permanently empty while the gap LOOKS closed. It is also a
+  // live server read -- the local copy is capped at 500 entries and the server
+  // copy is not -- so painting it once at sign-in would show a trail that is
+  // stale, and on this record stale means incomplete.
+  if(panelId==='panel-doseaudit' && typeof svRenderDoseAudit==='function') svRenderDoseAudit();
   window.scrollTo(0,0);
 }
 // backward-compat alias used by earlier builds
@@ -8702,6 +8755,149 @@ function askAI(){
       document.getElementById('ai-result').textContent=rep2;
     }).catch(function(e){});
   }).catch(function(e){});
+}
+
+// ===================================================================
+// THE DOSING AUDIT TRAIL READER (item 39, 2026-09-16)
+//
+// logDoseAudit() has written sv_audit_log since this app shipped and NOTHING
+// READ IT. Scoped 2026-09-14 and stated precisely then, because the stronger
+// claim would have been false: the rows ARE retrievable by a direct
+// authenticated API call. They were not retrievable THROUGH THE PRODUCT, by
+// the person who would be asked for them, in the situation where they would be
+// asked -- which on a DEA-relevant trail is the only situation that counts.
+//
+// ── THE SERVER IS THE SOURCE, AND SAYING WHICH ONE IS SHOWING IS HALF THE
+// ── FEATURE.
+// The local store is capped at SV_AUDIT_CAP (500) and that cap may evict --
+// only entries the server has confirmed, but evict nonetheless. So the local
+// copy can be a strict subset of the record, and a compliance screen that
+// showed it without saying so would be asserting completeness it does not
+// have. The read goes to the server first; local is a LABELLED fallback, never
+// a silent one.
+//
+// A FAILED READ IS NOT AN EMPTY TRAIL. svData() answers null on any refusal or
+// network error, and an empty array is a legitimate answer for a practice that
+// has dosed nothing. Those two must never render the same, so the null case
+// says the read failed and the empty case says the trail is empty.
+var _svAuditRows = [];
+var _svAuditSource = '';
+
+function svDoseAuditLocal(){
+  try{ var a = JSON.parse(localStorage.getItem(SV_AUDIT_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+  catch(e){ return []; }
+}
+
+function svRenderDoseAudit(){
+  var box = document.getElementById('doseaudit-source');
+  if(box) box.innerHTML = '<strong>Loading…</strong> reading the trail from the server.';
+  var done = function(rows, source, note){
+    _svAuditRows = rows || [];
+    _svAuditSource = source;
+    if(box) box.innerHTML = note;
+    svRenderDoseAuditTable();
+  };
+  var local = svDoseAuditLocal();
+  var p = (typeof svData === 'function') ? svData('read', SV_AUDIT_KEY, {}) : null;
+  if(!p || typeof p.then !== 'function'){
+    done(local, 'local',
+      '<strong>Showing this device only.</strong> The server could not be asked, so this is the local copy, which is capped at '
+      + SV_AUDIT_CAP + ' entries and may be incomplete. Do not treat it as the full record.');
+    return;
+  }
+  p.then(function(rows){
+    if(rows === null || rows === undefined){
+      // NOT an empty trail -- the read failed. Fall back to local and SAY SO.
+      done(local, 'local',
+        '<strong>The server read failed.</strong> Showing the local copy from this device, which is capped at '
+        + SV_AUDIT_CAP + ' entries and may be incomplete. This is not the full record; use “Reload from server” once connectivity is back.');
+      return;
+    }
+    if(!Array.isArray(rows)) rows = [];
+    done(rows, 'server',
+      '<strong>Showing the server record</strong> — ' + rows.length + ' entr' + (rows.length === 1 ? 'y' : 'ies')
+      + '. The server copy is not capped; this device holds ' + local.length + '.');
+  });
+}
+
+function svClearDoseAuditFilters(){
+  ['doseaudit-from','doseaudit-to','doseaudit-q'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  svRenderDoseAuditTable();
+}
+
+// Renders whatever _svAuditRows currently holds. Split from the READ so the
+// filters never re-hit the network -- a practice narrowing a date range during
+// an inspection should not be able to turn a loaded trail into a failed one.
+function svRenderDoseAuditTable(){
+  var tb = document.getElementById('doseaudit-tbody');
+  var cnt = document.getElementById('doseaudit-count');
+  if(!tb) return;
+  var from = (document.getElementById('doseaudit-from')||{}).value || '';
+  var to   = (document.getElementById('doseaudit-to')||{}).value || '';
+  var q    = ((document.getElementById('doseaudit-q')||{}).value || '').toLowerCase().trim();
+
+  var rows = (_svAuditRows || []).slice().filter(function(e){
+    if(!e || typeof e !== 'object') return false;
+    var ts = String(e.timestamp || '');
+    // Date comparison on the ISO PREFIX, not on a parsed Date. An entry whose
+    // timestamp is missing or unparseable must not silently drop out of a
+    // compliance record because of a filter it cannot answer -- so a blank
+    // filter keeps everything and a set filter keeps an undated entry too,
+    // which is the fail-visible direction.
+    if(from && ts && ts.slice(0,10) < from) return false;
+    if(to   && ts && ts.slice(0,10) > to)   return false;
+    if(q){
+      var hay = JSON.stringify(e).toLowerCase();
+      if(hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+  rows.sort(function(a,b){ return String(b.timestamp||'').localeCompare(String(a.timestamp||'')); });
+
+  if(cnt){
+    var undated = rows.filter(function(e){ return !e.timestamp; }).length;
+    cnt.textContent = rows.length + ' of ' + (_svAuditRows||[]).length + ' entries shown'
+      + (_svAuditSource ? ' (source: ' + _svAuditSource + ')' : '')
+      + (undated ? ' — ' + undated + ' with no timestamp, kept rather than filtered out' : '');
+  }
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="7" style="opacity:.75">'
+      + ((_svAuditRows||[]).length
+          ? 'No entries match these filters.'
+          : 'No entries. On a practice that has recorded no controlled-substance dosing this is the correct answer — it is not a failed read; the banner above says which copy was consulted.')
+      + '</td></tr>';
+    return;
+  }
+  var esc = function(v){
+    return String(v === undefined || v === null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  };
+  // The DETAIL column carries whatever the entry recorded beyond the named
+  // columns, rather than a fixed field list. logDoseAudit() is called from
+  // fourteen sites with different shapes, and a reader that showed only the
+  // fields it knew about would quietly drop the reason a dose was REFUSED --
+  // which is the entry an inspector is most likely to be asking about.
+  var KNOWN = {timestamp:1,id:1,type:1,drug:1,patient:1,witness:1};
+  tb.innerHTML = rows.map(function(e){
+    var extra = Object.keys(e).filter(function(k){ return !KNOWN[k]; })
+      .map(function(k){ return k + ': ' + (typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k]); })
+      .join(', ');
+    var id = String(e.id || '');
+    var idCell = id
+      ? esc(id) + (id.indexOf('ac') === 0 ? ' <span title="computed later, from what the entry already contained">(computed)</span>' : '')
+      : '<span title="written before ids existed and never synced">none</span>';
+    return '<tr>'
+      + '<td>' + esc(e.timestamp || '—') + '</td>'
+      + '<td>' + esc(e.type || '—') + '</td>'
+      + '<td>' + esc(e.drug || e.drug1 || '') + '</td>'
+      + '<td>' + esc(e.patient || '') + '</td>'
+      + '<td>' + esc(e.witness || '') + '</td>'
+      + '<td>' + esc(extra) + '</td>'
+      + '<td style="font-family:monospace;font-size:11px">' + idCell + '</td>'
+      + '</tr>';
+  }).join('');
 }
 
 function exportTableCSV(tableId,filename){
