@@ -142,10 +142,64 @@ async function main() {
     // locations had no session requirement at all and a licence key alone
     // could rename or close a yard.
     assert.match(m[0], /'locations':\s*\['read', 'write'\]/);
+    // law_trusttx, 2026-09-16. ATTORNEY IOLTA CLIENT TRUST MONEY -- the one
+    // figure a bar association audits -- and it had NO session gate at all.
+    // Both branches dispatched on the licence hash alone, and the licence key
+    // is shipped to the browser and readable by anyone who can open the app.
+    // Not a session that had gone stale: no session check existed. The adjacent
+    // `law_trust_reconcile` reads THE SAME TABLE forty lines below and verifies
+    // a session AND a role, which is why it survived three reads of the file.
+    //
+    // THIS ARM WAS RED ON origin/main FOR THE RIGHT REASON AND NOBODY FINISHED
+    // IT (fixed 2026-09-16). The count said 9 and the table held 11, so the arm
+    // did exactly what it exists to do -- "add the new resource to this test
+    // and say why it is gated" -- and the answer was never written down. A
+    // suite left red by its own correct finding is a suite whose next finding
+    // is read as noise.
+    assert.match(m[0], /'law_trusttx':\s*\['read', 'write'\]/);
     const pairs = (m[0].match(/'(read|write|reserve)'/g) || []).length;
-    assert.strictEqual(pairs, 9,
+    assert.strictEqual(pairs, 11,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
+
+  // ── EVERY PAIR IN THE TABLE IS DRIVEN SOMEWHERE, AND IT IS SAID WHERE ─────
+  // Added 2026-09-16. The count arm above proves the table has not changed
+  // size; it says nothing about whether anything EXERCISES the entries. GATED
+  // drives 7 of the 11 pairs -- `locations` and `law_trusttx` were added later
+  // and are driven in their own suites, which is right, because law_trusttx
+  // needs a SAIRNlaw session and this file mints StoneDesk ones.
+  //
+  // The failure this prevents is the quiet one: a resource added to the table,
+  // counted by the arm above, and driven by nothing anywhere -- which looks
+  // identical to a covered resource from inside this file.
+  await test('every pair in the gate table is DRIVEN -- here, or in a suite '
+    + 'this arm names', () => {
+      const fs = require('fs');
+      const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
+      const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/);
+      assert.ok(m, 'the gate table is gone');
+      const inTable = (m[0].match(/'([a-z_]+)':\s*\[/g) || [])
+        .map((x) => x.replace(/'|:|\s|\[/g, '')).sort();
+      const drivenHere = [...new Set(GATED.map((p) => p[0]))];
+      // Stated by hand, with the file that does the driving. A derived answer
+      // here would be this arm asserting its own premise.
+      const drivenElsewhere = {
+        locations: 'api/sd-data-locations.test.js',
+        law_trusttx: 'api/sd-data-law-trusttx-session.test.js'
+      };
+      const covered = [...drivenHere, ...Object.keys(drivenElsewhere)].sort();
+      assert.deepStrictEqual(inTable, covered,
+        'a gated resource is driven by nothing: ' +
+        inTable.filter((r) => covered.indexOf(r) === -1).join(', ') +
+        ' -- add arms here, or name the suite that drives it');
+      Object.keys(drivenElsewhere).forEach((r) => {
+        const f = require.resolve('./' + drivenElsewhere[r].replace('api/', ''));
+        assert.ok(fs.existsSync(f), 'the suite named for ' + r + ' does not exist: '
+          + drivenElsewhere[r]);
+        assert.ok(fs.readFileSync(f, 'utf8').indexOf(r) > -1,
+          drivenElsewhere[r] + ' does not mention ' + r + ' at all');
+      });
+    });
 
   await test('an ungated resource is untouched by the table', async () => {
     const { handler } = loadHandler({ noSession: true });
