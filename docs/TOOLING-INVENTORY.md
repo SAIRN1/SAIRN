@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**166 files in `tools/`.** By what actually invokes them:
+**168 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 50 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 41 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 43 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 24 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 37 | nothing runs these at all |
 
@@ -34,12 +34,12 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 109 |
+| CHECKER | 111 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
 
-**41 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**43 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -195,7 +195,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (41)
+## DECIDED -- not promoted, on purpose (43)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -243,9 +243,11 @@ is how a reader stops believing the number.
 | `three_way_match_check.py` | CHECKER | SAME TRACK-RECORD HOLD, and it is the closest of the fourteen to ready: three-state exit, a declared control pair in tests/run_three_way_match_probe.py. It has no FIXTURES block, which is the one gap worth naming rather than waiving -- convention 1 wants the criteria locked against synthetic cases before real data, and this checker judges MONEY (a purchase order, a receipt and an invoice agreeing). A money checker promoted without a blind lock is the combination this platform has least appetite for. Add the fixtures and it is a promotion candidate. |
 | `tier_a_bypass_check.py` | CHECKER | SAME SHAPE, and again its own line already says it: a read-list, not a number to drive to zero. Its interesting column is COULD NOT TELL -- it cannot see whether a refusal runs BEFORE the write, and naming a Tier A resource is not writing to one. A push gate needs a verdict; this tool deliberately produces three states of which the middle one is the useful one. Promote it only if the GATED column ever becomes a real clearance rather than "an identity check and a refusal both appear in this file". |
 | `tier_a_replaceability_check.py` | CHECKER | ITS INPUTS ARE THE REGISTER AND THE REGISTRY, NOT THE PUSH, so a push-time entry would print the same seven sc_* names on every push regardless of what the push contained. The two counts move when a TIER changes or a VERB GRANT changes, neither of which happens often and neither of which a push-time notice would surface any sooner than the probe does. AND IT IS NOT A NUMBER TO DRIVE TO ZERO: a hard delete verb is a decision, not a defect -- the SAIRNcode live probe depends on that verb to clean up after itself. What it reports is that the decision was never made per RESOURCE. Read it when a tier is assigned or a delete verb is granted, which is when its answer can change. Its own weaker half (how many Tier A evidence cells mention recoverability) reads LANGUAGE and says so on every run; promoting that to a push-time figure would turn a documentation-coverage number into an apparent defect count, which is the presentation the tool is written to prevent. |
+| `trend_alarm.py` | CHECKER | ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself. |
 | `va_rule_currency.py` | LIVE | one-off audits against a point in time, not standing checks. |
 | `verify_review_gates.py` | CHECKER | it takes a PLAN FILE and a ledger as arguments and **nothing in this repo references it at all** -- checked by grep across tools/, tests/, .claude/ and the docs, where the only mention was the old hand-written inventory claiming the push gate invoked it. It does not. The workflow it serves either never landed or is gone; deciding that is a separate call from wiring it, so it is recorded here rather than promoted or deleted. |
 | `waf_rule_check.py` | LIVE | CLEAN today, and gate-shaped -- but it makes a LIVE API call, so a transient network failure would read as a finding on a push. That is the false alarm that gets a report-only checker switched off. Run it by hand, or promote it once it distinguishes "drifted" from "could not ask" the way the SQL preflight does. |
+| `weakness_combination.py` | CHECKER | IT REPORTS PAIRS AND REFUSES THE VERDICT, on purpose -- whether two accepted risks compound is a judgement about consequences. A push notice implies a number to drive to zero and the right number of shared-property pairs is not zero; a register of four risks that shared nothing would mean the register was too small, not that the platform was safe. Its one genuinely mechanical half -- whether a trigger claimed as MECHANICAL is watched by anything that runs -- COULD be promoted on its own, and should be split out first rather than promoting the judgement half alongside it. |
 | `write_path_fault_scan.py` | CHECKER | a POINTER, not a gate, and its own output says so on every run: "THIS IS NOT A LIST OF DEFECTS." Of the eight sites it flagged in sairngrounds, FIVE were safe, and of the six in stonedesk, FOUR were. Promoting it would put a standing 25-line report on every push whose entries are candidates to read. Same class as sairn_ai_fact_scan.py above and recorded for the same reason. |
 
 ---
@@ -367,12 +369,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      166   git ls-files tools/
+  tools on disk                      168   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                48   report_only_checks.REGISTRY
-  tools invoked by tests/            110   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     41   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/            112   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     43   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 
