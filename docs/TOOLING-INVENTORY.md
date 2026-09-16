@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**172 files in `tools/`.** By what actually invokes them:
+**173 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 51 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 52 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 45 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 115 |
+| CHECKER | 116 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -128,7 +128,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (51)
+## REPORT-ONLY (52)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -178,6 +178,7 @@ quiet in practice.
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
 | `secrets_inventory.py` | 2026-09-14, and --check rather than the bare report: the bare run prints a ranking and exits 0 whatever it finds, which in a runner that is silent on a clean run means it would never say anything at all | docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved |
+| `service_role_tier_a_gate_check.py` | 2026-09-15, report-only. It reports CLEAN today, which is exactly when a checker is worth the least -- so it is registered to be READ rather than to gate, and its own population figures are printed above every verdict | a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that BYPASSES RLS -- that writes a Tier A resource with no identity check before the write. Separates GATED, PUBLIC_BY_DESIGN (the module declares itself unauthenticated AND carries a limiter) and UNGATED, because a checker that reports a documented public endpoint as a defect is one people switch off |
 | `soup_register_check.py` | 2026-09-12 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running |
 | `subprocess_decode_check.py` | 2026-09-15, report-only on its first day. The correct number IS zero -- unlike every read-list in this registry it is a gate, not a score -- but it is registered rather than made blocking on day one, on the same staging this file uses everywhere: a week of pushes says whether it is quiet, and a check nobody has watched be quiet should not be able to refuse a push | a text-mode subprocess call with no explicit encoding=, which decodes the child output with the LOCALE default (cp1252 on this platform) rather than UTF-8 |
 | `temporary_state_check.py` | 2026-09-14, report-only and deliberately NOT wired into the push gate. What it reports is state that LOOKS temporary, and it cannot read intent -- a long-expiry session token and a leaked suppression flag are the same shape. The only thing --check FAILS on is a declaration naming a scope the vocabulary has no word for, because that needs no threshold and no policy | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING |
@@ -374,11 +375,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      172   git ls-files tools/
+  tools on disk                      173   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                49   report_only_checks.REGISTRY
-  tools invoked by tests/            117   tests/**/*.py, *.js
+  report-only registry                50   report_only_checks.REGISTRY
+  tools invoked by tests/            118   tests/**/*.py, *.js
   recorded NOT-promoted decisions     45   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

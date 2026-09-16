@@ -1428,6 +1428,47 @@ REGISTRY = [
                     'and teeth showing a broken rule 1 OR rule 4 exits COULD '
                     'NOT RUN rather than reporting clean',
     },
+    {
+        'tool': 'service_role_tier_a_gate_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-15, report-only. It reports CLEAN today, which is '
+                    'exactly when a checker is worth the least -- so it is '
+                    'registered to be READ rather than to gate, and its own '
+                    'population figures are printed above every verdict',
+        'catches': 'a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that '
+                   'BYPASSES RLS -- that writes a Tier A resource with no '
+                   'identity check before the write. Separates GATED, '
+                   'PUBLIC_BY_DESIGN (the module declares itself '
+                   'unauthenticated AND carries a limiter) and UNGATED, '
+                   'because a checker that reports a documented public endpoint '
+                   'as a defect is one people switch off',
+        'why_it_matters': 'THIS IS NOT secrets_inventory.py\'s QUESTION AND THE '
+                          'TWO GET CONFUSED BECAUSE THEY SHARE A WORD. '
+                          'docs/SECRETS-INVENTORY.md reports the key "guarded '
+                          'in 61 of 63" -- guarded there means THE CODE CHECKS '
+                          'THE VARIABLE IS SET, a configuration question. It '
+                          'says nothing about whether a CALLER was '
+                          'authenticated before that key wrote a Tier A row. '
+                          'Item 40 left the second question explicitly '
+                          'unresolved on 2026-09-14',
+        'evidence': 'FIRST RUN 2026-09-15: 66 api/ modules read the key; only '
+                    'THREE address a Tier A resource in a write PATH, and all '
+                    'three are correct -- api/sd-data.js GATED, and '
+                    'public-book.js and stonedesk-public.js PUBLIC_BY_DESIGN '
+                    'with limiters. THE STRUCTURAL ANSWER IS THE RESULT: Tier A '
+                    'writes funnel through one gated chokepoint, and the two '
+                    'public endpoints are the declared exceptions. THIS DOES '
+                    'NOT CONTRADICT the open session-gate finding on '
+                    'sd-data.js: this asks whether the MODULE gates, that asks '
+                    'whether a per-resource BRANCH inside it does, and both are '
+                    'true at once. 26-arm probe; three of its eight fixtures '
+                    'exist because the classifier was wrong on a REAL file -- '
+                    'bridge.js (a jsonb key, writes bridge_data), sv-witness.js '
+                    '(killed by the over-correction that fixed bridge.js) and '
+                    'send-reminder.js (writes in helpers above the handler, '
+                    'CRON_SECRET first inside it)',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

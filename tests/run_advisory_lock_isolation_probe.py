@@ -99,8 +99,51 @@ ok('a -- inside a STRING is not treated as a comment',
 
 ok('a /* block */ comment is stripped',
    'HIDDEN' not in C.strip_sql_comments('select 1; /* HIDDEN */ select 2;'))
-ok('nested /* /* */ */ blocks are handled',
-   'HIDDEN' not in C.strip_sql_comments('select 1; /* a /* b */ HIDDEN */ select 2;'))
+
+# ── A LIMITATION OF THE SHARED KIT, RECORDED RATHER THAN HIDDEN ────────────
+# The stripper now delegates to checker_kit.strip_comments(sql=True), which
+# delegates in turn to comment_quote_check -- the canonical implementation this
+# platform says not to fork. It does NOT nest block comments, and Postgres does:
+# `/* a /* b */ HIDDEN */` leaves `HIDDEN */` live.
+#
+# THAT IS REACHABLE, NOT THEORETICAL. Measured 2026-09-15: 13 sql/ files use
+# block comments and TWO of them nest -- full_crud_truncate_sweep_2026-08-24.sql
+# nests SIX deep. It is not reachable for THIS checker, because neither file
+# defines an advisory-lock function, and that is asserted below rather than
+# assumed. The bug is reported as a finding against the canonical stripper and
+# deliberately NOT fixed here: it is a shared module several checkers depend on,
+# and folding that repair into this work would be the orthogonal change.
+nested = C.strip_sql_comments('select 1; /* a /* b */ HIDDEN */ select 2;')
+ok('KNOWN LIMITATION: nested /* /* */ */ blocks are NOT handled by the shared '
+   'stripper, and this arm records it rather than hiding it',
+   'HIDDEN' in nested,
+   'if this went red the canonical stripper gained nesting -- delete this arm '
+   'and restore the positive one')
+_nest_files = []
+for _fn in sorted(os.listdir(os.path.join(REPO, 'sql'))):
+    if not _fn.endswith('.sql'):
+        continue
+    _src = io.open(os.path.join(REPO, 'sql', _fn), encoding='utf-8',
+                   errors='replace').read()
+    _d = _max = _i = 0
+    while _i < len(_src) - 1:
+        if _src[_i:_i + 2] == '/*':
+            _d += 1
+            _max = max(_max, _d)
+            _i += 2
+            continue
+        if _src[_i:_i + 2] == '*/':
+            _d = max(0, _d - 1)
+            _i += 2
+            continue
+        _i += 1
+    if _max > 1:
+        _nest_files.append(_fn)
+_scanned, _sup0, _unread0 = C.scan()
+ok('...and NO file carrying a nested block comment defines an advisory-lock '
+   'function, so the limitation cannot reach THIS checker',
+   _nest_files and not any('sql/' + _f in (_scanned or {}) for _f in _nest_files),
+   (_nest_files, sorted(_scanned or {})))
 
 
 # ══ C. the real repository, and the three fixes are asserted BY NAME ═══════
@@ -161,11 +204,19 @@ broken = src.replace(ANCHOR, "    return ('GUARDED',")
 ok('the neutering changed the source', broken != src)
 
 TMP = tempfile.mkdtemp(prefix='ali_')
+# THE COPY NEEDS THE REAL tools/ ON ITS PATH, and finding that out was worth the
+# arm. Since the subject started importing checker_kit (item 28's shared kit),
+# a copy executed from a temp directory derives its own REPO from __file__ and
+# cannot resolve the import -- so it died on ImportError and exited 1. The teeth
+# arms below then failed while reporting nothing about the classifier, which is
+# the shape where a control looks broken and is actually untested. PYTHONPATH is
+# set explicitly rather than the arms being relaxed to accept exit 1.
+TEETH_ENV = dict(os.environ, PYTHONPATH=os.path.join(REPO, 'tools'))
 try:
     bp = os.path.join(TMP, 'broken_check.py')
     io.open(bp, 'w', encoding='utf-8').write(broken)
     r = subprocess.run([sys.executable, bp], capture_output=True, text=True,
-                       encoding='utf-8', errors='replace', cwd=REPO)
+                       encoding='utf-8', errors='replace', cwd=REPO, env=TEETH_ENV)
     ok('the broken copy runs at all', r.returncode in (0, 1, 2), r.stderr[-300:])
     # THE POINT: it must not silently report clean. The blind lock catches the
     # misclassification and turns it into COULD NOT RUN.
@@ -184,7 +235,7 @@ try:
     bp2 = os.path.join(TMP, 'broken2.py')
     io.open(bp2, 'w', encoding='utf-8').write(broken2)
     r2 = subprocess.run([sys.executable, bp2], capture_output=True, text=True,
-                        encoding='utf-8', errors='replace', cwd=REPO)
+                        encoding='utf-8', errors='replace', cwd=REPO, env=TEETH_ENV)
     ok('TEETH: an always-UNGUARDED classifier is ALSO caught by the lock',
        r2.returncode == 2, 'exit %s' % r2.returncode)
 

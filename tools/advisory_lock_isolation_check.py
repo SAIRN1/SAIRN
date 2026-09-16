@@ -65,6 +65,13 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SQL_DIR = os.path.join(REPO, 'sql')
 
+# tools/ on the path EXPLICITLY, because this file now imports checker_kit and a
+# copy of it executed from anywhere else -- which is exactly what this file's own
+# teeth section does -- would otherwise die on the import rather than run and be
+# judged. A control that cannot start looks identical to one that found nothing.
+if os.path.join(REPO, 'tools') not in sys.path:
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+
 EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 
 FUNC_RE = re.compile(
@@ -81,88 +88,30 @@ ATOMIC_UPDATE_RE = re.compile(r'\bupdate\b[^;]*?\breturning\b', re.I | re.S)
 
 
 def strip_sql_comments(src):
-    """Remove -- line comments and /* */ blocks WITHOUT touching string bodies.
+    """Blank comments, preserving offsets. DELEGATES TO tools/checker_kit.py.
 
-    Char-by-char rather than a regex, for the reason CLAUDE.md already records:
-    the regex version of exactly this shipped a literal backspace on this
-    platform, and a string containing a comment marker breaks it silently. Here
-    it matters concretely -- every one of these files carries long prose blocks
-    that name `insert`, `update` and `transaction_isolation`, so a comment-blind
-    scan would find the guard in the COMMENT that says the guard is missing.
+    ── THIS WAS SEVENTY LINES OF HAND-ROLLED CHAR-BY-CHAR PARSING, AND ITEM 28
+    ── IS THE REASON IT IS NOT ANY MORE.
+    Item 28 folded the structural skeleton every checker re-derives -- the
+    exit-code contract, the control pair, and COMMENT-STRIPPED PARSING -- into
+    tools/checker_kit.py, precisely so the next checker would not write its own
+    copy. This file wrote its own copy anyway, on 2026-09-15, hours after using
+    the kit would have been a one-line import.
+
+    AND THE KIT WAS ALREADY RIGHT ABOUT THE BUG THE COPY SHIPPED WITH. The
+    hand-rolled version treated a dollar-quoted `$$` body as OPAQUE -- exactly
+    backwards, since in plpgsql every function comment lives inside `$$` -- so a
+    body mentioning the isolation guard only in a `--` comment classified
+    GUARDED. Its own fixture caught that before it ran on sql/. Verified
+    2026-09-15: `checker_kit.strip_comments(src, sql=True)` strips a comment
+    inside a `$$` body, preserves the code around it, and preserves offsets.
+
+    The wrapper is kept rather than inlining the call at both sites so this
+    file's probe keeps naming the behaviour it tests -- and so the delegation is
+    the thing under test rather than an implementation detail nobody drives.
     """
-    out = []
-    i, n = 0, len(src)
-    in_s = in_d = in_dollar = False
-    dollar_tag = ''
-    while i < n:
-        c = src[i]
-        nxt = src[i + 1] if i + 1 < n else ''
-        # ── COMMENTS INSIDE A $$ BODY STILL HAVE TO BE STRIPPED ─────────────
-        # The first version of this treated a dollar-quoted body as opaque and
-        # copied it verbatim -- which is precisely backwards, because in
-        # plpgsql EVERY function comment lives inside $$. Its own fixture
-        # caught it: a body whose only mention of the guard was in a `--`
-        # comment classified GUARDED. So the closing tag is watched for here
-        # and everything else falls through to the normal string and comment
-        # handling below.
-        if in_dollar and not in_s and not in_d and src.startswith(dollar_tag, i):
-            out.append(' ' * len(dollar_tag))
-            i += len(dollar_tag)
-            in_dollar = False
-            continue
-        if in_s:
-            out.append(c)
-            if c == "'":
-                if nxt == "'":
-                    out.append(nxt)
-                    i += 2
-                    continue
-                in_s = False
-            i += 1
-            continue
-        if in_d:
-            out.append(c)
-            if c == '"':
-                in_d = False
-            i += 1
-            continue
-        if c == '-' and nxt == '-':
-            while i < n and src[i] != '\n':
-                out.append(' ')
-                i += 1
-            continue
-        if c == '/' and nxt == '*':
-            depth = 1
-            out.append('  ')
-            i += 2
-            while i < n and depth:
-                if src.startswith('/*', i):
-                    depth += 1
-                    out.append('  ')
-                    i += 2
-                elif src.startswith('*/', i):
-                    depth -= 1
-                    out.append('  ')
-                    i += 2
-                else:
-                    out.append(' ' if src[i] != '\n' else '\n')
-                    i += 1
-            continue
-        if not in_dollar:
-            m = re.match(r'\$(\w*)\$', src[i:])
-            if m:
-                dollar_tag = m.group(0)
-                in_dollar = True
-                out.append(dollar_tag)
-                i += len(dollar_tag)
-                continue
-        if c == "'":
-            in_s = True
-        elif c == '"':
-            in_d = True
-        out.append(c)
-        i += 1
-    return ''.join(out)
+    from checker_kit import strip_comments
+    return strip_comments(src, sql=True)
 
 
 def split_functions(clean):
