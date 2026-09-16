@@ -47,6 +47,49 @@
 -- The client treats an RPC failure exactly as it treats a count failure today:
 -- allow the call and log loudly. A counting outage must never take down every
 -- AI feature on the platform. That decision is unchanged by this file.
+--
+-- ══ SUPERSEDED 2026-09-15. DO NOT RE-RUN AFTER THE TENANT MIGRATION. ═══════
+-- THIS FILE DEFINES THE THREE-ARGUMENT FORM, AND THAT SIGNATURE WAS
+-- DELIBERATELY DROPPED. sql/sairn_ai_tenant_subbudget_2026-09-15.sql:91 does
+-- `drop function if exists public.sairn_ai_rate_limit_consume(text, integer,
+-- integer)` before creating a SIX-argument form whose last three parameters
+-- have DEFAULTS -- and its own comment says why it drops rather than
+-- overloads: with both present, a three-argument call matches BOTH and
+-- Postgres refuses the whole call with "function is not unique". That is a
+-- HARD OUTAGE on every AI call on the platform, not a degradation.
+--
+-- SO RE-RUNNING THIS FILE IS THE OUTAGE. It is not "reverting a guard" -- this
+-- file's definition IS guarded, which is exactly why the hazard is easy to
+-- miss and why tools/advisory_lock_isolation_check.py now keys its SUPERSEDED
+-- class on an explicit `drop function` rather than on a missing guard. The
+-- first version of that checker looked for an unguarded duplicate and walked
+-- straight past this file.
+--
+-- The block below ABORTS the script rather than leaving that as a sentence. A
+-- comment saying "do not run this" is the same class of control as the prose
+-- that documented the REPEATABLE READ hazard in sairnlaw_trusttx_functions.sql
+-- and protected nothing. On a database where the six-argument form is NOT
+-- installed this raises nothing, because a fresh database legitimately needs
+-- one of the two files to run.
+do $$
+begin
+  if exists (
+    select 1 from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname = 'sairn_ai_rate_limit_consume'
+       and p.pronargs = 6
+  ) then
+    raise exception
+      'REFUSING: the CURRENT 6-argument sairn_ai_rate_limit_consume is already '
+      'installed, and sql/sairn_ai_tenant_subbudget_2026-09-15.sql dropped the '
+      '3-argument form on purpose. Creating it again would make every 3-arg '
+      'call ambiguous ("function is not unique") and take every AI call down. '
+      'Run sql/sairn_ai_tenant_subbudget_2026-09-15.sql instead.'
+      using errcode = 'invalid_table_definition';
+  end if;
+end;
+$$;
 
 create or replace function public.sairn_ai_rate_limit_consume(
   p_app_id         text,

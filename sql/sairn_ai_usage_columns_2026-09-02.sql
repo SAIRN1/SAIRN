@@ -69,52 +69,71 @@ create index if not exists idx_sairn_ai_rl_usage
   on public.sairn_ai_rate_limit_log (app_id, requested_at desc)
   where input_tokens is not null;
 
--- ── 2. CONSUME NOW RETURNS THE ROW IT INSERTED ──────────────────────────────
--- Identical to sql/sairn_ai_rate_limit_consume_fn.sql except for `returning id`
--- and the extra `row_id` key. Additive: an older client that ignores the key
--- behaves exactly as before, so this file and that one can be run in either
--- order without a window where the limiter is broken.
-create or replace function public.sairn_ai_rate_limit_consume(
-  p_app_id         text,
-  p_limit          integer,
-  p_window_seconds integer
-)
-returns jsonb
-language plpgsql
-as $$
-declare
-  v_count  bigint;
-  v_row_id bigint;
+-- ── 2. SUPERSEDED, AND IT REFUSES RATHER THAN BEING A NOTE ──────────────────
+-- WAS: a 3-argument `sairn_ai_rate_limit_consume(text, integer, integer)`.
+-- REMOVED 2026-09-15 (Hank), and the removal is the whole point of this block.
+--
+-- ── WHY THIS WAS A LANDMINE AND NOT MERELY STALE ────────────────────────────
+-- Found by tools/advisory_lock_isolation_check.py's SUPERSEDED class, which
+-- exists because `create or replace` gives an OLD migration file the power to
+-- silently undo a NEW one, and nothing about running a migration tells you it
+-- is older. This file is named for its COLUMNS -- that is what somebody would
+-- re-run it for -- and section 1 above is still exactly that. Section 2 was
+-- carrying two separate hazards in the same twenty lines:
+--
+--   1. IT RE-CREATES A FUNCTION THAT WAS DELIBERATELY DROPPED.
+--      sql/sairn_ai_tenant_subbudget_2026-09-15.sql:91 does
+--      `drop function if exists public.sairn_ai_rate_limit_consume(text,
+--      integer, integer)` and replaces it with a SIX-argument form, and its
+--      own comment says why the 3-arg form is DROPPED rather than left beside
+--      it: with both present a 3-arg call is AMBIGUOUS and Postgres refuses
+--      with "function is not unique" -- a HARD OUTAGE on every AI call on the
+--      platform, not a degradation. Re-running this file would restore exactly
+--      the state that work removed.
+--
+--   2. THE COPY HERE HAS NO ISOLATION GUARD. The current definition refuses to
+--      run outside READ COMMITTED, because pg_advisory_xact_lock serialises
+--      ACQUISITION and not the SNAPSHOT. This copy predates that and would
+--      quietly reopen the race.
+--
+-- THE CURRENT, AUTHORITATIVE DEFINITION IS
+-- sql/sairn_ai_tenant_subbudget_2026-09-15.sql. Nothing else defines it.
+--
+-- ── AND IT IS A REFUSAL RATHER THAN A COMMENT, DELIBERATELY ─────────────────
+-- A comment saying "do not run this part" is the same class of control as the
+-- prose comment that documented the REPEATABLE READ hazard in
+-- sql/sairnlaw_trusttx_functions.sql and protected nothing. So this block
+-- ABORTS the whole script if the newer function is installed -- and the abort
+-- is what makes the columns above safe to re-run, because they are already
+-- applied by then and `add column if not exists` is idempotent.
+--
+-- If the newer function is NOT installed, this raises nothing and only says
+-- where to get it: on a fresh database the columns are still wanted and
+-- refusing here would block a legitimate first run.
+do $$
 begin
-  if p_app_id is null or p_app_id = '' then
-    return jsonb_build_object('error', 'app_id required');
+  if exists (
+    select 1 from pg_proc p
+      join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public'
+       and p.proname = 'sairn_ai_rate_limit_consume'
+       and p.pronargs = 6
+  ) then
+    raise exception
+      'REFUSING: sairn_ai_rate_limit_consume already exists in its CURRENT '
+      '6-argument form. This file is superseded for that function by '
+      'sql/sairn_ai_tenant_subbudget_2026-09-15.sql. The columns in section 1 '
+      'are already applied and are idempotent, so nothing here is needed. '
+      'Re-creating the old 3-argument form would make every 3-arg call '
+      'ambiguous ("function is not unique") and take every AI call down.'
+      using errcode = 'invalid_table_definition';
   end if;
-
-  perform pg_advisory_xact_lock(hashtext('sairn_ai_rl:' || p_app_id));
-
-  select count(*)
-    into v_count
-    from public.sairn_ai_rate_limit_log
-   where app_id = p_app_id
-     and requested_at >= now() - make_interval(secs => p_window_seconds);
-
-  -- Recorded even when over the limit, so observe-mode data reflects real
-  -- demand rather than being clipped at the threshold. Unchanged.
-  insert into public.sairn_ai_rate_limit_log (app_id)
-  values (p_app_id)
-  returning id into v_row_id;
-
-  return jsonb_build_object(
-    'prior_count', v_count,
-    'limited',     v_count >= p_limit,
-    'limit',       p_limit,
-    'row_id',      v_row_id
-  );
+  raise notice
+    'sairn_ai_rate_limit_consume is NOT installed. Section 2 of this file is '
+    'superseded and defines nothing -- run '
+    'sql/sairn_ai_tenant_subbudget_2026-09-15.sql for the current definition.';
 end;
 $$;
-
-revoke all on function public.sairn_ai_rate_limit_consume(text, integer, integer) from public, anon, authenticated;
-grant execute on function public.sairn_ai_rate_limit_consume(text, integer, integer) to service_role;
 
 -- ── 3. THE RECORDER ─────────────────────────────────────────────────────────
 -- Returns true only if it actually wrote. False is not an error and is not

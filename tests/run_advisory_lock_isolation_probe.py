@@ -128,8 +128,27 @@ ok('rf_allocate_invoice_number is SAFE_SHAPE, not a finding (UPDATE RETURNING)',
    flat.get(('sql/sairnroofing_billing_schema.sql', 'rf_allocate_invoice_number')) == 'SAFE_SHAPE',
    flat.get(('sql/sairnroofing_billing_schema.sql', 'rf_allocate_invoice_number')))
 
-ok('the superseded stale migration is reported',
-   any('sairn_ai_usage_columns' in p for p, _n, _o in (sup or [])), sup)
+# ── THE SUPERSEDED CLASS IS DROP-BASED, NOT GUARD-BASED ───────────────────
+# The first version keyed on "an UNGUARDED copy where another file has a
+# GUARDED one" and WALKED STRAIGHT PAST THE WORSE OF THE TWO REAL INSTANCES.
+# sql/sairn_ai_rate_limit_consume_fn.sql defines a 3-argument
+# sairn_ai_rate_limit_consume and IS guarded; the tenant migration explicitly
+# DROPS that signature before creating a 6-argument form with defaults on the
+# last three. Re-running the guarded older file puts both in the catalogue, a
+# 3-arg call matches both, and Postgres refuses it entirely -- "function is not
+# unique", a hard outage on every AI call, which is precisely what the tenant
+# work's own comment says dropping rather than overloading avoided.
+ok('the DROPPED-signature landmine is reported',
+   any('sairn_ai_rate_limit_consume_fn' in p for p, _n, _o in (sup or [])), sup)
+ok('...and it is reported for the ARITY that was dropped, not just the name',
+   any('/3 args' in n for _p, n, _o in (sup or [])), sup)
+ok('...naming the migration that dropped it, so the reader knows which is newer',
+   any(any('tenant_subbudget' in o for o in others) for _p, _n, others in (sup or [])),
+   sup)
+# The columns file was the FIRST instance and its definition was removed
+# outright on 2026-09-15. If it comes back, that is a regression.
+ok('sairn_ai_usage_columns no longer defines the function at all',
+   not any('sairn_ai_usage_columns' in p for p, _n, _o in (sup or [])), sup)
 
 
 # ══ D. TEETH -- the blind lock must actually stop a broken checker ═════════

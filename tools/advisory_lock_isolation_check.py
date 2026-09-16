@@ -222,24 +222,61 @@ def classify(body):
             'with nothing requiring READ COMMITTED')
 
 
-def superseded(functions_by_file):
-    """Files defining a function that ANOTHER file also defines, where this
-    copy is unguarded and the other is guarded.
+DROP_RE = re.compile(
+    r'drop\s+function\s+(?:if\s+exists\s+)?(?:public\.)?(\w+)\s*\(([^)]*)\)', re.I)
 
-    `create or replace` means re-running the older file silently reverts the
-    guard, and nothing about running a migration warns you it is older.
+
+def arity(arglist):
+    """Count top-level commas + 1. Good enough for these signatures, and a
+    miscount errs toward NOT matching, which drops a finding rather than
+    inventing one."""
+    depth, n = 0, 1
+    if not arglist.strip():
+        return 0
+    for ch in arglist:
+        if ch in '([':
+            depth += 1
+        elif ch in ')]':
+            depth -= 1
+        elif ch == ',' and depth == 0:
+            n += 1
+    return n
+
+
+def superseded(defs_by_file, drops_by_file):
+    """A file that DEFINES a function signature another migration explicitly
+    DROPPED. Re-running it restores exactly what that migration removed.
+
+    ── THE FIRST VERSION OF THIS HAD THE WRONG PREDICATE, AND MISSED THE WORSE
+    ── OF THE TWO REAL INSTANCES.
+    It looked for "an UNGUARDED copy where another file has a GUARDED one",
+    which finds a reverted guard and nothing else. The sharper hazard has
+    nothing to do with the guard: sql/sairn_ai_rate_limit_consume_fn.sql
+    defines a 3-argument sairn_ai_rate_limit_consume and IS guarded, and
+    sql/sairn_ai_tenant_subbudget_2026-09-15.sql explicitly DROPS that exact
+    signature before creating a 6-argument form with defaults on the last
+    three. Re-running the guarded older file therefore puts BOTH forms in the
+    catalogue, a 3-argument call matches both, and Postgres refuses the whole
+    call with "function is not unique" -- a hard outage on every AI call on the
+    platform, which is precisely the state the tenant work's own comment says
+    it avoided by dropping rather than overloading.
+
+    So the rule is DROP-based, not guard-based: whoever wrote a `drop function`
+    stated that this signature must not exist, and any file still creating it
+    is a landmine whether or not it is guarded.
     """
-    guarded, out = {}, []
-    for path, funcs in functions_by_file.items():
-        for name, verdict, _why in funcs:
-            if verdict == 'GUARDED':
-                guarded.setdefault(name, []).append(path)
-    for path, funcs in functions_by_file.items():
-        for name, verdict, _why in funcs:
-            if verdict in ('UNGUARDED', 'NO_RMW') and name in guarded:
-                others = [p for p in guarded[name] if p != path]
+    dropped = {}
+    for path, drops in drops_by_file.items():
+        for name, n in drops:
+            dropped.setdefault((name, n), []).append(path)
+    out = []
+    for path, defs in defs_by_file.items():
+        for name, n, _verdict in defs:
+            key = (name, n)
+            if key in dropped:
+                others = [p for p in dropped[key] if p != path]
                 if others:
-                    out.append((path, name, others))
+                    out.append((path, '%s/%d args' % (name, n), others))
     return out
 
 
@@ -323,6 +360,7 @@ def self_check(verbose=True):
 
 def scan():
     by_file, unreadable = {}, []
+    defs_by_file, drops_by_file = {}, {}
     if not os.path.isdir(SQL_DIR):
         return None, None, ['sql/ does not exist at ' + SQL_DIR]
     for fn in sorted(os.listdir(SQL_DIR)):
@@ -335,14 +373,25 @@ def scan():
             unreadable.append('%s: %s' % (fn, exc))
             continue
         clean = strip_sql_comments(src)
-        rows = []
+        rows, defs = [], []
         for name, body, _off in split_functions(clean):
             verdict, why = classify(body)
+            # EVERY definition is recorded for the drop cross-reference, not
+            # just the ones taking a lock: the "function is not unique" hazard
+            # has nothing to do with locking.
+            m = re.match(r'[^(]*\(([^)]*)\)', body[body.index('(') :] if '(' in body else '')
+            arglist = m.group(1) if m else ''
+            defs.append((name, arity(arglist), verdict))
             if verdict != 'NO_LOCK':
                 rows.append((name, verdict, why))
+        drops = [(m.group(1), arity(m.group(2))) for m in DROP_RE.finditer(clean)]
+        if drops:
+            drops_by_file['sql/' + fn] = drops
+        if defs:
+            defs_by_file['sql/' + fn] = defs
         if rows:
             by_file['sql/' + fn] = rows
-    return by_file, superseded(by_file), unreadable
+    return by_file, superseded(defs_by_file, drops_by_file), unreadable
 
 
 def main(argv=None):
@@ -397,11 +446,15 @@ def main(argv=None):
                 print('                  %s' % why)
     if sup:
         print('')
-        print('SUPERSEDED DEFINITIONS -- `create or replace` means re-running')
-        print('the older file silently REVERTS the guard, and nothing about')
-        print('running a migration tells you it is older:')
+        print('SUPERSEDED DEFINITIONS -- a file still CREATES a signature that')
+        print('another migration explicitly DROPPED. THIS IS NOT ABOUT THE')
+        print('GUARD: the dropped form may be perfectly guarded, and the hazard')
+        print('is that re-creating it beside a DEFAULTED overload makes a call')
+        print('match BOTH, so Postgres refuses it entirely -- "function is not')
+        print('unique", a hard outage rather than a degradation. Nothing about')
+        print('running a migration tells you it is the older one:')
         for path, name, others in sup:
-            print('  ! %s defines %s unguarded; guarded in %s'
+            print('  ! %s still creates %s, which was DROPPED by %s'
                   % (path, name, ', '.join(others)))
     if unreadable:
         print('')
