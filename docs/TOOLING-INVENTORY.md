@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**163 files in `tools/`.** By what actually invokes them:
+**164 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 49 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 40 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 24 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 37 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 106 |
+| CHECKER | 107 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 18 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 15
+**The number to act on: 19 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 16
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 18, by name, so this is actionable rather than a statistic:
+The 19, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -59,6 +59,7 @@ The 18, by name, so this is actionable rather than a statistic:
 | `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `checker_estimate_fusion.py` | SUITE-ONLY | a checker whose reliability estimate rests on a CORRECTOR THAT FAILS ITS OWN SANITY CHECK -- it fuses the always-on drifting flip rate with the accurate infrequent control evidence, and REFUSES to apply the correction when the control does not verify its own sabotage applied, because a compromised corrector makes a fused estimate worse than no fusion |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
+| `defect_budget_policy.py` | SUITE-ONLY | item 20 -- a defect budget that FORBIDS rather than informs, and the ways that gate quietly stops forbidding anything: a band that flips on noise at a boundary (held inside a 3-point margin, in BOTH directions, because declaring recovery early is the tempting half), a decision recorded without the number that produced it (every stamp carries the criteria version and a digest of the register CONTENTS, so a later reader can separate "the number changed" from "the reading was wrong"), a recount silently reversing a recorded decision (it raises REVISIT and rewrites nothing), a binary in-or-out budget that forbids everything the day it flips (four graduated bands), and an override used habitually (counted at the top of every run; past 3 in a window the MECHANISM is reported failed, and the override is still accepted, because a policy that cannot be overridden in an emergency gets disabled entirely). ROLLING vs PERMANENT aging is a REAL OPEN QUESTION, deliberately not defaulted: both numbers are printed, nothing is gated until --decide records a choice with a reason. On its first run both windows read zero remaining and the most extreme band, which the tool reads as the BUDGET being wrong rather than the platform being in crisis -- it reports UNCALIBRATED and prints the observed rate instead of tuning BUDGET_PER_WINDOW until the output flatters the corpus |
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
 | `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
@@ -256,7 +257,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (23)
+## SUITE-ONLY (24)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -268,6 +269,7 @@ fixtures. Nothing points them at the real codebase.
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
+| `defect_budget_policy.py` | CHECKER | item 20 -- a defect budget that FORBIDS rather than informs, and the ways that gate quietly stops forbidding anything: a band that flips on noise at a boundary (held inside a 3-point margin, in BOTH directions, because declaring recovery early is the tempting half), a decision recorded without the number that produced it (every stamp carries the criteria version and a digest of the register CONTENTS, so a later reader can separate "the number changed" from "the reading was wrong"), a recount silently reversing a recorded decision (it raises REVISIT and rewrites nothing), a binary in-or-out budget that forbids everything the day it flips (four graduated bands), and an override used habitually (counted at the top of every run; past 3 in a window the MECHANISM is reported failed, and the override is still accepted, because a policy that cannot be overridden in an emergency gets disabled entirely). ROLLING vs PERMANENT aging is a REAL OPEN QUESTION, deliberately not defaulted: both numbers are printed, nothing is gated until --decide records a choice with a reason. On its first run both windows read zero remaining and the most extreme band, which the tool reads as the BUDGET being wrong rather than the platform being in crisis -- it reports UNCALIBRATED and prints the observed rate instead of tuning BUDGET_PER_WINDOW until the output flatters the corpus | `run_defect_budget_policy_probe.py` |
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py`, `run_dispersion_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
@@ -363,11 +365,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      163   git ls-files tools/
+  tools on disk                      164   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                47   report_only_checks.REGISTRY
-  tools invoked by tests/            107   tests/**/*.py, *.js
+  tools invoked by tests/            108   tests/**/*.py, *.js
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

@@ -188,6 +188,27 @@ PURPOSES = {
         'budget would punish looking, since the app audited hardest looks '
         'worst. Report-only and must stay so -- a gate here would reward not '
         'citing a rule'),
+    'defect_budget_policy.py': ('CHECKER',
+        'item 20 -- a defect budget that FORBIDS rather than informs, and the '
+        'ways that gate quietly stops forbidding anything: a band that flips on '
+        'noise at a boundary (held inside a 3-point margin, in BOTH directions, '
+        'because declaring recovery early is the tempting half), a decision '
+        'recorded without the number that produced it (every stamp carries the '
+        'criteria version and a digest of the register CONTENTS, so a later '
+        'reader can separate "the number changed" from "the reading was '
+        'wrong"), a recount silently reversing a recorded decision (it raises '
+        'REVISIT and rewrites nothing), a binary in-or-out budget that forbids '
+        'everything the day it flips (four graduated bands), and an override '
+        'used habitually (counted at the top of every run; past 3 in a window '
+        'the MECHANISM is reported failed, and the override is still accepted, '
+        'because a policy that cannot be overridden in an emergency gets '
+        'disabled entirely). ROLLING vs PERMANENT aging is a REAL OPEN '
+        'QUESTION, deliberately not defaulted: both numbers are printed, '
+        'nothing is gated until --decide records a choice with a reason. On its '
+        'first run both windows read zero remaining and the most extreme band, '
+        'which the tool reads as the BUDGET being wrong rather than the platform '
+        'being in crisis -- it reports UNCALIBRATED and prints the observed rate '
+        'instead of tuning BUDGET_PER_WINDOW until the output flatters the corpus'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '
