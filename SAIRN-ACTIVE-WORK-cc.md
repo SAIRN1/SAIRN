@@ -4363,3 +4363,74 @@ audit** -- whose three mutations are the three halves of one silent failure:
 the write must REPORT failure, the failure must be SAID, and the caller must not
 print a success message over it. Each disabled separately, because a suite
 checking only one would pass while the other two were gone.
+
+## 2026-09-16 (continued) -- the void gate becomes real, land.sh does not exist, and the Tier A gate let my own push through
+
+### The server-side role gate
+
+`api/sd-data.js` now refuses a VOID TRANSITION on `sb_po`/`sb_recv` to any role
+but owner and manager. Until this, the 2026-09-14 decision lived only in
+`SB_VOID_ROLES` in `sairnbiz.html`, and the endpoint's gate is a SESSION gate --
+so any signed-in employee could POST a voided row past it.
+
+**The session gate is NOT widened, and that is asserted rather than intended.**
+Raising a PO and logging a receipt stay ordinary work for any signed-in
+employee. Section 3 of the suite drives that on a staff session and requires it
+through, so a future widening fails there rather than silently locking staff out
+of their own work.
+
+**Both directions, and the second is why it needs a read.** The write is a blind
+upsert of the whole payload, so without checking the stored row a staff account
+could UN-VOID by posting the same id with the status removed. **A void anybody
+can undo is not a void.** Setting a void costs no extra request -- it is
+privileged whatever was stored -- so only the clear direction pays for the read,
+and that asymmetry is itself an arm.
+
+`api/sd-data-sb-void-role.test.js`, **18 assertions**. One arm's LABEL was wrong
+before it was checked -- it read *"staff may correct the reason"* over an
+assertion requiring 403 -- and is corrected in place with the reason stated.
+
+### `land.sh` does not exist, and the sweep was done anyway
+
+**Searched the working tree, all five clones, and the entire git history: there
+is no `land.sh`.** The only hit for the string was my own claim file. The
+nearest real thing is the `sairn_claim.py` false-success defect Fourth fixed --
+a push that failed still printing CLAIMED -- which is the same CLASS and a
+different tool.
+
+**So the question behind the task was answered directly instead.** Every SHA I
+reported as pushed tonight, checked against `origin/main`: **33 named, 27 are
+ancestors of origin/main, 6 were rewritten by an amend or a rebase, 0 missing,
+and nothing local is unpushed.** Of the six, four have an identical patch-id to
+their replacement and the replacement is on origin. The two that differ are both
+explained and both verified by content rather than by argument: `d2f44c9d` was
+swallowed by an `--amend` that merged in more work (`cmd_guard` is on
+origin/main), and `1d61b512` was a commit I split and then rebased through a
+conflict (`MUTANT-ID-IS-PO-NUM` is on origin/main). **No false "pushed" claim.**
+
+### THE FINDING: the Tier A gate did not fire on my own product change
+
+`7005253c` changes an authorization path on two Tier A resources and **pushed
+unblocked.** Not because the detector missed them -- because an obligation for
+`sb_po`/`sb_recv` was ALREADY OPEN from a test-only change earlier the same day,
+**whose own recorded text reads "NEW NEGATIVE CONTROL, no product code
+changed."**
+
+**The gate is satisfied per RESOURCE, not per CHANGE.** So a server-side
+authorization change rode in on a control's record, and the entry a reviewer
+would read describes something else entirely. Worse as a property than as an
+instance: obligations accumulate faster than they are discharged, so on an
+active resource there is nearly always one open -- **which means the gate is
+silently most permissive on exactly the resources being worked hardest.**
+
+**What I fixed is only the REPAIR PATH.** `cmd_open()` read the working diff plus
+the unpushed range, and both are empty by the time anybody notices, so an
+accurate record could not be created after the fact. `--open ... --range A..B`
+now exists and its first use is the honest entry for `7005253c`. **The defect
+itself is still open**, recorded HIGH, and how many changes have already ridden
+in this way is not derivable from the register -- the register holds only what
+somebody opened.
+
+Changing what a blocking gate REFUSES is a different act from being able to
+record the truth about a change it let through, so the semantics decision is
+stated and left rather than taken on my own initiative.
