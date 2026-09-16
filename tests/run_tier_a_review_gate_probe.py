@@ -117,6 +117,60 @@ st = g.touched_tier_a(
 check('...but .claude/settings.json is NOT excluded -- a hook change is real',
       st == {'sc_claims': ['.claude/settings.json']}, st)
 
+# ── 2b. EVERY EXCLUSION CARRIES A REASON, AND EVERY TRACKED PATH CLASS IS
+# ── CLASSIFIED. Added 2026-09-16, and this is what replaced inverting the
+# ── predicate.
+#
+# THE INVERSION WAS MEASURED AND REJECTED. An `api/ + tests/ + tools/ + root
+# *.html` allow-list would silently drop 42 in-scope files across ten path
+# classes, including `.claude/settings.json` (wires the push hooks),
+# `.githooks/pre-commit` and `.github/workflows/codeql.yml`. The deny-list fails
+# into a LOUD false positive; an allow-list fails into SILENCE. For a gate whose
+# subject is somebody not being told, silence is the wrong direction.
+#
+# So the real defect was never the polarity -- it was that each exclusion was an
+# anonymous clause nobody had to justify, so a fourth false positive would be
+# fixed by appending a fifth clause and the pattern would stay invisible. These
+# arms make that impossible: a new top-level directory is a RED ARM, and a new
+# exclusion needs a reason somebody has to write.
+print('\n2b. exclusions are REASONED, and the classification is exhaustive')
+check('every SKIP_REASONS entry carries a non-trivial reason',
+      all(isinstance(why, str) and len(why) > 30 for _, why in g.SKIP_REASONS),
+      [why[:20] for _, why in g.SKIP_REASONS])
+check('skip_reason returns a REASON for an excluded path, not just True',
+      isinstance(g.skip_reason('docs/CRITICALITY-TIERS.md'), str),
+      g.skip_reason('docs/CRITICALITY-TIERS.md'))
+check('...and None for a path that CAN create an obligation',
+      g.skip_reason('api/sd-data.js') is None, g.skip_reason('api/sd-data.js'))
+
+_ls = subprocess.run(['git', '-C', REPO, 'ls-files'], capture_output=True,
+                     encoding='utf-8', errors='replace')
+if _ls.returncode != 0:
+    check('the tracked tree could be read', False, 'git ls-files failed')
+else:
+    _tracked = [f for f in _ls.stdout.split('\n')
+                if f and not f.startswith('archive/') and not f.startswith('"archive/')]
+    # One representative per path class, so the arm is about CLASSES rather than
+    # about 1900 files -- and so adding a file to a known directory is not a
+    # failure while adding a NEW directory is.
+    _classes = {}
+    for f in _tracked:
+        k = f.split('/')[0] + '/' if '/' in f else '<root>'
+        _classes.setdefault(k, f)
+    # IN SCOPE is the default and is correct: a class nobody has thought about
+    # should be REVIEWED, not skipped.
+    _known = sorted(_classes)
+    check('the tree has at least the expected path classes', len(_known) >= 8, _known)
+    _unreasoned = [k for k, f in _classes.items()
+                   if g.skip_reason(f) is None and k not in (
+                       'api/', 'tests/', 'tools/', '<root>', 'sql/', 'docs/',
+                       '.claude/', '.github/', '.githooks/', 'agent/', 'db/',
+                       'dist/', 'packages/', 'scripts/', 'skills/', 'sql/')]
+    check('NO UNRECOGNISED PATH CLASS -- a new top-level directory must be a '
+          'decision, not a default', _unreasoned == [],
+          'unrecognised: %s -- decide whether it can serve a Tier A resource, '
+          'then add it to this arm or to SKIP_REASONS with a reason' % _unreasoned)
+
 # THE OTHER DIRECTION, and it is the one that matters. Excluding prose must not
 # start excluding code: a file whose NAME merely contains ".md" is not markdown,
 # and a real handler must still count.

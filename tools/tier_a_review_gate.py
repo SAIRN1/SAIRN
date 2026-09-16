@@ -94,6 +94,65 @@ SELF = (
 )
 
 
+# ── WHY THIS IS STILL A DENY-LIST, MEASURED RATHER THAN PREFERRED ───────────
+# After the THIRD false positive of one shape (a worklog, a review probe, a
+# claim file -- each a file whose job is to TALK ABOUT Tier A work) the obvious
+# recombination was to INVERT: allow-list what can SERVE a resource instead of
+# deny-listing what describes it. That was measured before it was built, and the
+# measurement says do not.
+#
+# An `api/ + tests/ + tools/ + root *.html` allow-list would SILENTLY DROP 42
+# files that are in scope today, across ten path classes -- including
+# `.claude/settings.json`, which wires the push hooks; `.githooks/pre-commit`;
+# and `.github/workflows/codeql.yml`. Every one of those can change whether a
+# Tier A resource is protected at all.
+#
+# THE TWO PREDICATES FAIL IN OPPOSITE DIRECTIONS AND THAT DECIDES IT.
+#   deny-list  fails into a FALSE POSITIVE -- loud, annoying, and fixed in a line
+#   allow-list fails into SILENCE -- a new directory serving Tier A code is never
+#              reviewed and nothing says so
+# For a gate whose entire subject is somebody not being told, failing into
+# silence is the wrong direction. Inverting would have traded three loud
+# annoyances for one quiet hole.
+#
+# SO THE REAL DEFECT WAS NEVER THE POLARITY. It was that each exclusion was an
+# anonymous clause in a boolean, so a fourth false positive would be fixed by
+# appending a fifth clause and nobody would be forced to notice the pattern.
+# Every exclusion now carries a NAMED REASON, and
+# tests/run_tier_a_review_gate_probe.py FAILS when a tracked path class is
+# neither in scope nor explicitly excluded -- so a new top-level directory is a
+# red arm rather than a silent gap, and a new documentation-shaped file is one
+# line WITH a reason somebody has to write.
+SKIP_REASONS = (
+    # (predicate, reason). Order matters only for which reason is reported.
+    (lambda c: c in SELF,
+     'the gate itself -- recording an obligation must not create one'),
+    (lambda c: c.startswith('docs/'),
+     'prose. CRITICALITY-TIERS.md names every Tier A resource by definition, so '
+     'including docs/ would make every push a Tier A push'),
+    (lambda c: c.startswith('sql/'),
+     'a migration naming a resource is not code serving it'),
+    (lambda c: c.startswith('.claude/claims/'),
+     'a claim is a record of INTENT. Narrower than .claude/ on purpose: '
+     'settings.json and the hooks beside it genuinely change what gates a push'),
+    (lambda c: c.lower().endswith('.md'),
+     'markdown is prose, never a request handler -- and every session worklog '
+     'lives at the repo root by convention'),
+)
+
+
+def skip_reason(cur):
+    """The REASON this path cannot create an obligation, or None if it can.
+
+    A reason rather than a boolean, so the classification is legible and so the
+    coverage control can assert that every tracked path class has one.
+    """
+    for pred, why in SKIP_REASONS:
+        if pred(cur):
+            return why
+    return None
+
+
 class CouldNotTell(Exception):
     pass
 
@@ -367,11 +426,7 @@ def touched_tier_a(diff_text, resources):
             # wants inverting -- allow-list the files that can SERVE a resource
             # (api/, the app HTML) rather than deny-listing the ones that
             # describe it.
-            skip = (cur in SELF
-                    or cur.startswith('docs/')
-                    or cur.startswith('sql/')
-                    or cur.replace('\\', '/').startswith('.claude/claims/')
-                    or cur.lower().endswith('.md'))
+            skip = skip_reason(cur) is not None
             if not skip and cur.replace('\\', '/').startswith('tests/'):
                 try:
                     body = io.open(os.path.join(REPO, cur), encoding='utf-8',
@@ -449,8 +504,7 @@ def _scan(diff_text, resources, changed_only=True):
                 cur, skip = None, True
                 continue
             cur = (path[2:] if path[:2] in ('a/', 'b/') else path).replace('\\', '/')
-            skip = (cur in SELF or cur.startswith('docs/')
-                    or cur.startswith('sql/') or cur.lower().endswith('.md'))
+            skip = skip_reason(cur) is not None
             continue
         if cur is None or skip:
             continue
