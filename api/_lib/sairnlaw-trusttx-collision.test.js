@@ -116,9 +116,37 @@ check('the collision branch is reached by a real condition, not disabled',
 // told their balance is short when the balance was never the problem.
 check('the collision is checked before the balance guard, not after',
   FN_CODE.indexOf('TRUSTTX_ID_COLLISION') < FN_CODE.indexOf('INSUFFICIENT_TRUST_BALANCE'), true);
+// ── SCOPED TO THE COLLISION RAISE ITSELF, CORRECTED 2026-09-16 ─────────────
+// This read `FN_CODE.slice(FN_CODE.indexOf('raise exception'))` -- everything
+// after the FIRST raise anywhere in the function -- and asserted v_other_client
+// did not appear in it. The function now raises at line 149 BEFORE the
+// collision branch, and `select client_id into v_other_client` at line 179 is a
+// legitimate ASSIGNMENT sitting inside that slice. So the arm went red against
+// SQL that is correct: the message at line 187 interpolates p_trusttx_id only
+// and names no other client.
+//
+// AN ANCHOR THAT STILL MATCHES IS NOT AN ANCHOR THAT STILL POINTS AT THE RIGHT
+// THING (PR 1.3). `indexOf('raise exception')` never stopped matching; it
+// started matching an earlier one. A Tier A arm alleging a client-confidentiality
+// leak that does not exist is worse than a silent one, because the next reader
+// spends the trust-money session chasing it.
+//
+// The statement is located by its own error code and bounded by its own
+// terminator, and a failure to locate it is its own arm rather than a vacuous
+// pass -- a slice that finds nothing would otherwise test an empty string and
+// report clean.
+const COLLISION_RAISE = (function () {
+  const i = FN_CODE.indexOf('TRUSTTX_ID_COLLISION');
+  if (i < 0) return null;
+  const end = FN_CODE.indexOf(';', i);
+  return end < 0 ? null : FN_CODE.slice(i, end + 1);
+})();
+check('the collision raise statement was located at all -- a slice that found '
+      + 'nothing would pass the next arm by testing an empty string',
+  COLLISION_RAISE !== null, true);
 check('the collision message does NOT name the other client',
   /already exists under a different client/.test(FN) &&
-  !/v_other_client/.test(FN_CODE.slice(FN_CODE.indexOf('raise exception'))), true);
+  COLLISION_RAISE !== null && !/v_other_client/.test(COLLISION_RAISE), true);
 check('the do-nothing null path is closed by a re-select',
   /if v_row\.trusttx_id is null then/.test(FN_CODE) &&
   /v_row := v_existing;/.test(FN_CODE.slice(FN_CODE.indexOf('if v_row.trusttx_id is null then'))), true);
