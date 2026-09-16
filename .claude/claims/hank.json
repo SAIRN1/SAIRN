@@ -2033,8 +2033,8 @@
       "task": "transport timeout sweep red on clean tree diagnosis",
       "claimed_at": "2026-09-16T05:05:54Z",
       "claimed_at_epoch": 1789535154.3076925,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:25:28Z"
     },
     {
       "id": "hank-1789535992",
