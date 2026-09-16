@@ -1279,6 +1279,16 @@
       "claimed_at_epoch": 1789524523.9357111,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789525623",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 60 bullwhip derived source audit, item 47 FAI on tonight tools, item 79 defeater friction, skill ground truth audit",
+      "claimed_at": "2026-09-16T02:27:03Z",
+      "claimed_at_epoch": 1789525623.24359,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
