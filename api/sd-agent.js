@@ -44,6 +44,26 @@ const MODEL = 'claude-sonnet-5';
 const MAX_TOKENS = 4096;
 const MAX_ITERATIONS = 10; // guards against a runaway tool-call loop
 
+// ── THE ONLY AI ENDPOINT ON THE PLATFORM WITH NO BUDGET (2026-09-16) ────────
+// api/claude.js and api/sc-ai.js both consume the shared daily limiter. This
+// one did not, and it is the most expensive endpoint of the three: ONE request
+// here drives up to MAX_ITERATIONS model calls.
+//
+// AND IT IS CONSUMED PER MODEL CALL, NOT PER REQUEST. Charging one unit for a
+// request that can cost ten is an accounting error that makes the budget
+// meaningless exactly where it matters most -- the limiter would report a
+// healthy day while this endpoint spent ten times its share. A mid-loop refusal
+// is representable: the endpoint already returns the conversation so far on
+// MAX_ITERATIONS, so a caller gets a partial answer and a named reason rather
+// than a truncated success.
+//
+// THE LIMITER FAILS OPEN BY DESIGN -- it is a cost control, not a security
+// control -- and `degraded` means "this allow is the absence of a decision,
+// not a decision". It is surfaced rather than swallowed, the same way
+// api/claude.js surfaces it.
+const { checkAiRateLimit } = require('./_lib/ai-rate-limit');
+const AGENT_APP_ID = 'stonedesk';
+
 const SYSTEM_PROMPT =
   'You are the StoneDesk Agent, a data assistant scoped to one shop\'s StoneDesk ' +
   'account. Use read_profile, read_slabs, and read_memories to look up existing ' +
@@ -172,7 +192,20 @@ function toolResultMessage(toolUseId, result) {
 // Drives the loop forward until Claude stops calling tools, hits the
 // iteration cap, or requests write_slab (which pauses for confirmation).
 async function runLoop(lic, messages) {
+  let degraded = false;
   for (let i = 0; i < MAX_ITERATIONS; i++) {
+    // ONE UNIT PER MODEL CALL. See the note beside AGENT_APP_ID.
+    const rl = await checkAiRateLimit(AGENT_APP_ID, (lic && lic.license_hash) || null);
+    if (rl && rl.degraded) degraded = true;
+    if (rl && !rl.allowed) {
+      // A PARTIAL ANSWER WITH A NAMED REASON, not a truncated success. The
+      // conversation is returned so the caller can see what was done before
+      // the budget ran out and can resume tomorrow rather than starting over.
+      return {
+        status: 'rate_limited', reply: '', conversation: messages,
+        completed_calls: i, degraded: degraded
+      };
+    }
     const response = await callClaude(messages);
 
     if (response.stop_reason === 'tool_use') {
@@ -181,11 +214,11 @@ async function runLoop(lic, messages) {
 
       if (!toolUse) {
         // Shouldn't happen given stop_reason === 'tool_use', but don't loop forever on it.
-        return { status: 'done', reply: '', conversation: messages };
+        return { status: 'done', reply: '', conversation: messages, degraded: degraded };
       }
 
       if (toolUse.name === 'write_slab') {
-        return { status: 'confirmation_required', tool_use: toolUse, conversation: messages };
+        return { status: 'confirmation_required', tool_use: toolUse, conversation: messages, degraded: degraded };
       }
 
       const result = await executeAutoTool(lic, toolUse);
@@ -196,7 +229,7 @@ async function runLoop(lic, messages) {
     // end_turn (or any other terminal stop_reason) — done.
     messages.push({ role: 'assistant', content: response.content });
     const textBlock = response.content.find((b) => b.type === 'text');
-    return { status: 'done', reply: textBlock ? textBlock.text : '', conversation: messages };
+    return { status: 'done', reply: textBlock ? textBlock.text : '', conversation: messages, degraded: degraded };
   }
 
   const e = new Error('Agent exceeded ' + MAX_ITERATIONS + ' tool-call iterations without finishing');
@@ -281,17 +314,29 @@ module.exports = async (req, res) => {
 
     const outcome = await runLoop(lic, messages);
 
+    if (outcome.status === 'rate_limited') {
+      res.status(429).json({
+        error: { code: 'AI_RATE_LIMIT',
+                 message: 'This app has reached its AI request limit for today. '
+                          + 'The conversation so far is returned; try again tomorrow.' },
+        conversation: outcome.conversation,
+        completed_calls: outcome.completed_calls
+      });
+      return;
+    }
+
     if (outcome.status === 'confirmation_required') {
       res.status(200).json({
         ok: true,
         status: 'confirmation_required',
         tool_use: { id: outcome.tool_use.id, name: outcome.tool_use.name, input: outcome.tool_use.input },
-        conversation: outcome.conversation
+        conversation: outcome.conversation,
+        rate_limit_degraded: !!outcome.degraded
       });
       return;
     }
 
-    res.status(200).json({ ok: true, status: 'done', reply: outcome.reply, conversation: outcome.conversation });
+    res.status(200).json({ ok: true, status: 'done', reply: outcome.reply, conversation: outcome.conversation, rate_limit_degraded: !!outcome.degraded });
   } catch (err) {
     if (err.code === 'MAX_ITERATIONS') {
       res.status(500).json({ error: { code: 'MAX_ITERATIONS', message: err.message }, conversation: err.conversation });
