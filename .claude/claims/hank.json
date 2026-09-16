@@ -1973,8 +1973,8 @@
       "task": "shared multi location multi brand architecture measurement and design",
       "claimed_at": "2026-09-16T03:15:43Z",
       "claimed_at_epoch": 1789528543.515475,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T03:42:46Z"
     }
   ]
 }
