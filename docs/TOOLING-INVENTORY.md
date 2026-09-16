@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**164 files in `tools/`.** By what actually invokes them:
+**165 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 49 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 50 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 40 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 24 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 107 |
+| CHECKER | 108 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -127,7 +127,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (49)
+## REPORT-ONLY (50)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -136,6 +136,7 @@ quiet in practice.
 
 | Tool | Promoted | What it catches |
 |---|---|---|
+| `advisory_lock_isolation_check.py` | 2026-09-15, report-only on its first day like every other checker here. It reports a SUPERSEDED stale migration today, which is a real finding and not one a push should be blocked on | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one |
 | `bypassed_constant_check.py` | 2026-09-14, the day it was built. Report-only: it reports a shape that is sometimes deliberate, and a checker whose finding might be a considered choice has no business refusing a push | a declared decimal rate constant that some call site in the same app HTML bypasses with the literal value -- so changing the rate moves the declaration and leaves those sites quietly wrong |
 | `checkblocks.py` | 2026-09-12, after being given an exit code it never had | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check |
 | `cleanup_confirm_check.py` | 2026-09-10, written the same day for a rule that existed since 2026-08-26 with no mechanism behind it | a cleanup or migration file whose destructive statements carry no confirm query and no expected answer -- so nobody can ever establish what it did |
@@ -365,11 +366,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      164   git ls-files tools/
+  tools on disk                      165   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                47   report_only_checks.REGISTRY
-  tools invoked by tests/            108   tests/**/*.py, *.js
+  report-only registry                48   report_only_checks.REGISTRY
+  tools invoked by tests/            109   tests/**/*.py, *.js
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

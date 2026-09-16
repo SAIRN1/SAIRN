@@ -85,9 +85,69 @@ declare
   v_minute bigint;
   v_hour   bigint;
   v_day    bigint;
+  v_iso    text;
 begin
   if p_minute_max is null or p_hour_max is null or p_day_max is null then
     return jsonb_build_object('error', 'all three window maxima are required');
+  end if;
+
+  -- ── THE PRECONDITION THE ADVISORY LOCK'S CORRECTNESS RESTS ON ────────────
+  -- ADDED 2026-09-15 (Hank). THIS FUNCTION WAS THE LAST OF THE THREE WITHOUT
+  -- IT. `sairn_ai_rate_limit_consume` got the guard on 2026-09-14 when item
+  -- 78's formal model stopped assuming the isolation level, and
+  -- `sairnlaw_rate_limit_consume` was written with it the same day. This file
+  -- predates both (2026-09-04) and was never swept -- the same shape as the
+  -- two rate limiters item 78's triage found unswept in wex.js and
+  -- intl-caselaw.js, one level down.
+  --
+  -- WHY THE LOCK IS NOT ENOUGH ON ITS OWN. `pg_advisory_xact_lock` serialises
+  -- ACQUISITION. It does not move the transaction's SNAPSHOT. Under read
+  -- committed each `select count(*)` below takes a fresh snapshot, so it sees
+  -- every row committed by the caller that just released the lock, and
+  -- count-then-insert is genuinely atomic. Under REPEATABLE READ or
+  -- SERIALIZABLE the snapshot is taken once, at the transaction's first data
+  -- statement, so a caller that WAITED on the lock still counts against a
+  -- snapshot from before the holder committed -- and then inserts. The cap
+  -- over-runs with the lock working perfectly the whole time.
+  -- `node tools/rate_limit_race_model.js` enumerates that schedule.
+  --
+  -- ── AND THE CONSEQUENCE HERE IS NOT THE ONE THE AI LIMITER CARRIES ───────
+  -- RE-QUALIFIED RATHER THAN COPIED (cross-domain discipline 7: byte-identical
+  -- is not safe-in-context). The mechanism is the same three lines. What is
+  -- different is what happens when they fire, and it is different in BOTH
+  -- directions:
+  --
+  --   * WORSE WITHOUT IT. The AI limiter over-running spends an internal
+  --     budget. This one over-running spends a THIRD PARTY's documented
+  --     allowance on a token shared by every SAIRNlaw firm, and the penalty --
+  --     CourtListener throttling or revoking that token -- takes the citator
+  --     down for every firm at once and cannot be undone from this side. The
+  --     ceiling is 4 PER MINUTE, so the over-run needs two concurrent callers,
+  --     not fifty.
+  --
+  --   * SHARPER WHEN IT FIRES. `api/_lib/ai-rate-limit.js` ALLOWS the call
+  --     when its RPC errors. This one REFUSES: `consumeAtomic()` falls back to
+  --     the legacy path on a 404 and ONLY a 404, and throws on everything
+  --     else -- read out of api/_lib/courtlistener.js:62-63, not assumed. So a
+  --     raise here does not degrade to the racy path; it stops the citator.
+  --     THAT IS THE INTENDED DIRECTION and it is stated so nobody discovers it
+  --     during an outage: "I do not know whether we are within a third party's
+  --     limit on a shared credential" is not a state to spend budget in.
+  --
+  -- Nothing on this deployment sets a non-default isolation level today, which
+  -- is exactly why the guard exists: `alter role service_role set
+  -- default_transaction_isolation = 'repeatable read'` is ONE statement, it
+  -- would look like a hardening change, and it would silently re-open the bug
+  -- this whole file was written to close.
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'cl_rate_limit_consume requires READ COMMITTED; this transaction is %. '
+      'The advisory lock serialises acquisition, not the snapshot, so under % '
+      'a waiting caller counts against a stale snapshot and the shared '
+      'CourtListener budget over-runs with the lock working perfectly.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
   end if;
 
   -- One budget, one token, one lock. Held to end of transaction; every
@@ -148,3 +208,21 @@ grant execute on function public.cl_rate_limit_consume(integer, integer, integer
 -- rows age out of every window on their own -- the day window is 24 hours, so
 -- a burst of test rows suppresses real traffic for that long. Use small maxima
 -- for the limited: true cases, which write nothing.
+--
+-- ── RE-RUN REQUIRED, 2026-09-15 ────────────────────────────────────────────
+-- The isolation guard was added on 2026-09-15 and this file uses `create or
+-- replace`, so RUNNING IT AGAIN IS SAFE AND IS WHAT INSTALLS THE GUARD. Until
+-- it is re-run, the deployed function is the 2026-09-04 version and the
+-- REPEATABLE READ hole is open on the live database -- the repository being
+-- correct is not the same as the database being correct, and this line exists
+-- so the two are not confused.
+--
+-- Verify the guard itself, and it is the one check that proves the addition
+-- rather than the function:
+--   begin;
+--   set transaction isolation level repeatable read;
+--   select public.cl_rate_limit_consume(1000, 1000, 1000);
+--     -- EXPECTED: ERROR 25000 "requires READ COMMITTED; this transaction is
+--     -- repeatable read". A jsonb row here means the guard is NOT installed
+--     -- and the re-run did not happen, whatever anything else says.
+--   rollback;

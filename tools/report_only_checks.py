@@ -1333,6 +1333,47 @@ REGISTRY = [
                     'the 17 that do not resolve here rather than a plausible '
                     'story doing it. EXIT 2 TODAY, not 0, on the remaining 2',
     },
+    {
+        'tool': 'advisory_lock_isolation_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-15, report-only on its first day like every other '
+                    'checker here. It reports a SUPERSEDED stale migration '
+                    'today, which is a real finding and not one a push should '
+                    'be blocked on',
+        'catches': 'a plpgsql function that takes a pg_advisory lock, then '
+                   'READS state and WRITES based on it, with nothing requiring '
+                   'READ COMMITTED. Classifies SELECT ... FOR UPDATE and '
+                   'UPDATE ... RETURNING as SAFE_SHAPE rather than flagging '
+                   'them -- both raise 40001 under REPEATABLE READ, which is '
+                   'loud, and a checker that flags the two correct patterns '
+                   'alongside the broken one is one people switch off. Also '
+                   'reports an OLDER file defining the same function without '
+                   'the guard, because `create or replace` means re-running it '
+                   'silently reverts one',
+        'why_it_matters': 'THE DEFECT IS INVISIBLE IN THE CODE THAT CONTAINS '
+                          'IT. pg_advisory_xact_lock serialises ACQUISITION, '
+                          'not the SNAPSHOT: under REPEATABLE READ a caller '
+                          'that WAITED on the lock still reads from before the '
+                          'holder committed, then writes. The cap over-runs or '
+                          'the balance overdraws with the lock working '
+                          'perfectly, with no error and no contention symptom '
+                          '-- the code is correct and the thing that is wrong '
+                          'is a setting in another file, one `alter role` '
+                          'statement away and looking like a hardening change',
+        'evidence': 'FIRST RUN 2026-09-15 over 9 advisory-lock functions found '
+                    'THREE unguarded, and the sharpest was '
+                    'law_check_and_insert_disbursement -- attorney IOLTA trust '
+                    'money, where two concurrent disbursements each compute the '
+                    'balance from before the other committed and BOTH pass the '
+                    'sufficiency check. Its sibling law_check_and_void_deposit '
+                    'already DESCRIBED the hazard in a comment and nothing '
+                    'enforced it. All three guarded the same day; 31-arm probe '
+                    'at tests/run_advisory_lock_isolation_probe.py. The blind '
+                    'lock runs on EVERY run, not only --self-check, and its own '
+                    'fixtures caught two real bugs in the first draft before it '
+                    'ever touched sql/',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

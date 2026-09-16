@@ -92,6 +92,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING | `temporary_state_check.py` | real run 2026-09-14: 723 files, 0 declarations, 175 undeclared candidates, PASS. TWO REAL DEFECTS IN THE SUBJECT were found by building the control first -- a case-insensitive /config/ matched storeError('CONFIG', ...) in api/_lib/sd-store.js, and the Python `= True` blind spot was real and undisclosed. And a LIVE finding, not historical: stonedesk.html 2286/2299/6350 set sdSyncSuppressed=true, call st(), clear it, with no `finally` -- a throw between them silences every later server write for the session. 24-arm probe; neutering FLAG_ON collapses the positive arms, and the sabotage asserts its own anchor is present first. 0.4s |
 | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists | `export_coverage_check.py` | real run 2026-09-14: 11 Class A resources parsed from docs/2026-09-13-irreversible-write-witnessing-scoping.md rather than hardcoded. FIRST run: 3 exportable, 4 gaps in an existing registry, 4 in apps with no export path at all. AFTER the fix: 7 exportable, 0 gaps, the same 4 with no machinery -- and the probe now drives the FAILING direction against a planted registry, so closing the real gaps did not disarm it. The ON-SCREEN half of item 39 is NOT attempted here and the tool says so in its own header: two detectors for it were wrong in opposite directions, one missing alf_staff_credentials entirely and one binding most of SAIRNdental. 21-arm probe; blinding the registry reader collapses the EXPORTABLE answers, and section E pins all eleven verdicts by name so a registry change flips an arm -- which is exactly what happened when the four were fixed, and the table was edited in the same commit as the apps. 26 arms. 0.2s |
 | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify | `hover_separation_audit.py` | 2026-09-15 first run: 5,241 commits, 20 auditor commits, 0 violations; self-log 105 entries, chain INTACT, 33 SHAs claimed, 16 resolve and all 16 in scope. 15 of 15 "Committed a, pushed b" pairs have the local sha absent and the pushed one present, which is what explains 15 of the 17 that do not resolve here rather than a plausible story doing it. EXIT 2 TODAY, not 0, on the remaining 2 |
+| a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one | `advisory_lock_isolation_check.py` | FIRST RUN 2026-09-15 over 9 advisory-lock functions found THREE unguarded, and the sharpest was law_check_and_insert_disbursement -- attorney IOLTA trust money, where two concurrent disbursements each compute the balance from before the other committed and BOTH pass the sufficiency check. Its sibling law_check_and_void_deposit already DESCRIBED the hazard in a comment and nothing enforced it. All three guarded the same day; 31-arm probe at tests/run_advisory_lock_isolation_probe.py. The blind lock runs on EVERY run, not only --self-check, and its own fixtures caught two real bugs in the first draft before it ever touched sql/ |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -355,6 +356,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| 🚨 **The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ATTORNEY TRUST MONEY, and in two other places** | **SWEPT AND GUARDED 2026-09-15 (Hank)** &mdash; `law_check_and_insert_disbursement`, `law_check_and_void_deposit`, `cl_rate_limit_consume`. New `tools/advisory_lock_isolation_check.py` (report-only, r | `tests/run_advisory_lock_isolation_probe.py` |
 | ~~**Three of tesseract's four run-time fetches cannot be hashed, and `sairnlaw.html` has no Content-Security-Policy to bound where they come from**~~ &mdash; **CLOSED: a CSP now bounds them, verified in a real browser on the live page** | **CLOSED 2026-09-10 (CC)** &mdash; `1b6c3746`. Found 2026-09-10 (Hank) while closing the SRI row | `tests/sairnlaw_csp.js` |
 | ~~AWAITING INDEPENDENT VERIFICATION &mdash; `b5a76cf`, the AI Chain of Custody matter-attribution fix~~ &mdash; **REVIEWED. The four states were three, and the panel put a FALSE reason in front of a reviewer of a legal audit trail** | **REVIEW DONE 2026-09-08 (CC), not Hank.** All six items answered; the defect is FIXED. &#9888; The ROW STAYS OPEN for one bounded reason, the same as the StoneDesk row above: the correction is mine,  | `tests/law_custody_attribution_probe.py` |
 | `law_billingcodes` is kept on the device and sent nowhere — **left that way on purpose, measured before deciding** | **CLOSED-AS-DECIDED 2026-09-10 (CC)** — reason recorded in `api/_resources/sairnlaw.js` | `tests/dnt_vendor_backup_probe.py` |
@@ -446,7 +448,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**234 of 446 test files are traced to a stated requirement. 212 are not.**
+**235 of 447 test files are traced to a stated requirement. 212 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -682,10 +684,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 446   tests/**, api/*.test.js
-  open-work rows citing a test       224   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 447   tests/**, api/*.test.js
+  open-work rows citing a test       225   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                47   report_only_checks.REGISTRY
+  report-only registry                48   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

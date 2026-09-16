@@ -114,7 +114,48 @@ declare
   v_existing public.law_trusttx;
   v_existing_found boolean;
   v_other_client text;
+  v_iso text;
 begin
+  -- ── THE PRECONDITION THE BALANCE CHECK RESTS ON ─────────────────────────
+  -- ADDED 2026-09-15 (Hank). THE HAZARD WAS ALREADY KNOWN AND WRITTEN DOWN IN
+  -- THIS FILE -- see law_check_and_void_deposit below, whose own comment says
+  -- a change to REPEATABLE READ would make its re-select "silently return the
+  -- same pre-lock tuple ... with no error anywhere". That was correct, it was
+  -- never mechanised, and THIS function -- the one that moves money out -- had
+  -- the identical dependency with no comment at all.
+  --
+  -- WHAT THE LOCK DOES AND DOES NOT DO. pg_advisory_xact_lock serialises
+  -- ACQUISITION; it does not move the transaction's SNAPSHOT. Under read
+  -- committed, law_client_balance() below runs after the lock and takes a
+  -- fresh snapshot, so it sums every disbursement the previous holder
+  -- committed. Under REPEATABLE READ or SERIALIZABLE the snapshot is fixed at
+  -- the transaction's first data statement, so a caller that WAITED on the
+  -- lock still sums a balance from BEFORE the holder's disbursement.
+  --
+  -- THE CONSEQUENCE IS NOT A COUNTER OVER-RUN. Two concurrent disbursements
+  -- against one client each see the full balance, each pass `p_amount >
+  -- v_balance`, and both insert into law_trusttx: AN OVERDRAWN CLIENT TRUST
+  -- LEDGER, with the advisory lock working perfectly the whole time. On an
+  -- IOLTA account that is a bar-reportable event, not an internal accounting
+  -- discrepancy -- which is why this raises rather than degrading to anything.
+  --
+  -- NOT EXPLOITABLE TODAY, AND THAT IS THE REASON FOR THE GUARD RATHER THAN AN
+  -- ARGUMENT AGAINST IT. Nothing on this deployment sets a non-default
+  -- isolation level. `alter role service_role set
+  -- default_transaction_isolation = 'repeatable read'` is ONE statement that
+  -- reads as a hardening change.
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'law_check_and_insert_disbursement requires READ COMMITTED; this '
+      'transaction is %. The advisory lock serialises acquisition, not the '
+      'snapshot, so under % a waiting caller computes the trust balance from '
+      'before the previous disbursement committed and the client ledger can '
+      'be overdrawn with the lock held correctly.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
+  end if;
+
   perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_client_id));
 
   -- RETRY-IDEMPOTENCY, CLIENT-SCOPED. Same id AND same client is a genuine
@@ -222,7 +263,27 @@ declare
   v_row public.law_trusttx;
   v_balance_without numeric;
   v_voided_at timestamptz;
+  v_iso text;
 begin
+  -- ── THE COMMENT BELOW WAS RIGHT AND IS NOW MECHANICAL, 2026-09-15 (Hank) ─
+  -- The re-select after the lock already carried an accurate warning that a
+  -- change to REPEATABLE READ would make it "silently return the same pre-lock
+  -- tuple ... with no error anywhere". PROSE IS NOT A GUARD. A hazard that is
+  -- known, written down, and left unenforced is the most common defect shape
+  -- this platform records, and it is what let the same dependency sit
+  -- undocumented in the sibling function above.
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'law_check_and_void_deposit requires READ COMMITTED; this transaction '
+      'is %. The re-select after the advisory lock exists to see another '
+      'transaction''s committed effects, and under % it returns the same '
+      'pre-lock tuple instead -- so an already-voided transaction can be '
+      'voided twice with no error anywhere.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
+  end if;
+
   select * into v_row
     from public.law_trusttx
     where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
@@ -231,12 +292,12 @@ begin
       using errcode = 'P0001';
   end if;
   perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || v_row.client_id));
-  -- Re-select after the lock: relies on PostgREST/Postgres's default READ
-  -- COMMITTED isolation, where each statement after this point takes a fresh
-  -- snapshot -- if this connection pool were ever changed to REPEATABLE READ
-  -- or SERIALIZABLE, this re-select would silently return the same pre-lock
-  -- tuple and this guard's whole point (seeing another transaction's
-  -- committed effects) would quietly stop working with no error anywhere.
+  -- Re-select after the lock. THE ISOLATION DEPENDENCY THIS DESCRIBES IS NOW
+  -- ENFORCED AT THE TOP OF THIS FUNCTION rather than only described here --
+  -- the description was correct and, on its own, could not stop anything.
+  -- Under READ COMMITTED each statement after the lock takes a fresh snapshot,
+  -- which is what makes the re-select see another transaction's committed
+  -- effects.
   select * into v_row
     from public.law_trusttx
     where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
