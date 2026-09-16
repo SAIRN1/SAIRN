@@ -160,16 +160,6 @@ PURPOSES = {
         'WRONG TWICE and both are recorded in its header -- it missed ten apps '
         'that hold the proxy URL in a constant, and it counted the AI call\'s '
         'own POST as a data write, inflating the headline from 14 to 59'),
-    'accepted_risk_expiry_audit.py': ('CHECKER',
-        'an accepted risk whose EXPIRY CONDITION cannot fire -- no trigger '
-        'stated, or a trigger no tool evaluates, or a tool nothing invokes. '
-        'Complements accepted_risk_scan.py rather than repeating it: that one '
-        'asks whether an acceptance reached a register at all, this one reads '
-        'the ones that did. Found its own first case immediately -- the '
-        'supabase_admin row named a trigger and no monitor, while '
-        'ownership_evidence_drift.py had been watching it for a day and the row '
-        'had never been updated to say so. Over-reports on purpose; the count '
-        'is a read-list, not a score'),
     'accepted_risk_scan.py': ('CHECKER',
         'a risk somebody deliberately ACCEPTED in a comment and recorded '
         'nowhere central -- the shape that got api/sairncash/portal.js read as '
@@ -506,12 +496,10 @@ PURPOSES = {
     'independence_check.py': ('CHECKER', 'an index row claiming an INDEPENDENT review that names only a second READER, or names no method at all -- a second read shares the assumptions of the first, so it cannot break a shared blind spot; also reports that the defect register is not capturing independent-review at all, which blocks the fraction-caught measurement'),
     'pra_event_tree.py': ('CHECKER', 'which END STATE a component failure reaches -- fails closed or not, announced or not, reconstructible or not -- for every chokepoint in docs/SPOF-REGISTER.md and every secret with no guard. Top-down and per-system, the complement of fmea_draft.py which is bottom-up and per-file. REFUSES to produce a frequency or a fused risk score: the only candidate population is defects-found-in-code over six days, which is not a component-failure rate. A branch that took one value on the input set is reported as not having discriminated'),
     'reliability_growth.py': ('CHECKER', 'whether the defect discovery series may be fitted by a reliability growth model AT ALL -- enough intervals, a FALLING rate, and effort recorded. Goel-Okumoto and Musa-Okumoto are implemented and locked against synthetic curves with known parameters, so the refusal is a statement about the data rather than about a fitter nobody has seen work. Today it refuses on all three criteria and names each measured value'),
-    'flaky_checker_quarantine.py': ('CHECKER', 'a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard'),
     'condition_coverage.py': ('CHECKER', 'an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it'),
     'idempotency_check.py': ('CHECKER', 'a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run'),
     'invariant_runner.js': ('CHECKER', 'the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality'),
     'invariant_registry.js': ('CHECKER', 'not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine'),
-    'testability_gate.py': ('CHECKER', 'a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus'),
     'testability_criteria.py': ('CHECKER', 'not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything'),
     'fmea_draft.py': ('CHECKER', 'a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted'),
     'fmea_prediction_check.py': ('CHECKER', 'whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows'),

@@ -317,7 +317,20 @@ def _kind_before(code, brace):
             j -= 1
         while j >= 0 and code[j] in ' \t\r\n':
             j -= 1
-    m = LOOP_KEYWORD.search(code[:j + 1])
+    # ── A BOUNDED WINDOW, AND THE UNBOUNDED VERSION MADE THIS O(n^2) ────────
+    # This was `LOOP_KEYWORD.search(code[:j + 1])`. The pattern ends in `\s*$`,
+    # so it only ever matches the last few characters -- but slicing the whole
+    # prefix and searching it happens once PER BRACE, and `stonedesk.html` has
+    # tens of thousands. MEASURED 2026-09-16 while triaging this tool for
+    # promotion: 232 SECONDS to analyse 362 source units, down to 25 with the
+    # window. The answer never changed, which is exactly why nothing caught it
+    # -- a correct check that nobody had timed.
+    #
+    # The window is far wider than any keyword needs (`while` plus whitespace)
+    # so the negative lookbehind still sees real preceding context rather than
+    # the cut edge -- a window trimmed to the keyword length would let
+    # `...somethingfor {` match `for` with nothing in front of it.
+    m = LOOP_KEYWORD.search(code[max(0, j - 200):j + 1])
     return (m.group(1) if m else None), header
 
 

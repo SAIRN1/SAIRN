@@ -154,6 +154,90 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    # ── TRIAGE BATCH 2026-09-16. Three promoted, each on a run that was READ
+    # ── rather than on its docstring, and each timed against the same standard
+    # ── the not-promoted rows below are held to.
+    {
+        'tool': 'accepted_risk_expiry_audit.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only. 0.4 seconds, and its number moves '
+                    'only when somebody accepts or discharges a risk -- which is '
+                    'exactly the event a push notice should surface, because it '
+                    'is the one nobody goes looking for.',
+        'catches': 'an accepted risk whose expiry condition cannot fire: no '
+                   'condition stated at all, or a tool named as the trigger '
+                   'that nothing invokes',
+        'why_it_matters': 'an accepted risk is a decision to ship a known '
+                          'problem UNTIL something changes. If the "until" '
+                          'cannot be evaluated, the acceptance is permanent and '
+                          'nobody decided that. The two failure shapes are '
+                          'different and both are silent: UNCONDITIONAL never '
+                          'had a condition, UNINVOKED has one that no scheduler '
+                          'or gate ever asks. Neither produces any signal at the '
+                          'moment it matters, which is months later',
+        'evidence': 'REAL RUN 2026-09-16: 12 accept/defer decisions found. 2 '
+                    'RUNNING, 1 UNINVOKED, 0 MANUAL, and NINE UNCONDITIONAL -- '
+                    'three quarters of the register has no stated expiry '
+                    'condition at all, including index:263, which names '
+                    'tests/seed_never_syncs_platform.js as its trigger and '
+                    'states no condition under which the acceptance ends. The '
+                    'tool separates "no condition" from "a condition nothing '
+                    'evaluates" rather than reporting one number, which is what '
+                    'makes the 9 actionable',
+    },
+    {
+        'tool': 'flaky_checker_quarantine.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only. 2.6 seconds, and it is one of the '
+                    'few checks whose subject is THIS REGISTRY -- it reports '
+                    'which registered checks have evidence of ever having been '
+                    'measured, so it is the thing that would notice the rest '
+                    'going quiet.',
+        'catches': 'a registered checker with no evidence either way -- never '
+                   'measured, as distinct from measured and stable',
+        'why_it_matters': 'a fleet report that covers only what it reached reads '
+                          'as a clean fleet. The tool refuses that shape '
+                          'explicitly: it prints NOT MEASURED AT ALL above the '
+                          'rows, not below them, because a reader who sees the '
+                          'rows first has already formed the wrong impression',
+        'evidence': 'REAL RUN 2026-09-16: 46 of 52 registered checkers carry '
+                    'evidence; SIX have none either way -- '
+                    'advisory_lock_isolation_check.py, check_precedence.py, '
+                    'dispatch_state.py, hover_separation_audit.py, '
+                    'register_feed_gate.py and one more. Its own blind lock '
+                    'reports 16/16 fixtures correct and states it was run BEFORE '
+                    'any checker was measured, so the criteria were not tuned '
+                    'against the corpus they judge',
+    },
+    {
+        'tool': 'testability_gate.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only, AND ITS OWN OUTPUT ARGUES AGAINST '
+                    'TRUSTING ITS NUMBER YET -- which is the reason to register '
+                    'it rather than not. 0.2 seconds. A rate this high needs '
+                    'watching across pushes to calibrate, and a check nobody '
+                    'watches cannot be calibrated.',
+        'catches': 'a requirement in the generated traceability matrix that is '
+                   'not testable as written -- vague, hedged, or stating no '
+                   'observable behaviour',
+        'why_it_matters': 'an untestable requirement cannot be traced to a test '
+                          'that proves it, so every coverage figure built on the '
+                          'matrix is a figure over a corpus that partly cannot '
+                          'be covered at all. The number is upstream of several '
+                          'others rather than standing alone',
+        'evidence': 'REAL RUN 2026-09-16: 350 requirements read from 4 sections '
+                    'of the generated matrix, 137 NOT TESTABLE AS WRITTEN (39%), '
+                    '0 declared untestable on purpose. Registered WITH that rate '
+                    'unresolved, because the tool says the honest thing about it '
+                    'in its own output -- "a gate flagging most of a corpus that '
+                    'people have been working from is far more likely to be '
+                    'miscalibrated than to have found that most requirements are '
+                    'junk" -- and 17/17 locked fixtures say the criteria were '
+                    'not tuned against this corpus',
+    },
     {
         'tool': 'subprocess_decode_check.py',
         'mode': 'once',
@@ -185,6 +269,25 @@ REGISTRY = [
                           'FALSE FINDING about a push that touched no Tier A '
                           'resource. 358 sites in 137 files were fixed in one '
                           'sweep; this keeps the number at zero',
+        # THE ONLY ENTRY OF 52 THAT CARRIED NO `evidence`, and its absence broke
+        # `--list` for the WHOLE registry: the reader prints e['evidence'] for
+        # every row and this one sorts first, so the view crashed on its first
+        # line and never reached the other 51. A field that is optional in the
+        # data and mandatory in the reader is a KeyError waiting for whoever
+        # adds the next row.
+        'evidence': 'REAL RUN 2026-09-16, and it found one the 358-site sweep '
+                    'did not. is_subprocess_call() required the receiver to be '
+                    'the literal Name `subprocess`, so '
+                    'tests/seam_check/run_probe.py line 17 -- `import '
+                    'subprocess as _sp` then `_sp.run(..., text=True)` with no '
+                    'encoding -- was never in the population the sweep cleared. '
+                    'Not reported clean: never examined. The same file calls '
+                    'subprocess.run correctly five lines below it. Count went '
+                    '2 -> 3 once the binding was read from the imports rather '
+                    'than assumed, then 3 -> 0 with --fix, and '
+                    'tests/run_subprocess_decode_probe.py\'s zero-outstanding '
+                    'arm went from RED to green. The completeness claim was a '
+                    'count of what the detector could see',
     },
     {
         'tool': 'completeness_check.py',
@@ -1561,6 +1664,60 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    # ── TRIAGE BATCH 2026-09-16, and every decision below is a MEASURED
+    # ── RUNTIME rather than a reading of the tool's docstring.
+    # The push path already carries real cost, and a check people wait for is a
+    # check people route around. `trend_alarm.py` is recorded below as
+    # not-promoted partly for taking fourteen seconds, so that is the standard
+    # these were held to rather than a number invented for them.
+    ('retry_backoff_check.py', 'NOT ON THE PUSH PATH, ON MEASURED COST. 25 seconds over 362 '
+     'source units -- every api/**.js plus every <script> block in every app HTML, all of '
+     'which must be brace-matched into a block tree because the question it asks is '
+     'CONTAINMENT and containment cannot be grepped. Triaging it is what found it was '
+     'far worse: `_kind_before()` searched the ENTIRE file prefix once per brace, which '
+     'is O(n^2) on a 2MB file and took 232 SECONDS. That is fixed and the answer never '
+     'changed, which is exactly why nothing caught it -- a correct check nobody timed. '
+     'At 25s it is still nearly twice trend_alarm.py\'s rejected fourteen. It also has '
+     'almost nothing to say per run: the platform has TWO true retries and the standing '
+     'finding -- api/_lib/resilience.js has no importer, so the only breaker cannot fire '
+     '-- does not move push to push. It belongs on the cadence the SPOF and accepted-risk '
+     'registers are read on, not in front of somebody waiting to push'),
+    ('suite_control_triage.py', 'NOT ON THE PUSH PATH, SAME MEASUREMENT: 28 seconds, '
+     'because it parses every probe in tests/ to decide which suites have a negative '
+     'control and then joins that to the criticality register. AND ITS NUMBER IS A '
+     'BACKLOG, NOT A GATE. It reports 138 suites with no control; the right value is not '
+     'zero this week and a figure that cannot move between two pushes is one people stop '
+     'reading. It is the worklist for a session that has decided to spend an evening on '
+     'suite controls, which is how it has actually been used every time so far'),
+    ('guard_ablation.py', 'NOT ON THE PUSH PATH: it did not finish in 180 seconds on this '
+     'tree. Ablation is expensive by construction -- it removes a guard and re-runs what '
+     'depended on it -- so this is a property of the method rather than an implementation '
+     'defect, and the number is recorded rather than treated as a bug to fix. Nothing '
+     'that cannot state its own worst-case runtime belongs on a blocking path'),
+    ('hover_auditor_scope_gate.py', 'NOT A REGISTRY CANDIDATE AND ALREADY STRONGER THAN '
+     'ONE. It is a per-clone git hook that REFUSES the commit, which is upstream of any '
+     'push notice. Registering it would run it a second time, in a second place, with a '
+     'weaker verdict -- and a check that reports where it elsewhere refuses teaches '
+     'people that its report is advisory'),
+    ('hover_separation_ci.py', 'NOT A REGISTRY CANDIDATE BY DESIGN. Its whole purpose is '
+     'to run where a local check cannot be switched off -- GitHub\'s side of the push, as '
+     'a required status. Putting it in a registry that runs locally would reintroduce '
+     'exactly the bypass it exists to close'),
+    ('sairn_claim_hook.py', 'ALREADY WIRED, as a SessionStart hook. It answers a question '
+     'at the moment a session begins -- is somebody else already on this -- and that '
+     'answer is worthless at push time, when the duplicated work has already been done'),
+    ('session_lock_check.py', 'ALREADY WIRED, SessionStart, same reasoning as '
+     'sairn_claim_hook.py. Its subject is two sessions in one clone, which is decided '
+     'before any work happens and cannot be usefully re-asked afterwards'),
+    ('sairn_rebase_resolve.py', 'NOT A CHECKER. It is an operator tool that RESOLVES a '
+     'rebase; it makes changes rather than reporting on them, and nothing in this '
+     'registry is allowed to write'),
+    ('fmea_draft.py', 'NOT A CHECKER. It WRITES a draft, and is already invoked at the '
+     'only moment its answer changes -- tools/defect_register.py calls the FMEA loop on '
+     'every --add. A push-time copy would ask the same question with no new information'),
+    ('load_schema_snapshot.py', 'NOT A CHECKER. It loads a snapshot for other tools to '
+     'read. Its failure mode is that its OUTPUT is stale, which is a question for the '
+     'checks that consume it and not one it can ask about itself'),
     ('landing_verification.py', 'DELIBERATELY NOT ON THE PUSH PATH, and the reason is '
      'the check itself rather than a preference. Two of its three sections need the '
      'NETWORK -- 22 live route fetches and two package registries -- so on every push '
