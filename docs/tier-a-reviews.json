@@ -211,6 +211,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-16T03:11:02Z",
+      "resources": [
+        "dnt_ar",
+        "dnt_payments",
+        "sb_payruns"
+      ],
+      "files": [
+        "tools/suite_control_triage.py"
+      ],
+      "what": "tools/suite_control_triage.py (new, report-only), tools/suite_control_coverage.py probe-universe fix, tests/run_tool_selftest_probe.py argparse fix, tests/run_tool_selftest_probe_control.py (new control). NOTE FOR THE REVIEWER: the Tier A names the gate matched are FIXTURE STRINGS in suite_control_triage.py's blind lock, not resources it serves -- dnt_ar is there specifically to assert that a substring match against dnt_area does NOT fire. None of these four files reads, writes or gates any resource. Review the checkers as checkers.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

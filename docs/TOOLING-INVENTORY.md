@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**179 files in `tools/`.** By what actually invokes them:
+**180 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,13 +28,13 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 49 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 36 | nothing runs these at all |
+| **UNWIRED** | 37 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 122 |
+| CHECKER | 123 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 21 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 4 wired nowhere at all, and 17
+**The number to act on: 22 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 17
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 21, by name, so this is actionable rather than a statistic:
+The 22, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -73,6 +73,7 @@ The 21, by name, so this is actionable rather than a statistic:
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
 | `sairn_rebase_resolve.py` | SUITE-ONLY | a rebase conflict about to be resolved by the WRONG STRATEGY FOR ITS FILE CLASS -- it regenerates and stages a self-declared GENERATED document, REFUSES a source file outright, and refuses the whole run rather than doing a mixed set by halves; written after a --theirs loop put literal conflict markers on origin/main |
+| `suite_control_triage.py` | UNWIRED | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low |
 | `testability_criteria.py` | SUITE-ONLY | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything |
 | `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 
@@ -309,7 +310,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (36)
+## UNWIRED (37)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -352,6 +353,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
 | `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
+| `suite_control_triage.py` | CHECKER | which of the UNCONTROLLED suites to sabotage first -- it joins suite_control_coverage.py to docs/CRITICALITY-TIERS.md so the 142 suites nobody has ever tried to break are ranked by whether they guard money or a regulated record, rather than worked alphabetically. Catches the suite whose assertion power is unmeasured while the thing it guards is the most expensive kind to get wrong. Reports UNCLASSIFIED apart from Tier C, because a suite that names no registered resource is unranked and not low | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
 
 ---
@@ -382,7 +384,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      179   git ls-files tools/
+  tools on disk                      180   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                51   report_only_checks.REGISTRY
