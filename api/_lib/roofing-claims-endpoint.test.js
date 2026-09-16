@@ -1,4 +1,9 @@
 // api/_lib/roofing-claims-endpoint.test.js
+// REQUIREMENT: the claim money fields are stored SEPARATELY and the acv
+//   mismatch is a DERIVED summary on the response rather than a stored figure,
+//   so a carrier disagreement is visible without a second number to keep in
+//   step
+//
 // Round-trip tests for the rf_claims / rf_claim_photos branches of
 // api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-claims-endpoint.test.js

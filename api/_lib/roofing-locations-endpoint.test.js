@@ -1,4 +1,8 @@
 // api/_lib/roofing-locations-endpoint.test.js
+// REQUIREMENT: creating a location is management-only, a location with no name
+//   is refused, and the default location id is PUBLISHED to every signed-in
+//   role rather than inferred by each caller
+//
 // Round-trip tests for the Phase 4a rf_locations / rf_schedule branches of
 // api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-locations-endpoint.test.js

@@ -1,4 +1,8 @@
 // api/_lib/roofing-agreements-endpoint.test.js
+// REQUIREMENT: a contingency rule with NO authority citation is refused AT THE
+//   ENDPOINT and verified_by is server-stamped from the session -- any
+//   signed-in role may read the rules, and only management may write one
+//
 // Round-trip tests for the rf_claim_agreements and rf_contingency_rules
 // branches of api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-agreements-endpoint.test.js

@@ -1,4 +1,8 @@
 // api/_lib/dental-credentials-endpoint.test.js
+// REQUIREMENT: a credentialling rule missing its authority -- or missing only
+//   the QUOTE from it -- is refused, and a signed-in PROVIDER cannot write
+//   one, which is the gap that was open
+//
 // Round-trip tests for the dnt_cred_rules / dnt_credentials branches of
 // api/sd-data.js, driven through the REAL exported handler with a stubbed
 // Supabase REST layer.

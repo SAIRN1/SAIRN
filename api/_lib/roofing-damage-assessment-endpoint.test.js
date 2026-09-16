@@ -1,4 +1,8 @@
 // api/_lib/roofing-damage-assessment-endpoint.test.js
+// REQUIREMENT: a damage threshold with no source is REFUSED at storage rather
+//   than only at compute time, updated_by comes from the session, and any
+//   authenticated employee can read the threshold they are measured against
+//
 // Round-trip tests for rf_settings read/write and the rf_claims 'assess_damage'
 // verb of api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-damage-assessment-endpoint.test.js

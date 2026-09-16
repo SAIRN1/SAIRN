@@ -1,3 +1,8 @@
+// REQUIREMENT: drafting and document review RETRIEVE the real definition and
+//   inject it, because both send one ai_generate call with no `tools` field --
+//   an instruction to call a tool that is not there reads as a guard and
+//   enforces nothing
+//
 // Grounded definitions on the two SINGLE-SHOT surfaces, driven verbatim from
 // sairnlaw.html.
 //

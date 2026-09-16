@@ -505,20 +505,20 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 37 test files are traced to no stated requirement
+### 23 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 456 of 493 traced, 92.5%.
+For context and not as the headline: 470 of 493 traced, 95.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 462 citations come from
+### Where the 476 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 265 |
-| `declared` | 184 |
+| `declared` | 198 |
 | `declared+index` | 6 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
@@ -530,26 +530,13 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 37 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 23 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/deadline-washington.test.js`
 - `api/_lib/deadline-westvirginia.test.js`
 - `api/_lib/deadline-wisconsin.test.js`
-- `api/_lib/dental-credentials-endpoint.test.js`
-- `api/_lib/dnt-rollup-endpoint.test.js`
-- `api/_lib/law-trust-reconcile-endpoint.test.js`
-- `api/_lib/roofing-agreements-endpoint.test.js`
-- `api/_lib/roofing-billing-endpoint.test.js`
-- `api/_lib/roofing-claims-endpoint.test.js`
-- `api/_lib/roofing-damage-assessment-endpoint.test.js`
-- `api/_lib/roofing-locations-endpoint.test.js`
-- `api/_lib/roofing-programs-endpoint.test.js`
-- `api/_lib/roofing-supplement-endpoint.test.js`
-- `api/_lib/sairnlaw-grounded-drafting.test.js`
-- `api/_lib/sairnlaw-trust-void-race.test.js`
-- `api/_lib/sairnlaw-trusttx-collision.test.js`
 - `api/_lib/sairnsenior-appeals.test.js`
 - `api/_lib/sairnsenior-authorizations.test.js`
 - `api/_lib/sairnsenior-branches.test.js`
@@ -557,7 +544,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sairnsenior-hiring.test.js`
 - `api/_lib/sairnsenior-pay-rates.test.js`
 - `api/_lib/sairnsenior-payer-contracts.test.js`
-- `api/_lib/stonedesk-remnant-publishing.test.js`
 - `tests/hover_separation_ci_probe.py`
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`

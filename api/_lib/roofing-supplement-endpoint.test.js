@@ -1,4 +1,9 @@
 // api/_lib/roofing-supplement-endpoint.test.js
+// REQUIREMENT: a reconcile prices against the LATEST job measurement and a
+//   caller cannot substitute their own measured scope -- an omitted item is
+//   priced at full measured quantity, so the supplement is the company's
+//   figure and not the adjuster's
+//
 // Round-trip tests for the rf_claims 'reconcile' verb of api/sd-data.js,
 // through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-supplement-endpoint.test.js

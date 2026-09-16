@@ -1,4 +1,8 @@
 // api/_lib/roofing-billing-endpoint.test.js
+// REQUIREMENT: proposal and invoice totals are recomputed SERVER-SIDE and
+//   stored on the row, a client-supplied total is ignored rather than trusted,
+//   and an issued proposal with no line items is refused
+//
 // Round-trip tests for the Phase 4b rf_proposals / rf_invoices branches of
 // api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-billing-endpoint.test.js

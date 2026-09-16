@@ -1,3 +1,7 @@
+// REQUIREMENT: a remnant with NO published flag is NOT publishable -- absent
+//   means no, never yes by default -- and a SOLD remnant is not publishable
+//   even with the flag still ticked
+//
 // StoneDesk remnant publishing to the public catalog, driven verbatim from the
 // real files.
 //

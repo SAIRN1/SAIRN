@@ -1,4 +1,9 @@
 // api/_lib/law-trust-reconcile-endpoint.test.js
+// REQUIREMENT: an UNREADABLE transaction table REFUSES rather than reconciling
+//   a balance of zero against a real bank statement -- that would report a
+//   total loss of client trust money whose actual cause was a failed read, on
+//   the one figure a bar association audits
+//
 //
 // Run: node api/_lib/law-trust-reconcile-endpoint.test.js
 //

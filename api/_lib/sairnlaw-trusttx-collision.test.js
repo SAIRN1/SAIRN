@@ -1,3 +1,9 @@
+// REQUIREMENT: BOTH trusttx lookups are client-scoped and a same-id
+//   different-client collision RAISES on both paths rather than returning the
+//   other client's row, and the collision is checked BEFORE the balance guard
+//   so the caller is not told their balance is short when the balance was
+//   never the problem
+//
 // SAIRNlaw trust disbursement -- the cross-client trusttx_id collision.
 //
 // FOUND 2026-09-03 while re-verifying SAIRNlaw's open list. Recorded in

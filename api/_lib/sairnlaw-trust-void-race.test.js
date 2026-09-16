@@ -1,3 +1,8 @@
+// REQUIREMENT: a trust transaction voided elsewhere DURING the round trip
+//   stays voided, and a rejected void reverts that record to Posted -- both
+//   paths re-read the collection after the await, so an unrelated transaction
+//   changed in the meantime survives
+//
 // confirmVoid's rejection path -- driven verbatim from sairnlaw.html.
 //
 // TED'S CROSS-APP SCAN FLAGGED THIS AS A read-await-write STALE-ARRAY HIT AND

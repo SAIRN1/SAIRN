@@ -1,4 +1,9 @@
 // api/_lib/dnt-rollup-endpoint.test.js
+// REQUIREMENT: the cross-location roll-up answers 401 rather than an empty
+//   report with no session, is refused to frontdesk and provider roles, and
+//   its per-office figures are what the rows say with names taken from the
+//   registry
+//
 //
 // Run: node api/_lib/dnt-rollup-endpoint.test.js
 //

@@ -1,4 +1,8 @@
 // api/_lib/roofing-programs-endpoint.test.js
+// REQUIREMENT: a foreman can neither read a programme nor evaluate against
+//   one, and the refusal to evaluate leaks no programmes -- an estimator reads
+//   without writing, which is the distinction the role gate exists for
+//
 // Round-trip tests for the Phase 4d rf_company_programs branches of
 // api/sd-data.js, through the REAL handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-programs-endpoint.test.js
