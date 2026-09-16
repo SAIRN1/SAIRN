@@ -1414,6 +1414,16 @@
       "claimed_at_epoch": 1789517922.0043266,
       "status": "released",
       "released_at": "2026-09-16T01:38:33Z"
+    },
+    {
+      "id": "cc-1789524379",
+      "session": "cc",
+      "subject": "cc",
+      "task": "untraced count growth root cause, compromise trigger procedures for five identities, 83 untested claims tier triage, AR-1 stripe-config trigger wiring, item 79 automation bias defeater",
+      "claimed_at": "2026-09-16T02:06:19Z",
+      "claimed_at_epoch": 1789524379.7215302,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
