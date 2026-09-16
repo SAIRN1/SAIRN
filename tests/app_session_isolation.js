@@ -88,10 +88,26 @@ async function call(handler, resource, appId, sessionToken, action) {
   process.env[names.url] = 'https://stub.invalid';
   process.env[names.key] = ['stub', 'fixture', 'value'].join('-');
   let first = true;
-  global.fetch = async () => {
+  global.fetch = async (url) => {
     if (first) {
       first = false;
       return { ok: true, status: 200, json: async () => [{ status: 'active', app_id: appId }] };
+    }
+    // ── THE EMPLOYEE-AUTH LOOKUP IS ANSWERED, NOT LEFT EMPTY (2026-09-16) ──
+    // credentialStillActive() reads `<app>_employee_auth` and treats an EMPTY
+    // result as CREDENTIAL_INACTIVE -- correctly, since a session naming an
+    // employee row that does not exist is not a live credential. But this
+    // harness answered every query after the licence lookup with [], so a
+    // correctly signed-in caller was refused 403 by the re-check before any
+    // arm here could observe the thing it was driving.
+    //
+    // THAT MATTERS BEYOND THE ARMS BELOW: 403 for the right reason and 403 for
+    // the wrong one are the same number, so any arm asserting merely "not
+    // refused" would have been measuring the stub. The row is modelled as
+    // present and ACTIVE, which is the precondition for asking whether the
+    // EXPECTED APP is right -- the question this file exists for.
+    if (/_employee_auth\?/.test(String(url))) {
+      return { ok: true, status: 200, json: async () => [{ active: true }] };
     }
     return { ok: true, status: 200, json: async () => [] };
   };
@@ -279,18 +295,78 @@ section('0. the fixture really is a token, and really is app-bound');
   // canary and a healthy canary look identical. "No session complaints" is
   // evidence the fifteen are not FAILING; it is not evidence they are being
   // USED. The trigger cannot be confirmed from an error table alone.
-  for (const resource of PHASE_1_UNGATED) {
+  // ── THE ARM BELOW PASSED WHILE PRINTING ITS OWN REFUTATION ───────────────
+  // Until 2026-09-16 this loop asserted `out.code !== 401` and ran over all
+  // four resources. law_trusttx was gated on 2026-09-16 and SD_SESSION_GATED
+  // refuses with 403 FORBIDDEN, not 401 -- so the arm stayed GREEN and printed:
+  //
+  //   ok  PHASE 1 (2026-09-05, still open): law_trusttx is reachable with the
+  //       LICENCE ALONE -- no session -- and answers 403
+  //
+  // The message interpolates the status code that disproves the sentence it is
+  // asserting. REACHABILITY WAS ENCODED AS THE NEGATION OF ONE REFUSAL CODE,
+  // and the refusal that arrived was the other one. This file's own comment,
+  // six lines up, says a silent canary and a healthy canary look identical --
+  // and this is a canary that sang the wrong note and was counted as singing.
+  //
+  // Two changes, both of them the point: reachability is asserted POSITIVELY as
+  // 200, and the gated resource is in its own list with the inversion the
+  // section asked for. Never `!== <one code>` for "it got through".
+  const PHASE_2_GATED = ['law_trusttx'];
+  const STILL_UNGATED = PHASE_1_UNGATED.filter((r) => PHASE_2_GATED.indexOf(r) === -1);
+
+  for (const resource of STILL_UNGATED) {
     const out = await call(h, resource, null, null);
-    ok(out.code !== 401,
+    ok(out.code === 200,
        'PHASE 1 (2026-09-05, still open): ' + resource + ' is reachable with the LICENCE '
        + 'ALONE -- no session -- and answers ' + out.code
        + '. When phase 2 lands, INVERT this arm rather than deleting it');
   }
+  for (const resource of PHASE_2_GATED) {
+    const out = await call(h, resource, null, null);
+    ok(out.code === 403 && out.body && out.body.error
+       && out.body.error.code === 'FORBIDDEN',
+       'PHASE 2 (2026-09-16, DONE): ' + resource + ' is REFUSED without a session '
+       + 'and answers ' + out.code + ' ' + ((out.body && out.body.error
+       && out.body.error.code) || '?') + ' -- attorney CLIENT TRUST MONEY, Tier A, '
+       + 'the one balance a bar association audits');
+  }
+  // ── AND THE EXPECTED APP, WHICH IS THIS WHOLE FILE'S SUBJECT ─────────────
+  // Added 2026-09-16 after a negative control emptied SD_GATE_APP -- reverting
+  // law_trusttx's expected app to the hardcoded 'stonedesk' -- and this suite
+  // stayed SILENT. Every arm above drives the newest gated resource with NO
+  // session, and a refusal with no session is the same 403 whichever app the
+  // gate was expecting. The mutation is only visible to a caller who IS signed
+  // in, correctly, to the right app.
+  //
+  // That is not a small omission here: the header of this file says that for an
+  // unattributable licence, the expectedApp argument is THE ONLY THING between
+  // one app's session and another's data. A suite about expectedApp that cannot
+  // see expectedApp being emptied is measuring the other half.
+  //
+  // The failure it prevents is the one with the misleading symptom: with the
+  // expected app wrong, every correctly signed-in attorney is refused, and the
+  // obvious repair for THAT is to take the gate off.
+  for (const resource of PHASE_2_GATED) {
+    const right = await call(h, resource, null, token('sairnlaw'));
+    ok(right.code !== 403,
+       'a correctly signed-in SAIRNlaw session REACHES ' + resource + ' (' + right.code
+       + ') -- if this is 403 the gate is verifying against the wrong app, which '
+       + 'refuses every legitimate attorney');
+    const wrong = await call(h, resource, null, token('sairnbiz'));
+    ok(wrong.code === 403,
+       '...and a SAIRNbiz session is REFUSED ' + resource + ' (' + wrong.code
+       + ') -- so the arm above is about the APP, not about any session working');
+  }
+  ok(STILL_UNGATED.length + PHASE_2_GATED.length === PHASE_1_UNGATED.length
+     && PHASE_2_GATED.every((r) => PHASE_1_UNGATED.indexOf(r) !== -1),
+     'the two phase lists PARTITION the original four, so a resource cannot '
+     + 'leave the boundary by being dropped from one without joining the other');
   ok(PHASE_1_UNGATED.indexOf('law_trusttx') !== -1,
-     '...and the list still names law_trusttx: attorney CLIENT TRUST MONEY, Tier A, the '
-     + 'one balance a bar association audits, with no removal path. If it leaves this list '
-     + 'because it was gated, invert the arm; if it leaves because somebody trimmed the '
-     + 'list, that is a defect');
+     '...and the original list still names law_trusttx: attorney CLIENT TRUST MONEY, '
+     + 'Tier A, the one balance a bar association audits, with no removal path. If it '
+     + 'leaves this list because it was gated, move it to PHASE_2_GATED; if it leaves '
+     + 'because somebody trimmed the list, that is a defect');
 
   console.log('\nALL ' + n + ' ASSERTIONS PASS');
 })().catch((e) => { console.error('\nFAILED: ' + (e && e.message)); process.exit(1); });
