@@ -1504,6 +1504,16 @@
       "claimed_at_epoch": 1789569431.4335055,
       "status": "released",
       "released_at": "2026-09-16T15:06:22Z"
+    },
+    {
+      "id": "cc-1789571524",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sairncash trial_ends_at migration, dispatch_state dormant import, tier a suite controls continued",
+      "claimed_at": "2026-09-16T15:12:04Z",
+      "claimed_at_epoch": 1789571524.4556746,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
