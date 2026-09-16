@@ -3782,3 +3782,69 @@ its staleness rate. My sample is four and is reported as four.
 8 arms. `defect_register` probe **108 checks, 0 failed**. `employee-lifecycle`,
 `fail-open-triage`, `alf-append-only-fail-closed`, `preauth-envelope-ordering`
 all green. 34 more REQUIREMENT declarations, **164 -> 130 untraced**.
+
+---
+
+## 2026-09-16 (continued) -- a fixed defect that keeps being re-reported
+
+### 1. The claim tool: the bug is FIXED and the evidence is HISTORICAL
+
+I built this tool, so I checked the dates rather than my memory. **631 claims,
+6 exact duplicate groups, and every single one predates the guard that covers
+it** -- fourth's triple by 43 minutes, cc's pair by 22. Guards landed
+`befb65e3` 19:24Z and `a50aaf60` 21:46Z on 2026-09-14; the last duplicate is
+19:01Z. **Zero in the ~150 claims since**, and both guards already carry probes
+including a 69-arm mutation control.
+
+**The re-reporting is the real problem.** Released claims are kept on purpose,
+so every duplicate ever recorded is still in the file and a reader reasonably
+concludes the bug is live. That has now happened twice. `sairn_claim.py audit`
+bins by date so a fixed defect cannot be re-reported from its own archive -- and
+the arm that matters is the one proving it can still say **AFTER**, because a
+command that always answers "historical" would miss the recurrence it exists to
+catch.
+
+**It found the live shape while it was in there:** cody is holding **eleven**
+active claims, oldest 2026-09-15T10:34Z, never released. Not a duplicate --
+each is different work -- but every one reads to another session as a phantom
+block. Counted apart, because the two need opposite fixes.
+
+### 2. The stale-status sweep, and why it cannot be a verdict
+
+**Measured both ways before choosing a band.** A done word anywhere in the
+status fires on 89 of 173 open rows -- useless. The first four tokens gives 45,
+and reading those 45 is what settles it: the same shape covers `CONFIRMED AND
+CLOSED` (done), `HALF CLOSED` (explicitly not), `CODE CLOSED` (code done,
+migration never run), `OPEN BUILT AND PROVEN` (says OPEN first), and **`FOUND
+AND FIXED` on a row another session is working right now** -- I ran the test, it
+is still RED.
+
+So it prints the shortlist and refuses the verdict. **And the standing-mechanism
+question has a concrete answer rather than a deferral: an auto-flip on merge is
+not buildable, because a commit cannot name the row it closes -- rows have no
+IDs.** Adding them is 523 rows and a convention every session must follow, which
+is Michael's call. Until then the mechanism is the list plus the convention it
+makes visible: the FIRST word of a status is the verdict.
+
+### 3. Tracing
+
+30 more declarations, **130 -> 100 untraced**. Most of the remainder was the
+per-state legal-deadline suites; each names its own jurisdiction, because
+Florida's exclusivity rule is not Nevada's and a suite computing one from the
+other's data would be wrong in a way no shared sentence could express.
+**Bound-to-subject has been at ZERO since 2026-09-16** -- worth saying plainly,
+because it was reported back to me as having had no progress.
+
+### 4. Handed off, not done
+
+`credentialStillActive()` needs an independent live drive and **I am the author**.
+Row added naming Hank/Fourth/Cody and exactly what to drive, plus the two things
+I cannot check for myself: a wrong `AUTH_TABLE_BY_APP` entry fails **silently in
+the safe-looking direction**, and `NO_ACTIVE_CHECK` allows the request and only
+logs -- so if the lookup is failing on a real deployment the control is inert
+and the only sign is a console line nobody is watching.
+
+**`tier_a_review_gate.py --open` REFUSED to record it and was right to:** it
+fires on a diff naming a Tier A RESOURCE on a changed line, and this change
+names an access-control MECHANISM. A real limit of its reach, recorded rather
+than overridden.

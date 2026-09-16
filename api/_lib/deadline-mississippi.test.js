@@ -1,4 +1,9 @@
 // Mississippi deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: Mississippi deadlines are computed from Mississippi's OWN rule text,
+//   holiday list and service-method extensions, against the real seed and
+//   calendar on disk -- no other jurisdiction's data can produce a
+//   Mississippi answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Mississippi's rules are free and official and its CODE is not, which is the

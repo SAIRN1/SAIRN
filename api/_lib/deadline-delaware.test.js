@@ -1,4 +1,8 @@
 // Delaware Superior Court deadline rows -- isolated verification against the
+// REQUIREMENT: Delaware deadlines are computed from Delaware's OWN rule text, holiday
+//   list and service-method extensions, against the real seed and calendar
+//   on disk -- no other jurisdiction's data can produce a Delaware answer
+//
 // REAL engine and the REAL seed/calendar JSON on disk, not a scratch copy.
 //
 // Six things would be wrong if carried from a neighbour:

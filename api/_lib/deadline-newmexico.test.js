@@ -1,4 +1,9 @@
 // New Mexico deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: New Mexico deadlines are computed from New Mexico's OWN rule text,
+//   holiday list and service-method extensions, against the real seed and
+//   calendar on disk -- no other jurisdiction's data can produce a New
+//   Mexico answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Five things here would be wrong if carried from a neighbour or from any

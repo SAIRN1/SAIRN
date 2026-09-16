@@ -1,4 +1,9 @@
 // New Hampshire deadline rows -- isolated verification against the REAL engine
+// REQUIREMENT: New Hampshire deadlines are computed from New Hampshire's OWN rule text,
+//   holiday list and service-method extensions, against the real seed and
+//   calendar on disk -- no other jurisdiction's data can produce a New
+//   Hampshire answer
+//
 // and the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Five things would be wrong if carried from a neighbour:

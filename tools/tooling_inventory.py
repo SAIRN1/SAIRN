@@ -554,7 +554,18 @@ PURPOSES = {
     # -- two descriptions of one tool can disagree, which is the whole failure
     # this document exists to stop. tests/run_tooling_inventory_probe.py asserts
     # the disjointness and caught this within the hour of the promotion.
-    'sairn_claim.py': ('LIBRARY', 'claim / release / check / list on the work-claim files'),
+    'sairn_claim.py': ('LIBRARY',
+        'claim / release / check / list on the work-claim files -- plus `audit`, '
+        'which catches a duplicate claim recorded AFTER the guard that covers '
+        'it and, just as importantly, reports one recorded BEFORE as HISTORY. '
+        'Released claims are kept on purpose, so every duplicate ever recorded '
+        'stays in the file and a reader concludes the bug is live -- WHICH HAS '
+        'NOW HAPPENED TWICE. Measured 2026-09-16: 631 claims, 6 duplicate '
+        'groups, EVERY ONE predating its guard (the fourth triple by 43 minutes, '
+        'the cc pair by 22) and zero in the ~150 claims since. It also counts, '
+        'APART, the shape that IS live: claims never released, which is not a '
+        'duplicate and needs the opposite fix. It refuses to decide that two '
+        'DIFFERENT task strings are the same work -- exact means exact'),
     'gh_push.py': ('LIBRARY', 'a push whose arrival on the remote is queried back'),
     'gh_verify.py': ('LIBRARY', 'whether a commit is really on the remote'),
     'load_deadline_seed.py': ('LIVE', 'loads a deadline seed into a live licence'),

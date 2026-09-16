@@ -1,4 +1,9 @@
 // New Jersey deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: New Jersey deadlines are computed from New Jersey's OWN rule text,
+//   holiday list and service-method extensions, against the real seed and
+//   calendar on disk -- no other jurisdiction's data can produce a New
+//   Jersey answer
+//
 // the REAL seed/calendar JSON on disk.
 //
 // Expected dates were worked out BY HAND from the rule text and the Supreme

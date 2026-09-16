@@ -1,4 +1,8 @@
 // Oklahoma deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: Oklahoma deadlines are computed from Oklahoma's OWN rule text, holiday
+//   list and service-method extensions, against the real seed and calendar
+//   on disk -- no other jurisdiction's data can produce a Oklahoma answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Every expected date below was worked out BY HAND from the statute text and

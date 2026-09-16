@@ -1,4 +1,8 @@
 // Alabama deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: Alabama deadlines are computed from Alabama's OWN rule text, holiday
+//   list and service-method extensions, against the real seed and calendar
+//   on disk -- no other jurisdiction's data can produce a Alabama answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Every expected date was worked out BY HAND from the rule text and the derived

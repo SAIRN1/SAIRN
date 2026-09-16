@@ -1,4 +1,8 @@
 // Every seeded jurisdiction must have a display label.
+// REQUIREMENT: every jurisdiction the engine answers for has a real label, because
+//   jurLabel() falls back to the raw code and a bare code shown to a lawyer
+//   reads as a different jurisdiction
+//
 //
 // WHY THIS FILE EXISTS. `jurLabel()` in api/legal-deadlines.js is
 // `JURISDICTION_LABELS[code] || code`, so a jurisdiction with no entry falls

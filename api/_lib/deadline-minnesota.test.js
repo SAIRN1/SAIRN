@@ -1,4 +1,8 @@
 // Minnesota deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: Minnesota deadlines are computed from Minnesota's OWN rule text, holiday
+//   list and service-method extensions, against the real seed and calendar
+//   on disk -- no other jurisdiction's data can produce a Minnesota answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Every expected date below was worked out BY HAND from the rule text and the

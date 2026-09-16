@@ -1,4 +1,8 @@
 // Idaho deadline rows -- isolated verification against the REAL engine and the
+// REQUIREMENT: Idaho deadlines are computed from Idaho's OWN rule text, holiday list
+//   and service-method extensions, against the real seed and calendar on
+//   disk -- no other jurisdiction's data can produce a Idaho answer
+//
 // REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Six things here would be wrong if carried from a neighbour, and each is

@@ -1,4 +1,8 @@
 // Maryland deadline rows -- isolated verification against the REAL engine and
+// REQUIREMENT: Maryland deadlines are computed from Maryland's OWN rule text, holiday
+//   list and service-method extensions, against the real seed and calendar
+//   on disk -- no other jurisdiction's data can produce a Maryland answer
+//
 // the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Maryland is the first jurisdiction that needed an ENGINE change rather than

@@ -1,4 +1,8 @@
 // api/_lib/courtlistener-rate-limit.test.js
+// REQUIREMENT: the CourtListener limiter refuses past the agreed rate rather than
+//   relying on the vendor to refuse, so this platform cannot be the reason
+//   an account is throttled
+//
 //
 // Run:  node api/_lib/courtlistener-rate-limit.test.js
 //

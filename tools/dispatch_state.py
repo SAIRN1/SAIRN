@@ -153,12 +153,96 @@ def rows():
     return out, ''
 
 
+# ── ROWS WHOSE LEADING WORD DISAGREES WITH THE REST OF THE CELL ─────────────
+# `is_open()` reads the FIRST word of the status and defaults to OPEN. That is
+# the right default -- an unknown status is surfaced rather than assumed done --
+# and it means a row whose work landed stays OPEN until somebody edits the word.
+#
+# THE COST IS MEASURED, NOT ASSUMED. On 2026-09-16, of 173 open rows, TWO of the
+# first four spot-checked were already finished: `master_plan.py gate 4 counts
+# fault probes in PYTHON ONLY` (fault_probes() carries FAULT_PROBE_JS and the
+# document prints sairnbiz ... 2) and `run_snapshot_freshness_probe.py arms 2c
+# and 4a RED` (re-run: 0 arms failed). A third had already been closed under a
+# different title. A dispatch list that sends a session at finished work is the
+# failure the list exists to prevent, one level up.
+#
+# ── SO WHY THIS IS A REVIEW LIST AND NOT A VERDICT ──────────────────────────
+# MEASURED BOTH WAYS. A done word ANYWHERE in the status fires on 89 of 173 --
+# useless. Restricted to the first four tokens it fires on 45, and reading those
+# 45 is what settles it: the same shape covers
+#
+#   CONFIRMED AND CLOSED      really done
+#   TRACED AND CLOSED         really done
+#   HALF CLOSED               explicitly not
+#   CODE CLOSED               done in code, migration never run
+#   OPEN BUILT AND PROVEN     the row says OPEN in its own first word
+#   FOUND AND FIXED           and this one is on a row another session is
+#                             CURRENTLY working because the test is still RED
+#
+# There is no rule separating those without reading the sentence, and a tool
+# that guessed would close real work. So this prints the shortlist and refuses
+# the verdict, which is the same decision dispatch_state already makes about
+# matching a claim to a row.
+#
+# ── AND THE STANDING MECHANISM, ANSWERED RATHER THAN DEFERRED ───────────────
+# An auto-flip on merge is NOT buildable here and the blocker is concrete: a
+# commit cannot name the row it closes, because ROWS HAVE NO IDs. Adding them is
+# a change to 523 rows and a convention every session has to follow, which is
+# Michael's call and not a tool's. Until then the honest mechanism is this list
+# plus the convention the list makes visible: THE FIRST WORD OF A STATUS IS THE
+# VERDICT, and everything qualifying it comes after.
+LEADING_TOKENS = 4
+
+
+def cmd_stale_review(argv=None):
+    rs, err = rows()
+    if rs is None:
+        print('COULD NOT READ %s: %s -- nothing was reviewed. NOT a pass.'
+              % (INDEX, err))
+        return 2
+    open_rows = [r for r in rs if is_open(r[2])]
+    hits = []
+    for app, item, status, owner in open_rows:
+        st = strip_md(status).upper()
+        toks = re.findall(r'[A-Z-]+', st)[:LEADING_TOKENS]
+        for i, t in enumerate(toks):
+            if i > 0 and t in DONE_WORDS:
+                hits.append((app, strip_md(item), ' '.join(toks), strip_md(owner)))
+                break
+    print('STATUS-WORD REVIEW -- rows whose leading phrase disagrees with itself')
+    print('  %d row(s), %d open, %d to review' % (len(rs), len(open_rows), len(hits)))
+    print('  A done word ANYWHERE fires on far more and is useless; the first %d'
+          % LEADING_TOKENS)
+    print('  tokens is the tightest band that still contains the real ones.')
+    print('')
+    for app, item, lead, owner in hits:
+        print('  %-13s %-58s' % (app[:13], item[:58]))
+        print('      status opens: %-34s owner: %s' % (lead[:34], owner[:26] or '-'))
+    print('')
+    print('  THIS IS A SHORTLIST AND NOT A VERDICT. The same shape covers')
+    print('  "CONFIRMED AND CLOSED" (done), "HALF CLOSED" (explicitly not),')
+    print('  "CODE CLOSED" (done in code, migration never run) and "FOUND AND')
+    print('  FIXED" on a row another session is working right now because the')
+    print('  test is still RED. No rule separates those without reading the')
+    print('  sentence, and a tool that guessed would close real work.')
+    print('')
+    print('  THE CONVENTION THIS MAKES VISIBLE: the FIRST word of a status is')
+    print('  the verdict; everything qualifying it comes after. An auto-flip on')
+    print('  merge is not buildable until rows carry IDs a commit can name.')
+    return 1 if hits else 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--all', action='store_true')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--self-check', action='store_true')
+    ap.add_argument('--stale-review', action='store_true', dest='stale',
+                    help='rows whose leading status phrase disagrees with itself')
     args = ap.parse_args(argv)
+
+    if args.stale:
+        return cmd_stale_review()
 
     if args.self_check:
         bad = self_check()

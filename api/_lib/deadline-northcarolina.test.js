@@ -1,4 +1,9 @@
 // North Carolina deadline rows -- isolated verification against the REAL engine
+// REQUIREMENT: North Carolina deadlines are computed from North Carolina's OWN rule
+//   text, holiday list and service-method extensions, against the real seed
+//   and calendar on disk -- no other jurisdiction's data can produce a North
+//   Carolina answer
+//
 // and the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Every expected date was worked out BY HAND from the rule text and the NCAOC

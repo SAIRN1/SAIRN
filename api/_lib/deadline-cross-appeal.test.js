@@ -1,4 +1,7 @@
 // The four cross-appeal rows -- their later_of arithmetic AND their multi-slot
+// REQUIREMENT: a cross-appeal deadline is computed from the triggering document the
+//   rule names and not from the original appeal date, in BOTH directions
+//
 // trigger-document guard.
 //
 // WHY THIS FILE EXISTS AT ALL. Before 2026-09-02 these four rows were LIVE and

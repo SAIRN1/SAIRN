@@ -1,4 +1,7 @@
 // api/_lib/ai-usage.test.js
+// REQUIREMENT: AI usage is counted from what was actually billed rather than from what
+//   was requested, so a retried or failed call cannot inflate or hide spend
+//
 //
 // Run: node api/_lib/ai-usage.test.js
 //

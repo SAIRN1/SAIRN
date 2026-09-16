@@ -1161,6 +1161,98 @@ def cmd_list(args):
     return 0 if fetched else STALE_RC
 
 
+# ── HAS THE DUPLICATE-CLAIM DEFECT RECURRED, OR IS THE EVIDENCE HISTORICAL? ──
+# Released claims are KEPT, deliberately -- "who ran this and when" is the
+# question the next session asks. The cost of that decision is that every
+# duplicate ever recorded is still sitting in the file, so a reader opening
+# .claude/claims/ finds the 2026-09-13 quadruple and the 2026-09-14 triple and
+# reasonably concludes the bug is live.
+#
+# IT IS NOT, AND THE DATES DECIDE IT RATHER THAN ANYBODY'S MEMORY. The two
+# guards landed at the timestamps below, and EVERY exact duplicate in the record
+# predates the guard that covers it -- the fourth triple by 43 minutes, the cc
+# pair by 22. Measured 2026-09-16: 631 claims, 6 duplicate groups, ZERO after
+# the guards.
+#
+# So this command exists to stop a FIXED defect being re-reported as a live one,
+# which has now happened twice. It bins by date rather than asserting a verdict,
+# and a duplicate AFTER a guard is a real finding it will say loudly.
+#
+# THE TIMESTAMPS ARE THE COMMITS, not a recollection:
+#   befb65e3  identical-task retry guard      2026-09-14T19:24:31Z
+#   a50aaf60  retyped-task unpublished guard  2026-09-14T21:46:51Z
+GUARDS = (
+    ('befb65e3', 'identical-task retry', 1789500271),
+    ('a50aaf60', 'retyped-task unpublished', 1789508811),
+)
+GUARDED_FROM = max(g[2] for g in GUARDS)
+
+# A session holding this many ACTIVE claims at once is not a duplicate defect --
+# it is claims that were never released. Both make `list` noisy and both make
+# another session read a phantom block, but they need OPPOSITE fixes, so they
+# are counted apart rather than summed into one number.
+MANY_ACTIVE = 4
+
+
+def cmd_audit(args):
+    claims = load_all(from_origin=False)
+    if not claims:
+        print('COULD NOT READ ANY CLAIM FILE -- nothing was audited. NOT a pass.')
+        return 2
+
+    groups = {}
+    for c in claims:
+        k = (c.get('session'), c.get('subject'), c.get('task') or '')
+        groups.setdefault(k, []).append(c)
+    dup = {k: v for k, v in groups.items() if len(v) > 1}
+
+    before, after = [], []
+    for k, v in dup.items():
+        v = sorted(v, key=lambda c: c.get('claimed_at_epoch') or 0)
+        (after if (v[-1].get('claimed_at_epoch') or 0) > GUARDED_FROM
+         else before).append((k, v))
+
+    active_by = {}
+    for c in claims:
+        if c.get('status') == 'active':
+            active_by.setdefault(c.get('session'), []).append(c)
+    hoarders = {s: v for s, v in active_by.items() if len(v) >= MANY_ACTIVE}
+
+    print('CLAIM RECORD AUDIT -- %d claim(s) across %d session file(s)'
+          % (len(claims), len({c.get('session') for c in claims})))
+    print('  guards landed: ' + ', '.join('%s %s' % (g[0], g[1]) for g in GUARDS))
+    print('')
+    print('  EXACT DUPLICATES (same session, subject and task): %d group(s)'
+          % len(dup))
+    print('    BEFORE the guard that covers them  %d   <- historical, not a bug now'
+          % len(before))
+    print('    AFTER                              %d%s'
+          % (len(after), '   <- A REAL FINDING' if after else ''))
+    print('')
+    for k, v in sorted(before, key=lambda x: x[1][0].get('claimed_at_epoch') or 0):
+        print('    x%d  %-7s %s  %s'
+              % (len(v), k[0], v[0].get('claimed_at'), (k[2] or '(empty task)')[:46]))
+    for k, v in sorted(after, key=lambda x: x[1][0].get('claimed_at_epoch') or 0):
+        print('    AFTER THE GUARD  x%d  %-7s %s  %s'
+              % (len(v), k[0], v[0].get('claimed_at'), (k[2] or '(empty)')[:40]))
+    print('')
+    print('  THE OTHER SHAPE, COUNTED APART BECAUSE IT NEEDS THE OPPOSITE FIX:')
+    print('  claims never RELEASED. Not a duplicate -- each is different work --')
+    print('  but it makes `list` noisy and another session reads a phantom block.')
+    if hoarders:
+        for s, v in sorted(hoarders.items(), key=lambda x: -len(x[1])):
+            oldest = sorted(v, key=lambda c: c.get('claimed_at_epoch') or 0)[0]
+            print('    %-8s %2d active, oldest %s' % (s, len(v), oldest.get('claimed_at')))
+    else:
+        print('    no session is holding %d or more.' % MANY_ACTIVE)
+    print('')
+    print('  WHAT THIS DOES NOT DO: decide that two DIFFERENT task strings are')
+    print('  the same work. That judgement is what the phrase matcher already')
+    print('  fails at, and a second guesser here would move the failure rather')
+    print('  than remove it. Exact means exact.')
+    return 1 if (after or hoarders) else 0
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = p.add_subparsers(dest='cmd', required=True)
@@ -1192,6 +1284,9 @@ def main():
     c.add_argument('--all', action='store_true', help='include released/expired')
     nofetch(c)
 
+    c = sub.add_parser('audit', help='duplicates and unreleased claims, binned '
+                                     'by whether they predate the guard')
+
     args = p.parse_args()
     if args.cmd == 'check':
         return cmd_check(args)
@@ -1199,6 +1294,8 @@ def main():
         return cmd_claim(args)
     if args.cmd == 'release':
         return cmd_release(args)
+    if args.cmd == 'audit':
+        return cmd_audit(args)
     return cmd_list(args)
 
 

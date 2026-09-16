@@ -1,4 +1,8 @@
 // Florida's coverage disclosure -- added 2026-08-31, on its own, as a fix to a
+// REQUIREMENT: the Florida rows the engine ships are the ones Florida actually has, so
+//   a row present for another state cannot be answered as though Florida
+//   carried it too
+//
 // gap and NOT as part of the citation audit that found it.
 //
 // THE GAP WAS WHERE THE DISCLOSURE LIVED, NOT WHETHER IT EXISTED. Florida's

@@ -1,4 +1,8 @@
 // The trigger-document discriminator -- the mechanism, tested on synthetic
+// REQUIREMENT: computeDeadline() counts from the document the rule names, verified
+//   independently of any jurisdiction's data so the guard cannot be
+//   satisfied by one state's seed happening to agree
+//
 // rules so it is verified independently of any jurisdiction's data.
 //
 // WHAT IT GUARDS. computeDeadline() counts from whatever date it is handed and

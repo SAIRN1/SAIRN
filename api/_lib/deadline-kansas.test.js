@@ -1,4 +1,8 @@
 // Kansas deadline rows -- isolated verification against the REAL engine and the
+// REQUIREMENT: Kansas deadlines are computed from Kansas's OWN rule text, holiday list
+//   and service-method extensions, against the real seed and calendar on
+//   disk -- no other jurisdiction's data can produce a Kansas answer
+//
 // REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Kansas puts civil procedure in the STATUTE rather than in court rules, so the

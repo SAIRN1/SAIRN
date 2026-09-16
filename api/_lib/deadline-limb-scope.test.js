@@ -1,4 +1,8 @@
 // service_extension.applies_to_limbs -- the whole mechanism, and every seeded
+// REQUIREMENT: a service extension applies to the limb of the rule that declares it and
+//   is applied in the right ORDER, so an extension cannot silently widen a
+//   row that does not depend on it
+//
 // row that depends on it, in BOTH directions.
 //
 // WHAT WAS WRONG. A service extension was declared per ROW and applied AFTER

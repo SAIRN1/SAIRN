@@ -184,6 +184,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#9888; A TOKEN IS A CLAIM ABOUT THE PAST: a deactivated employee kept read and write on every gated resource in `api/sd-data.js` for the rest of a 12h token** | **FIXED 2026-09-16 (CC)** &mdash; `credentialStillActive()` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, wired into the `sd-data.js` session gate; `api/_lib/auth.test.js` **23 arms** including the sab | `api/_lib/auth.test.js`, `api/sd-data-active-credential.test.js` |
 | **`--reseat` treated a DANGLING commit as a good SHA, so the records a rebase orphaned were the exact ones it skipped** | **FIXED 2026-09-16 (CC)** &mdash; `reachable()` and `reseat_base()` in `tools/defect_register.py`; five arms in `tests/run_defect_register_probe.py` building a REAL orphan rather than a stub. **108 ch | `tests/run_defect_register_probe.py` |
 | **The dispatch list is offering CLOSED work: three of four open-and-unowned rows spot-checked were already done** | **MEASURED 2026-09-16 (CC)**, two of them closed with evidence &mdash; 71 &rarr; **69** unowned | `tests/run_snapshot_freshness_probe.py` |
+| **The duplicate-claim defect is FIXED and its evidence is HISTORICAL &mdash; and the record kept re-reporting it, twice** | **MEASURED AND MADE LEGIBLE 2026-09-16 (CC)** &mdash; `sairn_claim.py audit`, `tests/claims/run_claim_audit_probe.py` **18 arms** | `tests/claims/run_claim_audit_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -501,22 +502,22 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 133 test files are traced to no stated requirement
+### 103 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 354 of 487 traced, 72.7%.
+For context and not as the headline: 385 of 488 traced, 78.9%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 360 citations come from
+### Where the 391 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 263 |
-| `declared` | 87 |
+| `declared` | 117 |
 | `GUARD_TESTS+index` | 5 |
-| `declared+index` | 4 |
+| `declared+index` | 5 |
 | `GUARD_TESTS` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
@@ -526,40 +527,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 1 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 132 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 102 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 1 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
-- `api/_lib/ai-usage.test.js`
-- `api/_lib/courtlistener-rate-limit.test.js`
-- `api/_lib/deadline-alabama.test.js`
-- `api/_lib/deadline-arkansas.test.js`
-- `api/_lib/deadline-cross-appeal.test.js`
-- `api/_lib/deadline-delaware.test.js`
-- `api/_lib/deadline-florida-coverage.test.js`
-- `api/_lib/deadline-florida-exclusivity.test.js`
-- `api/_lib/deadline-hawaii.test.js`
-- `api/_lib/deadline-idaho.test.js`
-- `api/_lib/deadline-jurisdiction-labels.test.js`
-- `api/_lib/deadline-kansas.test.js`
-- `api/_lib/deadline-limb-scope.test.js`
-- `api/_lib/deadline-maryland.test.js`
-- `api/_lib/deadline-massachusetts.test.js`
-- `api/_lib/deadline-minnesota.test.js`
-- `api/_lib/deadline-mississippi.test.js`
-- `api/_lib/deadline-missouri.test.js`
-- `api/_lib/deadline-montana.test.js`
-- `api/_lib/deadline-nebraska.test.js`
-- `api/_lib/deadline-nevada.test.js`
-- `api/_lib/deadline-newhampshire.test.js`
-- `api/_lib/deadline-newjersey.test.js`
-- `api/_lib/deadline-newmexico.test.js`
-- `api/_lib/deadline-northcarolina.test.js`
-- `api/_lib/deadline-oklahoma.test.js`
-- `api/_lib/deadline-oregon.test.js`
-- `api/_lib/deadline-southcarolina.test.js`
-- `api/_lib/deadline-trigger-document.test.js`
-- `api/_lib/deadline-virginia.test.js`
 - `api/_lib/deadline-washington.test.js`
 - `api/_lib/deadline-westvirginia.test.js`
 - `api/_lib/deadline-wisconsin.test.js`
@@ -683,8 +654,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 487   tests/**, api/*.test.js
-  open-work rows citing a test       258   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 488   tests/**, api/*.test.js
+  open-work rows citing a test       259   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     50   report_only_checks.NOT_PROMOTED

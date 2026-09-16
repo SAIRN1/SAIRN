@@ -1,4 +1,8 @@
 // FLORIDA EXCLUSIVITY REGRESSION TEST -- "by only mail".
+// REQUIREMENT: Fla. R. Gen. Prac. & Jud. Admin. disapplies the service extension where
+//   Florida says it does, so a Florida answer cannot inherit the general
+//   extension rule the rest of the engine applies
+//
 //
 // DELIBERATELY NARROW, like the federal one. Florida has no full suite, and
 // that is part of why this went unnoticed: Fla. R. Gen. Prac. & Jud. Admin.

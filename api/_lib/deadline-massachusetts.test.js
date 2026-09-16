@@ -1,4 +1,9 @@
 // Massachusetts deadline rows -- isolated verification against the REAL engine
+// REQUIREMENT: Massachusetts deadlines are computed from Massachusetts's OWN rule text,
+//   holiday list and service-method extensions, against the real seed and
+//   calendar on disk -- no other jurisdiction's data can produce a
+//   Massachusetts answer
+//
 // and the REAL seed/calendar JSON on disk, not a scratch copy of either.
 //
 // Every expected date below was worked out BY HAND from the rule text and the
