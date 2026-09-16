@@ -80,6 +80,23 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'coordinated -- every app stops working at once',
         'last_rotated': '',
+        'compromise': (
+            'REVOKE: Supabase dashboard, Project Settings -> API -> roll the '
+            'service_role key. Then set SUPABASE_SERVICE_ROLE_KEY in Vercel '
+            '(Production AND Preview) and REDEPLOY -- the running functions '
+            'hold the old value until they do. BLAST WHILE COMPROMISED: read '
+            'and write on every table in the one project, RLS bypassed, so '
+            'every tenant of every app at once. WHAT BREAKS DURING: every '
+            'server-side path on the platform, until the redeploy completes. '
+            'ROTATION DOES NOT UNDO A READ -- anything already exfiltrated '
+            'stays exfiltrated, and docs/2026-09-14-nightly-backup-design.md '
+            'records the project on the FREE TIER with one-day log retention, '
+            'so there may be no way to establish what was touched. THE HUMAN '
+            'DECISION, not drafted here: whether to roll immediately and take '
+            'every app down, or stage the redeploy first. DRAFTED 2026-09-15 '
+            'from this register and the repo; the console steps are NOT '
+            'verified because no clone has that access.'
+        ),
     },
     {
         'id': 'sairn_backup_reader',
@@ -92,6 +109,19 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'alter role ... password. No automation',
         'last_rotated': '',
+        'compromise': (
+            'REVOKE: `alter role sairn_backup_reader with password ...` in '
+            'the Supabase SQL editor, or `drop role` outright. '
+            'sql/backup_reader_role.sql rotates unconditionally, so '
+            're-running the corrected file IS the rotation. BLAST WHILE '
+            'COMPROMISED: SELECT on every table in public plus BYPASSRLS -- a '
+            'complete read of the platform, and no write. WHAT BREAKS DURING: '
+            'the backup job only. NO APPLICATION PATH USES THIS ROLE, which '
+            'makes it the one credential here that can be revoked first and '
+            'reasoned about afterwards. STILL OPEN AND NOT ANSWERABLE FROM A '
+            'CLONE: whether the LIVE role currently holds the placeholder or '
+            'a rotated password. DRAFTED 2026-09-15.'
+        ),
         # ── CORRECTED 2026-09-15, AND THE STALE VERSION WAS MINE ─────────────
         # This row shipped saying the script-level finding was UNFIXED. It is
         # not, and I verified the correction rather than accepting it: Fourth's
@@ -164,6 +194,18 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'Anthropic console. Breaks every AI feature until redeployed',
         'last_rotated': '',
+        'compromise': (
+            'REVOKE: Anthropic console -> API keys -> revoke, then issue a '
+            'replacement, set ANTHROPIC_API_KEY in Vercel and REDEPLOY. BLAST '
+            'WHILE COMPROMISED: METERED SPEND on this account, which is a '
+            'financial exposure rather than a data one -- and the model calls '
+            'carry whatever the apps send, so treat prompt content as exposed '
+            'too. WHAT BREAKS DURING: every AI feature in every app, until '
+            'the redeploy. CHECK AFTERWARDS: console usage for the window, '
+            'which is the one place on this platform where a compromise '
+            'leaves an independent, billable trace. DRAFTED 2026-09-15; the '
+            'console steps are NOT verified from here.'
+        ),
     },
     {
         'id': 'stripe-account',
@@ -199,6 +241,23 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'coordinated. Universal logout',
         'last_rotated': '',
+        'compromise': (
+            'REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE '
+            'CONTAINMENT IS THE DISRUPTION, and that is why this needs '
+            'deciding in advance rather than during: one secret signs EVERY '
+            'app employee session and there is no overlap window, so rotating '
+            'LOGS EVERYONE OUT OF EVERYTHING AT ONCE, mid-shift, including '
+            'whoever is handling the incident. BLAST WHILE COMPROMISED: forge '
+            'a session token for any employee of any app, including an admin '
+            '-- so the exposure is IMPERSONATION, and every audit row written '
+            'during the window names whoever the forger chose. WHAT BREAKS '
+            'DURING: nothing stays broken; everyone signs in again. THE HUMAN '
+            'DECISION, not drafted here: whether a suspected compromise is '
+            'enough to rotate, given that the cost is certain and the '
+            'compromise is not. AN OVERLAP WINDOW -- accept two secrets '
+            'during a changeover -- would remove that dilemma and is a build, '
+            'not a procedure. DRAFTED 2026-09-15.'
+        ),
     },
     {
         'id': 'cron-caller',
@@ -275,6 +334,21 @@ IDENTITIES = [
         'source': 'repo',
         'rotation': 'Google Cloud IAM -- a JSON key, not a string',
         'last_rotated': '',
+        'compromise': (
+            'REVOKE: Google Cloud IAM -> the service account -> delete the '
+            'KEY (not the account), mint a replacement, set '
+            'SAIRNCASH_FIREBASE_SERVICE_ACCOUNT in Vercel and REDEPLOY. It is '
+            'a JSON blob, not a string, so a partial paste fails closed '
+            'rather than half-working. BLAST WHILE COMPROMISED: full Firebase '
+            'admin on SAIRNcash -- consumer accounts and their data, read and '
+            'write, and the ability to mint credentials. This is the consumer '
+            'side, so the affected parties are members of the public rather '
+            'than a business customer. WHAT BREAKS DURING: SAIRNcash '
+            'server-side paths, until the redeploy. NOTE it is DISTINCT from '
+            'the Firebase WEB values, which are public by design -- leaking '
+            'those is not this event. DRAFTED 2026-09-15; the IAM steps are '
+            'NOT verified from here.'
+        ),
     },
     {
         'id': 'sairncash-stripe-webhook',
@@ -473,6 +547,45 @@ def render():
         for i in warned:
             L.append('- **%s** -- %s' % (i['id'], i['warning']))
         L.append('')
+    # ── COMPROMISE PROCEDURES (2026-09-15) ──────────────────────────────────
+    # tools/rotation_blast_radius.py measured 0 of 22 identities recording what
+    # to do if that credential leaks. Every one had a ROTATION procedure -- how
+    # to change it -- and not one said what to do when it is known to be in
+    # somebody else's hands, which is a different question asked under time
+    # pressure.
+    #
+    # DRAFTED, NOT VERIFIED, and the distinction is on every one of them: the
+    # blast radius and what-breaks halves are derived from this register and the
+    # repo; the console steps are not verified, because no clone holds any of
+    # these credentials or that console access.
+    procs = [i for i in IDENTITIES if (i.get('compromise') or '').strip()]
+    if procs:
+        L.append('## If one of these is compromised')
+        L.append('')
+        L.append('**%d of %d identities carry a drafted procedure.** Written '
+                 '2026-09-15 for the identities holding BROAD standing access '
+                 'with no attested rotation and no schedule -- the set where '
+                 'neither of the other two controls is doing anything.'
+                 % (len(procs), len(IDENTITIES)))
+        L.append('')
+        L.append('**A procedure is a THIRD control and does not fix either of '
+                 'the first two.** It tells you what to do AFTER. It does not '
+                 'shorten the window a leaked credential works, and it does not '
+                 'narrow what that credential reaches.')
+        L.append('')
+        L.append('**DRAFTED, NOT REHEARSED, AND NOT VERIFIED.** The blast-radius '
+                 'and what-breaks halves are derived from this register and the '
+                 'repo. **The console steps are not verified** -- no clone holds '
+                 'these credentials or that access, so nobody here has done any '
+                 'of this. A runbook nobody has walked through is a draft, and '
+                 'calling it anything else is the claim-versus-reality failure '
+                 'this platform keeps recording.')
+        L.append('')
+        for i in procs:
+            L.append('### %s' % i['id'])
+            L.append('')
+            L.append(i['compromise'])
+            L.append('')
     L.append('## What this register cannot tell you')
     L.append('')
     L.append('- **Whether a credential is still live, or has ever been '

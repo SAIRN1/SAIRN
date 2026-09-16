@@ -190,8 +190,17 @@ check('the .2 criteria classify `postgres` as BROAD -- the row .1 missed. The '
       'revision moved a row AGAINST this platform, which is what distinguishes '
       'a correction from tuning to flatter the corpus',
       by_id.get('postgres', {}).get('scope') == 'BROAD', by_id.get('postgres'))
-check('CRITERIA_VERSION records that a revision happened at all',
-      R.CRITERIA_VERSION.endswith('.2'), R.CRITERIA_VERSION)
+rev = R.CRITERIA_VERSION.rsplit('.', 1)[-1]
+check('CRITERIA_VERSION records that at least one revision happened -- the '
+      'suffix is past .1, and it is NOT pinned to a specific number here '
+      'because pinning it makes the next honest revision fail this arm',
+      rev.isdigit() and int(rev) >= 2, R.CRITERIA_VERSION)
+src_rbr = io.open(os.path.join(REPO, 'tools', 'rotation_blast_radius.py'),
+                  encoding='utf-8').read()
+check('...and every revision is EXPLAINED in the source, with the direction it '
+      'moved the number. A version bump with no reason is a version bump',
+      src_rbr.count('-> .') >= 2 or src_rbr.count('.1 -> .2') >= 1,
+      [l.strip()[:70] for l in src_rbr.splitlines() if '-> .' in l][:4])
 
 print('\n7. THE RUN REFUSES TO REPORT A POSTURE')
 rc, out = run([])

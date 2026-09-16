@@ -71,12 +71,39 @@ live with, and when should that be revisited."*
   exploitation *today* is unrelated to any of the above: production's
   `STRIPE_SECRET_KEY` is an **expired `sk_test_` key**, so every call dies at
   Stripe. Nobody chose that.
-- **Trigger — MECHANICAL, and it is the one the Stripe entry lacked:**
-  `api/_lib/stripe-config.js` returns a `warnings` entry for a test key in a
-  production deployment, and every SAIRNcash endpoint logs it. **The day a
-  working live key is installed, that warning stops appearing** — which is the
-  moment this entry becomes live and needs a decision.
-- **Open with:** Michael (auth mechanism), 2026-09-14.
+- **Trigger — MECHANICAL for the producer, NOT WATCHED for the event. CORRECTED 2026-09-15, and the correction is the useful part.**
+  This entry said **MECHANICAL** and named `api/_lib/stripe-config.js`, which
+  returns a `warnings` entry for a test key in a production deployment. That was
+  true about the module and **false about the platform**:
+  `tools/weakness_combination.py` found that **nothing on this platform consumes
+  that signal** — not `report_only_checks`, not the push gate, not
+  `run_all_tests`, not a hook, not a workflow. It reaches a log and stops. **The
+  signal was PRODUCED and never CONSUMED**, and this register's own rule is that
+  a trigger nobody watches is not a trigger.
+
+  It is also **log-only by design and must stay that way** — the client message
+  deliberately names no variable, so there is nothing for a checker in this repo
+  to read. That is correct behaviour, not a gap to close.
+
+  So the trigger is now stated as the two halves it really has:
+
+  - **GUARDED, MECHANICAL:** `api/_lib/stripe-config.test.js` — a new suite,
+    and it is in `GUARD_TESTS`, so it can block a push. **The module had NO
+    SUITE AT ALL** until 2026-09-15, which meant the branch producing this
+    entry's trigger could have been edited away with the only consequence being
+    that an accepted risk's trigger quietly stopped existing. Its four-cell
+    control is the load-bearing one: of (test key, live key) × (production,
+    preview) **exactly one must warn**, because AR-1's trigger reads the
+    ABSENCE of that warning and a banner that fires everywhere has no absence.
+  - **NOT WATCHED, and said plainly rather than left implied:** whether a
+    working live key has actually been installed in production. **Nothing here
+    will announce that.** It needs a live environment read, which is a decision
+    about how this platform observes production and not something to invent in
+    a file.
+
+- **Open with:** Michael (auth mechanism), 2026-09-14. **The live-key question
+  is also Michael's** — either a live environment read, or the acceptance that
+  this entry's real trigger is a person noticing, 2026-09-15.
 
 ### AR-2 — "current" means two different things in two live apps
 

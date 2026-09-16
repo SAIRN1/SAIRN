@@ -1842,6 +1842,21 @@ NOT_PROMOTED = [
      'route -- same reason waf_rule_check.py is held out. Its network half is '
      'the point of the tool, so it wants a could-not-tell code before it can '
      'be wired, not just a promotion.'),
+    ('blind_review.py', 'IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a '
+     'human drives, and there is nothing for a push notice to say. A round is '
+     'opened deliberately and scored when the reviewer has judged; wiring that '
+     'to a push would either open rounds nobody asked for or report on a round '
+     'in progress. Promote nothing here. What COULD be wired one day is the '
+     'agreement rate across completed rounds, once there are enough rounds for '
+     'a rate to mean anything, and once the score-first arm exists to compare '
+     'it against -- neither is true yet.'),
+    ('accepted_risk_trigger_check.py', 'PROMOTABLE, AND HELD BACK ONE CYCLE ON '
+     'PURPOSE. It is read-only, fast, and clean as of 2026-09-15 -- AR-1 was '
+     'its one finding and that is now corrected. The reason to wait is that it '
+     'has run against exactly ONE register state, and this platform\'s own rule '
+     'for promotion is report-only until quiet IN PRACTICE, not until clean '
+     'once. Promote it after the next accepted risk is added, which is the '
+     'first time it will be asked a question it has not already answered.'),
     ('first_article_inspection.py', 'ITS MECHANICAL HALF IS PROMOTABLE AND ITS '
      'WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong '
      'one. "Does this new artefact have a suite at all" is a clean verdict; the '

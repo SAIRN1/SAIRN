@@ -171,7 +171,20 @@ def suites(subject, all_tests):
         # A python tool driven as a SUBPROCESS rather than imported -- several
         # probes here shell out to the tool instead of importing it, and
         # excluding that shape would report those tools as unverified.
-        re.compile(r'[\'"]%s[\'"]' % re.escape(base)),
+        #
+        # BUT NOT AS A DICTIONARY KEY. Being NAMED by a test file is not being
+        # TESTED by it, and there is one shape where that difference is total:
+        # tests/run_selftest_sweep_probe.py lists
+        # `sc_tier_a_write_gate_live_probe.py` as a declared EXCLUSION with a
+        # reason, and the bare-name rule read that as coverage -- reporting a
+        # PRODUCTION WRITE PATH as verified by the one file that deliberately
+        # refuses to run it.
+        #
+        # The exclusion is narrow on purpose: `'name.py':` with a colon after
+        # it. Requiring an invocation token on the same line was tried and
+        # over-corrected, dropping two tools whose probes name them in prose and
+        # cover them perfectly well.
+        re.compile(r'[\'"]%s[\'"](?!\s*:)' % re.escape(base)),
     ]
     hits = []
     for t, txt in all_tests.items():
@@ -228,9 +241,50 @@ def load_tests():
     return found or None
 
 
+# ── AN IN-FILE SELF-TEST IS A SUITE, AND IT IS A WEAKER KIND ──────────────────
+# THE THIRD TIME THIS TOOL MISTOOK ITS OWN BLIND SPOT FOR A FACT ABOUT SOMEBODY
+# ELSE'S WORK. It looked for arms only in `tests/` and `*.test.js`, so a tool
+# carrying `--selftest` inside itself reported NO SUITE AT ALL. Measured
+# 2026-09-15: of the seven artefacts this reported as having nothing, FIVE had a
+# working self-test -- 48 arms between them -- that simply nothing in the suite
+# runs. "Unverified" and "unwired" are different states and only one is a gap in
+# the work.
+#
+# IT IS STILL REPORTED SEPARATELY, because it is genuinely weaker on two counts
+# and merging them would hide both:
+#   * NOT INDEPENDENT. `docs/2026-09-13-cross-domain-disciplines.md` §5: the
+#     deep check runs with its subject NOT trusted. A self-test imports nothing
+#     and is edited in the same commit as the thing it checks.
+#   * NOT RUN. tools/run_all_tests.py discovers tests/ and *.test.js. A
+#     `--selftest` nobody invokes is a control that passes in a drawer.
+# THE FLAG MUST BE COMPARED AGAINST argv, not merely PRESENT in the file --
+# the same tightening tests/run_selftest_sweep_probe.py needed, and for the same
+# reason: this file's own source contains the string `--self-check` inside this
+# very regex, so a bare substring search reports THIS tool as having a self-test
+# it does not have.
+SELFTEST_RX = re.compile(
+    r"['\"](--self-?check|--selftest)['\"]\s*in\s*(?:sys\.)?argv", re.I)
+
+
+def selftest_of(subject):
+    """(entry-point flag, arm count) when the artefact tests itself, else None.
+    The arm count is read from the source, not by RUNNING it -- a tool that
+    executed every artefact it inspected would be an arbitrary-code runner."""
+    src = io.open(os.path.join(REPO, subject), encoding='utf-8',
+                  errors='replace').read()
+    m = SELFTEST_RX.search(src)
+    if not m:
+        return None
+    flag = m.group(1)
+    body = src[src.find('def _selftest'):] if 'def _selftest' in src else src
+    got = arms(body)
+    return {'flag': flag, 'arms': 0 if got is None else len(got)}
+
+
 def inspect(subject, all_tests):
     h = header(subject)
     ss = suites(subject, all_tests)
+    self_t = selftest_of(subject)
     a, unknown = [], []
     for s in ss:
         got = arms(all_tests[s])
@@ -240,6 +294,7 @@ def inspect(subject, all_tests):
             a.extend(got)
     return {'subject': subject, 'claims': claims(h), 'suites': ss,
             'arms': None if (unknown and not a) else a,
+            'selftest': self_t,
             'dialect_unknown': unknown, 'header_chars': len(h)}
 
 
@@ -367,6 +422,19 @@ def fixtures():
         ck('CONTROL: an artefact with NO suite gets an empty list, which is the '
            'one verdict this tool is allowed to reach',
            suites('tools/orphan.py', tests) == [])
+        ck('CONTROL: a test file that names the tool as a DICTIONARY KEY does '
+           'not count as a suite. tests/run_selftest_sweep_probe.py lists a '
+           'production write path as a declared EXCLUSION, and the bare-name '
+           'rule read that as coverage -- the one file that refuses to run it '
+           'reported as the file that verifies it',
+           suites('tools/widget.py',
+                  {'tests/excl.py': "EXCLUDE = {'widget.py': 'writes to prod'}"})
+           == [])
+        ck('CONTROL: and a test file that DRIVES it by name still counts, so '
+           'the exclusion is about the colon and not about the quotes',
+           suites('tools/widget.py',
+                  {'tests/drives.py': "subprocess.run([exe, 'widget.py'])"})
+           == ['tests/drives.py'])
         ck('CONTROL: the tool NEVER pairs a claim to an arm -- the FAI document '
            'says the two lists must not be matched automatically, and a scoring '
            'function here would be the 38%-with-five-false-positives result '
@@ -414,7 +482,8 @@ def main(argv):
 
     results = [inspect(s, all_tests) for s in subs
                if os.path.exists(os.path.join(REPO, s))]
-    unverified = [r for r in results if not r['suites']]
+    unverified = [r for r in results if not r['suites'] and not r['selftest']]
+    unwired = [r for r in results if not r['suites'] and r['selftest']]
 
     if '--json' in argv:
         print(json.dumps({'since': since, 'results': results}, indent=2))
@@ -441,6 +510,18 @@ def main(argv):
         print('    %d claim(s) across %d artefact(s), none of them verified by '
               'anything.' % (sum(len(r['claims']) for r in unverified),
                              len(unverified)))
+    if unwired:
+        print('')
+        print('  UNWIRED, WHICH IS NOT THE SAME STATE -- these carry a working')
+        print('  self-test that NOTHING IN THE SUITE RUNS. A control that')
+        print('  passes in a drawer is not a gap in the work; it is a gap in')
+        print('  the wiring, and it is also WEAKER: a self-test is edited in')
+        print('  the same commit as its subject, so it is not independent of')
+        print('  it (disciplines section 5).')
+        for r in unwired:
+            print('    %-44s %s, %d arm(s), %d claim(s)'
+                  % (r['subject'], r['selftest']['flag'],
+                     r['selftest']['arms'], len(r['claims'])))
     else:
         print('    every new artefact has at least one suite.')
     print('')

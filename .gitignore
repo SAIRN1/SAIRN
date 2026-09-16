@@ -19,3 +19,8 @@ __pycache__/
 # These carry real license_hash values and one-off test job IDs; they are
 # working notes for a single live verification, not schema the platform runs.
 sql/_scratch_*
+
+# A blind-review round in progress. The SEALED answers must never be committed:
+# a reviewer who can read them in the repo is not reviewing blind, and the
+# round would produce a measured agreement rate that means nothing.
+.blind-review-sealed.json

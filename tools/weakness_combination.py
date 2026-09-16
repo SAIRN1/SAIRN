@@ -189,6 +189,35 @@ def runner_text():
     return '\n'.join(parts) if parts else None
 
 
+def _watched(mech, runners):
+    """Is this mechanism named by something that runs -- directly, or through
+    the SUITE that guards it?
+
+    A module is watched when a runner names its suite, not only when a runner
+    names the module. `api/_lib/stripe-config.js` is log-only by design and no
+    checker can read its output; what CAN be held is that its behaviour is still
+    there, and `api/_lib/stripe-config.test.js` in GUARD_TESTS holds exactly
+    that. Requiring the module itself to appear would report a genuinely guarded
+    mechanism as unwatched -- a false finding, which costs more than the one it
+    would catch.
+
+    A SUITE IS NOT THE SAME AS A CONSUMER and the caller says so: this answers
+    "is anything holding this mechanism", not "does anything read its signal".
+    """
+    base = os.path.basename(mech)
+    if mech in runners or base in runners:
+        return True
+    stem, _dot, ext = base.rpartition('.')
+    if not stem:
+        return False
+    for guard in ('%s.test.js' % stem,
+                  'run_%s_probe.py' % stem.replace('-', '_'),
+                  'run_%s_probe.py' % stem.replace('_', '-')):
+        if guard in runners:
+            return True
+    return False
+
+
 def unwatched_triggers(entries, runners):
     """Entries claiming a MECHANICAL trigger whose named mechanism appears in
     nothing that runs. Returns None when the runners could not be read."""
@@ -203,8 +232,7 @@ def unwatched_triggers(entries, runners):
             out.append((e['id'], [], 'the trigger is called MECHANICAL and names '
                                      'no mechanism at all'))
             continue
-        missing = [m for m in named
-                   if m not in runners and os.path.basename(m) not in runners]
+        missing = [m for m in named if not _watched(m, runners)]
         if missing:
             out.append((e['id'], missing,
                         'nothing that runs on this platform mentions %s, so the '
@@ -408,6 +436,20 @@ def fixtures():
         ck('CONTROL: unreadable runners give None, NOT an empty list. An empty '
            'list here would read as "every trigger is watched"',
            unwatched_triggers(ents, None) is None)
+        ck('a mechanism is watched through the SUITE that guards it, not only '
+           'by its own name -- a log-only module no checker can read is still '
+           'held if a runner names its `.test.js`',
+           _watched('api/_lib/thing.js', 'GUARD_TESTS has thing.test.js here'))
+        ck('...and through a run_<stem>_probe.py too, which is how a python '
+           'tool is guarded here',
+           _watched('tools/some_tool.py', 'run_some_tool_probe.py runs nightly'))
+        ck('CONTROL: an unguarded, unmentioned mechanism is still NOT watched. '
+           'A widened rule that answered yes to everything would turn this '
+           'check into a pass generator',
+           not _watched('tools/nobody_runs_this.py', 'unrelated runner text'))
+        ck('CONTROL: the suite rule does not match on the STEM alone -- a '
+           'runner merely containing the word is not a guard',
+           not _watched('api/_lib/thing.js', 'we talk about thing a lot here'))
         g = os.path.join(d, 'g.md')
         io.open(g, 'w', encoding='utf-8', newline='\n').write('# x\nno entries\n')
         ck('a file with no entries section returns None too', parse(g) is None)

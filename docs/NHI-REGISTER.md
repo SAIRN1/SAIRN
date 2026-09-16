@@ -37,6 +37,34 @@
 
 - **sairn_backup_reader** -- THE SCRIPT IS FIXED -- Fourth's e40e146b raises while the placeholder password is present and rotates unconditionally on an existing role, so the file can no longer mint or preserve a published credential. WHAT IS STILL OPEN IS NARROWER AND IS NOT RESOLVABLE FROM SOURCE: the role is confirmed to EXIST in the live project, and whether it currently holds the placeholder or the rotated password is UNKNOWN. No clone has database access, so no check here can answer it -- it needs one query by somebody who can connect. Register entry 101. LIVE-PASSWORD-STATE UNKNOWN, not script-unfixed
 
+## If one of these is compromised
+
+**5 of 22 identities carry a drafted procedure.** Written 2026-09-15 for the identities holding BROAD standing access with no attested rotation and no schedule -- the set where neither of the other two controls is doing anything.
+
+**A procedure is a THIRD control and does not fix either of the first two.** It tells you what to do AFTER. It does not shorten the window a leaked credential works, and it does not narrow what that credential reaches.
+
+**DRAFTED, NOT REHEARSED, AND NOT VERIFIED.** The blast-radius and what-breaks halves are derived from this register and the repo. **The console steps are not verified** -- no clone holds these credentials or that access, so nobody here has done any of this. A runbook nobody has walked through is a draft, and calling it anything else is the claim-versus-reality failure this platform keeps recording.
+
+### supabase-service-role
+
+REVOKE: Supabase dashboard, Project Settings -> API -> roll the service_role key. Then set SUPABASE_SERVICE_ROLE_KEY in Vercel (Production AND Preview) and REDEPLOY -- the running functions hold the old value until they do. BLAST WHILE COMPROMISED: read and write on every table in the one project, RLS bypassed, so every tenant of every app at once. WHAT BREAKS DURING: every server-side path on the platform, until the redeploy completes. ROTATION DOES NOT UNDO A READ -- anything already exfiltrated stays exfiltrated, and docs/2026-09-14-nightly-backup-design.md records the project on the FREE TIER with one-day log retention, so there may be no way to establish what was touched. THE HUMAN DECISION, not drafted here: whether to roll immediately and take every app down, or stage the redeploy first. DRAFTED 2026-09-15 from this register and the repo; the console steps are NOT verified because no clone has that access.
+
+### sairn_backup_reader
+
+REVOKE: `alter role sairn_backup_reader with password ...` in the Supabase SQL editor, or `drop role` outright. sql/backup_reader_role.sql rotates unconditionally, so re-running the corrected file IS the rotation. BLAST WHILE COMPROMISED: SELECT on every table in public plus BYPASSRLS -- a complete read of the platform, and no write. WHAT BREAKS DURING: the backup job only. NO APPLICATION PATH USES THIS ROLE, which makes it the one credential here that can be revoked first and reasoned about afterwards. STILL OPEN AND NOT ANSWERABLE FROM A CLONE: whether the LIVE role currently holds the placeholder or a rotated password. DRAFTED 2026-09-15.
+
+### anthropic-api
+
+REVOKE: Anthropic console -> API keys -> revoke, then issue a replacement, set ANTHROPIC_API_KEY in Vercel and REDEPLOY. BLAST WHILE COMPROMISED: METERED SPEND on this account, which is a financial exposure rather than a data one -- and the model calls carry whatever the apps send, so treat prompt content as exposed too. WHAT BREAKS DURING: every AI feature in every app, until the redeploy. CHECK AFTERWARDS: console usage for the window, which is the one place on this platform where a compromise leaves an independent, billable trace. DRAFTED 2026-09-15; the console steps are NOT verified from here.
+
+### session-signing
+
+REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE CONTAINMENT IS THE DISRUPTION, and that is why this needs deciding in advance rather than during: one secret signs EVERY app employee session and there is no overlap window, so rotating LOGS EVERYONE OUT OF EVERYTHING AT ONCE, mid-shift, including whoever is handling the incident. BLAST WHILE COMPROMISED: forge a session token for any employee of any app, including an admin -- so the exposure is IMPERSONATION, and every audit row written during the window names whoever the forger chose. WHAT BREAKS DURING: nothing stays broken; everyone signs in again. THE HUMAN DECISION, not drafted here: whether a suspected compromise is enough to rotate, given that the cost is certain and the compromise is not. AN OVERLAP WINDOW -- accept two secrets during a changeover -- would remove that dilemma and is a build, not a procedure. DRAFTED 2026-09-15.
+
+### sairncash-firebase-admin
+
+REVOKE: Google Cloud IAM -> the service account -> delete the KEY (not the account), mint a replacement, set SAIRNCASH_FIREBASE_SERVICE_ACCOUNT in Vercel and REDEPLOY. It is a JSON blob, not a string, so a partial paste fails closed rather than half-working. BLAST WHILE COMPROMISED: full Firebase admin on SAIRNcash -- consumer accounts and their data, read and write, and the ability to mint credentials. This is the consumer side, so the affected parties are members of the public rather than a business customer. WHAT BREAKS DURING: SAIRNcash server-side paths, until the redeploy. NOTE it is DISTINCT from the Firebase WEB values, which are public by design -- leaking those is not this event. DRAFTED 2026-09-15; the IAM steps are NOT verified from here.
+
 ## What this register cannot tell you
 
 - **Whether a credential is still live, or has ever been rotated.** No clone holds one. Every rotation column is attested, never measured.

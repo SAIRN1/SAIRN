@@ -185,10 +185,29 @@ check('CONTROL: and the arm counts are not all identical, which would mean the '
       'extractor was returning something constant',
       len({len(v['arms']) for v in verdicts if v['arms']}) > 3,
       sorted({len(v['arms']) for v in verdicts if v['arms']}))
-check('an artefact with no suite is reported as a finding, so the run does not '
-      'exit 0 while claims sit unverified',
-      (rc == 1) == any(not v['suites'] for v in verdicts),
-      (rc, [v['subject'] for v in verdicts if not v['suites']]))
+rc_now, out_now = run([])
+nothing_at_all = [v for v in verdicts if not v['suites'] and not v['selftest']]
+unwired = [v for v in verdicts if not v['suites'] and v['selftest']]
+check('an artefact with NOTHING -- no suite and no self-test -- is a finding, '
+      'so the run does not exit 0 while claims sit unverified',
+      (rc_now == 1) == bool(nothing_at_all),
+      (rc_now, [v['subject'] for v in nothing_at_all]))
+check('UNWIRED IS REPORTED AS ITS OWN STATE, not folded into "no suite". Five '
+      'artefacts carried a working --selftest that nothing in the suite ran; '
+      'reporting those as unverified was this tool mistaking its own blind '
+      'spot for a fact about somebody else\'s work, for the third time',
+      (not unwired) or 'UNWIRED' in out_now,
+      [v['subject'] for v in unwired])
+check('CONTROL: the two lists are disjoint, so nothing is counted twice',
+      not (set(v['subject'] for v in nothing_at_all)
+           & set(v['subject'] for v in unwired)))
+check('CONTROL: a self-test is DETECTED by comparing the flag against argv, '
+      'not by the string appearing anywhere -- this tool\'s own source contains '
+      '"--self-check" inside a regex and enrolled itself on the first run',
+      F.selftest_of('tools/sabotage.py') is not None
+      and F.selftest_of('tools/traceability_matrix.py') is None,
+      (F.selftest_of('tools/sabotage.py'),
+       F.selftest_of('tools/traceability_matrix.py')))
 
 print('\n8. COULD-NOT-TELL IS NOT FOLDED INTO A PASS')
 check('a suite whose dialect is unknown is recorded separately from the arms',

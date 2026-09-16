@@ -12,6 +12,7 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 
 | App | Requirement (what it guards) | Proved by | The defect that put it here |
 |---|---|---|---|
+| PLATFORM | the ONLY unhealthy Stripe state visible without calling Stripe still produces a signal, and still produces it in exactly one environment | `api/_lib/stripe-config.test.js` | docs/ACCEPTED-RISKS.md AR-1 is accepted on a trigger, and that trigger IS this module: a `warnings` entry when STRIPE_SECRET_KEY is an sk_test_ key in a production deployment, whose DISAPPEARANCE is the moment the accepted risk becomes live. Found 2026-09-15: the module had NO SUITE AT ALL, so the branch producing that signal could have been edited away and the only consequence would have been an accepted risk's trigger quietly ceasing to exist -- with the register still saying it was monitored. The signal is also LOG-ONLY by design (it must never reach a client), so no checker in this repo can read the signal itself; guarding the PRODUCER is the half that can be held from inside the repo, and AR-1 now says which half is which. The four-cell control is the load-bearing one: a warning that fired in preview as well would be a banner rather than a signal, and AR-1's trigger reads the ABSENCE of it. |
 | PLATFORM | the endpoint forwards every input the deadline engine reads | `api/_lib/deadline-endpoint-inputs.test.js` | The engine grew `service_methods` on 2026-08-27 and api/legal-deadlines.js was never updated, so the field was silently dropped on every live request for five days: Florida returned +5 days and an assumed exclusivity even when the caller sent ["mail","email"], on the shortest answer period in the engine, and Utah's +7 became unreachable. Both per-state suites were green throughout -- 14/14 and 59/59 -- because they call computeDeadline() directly and never traverse the endpoint. |
 | sairncode | each auth endpoint passes the shared helper THE SAME roles its own setup gate enforces | `api/_lib/employee-lifecycle-wiring.test.js` | The shared helper takes PROVISIONING_ROLES as a parameter so each app can pass its own, and the wrong list is invisible in review because it looks like every other app's. CLAUDE.md records the live case: SAIRNcode's is `admin`, not `owner`, and a guard hardcoding `owner` passes it clean forever while checking nothing. |
 | PLATFORM | the fourteen data endpoints still authenticate before they refuse | `api/preauth-envelope-ordering.test.js` | Not redundant with check 7, which scopes to the api/ files THIS push touches. This asserts the ordering across all fourteen from source anchors regardless of what the push contains -- the case where somebody else's commit reorders one and arrives here by rebase. It anchors on CODE and never on message text, because the detector's own boundary regex once matched `verifySessionToken(` inside a header comment and reported two defective files as clean. |
@@ -137,6 +138,8 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 - `missing_dom_target_check.py` -- its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress.
 - `local_only_collection_check.py` -- its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".
 - `sairn_app_map_check.py` -- CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion.
+- `blind_review.py` -- IT IS NOT A CHECKER, it is a two-phase REVIEW FLOW a human drives, and there is nothing for a push notice to say. A round is opened deliberately and scored when the reviewer has judged; wiring that to a push would either open rounds nobody asked for or report on a round in progress. Promote nothing here. What COULD be wired one day is the agreement rate across completed rounds, once there are enough rounds for a rate to mean anything, and once the score-first arm exists to compare it against -- neither is true yet.
+- `accepted_risk_trigger_check.py` -- PROMOTABLE, AND HELD BACK ONE CYCLE ON PURPOSE. It is read-only, fast, and clean as of 2026-09-15 -- AR-1 was its one finding and that is now corrected. The reason to wait is that it has run against exactly ONE register state, and this platform's own rule for promotion is report-only until quiet IN PRACTICE, not until clean once. Promote it after the next accepted risk is added, which is the first time it will be asked a question it has not already answered.
 - `first_article_inspection.py` -- ITS MECHANICAL HALF IS PROMOTABLE AND ITS WORKSHEET HALF IS NOT, and promoting the pair would promote the wrong one. "Does this new artefact have a suite at all" is a clean verdict; the claim-versus-arm worksheet is a HUMAN pass by design and a push notice carrying two unmatched lists is a notice nobody reads. It also scans git history for a date window, so wiring it needs a decision about what the window IS on a push -- since-the-merge-base is not the same question as since-today. Split the suite check out, then promote that.
 - `rotation_blast_radius.py` -- IT READS DECLARATIONS, NOT THE WORLD. Every figure comes from the scope and rotation TEXT in tools/nhi_register.py; no clone holds any of these credentials, so nothing here is measured against a live grant. A push notice would put "20 of 22 unrotated" in front of people every day, where the number cannot move without a human attesting a rotation that this tool cannot verify either. It belongs where the accepted-risk and NHI registers are reviewed, on the same cadence as those.
 - `trend_alarm.py` -- ITS OWN OUTPUT SAYS IT IS NOT ARMED, and wiring an unarmed measurement into a push notice would put a number in front of people that nothing has been tuned to interpret -- which is how a measurement becomes a threshold by habit. It is also SLOW by construction: the series are recovered from git history, 221 `git show` calls per run, about 14 seconds. Promote it when a labelled episode exists AND gains are recorded, which is the same gate the tool applies to itself.
@@ -468,9 +471,32 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**246 of 459 test files are traced to a stated requirement. 213 are not.**
+### 216 test files are traced to no stated requirement
+
+**That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
+
+For context and not as the headline: 247 of 463 traced, 53.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
+
+### Where the 253 citations come from
+
+| source | citations |
+|---|---|
+| `index` | 247 |
+| `GUARD_TESTS+index` | 4 |
+| `GUARD_TESTS` | 2 |
+
+**One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
+
+### The two kinds, because they need different fixes
+
+| kind | count | what it means | the fix |
+|---|---|---|---|
+| **bound to a subject, tied to no requirement** | 57 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 159 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 57 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/accounting-connector.test.js`
 - `api/_lib/ai-rate-limit.test.js`
@@ -622,6 +648,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_jobs_load_failure.js`
 - `tests/rootpages.js`
 - `tests/run_accepted_risk_probe.py`
+- `tests/run_blind_review_probe.py`
 - `tests/run_bypassed_constant_probe.py`
 - `tests/run_citator_freshness_probe.py`
 - `tests/run_cleanup_confirm_probe.py`
@@ -630,6 +657,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
+- `tests/run_guard_ablation_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_invisible_in_pattern_probe.py`
 - `tests/run_jscomments_probe.py`
@@ -639,6 +667,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
 - `tests/run_schema_verdict_probe.py`
+- `tests/run_selftest_sweep_probe.py`
 - `tests/run_shape_antipattern_probe.py`
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
@@ -705,11 +734,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 459   tests/**, api/*.test.js
+  test files on disk                 463   tests/**, api/*.test.js
   open-work rows citing a test       235   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                51   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     42   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     44   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
 

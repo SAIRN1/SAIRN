@@ -296,6 +296,38 @@ PURPOSES = {
         'which says HOW and never WHEN. UNATTESTED IS NOT "NEVER ROTATED" -- no '
         'clone holds these credentials, so a missing date is the absence of a '
         'note; what IS a fact is that nothing here would notice either way'),
+    'blind_review.py': ('CHECKER',
+        'item 79 -- a reviewer anchoring on an automated verdict they saw '
+        'before forming their own. The mitigation is an ORDERING and not a '
+        'warning: `--start` writes a worksheet of EVIDENCE ONLY with the '
+        'recorded severity removed and sealed in a file the worksheet never '
+        'names; `--submit` takes the reviewer\'s own severities and only THEN '
+        'reveals. Every judgment must carry a DEFEATER -- what would have to be '
+        'true for that severity to be WRONG -- refused below a substance floor, '
+        'because an accept with no engagement is re-anchored by the reveal '
+        'anyway. WHAT IS MECHANICAL: the worksheet is SCANNED for every '
+        'withheld value and the round is REFUSED if one appears; a submission '
+        'modified before the round opened is refused; the sealed file is '
+        'gitignored. WHAT IS NOT, and is printed on every round: nothing stops '
+        'a reviewer opening the seal -- the control is that doing so is a '
+        'deliberate act rather than the default reading order. FIRST REAL '
+        'ROUND: 3 of 6 agreed with the recorded severity. ONE ROUND MEASURES '
+        'NOTHING ABOUT AUTOMATION BIAS -- the experiment needs the same '
+        'reviewers under a SCORE-FIRST ordering and that arm does not exist'),
+    'accepted_risk_trigger_check.py': ('CHECKER',
+        'an accepted risk whose trigger is labelled MECHANICAL and is watched '
+        'by nothing. The register\'s own rule -- a trigger nobody watches is '
+        'not a trigger -- checked against the register. The distinction it '
+        'turns on is narrow and is the whole tool: PRODUCING a signal is not '
+        'CONSUMING one, and an entry cannot show the difference. Split out of '
+        'weakness_combination.py exactly as that tool\'s NOT_PROMOTED entry '
+        'said it should be, and it IMPORTS that module\'s functions rather than '
+        're-implementing them so the two cannot disagree about what the '
+        'register says. A mechanism counts as watched when a runner names the '
+        'SUITE that guards it, not only the module -- requiring the module '
+        'itself reported a genuinely guarded mechanism as unwatched. It says '
+        'plainly that a suite is NOT a consumer: this answers whether anything '
+        'holds the mechanism, never whether anything reads its signal'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '

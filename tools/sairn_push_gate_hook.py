@@ -225,6 +225,22 @@ MODE = 'pretooluse'
 # a registry entry with the same four fields, and a test with no real defect
 # behind it does not belong here -- it belongs in the report-only runner.
 GUARD_TESTS = [
+    ('api/_lib/stripe-config.test.js',
+     'the ONLY unhealthy Stripe state visible without calling Stripe still '
+     'produces a signal, and still produces it in exactly one environment',
+     'docs/ACCEPTED-RISKS.md AR-1 is accepted on a trigger, and that trigger IS '
+     'this module: a `warnings` entry when STRIPE_SECRET_KEY is an sk_test_ key '
+     'in a production deployment, whose DISAPPEARANCE is the moment the '
+     'accepted risk becomes live. Found 2026-09-15: the module had NO SUITE AT '
+     'ALL, so the branch producing that signal could have been edited away and '
+     'the only consequence would have been an accepted risk\'s trigger quietly '
+     'ceasing to exist -- with the register still saying it was monitored. The '
+     'signal is also LOG-ONLY by design (it must never reach a client), so no '
+     'checker in this repo can read the signal itself; guarding the PRODUCER is '
+     'the half that can be held from inside the repo, and AR-1 now says which '
+     'half is which. The four-cell control is the load-bearing one: a warning '
+     'that fired in preview as well would be a banner rather than a signal, and '
+     'AR-1\'s trigger reads the ABSENCE of it.'),
     ('api/_lib/deadline-endpoint-inputs.test.js',
      'the endpoint forwards every input the deadline engine reads',
      'The engine grew `service_methods` on 2026-08-27 and api/legal-deadlines.js '

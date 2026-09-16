@@ -407,13 +407,105 @@ def build():
     untraced = [t for t in tests if t not in cited]
     W('## 5. THE GAPS -- read this section first')
     W('')
-    W('**%d of %d test files are traced to a stated requirement. %d are not.**'
-      % (len(tests) - len(untraced), len(tests), len(untraced)))
+    # ── THE ABSOLUTE COUNT LEADS, AND THE RATIO FOLLOWS ──────────────────
+    # MEASURED 2026-09-15 over 221 readings of this document recovered from its
+    # own git history (tools/trend_alarm.py): the RATIO improved monotonically
+    # 29.4% -> 52.5% over five days while the UNTRACED COUNT rose 185 -> 212.
+    # Same document, same readings, opposite directions.
+    #
+    # The headline was the ratio, so the page got better every day while the
+    # backlog it is a ratio of grew. That is Goodhart's law with this document
+    # as the measure, and the fix is not a new checker -- it is putting the
+    # number that cannot improve by adding work at the top.
+    W('### %d test files are traced to no stated requirement' % len(untraced))
+    W('')
+    W('**That absolute count is the headline, deliberately, and the ratio is '
+      'below it.** For five days this section led with the RATIO, which '
+      'improved from 29.4% to 52.5% while this count rose from 185 to 212 '
+      '-- measured over 221 readings of this document recovered from its own '
+      'git history. Same document, same readings, opposite directions. A '
+      'ratio improves when traced work is added; only this number falls when '
+      'the gap actually closes.')
+    W('')
+    W('For context and not as the headline: %d of %d traced, %.1f%%.'
+      % (len(tests) - len(untraced), len(tests),
+         100.0 * (len(tests) - len(untraced)) / max(1, len(tests))))
     W('')
     W('An untraced test is not a bad test. It means no source in this repo '
       'states what it is for in a form this can read, so an auditor cannot '
       'tell what would be lost if it were deleted. The fix is one line in the '
       'open-work index or a `GUARD_TESTS` entry -- not a new document.')
+    W('')
+
+    # ── WHERE THE CITATIONS ACTUALLY COME FROM ──────────────────────────
+    # A concentration finding, not a count: if one source dries up, this
+    # document's headline collapses and nothing else would say so.
+    src_count = {}
+    for _t, who in cited.items():
+        key = '+'.join(sorted(set(who)))
+        src_count[key] = src_count.get(key, 0) + 1
+    W('### Where the %d citations come from' % len(cited))
+    W('')
+    W('| source | citations |')
+    W('|---|---|')
+    for k in sorted(src_count, key=lambda x: -src_count[x]):
+        W('| `%s` | %d |' % (k, src_count[k]))
+    W('')
+    W('**One source carries almost all of it.** That is a concentration, not '
+      'a defect -- but it means the traced figure moves with how diligently '
+      'the open-work index is written, not with how well tested this repo is, '
+      'and if that habit lapsed nothing here would say so.')
+    W('')
+
+    # ── THE TWO KINDS OF UNTRACED, WHICH NEED DIFFERENT FIXES ───────────
+    # `foo.test.js` beside `foo.js` is the strongest subject binding this repo
+    # has -- the filename names what it tests -- and traced() deliberately does
+    # NOT count it, because a SUBJECT is not a REQUIREMENT. Widening the
+    # definition to include it would move ~120 files into the traced column
+    # overnight without one more requirement being stated anywhere, which is
+    # exactly the measure-gaming this section was just rewritten to stop.
+    # So the two are separated and reported, not merged.
+    bound, unbound = [], []
+    for t in untraced:
+        p = t.replace(os.sep, '/')
+        base = os.path.basename(p)
+        subj = None
+        if base.endswith('.test.js'):
+            stem = base[:-len('.test.js')]
+            # Beside it first, then api/<stem>.js -- api/_lib/claude.test.js
+            # tests api/claude.js, and a same-directory-only rule reports that
+            # real binding as absent.
+            for cand in (os.path.dirname(p) + '/' + stem + '.js',
+                         'api/' + stem + '.js'):
+                if os.path.isfile(os.path.join(REPO, cand)):
+                    subj = cand
+                    break
+        elif base.startswith('run_') and base.endswith('_probe.py'):
+            stem = base[len('run_'):-len('_probe.py')]
+            for cand in ('tools/%s.py' % stem, 'tools/%s.py' % stem.replace('_', '-')):
+                if os.path.isfile(os.path.join(REPO, cand)):
+                    subj = cand
+                    break
+        (bound if subj and os.path.isfile(os.path.join(REPO, subj))
+         else unbound).append((t, subj))
+    W('### The two kinds, because they need different fixes')
+    W('')
+    W('| kind | count | what it means | the fix |')
+    W('|---|---|---|---|')
+    W('| **bound to a subject, tied to no requirement** | %d | the filename '
+      'names the module it tests and that module exists, so an auditor can see '
+      'WHAT it covers but not WHY that coverage is required | a row or a '
+      '`GUARD_TESTS` entry stating the requirement |' % len(bound))
+    W('| **no subject binding either** | %d | nothing in the repo ties it to a '
+      'module OR to a requirement | read it, then one of the above |'
+      % len(unbound))
+    W('')
+    W('**These are NOT merged into the traced column, and that is the whole '
+      'point.** `foo.test.js` beside `foo.js` is the strongest subject binding '
+      'this repo has, and counting it as traced would move %d files across '
+      'overnight with not one more requirement written down anywhere -- which '
+      'is the same measure-gaming the headline above was rewritten to stop. A '
+      'SUBJECT is not a REQUIREMENT.' % len(bound))
     W('')
     for t in untraced:
         W('- `%s`' % t)

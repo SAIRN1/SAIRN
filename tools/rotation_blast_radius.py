@@ -56,7 +56,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
-CRITERIA_VERSION = '2026-09-15.2'
+CRITERIA_VERSION = '2026-09-15.3'
 
 # ── CRITERIA, FIXED BEFORE THE REAL REGISTER WAS READ ─────────────────────────
 # Written against the synthetic fixtures below first. Calibrating these against
@@ -142,7 +142,31 @@ def scope_state(ident):
     return 'BROAD' if BROAD_SCOPE.search(ident.get('scope') or '') else 'BOUNDED'
 
 
+# A drafted procedure has to SAY something. The bar is deliberately a length
+# floor rather than a keyword list: "revoke it" satisfies any keyword check and
+# tells an incident responder nothing. Same shape as --decide's reason floor in
+# tools/defect_budget_policy.py.
+MIN_PROCEDURE_CHARS = 120
+
+
 def has_compromise_trigger(ident):
+    """An explicit `compromise` procedure, or a trigger stated in prose.
+
+    ── THE FIELD WAS ADDED AFTER THE FIRST RUN (.2 -> .3) AND THE NUMBER WENT UP
+    On 2026-09-15 this reported 0 of 22. Five procedures were then WRITTEN for
+    the five identities where neither control was doing anything, and this now
+    reads that field.
+
+    THAT IS THE DIRECTION THAT NEEDS SCRUTINY, so it is stated rather than
+    left to be noticed: the figure improved. It improved because the DATA
+    changed -- procedures were written that did not exist -- and not because
+    the test was loosened. The criteria change is that a field which did not
+    exist is now read; the fixture below proves an empty or thin one still does
+    not count, which is what keeps that distinction honest.
+    """
+    proc = (ident.get('compromise') or '').strip()
+    if len(proc) >= MIN_PROCEDURE_CHARS:
+        return True
     blob = ' '.join(str(ident.get(k, '')) for k in ('rotation', 'scope', 'note'))
     return bool(COMPROMISE.search(blob))
 
@@ -237,7 +261,18 @@ def fixtures():
        'evidence and the rest is intent',
        rotation_state(dict(F['dated'], rotation='not ours')) == 'ATTESTED')
 
-    ck('a compromise trigger is detected', has_compromise_trigger(F['trigger']))
+    ck('a compromise trigger stated in prose is detected',
+       has_compromise_trigger(F['trigger']))
+    ck('an explicit `compromise` PROCEDURE is a trigger',
+       has_compromise_trigger({'compromise': 'x' * MIN_PROCEDURE_CHARS}))
+    ck('CONTROL: a THIN procedure is not. "Revoke it" satisfies any keyword '
+       'check and tells an incident responder nothing, so the bar is a length '
+       'floor and the field being PRESENT is not enough',
+       not has_compromise_trigger({'compromise': 'revoke it'}))
+    ck('CONTROL: an EMPTY procedure field is not a trigger either -- adding the '
+       'key without writing anything must not move the number',
+       not has_compromise_trigger({'compromise': ''})
+       and not has_compromise_trigger({'compromise': '   '}))
     ck('CONTROL: a scheduled rotation is NOT a compromise trigger. They answer '
        'different questions and conflating them is the substitution this whole '
        'tool exists to refuse', not has_compromise_trigger(F['narrow']))
@@ -319,13 +354,24 @@ def main(argv):
                  'yes' if r['compromise_trigger'] else '-'))
     print('')
     if both:
-        print('  NEITHER CONTROL IS DOING ANYTHING FOR THESE %d -- broad standing'
+        covered = [r for r in both if r['compromise_trigger']]
+        print('  BROAD STANDING ACCESS *AND* NO ATTESTED ROTATION OR SCHEDULE,')
+        print('  for %d. This is a SET, not an average of the two columns above:'
               % len(both))
-        print('  access AND no attested rotation or schedule. This is a SET, not')
-        print('  an average of the two columns above:')
         for r in both:
-            print('    %s' % r['id'])
+            print('    %-30s %s' % (r['id'],
+                                    'compromise procedure drafted'
+                                    if r['compromise_trigger']
+                                    else 'NO compromise procedure'))
         print('')
+        if covered:
+            print('  %d of those %d now carry a drafted compromise procedure, '
+                  'which is' % (len(covered), len(both)))
+            print('  a THIRD control and not a fix for either of the first two.')
+            print('  A procedure tells you what to do AFTER; it does not shorten')
+            print('  the window and it does not narrow the blast radius. These')
+            print('  rows are still in this list for exactly that reason.')
+            print('')
     print('  ROTATION IS NOT A SUBSTITUTE FOR SCOPING AND SCOPING IS NOT A')
     print('  SUBSTITUTE FOR ROTATION. A freshly-rotated credential that can')
     print('  reach everything still reaches everything for as long as it is')
