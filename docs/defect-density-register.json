@@ -3295,6 +3295,63 @@
       "recurrence_open": "NOT CLOSED. The guards exist in files. Whether the migrations have been re-run against the deployed database is unverifiable from a clone, and until they have been, every guarded function is guarded only in the repository. tools/advisory_lock_isolation_check.py says so on every run rather than reporting the platform clean."
     },
     {
+      "commit": "4f757c3fc5c2",
+      "date": "2026-09-16",
+      "subject": "fix(test): the repair for the `!== 401` arm contained the same defect, 38 lines down",
+      "files": [
+        "tests/app_session_isolation.js",
+        "tests/app_session_isolation_probe.py"
+      ],
+      "lines_added": 228,
+      "lines_removed": 22,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the repair for the `!== 401` arm in tests/app_session_isolation.js SHIPPED WITH A FRESH INSTANCE OF THE SAME CLASS: the expectedApp arm added with the fix asserted `right.code !== 403` for \"a correctly signed-in SAIRNlaw session REACHES law_trusttx\" -- a negation of one refusal code, satisfied by a 401, a 500 or a harness fault, written 38 lines below the fix's own comment saying never to do it. Two older arms in the same file carried the shape as well",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "798543873912",
+        "date": "2026-09-16",
+        "subject": "fix(test): an arm that PASSED while printing its own refutation",
+        "lag_days": 0
+      },
+      "citation_note": "The arm could fail, and could not fail for the states that matter. Cited as 1.1 because the end state is the same -- an assertion that cannot go red when the thing it describes stops being true -- but it is not a check that stopped checking: it never could.",
+      "contributing_factors": [
+        {
+          "factor": "THE CLASS DOES NOT ANNOUNCE ITSELF AT THE MOMENT OF WRITING. `!== 403` reads as \"not refused by the gate\", which IS the question being asked -- and it is satisfied by a 401, a 500, and by the harness throwing. Every one of those is a legitimate attorney turned away, which is exactly what the arm exists to detect.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three assertions moved to positive form: the new expectedApp arm to `=== 200`, the own-session CONTROL to `=== 200`, and the licence-boundary arm to `=== 400` by name."
+        },
+        {
+          "factor": "I WROTE IT 38 LINES BELOW MY OWN COMMENT SAYING NOT TO. The comment reads \"Never `!== <one code>` for it got through\" and the new arm does precisely that. Knowing the rule, having just written it down, and having the counter-example open in the same file was not enough -- which is the strongest evidence available that this needs a mechanical check rather than a remembered one.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No sweep exists for reachability asserted as the negation of a status code. Writing one means distinguishing \"got through\" arms from arms that legitimately rule out one code; scoped but not built."
+        },
+        {
+          "factor": "A PROBE THAT ONLY PROVES THE NEW SUITE CATCHES THINGS PROVES NOTHING ABOUT THE REPAIR. Six of the nine mutations would have been caught by the BROKEN suite as well, so counting them as evidence would have overstated the fix by a factor of three.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "old_form_is_blind() pulls the suite AS IT WAS from git -- the parent of the commit introducing PHASE_2_GATED, derived rather than pinned -- and requires every same-reason mutation to leave it GREEN. It rejected three candidates, including a 403->401 mutation that tests the repair with the one input the defect never had."
+        },
+        {
+          "factor": "THE FIRST VERSION OF THAT CONTROL WAS WRONG IN THE SAME FAMILY: it HAND-REVERTED three predicates rather than reading history, and hand-reverting a predicate cannot remove an ARM that did not exist yet. It reported two false SEENs -- a counterfactual assembled by hand is a guess about history.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The counterfactual is `git show <sha>^:<path>`. Stated in the file, because the reconstruct-by-hand instinct is the natural one."
+        }
+      ],
+      "recurrence_open": "NO MECHANICAL CHECK EXISTS FOR THE CLASS, and this record is the proof that remembering does not work: the author had written the rule down in that file, in that session, and reintroduced the defect 38 lines later. Three arms in ONE file are corrected; nothing has swept the other 156 suites. The deeper cause is also still open -- sd-data answers no-session with 401 on one path and 403 on another, which is what makes a negation ambiguous in the first place."
+    },
+    {
       "commit": "0c26bcd13eda",
       "date": "2026-09-16",
       "subject": "fix(test): the sairnlaw resource suite was 18/20 and BOTH red arms were its own fault",
