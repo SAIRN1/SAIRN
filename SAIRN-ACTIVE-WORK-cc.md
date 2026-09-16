@@ -3597,3 +3597,70 @@ in both directions inside the same session.
 **The tier-a-reviews register conflicted on rebase and was MERGED, not
 overwritten** -- another clone's obligation and mine were both kept. Taking
 either side would have silently discharged somebody else's.
+
+---
+
+## 2026-09-15 (continued) -- R03 was half-fixed, and four closures
+
+Pushed as `94a4063f`, verified on origin by SHA equality. Write-up:
+`docs/2026-09-15-r03-and-four-closures.md`.
+
+### The thing worth carrying forward
+
+**A FIX APPLIED TO A HELPER IS NOT A FIX APPLIED TO ITS CALLERS, and the
+scanner that found the original cannot see the difference.** `bfe591a2` made
+`cmSavePoints()` await its push and report honestly. The three call sites kept
+dropping the promise and toasting success unconditionally. The defect survived
+its own fix, one level up, and `tools/write_path_fault_scan.py` reported
+sairngrounds clean throughout -- it matches the DATA WRAPPER by name and these
+sites call a local async helper.
+
+**AND THE PREVIOUS SESSION HAD CONSIDERED IT.** Its note at the site argues that
+`toast()` replaces text, so the optimistic message is corrected when the push
+resolves. The case it misses: **a correction only corrects if it is the NEXT
+message**, and capturing course points is a sequence with an 8-second GPS await
+in it, so a second capture routinely overwrites the first one's correction with
+another success claim.
+
+That is the shape to watch for generally: **a reasoned decision that is right
+about the mechanism and wrong about the sequence.**
+
+### The other four
+
+**A THIRD CITING SOURCE for traceability** -- a `REQUIREMENT:` declared in the
+test file's own header. **Co-location was still refused**: a filename says WHAT
+a test covers, not WHY the coverage is required, and counting it would have
+moved 55 files on a naming convention. 22 declarations hand-written, 213 -> 200.
+The arm that matters is the one asserting `declared` is not carrying the whole
+figure -- otherwise the metric is moved rather than closed.
+
+**THE LAST TIER A ARTEFACT WITH NO SUITE** now has one, and it deliberately does
+NOT run the live probe -- that would wire a production writer into every push.
+
+**A SELF-TEST THAT CANNOT FAIL IS NOT A CHECK.** 11 mutants planted from outside
+into `sabotage.py`, `line_endings.py` and `nhi_register.py`; all 11 caught, each
+by the arm it was aimed at -- which is asserted, because a mutant caught by the
+WRONG arm means the coverage sits somewhere other than where it was thought to.
+
+**ITEM 79 ROUND TWO: 6 of 14 across both rounds, and the 8 disagreements split
+4 MORE severe and 4 LESS.** That even split is what the second round bought: a
+one-sided split would be a calibration offset between reviewers; an even one is
+DISPERSION from a scale with no definition. `SEVERITIES` carried four words and
+no definitions while `layer` and `injection_phase` each carry a paragraph. Now
+defined -- and **the 85 existing records are NOT re-tiered**, which leaves the
+corpus mixed and `defect_budget_policy.py` weighting across two vocabularies.
+Said out loud rather than fixed silently.
+
+### Verified
+
+`checkblocks sairngrounds` 5 blocks 0 failed. `grd_write_faults` 25 arms.
+`selftest_independence` 11 mutants all caught. `sc_tier_a` offline probe 30
+arms. `traceability_matrix` probe 30 checks 0 failed. All 8 node suites and 5
+python probes whose headers gained a declaration re-run green. `md_table_check`
+0 malformed over 542 rows.
+
+**One COULD-NOT-TELL observed and it is NOT from this work:**
+`api/sairndental/public-book.js -> stampLocation()` has no local function
+declaration because the name is re-exported from `locationScope`, so
+`sairn_seam_check.py` cannot read that seam. Pre-existing, correctly reported as
+a third state, and still unverified.
