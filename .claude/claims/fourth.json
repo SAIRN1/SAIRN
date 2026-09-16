@@ -1503,8 +1503,8 @@
       "task": "item 5 assurance case, item 84 probabilistic risk assessment event tree, DORA metrics tool",
       "claimed_at": "2026-09-16T03:33:54Z",
       "claimed_at_epoch": 1789529634.616585,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:04:57Z"
     }
   ]
 }
