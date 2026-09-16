@@ -37,6 +37,18 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CHECKER = os.path.join(REPO, 'tools', 'hover_separation_ci.py')
 SKILL_DIR = '.claude/skills/sairn-hover-auditor'
 
+# THE SUBPROCESS ARMS STAY THE PRIMARY EVIDENCE. Everything about a verdict --
+# exit code, the wording of a refusal, whether the range was read at all -- is
+# driven through the real CLI, because that is what CI invokes and an in-process
+# call would not exercise it.
+#
+# The import is for the two arms that CANNOT be asked of a CLI: comparing two
+# module constants for drift, and re-running the SUPERSEDED criteria against the
+# same commits to show the rewrite was necessary. Both are statements about the
+# module's internals; neither has a command line.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import hover_separation_ci as R                                  # noqa: E402
+
 FAILS = []
 
 
@@ -68,6 +80,24 @@ def commit(wt, files, message):
     if r.returncode != 0:
         raise RuntimeError('commit failed: ' + (r.stderr or '')[:200])
     return git(wt, 'rev-parse', 'HEAD').stdout.strip()
+
+
+def commits_for(wt, rng):
+    """The checker's own range reader, pointed at the throwaway repo.
+
+    Used by the ablation arm, which has to classify the SAME commits the shape
+    rule saw -- reading them a second way would make the comparison meaningless.
+    """
+    import os as _os
+    cwd = _os.getcwd()
+    _os.chdir(wt)
+    try:
+        commits, err = R.commits_in(rng)
+        if commits is None:
+            raise RuntimeError('range unreadable in fixture repo: %s' % err)
+        return commits
+    finally:
+        _os.chdir(cwd)
 
 
 def run_checker(wt, rng):
@@ -156,6 +186,54 @@ def main():
         code, out = run_checker(wt, '%s..%s' % (plat, book))
         arm('the auditor\'s directory plus a CLAIM FILE is not a violation',
             code == 0, 'exit %s\n%s' % (code, out[-500:]))
+
+        # 4b. THE BOUNDARY RUNNING THE OTHER WAY, IN REAL GIT. CLAUDE.md states
+        #     it in terms -- "A build agent must not reach into that clone" --
+        #     and it was covered only by a constructed commit dict in
+        #     --fixtures. A synthetic arm and an end-to-end arm are not the same
+        #     evidence, and the FAI on this tool named the difference as a gap
+        #     rather than letting the fixture stand in for it.
+        reach = commit(wt, {SKILL_DIR + '/SKILL.md': 'audit notes v4\n',
+                            '.claude/claims/cody.json': '[]\n',
+                            'api/sd-data.js': '// a build agent edit\n'},
+                       'a build agent reaching into the auditor clone')
+        code, out = run_checker(wt, '%s..%s' % (book, reach))
+        arm('a BUILD AGENT reaching into the auditor\'s directory alongside '
+            'platform work is REFUSED, in real git', code == 1,
+            'exit %s\n%s' % (code, out[-500:]))
+        arm('...and the refusal names the platform path, not the claim file',
+            'api/sd-data.js' in out and 'claims/cody.json' not in out,
+            out[-500:])
+
+        # 4c. THE SCOPE DEFINITIONS MUST STILL AGREE, and the check must be
+        #     able to say they do not. Two constants that must match, with
+        #     nothing comparing them, is how they stop matching.
+        gate, audit, agree = R.scope_definitions_agree()
+        arm('the two scope definitions agree today', agree, (gate, audit))
+        _real = R.A.AUDITOR_SCOPE
+        try:
+            R.A.AUDITOR_SCOPE = ('.claude/skills/somewhere-else/',)
+            arm('...and the comparison can REPORT drift, so it is not comparing '
+                'nothing', not R.scope_definitions_agree()[2])
+        finally:
+            R.A.AUDITOR_SCOPE = _real
+        arm('...and it agrees again once restored', R.scope_definitions_agree()[2])
+
+        # 4d. THE ABLATION. v1 keyed on hover_separation_audit.attribute(), and
+        #     a commit in which the auditor ALSO touches platform code is
+        #     unattributable BY CONSTRUCTION -- so the one commit the gate
+        #     exists to refuse was the one it could not see. Shipped that way it
+        #     would have been a green required check that meant nothing.
+        #
+        #     This drives the OLD criteria at the SAME violating commit and
+        #     requires it to stay silent. Without this arm, "the mixed commit is
+        #     refused" is true and says nothing about whether the rewrite was
+        #     necessary.
+        v1 = [c for c in commits_for(wt, '%s..%s' % (clean, bad))
+              if R.A.attribute(c)[0] == 'hover' and R.offending(c)]
+        arm('ABLATION: the v1 attribution rule finds NOTHING in the very commit '
+            'the shape rule refuses -- which is why it was replaced',
+            not v1, v1)
 
         # 5. AN UNREADABLE RANGE IS A THIRD STATE, not a pass.
         code, out = run_checker(wt, 'deadbeefdeadbeef..HEAD')

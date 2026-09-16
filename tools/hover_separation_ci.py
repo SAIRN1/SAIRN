@@ -36,15 +36,33 @@ refuses if they have drifted. Two definitions that must match and nothing
 comparing them is how they stop matching.
 
 ── WHAT THIS CAN AND CANNOT SAY, BEFORE ANY RESULT ─────────────────────────
-It can say: **no commit in this push that is POSITIVELY IDENTIFIED as the
-auditor's touches anything outside its own scope.**
+It can say: **no commit in this push touches the auditor's own skill directory
+AND anything outside its scope.**
 
-It cannot say the auditor wrote no platform code. Attribution of a hover commit
-rests on the commit touching ONLY the auditor's skill directory, so a commit in
-which the auditor also edited `api/sd-data.js` fails that test and lands in
-UNATTRIBUTED rather than being caught. `hover_separation_audit.py` names this
-circularity in its own header and so does this file: **git alone cannot prove
-the negative, and a green check here is not that proof.**
+That is a question about COMMIT SHAPE and needs no attribution, which matters
+because all five roles commit through one git identity and there is no author
+field to group by. See review() for why the alternative could not work.
+
+It cannot say the auditor wrote no platform code. A commit touching ONLY
+platform code, and nothing of the auditor's own, is indistinguishable from any
+build agent's -- nothing here fires on it. **Git alone cannot prove the
+negative, and a green check here is not that proof.**
+
+── THIS PARAGRAPH SAID THE OPPOSITE UNTIL ITS FIRST ARTICLE INSPECTION ─────
+It read: *"Attribution of a hover commit rests on the commit touching ONLY the
+auditor's skill directory, so a commit in which the auditor also edited
+api/sd-data.js fails that test and lands in UNATTRIBUTED rather than being
+caught."* That described v1, which keyed on attribution and was replaced
+precisely because it could never fire. After the rewrite the sentence was not
+merely stale -- it was BACKWARDS: the mixed commit it says is missed is now the
+one case the tool exists to refuse.
+
+Nothing mechanical caught it. `review()` carried the correct account the whole
+time, three screens below a header that contradicted it, and both compile.
+Found by the FAI worksheet on 2026-09-16, reading the ten claims in this header
+against the eleven arms in the suite -- which is the pass the item 47 document
+insists must be done by a human, and this is what it is for. A reader trusting
+the header would have believed the gate cannot catch the very thing it catches.
 
 WHAT WOULD CLOSE IT is the auditor becoming positively identifiable on every
 commit -- a bookkeeping file it always touches, the way each build agent touches

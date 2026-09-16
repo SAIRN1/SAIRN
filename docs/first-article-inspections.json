@@ -638,6 +638,86 @@
           "note": "A scope statement about deployment, not behaviour. Testing it would mean asserting the absence of a second machine. Recorded so the limit is in the record rather than only in prose -- it is the same limit the session lock files already have, and it means this registry answers for ONE workstation."
         }
       ]
+    },
+    {
+      "artefact": "tools/hover_separation_ci.py",
+      "inspected": "2026-09-16",
+      "inspector": "Cody",
+      "sha256": "a2a93cff8e6420e29a340198e5c475e052eba94b6cf5f98964ff308554cf0a9d",
+      "report": "docs/2026-09-16-first-article-hover-separation-ci.md",
+      "suites": [
+        "tests/hover_separation_ci_probe.py"
+      ],
+      "author_note": "SELF-INSPECTION, AND IT IS THE WEAKEST KIND OF EVIDENCE IN THIS FILE. I wrote the tool, I wrote the control, and I read the two against each other -- so the claim-to-arm mapping is the author reading his own header, which is exactly the blind spot the independent-review rule exists for. Recorded because the artefact arrived UNOWNED: nobody had logged an inspection, and an uninspected artefact under the item 47 requirement date is worse than a self-inspected one that says so plainly. IT FOUND ONE REAL DEFECT, IN THE DRAWING RATHER THAN THE BEHAVIOUR: the header's WHAT THIS CAN AND CANNOT SAY section still described v1, which keyed on ATTRIBUTION -- and after the rewrite onto commit SHAPE that paragraph was not stale but BACKWARDS, stating that a commit in which the auditor also edits platform code 'lands in UNATTRIBUTED rather than being caught' when that mixed commit is now the one case the tool refuses. review() carried the correct account three screens below a header that contradicted it; both compile and nothing mechanical could see it. Corrected in the same change with the superseded sentence quoted in place. THREE CLAIMS ARE CARRIED BY NO ARM and are named in the report: the server-side claim cannot be tested from this file and the workflow is currently REPORTING-ONLY after a required-status-check attempt deadlocked direct pushes to main; the hover.json measurement is a hand-reading nothing re-takes; and the build-agent-reaching-in case is synthetic only. It should be re-read by another session -- a control written by the person who chose the design is the least likely place for that design to be doubted.",
+      "claims": [
+        {
+          "claim": "Refuses a commit that touches the auditor's own skill directory AND code outside its scope.",
+          "status": "verified",
+          "by": "'a commit mixing the auditor's directory with PLATFORM CODE is REFUSED' in tests/hover_separation_ci_probe.py, driven against a real commit in a real throwaway git repository, plus the --fixtures arms 'auditor commit touching PLATFORM CODE' and 'auditor commit touching the app HTML'"
+        },
+        {
+          "claim": "The refusal names the offending path and quotes the rule rather than only failing.",
+          "status": "verified",
+          "by": "'...and the refusal NAMES the offending path' and '...and quotes the rule rather than only failing' (whitespace-normalised, because the tool wraps that sentence across two print calls)"
+        },
+        {
+          "claim": "A clean commit inside the auditor's own directory passes.",
+          "status": "verified",
+          "by": "'a commit inside the auditor's own directory PASSES' paired with '...and it was seen, not skipped -- the range was not empty'",
+          "note": "The pairing is the point. The first arm alone is satisfied by a range reader that returned nothing, which is exactly the defect this probe found in commits_in()."
+        },
+        {
+          "claim": "A platform-only commit is not refused -- the auditor is not the only committer.",
+          "status": "verified",
+          "by": "'a platform-only commit is NOT refused' -- without which every refusal arm above is satisfied by a checker that refuses everything"
+        },
+        {
+          "claim": "Bookkeeping is not platform code: a claim file alongside the auditor's directory is not a violation.",
+          "status": "verified",
+          "by": "'the auditor's directory plus a CLAIM FILE is not a violation', and the --fixtures arm '...and a build agent touching ONLY the auditor's skill dir is not'",
+          "note": "This carve-out was FORCED BY A FIXTURE rather than chosen. Without it, the one convention that could break the tool's circularity -- the auditor taking claims so it becomes identifiable -- could not be adopted without first changing the gate. A rule that forbids its own fix is worse than the gap."
+        },
+        {
+          "claim": "An unreadable range is COULD NOT RUN (exit 2), never a pass.",
+          "status": "verified",
+          "by": "'an unreadable range is COULD NOT RUN (exit 2), never a pass' and '...and it says nothing was checked'"
+        },
+        {
+          "claim": "The two scope definitions, in hover_auditor_scope_gate.ALLOWED and hover_separation_audit.AUDITOR_SCOPE, are asserted to still agree before either is used.",
+          "status": "verified",
+          "by": "'the two scope definitions agree today', '...and the comparison can REPORT drift, so it is not comparing nothing' and '...and it agrees again once restored' in tests/hover_separation_ci_probe.py -- driven in both directions, so it cannot pass by comparing nothing"
+        },
+        {
+          "claim": "It catches the boundary running the other way: a build agent reaching into the auditor's directory alongside platform work.",
+          "status": "verified",
+          "by": "'a BUILD AGENT reaching into the auditor's directory alongside platform work is REFUSED, in real git' and '...and the refusal names the platform path, not the claim file'",
+          "note": "WAS SYNTHETIC-ONLY AND IS NOT ANY MORE. The FAI named that as a gap -- the case existed only as a constructed commit dict in --fixtures -- and the arm was added to the end-to-end probe in the same change, building the commit in real git the way the auditor case already was. The second arm matters: it requires the refusal to name the platform path and NOT the claim file, so the bookkeeping carve-out is proved to still hold while the commit is being refused for another reason."
+        },
+        {
+          "claim": "It runs on GitHub's side of the push, where a local hook cannot be switched off.",
+          "status": "cannot-test",
+          "by": "no arm -- this is a property of .github/workflows/hover-separation.yml and the repository's branch rules, not of this file, and nothing this file can execute settles it",
+          "note": "AND IT IS NOT TRUE OF THE PLATFORM TODAY. The workflow is REPORTING-ONLY: making it a required status check on 2026-09-16 deadlocked direct pushes to main for every clone, because GitHub evaluates required checks before accepting a push while the workflow only runs after one. The claim is true of the code and NOT YET true of the deployment, which is the distinction this disposition exists to keep visible."
+        },
+        {
+          "claim": "It cannot prove the auditor wrote no platform code: a commit touching ONLY platform code is indistinguishable from any build agent's.",
+          "status": "cannot-test",
+          "by": "no arm can demonstrate the absence of a signal that does not exist. The tool prints this limit on every run, including a green one, which is the only enforcement available",
+          "note": "This is the honest residual and it is stated rather than engineered around."
+        },
+        {
+          "claim": ".claude/claims/hover.json is named in CLAUDE.md's clone registry and has never existed in this history -- zero commits touch it.",
+          "status": "cannot-test",
+          "by": "a hand measurement taken once on 2026-09-16 (`git log --all -- .claude/claims/hover.json` returned zero commits, and the file is absent from .claude/claims/)",
+          "note": "NOTHING RE-TAKES IT. It will go stale silently the day the file is created -- which is the outcome the claim argues FOR. Named as a gap in the report. A build agent creating that file would be reaching into another role's convention, so it is reported rather than fixed here."
+        },
+        {
+          "claim": "Its first version keyed on attribution and could never have fired, because a commit in which the auditor also touches platform code is unattributable by construction.",
+          "status": "verified",
+          "by": "'ABLATION: the v1 attribution rule finds NOTHING in the very commit the shape rule refuses -- which is why it was replaced' -- it runs hover_separation_audit.attribute() over the SAME commits the shape rule refused and requires it to stay silent",
+          "note": "Promoted from a --fixtures citation to a real end-to-end arm during the FAI. Without it, 'the mixed commit is refused' is true and says nothing about whether the rewrite was necessary."
+        }
+      ]
     }
   ]
 }
