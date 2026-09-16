@@ -21,6 +21,10 @@ Nothing is committed to, mutated in, or restored in this clone -- so there is
 no window in which a probe's fixture commit could be picked up by a push, which
 is how five stranded PROBE commits reached origin on 2026-09-10.
 """
+# REQUIREMENT: the separation checker is driven against a REAL git repository
+#   with REAL commits, because a correct classifier wired to a range-reader
+#   that returns nothing reports exactly the same green as one that works
+#
 import os
 import shutil
 import subprocess
@@ -74,7 +78,28 @@ def run_checker(wt, rng):
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
+def tracked_dirty():
+    st = git(REPO, 'status', '--porcelain').stdout
+    return set(l for l in st.split('\n')
+               if l.strip() and not l.startswith('??'))
+
+
 def main():
+    # ── THE BASELINE, TAKEN BEFORE ANYTHING RUNS (added 2026-09-16) ─────────
+    # Arm 7 used to assert the clone had NO tracked file modified at all, which
+    # answers a different question from the one it names. A session with
+    # uncommitted work of its own made it go red, and the failure said "this
+    # clone has no tracked file modified by the probe" about files the probe had
+    # never touched -- measured, not hypothetical: it fired mid-session on
+    # sixteen unrelated edits.
+    #
+    # This repo already has the sentence for that class and already has the
+    # answer: "a tracked file modified DURING a suite run is indistinguishable
+    # from residue after one", which tests/push_gate/check9_probe.py resolves by
+    # reporting COULD NOT TELL rather than by guessing. The cheaper resolution
+    # here is that the probe knows what the tree looked like before it started,
+    # so the DIFFERENCE is attributable to it and nothing else is.
+    before = tracked_dirty()
     wt = tempfile.mkdtemp(prefix='hover-sep-probe-')
     try:
         r = git(wt, 'init', '-q', '-b', 'main')
@@ -146,12 +171,21 @@ def main():
         arm('the checker\'s own --fixtures pass', r.returncode == 0,
             (r.stdout or r.stderr)[-400:])
 
-        # 7. NOTHING WAS DONE TO THIS CLONE.
-        st = git(REPO, 'status', '--porcelain').stdout
-        dirty = [l for l in st.split('\n')
-                 if l.strip() and not l.startswith('??')]
-        arm('this clone has no tracked file modified by the probe',
-            not dirty, dirty[:5])
+        # 7. NOTHING WAS DONE TO THIS CLONE -- measured as a DIFFERENCE from
+        # the baseline, so what the arm names is what the arm tests.
+        introduced = sorted(tracked_dirty() - before)
+        arm('this probe modified no tracked file in this clone',
+            not introduced,
+            'introduced: %s' % introduced[:5])
+        if before:
+            # Not a failure and not silence. The arm is still valid -- a
+            # difference is attributable whatever the starting point -- but a
+            # reader is entitled to know it ran against a tree that was already
+            # dirty, because that is the condition under which the OLD arm gave
+            # a wrong answer.
+            print('  note  the working tree already had %d modified tracked '
+                  'file(s) before this probe started; arm 7 measured the '
+                  'DIFFERENCE, not the total' % len(before))
     finally:
         shutil.rmtree(wt, ignore_errors=True)
 
