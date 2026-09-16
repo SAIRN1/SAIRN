@@ -4298,3 +4298,68 @@ caught for the wrong reason proves nothing about the arm it was meant to
 exercise**, so it is written at the top of the file rather than quietly skipped.
 An untested branch inside a tested function is exactly what a control should
 surface.
+
+## 2026-09-16 (continued) -- the AP void question answered, and two more controls
+
+### The `accounting` question, and the answer is not the one the sentence implied
+
+The row carried one line: *"`accounting` is NOT in the void list. A literal
+reading of the decision excludes it; on an AP control that is worth a second
+look, and it is one constant to change."* Here is the second look.
+
+**For adding it.** Accounting is the role that actually works AP, voiding is the
+ONLY correction path in the product, and the duplicate-number deadlock is the
+sharp case: two workstations raise `PO-2026-001`, `sbMatchPure` refuses the bill
+outright, and **the only way to clear it is to void one PO.** So the people who
+meet the collision cannot clear it. The route around is not fraud, it is habit
+-- *"void this one for me"* weekly trains a manager to void without reading,
+which hollows out the second-person check the void log exists to provide.
+
+**For leaving it out, and it is real rather than a formality.** Measured in the
+shipped file: `saveBill()` and `sbPayBill()` carry **no role gate at all**, so
+`SB_VOID_ROLES` is the only role distinction anywhere near the AP path.
+Accounting able to both create the documents and void the ones contradicting a
+bill is the zero-way match returning by another door.
+
+**NEITHER IS LOAD-BEARING TODAY, AND THAT IS THE ACTUAL ANSWER.** The gate is
+client-side only -- the server block is a SESSION gate, so a signed-in employee
+of any role can already POST a voided row. **Excluding `accounting` is not a
+control, it is a UI affordance.** It does not stop an accounting user voiding,
+only stops them using the button. Changing the constant alone buys convenience
+and zero control; refusing to change it prevents nothing.
+
+**Recommended: do not touch the constant by itself.** The decision worth making
+is the server-side role check on the `sb_po`/`sb_recv` write path this row
+already names. Shipping that with today's `[owner, manager]` makes the stated
+decision true for the first time, and only then does adding `accounting` cost or
+buy anything.
+
+### And the same row's status had been false for two days
+
+It said *"COMMITTED, NOT YET PUSHED -- so NOT LIVE-VERIFIED"*. True on
+2026-09-14, false the moment the commit went out, and nobody re-read it. Now
+measured: `https://sairn.vercel.app/sairnbiz` answers **200, 382,350 bytes**, and
+the deployed source carries `SB_VOID_ROLES`. **The row where the decision would
+be made was carrying a stale claim about its own subject.**
+
+### A push rejection worth knowing about, because every clone will hit it
+
+`git push origin main` was rejected once with **"Required status check
+`hover-separation` is expected"** -- a GitHub ruleset, not the local gate, so
+`SAIRN_SEED_GATE=off` does nothing for it. **The same push succeeded on retry a
+minute later.** The workflow triggers `on: push`, so the check can only ever be
+green for a commit that is already on main; the reading that fits what was
+observed is that the rule evaluates the CURRENT head, and a push is refused
+while the previous head's run is still in flight. **Wait and retry; do not
+force, and do not reach for the override.** Stated as the reading that fits one
+observation, not as a verified mechanism -- somebody should confirm it against
+the ruleset configuration.
+
+### Two more Tier A controls
+
+**SAIRNbiz three-way match** (four of five refusals; the fifth has no surgical
+disable and is named in the file rather than skipped) and **SAIRNvet dose
+audit** -- whose three mutations are the three halves of one silent failure:
+the write must REPORT failure, the failure must be SAID, and the caller must not
+print a success message over it. Each disabled separately, because a suite
+checking only one would pass while the other two were gone.
