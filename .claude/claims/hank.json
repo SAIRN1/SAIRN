@@ -1965,6 +1965,16 @@
       "claimed_at_epoch": 1789527396.9023185,
       "status": "released",
       "released_at": "2026-09-16T03:07:40Z"
+    },
+    {
+      "id": "hank-1789528543",
+      "session": "hank",
+      "subject": "multi-location",
+      "task": "shared multi location multi brand architecture measurement and design",
+      "claimed_at": "2026-09-16T03:15:43Z",
+      "claimed_at_epoch": 1789528543.515475,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
