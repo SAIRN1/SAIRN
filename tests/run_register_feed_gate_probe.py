@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/register_feed_gate.py']
 #!/usr/bin/env python
 """tests/run_register_feed_gate_probe.py -- controls for
 tools/register_feed_gate.py.

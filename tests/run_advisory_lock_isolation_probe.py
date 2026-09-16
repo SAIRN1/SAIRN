@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/advisory_lock_isolation_check.py']
 #!/usr/bin/env python
 """tests/run_advisory_lock_isolation_probe.py -- controls for
 tools/advisory_lock_isolation_check.py.

@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/hover_separation_audit.py']
 #!/usr/bin/env python
 """tests/run_hover_separation_probe.py -- the controls for the two hover
 auditor separation tools, and the reason each one exists.

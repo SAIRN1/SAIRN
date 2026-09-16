@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/service_role_tier_a_gate_check.py']
 #!/usr/bin/env python
 """tests/run_service_role_gate_probe.py -- controls for
 tools/service_role_tier_a_gate_check.py.

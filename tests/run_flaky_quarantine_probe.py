@@ -18,6 +18,8 @@ And the rule that keeps it honest either way: NEVER QUARANTINE ON A SINGLE RED.
 Section 3 pins that one disagreement is WATCH, and that too few runs is not a
 verdict at all.
 """
+CONTROLS_FOR = ['tools/flaky_checker_quarantine.py']
+
 import io
 import json
 import os

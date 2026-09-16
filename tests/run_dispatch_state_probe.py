@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/dispatch_state.py']
 #!/usr/bin/env python
 """tests/run_dispatch_state_probe.py -- controls for tools/dispatch_state.py.
 

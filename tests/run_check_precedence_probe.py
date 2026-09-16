@@ -1,3 +1,4 @@
+CONTROLS_FOR = ['tools/check_precedence.py']
 #!/usr/bin/env python
 """tests/run_check_precedence_probe.py -- controls for tools/check_precedence.py.
 

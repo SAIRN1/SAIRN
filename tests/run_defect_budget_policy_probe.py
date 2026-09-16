@@ -28,6 +28,8 @@ goes to a temp path and section 12 proves it: this tool's own subject is a
 record of governance decisions, and a probe that can forge one is worse than no
 probe.
 """
+CONTROLS_FOR = ['tools/defect_budget_policy.py']
+
 # REQUIREMENT: the defect budget GATES rather than informs -- four graduated bands, a
 #   margin that delays leaving a band as well as entering one, and a refusal
 #   to arm on a budget it cannot calibrate

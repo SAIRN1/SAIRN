@@ -19,6 +19,8 @@ So the arms that matter are not "does it classify". They are:
     far more likely miscalibrated than right, and one that passed everything
     would satisfy every other arm here.
 """
+CONTROLS_FOR = ['tools/testability_gate.py']
+
 # REQUIREMENT: the testability gate reads the column it claims to read, after a version
 #   of it scored the wrong one and reported a confident wrong number
 #
