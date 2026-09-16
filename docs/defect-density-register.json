@@ -3925,7 +3925,7 @@
       "recurrence_open": "PARTLY CLOSED. The central redirect covers every probe the SUITE spawns, and one probe run BY HAND still writes the real log unless it sets the env itself -- only check9_probe.py does. The wider shape is untouched: nothing prevents any tool from writing a real record from a test context, and the bypass log is append-only BY CONVENTION rather than by enforcement, so the retraction relies on the same trust the original row did."
     },
     {
-      "commit": "6b0a333fa4d8",
+      "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
       "files": [
@@ -3974,7 +3974,7 @@
       "recurrence_open": "Nothing checks that every ACTION a handler dispatches on is reached by some suite. The same question has not been asked of any other multi-action api/ handler on the platform, and this one was only found because a reviewer grepped for the action strings rather than reading the arms."
     },
     {
-      "commit": "6b0a333fa4d8",
+      "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
       "files": [
@@ -4017,7 +4017,7 @@
       "recurrence_open": "A deleted query FILTER is invisible to any behavioural arm that only checks the empty-result path. Nothing on the platform sweeps for PostgREST filters that no control source-anchors."
     },
     {
-      "commit": "6b0a333fa4d8",
+      "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
       "files": [
@@ -5029,7 +5029,7 @@
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     },
     {
-      "commit": "1bb439fb7999",
+      "commit": "94fe18575ee9",
       "date": "2026-09-16",
       "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
       "files": [
