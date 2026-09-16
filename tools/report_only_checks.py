@@ -1374,6 +1374,60 @@ REGISTRY = [
                     'fixtures caught two real bugs in the first draft before it '
                     'ever touched sql/',
     },
+    {
+        'tool': 'check_precedence.py',
+        'mode': 'once',
+        'args': ['--self-check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-15 report-only, AND IT MUST NEVER BE ANYTHING '
+                    'ELSE. Its CONFLICT verdict is a question, not a finding: '
+                    'blocking a push because two of our own tools disagree '
+                    'punishes whoever happens to be pushing for a disagreement '
+                    'that predates them, and the reliable consequence is an '
+                    'override habit this repo has already recorded costing '
+                    'more than the gate saved. RUN AS --self-check, NOT the '
+                    'live pairing, and the reason is cost rather than value: '
+                    'the live run shells out to checker_confidence.py and '
+                    'checker_estimate_fusion.py, both of which THIS SWEEP '
+                    'ALREADY RUNS, so the bare form would run them three times '
+                    'inside a budget already at 330s of 600s. --self-check '
+                    'proves the rule table, which is the part that can silently '
+                    'rot; the live pairing is a deliberate manual run',
+        'catches': 'the precedence table for two independent checks disagreeing '
+                   'about the same subject no longer resolving the way item 64 '
+                   'decided it should -- driven over every ordering of every '
+                   'pair, not a sample',
+        'why_it_matters': 'THE RULE EXISTS SO IT IS NOT INVENTED AT THE MOMENT '
+                          'OF DISAGREEMENT, by whoever is under the most '
+                          'pressure, in the direction that unblocks them. Four '
+                          'cases: a FINDING beats a CLEAN (clean is the vacuous '
+                          'default -- checkblocks.py exited 0 for months and '
+                          'looked exactly like a clean codebase); a FINDING '
+                          'beats a COULD_NOT_RUN and the could-not-run is '
+                          'CARRIED, never absorbed; two findings contradicting '
+                          'on the same fact are a CONFLICT that escalates and '
+                          'blocks nothing; and a CLEAN does NOT rescue a '
+                          'COULD_NOT_RUN -- the one that would otherwise be '
+                          'decided the other way at 2am. AND THE RATING IS '
+                          'DELIBERATELY NOT THE TIEBREAK: confidence measures '
+                          'stability and control coverage, NOT correctness on '
+                          'this input, so using it would convert a real '
+                          'disagreement into a confident single answer in '
+                          'favour of whichever checker has been around longer',
+        'evidence': 'FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both '
+                    'checker_confidence.py and checker_estimate_fusion.py found '
+                    'FOUR real disagreements, and rule 1 resolves all four with '
+                    'no tiebreak -- including master_plan.py and '
+                    'traceability_matrix.py, which confidence rates HIGH while '
+                    'fusion reports UNCORRECTED: a HIGH rating does not outrank '
+                    '"its corrector failed its own check". ZERO CONFLICTs on '
+                    'live data so far, said out loud rather than left to be '
+                    'assumed exercised; case 3 is driven on fixtures. 48-arm '
+                    'probe at tests/run_check_precedence_probe.py, including '
+                    '125 rating combinations that must not move any verdict, '
+                    'and teeth showing a broken rule 1 OR rule 4 exits COULD '
+                    'NOT RUN rather than reporting clean',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
