@@ -3205,6 +3205,55 @@
       "recurrence_open": "NOT CLOSED. The guards exist in files. Whether the migrations have been re-run against the deployed database is unverifiable from a clone, and until they have been, every guarded function is guarded only in the repository. tools/advisory_lock_isolation_check.py says so on every run rather than reporting the platform clean."
     },
     {
+      "commit": "0c26bcd13eda",
+      "date": "2026-09-16",
+      "subject": "fix(test): the sairnlaw resource suite was 18/20 and BOTH red arms were its own fault",
+      "files": [
+        "api/sd-data-sairnlaw-resources.test.js",
+        "tests/law_resources_phase_boundary_probe.py"
+      ],
+      "lines_added": 194,
+      "lines_removed": 11,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-data-sairnlaw-resources.test.js reported law_trust_reconcile as \"registered with no handler\" -- a FALSE FINDING about a resource with a real branch -- because its BESPOKE skip-list was a hardcoded four and a fifth bespoke branch shipped; and its PHASE 1 arm, which carries its own instruction to be INVERTED when a resource is gated, was not inverted when law_trusttx was, so the suite ran 18/20 on origin/main with both red arms being the suite's own fault",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "No section covers a suite's own skip-list going stale. It is adjacent to 1.3, an anchor that no longer points at the right thing, but the anchors here still match -- what drifted is a hand-kept list of what to EXCLUDE, which is the opposite direction and produces false findings rather than silence.",
+      "contributing_factors": [
+        {
+          "factor": "A HAND-KEPT LIST OF WHAT A CHECKER SHOULD SKIP GOES STALE IN EXACTLY ONE DIRECTION: silently, toward FALSE findings, on the day somebody adds the fifth. The pinned-list-drift shape, arriving through an exclusion rather than an inclusion.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "BESPOKE is derived from the branches that exist, and an explicit BESPOKE_EXPECTED is compared against it in BOTH directions so the derivation cannot make the have-a-branch arm vacuous."
+        },
+        {
+          "factor": "THE ARM CARRIED ITS OWN INSTRUCTION AND NOBODY FOLLOWED IT. \"WHEN THAT HAPPENS THIS TEST MUST BE INVERTED, not deleted.\" It happened the same day, in a commit that deliberately gated attorney trust money, and the inversion was not done.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Split per resource, since only law_trusttx moved, plus an arm asserting the two phase lists PARTITION the bespoke writable four so a resource cannot fall out of both."
+        },
+        {
+          "factor": "A RED ARM NOBODY CAN ACT ON IS READ AS NOISE, AND THE NEXT GENUINELY RED ARM BESIDE IT IS READ THE SAME WAY. Two standing failures in a suite whose subject is resources that silently do not work is the worst possible place for that habit to form.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tests/law_resources_phase_boundary_probe.py -- 6 mutations, 11 arms -- so the suite's ability to fail is measured rather than assumed the next time it is green."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for suites that are RED on origin/main. Both of these were found by running them, and the second red suite in this same push (the session gate) was found the same way. There is a runner, and nothing compares its result to an expectation, so a suite can sit red indefinitely without anybody being told."
+    },
+    {
       "commit": "0dd8b2fc4d01",
       "date": "2026-09-16",
       "subject": "fix(sairnlaw): a Tier A trust-money arm alleged a confidentiality leak that does not exist",
@@ -3402,55 +3451,6 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
-      "commit": "0c26bcd13eda",
-      "date": "2026-09-16",
-      "subject": "fix(test): the sairnlaw resource suite was 18/20 and BOTH red arms were its own fault",
-      "files": [
-        "api/sd-data-sairnlaw-resources.test.js",
-        "tests/law_resources_phase_boundary_probe.py"
-      ],
-      "lines_added": 194,
-      "lines_removed": 11,
-      "app": "sairnlaw",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/sd-data-sairnlaw-resources.test.js reported law_trust_reconcile as \"registered with no handler\" -- a FALSE FINDING about a resource with a real branch -- because its BESPOKE skip-list was a hardcoded four and a fifth bespoke branch shipped; and its PHASE 1 arm, which carries its own instruction to be INVERTED when a resource is gated, was not inverted when law_trusttx was, so the suite ran 18/20 on origin/main with both red arms being the suite's own fault",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 1
-      },
-      "citation_note": "No section covers a suite's own skip-list going stale. It is adjacent to 1.3, an anchor that no longer points at the right thing, but the anchors here still match -- what drifted is a hand-kept list of what to EXCLUDE, which is the opposite direction and produces false findings rather than silence.",
-      "contributing_factors": [
-        {
-          "factor": "A HAND-KEPT LIST OF WHAT A CHECKER SHOULD SKIP GOES STALE IN EXACTLY ONE DIRECTION: silently, toward FALSE findings, on the day somebody adds the fifth. The pinned-list-drift shape, arriving through an exclusion rather than an inclusion.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "BESPOKE is derived from the branches that exist, and an explicit BESPOKE_EXPECTED is compared against it in BOTH directions so the derivation cannot make the have-a-branch arm vacuous."
-        },
-        {
-          "factor": "THE ARM CARRIED ITS OWN INSTRUCTION AND NOBODY FOLLOWED IT. \"WHEN THAT HAPPENS THIS TEST MUST BE INVERTED, not deleted.\" It happened the same day, in a commit that deliberately gated attorney trust money, and the inversion was not done.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Split per resource, since only law_trusttx moved, plus an arm asserting the two phase lists PARTITION the bespoke writable four so a resource cannot fall out of both."
-        },
-        {
-          "factor": "A RED ARM NOBODY CAN ACT ON IS READ AS NOISE, AND THE NEXT GENUINELY RED ARM BESIDE IT IS READ THE SAME WAY. Two standing failures in a suite whose subject is resources that silently do not work is the worst possible place for that habit to form.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "tests/law_resources_phase_boundary_probe.py -- 6 mutations, 11 arms -- so the suite's ability to fail is measured rather than assumed the next time it is green."
-        }
-      ],
-      "recurrence_open": "Nothing sweeps for suites that are RED on origin/main. Both of these were found by running them, and the second red suite in this same push (the session gate) was found the same way. There is a runner, and nothing compares its result to an expectation, so a suite can sit red indefinitely without anybody being told."
-    },
-    {
       "commit": "25f2194d16ab",
       "date": "2026-09-16",
       "subject": "fix(tools): third confirmed instance of the one-spelling blind spot -- the decode checker could not see an aliased subprocess import",
@@ -3639,6 +3639,57 @@
       ],
       "recurrence_open": "The coverage cross-check between a mutation probe and the suite that must catch it is by COUNT on this platform, not by name, so the same drift can occur in any probe/suite pair using that pattern.",
       "single_factor_note": "The whole defect is one comparison operator and the comment that misdescribes it; there is no second contributor to find."
+    },
+    {
+      "commit": "42cb77b34221",
+      "date": "2026-09-16",
+      "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
+      "files": [
+        "tests/rebase_resolve_merge_control.py",
+        "tools/sairn_rebase_resolve.py"
+      ],
+      "lines_added": 63,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_rebase_resolve.py's serializer round-trip proof searched indents at ensure_ascii=False ONLY, and passed on both real registers because neither held a non-ASCII byte that day. tools/defect_register.py writes its register with the json default (ensure_ascii=True), so the first rebase carrying an em-dash made the tool refuse the larger of the two ledgers it was written to merge",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c6d07088ee85",
+        "date": "2026-09-16",
+        "subject": "fix(rebase): the two JSON registers get a real 3-way merge, not a side taken",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 covers a check that cannot fail. This one COULD fail and did not, because the input space it was validated against was accidentally narrower than the input space it would meet -- the same green, reached from the other side, so the citation is arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "THE PROBE WAS WRITTEN AGAINST THE FILES AS THEY WERE THAT HOUR, AND THEY HAPPENED TO BE PURE ASCII. Both registers round-tripped at ensure_ascii=False, so the single-setting search was indistinguishable from a correct one until a commit subject with an em-dash arrived on the next rebase.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "serializer_of() returns (indent, ensure_ascii) and searches both settings; a14 in the control drives a non-ASCII ledger written the escaped way."
+        },
+        {
+          "factor": "THE TWO LEDGERS DISAGREE WITH EACH OTHER AND NOTHING SAYS SO. tools/defect_register.py writes with the json default (ensure_ascii=True); tools/tier_a_review_gate.py passes False. A reader of either writer alone would conclude the platform has one convention.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not unified. Changing either writer would reformat that whole ledger in one commit -- the exact whole-file-diff harm the round-trip proof exists to prevent -- and the merge tool now reads the convention from the file rather than assuming one."
+        },
+        {
+          "factor": "THE SABOTAGE ARM FOR THE ROUND-TRIP PROOF DID NOT COVER THIS HALF. Removing the ensure_ascii search leaves a12 green, because a ledger that round-trips at False still round-trips at False -- so the existing guard-is-load-bearing evidence said nothing about the part that was wrong.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A SEPARATE sabotage entry pins the ensure_ascii half against a14, rather than widening a12's, so each half has its own failing witness."
+        }
+      ],
+      "recurrence_open": "The probe now covers two settings and eight indents. It still cannot reproduce a ledger written by anything other than json.dumps -- a sort_keys pass, a custom separator, or a hand-edit -- and in every one of those cases it refuses rather than reformats, which is the right answer and is also a tool that has stopped being useful without anyone being told why."
     },
     {
       "commit": "449b8476b206",
@@ -4526,106 +4577,6 @@
       "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
     },
     {
-      "commit": "c9680a83b6de",
-      "date": "2026-09-16",
-      "subject": "fix(test): the session-gate suite was RED on main for its own correct reason",
-      "files": [
-        "api/sd-data-session-gate.test.js",
-        "tests/session_gate_table_probe.py"
-      ],
-      "lines_added": 152,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/sd-data-session-gate.test.js was FAILING on origin/main: its pair-count arm said 9 and SD_SESSION_GATED held 11 after law_trusttx was gated on 2026-09-16. The arm was correct and its own message asks for the new resource to be named and justified; that was never done, so the suite guarding the licence-key-is-not-enough gate sat red. Separately, the count proves the table's SIZE and nothing exercises the entries -- GATED drove 7 of the 11 pairs and no arm said where the other 4 were driven",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "c98b5d674c76",
-        "date": "2026-09-16",
-        "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
-        "lag_days": 0
-      },
-      "citation_note": "The count arm is the OPPOSITE of 1.1 -- it is a check that DID fail, correctly, and was left failing. No section covers the failure mode of a correct finding that nobody closes, which is why this is recorded rather than cited.",
-      "contributing_factors": [
-        {
-          "factor": "THE ARM ASKS FOR A HUMAN ANSWER AND NOTHING ENSURES ONE ARRIVES. Its message is \"add the new resource to this test and say why it is gated\" -- exactly right, and it makes the suite red until somebody does it. The commit that gated law_trusttx did not, and the push landed anyway.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Answered: law_trusttx asserted by name with the reason beside it, count 11."
-        },
-        {
-          "factor": "A COUNT PROVES SIZE, NOT COVERAGE. The arm's own comment records that its predecessor claimed \"exactly seven pairs\" while matching three -- fixed by counting. Counting does not answer the next question: GATED drove 7 of 11 pairs, and locations and law_trusttx were exercised only in other files, which this suite had no way to state.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A new arm asserts every resource in the table is driven HERE or in a suite it NAMES, and that the named suite exists and mentions the resource."
-        },
-        {
-          "factor": "A RESOURCE COUNTED, GATED, AND DRIVEN BY NOTHING IS INDISTINGUISHABLE FROM A COVERED ONE from inside this file. The gate would still be in the table, the count would still be right, and no arm would ever present a request for it.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Driven by mutation 7 of tests/session_gate_table_probe.py, which adds a resource to the table that nothing exercises and requires the suite to see it."
-        }
-      ],
-      "recurrence_open": "The driven-somewhere arm names its companion suites BY HAND and checks they exist and mention the resource. It cannot check that they actually DRIVE it -- a suite that mentions law_trusttx in a comment would satisfy it. The stronger version needs a coverage signal this platform does not collect. And nothing still sweeps for suites red on origin/main, which is how both of this push's test-layer defects were found."
-    },
-    {
-      "commit": "42cb77b34221",
-      "date": "2026-09-16",
-      "subject": "fix(rebase): the serializer probe tried ONE ensure_ascii setting and passed anyway",
-      "files": [
-        "tests/rebase_resolve_merge_control.py",
-        "tools/sairn_rebase_resolve.py"
-      ],
-      "lines_added": 63,
-      "lines_removed": 14,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_rebase_resolve.py's serializer round-trip proof searched indents at ensure_ascii=False ONLY, and passed on both real registers because neither held a non-ASCII byte that day. tools/defect_register.py writes its register with the json default (ensure_ascii=True), so the first rebase carrying an em-dash made the tool refuse the larger of the two ledgers it was written to merge",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "c6d07088ee85",
-        "date": "2026-09-16",
-        "subject": "fix(rebase): the two JSON registers get a real 3-way merge, not a side taken",
-        "lag_days": 0
-      },
-      "citation_note": "1.1 covers a check that cannot fail. This one COULD fail and did not, because the input space it was validated against was accidentally narrower than the input space it would meet -- the same green, reached from the other side, so the citation is arguable rather than clean.",
-      "contributing_factors": [
-        {
-          "factor": "THE PROBE WAS WRITTEN AGAINST THE FILES AS THEY WERE THAT HOUR, AND THEY HAPPENED TO BE PURE ASCII. Both registers round-tripped at ensure_ascii=False, so the single-setting search was indistinguishable from a correct one until a commit subject with an em-dash arrived on the next rebase.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "serializer_of() returns (indent, ensure_ascii) and searches both settings; a14 in the control drives a non-ASCII ledger written the escaped way."
-        },
-        {
-          "factor": "THE TWO LEDGERS DISAGREE WITH EACH OTHER AND NOTHING SAYS SO. tools/defect_register.py writes with the json default (ensure_ascii=True); tools/tier_a_review_gate.py passes False. A reader of either writer alone would conclude the platform has one convention.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Not unified. Changing either writer would reformat that whole ledger in one commit -- the exact whole-file-diff harm the round-trip proof exists to prevent -- and the merge tool now reads the convention from the file rather than assuming one."
-        },
-        {
-          "factor": "THE SABOTAGE ARM FOR THE ROUND-TRIP PROOF DID NOT COVER THIS HALF. Removing the ensure_ascii search leaves a12 green, because a ledger that round-trips at False still round-trips at False -- so the existing guard-is-load-bearing evidence said nothing about the part that was wrong.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "A SEPARATE sabotage entry pins the ensure_ascii half against a14, rather than widening a12's, so each half has its own failing witness."
-        }
-      ],
-      "recurrence_open": "The probe now covers two settings and eight indents. It still cannot reproduce a ledger written by anything other than json.dumps -- a sort_keys pass, a custom separator, or a hand-edit -- and in every one of those cases it refuses rather than reformats, which is the right answer and is also a tool that has stopped being useful without anyone being told why."
-    },
-    {
       "commit": "a744ceb5e0eb",
       "date": "2026-09-16",
       "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
@@ -4797,6 +4748,60 @@
       "recurrence_open": "Only this arm was corrected. Other probes in tests/ assert on absolute working-tree cleanliness the same way, and nothing sweeps for the pattern; each will read correctly until somebody runs it with work in progress. The baseline shape is cheap enough to copy and is not copied anywhere yet."
     },
     {
+      "commit": "bb97110a2d14",
+      "date": "2026-09-16",
+      "subject": "fix(tier-a-gate): an obligation can be recorded for work already pushed, because one had to be",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 59,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py is satisfied PER RESOURCE, not per change. Commit 7005253c -- a real product change adding a server-side role check on the sb_po/sb_recv void transition in api/sd-data.js -- pushed UNBLOCKED because an obligation for those two resources was already open from a test-only change earlier the same day, whose own recorded text reads 'NEW NEGATIVE CONTROL, no product code changed'. So an authorization change to a Tier A money path was recorded by nobody, and the entry a reviewer would read describes something else. Found by noticing the gate did NOT fire on my own push when the diff plainly names both resources.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The per-resource semantics is how the gate was built, not something a commit introduced, so there is no injection sha to name. Pointing at the commit that created the tool would record a lag that never elapsed."
+      },
+      "citation_note": "1.1 is a check that stopped checking. This one never stopped: it answers a narrower question than its own refusal text implies -- 'a Tier A change is reviewed by a session OTHER than the one that wrote it' reads as a claim about the CHANGE, and the mechanism is about the RESOURCE. Same end state, different route, so the citation is arguable.",
+      "contributing_factors": [
+        {
+          "factor": "The gate answers 'is there an OPEN obligation for this resource' rather than 'is THIS CHANGE recorded', so any open entry satisfies any later change touching the same resource",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Per-change obligations are the real fix and are NOT made in this commit -- changing what a blocking gate refuses is a separate act from being able to record the truth about a change it let through. Recorded here so the decision is visible rather than assumed."
+        },
+        {
+          "factor": "Obligations accumulate faster than they are discharged, so on an active resource there is nearly always one open -- which means the gate is silently permissive on exactly the resources being worked hardest",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "This is a property of the queue, not of the code. It gets better only when discharges keep pace with opens, which is a staffing fact rather than a change."
+        },
+        {
+          "factor": "cmd_open() read the working diff plus the UNPUSHED range, and both are empty by the time anybody notices the gate let something through -- so there was no way to record an accurate obligation after the fact",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--open ... --range A..B, refusing a malformed range and refusing an empty one with the distinction stated"
+        },
+        {
+          "factor": "Nothing compares an obligation's TEXT to the change that satisfied it. The entry that covered a server-side authorization change says in its own words 'no product code changed', and no mechanism reads that sentence",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Comparing recorded prose to a diff is a judgement, not a check, and a tool that guessed would either nag on every honest entry or pass on every dishonest one. The per-change fix above removes the need for it."
+        }
+      ],
+      "recurrence_open": "THE DEFECT ITSELF IS STILL OPEN. What this commit fixes is only the repair path -- an accurate obligation can now be recorded for work already pushed, and one was. Every future change touching a resource with an open obligation will still pass unrecorded, and nobody is told. The count of changes that have already ridden in this way is not known and is not derivable from the register, because the register only holds what somebody opened."
+    },
+    {
       "commit": "bfa3fff4c5fc",
       "date": "2026-09-16",
       "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
@@ -4890,6 +4895,55 @@
         }
       ],
       "recurrence_open": "THE THIRD STATE LETS THE REQUEST THROUGH ON PURPOSE. NO_ACTIVE_CHECK continues when the app has no employee table or the lookup itself fails, because a transport failure is not a deactivation and refusing every user whenever the database blinks is the worse failure. That trade is right and it means a sustained database fault RE-OPENS this gap for as long as it lasts; only the log makes it visible and nothing alarms on a run of them. The declared table map is hand-kept for the same good reason, so a sixteenth app added without an entry answers NO_ACTIVE_CHECK and is unprotected, silently."
+    },
+    {
+      "commit": "c9680a83b6de",
+      "date": "2026-09-16",
+      "subject": "fix(test): the session-gate suite was RED on main for its own correct reason",
+      "files": [
+        "api/sd-data-session-gate.test.js",
+        "tests/session_gate_table_probe.py"
+      ],
+      "lines_added": 152,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-data-session-gate.test.js was FAILING on origin/main: its pair-count arm said 9 and SD_SESSION_GATED held 11 after law_trusttx was gated on 2026-09-16. The arm was correct and its own message asks for the new resource to be named and justified; that was never done, so the suite guarding the licence-key-is-not-enough gate sat red. Separately, the count proves the table's SIZE and nothing exercises the entries -- GATED drove 7 of the 11 pairs and no arm said where the other 4 were driven",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c98b5d674c76",
+        "date": "2026-09-16",
+        "subject": "fix(sairnlaw): law_trusttx had NO session gate at all -- and the adjacent feature reading the same table had one",
+        "lag_days": 0
+      },
+      "citation_note": "The count arm is the OPPOSITE of 1.1 -- it is a check that DID fail, correctly, and was left failing. No section covers the failure mode of a correct finding that nobody closes, which is why this is recorded rather than cited.",
+      "contributing_factors": [
+        {
+          "factor": "THE ARM ASKS FOR A HUMAN ANSWER AND NOTHING ENSURES ONE ARRIVES. Its message is \"add the new resource to this test and say why it is gated\" -- exactly right, and it makes the suite red until somebody does it. The commit that gated law_trusttx did not, and the push landed anyway.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Answered: law_trusttx asserted by name with the reason beside it, count 11."
+        },
+        {
+          "factor": "A COUNT PROVES SIZE, NOT COVERAGE. The arm's own comment records that its predecessor claimed \"exactly seven pairs\" while matching three -- fixed by counting. Counting does not answer the next question: GATED drove 7 of 11 pairs, and locations and law_trusttx were exercised only in other files, which this suite had no way to state.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A new arm asserts every resource in the table is driven HERE or in a suite it NAMES, and that the named suite exists and mentions the resource."
+        },
+        {
+          "factor": "A RESOURCE COUNTED, GATED, AND DRIVEN BY NOTHING IS INDISTINGUISHABLE FROM A COVERED ONE from inside this file. The gate would still be in the table, the count would still be right, and no arm would ever present a request for it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Driven by mutation 7 of tests/session_gate_table_probe.py, which adds a resource to the table that nothing exercises and requires the suite to see it."
+        }
+      ],
+      "recurrence_open": "The driven-somewhere arm names its companion suites BY HAND and checks they exist and mention the resource. It cannot check that they actually DRIVE it -- a suite that mentions law_trusttx in a comment would satisfy it. The stronger version needs a coverage signal this platform does not collect. And nothing still sweeps for suites red on origin/main, which is how both of this push's test-layer defects were found."
     },
     {
       "commit": "c98b5d674c76",
