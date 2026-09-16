@@ -101,7 +101,35 @@ print('2. EVERY HOOK SCRIPT NAMED IN settings.json EXISTS')
 named = sorted({m.group(1) for _, _, c in cmds
                 for m in [re.search(r'tools/([\w.-]+\.py)', c)] if m})
 missing = [n for n in named if not os.path.isfile(os.path.join(REPO, 'tools', n))]
-check(missing == [], 'all %d named script(s) are on disk %s' % (len(named), missing))
+check(missing == [], 'all %d repo script(s) are on disk %s' % (len(named), missing))
+
+# ── THE POPULATION THIS SECTION USED TO EXCLUDE, ADDED 2026-09-16 ───────────
+# The line above matches `tools/<name>.py` and nothing else, and for the life
+# of this probe every hook command was a repo script, so the pattern and the
+# population were the same set. On 2026-09-16 settings.json gained its first
+# hook whose script lives OUTSIDE every working tree -- the hover auditor's
+# self-health hook, under ~/.claude/projects/. It was invisible here, and the
+# result line still read "all 8 named scripts are on disk".
+#
+# THAT IS BACKWARDS FROM WHERE THE RISK IS. A script under `tools/` is
+# versioned: it cannot go missing without a commit saying so. The external one
+# is in no clone, under no review and in no history -- it is the ONE hook
+# target that can vanish silently, and it was the one this section did not
+# look at. A check that reads as coverage of a population while structurally
+# excluding a member is the shape the whole conventions document is about.
+#
+# Reported as its own count rather than folded into the number above, because
+# "on disk" means something different for an unversioned machine-local file:
+# true here says nothing about a fresh clone or another machine.
+external = sorted({m.group(1) for _, _, c in cmds
+                   for m in [re.search(r'python\s+"([A-Za-z]:/[^"]+\.py)"', c)] if m})
+ext_missing = [p for p in external if not os.path.isfile(p)]
+for p in external:
+    print('        UNVERSIONED, machine-local: %s' % p)
+check(ext_missing == [],
+      '%d hook script(s) outside every working tree are on disk %s -- true on '
+      'THIS machine only; they are in no clone and no history'
+      % (len(external), ext_missing))
 
 print('')
 print('3. clone_name() IS A FACT ABOUT THE CLONE, NOT ABOUT THE CWD')

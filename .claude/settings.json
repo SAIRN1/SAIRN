@@ -127,6 +127,12 @@
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_claim_hook.py\"",
             "timeout": 12
+          },
+          {
+            "type": "command",
+            "command": "python \"C:/Users/marsh/.claude/projects/C--Users-marsh-Documents-SAIRN-hover/hover-audit-log/hover_self_health_hook.py\"",
+            "timeout": 20,
+            "statusMessage": "Running the hover auditor self-health check (no-op outside the hover auditor's own clone)..."
           }
         ]
       }
