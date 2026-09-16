@@ -106,6 +106,40 @@ def main():
         'the walk would double every finding in it',
         len(lib) == len(set(lib)), sorted(set(x for x in lib if lib.count(x) > 1)))
 
+    # 0c. THE BREAKER VOCABULARY GAINED A NAME, AND THE NAME NEEDS A GUARD.
+    #     checkAiRateLimit is the control that actually exists here -- the four
+    #     resilience.js names have zero importers, so before 2026-09-16 the
+    #     BREAKER pattern could only ever match code nothing runs. But a budget
+    #     check is a VERDICT, not a wrapper: calling it and discarding the
+    #     answer reads as protected and stops nothing, which is the same
+    #     call-and-ignore shape that made a cache purge look wired and an
+    #     append-only guard look present. Both directions are driven here.
+    arm('a loop that consumes a budget AND leaves on refusal counts as broken '
+        'out of',
+        R.breaker_is_acted_on('{ const rl = await checkAiRateLimit(a, b); '
+                              'if (!rl.allowed) return x; await fetch(u); }'))
+    arm('...and one that CALLS it and discards the answer does NOT',
+        not R.breaker_is_acted_on('{ await checkAiRateLimit(a, b); '
+                                  'await fetch(u); }'),
+        'call-and-ignore must not read as protected')
+    arm('...and a wrapper-style breaker needs no exit, because the call IS the '
+        'protection',
+        R.breaker_is_acted_on('{ await guardedFetch(u); }'))
+    # THIS ARM WAS VACUOUS ON ITS FIRST WRITING and is kept as the corrected
+    # version rather than deleted: it read `... if hasattr(R, 'scan') else True`,
+    # and R has no `scan`, so it passed without checking anything. A fallback
+    # that defaults to True is an arm that reports green when it cannot run --
+    # the exact third-state error this repo refuses everywhere else.
+    _agent = [s for n, s in srcs if n == 'api/sd-agent.js']
+    arm('the real api/sd-agent.js source is in the sweep at all', bool(_agent),
+        [n for n, _ in srcs if 'agent' in n][:4])
+    if _agent:
+        _body = R.blank_noise(_agent[0])
+        arm('...and its runLoop consumes the budget AND leaves on refusal, so '
+            'it reads as broken out of',
+            R.breaker_is_acted_on(_body) and 'checkAiRateLimit' in _body,
+            'checkAiRateLimit present: %s' % ('checkAiRateLimit' in _body))
+
     pats = [pat.pattern for pat in R.OUTBOUND]
     arm('an AI/agent call is an OUTBOUND call -- callClaude is in the vocabulary',
         any('callClaude' in x for x in pats), pats)

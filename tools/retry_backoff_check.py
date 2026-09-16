@@ -105,7 +105,38 @@ DELAY = re.compile(
     r'|(?<![A-Za-z0-9_$.])delay\s*\('
     r'|new\s+Promise\s*\([^)]*setTimeout')
 
-BREAKER = re.compile(r'(?<![A-Za-z0-9_$.])(?:guardedFetch|createBreaker|createBulkhead|withTimeout)\s*\(')
+# ── A BUDGET THAT CAN STOP THE LOOP IS A BREAKER IN THE SENSE MEANT HERE ────
+# The four names above are api/_lib/resilience.js's vocabulary, which has zero
+# importers -- so before 2026-09-16 this pattern could only ever match code
+# nothing runs. `checkAiRateLimit` is the control that actually exists on this
+# platform, and a loop that consumes a unit per iteration and EXITS when the
+# answer is not allowed cannot run away.
+#
+# CALLING IT IS NOT ENOUGH, and that is why this is not a one-word edit.
+# `checkAiRateLimit(...)` whose answer is discarded reads as protected and
+# stops nothing -- the same call-and-ignore shape that made a purge look wired
+# and made an append-only guard look present. So the body must ALSO leave the
+# loop: a `return` or a `break` has to appear after the call, and
+# breaker_is_acted_on() below is what checks it.
+BREAKER = re.compile(r'(?<![A-Za-z0-9_$.])(?:guardedFetch|createBreaker|createBulkhead|withTimeout|checkAiRateLimit)\s*\(')
+# The names above that only PROMISE protection if their answer is used. The
+# resilience.js four wrap the call itself, so using them is acting on them; a
+# budget check returns a verdict somebody has to read.
+BREAKER_NEEDS_EXIT = re.compile(r'(?<![A-Za-z0-9_$.])checkAiRateLimit\s*\(')
+EXIT_STMT = re.compile(r'(?<![A-Za-z0-9_$])(?:return|break)(?![A-Za-z0-9_$])')
+
+
+def breaker_is_acted_on(body):
+    """Does the loop body ACT on the breaker it calls, or merely call it?
+
+    For a wrapper-style breaker the call IS the protection. For a verdict-style
+    one -- a budget check -- the protection is the exit that follows it, and a
+    body without one is protected by nothing at all.
+    """
+    m = BREAKER_NEEDS_EXIT.search(body)
+    if not m:
+        return True
+    return bool(EXIT_STMT.search(body[m.end():]))
 
 LOOP_KEYWORD = re.compile(r'(?<![A-Za-z0-9_$])(for|while|do)\s*$')
 
@@ -385,7 +416,7 @@ def analyse(code):
             o, c, kind, header = inner
             body = code[o:c]
             has_delay = bool(DELAY.search(body))
-            has_breaker = bool(BREAKER.search(body))
+            has_breaker = bool(BREAKER.search(body)) and breaker_is_acted_on(body)
             args = _call_args(code, m)
             # A RETRY CALLS THE SAME THING AGAIN. If the loop rebinds anything
             # the call reads, the target differs per pass and it is a work list.
