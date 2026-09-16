@@ -17,6 +17,10 @@ same app must come back silent.
 
 Run: python tests/run_index_duplicate_probe.py
 """
+# REQUIREMENT: two open-work rows about the same subject are reported as
+#   near-duplicates, so one piece of work cannot be tracked twice and closed
+#   once
+#
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
 # inference models were each wrong within an hour of being written.

@@ -3723,3 +3723,62 @@ the mechanism built to report exactly that.
 the 52 PLATFORM records touch no app file at all, and reattributing every
 single-app one moves the largest unit from 9 to 9. The shortfall is real; time
 is the right remedy; and it re-answers itself every run.
+
+---
+
+## 2026-09-16 (continued) -- a token is a claim about the past
+
+### 1. The critical one, and the original fix was app-shaped
+
+`9fef0f35` closed the deactivated-admin gap for `api/sc-auth.js`'s own roster
+and set_active. **Nothing closed it for the DATA PATH.** `api/sd-data.js` gates
+thirteen apps' resources on `session.role` read from the token claim and never
+asked whether the credential behind it is still active -- so a deactivated
+employee kept read and write on every gated resource until the token expired.
+
+`credentialStillActive()` now lives beside the thing that mints the token, and
+the sabotage arm is the proof: **one token, signed once, verified before and
+after the row behind it is flipped.** It is byte-identical and still verifies;
+the second use is refused.
+
+**Three states, not two.** A transport failure is NOT a deactivation --
+answering "inactive" would lock every user out whenever the database blinked --
+so `NO_ACTIVE_CHECK` allows the request and LOGS, and there is a control arm for
+each direction.
+
+**The table map is DECLARED.** Fifteen apps, no rule: four use a prefix, the
+rest the full name, and `sairncare`'s table is not `alf_*` though its endpoint
+is. A derivation would be wrong for five and wrong SILENTLY, because a missing
+table reads as "no active row" and would refuse that whole app.
+
+### 2. Two brittle arms, both mine to have caused
+
+`--reseat` skipped exactly the records it exists to fix: a rebase leaves the old
+commit as a DANGLING object that still resolves, and `resolve()` calls that
+good. **Resolvable is not reachable.** `--check`'s contract is unchanged; only
+the repair now asks the repair's question.
+
+And two arms in the register probe went red because of MY registrations, not
+because of a regression -- `'sairncode' in unswept` pinned a member that stopped
+being unswept the moment it got a record, **reporting progress as a failure**;
+and a per-app row filter keyed on the literal `' 0.'` stopped counting
+`sairndental` the moment its rate passed 1.00. Both now assert properties.
+
+### 3. And the dispatch list is offering closed work
+
+Three of the first four open-and-unowned rows I looked at were **already done**.
+`dispatch_state.py` is not wrong -- `is_open()` reads the status column and
+defaults to OPEN on purpose. **The rows are stale: the work landed and the
+status word never moved.** Two closed with evidence, one already struck through
+and reaching the list through an older title.
+
+That is worth carrying: **a dispatch list that sends a session at finished work
+is the failure the list exists to prevent, one level up**, and nothing measures
+its staleness rate. My sample is four and is reported as four.
+
+### Verified
+
+`auth.test.js` 23 arms including the sabotage one. `sd-data-active-credential`
+8 arms. `defect_register` probe **108 checks, 0 failed**. `employee-lifecycle`,
+`fail-open-triage`, `alf-append-only-fail-closed`, `preauth-envelope-ordering`
+all green. 34 more REQUIREMENT declarations, **164 -> 130 untraced**.

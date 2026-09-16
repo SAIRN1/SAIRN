@@ -1,4 +1,7 @@
 // tests/exec_role_gate.js
+// REQUIREMENT: the executive panel refuses every role it is not meant for, checked
+//   against the role list the app itself enforces rather than a copy
+//
 //
 // Run:  node tests/exec_role_gate.js
 //

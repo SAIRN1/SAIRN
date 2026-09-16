@@ -24,6 +24,9 @@ be wrong, and each is planted below:
 
 A suite that has only ever been green is a suite whose behaviour nobody knows.
 """
+# REQUIREMENT: a dental financial tier is read from the record rather than inferred, so
+#   a patient cannot be moved between tiers by a display rule
+#
 import os
 import sys
 

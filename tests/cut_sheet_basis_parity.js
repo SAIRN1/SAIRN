@@ -1,4 +1,7 @@
 // tests/cut_sheet_basis_parity.js
+// REQUIREMENT: a cut sheet and the quote it derives from report the same basis, so two
+//   documents about one job cannot state different measurements
+//
 //
 // Run:  node tests/cut_sheet_basis_parity.js
 //

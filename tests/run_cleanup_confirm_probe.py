@@ -12,6 +12,9 @@ FIXTURES ARE SYNTHETIC. Pinning arms to real cleanup files would rot the moment
 one is edited -- the failure `tests/reachability/live_mode_probe.py` records
 against its own first version. Nothing here reads or writes the repo.
 """
+# REQUIREMENT: a destructive action confirms before it runs and reports what it
+#   actually removed, so a cleanup cannot quietly take more than it said
+#
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
 # inference models were each wrong within an hour of being written.

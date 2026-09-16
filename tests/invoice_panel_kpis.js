@@ -1,4 +1,7 @@
 // tests/invoice_panel_kpis.js
+// REQUIREMENT: every invoice KPI is computed from the invoice rows on screen rather
+//   than hardcoded, so a headline figure cannot be a fabricated constant
+//
 //
 // Run:  node tests/invoice_panel_kpis.js
 //

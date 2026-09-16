@@ -6,6 +6,10 @@ The arm that matters most is 2c: registering a file must CHANGE the answer. A
 cross-check that reports everything unregistered forever would look identical to
 a working one on day zero, when the register is empty.
 """
+# REQUIREMENT: every accepted risk carries a trigger and an owner, because a risk
+#   accepted with no re-read condition is indistinguishable from one nobody
+#   noticed
+#
 import contextlib
 import io as _io
 import os

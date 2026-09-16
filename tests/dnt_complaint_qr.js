@@ -1,4 +1,7 @@
 // tests/dnt_complaint_qr.js
+// REQUIREMENT: a complaint QR code resolves only to the complaint it encodes and cannot
+//   be edited into a reference to another practice's record
+//
 //
 // Run:  node tests/dnt_complaint_qr.js
 //

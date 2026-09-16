@@ -25,6 +25,9 @@ audit observation.
 
 Every mutation below restores one half of that defect.
 """
+# REQUIREMENT: an append-only medication record cannot be updated or deleted through
+#   any reachable path, because the append-only property IS the audit trail
+#
 import os
 import sys
 

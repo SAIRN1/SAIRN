@@ -1,4 +1,7 @@
 // tests/nesting_dxf.js
+// REQUIREMENT: a nested DXF layout places every part it claims to place, so a part
+//   dropped by the nester cannot be reported as nested
+//
 //
 // Run:  node tests/nesting_dxf.js
 //

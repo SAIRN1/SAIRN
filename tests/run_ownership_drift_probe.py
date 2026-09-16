@@ -1,3 +1,7 @@
+
+# REQUIREMENT: the recorded owner of each artefact still matches the evidence, so an
+#   ownership claim cannot go stale without something saying so
+#
 #!/usr/bin/env python
 """tests/run_ownership_drift_probe.py
 

@@ -24,6 +24,9 @@ assumption breaks.
 
 Every arm runs in a throwaway git worktree, never this clone.
 """
+# REQUIREMENT: an entitlement answer is recomputed rather than served from a stale
+#   cache, so a revoked entitlement cannot keep working
+#
 import io
 import os
 import shutil

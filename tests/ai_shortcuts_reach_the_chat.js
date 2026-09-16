@@ -1,4 +1,7 @@
 // tests/ai_shortcuts_reach_the_chat.js
+// REQUIREMENT: every AI shortcut a panel offers actually reaches the chat handler, so
+//   no button is wired to nothing while appearing to work
+//
 //
 // Run:  node tests/ai_shortcuts_reach_the_chat.js
 //

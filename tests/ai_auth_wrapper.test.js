@@ -1,4 +1,7 @@
 // tests/ai_auth_wrapper.test.js
+// REQUIREMENT: the AI wrapper authenticates before it calls a billed model, so an
+//   unauthenticated caller cannot spend on this account
+//
 //
 // Run:  node tests/ai_auth_wrapper.test.js
 //

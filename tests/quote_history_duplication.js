@@ -1,4 +1,7 @@
 // tests/quote_history_duplication.js
+// REQUIREMENT: a quote revision appends to history rather than duplicating the quote,
+//   so a revised price cannot be counted twice in any total
+//
 //
 // Run:  node tests/quote_history_duplication.js
 //

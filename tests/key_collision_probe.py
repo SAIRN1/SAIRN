@@ -48,6 +48,9 @@ that arm for the hour in which that was proved.
 
 Exit 0 pass, 1 fail.
 """
+# REQUIREMENT: two features cannot share a storage key, because a collision silently
+#   overwrites one feature's data with another's
+#
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
 # inference models were each wrong within an hour of being written.

@@ -339,8 +339,19 @@ try:
           'SWEPT FILES' in out and 'the real signal' in out, True)
     check('G2 the unswept files are a COUNT, never a rate',
           'UNSWEPT FILES' in out and 'not a rate' in out, True)
-    check('G3 and they are NAMED, so the coverage owed is actionable',
-          'sairncode' in out.split('UNSWEPT FILES')[-1][:600], True)
+    # ── PINNED TO A PROPERTY, NOT TO A MEMBER (corrected 2026-09-16) ──────
+    # This read `'sairncode' in ...` and went red the day sairncode got its
+    # first record -- reporting PROGRESS as a failure. An arm pinned to a value
+    # that happened to be true when it was written is the brittle-anchor class
+    # this repo keeps finding; what it meant to assert is that the unswept apps
+    # are NAMED at all.
+    _unswept = out.split('UNSWEPT FILES')[-1][:600].split('\n')
+    _named = [t.strip() for t in (_unswept[1] if len(_unswept) > 1 else '').split(',')
+              if t.strip()]
+    check('G3 the unswept apps are NAMED, so the coverage owed is actionable',
+          len(_named) > 0, True)
+    check('G3a ...and every name is a real app HTML file rather than a label',
+          all(os.path.isfile(os.path.join(wt, n + '.html')) for n in _named), True)
     check('G4 the single ALL APPS rate is gone',
           'ALL APPS' in out, False)
 
@@ -358,9 +369,15 @@ try:
 
     swept_line = [l for l in out.split('\n') if 'SWEPT FILES' in l
                   and 'UNSWEPT' not in l][0]
+    # STRUCTURE, NOT A LITERAL RATE PREFIX (corrected 2026-09-16). This
+    # filtered on `' 0.' in l`, so the moment any app's rate reached 1.00 --
+    # sairndental did, at 9 records -- its row stopped being counted and the
+    # totals stopped matching. A row is: two spaces, a name, then exactly three
+    # numeric columns, whatever their magnitude.
     per_app = [l for l in out.split('\n')
-               if l.startswith('  ') and ' 0.' in l and 'SWEPT' not in l
-               and 'UNSWEPT' not in l and 'OFF-FILE' not in l]
+               if re.match(r'^  \S+\s+\d+\s+\d+\s+\d+\.\d+\s*$', l)
+               and 'SWEPT' not in l and 'UNSWEPT' not in l
+               and 'OFF-FILE' not in l]
     counted = sum(_nums(l)[1] for l in per_app) if per_app else 0
     # (7) in the label is a count of files, so the defect total is the LAST
     # integer on the line, after the file count and the line count.
@@ -551,6 +568,69 @@ try:
 
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)
+    git(REPO, 'worktree', 'prune')
+
+# ── RESOLVABLE IS NOT REACHABLE (2026-09-16) ────────────────────────────────
+# `--check` calls a SHA good the moment `rev-parse --verify` accepts it, and
+# that is the right contract for a checker: a record pointing at a real object
+# is not a register pointing at nothing.
+#
+# IT IS THE WRONG QUESTION FOR A RE-SEAT. A rebase leaves the original commit
+# behind as a DANGLING object -- it still resolves until the reflog expires --
+# so `--reseat` skipped it and the record went on naming a commit that is not
+# on the branch. Found when the register-feed gate refused a push twice: it asks
+# whether a commit BEING PUSHED has a record, the register asked whether a
+# recorded SHA is a valid object, and four records satisfied the second while
+# failing the first.
+#
+# THE ARMS BELOW BUILD A REAL DANGLING COMMIT rather than stubbing one. A stub
+# would prove the branch is written; only a real orphan proves it is reached.
+import importlib.util as _ilu                                    # noqa: E402
+
+_wt2 = os.path.join(tempfile.gettempdir(), 'reseat-probe-%d' % os.getpid())
+git(REPO, 'worktree', 'add', '-q', '--detach', _wt2, 'HEAD')
+try:
+    io.open(os.path.join(_wt2, 'zz_reseat_probe.txt'), 'w',
+            encoding='utf-8', newline='\n').write('one\n')
+    git(_wt2, 'add', 'zz_reseat_probe.txt')
+    git(_wt2, '-c', 'user.email=probe@x', '-c', 'user.name=probe',
+        'commit', '-q', '-m', 'fix(zz): a reseat probe subject nothing else uses')
+    orphan = git(_wt2, 'rev-parse', 'HEAD').stdout.strip()
+    # Rewrite it, exactly as a rebase does. The old SHA survives as a dangling
+    # object and the SAME SUBJECT now lives at a new one.
+    io.open(os.path.join(_wt2, 'zz_reseat_probe.txt'), 'w',
+            encoding='utf-8', newline='\n').write('two\n')
+    git(_wt2, 'add', 'zz_reseat_probe.txt')
+    git(_wt2, '-c', 'user.email=probe@x', '-c', 'user.name=probe',
+        'commit', '-q', '--amend', '--no-edit')
+    rewritten = git(_wt2, 'rev-parse', 'HEAD').stdout.strip()
+
+    check('S0 the orphan and the rewrite are different commits',
+          orphan != rewritten and len(orphan) == 40, True)
+
+    _spec = _ilu.spec_from_file_location(
+        'dr_live', os.path.join(REPO, 'tools', 'defect_register.py'))
+    dr = _ilu.module_from_spec(_spec)
+    _spec.loader.exec_module(dr)
+    dr.REPO = _wt2
+
+    check('S1 the orphaned SHA still RESOLVES -- which is why --check accepts '
+          'it and why that is not the bug',
+          bool(dr.git('rev-parse', '--verify', orphan + '^{commit}')), True)
+    check('S2 ...and it is NOT REACHABLE from the branch, which is the question '
+          'a re-seat is for', dr.reachable(orphan, 'HEAD'), False)
+    check('S3 CONTROL: the rewritten commit IS reachable, so the test is about '
+          'reachability and not about every SHA failing',
+          dr.reachable(rewritten, 'HEAD'), True)
+    check('S4 CONTROL: reachable() is not inverted -- HEAD reaches itself. '
+          '`merge-base --is-ancestor` signals through its EXIT CODE and prints '
+          'nothing, so a truthiness test would read every ancestor as not one',
+          dr.reachable('HEAD', 'HEAD'), True)
+    check('S5 the base is origin/main when it exists, because that is what '
+          'another clone will fetch',
+          dr.reseat_base()[0] in ('origin/main', 'HEAD'), True)
+finally:
+    git(REPO, 'worktree', 'remove', '--force', _wt2)
     git(REPO, 'worktree', 'prune')
 
 check('Z1 the worktree was cleaned up', os.path.exists(wt), False)

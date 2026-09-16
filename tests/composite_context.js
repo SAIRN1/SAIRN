@@ -1,4 +1,7 @@
 // tests/composite_context.js
+// REQUIREMENT: a composite AI context is assembled only from records the caller can
+//   already read, so context assembly cannot become a read-around
+//
 //
 // Run:  node tests/composite_context.js
 //

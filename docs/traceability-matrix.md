@@ -180,6 +180,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The last Tier A artefact with no suite, and three whose only check was their own self-test &mdash; now proven to BITE** | **BUILT 2026-09-15 (CC)** &mdash; `tests/run_sc_tier_a_live_probe_probe.py` (30 arms) and `tests/run_selftest_independence_probe.py` (**11 mutants, all caught**) | `tests/run_sc_tier_a_live_probe_probe.py`, `tests/run_selftest_independence_probe.py` |
 | **R03&rsquo;s class swept platform-wide: THREE more live instances, and one of them destroyed a truthful message instead of merely omitting one** | **FIXED 2026-09-16 (CC)** &mdash; `tools/optimistic_success_scan.py` (report-only, NOT_PROMOTED), `tests/run_optimistic_success_probe.py` 25 arms; `sairndental.html` and `sairndesign.html` fixed, four | `tests/run_optimistic_success_probe.py` |
 | **All 55 bound-to-subject test files now declare a requirement &mdash; and the length floor was measuring the first LINE of one** | **CLOSED 2026-09-16 (CC)** &mdash; 34 more declarations; continuation lines joined in `tools/traceability_matrix.py`; `tests/run_traceability_matrix_probe.py` **32 checks, 0 failed**. 213 &rarr; **163 | `tests/run_traceability_matrix_probe.py` |
+| **&#9888; A TOKEN IS A CLAIM ABOUT THE PAST: a deactivated employee kept read and write on every gated resource in `api/sd-data.js` for the rest of a 12h token** | **FIXED 2026-09-16 (CC)** &mdash; `credentialStillActive()` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, wired into the `sd-data.js` session gate; `api/_lib/auth.test.js` **23 arms** including the sab | `api/_lib/auth.test.js`, `api/sd-data-active-credential.test.js` |
+| **`--reseat` treated a DANGLING commit as a good SHA, so the records a rebase orphaned were the exact ones it skipped** | **FIXED 2026-09-16 (CC)** &mdash; `reachable()` and `reseat_base()` in `tools/defect_register.py`; five arms in `tests/run_defect_register_probe.py` building a REAL orphan rather than a stub. **108 ch | `tests/run_defect_register_probe.py` |
+| **The dispatch list is offering CLOSED work: three of four open-and-unowned rows spot-checked were already done** | **MEASURED 2026-09-16 (CC)**, two of them closed with evidence &mdash; 71 &rarr; **69** unowned | `tests/run_snapshot_freshness_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -215,7 +218,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **INDEPENDENT REVIEW of Fourth&rsquo;s item 65a (nightly backup) and item 78 (role-gate formal spec): FOUR findings, one of them a published credential** | **REVIEWED 2026-09-14 (CC)** at `518782ec` and `858ad4a6`+`d7091d3f`. Three register records, `detection_method: independent-review`. **Findings raised, NOT fixed &mdash; they are Fourth&rsquo;s files | `tests/app_session_isolation.js` |
 | **Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURCE asked for, not just the route** | **BUILT 2026-09-14 (CC)** &mdash; inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker. Held by `tests/reachability/resource_demand_probe.py` (18 arms, three mutation controls | `api/sd-data-dental-ledger-validation.test.js`, `tests/reachability/resource_demand_probe.py` |
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
-| **`master_plan.py` gate 4 counts fault probes in PYTHON ONLY, so a JavaScript mutation probe reads as no probe at all** | **FOUND 2026-09-14 (CC)** while closing the SAIRNbiz void row. **MEASURED, not inferred:** `fault_probes()` in `tools/master_plan.py` walks `tests/` and skips any file not ending `.py` | `tests/sairnbiz_void_mutation_control.js` |
+| **`master_plan.py` gate 4 counts fault probes in PYTHON ONLY, so a JavaScript mutation probe reads as no probe at all** | **CLOSED 2026-09-16 (CC)** &mdash; VERIFIED, not assumed: `fault_probes()` now carries `FAULT_PROBE_JS` and an explicit `tests/faults/` rule, and `docs/MASTER-PLAN.md` prints `sairnbiz ... 2` with `te | `tests/sairnbiz_void_mutation_control.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
 | **23 of 64 check-shaped tools had NO RECORDED DECISION either way &mdash; not promoted, not recorded as deliberately unpromoted, and therefore measured by nothing** | **MEASURED AND DISCLOSED 2026-09-14 (Cody)** &mdash; coverage disclosure widened in `tools/flaky_checker_quarantine.py`; my own new checker given a recorded NOT_PROMOTED reason, 23 &rarr; 22 | `tests/run_tooling_inventory_probe.py` |
@@ -250,7 +253,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Methodology piece 1: mutation-derived condition coverage &mdash; 48 of 146 operands in the Tier A financial engines are ones the suite does NOT notice being wrong** | **BUILT 2026-09-13 (Hank)** &mdash; `tools/condition_coverage.py`, 20 arms, `fb5a1884` | `tests/sairncare/test-care-charges.js` |
 | `docs/MASTER-PLAN.md` says "every number below is derived" in the present tense, and it is not — the one document that compounds four gates into one FINISHED verdict is hand-maintained | **BUILT AND CLOSED 2026-09-13 (Fourth)** &mdash; `tools/master_plan.py` + `tests/run_master_plan_probe.py`, commits `3712fb4c` / `6ac7d8af` | `tests/run_master_plan_probe.py` |
 | `--check` on a generated document is a SELF-CONSISTENCY check, not a closing-error check — it cannot see that the generator stopped reading a source | **BUILT AND CLOSED 2026-09-13 (Fourth)** &mdash; `tools/closing_error.py` + `tests/run_closing_error_probe.py`, commits `79b87085` / `a4d88cbd` | `tests/run_closing_error_probe.py` |
-| `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **OPEN 2026-09-13 (found by Fourth while declaring the file a control; deliberately NOT fixed)** — `python tests/run_snapshot_freshness_probe.py` reports `2 arm(s) failed`; the other 12 arms pass. Pre | `tests/run_snapshot_freshness_probe.py` |
+| `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **CLOSED 2026-09-16 (CC)** &mdash; RE-RUN, not assumed: `python tests/run_snapshot_freshness_probe.py` reports **0 arm(s) failed** and exits 0, with 2c and 4a both PASS. **THE ROW WAS STALE, NOT THE W | `tests/run_snapshot_freshness_probe.py` |
 | ~~`literal_drift_check.py` has a control that proves DETERMINISM and never proves it can FIRE~~ &mdash; **CLOSED** | **CLOSED 2026-09-14 (CC)**, verified independently by Hank 2026-09-14 &mdash; `tests/run_literal_drift_control_probe.py` exists and passes, and `python tools/checker_control_check.py` now reports **ON | `tests/run_literal_drift_control_probe.py` |
 | ~~Nothing runs 58% of the test suite, and two probes had rotted unnoticed inside it~~ — **`tools/run_all_tests.py` runs all 126 and NAMES what it did not run** | **CLOSED 2026-09-08 (Hank)** — `67e9a33` (the two rotted probes) and `5c439e6` (the runner); 126/126 pass on a clean tree | `tests/fail_open_browser_probe.py`, `tests/reachability/live_mode_probe.py` |
 | ~~The report-only suite hook runs after every `git push`~~ &mdash; **it ran after every BASH TOOL CALL, because `"if": "Bash(git push*)"` is not a field a Claude Code hook has** | **FIXED 2026-09-09 (Hank)** &mdash; root cause found by watching processes, not by reading | `tests/run_all_tests_hook_gate_probe.py` |
@@ -496,23 +499,23 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 164 test files are traced to no stated requirement
+### 130 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 318 of 482 traced, 66.0%.
+For context and not as the headline: 353 of 483 traced, 73.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 324 citations come from
+### Where the 359 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 262 |
-| `declared` | 55 |
+| `declared` | 88 |
 | `GUARD_TESTS+index` | 5 |
+| `declared+index` | 3 |
 | `GUARD_TESTS` | 1 |
-| `declared+index` | 1 |
 
 **One source carries almost all of it.** That is a concentration, not a defect -- but it means the traced figure moves with how diligently the open-work index is written, not with how well tested this repo is, and if that habit lapsed nothing here would say so.
 
@@ -521,7 +524,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 164 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 130 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -594,49 +597,15 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sd-data-slab-reserve.test.js`
 - `api/sd-sub-data-auth-ordering.test.js`
 - `api/stripe-config.test.js`
-- `tests/ai_auth_wrapper.test.js`
-- `tests/ai_shortcuts_reach_the_chat.js`
-- `tests/alf_append_only_probe.py`
-- `tests/approval_persistence.js`
 - `tests/claims/run_claim_retype_mutation_control.py`
 - `tests/claims/run_push_verify_probe.py`
-- `tests/composite_context.js`
-- `tests/cut_sheet_basis_parity.js`
-- `tests/discarded_verdict_check.test.js`
-- `tests/dnt_complaint_qr.js`
-- `tests/dnt_financial_tier_probe.py`
-- `tests/dnt_vendor_write_confirmation.js`
-- `tests/entitlement_freshness_control.py`
-- `tests/exec_role_gate.js`
 - `tests/failsafe/countersign_coverage_probe.py`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
 - `tests/faults/run_fault_suite_probe.py`
 - `tests/faults/sv_suppression_faults.js`
-- `tests/intake_form_public_surface.js`
-- `tests/intake_link_no_credential.js`
-- `tests/intake_no_false_success.js`
-- `tests/invoice_panel_kpis.js`
-- `tests/key_collision_probe.py`
-- `tests/merge_by_id_overwrite.js`
-- `tests/nesting_dxf.js`
-- `tests/prompt_budget.js`
 - `tests/push_gate/check4_probe.py`
 - `tests/push_gate/check9_probe.py`
-- `tests/quote_history_duplication.js`
-- `tests/retry_backoff_check_control.py`
-- `tests/roofing_claim_gate_single_source.js`
-- `tests/roofing_jobs_load_failure.js`
-- `tests/rootpages.js`
-- `tests/run_accepted_risk_probe.py`
-- `tests/run_bypassed_constant_probe.py`
-- `tests/run_citator_freshness_probe.py`
-- `tests/run_cleanup_confirm_probe.py`
-- `tests/run_eaten_substitution_probe.py`
-- `tests/run_financial_invariant_probe.py`
-- `tests/run_index_duplicate_probe.py`
-- `tests/run_invisible_in_pattern_probe.py`
-- `tests/run_ownership_drift_probe.py`
 - `tests/run_rate_limit_race_probe.js`
 - `tests/run_role_gate_invariants_probe.js`
 - `tests/run_sabotage_control_probe.py`
@@ -709,8 +678,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 482   tests/**, api/*.test.js
-  open-work rows citing a test       254   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 483   tests/**, api/*.test.js
+  open-work rows citing a test       257   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     49   report_only_checks.NOT_PROMOTED

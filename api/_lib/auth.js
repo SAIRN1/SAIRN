@@ -681,9 +681,99 @@ function verifySsoState(token, expectedApp) {
   return { license_hash: claims.license_hash, code_verifier: claims.code_verifier };
 }
 
+// ── A TOKEN IS A CLAIM ABOUT THE PAST ──────────────────────────────────────
+// `verifySessionToken` proves a token was minted by this platform, for this
+// licence and this app, and has not expired. IT PROVES NOTHING ABOUT NOW.
+//
+// THE LIVE FINDING, 2026-08-23, on SAIRNcode and against production: a session
+// token carries a role claim and stays valid for its full 12h life INCLUDING
+// after the credential behind it is deactivated. `api/sc-auth.js` fixed that
+// for its own `roster` and `set_active`, and `api/_lib/employee-lifecycle.js`
+// carries the same re-check for the apps that share it.
+//
+// NOTHING CLOSED IT FOR THE DATA PATH. `api/sd-data.js` gates thirteen apps'
+// resources on `session.role` read from the token claim and never asks whether
+// that credential is still active, so a deactivated employee kept read and
+// write access to every gated resource until their token happened to expire.
+// Deactivation is the one control an owner has for somebody who has just left.
+//
+// DECLARED, NEVER DERIVED. Fifteen apps and no rule: `sd`, `sb`, `grd` and
+// `scp` use a prefix, the rest use the full app name, and `sairncare`'s table
+// is not `alf_*` though its endpoint is. A derivation would be wrong for at
+// least five of them and wrong SILENTLY -- a missing table reads as "no active
+// row", which would refuse every caller in that app.
+const AUTH_TABLE_BY_APP = {
+  stonedesk: 'sd_employee_auth',
+  sairnbiz: 'sb_employee_auth',
+  sairngrounds: 'grd_employee_auth',
+  sairnscape: 'scp_employee_auth',
+  sairnlaw: 'sairnlaw_employee_auth',
+  sairncode: 'sairncode_employee_auth',
+  sairndental: 'sairndental_employee_auth',
+  sairnmechanical: 'sairnmechanical_employee_auth',
+  sairnlegacy: 'sairnlegacy_employee_auth',
+  sairndesign: 'sairndesign_employee_auth',
+  sairnbuild: 'sairnbuild_employee_auth',
+  sairnsenior: 'sairnsenior_employee_auth',
+  sairncare: 'sairncare_employee_auth',
+  sairnroofing: 'sairnroofing_employee_auth',
+  sairnvet: 'sairnvet_employee_auth'
+  // stonedesk_sub is DELIBERATELY ABSENT. Subcontractors authenticate against
+  // `sd_sub_auth` keyed on sub_id, not employee_id, and their removal path is
+  // a different one. Listing it here with the wrong key would refuse every
+  // subcontractor; omitting it makes credentialStillActive() answer
+  // NO_ACTIVE_CHECK, which the caller must handle rather than read as a pass.
+};
+
+/**
+ * Is the credential behind this session STILL active?
+ *
+ * Returns { ok: true } when it is, { ok: false, code, message } when it is not,
+ * and { ok: false, code: 'NO_ACTIVE_CHECK' } when this app has no employee
+ * table to ask. THE THIRD STATE IS NOT A PASS and is not an error -- it is
+ * "could not tell", and a caller that folds it into either is the defect this
+ * platform has a standing rule against.
+ *
+ * COSTS ONE QUERY PER GATED REQUEST, and that is the price of the control
+ * rather than an oversight. It is a single indexed lookup by licence and
+ * employee id, and the alternative -- a cache -- would reintroduce exactly the
+ * window this closes, just shorter.
+ */
+async function credentialStillActive(session, licHash, rest, headers) {
+  if (!session || !session.employee_id) {
+    return { ok: false, code: 'FORBIDDEN', message: 'A valid employee session is required' };
+  }
+  const table = AUTH_TABLE_BY_APP[session.app];
+  if (!table) return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  let rows;
+  try {
+    const r = await fetch(rest(table + '?license_hash=eq.' + encodeURIComponent(licHash) +
+      '&employee_id=eq.' + encodeURIComponent(session.employee_id) +
+      '&select=active&limit=1'), { headers });
+    rows = await r.json();
+    if (!r.ok) return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  } catch (e) {
+    // A TRANSPORT FAILURE IS NOT A DEACTIVATION. Answering "inactive" here
+    // would lock every user out of an app whenever the database blinked, and
+    // answering "active" would silently disable the control. Third state.
+    return { ok: false, code: 'NO_ACTIVE_CHECK' };
+  }
+  const row = Array.isArray(rows) && rows[0];
+  if (!row || row.active !== true) {
+    return {
+      ok: false,
+      code: 'CREDENTIAL_INACTIVE',
+      message: 'This credential has been deactivated. Sign in again with an active account.'
+    };
+  }
+  return { ok: true };
+}
+
 module.exports = {
   ROLES,
   ROLES_BY_APP,
+  AUTH_TABLE_BY_APP,
+  credentialStillActive,
   hashPin,
   verifyPin,
   signSessionToken,

@@ -28,7 +28,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest, ROLES_BY_APP } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
@@ -785,6 +785,36 @@ module.exports = async (req, res) => {
           }
         });
         return;
+      }
+      // ── AND THE CREDENTIAL BEHIND IT MUST STILL BE ACTIVE ────────────────
+      // verifySessionToken proves the token was minted by us and has not
+      // expired. It proves nothing about NOW. Until 2026-09-16 a deactivated
+      // employee kept read and write access to every gated resource here for
+      // the remaining life of a 12h token -- and deactivation is the one
+      // control an owner has for somebody who has just left.
+      //
+      // api/sc-auth.js closed this for its own roster/set_active on
+      // 2026-08-23 and api/_lib/employee-lifecycle.js carries it for the apps
+      // that share it. NOTHING CLOSED IT FOR THE DATA PATH, which is thirteen
+      // apps' resources.
+      //
+      // NO_ACTIVE_CHECK IS NOT A PASS. It means this app has no employee table
+      // to ask, or the lookup itself failed -- and a transport failure is not a
+      // deactivation. The request continues, because refusing everybody
+      // whenever the database blinks is a worse failure than the one being
+      // closed, and the outcome is LOGGED so a run of them is visible rather
+      // than silent.
+      const stillActive = await credentialStillActive(gateSession, licHash, rest, headers);
+      if (!stillActive.ok && stillActive.code === 'CREDENTIAL_INACTIVE') {
+        res.status(403).json({ error: { code: stillActive.code, message: stillActive.message } });
+        return;
+      }
+      if (!stillActive.ok) {
+        try {
+          console.warn('sd-data: active-credential re-check DID NOT RUN for app "'
+            + gateSession.app + '" (' + stillActive.code + '). The request was '
+            + 'allowed on the token alone.');
+        } catch (e) { /* logging must never refuse a request */ }
       }
     }
 

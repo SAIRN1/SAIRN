@@ -1,3 +1,7 @@
+
+# REQUIREMENT: a constant declared as the single source is not bypassed by a literal
+#   elsewhere, because a second copy is what makes two answers possible
+#
 #!/usr/bin/env python
 """tests/run_bypassed_constant_probe.py
 

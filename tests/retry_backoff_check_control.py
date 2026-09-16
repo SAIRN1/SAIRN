@@ -19,6 +19,9 @@ probe that never writes cannot participate in that. The cost is that this does
 not exercise the file-reading half of the tool -- `sources()` -- and arm 0 below
 covers that separately by asserting the real sweep actually reaches real files.
 """
+# REQUIREMENT: a retry policy actually backs off rather than retrying immediately, so a
+#   failing dependency is not hammered by its own client
+#
 import io
 import os
 import sys

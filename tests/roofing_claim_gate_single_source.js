@@ -1,4 +1,7 @@
 // tests/roofing_claim_gate_single_source.js
+// REQUIREMENT: the roofing claim gate is enforced from ONE source, so the client and
+//   the server cannot disagree about whether a claim is admissible
+//
 //
 // Run:  node tests/roofing_claim_gate_single_source.js
 //

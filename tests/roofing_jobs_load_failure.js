@@ -1,4 +1,7 @@
 // tests/roofing_jobs_load_failure.js
+// REQUIREMENT: a failed jobs load is reported as a failure rather than rendered as an
+//   empty list, so nothing missing can read as nothing there
+//
 //
 // Run:  node tests/roofing_jobs_load_failure.js
 //

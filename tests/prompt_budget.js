@@ -1,4 +1,7 @@
 // tests/prompt_budget.js
+// REQUIREMENT: a model prompt cannot exceed the budget the caller declared, so a large
+//   context cannot silently buy more tokens than were authorised
+//
 //
 // Run:  node tests/prompt_budget.js
 //

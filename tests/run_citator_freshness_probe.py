@@ -13,6 +13,9 @@ suspect. Two things keep them honest: every match runs against COMMENT-STRIPPED
 source, so a sentence describing the rule cannot satisfy it; and each arm has a
 control that removes the real line and checks the arm goes red.
 """
+# REQUIREMENT: a citation the citator reports as current was checked against a source
+#   within the stated window, so staleness cannot read as currency
+#
 import io
 import os
 import re

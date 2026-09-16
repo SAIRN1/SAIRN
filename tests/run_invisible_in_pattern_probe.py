@@ -28,6 +28,9 @@ tools/sabotage_control_check.py exists to catch: when the anchor rots,
 str.replace silently does nothing, the checker runs against an UNCHANGED file,
 and "the checker exited 0" is then reported as the clean arm passing.
 """
+# REQUIREMENT: a pattern containing an invisible or control character is refused,
+#   because such a pattern can never match and reports clean forever
+#
 import io
 import os
 import subprocess

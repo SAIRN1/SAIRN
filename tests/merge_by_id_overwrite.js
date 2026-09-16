@@ -1,4 +1,7 @@
 // tests/merge_by_id_overwrite.js
+// REQUIREMENT: merging records by id updates the matching row and never silently
+//   overwrites a different one, so a stale id cannot destroy live data
+//
 // Run: node tests/merge_by_id_overwrite.js
 //
 // The three client merge functions -- dntMergeById, grdMergeById, scpMergeById

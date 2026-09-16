@@ -1,4 +1,7 @@
 // tests/intake_link_no_credential.js
+// REQUIREMENT: an intake link carries no credential and cannot be turned into one, so
+//   possessing the URL grants nothing but the form
+//
 //
 // Run:  node tests/intake_link_no_credential.js
 //

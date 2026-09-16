@@ -1,4 +1,7 @@
 // tests/dnt_vendor_write_confirmation.js
+// REQUIREMENT: a dental vendor write is confirmed against what the server returned
+//   rather than assumed from the request having been sent
+//
 //
 // Run:  node tests/dnt_vendor_write_confirmation.js
 //

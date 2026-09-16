@@ -18,6 +18,9 @@ would have hidden the first real finding of this build: ledger.validateEntry
 read 2000/2000 STABLE while MISCLASSIFIED, because the adapter compared
 undefined with undefined. A single score would have said PASS.
 """
+# REQUIREMENT: the money engines hold their stated invariants under generated input, so
+#   a total can never disagree with the lines it is a total of
+#
 import io
 import json
 import os

@@ -1,4 +1,7 @@
 // tests/approval_persistence.js
+// REQUIREMENT: an approval survives a reload and cannot be re-applied to produce a
+//   second approval on the same record
+//
 //
 // Run:  node tests/approval_persistence.js
 //

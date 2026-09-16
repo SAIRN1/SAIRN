@@ -1,4 +1,7 @@
 // tests/intake_form_public_surface.js
+// REQUIREMENT: the public intake form exposes only what an unauthenticated visitor is
+//   entitled to see, and reaches no tenant record beyond the one it is for
+//
 //
 // Run:  node tests/intake_form_public_surface.js
 //

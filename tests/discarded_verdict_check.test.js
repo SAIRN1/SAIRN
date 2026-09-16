@@ -1,4 +1,7 @@
 // tests/discarded_verdict_check.test.js
+// REQUIREMENT: a verdict a checker computed is acted on rather than discarded, because
+//   a result nobody reads is the same as a check that never ran
+//
 //
 // Run:  node tests/discarded_verdict_check.test.js
 //

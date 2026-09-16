@@ -1,4 +1,7 @@
 // tests/rootpages.js
+// REQUIREMENT: there is ONE definition of a root app page this repository ships, so no
+//   checker enumerates apps differently from any other
+//
 //
 // THE ONE DEFINITION OF "a root app page this repository ships".
 //

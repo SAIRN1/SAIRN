@@ -1,3 +1,7 @@
+
+# REQUIREMENT: a string substitution that matched nothing is REPORTED rather than
+#   silently leaving the template unchanged
+#
 #!/usr/bin/env python
 """tests/run_eaten_substitution_probe.py
 

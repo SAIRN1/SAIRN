@@ -1,4 +1,7 @@
 // tests/intake_no_false_success.js
+// REQUIREMENT: a public intake submission that did not reach the server is never
+//   reported to the submitter as received
+//
 //
 // Run:  node tests/intake_no_false_success.js
 //

@@ -819,20 +819,88 @@ def cmd_check(argv=()):
     return 0
 
 
+def reseat_base():
+    """The ref reachability is measured against, and its name for the report.
+
+    origin/main when it exists -- that is what every other clone will fetch and
+    what an auditor following a SHA will actually have. HEAD when it does not,
+    which is the case in a fresh worktree or a clone with no remote.
+
+    Returns (ref, None) or (None, why). A refusal rather than a default: with no
+    ref to compare against, EVERY record would look unreachable and this would
+    re-seat the whole register on the strength of not being able to look.
+    """
+    for ref in ('origin/main', 'HEAD'):
+        if git('rev-parse', '--verify', ref):
+            return ref, None
+    return None, 'neither origin/main nor HEAD could be read'
+
+
+def reachable(sha, base):
+    """Is this commit an ancestor of `base`?
+
+    ── RESOLVABLE IS NOT REACHABLE (2026-09-16) ─────────────────────────────
+    `resolve()` calls a SHA good the moment `rev-parse --verify` accepts it, and
+    that is the RIGHT contract for `--check`: a record pointing at a real object
+    is not a register pointing at nothing.
+
+    IT IS THE WRONG QUESTION FOR A RE-SEAT. A rebase rewrites a commit and
+    leaves the original behind as a DANGLING object -- it still resolves, for as
+    long as it takes the reflog to expire, so `--reseat` skipped it and the
+    record went on naming a commit that is not on the branch. Found on
+    2026-09-16 when the register-feed gate refused a push twice: it asks whether
+    a commit BEING PUSHED has a record, the register asked whether a recorded
+    SHA is a valid object, and four records satisfied the second while failing
+    the first.
+
+    With four clones rebasing onto one branch that is the normal case rather
+    than an edge one, so the repair command now asks the question the repair is
+    for. `--check`'s acceptance contract is deliberately unchanged.
+    """
+    # `git()` returns '' on success-with-no-output and None on a non-zero exit.
+    # `merge-base --is-ancestor` prints NOTHING and signals through the exit
+    # code alone, so the test is `is not None` -- `bool()` would read every
+    # ancestor as not-an-ancestor, which is the inverted answer and would
+    # re-seat the entire register.
+    return git('merge-base', '--is-ancestor', sha, base) is not None
+
+
 def cmd_reseat():
     """Write re-seated SHAs back. A separate command on purpose: `--check` is
     read-only, and a checker that edits the thing it checks is not a checker."""
     reg = load()
     idx = subject_index()
+    base, why = reseat_base()
+    if base is None:
+        print('COULD NOT RE-SEAT: %s.' % why)
+        print('  Nothing was written. With no ref to measure reachability')
+        print('  against, every record would look unreachable and this would')
+        print('  re-seat the whole register on the strength of not looking.')
+        return 2
+    print('reachability measured against %s' % base)
     n = 0
     for r in reg['records']:
         sha, how = resolve(r, idx)
-        if how == 'subject':
-            print('  %s -> %s  %s' % (r['commit'], sha, r['subject'][:66]))
+        # A SHA THAT RESOLVES BUT IS NOT ON THE BRANCH is exactly the case a
+        # re-seat exists for, and it was the one case this skipped.
+        if how == 'sha' and not reachable(r['commit'], base):
+            hits = idx.get(r.get('subject') or '\x00absent', [])
+            if len(hits) == 1:
+                sha, how = hits[0][:12], 'dangling'
+            else:
+                print('  %s  DANGLING and %s -- left alone'
+                      % (r['commit'],
+                         'AMBIGUOUS by subject' if hits else 'no subject match'))
+                continue
+        if how in ('subject', 'dangling'):
+            print('  %s -> %s  %s%s'
+                  % (r['commit'], sha, r['subject'][:58],
+                     '   (was dangling)' if how == 'dangling' else ''))
             r['commit'] = sha
             n += 1
     if not n:
-        print('nothing to re-seat -- every SHA resolves as recorded.')
+        print('nothing to re-seat -- every SHA resolves AND is reachable '
+              'from %s.' % base)
         return 0
     # DELIBERATELY NOT RE-SORTED. The sort key is (date, commit), so re-seating
     # twelve SHAs reorders the file and produces a 157-line diff for a 12-line
