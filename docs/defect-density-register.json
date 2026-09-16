@@ -2842,7 +2842,7 @@
       "phase_note": "Read from the function body: the lock, the aggregate and the insert are all present and correct; what is absent is the isolation precondition they rest on. A design-time omission, not a coding slip."
     },
     {
-      "commit": "1b63e3de4a1b",
+      "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
       "files": [
@@ -2916,7 +2916,7 @@
       "citation_note": "silent failure: the user is told the item was added and nothing ever says otherwise"
     },
     {
-      "commit": "1b63e3de4a1b",
+      "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
       "files": [
@@ -2990,7 +2990,7 @@
       "citation_note": "silent failure: the message hedged about the email draft and never about the write"
     },
     {
-      "commit": "1b63e3de4a1b",
+      "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
       "files": [
@@ -3064,7 +3064,7 @@
       "citation_note": "silent failure, and the design half is that the helper made honest reporting impossible for every caller"
     },
     {
-      "commit": "1b63e3de4a1b",
+      "commit": "53b0f9a475c5",
       "date": "2026-09-16",
       "subject": "fix(platform): R03's class swept platform-wide -- THREE more live instances, and one of them never corrected itself at all",
       "files": [
