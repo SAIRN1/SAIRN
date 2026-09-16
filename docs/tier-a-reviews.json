@@ -228,6 +228,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-16T04:10:46Z",
+      "resources": [
+        "quotes"
+      ],
+      "files": [
+        "tools/retry_backoff_check.py"
+      ],
+      "what": "tools/retry_backoff_check.py (new, report-only) and tests/retry_backoff_check_control.py (new control) for item 81. NOTE FOR THE REVIEWER: the gate matched the Tier A resource 'quotes' inside a FIXTURE STRING -- the must-not-fire arm 'Storage full - clear old quotes and retry.', which exists precisely to prove the tool does not fire on the English word retry in a user-facing message. Neither file reads, writes or gates any resource; retry_backoff_check.py only reads source text. Review the checker as a checker: its criteria, its blind lock, and whether the control discriminates.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
