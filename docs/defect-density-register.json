@@ -3331,6 +3331,67 @@
       "citation_note": "a truthful message was raised and then destroyed by an unconditional one, which is a silent failure assembled out of two correct-looking lines"
     },
     {
+      "commit": "5796a85139e2",
+      "date": "2026-09-16",
+      "subject": "fix(audit,gate): a probe wrote a real override into the real audit log, and the Tier A gate counted resource names inside sentences",
+      "files": [
+        "docs/BYPASS-LOG.jsonl",
+        "tests/push_gate/check9_probe.py",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/bypass_log.py",
+        "tools/run_all_tests.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 326,
+      "lines_removed": 7,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "A test probe wrote a real override row into docs/BYPASS-LOG.jsonl -- the audit record of every push-gate bypass carried an entry attributed to session cody for a command no human ran",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "a5999f057781",
+        "date": "2026-09-15",
+        "subject": "feat(gate): item 86 -- every override recorded, and a repeatedly bypassed check reported as a defect in the CHECK",
+        "lag_days": 1
+      },
+      "citation_note": "Adjacent rather than exact. PR 1.11 is about a check that cannot run reporting a pass; this is a check's RECORD being fed by its own test harness, so the log reads as evidence of something that did not happen. Same family -- a mechanism whose output cannot be distinguished from the real thing -- but the rule does not name it, hence arguable.",
+      "contributing_factors": [
+        {
+          "factor": "tests/push_gate/check9_probe.py drives the real push-gate hook with a real SAIRN_SEED_GATE=off payload and never set SAIRN_BYPASS_LOG, so the hook logged the bypass to the live audit record.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The probe now sets SAIRN_BYPASS_LOG to a PID-tagged throwaway file and asserts the real log is byte-identical afterwards."
+        },
+        {
+          "factor": "The redirect mechanism existed in tools/bypass_log.py from the day it was written and its use was left to each probe author to remember. Measured: of 24 test files that drive the hook as a subprocess, ONE set it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tools/run_all_tests.py now sets SAIRN_BYPASS_LOG for every child it spawns, which covers the other 23 and every probe written after today."
+        },
+        {
+          "factor": "Nothing asserted that the real audit log was unchanged by a probe run. The suite dirty-tree check reported the file as untracked residue, which reads as untidiness rather than as a fabricated audit row.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "check9_probe.py now has an explicit arm comparing the real log before and after."
+        },
+        {
+          "factor": "The log had no way to correct a row. Deleting one would have been the only option, and an audit trail that deletes what embarrasses it is worth less than one carrying a known-bad row and a note.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "bypass_log.retract() appends a retraction naming the row it strikes; patterns() excludes struck rows from the PATTERN_AT count and the reporter names them rather than netting them off."
+        }
+      ],
+      "recurrence_open": "PARTLY CLOSED. The central redirect covers every probe the SUITE spawns, and one probe run BY HAND still writes the real log unless it sets the env itself -- only check9_probe.py does. The wider shape is untouched: nothing prevents any tool from writing a real record from a test context, and the bypass log is append-only BY CONVENTION rather than by enforcement, so the retraction relies on the same trust the original row did."
+    },
+    {
       "commit": "769667475cb5",
       "date": "2026-09-16",
       "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
