@@ -3647,6 +3647,127 @@
       "single_factor_note": "The whole defect is one missing guard in one function, and svPushOne twenty lines away already had it with a comment explaining why -- so there is no second contributor to find; the guard was simply not copied onto the read path."
     },
     {
+      "commit": "a744ceb5e0eb",
+      "date": "2026-09-16",
+      "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/session_lock_liveness_probe.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/session_lock_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 816,
+      "lines_removed": 78,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "tools/session_lock_check.py detected a second session in the same clone correctly and could only print about it. On 2026-09-15 two sessions read the SessionStart warning and continued anyway -- the warning did not malfunction, being ignorable is what failed. SessionStart hooks in this codebase's schema cannot deny; only PreToolUse carries permissionDecision deny, and sairn_push_gate_hook.py had been doing exactly that in the same repo the whole time. Fixed by adding a PreToolUse guard on Write/Edit/Bash that refuses when CLAUDE_PID plus that process's real start time confirm another session is live.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "49c2311e69ec",
+        "date": "2026-08-24",
+        "subject": "feat: session-lock collision warning across the four SAIRN clones",
+        "lag_days": 23
+      },
+      "citation_note": "No standing rule says an advisory warning is not a control. The nearest is PR 4.2, which is about the CLAIM system reducing rather than eliminating collisions -- a different mechanism with a different failure. Citing it would score an agreement the FMEA matcher would then treat as clean.",
+      "phase_note": "The 2026-08-24 design chose an advisory SessionStart warning deliberately and recorded why -- a SessionStart hook cannot deny, and no stable session identity was available to do better. The warning was built exactly as designed and worked. The defect is in what the design settled for, not in the code that implemented it.",
+      "contributing_factors": [
+        {
+          "factor": "A SessionStart hook cannot deny, so the detection had no enforcement channel available to it at the point it fired",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Added a PreToolUse guard on Write|Edit|Bash using the same deny shape as sairn_push_gate_hook.py; the SessionStart warning stays as the first heads-up"
+        },
+        {
+          "factor": "No stable per-session identity was thought to exist -- os.getpid() differs on every hook invocation, so the original design used time-based staleness only and that reasoning was correct when written",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "CLAUDE_PID names the CLI process, is stable for the session and is inherited by every hook; the lock now stores it with the process start time so a recycled pid reads as dead rather than alive"
+        },
+        {
+          "factor": "Nothing measured whether the warning was ACTED ON. A hook that fires is recorded as having fired; whether the session then did anything differently was invisible",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "A hook cannot observe what the assistant does with its output. The fix is to remove the choice rather than to measure it, which is what the deny does."
+        },
+        {
+          "factor": "The warning text asked the reader to surface it to Michael and let him decide -- an instruction a session under time pressure can satisfy by mentioning it once and continuing",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The refusal text now states the liveness evidence and says the block clears itself when the other process exits, so there is nothing to weigh up"
+        }
+      ],
+      "recurrence_open": "This still only sees two sessions in the SAME clone directory. Two different clones converging on one external task is untouched by it and remains the claim system's problem. It also fails OPEN whenever liveness cannot be determined -- CLAUDE_PID unset, an unreadable process handle -- and in that state the original ignorable-warning behaviour is exactly what is left."
+    },
+    {
+      "commit": "a744ceb5e0eb",
+      "date": "2026-09-16",
+      "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cc.md",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/session_lock_liveness_probe.py",
+        "tools/sairn_push_gate_hook.py",
+        "tools/session_lock_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 816,
+      "lines_removed": 78,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tools/sairn_push_gate_hook.py ran every GUARD_TESTS entry through a hardcoded node interpreter. Every entry happened to be JavaScript, so the assumption was invisible for the life of the registry. The first .py entry did not report that it could not be run -- it reported a node SyntaxError on the Python file's own docstring and DENIED the push, attributing a failure to the test rather than to the runner. Found by adding that first entry and reading what the gate actually said. Fixed by dispatching on the file suffix.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "sairn_push_gate_hook.py",
+      "injection": {
+        "commit": "9f7d61cfae44",
+        "date": "2026-09-10",
+        "subject": "feat(push-gate): check 9 -- the named guard and seam tests can now stop a push",
+        "lag_days": 6
+      },
+      "citation_note": "1.11 is about could-not-run being folded into PASS. Here it folded into FAIL, which is the safe direction and is why this was found in minutes rather than years -- so the citation is the right family and not the exact shape, and it is recorded as arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "The interpreter was a literal in the runner rather than a property of the entry, and nothing in the registry format recorded what a test is written in",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The runner now selects sys.executable for .py and node otherwise, with the incident recorded at the call site"
+        },
+        {
+          "factor": "Every entry added since the registry was built was JavaScript, so a wrong assumption and a correct one produced identical results for the whole population",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A homogeneous population cannot exercise a dispatch it never needs. Nothing would have surfaced this before the first member of a second kind arrived, which is exactly when it did surface."
+        },
+        {
+          "factor": "The failure was reported in the vocabulary of the TEST -- named test, its GUARDS line, its WHY IT EXISTS line, then a stack trace -- so the runner was the last place a reader would look",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Distinguishing could-not-execute from failed in the gate output would be a real improvement, but it is a change to blocking push-gate behaviour outside this task's scope and belongs in its own change with its own control."
+        }
+      ],
+      "recurrence_open": "The dispatch is by file suffix, so it handles .py and .js and nothing else. A third kind -- a shell script, a compiled binary, a .mjs needing a flag -- lands in the same hole, and the registry format still does not record what a test is written in. What changed is that the population now has two kinds instead of one, not that the assumption was removed."
+    },
+    {
       "commit": "bfa3fff4c5fc",
       "date": "2026-09-16",
       "subject": "fix(auth): a deactivated employee kept read and write on every gated resource -- the 2026-08-23 fix was app-shaped and the defect was not",
