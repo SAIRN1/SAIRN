@@ -611,11 +611,44 @@ def main(argv):
     bare = [r for r in retries if not r['delay'] and not r['breaker']]
     unclear = [r for r in rows if r['shape'] == 'UNCLEAR']
 
+    # THE VERDICT IS COMPUTED ONCE AND BOTH OUTPUT MODES RETURN IT.
+    #
+    # FOUND 2026-09-16 BY THE FIRST ARTICLE INSPECTION ITEM 47 DEMANDS OF THIS
+    # TOOL (Hank, on Cody's tool). `--json` used to carry its own rule --
+    # `EXIT_FINDING if (bare or unclear) else EXIT_CLEAN` -- and it disagreed
+    # with the text path on the same input in TWO ways:
+    #
+    #   UNCLEAR. The text path routes it through `could_not_run`, so it exits
+    #   2. The json path called it a FINDING and exited 1. "Could not tell" and
+    #   "found something" are the two states this repo most insists on keeping
+    #   apart, and which one a caller got depended on an output flag.
+    #
+    #   THE BREAKER, AND THIS IS THE SHARPER HALF. The text path adds "the only
+    #   breaker on the platform cannot fire" to `findings` when there are no
+    #   importers -- the tool's own headline result. The json path never looked
+    #   at `importers` at all, so on today's real repo `--json` exits 0 while
+    #   the text run exits non-zero, and a caller wiring the machine-readable
+    #   mode into anything would have read the platform as clean.
+    #
+    # One accounting, two renderings.
+    cnr = ['%s (%d unclosed brace(s) -- the scan stopped short there)' % u
+           for u in unbalanced]
+    cnr += ['%s -- %s' % u for u in unreadable]
+    cnr += ['%s line %d: could not tell retry from iteration'
+            % (r['file'], r['line']) for r in unclear]
+    findings = ['%s line %d: %s loop calls %s every iteration with no delay '
+                'and no breaker' % (r['file'], r['line'], r['loop'], r['call'])
+                for r in bare]
+    if not importers:
+        findings.append('api/_lib/resilience.js has no importer: the only '
+                        'breaker on the platform cannot fire')
+
     if '--json' in argv:
         print(json.dumps({'rows': rows, 'breaker_importers': importers,
-                          'unbalanced': unbalanced, 'unreadable': unreadable},
+                          'unbalanced': unbalanced, 'unreadable': unreadable,
+                          'findings': findings, 'could_not_run': cnr},
                          indent=2))
-        return EXIT_FINDING if (bare or unclear) else EXIT_CLEAN
+        return finish(findings, cnr, quiet=True)
 
     print('RETRY / BACKOFF / BREAKER -- report only, nothing gates on this')
     print('  %d source unit(s) scanned (every api/**.js and every <script> block in '
@@ -653,18 +686,6 @@ def main(argv):
                   % (r['file'], r['line'], r['loop'],
                      'delay' if r['delay'] else 'breaker'))
 
-    cnr = ['%s (%d unclosed brace(s) -- the scan stopped short there)' % u
-           for u in unbalanced]
-    cnr += ['%s -- %s' % u for u in unreadable]
-    cnr += ['%s line %d: could not tell retry from iteration'
-            % (r['file'], r['line']) for r in unclear]
-
-    findings = ['%s line %d: %s loop calls %s every iteration with no delay '
-                'and no breaker' % (r['file'], r['line'], r['loop'], r['call'])
-                for r in bare]
-    if not importers:
-        findings.append('api/_lib/resilience.js has no importer: the only '
-                        'breaker on the platform cannot fire')
     return finish(findings, cnr,
                   clean_line='\n  No loop issues an uncontrolled call without a '
                              'delay or a breaker.')

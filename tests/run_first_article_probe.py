@@ -158,6 +158,77 @@ finally:
     F.RECORD = _real
     os.remove(_tmp2)
 
+# ── 6. THE ARM EXTRACTOR READS ASSERTION HELPERS BY WHAT THEY DO ───────────
+#
+# WHY THESE ARMS EXIST. arm_labels() recognised exactly `check(` and `ck(`.
+# Measured 2026-09-16 across tests/*.py: 2,342 labelled calls visible, 617
+# `ok(` and 103 `arm(` calls invisible -- and `--worksheet
+# tools/dispatch_state.py tests/run_dispatch_state_probe.py` printed ARMS (0)
+# for a suite with 38 passing arms. An inspector handed an empty right-hand
+# column concludes the tool is unverified.
+#
+# That is THIS TOOL'S OWN RECORDED DEFECT happening a second time -- its
+# open-work row says "the tool that found it read a real 24-arm suite as ZERO
+# first". Appending 'ok' to the tuple would have fixed today and rotted on the
+# next helper name, so the question asked is structural. These arms pin BOTH
+# directions of that, because a permissive predicate that matched everything
+# would also print an empty-looking worksheet, just a noisier one.
+_fd6, _t6 = tempfile.mkstemp(suffix='.py')
+os.close(_fd6)
+io.open(_t6, 'w', encoding='utf-8').write(
+    'fails = []\n'
+    'def ok(label, cond):\n'
+    '    if not cond:\n'
+    '        fails.append(label)\n'
+    '        print("FAIL " + label)\n'
+    'def section(title):\n'          # prose, not an assertion
+    '    print(title)\n'
+    'def fixture(name, body):\n'     # builds something, asserts nothing
+    '    return {"n": name, "b": body}\n'
+    'def verdict(label, got, want):\n'
+    '    assert got == want, label\n'
+    'ok("an arm named by a helper called ok", True)\n'
+    'section("a heading that is not an arm")\n'
+    'fixture("a fixture that is not an arm", 1)\n'
+    'verdict("an arm named by a helper called verdict", 1, 1)\n')
+try:
+    _labels = [l for _p, l in F.arm_labels([_t6])]
+    check('6 an assertion helper named ok() is READ, not counted as zero',
+          'an arm named by a helper called ok' in _labels, _labels)
+    check('6 ...and one named verdict() is read too, because the predicate is '
+          'about what the function DOES, not what it is called',
+          'an arm named by a helper called verdict' in _labels, _labels)
+    check('6 a helper that only PRINTS A HEADING is not an arm',
+          'a heading that is not an arm' not in _labels, _labels)
+    check('6 a helper that BUILDS A FIXTURE and asserts nothing is not an arm',
+          'a fixture that is not an arm' not in _labels, _labels)
+    check('6 so the count is exactly the two real arms',
+          len(_labels) == 2, _labels)
+finally:
+    os.remove(_t6)
+
+# THE OLD NAMES SURVIVE UNCONDITIONALLY. The predicate detects `check` in most
+# suites but not where the helper is imported rather than defined -- 268 calls'
+# worth. Recognition is a UNION so this change can only widen what is visible.
+_fd7, _t7 = tempfile.mkstemp(suffix='.py')
+os.close(_fd7)
+io.open(_t7, 'w', encoding='utf-8').write(
+    'from helpers import check\n'                 # defined elsewhere entirely
+    'check("an imported check() is still an arm", True)\n')
+try:
+    _labels7 = [l for _p, l in F.arm_labels([_t7])]
+    check('6 check() is recognised even when the suite does not define it, so '
+          'the new predicate cannot NARROW what the old names already saw',
+          _labels7 == ['an imported check() is still an arm'], _labels7)
+finally:
+    os.remove(_t7)
+
+# AND THE CASE THAT STARTED IT, against the real file rather than a fixture.
+_real_arms = [l for _p, l in F.arm_labels(
+    [os.path.join('tests', 'run_dispatch_state_probe.py')])]
+check('6 the real 38-arm dispatch_state probe no longer reads as ZERO arms',
+      len(_real_arms) > 20, len(_real_arms))
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

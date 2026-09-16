@@ -243,6 +243,97 @@ else:
           'right now and is not evidence until they diverge again'
           % (_hours, '%.1f' % _chours if _chours is not None else 'unknown'))
 
+# ── 9. THE ACCEPTANCE MECHANISM, ADDED 2026-09-16 ──────────────────────────
+#
+# This tool asks "does the column exist" and cannot ask whether the read is a
+# DEFECT or deliberate forward-compatibility -- both look like `row.X` against
+# an absent column. An acceptance file answers that second question ONCE, with
+# evidence, so the tool can stay readable.
+#
+# EVERY ARM HERE IS ABOUT THE DANGEROUS DIRECTION. An acceptance is a way to
+# make a finding disappear, so the arms that matter are the ones proving it
+# CANNOT disappear quietly: the count is printed, the entry is named, a
+# reasonless entry is refused, a malformed file disables every acceptance
+# loudly, and an acceptance that outlives its read is itself a finding.
+def fixture_with_accept(js, accepted_json, schema=None):
+    tmp = fixture(js, schema)
+    os.makedirs(os.path.join(tmp, 'tools'), exist_ok=True)
+    io.open(os.path.join(tmp, 'tools', 'gate_column_accepted.json'), 'w',
+            encoding='utf-8', newline='\n').write(accepted_json)
+    return tmp
+
+
+ACC_OK = json.dumps([{'file': 'api/_lib/fx.js', 'property': 'trial_ends_at',
+                      'reason': 'a real reason a reader can check'}])
+
+tmp = fixture_with_accept(
+    ONE_TABLE + "out.trial_ends_at = row.trial_ends_at || null;\n", ACC_OK)
+rc, out = run(tmp)
+check('9a  an ACCEPTED read is not a finding',
+      'reads of a column that DOES NOT EXIST: 0' in out, out[:400])
+check('9b  ...and the exit code is clean', rc == 0, 'exit %d' % rc)
+check('9c  but it is COUNTED, never silently subtracted',
+      '1 TRIAGED AND ACCEPTED' in out, out[:400])
+check('9d  ...and NAMED, with its reason on screen',
+      'row.trial_ends_at' in out and 'a real reason a reader can check' in out,
+      out[:600])
+shutil.rmtree(tmp, ignore_errors=True)
+
+# THE CONTROL FOR 9a. Without this, every arm above is satisfied by a tool that
+# reports nothing at all.
+tmp = fixture_with_accept(
+    ONE_TABLE + "out.some_other = row.some_other || null;\n", ACC_OK)
+rc, out = run(tmp)
+check('9e  CONTROL: an acceptance for a DIFFERENT property does not excuse '
+      'this one', 'reads of a column that DOES NOT EXIST: 1' in out and rc == 1,
+      out[:400])
+shutil.rmtree(tmp, ignore_errors=True)
+
+# A STALE ACCEPTANCE IS A FINDING IN ITS OWN RIGHT. The read it excused is gone,
+# so the entry now excuses nothing and nothing else would ever say so.
+tmp = fixture_with_accept(ONE_TABLE + "out.key = row.key;\n", ACC_OK)
+rc, out = run(tmp)
+check('9f  an acceptance matching NO read in the source is reported STALE',
+      'STALE ACCEPTANCE' in out, out[:500])
+check('9g  ...and a stale acceptance FAILS, rather than sitting in a file',
+      rc == 1, 'exit %d' % rc)
+shutil.rmtree(tmp, ignore_errors=True)
+
+# AN ACCEPTANCE WITH NO REASON IS NOT ONE.
+tmp = fixture_with_accept(
+    ONE_TABLE + "out.trial_ends_at = row.trial_ends_at || null;\n",
+    json.dumps([{'file': 'api/_lib/fx.js', 'property': 'trial_ends_at'}]))
+rc, out = run(tmp)
+check('9h  a reasonless acceptance is REFUSED and the read stays a finding',
+      'reads of a column that DOES NOT EXIST: 1' in out and rc == 1, out[:400])
+check('9i  ...and it says why rather than dropping the entry silently',
+      'an acceptance nobody justified is not one' in out, out[:600])
+shutil.rmtree(tmp, ignore_errors=True)
+
+# A MALFORMED FILE DISABLES EVERY ACCEPTANCE, LOUDLY. The opposite -- a bad
+# file quietly excusing everything, or quietly excusing nothing while claiming
+# "accepted 0" -- is the swallow-and-carry-on this platform has already been
+# bitten by in fail_open_check.load_accepted().
+tmp = fixture_with_accept(
+    ONE_TABLE + "out.trial_ends_at = row.trial_ends_at || null;\n",
+    '{ this is not json')
+rc, out = run(tmp)
+check('9j  a malformed acceptance file leaves the read UNTRIAGED, not excused',
+      'reads of a column that DOES NOT EXIST: 1' in out and rc == 1, out[:400])
+check('9k  ...and says so out loud',
+      'NO acceptances are in effect' in out, out[:600])
+shutil.rmtree(tmp, ignore_errors=True)
+
+# AND THE PATH IS LATE-BOUND. Every arm above depends on it: a module-level
+# ACCEPTED_PATH computed from the real REPO would have made them all read the
+# REAL acceptance file while believing they were reading a fixture.
+tmp = fixture(ONE_TABLE + "out.trial_ends_at = row.trial_ends_at || null;\n")
+rc, out = run(tmp)
+check('9l  with NO acceptance file in the fixture the read is a finding -- so '
+      'the arms above were reading the fixture, not the real repo file',
+      'reads of a column that DOES NOT EXIST: 1' in out and rc == 1, out[:400])
+shutil.rmtree(tmp, ignore_errors=True)
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  %s' % f)

@@ -141,8 +141,72 @@ def header_claims(src):
     return out
 
 
+ARM_NAMES = ('check', 'ck')
+
+# Names that, assigned to or declared global inside a function, mean that
+# function RECORDS a failure. Kept here rather than inline so the predicate
+# below reads as one sentence.
+_FAILWORDS = ('fail', 'fails', 'failed', 'failures', 'errors')
+
+
+def is_assertion_helper(fn):
+    """Does this locally-defined function RECORD OR RAISE a failure?
+
+    ── WHY THIS IS A PREDICATE AND NOT A LIST OF NAMES ─────────────────────
+    arm_labels() used to recognise exactly `check(` and `ck(`. MEASURED
+    2026-09-16 across tests/*.py: 2,342 labelled calls were visible and 617
+    `ok(` calls plus 103 `arm(` calls were not. The consequence is not a
+    cosmetic undercount -- `--worksheet tools/dispatch_state.py
+    tests/run_dispatch_state_probe.py` printed **ARMS (0)** for a suite with
+    **38 passing arms**, so an inspector mapping claims to arms would have been
+    handed an empty right-hand column and concluded the tool was unverified.
+
+    THAT IS THE SAME DEFECT THIS TOOL'S OWN OPEN-WORK ROW ALREADY RECORDS
+    HAPPENING ONCE -- *"the tool that found it read a real 24-arm suite as ZERO
+    first"*. Fixing it by appending `'ok'` to the tuple would fix today's suite
+    and rot again the next time somebody names their helper `verdict`; a
+    growing list of names is how a checker stops covering anything.
+
+    So the question asked is STRUCTURAL: a function defined in this suite,
+    taking a label as its first parameter, whose body asserts, raises, prints
+    something containing FAIL, or increments a failure counter. That is what an
+    assertion helper IS, whatever it is called.
+
+    THE RECOGNITION IS A UNION WITH THE OLD NAMES, DELIBERATELY. The predicate
+    detects `check` in 118 files and misses it in the handful where the helper
+    is imported rather than defined, or defined inside another function -- 268
+    calls' worth. `check`/`ck` stay recognised unconditionally so this change
+    can only widen what is visible, never narrow it. A proven floor is not
+    thrown away because a better rule arrived.
+
+    AND THE ERROR DIRECTION IS CHOSEN RATHER THAN ACCEPTED. This feeds a
+    worksheet a HUMAN reads. An extra non-assertion label costs that person a
+    moment; a 38-arm suite reported as empty costs an inspection that then
+    reads as done. So the predicate is deliberately permissive.
+    """
+    if not fn.args.args:
+        return False
+    for n in ast.walk(fn):
+        if isinstance(n, (ast.Assert, ast.Raise)):
+            return True
+        if isinstance(n, ast.Global) and any(
+                g.lower() in _FAILWORDS for g in n.names):
+            return True
+        if (isinstance(n, ast.AugAssign) and isinstance(n.target, ast.Name)
+                and n.target.id.lower() in _FAILWORDS):
+            return True
+        if (isinstance(n, ast.Constant) and isinstance(n.value, str)
+                and 'FAIL' in n.value):
+            return True
+    return False
+
+
 def arm_labels(paths):
-    """First string literal of every check()/ck() call in the named suites."""
+    """First string literal of every ASSERTION-HELPER call in the named suites.
+
+    See is_assertion_helper() for what counts as one and why it is not a list
+    of names.
+    """
     out = []
     for p in paths:
         full = p if os.path.isabs(p) else os.path.join(REPO, p)
@@ -153,9 +217,13 @@ def arm_labels(paths):
                                      errors='replace').read(), full)
         except Exception:                                        # noqa: BLE001
             continue
+        helpers = set(ARM_NAMES)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.FunctionDef) and is_assertion_helper(node):
+                helpers.add(node.name)
         for node in ast.walk(tree):
             if (isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
-                    and node.func.id in ('check', 'ck') and node.args):
+                    and node.func.id in helpers and node.args):
                 a = node.args[0]
                 if isinstance(a, ast.Constant) and isinstance(a.value, str):
                     out.append((os.path.basename(p), a.value))

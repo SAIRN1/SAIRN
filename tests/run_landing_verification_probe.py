@@ -277,6 +277,159 @@ check('10 the real tool runs offline and does not crash', r.returncode in (0, 1,
 check('10 and it names the baseline it measured against',
       'baseline origin/main' in r.stdout, True)
 
+# ── 11. THE TWO CLAIMS THE FIRST ARTICLE INSPECTION FOUND UNVERIFIED ────────
+#
+# Added 2026-09-16 by the FAI item 47 demands of this tool. The inspection found
+# the same gap Fourth's three-tool FAI found the same day and that the
+# dispatch_state inspection found an hour earlier: the header states REPORT
+# ONLY, and nothing checked it. On this tool that claim has a second, sharper
+# half -- "IT NEVER RUNS `git fetch` IN ANOTHER CLONE" -- which is the whole
+# reason it can call itself report-only while auditing four other repositories.
+import ast as _ast
+
+_src = io.open(TOOL, encoding='utf-8').read()
+_tree = _ast.parse(_src)
+
+
+def _git_calls():
+    """Every run([...]) whose argv starts with 'git', and its cwd argument."""
+    out = []
+    for n in _ast.walk(_tree):
+        if not (isinstance(n, _ast.Call) and isinstance(n.func, _ast.Name)
+                and n.func.id == 'run' and n.args):
+            continue
+        argv = n.args[0]
+        if not (isinstance(argv, _ast.List) and argv.elts
+                and isinstance(argv.elts[0], _ast.Constant)
+                and argv.elts[0].value == 'git'):
+            continue
+        words = [e.value for e in argv.elts
+                 if isinstance(e, _ast.Constant) and isinstance(e.value, str)]
+        cwd = None
+        for kw in n.keywords:
+            if kw.arg == 'cwd':
+                cwd = _ast.dump(kw.value)
+        if len(n.args) > 1:
+            cwd = _ast.dump(n.args[1])
+        out.append((words, cwd))
+    return out
+
+
+_calls = _git_calls()
+check('11 the source really contains git invocations, so the arms below are '
+      'not passing on an empty list', len(_calls) >= 5, True)
+
+# THE MUTATING VERBS, BY NAME. A report-only tool may read a repository all day;
+# what it may never do is change one. Listed rather than inferred, because
+# "does this git subcommand write" is not derivable from the string.
+_MUTATING = ('fetch', 'pull', 'push', 'commit', 'add', 'checkout', 'reset',
+             'merge', 'rebase', 'clean', 'stash', 'gc', 'prune', 'tag', 'rm',
+             'mv', 'apply', 'cherry-pick', 'am', 'config')
+_offending = [(w, c) for w, c in _calls
+              if any(v in w for v in _MUTATING) and c is not None]
+check('11 NO mutating git verb is ever run with an explicit cwd -- i.e. never '
+      'in another clone', _offending, [])
+
+_fetches = [(w, c) for w, c in _calls if 'fetch' in w]
+check('11 there IS a fetch, in this clone, because the baseline has to be '
+      'current', len(_fetches) == 1 and _fetches[0][1] is None, True)
+check('11 ...and it is guarded by --offline rather than unconditional',
+      'if not offline:' in _src.split('def baseline_tip')[1][:400], True)
+
+# The per-clone reads must carry a cwd -- the opposite direction, so the arm
+# above cannot be satisfied by a tool that simply stopped looking at the other
+# clones at all.
+_with_cwd = [w for w, c in _calls if c is not None]
+check('11 and the READ-ONLY per-clone calls DO carry a cwd, so the arm above '
+      'is not passing on a tool that stopped visiting other clones',
+      len(_with_cwd) >= 3 and all(
+          not any(v in w for v in _MUTATING) for w in _with_cwd), True)
+
+# AND THE WHOLE WORKING TREE IS UNCHANGED BY A REAL RUN. Structurally different
+# from the source arms above: those say no writer is written down, this says
+# nothing moved. `--offline` so this arm needs no network.
+def _tree_state():
+    return subprocess.run(['git', 'status', '--porcelain'], cwd=REPO,
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace').stdout
+
+
+_before = _tree_state()
+for _a in (['--offline', '--skills'], ['--offline', '--landing'],
+           ['--offline', '--upgrades'], ['--offline', '--json']):
+    subprocess.run([sys.executable, TOOL] + _a, cwd=REPO, capture_output=True,
+                   text=True, encoding='utf-8', errors='replace',
+                   env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+check('11 REPORT ONLY, measured: a full offline run leaves the working tree '
+      'byte-identical -- nothing created, modified or deleted',
+      _tree_state(), _before)
+
+# ── 12. THE BASELINE IS origin/main, NEVER LOCAL HEAD ───────────────────────
+#
+# Added by the same First Article Inspection, which had dispositioned this
+# claim as UNVERIFIED: the tool's header states it, and nothing drove
+# baseline_tip() against a repo where the two actually DISAGREE. Every other
+# arm passed a tip in by hand, so the one function that chooses the tip had
+# never been called.
+#
+# The claim is not decoration. `deploy_verify_notify.py` false-alarmed twice on
+# 2026-09-01 comparing live against a LOCAL HEAD that was one commit behind,
+# because in a multi-clone setup a local HEAD is stale by default.
+_d12 = os.path.join(tmp, 'baseline')
+os.makedirs(_d12)
+
+
+def _git(*a, **kw):
+    return subprocess.run(['git'] + list(a), cwd=kw.get('cwd', _d12),
+                          capture_output=True, text=True, encoding='utf-8',
+                          errors='replace')
+
+
+_git('init', '--quiet', '-b', 'main')
+_git('config', 'user.email', 'probe@example.invalid')
+_git('config', 'user.name', 'probe')
+write(os.path.join(_d12, 'f.txt'), 'one\n')
+_git('add', '-A')
+_git('commit', '--quiet', '-m', 'first')
+_first = _git('rev-parse', 'HEAD').stdout.strip()
+write(os.path.join(_d12, 'f.txt'), 'two\n')
+_git('add', '-A')
+_git('commit', '--quiet', '-m', 'second')
+_head = _git('rev-parse', 'HEAD').stdout.strip()
+# origin/main deliberately points at the FIRST commit: this is the real shape
+# -- a clone whose HEAD has moved past what the remote last told it about.
+_git('update-ref', 'refs/remotes/origin/main', _first)
+
+_saved12 = lv.REPO
+lv.REPO = _d12
+try:
+    _tip, _err = lv.baseline_tip(offline=True)
+finally:
+    lv.REPO = _saved12
+check('12 the two refs genuinely disagree, so the arm below is not passing on '
+      'a repo where any answer is right', _first != _head, True)
+check('12 baseline_tip() returns origin/main, NOT the local HEAD',
+      (_tip, _err), (_first, None))
+check('12 ...and it is not merely returning HEAD by coincidence',
+      _tip != _head, True)
+
+# AND IT REFUSES rather than falling back to HEAD when origin/main is absent.
+_d12b = os.path.join(tmp, 'baseline-noremote')
+os.makedirs(_d12b)
+_git('init', '--quiet', '-b', 'main', cwd=_d12b)
+_git('config', 'user.email', 'probe@example.invalid', cwd=_d12b)
+_git('config', 'user.name', 'probe', cwd=_d12b)
+write(os.path.join(_d12b, 'f.txt'), 'one\n')
+_git('add', '-A', cwd=_d12b)
+_git('commit', '--quiet', '-m', 'first', cwd=_d12b)
+lv.REPO = _d12b
+try:
+    _tip2, _err2 = lv.baseline_tip(offline=True)
+finally:
+    lv.REPO = _saved12
+check('12 with NO origin/main it REFUSES rather than silently using HEAD',
+      (_tip2, bool(_err2)), (None, True))
+
 shutil.rmtree(tmp, ignore_errors=True)
 print()
 if fails:

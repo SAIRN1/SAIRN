@@ -94,8 +94,18 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 MISSING = -32767   # the executable is not on PATH: a third state, not exit 1
 
 
-def run(args, cwd=REPO):
+def run(args, cwd=None):
     """(returncode, stdout, stderr) with an EXPLICIT encoding.
+
+    `cwd=None` MEANS REPO, RESOLVED AT CALL TIME, and that is not a style
+    preference. It was `cwd=REPO`, and a Python default argument is evaluated
+    once at def time -- so a control that repointed `lv.REPO` at a fixture
+    repository went on running git in the REAL one, and its assertions were
+    about this clone rather than about the fixture. Found 2026-09-16 while
+    writing the arm a First Article Inspection said was missing for
+    baseline_tip(): the arm failed, and the cause was the harness silently
+    testing the wrong repository, which is the vacuous-control shape this
+    platform polices hardest. Late binding makes the seam real.
 
     Not `text=True` alone: a bare text-mode subprocess decodes with the locale
     default, which is cp1252 here, and `subprocess_decode_check.py` exists
@@ -114,8 +124,9 @@ def run(args, cwd=REPO):
     exe = shutil.which(args[0])
     if exe is None:
         return MISSING, '', '%s is not on PATH' % args[0]
-    p = subprocess.run([exe] + list(args[1:]), cwd=cwd, capture_output=True,
-                       text=True, encoding='utf-8', errors='replace')
+    p = subprocess.run([exe] + list(args[1:]), cwd=cwd or REPO,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
     return p.returncode, (p.stdout or ''), (p.stderr or '')
 
 

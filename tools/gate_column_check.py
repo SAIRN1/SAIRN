@@ -132,6 +132,78 @@ def snapshot_age():
     return 'generated %s; committed %s' % (gen, committed)
 
 
+ACCEPTED_REL = os.path.join('tools', 'gate_column_accepted.json')
+
+
+def accepted_path():
+    """Resolved from REPO AT CALL TIME, not bound at import.
+
+    `tests/run_gate_column_probe.py` repoints `G.REPO` at a fixture tree, and a
+    module-level `ACCEPTED_PATH = os.path.join(REPO, ...)` would have gone on
+    reading the REAL acceptance file while every arm believed it was testing a
+    fixture. That is the same late-binding trap found the same day in
+    `landing_verification.run()`, where a `cwd=REPO` default argument made a
+    control assert about the wrong repository -- and a control that silently
+    tests the wrong input is the shape this platform polices hardest.
+    """
+    return os.path.join(REPO, ACCEPTED_REL)
+
+
+def accepted():
+    """(file, property) -> reason, from tools/gate_column_accepted.json.
+
+    ── WHY THIS EXISTS, AND WHY IT IS NOT A SUPPRESSION LIST ──────────────────
+    This tool asks "does the column exist" and cannot ask the next question: is
+    the read a DEFECT, or deliberate forward-compatibility? Both look
+    identical -- `row.X` against a column absent from the snapshot.
+
+    `api/_lib/license.js` is the case that forced it. Two of its reads have been
+    reported here since the tool was written and NEITHER is a defect: the query
+    is `select=*` so a newly-added column is read if present, the read
+    normalises an absent column to null, and the CALL SITES treat null as
+    CANNOT-TELL rather than as either answer -- pinned by a named test, in both
+    directions. One of the two carries a comment saying "THIS COLUMN DOES NOT
+    EXIST TODAY AND NOTHING IS INVENTED BY READING IT."
+
+    A tool that reports those for ever is one people learn to read past, and a
+    gate nobody reads is off.
+
+    THE ACCEPTANCES ARE COUNTED AND NAMED, NEVER SILENTLY SUBTRACTED -- an
+    exclusion a reader cannot see is indistinguishable from a checker that
+    stopped looking. And a STALE acceptance, one matching no read in the
+    current source, is a FINDING in its own right: an acceptance that outlives
+    the code it excused is exactly how a gate stops covering anything.
+
+    A MALFORMED FILE DISABLES NOTHING QUIETLY. It says so and treats every read
+    as untriaged, which is the direction that cannot hide a defect -- the same
+    decision, and the same reasoning, as `fail_open_check.load_accepted()`,
+    whose docstring records a bare `except` silently discarding every
+    acceptance while reporting "accepted 0" as though the file were empty.
+    """
+    path = accepted_path()
+    if not os.path.exists(path):
+        return {}
+    try:
+        with io.open(path, encoding='utf-8') as fh:
+            entries = json.load(fh)
+    except Exception as err:                                     # noqa: BLE001
+        print('WARNING: %s could not be parsed (%s). NO acceptances are in '
+              'effect, so every read below is listed as untriaged.'
+              % (os.path.basename(path), err))
+        return {}
+    out = {}
+    for e in entries:
+        if not isinstance(e, dict) or 'file' not in e or 'property' not in e:
+            continue      # the `_note` header is prose, not an acceptance
+        if not str(e.get('reason') or '').strip():
+            print('WARNING: acceptance for %s.%s has no reason -- an '
+                  'acceptance nobody justified is not one.'
+                  % (e['file'], e['property']))
+            continue
+        out[(e['file'], e['property'])] = e['reason']
+    return out
+
+
 def main(argv):
     if not os.path.exists(SNAPSHOT):
         print('db/schema_snapshot.json is missing. NOT a pass -- nothing was checked.')
@@ -193,8 +265,18 @@ def main(argv):
         seen.add(k)
         unique.append(x)
 
+    acc = accepted()
+    triaged = [x for x in unique if (x['file'], x['property']) in acc]
+    unique = [x for x in unique if (x['file'], x['property']) not in acc]
+    # A STALE ACCEPTANCE IS A FINDING. The read it excused is gone, so the entry
+    # now excuses nothing and nothing else would ever say so.
+    live = {(x['file'], x['property']) for x in triaged}
+    stale = sorted(k for k in acc if k not in live)
+
     if '--json' in argv:
-        print(json.dumps({'findings': unique, 'unattributed': unattributed,
+        print(json.dumps({'findings': unique, 'accepted': triaged,
+                          'stale_acceptances': [list(k) for k in stale],
+                          'unattributed': unattributed,
                           'checked': checked}, indent=1))
     else:
         print('GATE COLUMN CHECK -- report only, nothing was written')
@@ -203,6 +285,8 @@ def main(argv):
         print('                      %s' % snapshot_age())
         print('  files attributed  : %d  (query exactly one table)' % len(checked))
         print('  reads of a column that DOES NOT EXIST: %d' % len(unique))
+        print('  ...plus %d TRIAGED AND ACCEPTED, counted and named below '
+              'rather than subtracted' % len(triaged))
         print('  NOT checked       : %d  (multi-table or unknown table -- NOT a pass)'
               % len(unattributed))
         for x in unique:
@@ -210,6 +294,22 @@ def main(argv):
             print('      `%s` is not a column of %s, so this read is always undefined.'
                   % (x['property'], x['table']))
             print('      %s has: %s' % (x['table'], ', '.join(sorted(cols[x['table']]))))
+        if triaged:
+            print('\n  TRIAGED AND ACCEPTED (%d) -- deliberate '
+                  'forward-compatibility, not defects.' % len(triaged))
+            print('  Each carries its reason and its evidence in '
+                  'tools/gate_column_accepted.json.')
+            for x in triaged:
+                print('    %s reads %s.%s'
+                      % (x['file'], x['var'], x['property']))
+                print('        %s...' % acc[(x['file'], x['property'])][:150])
+        if stale:
+            print('\n  STALE ACCEPTANCE(S) (%d) -- THIS IS A FINDING.' % len(stale))
+            print('  Each excuses a read that no longer exists, so it now '
+                  'excuses nothing')
+            print('  and nothing else would ever say so.')
+            for f, p in stale:
+                print('    %s.%s' % (f, p))
         if unattributed:
             print('\n  NOT CHECKED, named rather than skipped:')
             for rel, n in unattributed:
@@ -229,7 +329,7 @@ def main(argv):
         print('\n  NOTE: this answers "does the column exist", not "does anything write')
         print('  to it". A column that exists and is never populated fails the same way.')
 
-    return 1 if unique else 0
+    return 1 if (unique or stale) else 0
 
 
 if __name__ == '__main__':

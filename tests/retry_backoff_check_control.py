@@ -24,6 +24,7 @@ covers that separately by asserting the real sweep actually reaches real files.
 #
 import io
 import os
+import subprocess
 import sys
 
 CONTROLS_FOR = ['tools/retry_backoff_check.py']
@@ -162,6 +163,156 @@ def main():
         rc == 2, 'exit %r' % rc)
     arm('...and the unmodified criteria pass their own lock',
         R.run_fixtures() == 0)
+
+    # 6. THE "Report only." CLAIM, ADDED 2026-09-16 BY A FIRST ARTICLE
+    #    INSPECTION (item 47), by Hank, on a tool written by another session.
+    #    It is the THIRD tool in a row inspected that day to state REPORT ONLY
+    #    in its own header and check it nowhere -- after Fourth's three-tool
+    #    sweep found the same thing, and after tools/dispatch_state.py the same
+    #    hour. The exit-code contract is already covered by arm 5 above
+    #    (a broken blind lock REFUSES with 2), so this is the half that had
+    #    nothing, not a second finding about the same gap.
+    #
+    #    REPORT ONLY means it never MUTATES -- not that it never exits 1, which
+    #    a report-only check registered with by_exit is expected to do. So the
+    #    arms ask about mutation, from two structurally different directions:
+    #    the SOURCE (no writer is written down) and a RUN (nothing moved).
+    import ast as _ast
+    _SUBJECT = os.path.join(REPO, 'tools', 'retry_backoff_check.py')
+    _src = io.open(_SUBJECT, encoding='utf-8').read()
+    _writes = []
+    for _n in _ast.walk(_ast.parse(_src)):
+        if not (isinstance(_n, _ast.Call) and (
+                (isinstance(_n.func, _ast.Name) and _n.func.id == 'open')
+                or (isinstance(_n.func, _ast.Attribute)
+                    and _n.func.attr == 'open'))):
+            continue
+        # The MODE argument only. Scanning every string argument flags
+        # `errors='replace'` -- an 'a' in a careful read -- which is how the
+        # first version of this same predicate produced four false hits on
+        # this very file.
+        _m = _n.args[1] if len(_n.args) > 1 else None
+        for _k in _n.keywords:
+            if _k.arg == 'mode':
+                _m = _k.value
+        if (isinstance(_m, _ast.Constant) and isinstance(_m.value, str)
+                and any(c in _m.value for c in 'wax+')):
+            _writes.append(_ast.dump(_n)[:100])
+    arm('6 REPORT ONLY: no write-mode open() anywhere in the source', not _writes,
+        _writes[:2])
+    for _w in ('json.dump(', 'shutil.', 'os.remove', 'os.rename', 'os.makedirs',
+               'os.mkdir', 'subprocess.run', 'subprocess.call'):
+        arm('6 ...and no %s' % _w, _w not in _src, _w)
+
+    def _tree():
+        return subprocess.run(
+            ['git', 'status', '--porcelain'], cwd=REPO, capture_output=True,
+            text=True, encoding='utf-8', errors='replace').stdout
+
+    # ONE RUN, not one per subcommand. The full sweep reads every app HTML and
+    # takes real time; three of them turned this control into a two-minute
+    # file, and a control nobody will wait for is a control that gets skipped.
+    # The source arms above cover the other entry points -- a writer cannot be
+    # present on one code path and absent from the file.
+    _before = _tree()
+    subprocess.run([sys.executable, _SUBJECT], cwd=REPO, capture_output=True,
+                   text=True, encoding='utf-8', errors='replace',
+                   env=dict(os.environ, PYTHONIOENCODING='utf-8'))
+    arm('6 ...and a real run leaves the WHOLE WORKING TREE unchanged',
+        _tree() == _before, 'the tool mutated the repo')
+
+    # 7. THE OTHER TWO THIRDS OF THE EXIT CONTRACT, added by the same First
+    #    Article Inspection. The header states "Exit 0 clean, 1 finding, 2
+    #    could-not-run"; arm 5 above covered the 2 and NOTHING covered the 0 or
+    #    the 1. Every arm in this file works at the analyse() layer, so main()
+    #    -- the function whose return value IS the contract -- had never been
+    #    called.
+    #
+    #    DRIVEN THROUGH THE REAL main() WITH sources() STUBBED, not through a
+    #    subprocess. The real sweep reads every app HTML and takes minutes; a
+    #    control that slow is one that gets skipped. Stubbing the source list is
+    #    the seam that makes the exit contract testable in milliseconds, and it
+    #    is the SAME main(), so the mapping from findings to exit code is the
+    #    real one.
+    _real_sources = R.sources
+    _real_importers = R.breaker_importers
+    CLEAN_UNIT = ('fixture_clean.js',
+                  'async function f(u){ const r = await fetch(u); return r; }\n')
+    BARE_RETRY = ('fixture_bare.js',
+                  'async function f(u, h) {\n'
+                  '  let n = 3;\n'
+                  '  while (n--) {\n'
+                  '    const r = await fetch(u, { headers: h });\n'
+                  '    if (r.ok) return r;\n'
+                  '  }\n'
+                  '  return null;\n'
+                  '}\n')
+    # UNCLEAR is produced when the outbound call inside a loop has NO arguments,
+    # so the tool cannot tell what is being called again. Its own header says
+    # "Where it cannot tell, it says UNCLEAR and that is not a pass" -- and that
+    # branch was reachable and exercised by nothing.
+    UNCLEAR_UNIT = ('fixture_unclear.js',
+                    'async function f() {\n'
+                    '  let n = 3;\n'
+                    '  while (n--) {\n'
+                    '    const r = await fetch();\n'
+                    '    if (r) return r;\n'
+                    '  }\n'
+                    '}\n')
+    import contextlib
+
+    def _rc(argv=None):
+        """main()'s exit code, with its report swallowed."""
+        with contextlib.redirect_stdout(io.StringIO()):
+            return R.main(argv or [])
+
+    try:
+        # EXIT 0 needs the BREAKER stubbed as well, and that is itself worth
+        # recording: on the real repo today `breaker_importers()` returns an
+        # empty list and main() adds "the only breaker on the platform cannot
+        # fire" to its findings. So this tool CANNOT exit 0 against the live
+        # tree, by design, and an arm that did not stub it would have been
+        # asserting the platform's state rather than the tool's contract.
+        R.breaker_importers = lambda: ['api/fixture-importer.js']
+        R.sources = lambda: ([CLEAN_UNIT], [])
+        arm('7 EXIT 0: no bare retry, nothing UNCLEAR and a breaker with an '
+            'importer exits CLEAN', _rc() == 0)
+        R.sources = lambda: ([BARE_RETRY], [])
+        arm('7 EXIT 1: a bare retry -- a loop, an outbound call, no delay and '
+            'no breaker -- is a FINDING', _rc() == 1)
+        arm('7 ...and --json returns the SAME code on the same input',
+            _rc(['--json']) == _rc([]))
+
+        # THE UNCLEAR PATH, which nothing exercised before this inspection.
+        R.sources = lambda: ([UNCLEAR_UNIT], [])
+        _found, _ = R.analyse(R.blank_noise(UNCLEAR_UNIT[1]))
+        arm('7 UNCLEAR: an outbound call with NO arguments inside a loop reads '
+            'UNCLEAR, because the tool cannot tell what is called again',
+            [f['shape'] for f in _found] == ['UNCLEAR'],
+            [(f['line'], f['shape']) for f in _found])
+        arm('7 ...and UNCLEAR IS NOT A PASS -- it is COULD NOT RUN (2), not a '
+            'finding and not clean', _rc() == 2)
+        arm('7 ...and --json agrees about THAT too, which it did not before '
+            'this inspection: it had its own rule and called UNCLEAR a finding',
+            _rc(['--json']) == 2)
+
+        # THE HEADLINE FINDING MUST REACH A MACHINE-READABLE CALLER. The json
+        # path never looked at breaker_importers(), so on the real repo it
+        # exited 0 while the text run did not -- the tool's own headline
+        # invisible to anything wired to --json.
+        R.breaker_importers = lambda: []
+        R.sources = lambda: ([CLEAN_UNIT], [])
+        arm('7 A PLATFORM WITH NO BREAKER IMPORTER IS A FINDING IN BOTH MODES',
+            (_rc(), _rc(['--json'])) == (1, 1),
+            (_rc(), _rc(['--json'])))
+
+        R.breaker_importers = lambda: ['api/fixture-importer.js']
+        R.sources = lambda: ([], [])
+        arm('7 EXIT 2: an empty source universe is COULD NOT RUN, not a clean '
+            'sweep over nothing', _rc() == 2)
+    finally:
+        R.sources = _real_sources
+        R.breaker_importers = _real_importers
 
     print('\n%d failure(s)' % len(FAILS))
     return 1 if FAILS else 0

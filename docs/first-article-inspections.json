@@ -1,386 +1,560 @@
 {
- "note": "First Article Inspection records (item 47). An FAI verifies EVERY claim an artefact's own header makes, exhaustively, before the artefact is trusted -- a different question from the adversarial review, which asks whether a hostile reader can find a bug. The claim-to-arm mapping in each record was made BY READING. It is not generated and must not be: word-overlap scoring of prose claims against prose arm labels returned 38% with five false positives out of five on this platform (2026-09-14). tools/first_article_check.py verifies that a mapping exists, disposes of every claim, and still describes the bytes on disk -- not that the arm somebody named tests the claim they named it for.",
- "required_from": "2026-09-16",
- "required_from_note": "Forward only, and the date is the day AFTER the requirement was written on purpose. 22 tools were first committed on 2026-09-15 by four sessions working in parallel; none of them could have followed a rule that did not exist yet, and reporting them as findings would make the gate's first run a wall of noise about work nobody did wrong. A rule starts when it is announced. The tools that pre-date it are uninspected and that debt is real -- the COUNT is printed on every run rather than written here, because a count in prose goes stale the first week and nothing makes it fail. tools/entity_baseline_readiness.py pre-dates the requirement too and is inspected anyway: it is the first article.",
- "dispositions": {
-  "verified": "a named arm exercises the claim",
-  "accepted-risk": "the claim states a limit that cannot have a test; recorded in docs/ACCEPTED-RISKS.md",
-  "cannot-test": "the claim is about provenance, scope or intent rather than behaviour, and no arm could settle it",
-  "unverified": "no arm, and no reason it could not have one. THIS FAILS THE CHECK."
- },
- "inspections": [
-  {
-   "artefact": "tools/entity_baseline_readiness.py",
-   "inspected": "2026-09-16",
-   "inspector": "Fourth",
-   "sha256": "1bd6b245d1ffdd5ad94cbad465245fa8ef314d905dac1f4ba6f8ab5dd6e44111",
-   "report": "docs/2026-09-15-first-article-entity-baseline-readiness.md",
-   "suites": [
-    "tools/entity_baseline_readiness.py",
-    "tests/run_baseline_readiness_probe.py"
-   ],
-   "claims": [
-    {
-     "claim": "Exit 0 when at least one entity is ready.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 0 when at least one entity is ready\": it really does' and '...and on the --json path too, which returns separately'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested the not-ready side only, so the tool could have returned 1 unconditionally and passed. Closed by this inspection."
-    },
-    {
-     "claim": "Exit 1 when no entity is ready.",
-     "status": "verified",
-     "by": "probe: 'with nothing ready the exit code is 1, not 0' and 'the TEXT run also exits 1 when nothing is ready'"
-    },
-    {
-     "claim": "Exit 2 when the question could not be answered.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2 when the question could not be answered\": an unreadable register is COULD-NOT-RUN, not \"nothing is ready\"'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Nothing exercised it, so an unreadable register could have been reported as a finding -- a could-not-run folded into 'nothing is ready', which is the PR 1.11 shape exactly. Closed by this inspection."
-    },
-    {
-     "claim": "REPORT ONLY -- nothing gates on this.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"report only, nothing gates on this\": it is NOT in the report-only RUNNER registry', '...and it IS recorded as a deliberate NOT-PROMOTED decision', '...and the push gate does not invoke it'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Stated in the header and enforced nowhere, though it is mechanically checkable. Closed by this inspection."
-    },
-    {
-     "claim": "It does not compute a baseline; it answers whether computing one would mean anything.",
-     "status": "cannot-test",
-     "by": "a claim about SCOPE. There is no baseline code path to assert the absence of, and an arm asserting that some future field is missing would pass forever on any tool that never grew one. Held by review, not by an arm."
-    },
-    {
-     "claim": "This re-answers the question from the register on every run, so the day it flips, something says so.",
-     "status": "verified",
-     "by": "probe: '%s: the unit count matches an independent Counter', '%s: the record count matches' and '%s: the largest unit matches', each run over all three dimensions against the real register"
-    },
-    {
-     "claim": "The bar is MIN_RECORDS_PER_UNIT and it is A JUDGEMENT, PRE-REGISTERED AND STATED AS ONE, printed with every verdict.",
-     "status": "verified",
-     "by": "self-check: 'the bar is pre-registered at the LOW end of the stated 20-30 judgement'; probe: '...and the bar it applied is published in the output, not just printed' and '...and names the bar it applied in the text, not only in the JSON'"
-    },
-    {
-     "claim": "Nothing here derives the bar.",
-     "status": "cannot-test",
-     "by": "a claim about PROVENANCE. No arm can show a number was not fitted to the data; it is held by the constant being a literal with its rationale beside it, and by the 2026-09-14 findings document the 20-30 range comes from."
-    },
-    {
-     "claim": "A baseline needs a MEASURABLE DENOMINATOR; without exposure it is a COUNT wearing a rate.",
-     "status": "verified",
-     "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY', '...and its volume bar is recorded as PASSED', '...and it says waiting will not fix it'; probe: 'layer clears the record bar and is STILL not ready'"
-    },
-    {
-     "claim": "A dimension that clears bar 1 and fails bar 2 is NOT ready.",
-     "status": "verified",
-     "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY'; probe: 'layer clears the record bar and is STILL not ready -- no denominator, which time does not fix'"
-    },
-    {
-     "claim": "PLATFORM is excluded by name and the exclusion is PRINTED, because a silent exclusion is a different tool from a declared one.",
-     "status": "verified",
-     "by": "self-check: 'the PLATFORM bucket does not make a dimension ready', '...and its 200 records are reported as EXCLUDED, not silently dropped', '...and it is not counted as a unit'; probe: 'counted + excluded accounts for every record that has the field' and 'CLAIM \"the exclusion is PRINTED\": the excluded count appears in the text output, not only in the JSON'",
-     "note": "HALF UNVERIFIED WHEN THE INSPECTION STARTED. The exclusion COUNT was asserted; that it reaches the printed page was not, and 'PRINTED' is the load-bearing word in the claim. Closed by this inspection."
-    },
-    {
-     "claim": "One ready unit is not a comparison, and a baseline is one.",
-     "status": "verified",
-     "by": "self-check: 'one ready unit is not enough -- a baseline needs a comparison'; probe: 'CLAIM \"one unit is not a comparison\": a register where exactly ONE app clears the bar is NOT ready' and '...and it is the VOLUME verdict, so the reason given is the true one'",
-     "note": "BEHAVIOURALLY UNVERIFIED WHEN THE INSPECTION STARTED. The self-check asserted the CONSTANT was >= 2. A constant is not a behaviour: the comparison could have been written >= 1 and that arm would not have noticed. Closed by this inspection."
-    },
-    {
-     "claim": "The catch-all bucket is excluded by name, never by a rule that could quietly grow to cover a real app.",
-     "status": "verified",
-     "by": "self-check: '...and it is not counted as a unit'; NOT_AN_ENTITY is a literal tuple of names with no pattern matching, and the probe's 'counted + excluded' identity would move the moment the exclusion widened"
-    },
-    {
-     "claim": "attribution_check() answers whether the catch-all shortfall is REAL or a FILING artefact, and must be able to answer both.",
-     "status": "verified",
-     "by": "self-check: 'a catch-all that touches no app file reattributes NOTHING, so the shortfall reads as REAL' and 'CONTROL: a catch-all that is really single-app work DOES move the bar, so the check can answer FILING as well as REAL'",
-     "note": "THE CAPABILITY SHIPPED WITHOUT A HEADER CLAIM. The arms existed and nothing pointed at them -- the inverse of an unverified claim. The header claim was added by this re-inspection; the arms are the other session's and were not changed."
-    },
-    {
-     "claim": "It uses the app list and prefix aliases docs/traceability-matrix.md already derives, not a second list here that could disagree.",
-     "status": "cannot-test",
-     "by": "a claim about PROVENANCE of a dependency. attribution_check() imports traceability_matrix and reads apps() and APP_ALIASES from it, so there is no second list to diverge -- held by the import rather than by an arm, because an arm asserting \"no second list exists\" would pass on any file that never grew one."
-    },
-    {
-     "claim": "It returns None when traceability_matrix cannot be imported, reported as COULD-NOT-TELL rather than folded into either answer.",
-     "status": "verified",
-     "by": "self-check: 'the attribution check could not run, which is COULD-NOT-TELL and not a pass'",
-     "note": "The arm is written as a failing branch inside the self-check: if the import fails the arm fires rather than the check silently reporting REAL."
-    }
-   ],
-   "reinspections": [
-    {
-     "on": "2026-09-16",
-     "by": "Fourth",
-     "why": "the FAI gate reported the record STALE: another session added 116 lines implementing an attribution check after the 2026-09-15 inspection. RE-INSPECTED, NOT RE-HASHED -- every original claim was re-checked against the new bytes and the three claims the new capability makes were added. A re-hash alone would have asserted coverage nobody had redone.",
-     "claims_added": 3
-    }
-   ]
+  "note": "First Article Inspection records (item 47). An FAI verifies EVERY claim an artefact's own header makes, exhaustively, before the artefact is trusted -- a different question from the adversarial review, which asks whether a hostile reader can find a bug. The claim-to-arm mapping in each record was made BY READING. It is not generated and must not be: word-overlap scoring of prose claims against prose arm labels returned 38% with five false positives out of five on this platform (2026-09-14). tools/first_article_check.py verifies that a mapping exists, disposes of every claim, and still describes the bytes on disk -- not that the arm somebody named tests the claim they named it for.",
+  "required_from": "2026-09-16",
+  "required_from_note": "Forward only, and the date is the day AFTER the requirement was written on purpose. 22 tools were first committed on 2026-09-15 by four sessions working in parallel; none of them could have followed a rule that did not exist yet, and reporting them as findings would make the gate's first run a wall of noise about work nobody did wrong. A rule starts when it is announced. The tools that pre-date it are uninspected and that debt is real -- the COUNT is printed on every run rather than written here, because a count in prose goes stale the first week and nothing makes it fail. tools/entity_baseline_readiness.py pre-dates the requirement too and is inspected anyway: it is the first article.",
+  "dispositions": {
+    "verified": "a named arm exercises the claim",
+    "accepted-risk": "the claim states a limit that cannot have a test; recorded in docs/ACCEPTED-RISKS.md",
+    "cannot-test": "the claim is about provenance, scope or intent rather than behaviour, and no arm could settle it",
+    "unverified": "no arm, and no reason it could not have one. THIS FAILS THE CHECK."
   },
-  {
-   "artefact": "api/audit-checkpoint.js",
-   "inspected": "2026-09-14",
-   "inspector": "Hank",
-   "sha256": "5933926186e36db58624c4348153a85bac0cc321150b3b2ef711648f6e0b55f3",
-   "report": "docs/2026-09-14-first-article-inspection.md",
-   "summary": {
-    "claims_total": 8,
-    "unverified": 0,
-    "transcribed": true,
-    "note": "Transcribed from the published report, NOT re-derived here. The per-claim mapping lives in that document and is not itemised in this record, so this row is reported as RECORDED, NOT ITEMISED rather than being flattened into the same shape as an inspection whose mapping is present."
-   }
-  },
-  {
-   "artefact": "api/cron-watchdog.js",
-   "inspected": "2026-09-14",
-   "inspector": "Hank",
-   "sha256": "4031b4bb19c201fdfa078fb135a4ee8a0cf7a8ba9f84205cd3d4c9c6c41add7a",
-   "report": "docs/2026-09-14-first-article-inspection.md",
-   "summary": {
-    "claims_total": 6,
-    "unverified": 0,
-    "transcribed": true,
-    "note": "As above. One claim was routed to AR-4 in docs/ACCEPTED-RISKS.md rather than to an arm -- the watchdog shares a scheduler with the jobs it watches, which is a limit no arm can cover."
-   }
-  },
-  {
-   "artefact": "tools/assurance_case.py",
-   "report": "docs/2026-09-16-first-article-three-tools.md",
-   "suites": [
-    "tools/assurance_case.py",
-    "tests/run_assurance_case_probe.py"
-   ],
-   "claims": [
+  "inspections": [
     {
-     "claim": "Exit 0 when every developed goal is SUPPORTED, 1 when one is not.",
-     "status": "verified",
-     "by": "probe: '...and the exit code follows the top verdict', which compares the process exit against the JSON verdict on the real tree"
+      "artefact": "tools/entity_baseline_readiness.py",
+      "inspected": "2026-09-16",
+      "inspector": "Fourth",
+      "sha256": "1bd6b245d1ffdd5ad94cbad465245fa8ef314d905dac1f4ba6f8ab5dd6e44111",
+      "report": "docs/2026-09-15-first-article-entity-baseline-readiness.md",
+      "suites": [
+        "tools/entity_baseline_readiness.py",
+        "tests/run_baseline_readiness_probe.py"
+      ],
+      "claims": [
+        {
+          "claim": "Exit 0 when at least one entity is ready.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 0 when at least one entity is ready\": it really does' and '...and on the --json path too, which returns separately'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested the not-ready side only, so the tool could have returned 1 unconditionally and passed. Closed by this inspection."
+        },
+        {
+          "claim": "Exit 1 when no entity is ready.",
+          "status": "verified",
+          "by": "probe: 'with nothing ready the exit code is 1, not 0' and 'the TEXT run also exits 1 when nothing is ready'"
+        },
+        {
+          "claim": "Exit 2 when the question could not be answered.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2 when the question could not be answered\": an unreadable register is COULD-NOT-RUN, not \"nothing is ready\"'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Nothing exercised it, so an unreadable register could have been reported as a finding -- a could-not-run folded into 'nothing is ready', which is the PR 1.11 shape exactly. Closed by this inspection."
+        },
+        {
+          "claim": "REPORT ONLY -- nothing gates on this.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"report only, nothing gates on this\": it is NOT in the report-only RUNNER registry', '...and it IS recorded as a deliberate NOT-PROMOTED decision', '...and the push gate does not invoke it'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Stated in the header and enforced nowhere, though it is mechanically checkable. Closed by this inspection."
+        },
+        {
+          "claim": "It does not compute a baseline; it answers whether computing one would mean anything.",
+          "status": "cannot-test",
+          "by": "a claim about SCOPE. There is no baseline code path to assert the absence of, and an arm asserting that some future field is missing would pass forever on any tool that never grew one. Held by review, not by an arm."
+        },
+        {
+          "claim": "This re-answers the question from the register on every run, so the day it flips, something says so.",
+          "status": "verified",
+          "by": "probe: '%s: the unit count matches an independent Counter', '%s: the record count matches' and '%s: the largest unit matches', each run over all three dimensions against the real register"
+        },
+        {
+          "claim": "The bar is MIN_RECORDS_PER_UNIT and it is A JUDGEMENT, PRE-REGISTERED AND STATED AS ONE, printed with every verdict.",
+          "status": "verified",
+          "by": "self-check: 'the bar is pre-registered at the LOW end of the stated 20-30 judgement'; probe: '...and the bar it applied is published in the output, not just printed' and '...and names the bar it applied in the text, not only in the JSON'"
+        },
+        {
+          "claim": "Nothing here derives the bar.",
+          "status": "cannot-test",
+          "by": "a claim about PROVENANCE. No arm can show a number was not fitted to the data; it is held by the constant being a literal with its rationale beside it, and by the 2026-09-14 findings document the 20-30 range comes from."
+        },
+        {
+          "claim": "A baseline needs a MEASURABLE DENOMINATOR; without exposure it is a COUNT wearing a rate.",
+          "status": "verified",
+          "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY', '...and its volume bar is recorded as PASSED', '...and it says waiting will not fix it'; probe: 'layer clears the record bar and is STILL not ready'"
+        },
+        {
+          "claim": "A dimension that clears bar 1 and fails bar 2 is NOT ready.",
+          "status": "verified",
+          "by": "self-check: 'a dimension that clears the RECORD bar but has NO denominator is NOT READY'; probe: 'layer clears the record bar and is STILL not ready -- no denominator, which time does not fix'"
+        },
+        {
+          "claim": "PLATFORM is excluded by name and the exclusion is PRINTED, because a silent exclusion is a different tool from a declared one.",
+          "status": "verified",
+          "by": "self-check: 'the PLATFORM bucket does not make a dimension ready', '...and its 200 records are reported as EXCLUDED, not silently dropped', '...and it is not counted as a unit'; probe: 'counted + excluded accounts for every record that has the field' and 'CLAIM \"the exclusion is PRINTED\": the excluded count appears in the text output, not only in the JSON'",
+          "note": "HALF UNVERIFIED WHEN THE INSPECTION STARTED. The exclusion COUNT was asserted; that it reaches the printed page was not, and 'PRINTED' is the load-bearing word in the claim. Closed by this inspection."
+        },
+        {
+          "claim": "One ready unit is not a comparison, and a baseline is one.",
+          "status": "verified",
+          "by": "self-check: 'one ready unit is not enough -- a baseline needs a comparison'; probe: 'CLAIM \"one unit is not a comparison\": a register where exactly ONE app clears the bar is NOT ready' and '...and it is the VOLUME verdict, so the reason given is the true one'",
+          "note": "BEHAVIOURALLY UNVERIFIED WHEN THE INSPECTION STARTED. The self-check asserted the CONSTANT was >= 2. A constant is not a behaviour: the comparison could have been written >= 1 and that arm would not have noticed. Closed by this inspection."
+        },
+        {
+          "claim": "The catch-all bucket is excluded by name, never by a rule that could quietly grow to cover a real app.",
+          "status": "verified",
+          "by": "self-check: '...and it is not counted as a unit'; NOT_AN_ENTITY is a literal tuple of names with no pattern matching, and the probe's 'counted + excluded' identity would move the moment the exclusion widened"
+        },
+        {
+          "claim": "attribution_check() answers whether the catch-all shortfall is REAL or a FILING artefact, and must be able to answer both.",
+          "status": "verified",
+          "by": "self-check: 'a catch-all that touches no app file reattributes NOTHING, so the shortfall reads as REAL' and 'CONTROL: a catch-all that is really single-app work DOES move the bar, so the check can answer FILING as well as REAL'",
+          "note": "THE CAPABILITY SHIPPED WITHOUT A HEADER CLAIM. The arms existed and nothing pointed at them -- the inverse of an unverified claim. The header claim was added by this re-inspection; the arms are the other session's and were not changed."
+        },
+        {
+          "claim": "It uses the app list and prefix aliases docs/traceability-matrix.md already derives, not a second list here that could disagree.",
+          "status": "cannot-test",
+          "by": "a claim about PROVENANCE of a dependency. attribution_check() imports traceability_matrix and reads apps() and APP_ALIASES from it, so there is no second list to diverge -- held by the import rather than by an arm, because an arm asserting \"no second list exists\" would pass on any file that never grew one."
+        },
+        {
+          "claim": "It returns None when traceability_matrix cannot be imported, reported as COULD-NOT-TELL rather than folded into either answer.",
+          "status": "verified",
+          "by": "self-check: 'the attribution check could not run, which is COULD-NOT-TELL and not a pass'",
+          "note": "The arm is written as a failing branch inside the self-check: if the import fails the arm fires rather than the check silently reporting REAL."
+        }
+      ],
+      "reinspections": [
+        {
+          "on": "2026-09-16",
+          "by": "Fourth",
+          "why": "the FAI gate reported the record STALE: another session added 116 lines implementing an attribution check after the 2026-09-15 inspection. RE-INSPECTED, NOT RE-HASHED -- every original claim was re-checked against the new bytes and the three claims the new capability makes were added. A re-hash alone would have asserted coverage nobody had redone.",
+          "claims_added": 3
+        }
+      ]
     },
     {
-     "claim": "Exit 2 when the argument could not be evaluated.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2 when the argument could not be evaluated\": an evaluation that raises is COULD NOT RUN, not a refusal'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested 0 and 1, so an evaluation that raised could have been reported as NOT SUPPORTED -- a could-not-run folded into a finding, PR 1.11. Closed by this inspection."
+      "artefact": "api/audit-checkpoint.js",
+      "inspected": "2026-09-14",
+      "inspector": "Hank",
+      "sha256": "5933926186e36db58624c4348153a85bac0cc321150b3b2ef711648f6e0b55f3",
+      "report": "docs/2026-09-14-first-article-inspection.md",
+      "summary": {
+        "claims_total": 8,
+        "unverified": 0,
+        "transcribed": true,
+        "note": "Transcribed from the published report, NOT re-derived here. The per-claim mapping lives in that document and is not itemised in this record, so this row is reported as RECORDED, NOT ITEMISED rather than being flattened into the same shape as an inspection whose mapping is present."
+      }
     },
     {
-     "claim": "REPORT ONLY -- an assurance case is an ARGUMENT, never a proof.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"report only\": assurance_case.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED, and mechanically checkable three ways. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+      "artefact": "api/cron-watchdog.js",
+      "inspected": "2026-09-14",
+      "inspector": "Hank",
+      "sha256": "4031b4bb19c201fdfa078fb135a4ee8a0cf7a8ba9f84205cd3d4c9c6c41add7a",
+      "report": "docs/2026-09-14-first-article-inspection.md",
+      "summary": {
+        "claims_total": 6,
+        "unverified": 0,
+        "transcribed": true,
+        "note": "As above. One claim was routed to AR-4 in docs/ACCEPTED-RISKS.md rather than to an arm -- the watchdog shares a scheduler with the jobs it watches, which is a limit no arm can cover."
+      }
     },
     {
-     "claim": "Every leaf is a COMMAND or an ARTIFACT, run or read on each invocation, so the case cannot rot into a summary.",
-     "status": "verified",
-     "by": "probe: '%s cites %s, which exists on disk' and '%s cites %s, which is registered in PURPOSES or in the runner REGISTRY', run over every leaf; the injected-command arms prove the leaf is executed rather than merely named",
-     "note": "The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+      "artefact": "tools/assurance_case.py",
+      "report": "docs/2026-09-16-first-article-three-tools.md",
+      "suites": [
+        "tools/assurance_case.py",
+        "tests/run_assurance_case_probe.py"
+      ],
+      "claims": [
+        {
+          "claim": "Exit 0 when every developed goal is SUPPORTED, 1 when one is not.",
+          "status": "verified",
+          "by": "probe: '...and the exit code follows the top verdict', which compares the process exit against the JSON verdict on the real tree"
+        },
+        {
+          "claim": "Exit 2 when the argument could not be evaluated.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2 when the argument could not be evaluated\": an evaluation that raises is COULD NOT RUN, not a refusal'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Every exit-code arm tested 0 and 1, so an evaluation that raised could have been reported as NOT SUPPORTED -- a could-not-run folded into a finding, PR 1.11. Closed by this inspection."
+        },
+        {
+          "claim": "REPORT ONLY -- an assurance case is an ARGUMENT, never a proof.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"report only\": assurance_case.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED, and mechanically checkable three ways. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+        },
+        {
+          "claim": "Every leaf is a COMMAND or an ARTIFACT, run or read on each invocation, so the case cannot rot into a summary.",
+          "status": "verified",
+          "by": "probe: '%s cites %s, which exists on disk' and '%s cites %s, which is registered in PURPOSES or in the runner REGISTRY', run over every leaf; the injected-command arms prove the leaf is executed rather than merely named",
+          "note": "The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+        },
+        {
+          "claim": "A leaf that cannot be evaluated is reported as COULD-NOT-RUN rather than quietly dropped.",
+          "status": "verified",
+          "by": "probe: 'an evidence command that CANNOT RUN is its own state, not a refusal'"
+        },
+        {
+          "claim": "UNDEVELOPED goals are DRAWN rather than omitted.",
+          "status": "verified",
+          "by": "self-check: 'the case DRAWS its undeveloped goals rather than omitting them' and '...and each one says WHY it is undeveloped, at length'; probe: '...and it DRAWS its undeveloped goals'"
+        },
+        {
+          "claim": "A goal is SUPPORTED only if every child is: no partial credit and no weighting.",
+          "status": "verified",
+          "by": "self-check: 'one failing leaf makes its goal NOT SUPPORTED, whatever the siblings do' and '...and an all-passing goal IS supported, so the verdict is not constant'"
+        },
+        {
+          "claim": "An UNDEVELOPED goal is neither supported nor refuted.",
+          "status": "verified",
+          "by": "self-check: 'an UNDEVELOPED goal is neither supported nor unsupported'"
+        },
+        {
+          "claim": "ASSUMPTIONS are named so a reader can reject them.",
+          "status": "verified",
+          "by": "self-check: 'the argument records its ASSUMPTIONS, which are not evidenced'; probe: 'the JSON carries the assumptions'"
+        },
+        {
+          "claim": "NOT a claim that Tier A data is safe, that the evidence is sufficient, or a certification artefact.",
+          "status": "cannot-test",
+          "by": "three SCOPE disclaimers. No arm can show a document is not being read as something it disclaims; they are held by the text and by the tool being registered NOT-PROMOTED so nothing consumes its verdict automatically."
+        }
+      ],
+      "inspected": "2026-09-16",
+      "inspector": "Fourth",
+      "sha256": "8046444f8a3ed24aac808eb73493aba35b45cd4541487f6c721b83da6433597f"
     },
     {
-     "claim": "A leaf that cannot be evaluated is reported as COULD-NOT-RUN rather than quietly dropped.",
-     "status": "verified",
-     "by": "probe: 'an evidence command that CANNOT RUN is its own state, not a refusal'"
+      "artefact": "tools/risk_event_tree.py",
+      "report": "docs/2026-09-16-first-article-three-tools.md",
+      "suites": [
+        "tools/risk_event_tree.py",
+        "tests/run_risk_event_tree_probe.py"
+      ],
+      "claims": [
+        {
+          "claim": "Exit 0 always unless the tree could not be evaluated (2).",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2 when the tree could not be evaluated\": a computation that raises is COULD NOT RUN, not a zero'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
+        },
+        {
+          "claim": "REPORT ONLY.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"report only\": risk_event_tree.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+        },
+        {
+          "claim": "Every per-barrier probability is a JUDGEMENT with a stated basis and a band, never a point.",
+          "status": "verified",
+          "by": "self-check: 'every barrier is a BAND, never a point -- a point would be read as measured', 'every barrier states a BASIS for its band, at length', 'every barrier cites what was actually MEASURED, separately from the judgement'"
+        },
+        {
+          "claim": "The output is a RANGE, and the corner search is exact because the worst state is monotone in every p_fail.",
+          "status": "verified",
+          "by": "probe: 'no sampled point falls OUTSIDE the reported range' and the four 'the worst state is monotone increasing in p_fail[i]' arms, which check the property the exactness rests on"
+        },
+        {
+          "claim": "STABILITY IS MEASURED rather than assumed: the ranking is recomputed at every corner and reported STABLE only if it does not change.",
+          "status": "verified",
+          "by": "probe: '...and its verdict agrees with the number of orders it found' and 'a tree with no uncertainty ranks STABLY -- the check can say yes'"
+        },
+        {
+          "claim": "Item 65's band is READ FROM AN ARTEFACT, so it narrows mechanically rather than by anybody editing a constant.",
+          "status": "verified",
+          "by": "probe: 'with NO artefact the band stays at its widest and says why', 'an artefact that does NOT answer is not treated as a clean result', 'uncovered = 0 NARROWS the band', 'uncovered > 0 moves the band UP, not down', and 'the shipped B4 band matches what backup_band() returns today'"
+        },
+        {
+          "claim": "NOT a frequency, NOT independent, NOT a licence to stop at the first barrier -- the figures are a FLOOR.",
+          "status": "cannot-test",
+          "by": "three claims about INTERPRETATION. The independence assumption is real and is stated in the header and in the output; no arm can show a reader did not treat the floor as an estimate."
+        }
+      ],
+      "inspected": "2026-09-16",
+      "inspector": "Fourth",
+      "sha256": "cf2a1750f17f81a3ffd4528829fbabe0045d055fb1ec4a3bed61335b05fc1b03"
     },
     {
-     "claim": "UNDEVELOPED goals are DRAWN rather than omitted.",
-     "status": "verified",
-     "by": "self-check: 'the case DRAWS its undeveloped goals rather than omitting them' and '...and each one says WHY it is undeveloped, at length'; probe: '...and it DRAWS its undeveloped goals'"
+      "artefact": "tools/dora_metrics.py",
+      "report": "docs/2026-09-16-first-article-three-tools.md",
+      "suites": [
+        "tools/dora_metrics.py",
+        "tests/run_dora_metrics_probe.py"
+      ],
+      "claims": [
+        {
+          "claim": "Exit 2 when a metric COULD NOT BE COMPUTED AT ALL.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2 when a metric could not be computed at all\": no git history is COULD NOT RUN, never an empty-but-clean report'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
+        },
+        {
+          "claim": "REPORT ONLY.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"report only\": dora_metrics.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
+        },
+        {
+          "claim": "Deployment frequency is reported BOTH ways -- all commits and the subset touching a DEPLOYABLE SURFACE.",
+          "status": "verified",
+          "by": "probe: 'deployment frequency is reported BOTH ways, not just the large one' and 'an independent parse of git agrees on the deployable count'"
+        },
+        {
+          "claim": "Lead time is NOT MEANINGFUL on this topology and is reported as such rather than as an elite-band result.",
+          "status": "verified",
+          "by": "probe: 'lead time is marked NOT MEANINGFUL on this topology' and '...and it carries the reason, so the caveat travels with the number'"
+        },
+        {
+          "claim": "Change failure rate is computed ONLY over records that carry an injection commit, with the coverage printed beside it.",
+          "status": "verified",
+          "by": "probe: 'the change failure rate carries the COVERAGE it was computed over' and '...and that coverage is honest about being partial today'"
+        },
+        {
+          "claim": "The fix-commit ratio is reported SEPARATELY AND LABELLED NOT CFR.",
+          "status": "verified",
+          "by": "probe: 'the fix-commit ratio is present and NOT called the change failure rate' and '...and it is a different number from the CFR, or one of them is wrong'"
+        },
+        {
+          "claim": "NOT a benchmark band: no elite/high/medium/low is printed.",
+          "status": "verified",
+          "by": "probe: 'the output never claims an ELITE / HIGH / MEDIUM / LOW band' and '...and it says WHY no band is printed, rather than just omitting one'"
+        },
+        {
+          "claim": "NOT that a Vercel deployment succeeded -- this reads git, not the platform.",
+          "status": "cannot-test",
+          "by": "a claim about what the DATA SOURCE can see. A commit that failed to build counts as a deployment here; confirming otherwise needs the Vercel deployment API, which is outside this tool by design. Held by the header, and by item 84 barrier G10 of the assurance case carrying the same repository-is-not-the-deployment limit."
+        },
+        {
+          "claim": "NOT a quality measure -- deployment frequency is a measure of BATCH SIZE.",
+          "status": "cannot-test",
+          "by": "a claim about INTERPRETATION. It is why the tool is registered NOT-PROMOTED with the reason \"wiring it into a runner would create pressure on a number that is not a goal\"."
+        }
+      ],
+      "inspected": "2026-09-16",
+      "inspector": "Fourth",
+      "sha256": "d97a0b27f13c89472906d42bc40722f6cf8582e7422197f1fc3c04a3a1d6b3fb"
     },
     {
-     "claim": "A goal is SUPPORTED only if every child is: no partial credit and no weighting.",
-     "status": "verified",
-     "by": "self-check: 'one failing leaf makes its goal NOT SUPPORTED, whatever the siblings do' and '...and an all-passing goal IS supported, so the verdict is not constant'"
+      "artefact": "tools/optimistic_success_scan.py",
+      "inspected": "2026-09-16",
+      "inspector": "Fourth",
+      "sha256": "d711fe40588f90517c60e7cfcb0ac9aed77965caa768be379ca2d7846c5e5df5",
+      "report": "docs/2026-09-16-first-article-three-tools.md",
+      "suites": [
+        "tools/optimistic_success_scan.py",
+        "tests/run_optimistic_success_probe.py"
+      ],
+      "author_note": "WRITTEN BY ANOTHER SESSION. Inspected by Fourth because the gate reported it and it was unclaimed. The claim-to-arm mapping is mine and could be wrong about the author's intent; where it is, the arm is what to trust, not this record.",
+      "claims": [
+        {
+          "claim": "REPORT ONLY -- every hit needs a human.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"report only\": optimistic_success_scan.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row to state REPORT ONLY and check it nowhere."
+        },
+        {
+          "claim": "Exit 2 when the fixture lock fails -- no app was read.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2\": a FAILED FIXTURE LOCK is COULD-NOT-RUN, never a clean scan'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row with an exit-2 contract and arms for exit 0 and 1 only."
+        },
+        {
+          "claim": "Exit 2 when no app could be listed -- NOT a clean run.",
+          "status": "verified",
+          "by": "probe: 'CLAIM \"exit 2\": NO APPS LISTED is COULD-NOT-RUN, not a clean sweep over zero files'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED."
+        },
+        {
+          "claim": "A caller that DROPS a write's promise cannot condition anything on the result, so a dropped write plus ANY later toast() in the same function is a message that cannot depend on it.",
+          "status": "verified",
+          "by": "probe: 'a dropped helper then a toast is a candidate', 'the DATA WRAPPER dropped directly is a candidate too, so the narrower tool's whole population is still covered', and 'a dropped call inside a callback still counts -- a forEach is where the sairndental purchase-order archive hid'"
+        },
+        {
+          "claim": "A result that is TAKEN is not dropped -- await, assignment, return, a .then chain, an argument, or an array element.",
+          "status": "verified",
+          "by": "probe: 'await takes the result', 'assignment takes the result', 'return takes the result', 'a .then chain takes the result', 'an ARGUMENT takes the result', '...and so does `arr.push(f(x))`', 'an ARRAY ELEMENT takes the result'"
+        },
+        {
+          "claim": "It does not guess whether a message reads as success, which would be a word list and would be wrong in both directions.",
+          "status": "verified",
+          "by": "probe: 'CONTROL: no word list decides whether a message reads as success -- that would be wrong in both directions and is why the rule is structural'"
+        },
+        {
+          "claim": "A correction LATER is not a defence: a message that corrects an earlier one only corrects it if it is the NEXT message.",
+          "status": "cannot-test",
+          "by": "an argument about USER-VISIBLE SEQUENCE, made in the header against a rebuttal recorded at the real site. No arm can drive a repeated action in a browser and observe which message survives; it is held by the reasoning and by the tool refusing to dismiss a hit on that basis."
+        },
+        {
+          "claim": "It cannot decide that a hit is a defect, and a clean app is a FLOOR rather than a clearance because it follows one hop.",
+          "status": "verified",
+          "by": "probe: 'the output says these are CANDIDATES and not defects' and '...and that a clean run is a FLOOR because it follows one hop'"
+        },
+        {
+          "claim": "It cannot see a message that is not a toast(), and \"any toast after the call in the same function\" catches a message in an else arm the call can never reach.",
+          "status": "verified",
+          "by": "probe: '...and it names the branch false positive with a MEASURED number rather than as a caveat'",
+          "note": "The first half -- messages that are not toast() -- is a scope limit with no arm and no possible one; the second half, the branch false positive, is measured and named in the output."
+        }
+      ]
     },
     {
-     "claim": "An UNDEVELOPED goal is neither supported nor refuted.",
-     "status": "verified",
-     "by": "self-check: 'an UNDEVELOPED goal is neither supported nor unsupported'"
+      "artefact": "tools/dispatch_state.py",
+      "inspected": "2026-09-16",
+      "inspector": "Hank",
+      "sha256": "ccce0b0132d4e2eafb934bc3103b4002dea8f6f012846056195acd75b8af403a",
+      "report": "docs/2026-09-16-first-article-dispatch-landing-retry.md",
+      "suites": [
+        "tests/run_dispatch_state_probe.py"
+      ],
+      "author_note": "WRITTEN BY ANOTHER SESSION. Inspected by Hank because the gate reported it and it was unclaimed (sairn_claim check: CLEAR). The claim-to-arm mapping is mine and could be wrong about the author intent; where it is, the arm is what to trust, not this record.",
+      "claims": [
+        {
+          "claim": "REPORT ONLY.",
+          "status": "verified",
+          "by": "probe section F -- 'no write-mode open() anywhere in the source, found by AST so a nested path expression cannot hide one', its fire-proof pair '...and that check really detects one when it is there', and 'EVERY subcommand leaves the WHOLE WORKING TREE unchanged -- nothing created, modified or deleted anywhere in the repo'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED, and this is the third tool in a row on this platform to state REPORT ONLY and check it nowhere -- after the three in Fourth 2026-09-16 sweep. The arms went in during the inspection. TWO DEFECTS IN MY OWN ARMS WERE FOUND BY SABOTAGING THEM: a regex source check walked straight past io.open(os.path.join(...), \"w\") because [^)]* stops at the inner paren, and a fingerprint over the two files the tool READS missed a sabotage that created a NEW file elsewhere. Replaced with an AST walk over the mode argument and a git status --porcelain captured before the suite runs the subject at all."
+        },
+        {
+          "claim": "Exit 0 clean, 1 finding, 2 could-not-run.",
+          "status": "verified",
+          "by": "'AN ABSENT CLAIMS DIRECTORY IS COULD NOT RUN (2), not an empty claim list' and 'TEETH: an always-closed classifier exits COULD NOT RUN (2), not 0'; the clean direction is 'the ordinary report path passes an EMPTY findings list to finish()'",
+          "note": "ALREADY COVERED before this inspection, in both could-not-run directions. Recorded explicitly so this file is not read as finding the same two gaps here that it found on the other two tools -- on this one only the report-only half was missing."
+        },
+        {
+          "claim": "It joins on the OWNER COLUMN and on the SESSION NAMES in the claim text, and where those disagree it says so rather than picking one.",
+          "status": "verified",
+          "by": "'a single owner is found', 'two owners are both found', 'Michael is not a session', 'a word merely CONTAINING a session name does not match', 'an em-dash owner cell yields nobody'"
+        },
+        {
+          "claim": "THE CLAIM MATCHER IS NOT THE AUTHORITY HERE, DELIBERATELY ... So this tool does NOT ask it.",
+          "status": "verified",
+          "by": "'...and NO subprocess.run, so it never invokes sairn_claim.py to ask the claim matcher', with '...and NO subprocess.call, same reason' and '...and NO subprocess.check_output or check_call, same reason'",
+          "note": "Verified by a property rather than by an arm naming the claim, which is weaker evidence than the others here and is stated as such."
+        },
+        {
+          "claim": "an unseen status defaults to OPEN -- the tool fails toward showing too much rather than too little",
+          "status": "verified",
+          "by": "'an unseen status %r defaults to OPEN' over six words, 'EVERY done-word closes a row', and 'a done-word only counts at the START -- \"not CLOSED\" stays open'"
+        },
+        {
+          "claim": "the buckets partition the open rows -- none is lost between them",
+          "status": "verified",
+          "by": "'the buckets partition the open rows -- none is lost between them', computed from --json against the live index"
+        },
+        {
+          "claim": "WHAT IT CANNOT DO: it cannot tell whether a claim task string and a registry row are the same WORK.",
+          "status": "verified",
+          "by": "'it states its own limit rather than implying a verdict' -- the report must contain both 'same work' and 'second guesser'"
+        }
+      ]
     },
     {
-     "claim": "ASSUMPTIONS are named so a reader can reject them.",
-     "status": "verified",
-     "by": "self-check: 'the argument records its ASSUMPTIONS, which are not evidenced'; probe: 'the JSON carries the assumptions'"
+      "artefact": "tools/landing_verification.py",
+      "inspected": "2026-09-16",
+      "inspector": "Hank",
+      "sha256": "dd85d70f83ed31184ea8e1cfd083a0d7ef55ddb81443284693785b2b9b41a1c5",
+      "report": "docs/2026-09-16-first-article-dispatch-landing-retry.md",
+      "suites": [
+        "tests/run_landing_verification_probe.py"
+      ],
+      "author_note": "SELF-INSPECTION, AND THAT IS A REAL WEAKNESS RATHER THAN A FORMALITY. I wrote this tool earlier the same day, so the claim-to-arm mapping is the author reading his own header, which is exactly the blind spot the independent-review rule exists for. It is recorded because the gate named the artefact and leaving it uninspected is worse; it should be re-read by another session.",
+      "claims": [
+        {
+          "claim": "Report-only: it never edits, pushes, fetches into another clone, or installs anything.",
+          "status": "verified",
+          "by": "section 11 -- '11 NO mutating git verb is ever run with an explicit cwd -- i.e. never in another clone' (AST over every run([git ...]) call) and '11 REPORT ONLY, measured: a full offline run leaves the working tree byte-identical -- nothing created, modified or deleted'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Same gap as the other two tools in this report."
+        },
+        {
+          "claim": "IT NEVER RUNS `git fetch` IN ANOTHER CLONE.",
+          "status": "verified",
+          "by": "'11 there IS a fetch, in this clone, because the baseline has to be current', '11 ...and it is guarded by --offline rather than unconditional', and the paired direction '11 and the READ-ONLY per-clone calls DO carry a cwd, so the arm above is not passing on a tool that stopped visiting other clones'",
+          "note": "The paired arm matters as much as the first: without it, a tool that simply stopped visiting the other clones would satisfy the never-fetch-elsewhere claim trivially."
+        },
+        {
+          "claim": "A CHALLENGE IS A THIRD STATE ... UNVERIFIED is reported as UNVERIFIED and NEVER lands in the MATCHES column.",
+          "status": "verified",
+          "by": "'8 a Vercel challenge is UNVERIFIED, not MATCHES and not a FINDING', '8 and it says the check did not run rather than implying a bad deploy', and '7 an UNVERIFIED live route is exit 2, never clean'"
+        },
+        {
+          "claim": "CRLF IS NOT DRIFT.",
+          "status": "verified",
+          "by": "'3 a CRLF file and its LF twin compare EQUAL', the paired '3 but a REAL content difference still differs', and '4 a CRLF store copy of an identical skill is NOT a finding'"
+        },
+        {
+          "claim": "THE CLONE LIST IS DISCOVERED, NOT WRITTEN DOWN.",
+          "status": "verified",
+          "by": "'1 every SAIRN-* directory that is a repo is discovered' and '1 a directory without .git is NOT counted as a clone'"
+        },
+        {
+          "claim": "THE URL MAP COMES FROM `vercel.json` ... a derivation source yielding zero routes is a refusal.",
+          "status": "verified",
+          "by": "'2 a missing vercel.json is an error, not zero routes', '2 a vercel.json yielding ZERO routes REFUSES rather than passing', and '2 a real route is read and a catch-all is not mistaken for an app'"
+        },
+        {
+          "claim": "An absent npm is COULD NOT TELL, never CURRENT (fails closed, PR 1.11).",
+          "status": "verified",
+          "by": "'6 an executable that is not on PATH returns MISSING, not an exception' and '6 npm absent reports COULD NOT TELL, NEVER \"nothing outdated\"'"
+        },
+        {
+          "claim": "THE BASELINE IS `origin/main`, NEVER LOCAL HEAD.",
+          "status": "verified",
+          "by": "section 12, added during this inspection -- '12 baseline_tip() returns origin/main, NOT the local HEAD', guarded by '12 the two refs genuinely disagree, so the arm below is not passing on a repo where any answer is right', plus '12 with NO origin/main it REFUSES rather than silently using HEAD'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED -- every other arm passed a tip in by hand, so the one function that CHOOSES the tip had never been called. WRITING THE ARM FOUND A REAL DEFECT: run() took cwd=REPO as a DEFAULT ARGUMENT, evaluated once at def time, so a control repointing lv.REPO at a fixture went on running git in the real clone and asserted about the wrong repository. Late-bound to cwd or REPO. That is the vacuous-control shape, in the seam a control needs."
+        },
+        {
+          "claim": "It cannot tell a stuck deploy from a route that was never deployed; both read as DRIFT and the message says so.",
+          "status": "verified",
+          "by": "'8 a live body that differs is DRIFT' and '8 and DRIFT does not claim to know WHY'"
+        },
+        {
+          "claim": "It cannot see a Vercel preview deployment.",
+          "status": "cannot-test",
+          "by": "no arm",
+          "note": "A statement about what the tool does NOT look at. There is nothing to drive: it would require a preview deployment to exist and the tool to be shown ignoring it. Recorded as a scope note rather than a requirement."
+        }
+      ]
     },
     {
-     "claim": "NOT a claim that Tier A data is safe, that the evidence is sufficient, or a certification artefact.",
-     "status": "cannot-test",
-     "by": "three SCOPE disclaimers. No arm can show a document is not being read as something it disclaims; they are held by the text and by the tool being registered NOT-PROMOTED so nothing consumes its verdict automatically."
+      "artefact": "tools/retry_backoff_check.py",
+      "inspected": "2026-09-16",
+      "inspector": "Hank",
+      "sha256": "5d35cd16cc45d15f20f5bc69fb5c6c9acc46509325b4f662a459eb2c362f3d19",
+      "report": "docs/2026-09-16-first-article-dispatch-landing-retry.md",
+      "suites": [
+        "tests/retry_backoff_check_control.py"
+      ],
+      "author_note": "WRITTEN BY ANOTHER SESSION (Cody, the same day). Inspected by Hank because the gate reported it and no active claim covered it. The claim-to-arm mapping is mine and could be wrong about the author intent; where it is, the arm is what to trust, not this record.",
+      "claims": [
+        {
+          "claim": "Report only.",
+          "status": "verified",
+          "by": "control section 6 -- '6 REPORT ONLY: no write-mode open() anywhere in the source', the named-writer arms, and '6 ...and a real run leaves the WHOLE WORKING TREE unchanged'",
+          "note": "UNVERIFIED WHEN THE INSPECTION STARTED -- the third of three tools in this report with the same gap. THE ARM CAUGHT A DEFECT IN MY OWN DETECTOR ON THIS FILE: scanning every string argument for a write character reported FOUR false hits here, because errors=\"replace\" contains an \"a\". Narrowed to the mode argument only, and the same correction was carried back to the dispatch_state arms."
+        },
+        {
+          "claim": "Exit 0 clean, 1 finding, 2 could-not-run.",
+          "status": "verified",
+          "by": "control section 7, added during this inspection -- '7 EXIT 0: no bare retry, nothing UNCLEAR and a breaker with an importer exits CLEAN', '7 EXIT 1: a bare retry -- a loop, an outbound call, no delay and no breaker -- is a FINDING', '7 EXIT 2: an empty source universe is COULD NOT RUN, not a clean sweep over nothing', and '7 ...and --json returns the SAME code on the same input'",
+          "note": "ONLY THE EXIT-2 HALF WAS COVERED WHEN THE INSPECTION STARTED (arm 5, the blind lock). Writing the rest FOUND A REAL DEFECT IN THE TOOL: --json carried its OWN exit rule and disagreed with the text path in two ways -- it called UNCLEAR a FINDING where the text path correctly calls it COULD-NOT-RUN, and it never looked at breaker_importers() at all, so on the real repo today --json exited 0 while the text run did not. The tool HEADLINE result -- the only breaker on the platform cannot fire -- was invisible to any caller wired to the machine-readable mode. One accounting now, two renderings."
+        },
+        {
+          "claim": "A call is in a retry loop when the enclosing block is the body of a for, while or do -- established by walking OUT from the call site.",
+          "status": "verified",
+          "by": "'...and a retry planted into it IS reported', driven into three REAL api/ files, each guarded by its own '%s has no retry as it stands'"
+        },
+        {
+          "claim": "A local loop that re-compresses an image until it fits is a retry in English and is not one here.",
+          "status": "verified",
+          "by": "\"the file's real pagination still reads ITERATION alongside it\" -- both answers in one file at the same time, which is what says the tool discriminates rather than leans"
+        },
+        {
+          "claim": "A two-iteration loop over two DIFFERENT urls is not a retry at all, and this tool says so rather than guessing.",
+          "status": "verified",
+          "by": "'criteria stubbed to \"always iteration\" makes --fixtures REFUSE' and its paired '...and the unmodified criteria pass their own lock' -- the discrimination is locked against fixtures rather than asserted"
+        },
+        {
+          "claim": "a retry that DOES back off is not reported as bare",
+          "status": "verified",
+          "by": "'a planted retry WITH a delay is seen as a retry that backs off'"
+        },
+        {
+          "claim": "It has zero importers outside its own test.",
+          "status": "verified",
+          "by": "'breaker_importers() returns a list (0 today, and that is the finding)', measured every run rather than asserted as a constant, plus '7 A PLATFORM WITH NO BREAKER IMPORTER IS A FINDING IN BOTH MODES'"
+        },
+        {
+          "claim": "Where it cannot tell, it says UNCLEAR and that is not a pass.",
+          "status": "verified",
+          "by": "'7 UNCLEAR: an outbound call with NO arguments inside a loop reads UNCLEAR, because the tool cannot tell what is called again', '7 ...and UNCLEAR IS NOT A PASS -- it is COULD NOT RUN (2), not a finding and not clean', and '7 ...and --json agrees about THAT too, which it did not before this inspection: it had its own rule and called UNCLEAR a finding'",
+          "note": "NO ARM DRIVED THE UNCLEAR PATH BEFORE THIS INSPECTION. The branch was reachable and exercised by nothing, which is exactly where the --json disagreement was hiding."
+        }
+      ]
     }
-   ],
-   "inspected": "2026-09-16",
-   "inspector": "Fourth",
-   "sha256": "8046444f8a3ed24aac808eb73493aba35b45cd4541487f6c721b83da6433597f"
-  },
-  {
-   "artefact": "tools/risk_event_tree.py",
-   "report": "docs/2026-09-16-first-article-three-tools.md",
-   "suites": [
-    "tools/risk_event_tree.py",
-    "tests/run_risk_event_tree_probe.py"
-   ],
-   "claims": [
-    {
-     "claim": "Exit 0 always unless the tree could not be evaluated (2).",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2 when the tree could not be evaluated\": a computation that raises is COULD NOT RUN, not a zero'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
-    },
-    {
-     "claim": "REPORT ONLY.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"report only\": risk_event_tree.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
-    },
-    {
-     "claim": "Every per-barrier probability is a JUDGEMENT with a stated basis and a band, never a point.",
-     "status": "verified",
-     "by": "self-check: 'every barrier is a BAND, never a point -- a point would be read as measured', 'every barrier states a BASIS for its band, at length', 'every barrier cites what was actually MEASURED, separately from the judgement'"
-    },
-    {
-     "claim": "The output is a RANGE, and the corner search is exact because the worst state is monotone in every p_fail.",
-     "status": "verified",
-     "by": "probe: 'no sampled point falls OUTSIDE the reported range' and the four 'the worst state is monotone increasing in p_fail[i]' arms, which check the property the exactness rests on"
-    },
-    {
-     "claim": "STABILITY IS MEASURED rather than assumed: the ranking is recomputed at every corner and reported STABLE only if it does not change.",
-     "status": "verified",
-     "by": "probe: '...and its verdict agrees with the number of orders it found' and 'a tree with no uncertainty ranks STABLY -- the check can say yes'"
-    },
-    {
-     "claim": "Item 65's band is READ FROM AN ARTEFACT, so it narrows mechanically rather than by anybody editing a constant.",
-     "status": "verified",
-     "by": "probe: 'with NO artefact the band stays at its widest and says why', 'an artefact that does NOT answer is not treated as a clean result', 'uncovered = 0 NARROWS the band', 'uncovered > 0 moves the band UP, not down', and 'the shipped B4 band matches what backup_band() returns today'"
-    },
-    {
-     "claim": "NOT a frequency, NOT independent, NOT a licence to stop at the first barrier -- the figures are a FLOOR.",
-     "status": "cannot-test",
-     "by": "three claims about INTERPRETATION. The independence assumption is real and is stated in the header and in the output; no arm can show a reader did not treat the floor as an estimate."
-    }
-   ],
-   "inspected": "2026-09-16",
-   "inspector": "Fourth",
-   "sha256": "cf2a1750f17f81a3ffd4528829fbabe0045d055fb1ec4a3bed61335b05fc1b03"
-  },
-  {
-   "artefact": "tools/dora_metrics.py",
-   "report": "docs/2026-09-16-first-article-three-tools.md",
-   "suites": [
-    "tools/dora_metrics.py",
-    "tests/run_dora_metrics_probe.py"
-   ],
-   "claims": [
-    {
-     "claim": "Exit 2 when a metric COULD NOT BE COMPUTED AT ALL.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2 when a metric could not be computed at all\": no git history is COULD NOT RUN, never an empty-but-clean report'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection."
-    },
-    {
-     "claim": "REPORT ONLY.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"report only\": dora_metrics.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. Closed by this inspection. The first version of this mapping DESCRIBED the arm instead of quoting its label, and the gate refused it: a disposition that paraphrases points at nothing a reader can find."
-    },
-    {
-     "claim": "Deployment frequency is reported BOTH ways -- all commits and the subset touching a DEPLOYABLE SURFACE.",
-     "status": "verified",
-     "by": "probe: 'deployment frequency is reported BOTH ways, not just the large one' and 'an independent parse of git agrees on the deployable count'"
-    },
-    {
-     "claim": "Lead time is NOT MEANINGFUL on this topology and is reported as such rather than as an elite-band result.",
-     "status": "verified",
-     "by": "probe: 'lead time is marked NOT MEANINGFUL on this topology' and '...and it carries the reason, so the caveat travels with the number'"
-    },
-    {
-     "claim": "Change failure rate is computed ONLY over records that carry an injection commit, with the coverage printed beside it.",
-     "status": "verified",
-     "by": "probe: 'the change failure rate carries the COVERAGE it was computed over' and '...and that coverage is honest about being partial today'"
-    },
-    {
-     "claim": "The fix-commit ratio is reported SEPARATELY AND LABELLED NOT CFR.",
-     "status": "verified",
-     "by": "probe: 'the fix-commit ratio is present and NOT called the change failure rate' and '...and it is a different number from the CFR, or one of them is wrong'"
-    },
-    {
-     "claim": "NOT a benchmark band: no elite/high/medium/low is printed.",
-     "status": "verified",
-     "by": "probe: 'the output never claims an ELITE / HIGH / MEDIUM / LOW band' and '...and it says WHY no band is printed, rather than just omitting one'"
-    },
-    {
-     "claim": "NOT that a Vercel deployment succeeded -- this reads git, not the platform.",
-     "status": "cannot-test",
-     "by": "a claim about what the DATA SOURCE can see. A commit that failed to build counts as a deployment here; confirming otherwise needs the Vercel deployment API, which is outside this tool by design. Held by the header, and by item 84 barrier G10 of the assurance case carrying the same repository-is-not-the-deployment limit."
-    },
-    {
-     "claim": "NOT a quality measure -- deployment frequency is a measure of BATCH SIZE.",
-     "status": "cannot-test",
-     "by": "a claim about INTERPRETATION. It is why the tool is registered NOT-PROMOTED with the reason \"wiring it into a runner would create pressure on a number that is not a goal\"."
-    }
-   ],
-   "inspected": "2026-09-16",
-   "inspector": "Fourth",
-   "sha256": "d97a0b27f13c89472906d42bc40722f6cf8582e7422197f1fc3c04a3a1d6b3fb"
-  },
-  {
-   "artefact": "tools/optimistic_success_scan.py",
-   "inspected": "2026-09-16",
-   "inspector": "Fourth",
-   "sha256": "d711fe40588f90517c60e7cfcb0ac9aed77965caa768be379ca2d7846c5e5df5",
-   "report": "docs/2026-09-16-first-article-three-tools.md",
-   "suites": [
-    "tools/optimistic_success_scan.py",
-    "tests/run_optimistic_success_probe.py"
-   ],
-   "author_note": "WRITTEN BY ANOTHER SESSION. Inspected by Fourth because the gate reported it and it was unclaimed. The claim-to-arm mapping is mine and could be wrong about the author's intent; where it is, the arm is what to trust, not this record.",
-   "claims": [
-    {
-     "claim": "REPORT ONLY -- every hit needs a human.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"report only\": optimistic_success_scan.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row to state REPORT ONLY and check it nowhere."
-    },
-    {
-     "claim": "Exit 2 when the fixture lock fails -- no app was read.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2\": a FAILED FIXTURE LOCK is COULD-NOT-RUN, never a clean scan'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row with an exit-2 contract and arms for exit 0 and 1 only."
-    },
-    {
-     "claim": "Exit 2 when no app could be listed -- NOT a clean run.",
-     "status": "verified",
-     "by": "probe: 'CLAIM \"exit 2\": NO APPS LISTED is COULD-NOT-RUN, not a clean sweep over zero files'",
-     "note": "UNVERIFIED WHEN THE INSPECTION STARTED."
-    },
-    {
-     "claim": "A caller that DROPS a write's promise cannot condition anything on the result, so a dropped write plus ANY later toast() in the same function is a message that cannot depend on it.",
-     "status": "verified",
-     "by": "probe: 'a dropped helper then a toast is a candidate', 'the DATA WRAPPER dropped directly is a candidate too, so the narrower tool's whole population is still covered', and 'a dropped call inside a callback still counts -- a forEach is where the sairndental purchase-order archive hid'"
-    },
-    {
-     "claim": "A result that is TAKEN is not dropped -- await, assignment, return, a .then chain, an argument, or an array element.",
-     "status": "verified",
-     "by": "probe: 'await takes the result', 'assignment takes the result', 'return takes the result', 'a .then chain takes the result', 'an ARGUMENT takes the result', '...and so does `arr.push(f(x))`', 'an ARRAY ELEMENT takes the result'"
-    },
-    {
-     "claim": "It does not guess whether a message reads as success, which would be a word list and would be wrong in both directions.",
-     "status": "verified",
-     "by": "probe: 'CONTROL: no word list decides whether a message reads as success -- that would be wrong in both directions and is why the rule is structural'"
-    },
-    {
-     "claim": "A correction LATER is not a defence: a message that corrects an earlier one only corrects it if it is the NEXT message.",
-     "status": "cannot-test",
-     "by": "an argument about USER-VISIBLE SEQUENCE, made in the header against a rebuttal recorded at the real site. No arm can drive a repeated action in a browser and observe which message survives; it is held by the reasoning and by the tool refusing to dismiss a hit on that basis."
-    },
-    {
-     "claim": "It cannot decide that a hit is a defect, and a clean app is a FLOOR rather than a clearance because it follows one hop.",
-     "status": "verified",
-     "by": "probe: 'the output says these are CANDIDATES and not defects' and '...and that a clean run is a FLOOR because it follows one hop'"
-    },
-    {
-     "claim": "It cannot see a message that is not a toast(), and \"any toast after the call in the same function\" catches a message in an else arm the call can never reach.",
-     "status": "verified",
-     "by": "probe: '...and it names the branch false positive with a MEASURED number rather than as a caveat'",
-     "note": "The first half -- messages that are not toast() -- is a scope limit with no arm and no possible one; the second half, the branch false positive, is measured and named in the output."
-    }
-   ]
-  }
- ]
+  ]
 }
