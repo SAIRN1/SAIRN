@@ -34,7 +34,14 @@
 // The implicit location every pre-existing and single-practice row belongs
 // to. A real registry entry may later be given this id; nothing here
 // assumes the string is absent from dnt_settings.data.locations.
-const DEFAULT_LOCATION_ID = 'LOC-DEFAULT';
+// ── THE CONSTANT AND THE STAMP MOVED OUT (item 4, 2026-09-16) ──────────────
+// api/_lib/location-scope.js owns both now. This file had an identical copy
+// of each, as did api/_lib/roofing-locations.js -- two apps, two sessions,
+// one function, which is `isDate` defined fourteen times one layer up. The
+// re-exports below are deliberate: every caller keeps working, and the
+// duplication is gone rather than merely deprecated.
+const locationScope = require('./location-scope');
+const DEFAULT_LOCATION_ID = locationScope.DEFAULT_LOCATION_ID;
 
 const MAX_LOCATION_ID_LEN = 64;
 const MAX_LOCATION_NAME_LEN = 128;
@@ -58,13 +65,7 @@ const MAX_LOCATIONS = 50;
 // designed. The declaration lives here, next to the contract it describes,
 // rather than in the tool -- a stale exception is then visible in the diff of
 // the file it excuses.
-function stampLocation(payload) {
-  const out = Object.assign({}, payload || {});
-  const raw = out.location_id;
-  const clean = (typeof raw === 'string') ? raw.trim() : '';
-  out.location_id = (clean && clean.length <= MAX_LOCATION_ID_LEN) ? clean : DEFAULT_LOCATION_ID;
-  return out;
-}
+const stampLocation = locationScope.stampLocation;
 
 // Validates dnt_settings.data.locations -- the minimal registry. Kept in
 // settings rather than a new dnt_locations table on purpose: a new table

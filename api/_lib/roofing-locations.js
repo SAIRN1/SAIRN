@@ -35,7 +35,17 @@
 // The implicit location every pre-existing and single-branch job belongs to.
 // A real registry row may later be created with this id; nothing here assumes
 // the string is absent from rf_locations.
-const DEFAULT_LOCATION_ID = 'LOC-DEFAULT';
+// ── THE CONSTANT AND THE STAMP MOVED OUT (item 4, 2026-09-16) ──────────────
+// api/_lib/location-scope.js owns both. This file and api/_lib/dnt-location.js
+// held byte-equivalent copies -- same trim, same 64-char cap, same fall back
+// rather than refuse. The re-exports keep every caller working.
+//
+// THE ROLL-UP IS NOT SHARED AND MUST NOT BE. roofing-consolidation.js buckets
+// per legal ENTITY with location->entity as a mapping; dnt-rollup.js buckets
+// per LOCATION. Two axes versus one, and this app is the reference for the
+// two-axis model.
+const locationScope = require('./location-scope');
+const DEFAULT_LOCATION_ID = locationScope.DEFAULT_LOCATION_ID;
 
 const MAX_ID_LEN = 64;
 const MAX_NAME_LEN = 128;
@@ -52,12 +62,7 @@ function str(v) { return typeof v === 'string' ? v.trim() : ''; }
 // absent, blank, non-string or over-length falls back to the default rather
 // than being rejected -- a job must never fail to save because of an optional
 // attribution field.
-function stampLocation(payload) {
-  const out = Object.assign({}, payload || {});
-  const given = str(out.location_id);
-  out.location_id = (given && given.length <= MAX_ID_LEN) ? given : DEFAULT_LOCATION_ID;
-  return out;
-}
+const stampLocation = locationScope.stampLocation;
 
 function validateLocation(payload) {
   const problems = [];
