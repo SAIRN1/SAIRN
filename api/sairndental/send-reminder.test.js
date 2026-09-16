@@ -121,6 +121,86 @@ async function main() {
     );
   });
 
+  // ── THE REFUSAL THAT ACTUALLY FAILED, TWENTY-THREE TIMES ────────────────
+  // `dnt_appointments list failed 504` -- count=23 in Vercel's runtime-error
+  // table between 2026-09-12 and 2026-09-14. Every one of those runs returned
+  // 502 and wrote NO heartbeat.
+  //
+  // AND THE CONSEQUENCE WAS A FALSE GREEN, NOT A GAP, which makes this the
+  // sharper half of the same defect found in api/audit-checkpoint.js on the
+  // same day. That job refused on EVERY run, so it produced NEVER_BEAT --
+  // visibly wrong. This one succeeds most hours and failed about one in three,
+  // so the last successful beat stayed fresh and cron-watchdog reported
+  // `/api/sairndental/send-reminder=ok` throughout. The failures were
+  // invisible to the monitor and were found in the provider's error table
+  // instead -- which is the work the heartbeat exists so nobody has to do.
+  await test('A FAILED APPOINTMENT READ STILL BEATS -- a false green is worse '
+    + 'than a gap', async () => {
+    setFixtureEnv(CRON_SECRET_ENV_NAME, fixtureValue);
+    setFixtureEnv('SUPABASE_URL', 'https://fixture.invalid');
+    setFixtureEnv('SUPABASE_SERVICE_ROLE_KEY', 'fixture-key');
+    setFixtureEnv('RESEND_API_KEY', 'fixture-key');
+    setFixtureEnv('RESEND_FROM_EMAIL', 'alerts@fixture.invalid');
+    var beats = [];
+    var realFetch = global.fetch;
+    // The 504 that really happened, and a captured heartbeat table so a beat
+    // can be OBSERVED rather than assumed. Without this the beat POST would
+    // fall through to whatever the stub returns, beat() would swallow the
+    // result by design, and no arm could tell a job that beat from one that
+    // did not.
+    global.fetch = async function (url, init) {
+      if (String(url).indexOf('sairn_cron_heartbeat') !== -1) {
+        beats.push(JSON.parse(init.body));
+        return { ok: true, status: 201, text: async function () { return ''; } };
+      }
+      return { ok: false, status: 504,
+               text: async function () { return 'Gateway Timeout'; },
+               json: async function () { return {}; } };
+    };
+    delete require.cache[require.resolve('./send-reminder.js')];
+    var handler = require('./send-reminder.js');
+    var res = mockRes();
+    await handler({ headers: { authorization: 'Bearer ' + fixtureValue } }, res);
+    global.fetch = realFetch;
+    assert.strictEqual(res.statusCode, 502);
+    assert.strictEqual(beats.length, 1, 'it refused without beating');
+    assert.strictEqual(beats[0].job, '/api/sairndental/send-reminder');
+    assert.strictEqual(beats[0].outcome, 'failed',
+      'nothing was scanned and nothing sent -- that is not `partial`');
+    assert.strictEqual(beats[0].detail.error, 'APPOINTMENT_LIST_FAILED');
+    assert.strictEqual(beats[0].detail.http, 504);
+    assert.strictEqual(beats[0].expected_interval_seconds, 3600,
+      'beat() refuses an intervalless beat outright, which would leave the '
+      + 'job looking silent anyway');
+  });
+
+  // THE CONTROL. Without it the arm above is satisfied by a handler that beats
+  // `failed` on every path, including a clean sweep.
+  await test('CONTROL: a CLEAN sweep beats, and not as a failure', async () => {
+    setFixtureEnv(CRON_SECRET_ENV_NAME, fixtureValue);
+    var beats = [];
+    var realFetch = global.fetch;
+    global.fetch = async function (url, init) {
+      if (String(url).indexOf('sairn_cron_heartbeat') !== -1) {
+        beats.push(JSON.parse(init.body));
+        return { ok: true, status: 201, text: async function () { return ''; } };
+      }
+      return { ok: true, status: 200,
+               text: async function () { return '[]'; },
+               json: async function () { return []; } };
+    };
+    delete require.cache[require.resolve('./send-reminder.js')];
+    var handler = require('./send-reminder.js');
+    var res = mockRes();
+    await handler({ headers: { authorization: 'Bearer ' + fixtureValue } }, res);
+    global.fetch = realFetch;
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(beats.length, 1);
+    assert.strictEqual(beats[0].outcome, 'ok');
+    assert.strictEqual(beats[0].detail.error, undefined,
+      'a clean sweep is reporting an error');
+  });
+
   console.log(passed + ' passed' + (process.exitCode ? ', with failures above' : ''));
 }
 

@@ -145,6 +145,31 @@ module.exports = async (req, res) => {
     if (!listRes.ok) {
       var errBody = await listRes.text().catch(function () { return ''; });
       console.error('send-reminder: dnt_appointments list failed', listRes.status, errBody);
+      // ── THIS REFUSAL BEATS TOO, AND IT DID NOT (fixed 2026-09-16) ────────
+      // THIS IS THE PATH THAT ACTUALLY FAILED, TWENTY-THREE TIMES. Vercel's
+      // runtime-error table recorded `dnt_appointments list failed 504` at
+      // count=23 between 2026-09-12 and 2026-09-14. Every one of those runs
+      // returned here and wrote NO heartbeat.
+      //
+      // AND THE CONSEQUENCE IS WORSE THAN SILENCE, WHICH IS WHY THIS IS THE
+      // sharper half of the same defect found in api/audit-checkpoint.js. That
+      // one refused on every run, so it produced NEVER_BEAT -- visibly wrong.
+      // This job SUCCEEDS most hours and failed about one in three, so the
+      // last successful beat stayed fresh and cron-watchdog went on reporting
+      // `/api/sairndental/send-reminder=ok` throughout. A FALSE GREEN, not a
+      // gap: the failures were invisible to the monitor entirely and were
+      // found in the provider's error table instead, which is the thing the
+      // heartbeat exists so nobody has to do.
+      //
+      // `failed` rather than `partial`: nothing was scanned and nothing was
+      // sent, so the job did not do its work. `partial` in this file means
+      // some reminders sent and some failed.
+      await beat({
+        job: '/api/sairndental/send-reminder', outcome: 'failed',
+        expected_interval_seconds: 3600,
+        detail: { error: 'APPOINTMENT_LIST_FAILED', http: listRes.status,
+                  retry_helps: true }
+      });
       res.status(502).json({ error: { message: 'Could not list appointments' } });
       return;
     }

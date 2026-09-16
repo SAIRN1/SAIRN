@@ -322,6 +322,19 @@ module.exports = async (req, res) => {
         // NOT "no stale jobs". A watchdog reporting a clean sweep over a table
         // that does not exist is the cheeriest possible way to say nothing is
         // being watched.
+        //
+        // NO BEAT HERE, AND THAT IS THE ONE CASE WHERE THE OMISSION IS RIGHT
+        // rather than the defect fixed below. The heartbeat table is the thing
+        // that is missing; beat() writes to that same table and would fail
+        // identically. It already logs its own specific line for this --
+        // "sql/cron_heartbeat_schema.sql has not been run" -- so calling it
+        // would add a second, less precise message and no row. The console
+        // line and the 503 are the whole signal available, and the watchdog
+        // being un-monitorable while its own storage is absent is a fact about
+        // the situation rather than something this file can fix.
+        console.error('cron-watchdog: NOT_PROVISIONED -- the heartbeat table '
+          + 'is absent, so nothing was checked AND no heartbeat could be '
+          + 'written for this run either. Nothing is watching anything.');
         res.status(503).json({
           error: {
             code: 'NOT_PROVISIONED',
@@ -333,12 +346,38 @@ module.exports = async (req, res) => {
         return;
       }
       console.error('cron-watchdog: heartbeat read failed HTTP ' + r.status + ' ' + text.slice(0, 200));
+      // ── THE WATCHDOG MUST REPORT ITS OWN FAILURE (fixed 2026-09-16) ──────
+      // Both of these returned without beating. That is the same defect found
+      // in api/audit-checkpoint.js and api/sairndental/send-reminder.js, and
+      // it is the WORST instance of it, because NOTHING ELSE WATCHES THE
+      // WATCHDOG -- this file is the only reader of the heartbeat table, and
+      // the row it writes about itself is the only evidence that the sweep
+      // ran. Failing these two ways wrote nothing, so the monitor went silent
+      // exactly when it was broken, and its own staleness check for
+      // `/api/cron-watchdog` is what would otherwise have caught that.
+      //
+      // The table EXISTS on this path -- the read failed for some other
+      // reason -- so unlike the NOT_PROVISIONED branch above, beat() can
+      // actually write here.
+      await beat({
+        job: '/api/cron-watchdog', outcome: 'failed',
+        expected_interval_seconds: 3600,
+        detail: { error: 'HEARTBEAT_READ_FAILED', http: r.status,
+                  checked: 0, retry_helps: true }
+      });
       res.status(502).json({ error: { message: 'Could not read heartbeats, so nothing was checked.' } });
       return;
     }
     let rows;
     try { rows = JSON.parse(text); } catch (e) { rows = null; }
     if (!Array.isArray(rows)) {
+      console.error('cron-watchdog: heartbeat read returned a non-array');
+      await beat({
+        job: '/api/cron-watchdog', outcome: 'failed',
+        expected_interval_seconds: 3600,
+        detail: { error: 'HEARTBEAT_READ_NOT_AN_ARRAY', checked: 0,
+                  retry_helps: true }
+      });
       res.status(502).json({ error: { message: 'Heartbeat read returned a non-array, so nothing was checked.' } });
       return;
     }

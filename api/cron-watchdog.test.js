@@ -228,6 +228,75 @@ function withChannel(on, fn) {
       }
     });
 }
+// ── THE WATCHDOG MUST REPORT ITS OWN FAILURE (added 2026-09-16) ──────────
+// Two of its refusal paths returned 502 without beating. That is the same
+// defect found the same day in api/audit-checkpoint.js and
+// api/sairndental/send-reminder.js, and it is the WORST instance: NOTHING
+// ELSE WATCHES THE WATCHDOG. This file is the only reader of the heartbeat
+// table, and the row it writes about ITSELF is the only evidence the sweep
+// ran -- so failing these two ways made the monitor go silent exactly when it
+// was broken, and its own staleness check for /api/cron-watchdog is what
+// would otherwise have caught that.
+//
+// `beats()` captures every POST to the heartbeat table so a beat can be
+// OBSERVED. The arms below assert on that, not on the 502 -- Vercel throws a
+// cron response body away and nobody reads it.
+function beats(readReply) {
+  const seen = [];
+  const run = call(async (url, init) => {
+    if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) return readReply;
+    seen.push(JSON.parse(init.body));
+    return reply(201, '');
+  });
+  return run.then((out) => ({ out: out, beats: seen }));
+}
+
+t('A HEARTBEAT READ THAT FAILS STILL BEATS -- the monitor must not go silent '
+  + 'when it is the broken one', async () => {
+  const r = await beats(reply(502, 'upstream exploded'));
+  assert.strictEqual(r.out.code, 502);
+  assert.strictEqual(r.beats.length, 1, 'it refused without beating');
+  assert.strictEqual(r.beats[0].job, '/api/cron-watchdog');
+  assert.strictEqual(r.beats[0].outcome, 'failed');
+  assert.strictEqual(r.beats[0].detail.error, 'HEARTBEAT_READ_FAILED');
+  assert.strictEqual(r.beats[0].detail.checked, 0,
+    'a run that checked nothing must not imply it checked something');
+});
+
+t('A NON-ARRAY READ STILL BEATS, and says so distinctly', async () => {
+  const r = await beats(reply(200, '{"not":"an array"}'));
+  assert.strictEqual(r.out.code, 502);
+  assert.strictEqual(r.beats.length, 1, 'it refused without beating');
+  assert.strictEqual(r.beats[0].detail.error, 'HEARTBEAT_READ_NOT_AN_ARRAY',
+    'the two refusals must be told apart by more than their status code');
+});
+
+// THE ONE CASE WHERE NOT BEATING IS CORRECT, pinned so a later sweep does not
+// "fix" it into a beat that cannot be written. The heartbeat table is the
+// thing that is missing; beat() writes to that same table and would fail
+// identically, so the console line and the 503 are the whole signal available.
+t('NOT_PROVISIONED does NOT beat -- the table it would beat to is the missing '
+  + 'one, and that is deliberate', async () => {
+  const r = await beats(reply(404, JSON.stringify(
+    { code: 'PGRST205', message: 'relation "sairn_cron_heartbeat" does not exist' })));
+  assert.strictEqual(r.out.code, 503);
+  assert.strictEqual(r.out.body.error.code, 'NOT_PROVISIONED');
+  assert.strictEqual(r.beats.length, 0,
+    'it tried to beat to the table it just reported absent');
+});
+
+// THE CONTROL. Without it every arm above is satisfied by a handler that beats
+// on every path, including one that beats `failed` on a clean sweep.
+t('CONTROL: a HEALTHY sweep beats too, and not as a failure', async () => {
+  const r = await beats(reply(200, JSON.stringify(ALL_FRESH())));
+  assert.strictEqual(r.out.code, 200);
+  assert.strictEqual(r.beats.length, 1);
+  assert.notStrictEqual(r.beats[0].outcome, 'failed',
+    'a clean sweep is reporting itself as a failure');
+  assert.strictEqual(r.beats[0].detail.error, undefined,
+    'a clean sweep is reporting an error');
+});
+
 const healthy = () => call(async (url) => {
   if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) {
     return reply(200, JSON.stringify(ALL_FRESH()));
