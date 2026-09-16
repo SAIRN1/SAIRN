@@ -1474,6 +1474,16 @@
       "claimed_at_epoch": 1789561882.6825604,
       "status": "released",
       "released_at": "2026-09-16T13:19:22Z"
+    },
+    {
+      "id": "cc-1789564982",
+      "session": "cc",
+      "subject": "cc",
+      "task": "hover settings hook propagation, tracing continued, schema snapshot query",
+      "claimed_at": "2026-09-16T13:23:02Z",
+      "claimed_at_epoch": 1789564982.9152393,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
