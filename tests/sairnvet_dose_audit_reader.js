@@ -90,7 +90,8 @@ const sandbox = {
   SV_AUDIT_CAP: 500,
   SV_FETCH_TIMEOUT_MS: 40,        // short, so the hang-guard arm is testable
   svData: null,
-  JSON, Object, String, Array, Promise, Math, Date, setTimeout, console
+  JSON, Object, String, Array, Promise, Math, Date, setTimeout, console,
+  Intl, isNaN
 };
 const vm = require('node:vm');
 const ctx = vm.createContext(sandbox);
@@ -99,6 +100,8 @@ vm.runInContext(
   fn('function svDoseAuditLocal(') + '\n' +
   fn('function svAuditLocalOnly(') + '\n' +
   fn('function svRenderDoseAudit(') + '\n' +
+  fn('function svAuditZone(') + '\n' +
+  fn('function svAuditLocalTime(') + '\n' +
   fn('function svAuditDayPrefix(') + '\n' +
   fn('function svAuditHaystack(') + '\n' +
   fn('function svClearDoseAuditFilters(') + '\n' +
@@ -106,9 +109,9 @@ vm.runInContext(
 
 // The extraction is ASSERTED, so an arm written as "must say X" cannot pass
 // because nothing was defined.
-['svDoseAuditLocal', 'svAuditLocalOnly', 'svRenderDoseAudit', 'svAuditDayPrefix',
- 'svAuditHaystack', 'svClearDoseAuditFilters',
- 'svRenderDoseAuditTable'].forEach((n) => {
+['svDoseAuditLocal', 'svAuditLocalOnly', 'svRenderDoseAudit', 'svAuditZone',
+ 'svAuditLocalTime', 'svAuditDayPrefix', 'svAuditHaystack',
+ 'svClearDoseAuditFilters', 'svRenderDoseAuditTable'].forEach((n) => {
   ok('A. ' + n + ' was lifted out of the real file', typeof ctx[n] === 'function');
 });
 
@@ -448,6 +451,96 @@ ok('and the generic exporter is still there for every other table',
 // every evening dose after 20:00 local to the next UTC day.
 ok('H. the screen says the date filters are UTC, not local',
    /filter on the <strong>UTC<\/strong> day/i.test(src));
+
+// ── I. LOCAL TIME IS A DISPLAY; UTC IS STILL THE RECORD ───────────────────
+//
+// Michael's decision, 2026-09-16: UTC stays the stored, immutable basis --
+// FDA's Part 11 guidance says for systems spanning time zones the recorded
+// stamp is not expected to be the signer's local time -- and the LOCAL time is
+// added as a labelled display beside it, never instead of it.
+//
+// THE DST ARMS ARE THE POINT OF THIS SECTION AND THEY USE REAL Intl, NOT A
+// MOCK. A conversion that is right in July and wrong in November is the shape
+// this fails in, and a stubbed formatter would prove nothing about it. The
+// fall-back arm is the sharp one: 01:30 local happens TWICE on 2026-11-01 and
+// the two instants are an hour apart, so without the zone abbreviation beside
+// it the two rows would be indistinguishable on a controlled-substance record.
+console.log('I. local time is displayed, labelled, and correct across DST');
+const TZ = 'America/New_York';
+const L = (iso) => ctx.svAuditLocalTime(iso, TZ);
+
+eq('I spring-forward, the EST side (06:30Z is 01:30 EST)',
+   L('2026-03-08T06:30:00.000Z'), '2026-03-08, 01:30:00 EST');
+eq('I spring-forward, the EDT side one hour later (07:30Z is 03:30 EDT, and '
+   + '02:30 local never happened)',
+   L('2026-03-08T07:30:00.000Z'), '2026-03-08, 03:30:00 EDT');
+eq('I fall-back, the EDT side (05:30Z is 01:30 EDT)',
+   L('2026-11-01T05:30:00.000Z'), '2026-11-01, 01:30:00 EDT');
+eq('I fall-back, the EST side an hour later -- SAME wall clock, and only the '
+   + 'zone abbreviation tells the two instants apart',
+   L('2026-11-01T06:30:00.000Z'), '2026-11-01, 01:30:00 EST');
+ok('I and those two are genuinely different instants rendered at the same '
+   + 'wall-clock time, which is why the abbreviation is not decoration',
+   L('2026-11-01T05:30:00.000Z') !== L('2026-11-01T06:30:00.000Z'), 'identical');
+
+// THE CASE THE REVIEW NAMED. An evening dose local lands on the NEXT UTC day,
+// which is why the date filters carry their own disclosure and why a reader
+// needs the local column at all.
+eq('I an evening dose sits on the previous LOCAL day from its UTC day',
+   L('2026-09-15T23:30:00.000Z'), '2026-09-15, 19:30:00 EDT');
+eq('...and its UTC day is the next one, which is what the filters compare',
+   ctx.svAuditDayPrefix('2026-09-16T03:30:00.000Z'), '2026-09-16');
+
+// FAILS CLOSED. A time it cannot convert or cannot label is NOT converted.
+eq('I an unparseable timestamp converts to null, never to a guessed local time',
+   L('Sept 15 2026'), null);
+eq('I a missing timestamp converts to null', L(undefined), null);
+eq('I and with NO resolvable zone it returns null rather than an unlabelled time',
+   ctx.svAuditLocalTime('2026-09-15T12:00:00.000Z', '__not_a_zone__'), null);
+
+// THE CELL, THE HEADER AND THE RECORD.
+const _zone = ctx.svAuditZone;
+ctx.svAuditZone = () => TZ;
+dom.els['doseaudit-zone-th'] = { textContent: '' };
+out = render([ENTRY({ type: 'dose_calc', timestamp: '2026-09-15T23:30:00.000Z' })], 'server');
+ok('I the row shows the LOCAL time', /19:30:00 EDT/.test(out.body), out.body);
+ok('...and STILL shows the stored UTC value, because that is the record',
+   /2026-09-15T23:30:00\.000Z/.test(out.body), out.body);
+ok('...and the ZONE is named in the column header, so it survives printing',
+   /Local time — America\/New_York/.test(dom.els['doseaudit-zone-th'].textContent),
+   dom.els['doseaudit-zone-th'].textContent);
+
+out = render([{ type: 'refused', id: 'au4', timestamp: 'Sept 15 2026' }], 'server');
+ok('I a row whose timestamp will not parse says "see UTC" rather than a '
+   + 'converted time', /see UTC/.test(out.body), out.body);
+ok('...and that row is still SHOWN, not dropped', /refused/.test(out.body), out.body);
+
+ctx.svAuditZone = () => null;
+dom.els['doseaudit-zone-th'] = { textContent: '' };
+out = render([ENTRY({ type: 'dose_calc' })], 'server');
+ok('I with no resolvable zone the header says so outright',
+   /UNAVAILABLE/.test(dom.els['doseaudit-zone-th'].textContent),
+   dom.els['doseaudit-zone-th'].textContent);
+ok('...and no row invents a local time', !/EDT|EST/.test(out.body), out.body);
+ctx.svAuditZone = _zone;
+
+// NOTHING WRITES A CONVERTED TIME. The display is derived on read; the store
+// still holds toISOString() and only toISOString().
+ok('I logDoseAudit still writes toISOString and nothing else',
+   /function logDoseAudit\([\s\S]{0,1200}?toISOString\(\)/.test(src), 'writer changed');
+ok('I no write path calls the local-time formatter',
+   !/st\('sv_audit_log'[\s\S]{0,200}svAuditLocalTime/.test(src)
+   && !/svAuditLocalTime[^\n]{0,80}(localStorage|setItem)/.test(src), 'a converted time is being stored');
+ok('I the exported CSV names the zone of its local column',
+   /TIME ZONE OF THE "When \(local\)" COLUMN/.test(fn('function svExportDoseAudit(')));
+ok('I ...and says UTC is the stored basis and local is derived',
+   /stored, immutable basis/.test(fn('function svExportDoseAudit(')));
+ok('I the table header still carries the UTC column beside the local one',
+   /<th>When <span id="doseaudit-zone-th">\(local\)<\/span><\/th><th>When \(UTC\)<\/th>/.test(src),
+   'the UTC column was replaced rather than joined');
+ok('I the empty-state colspan matches the widened table',
+   /colspan="8"[^>]*>'\s*\+\s*\(!_svAuditLoaded/.test(src)
+   || /tb\.innerHTML = '<tr><td colspan="8"/.test(src), 'colspan not widened');
 
 console.log('\n' + '='.repeat(60));
 console.log(pass + ' passed, ' + fail + ' failed');

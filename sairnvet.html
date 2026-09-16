@@ -1223,7 +1223,7 @@
 <div style="font-size:12px;opacity:.75;margin-bottom:8px">Dates filter on the <strong>UTC</strong> day shown in the When column, not on your local day. An entry dosed late in the evening local time belongs to the next UTC day.</div>
 <div id="doseaudit-count" style="font-size:13px;opacity:.85;margin-bottom:8px"></div>
 <div class="sv-tw"><table id="panel-doseaudit-table">
-<thead><tr><th>When (UTC)</th><th>Event</th><th>Drug</th><th>Patient</th><th>Witness</th><th>Detail</th><th>Id</th></tr></thead>
+<thead><tr><th>When <span id="doseaudit-zone-th">(local)</span></th><th>When (UTC)</th><th>Event</th><th>Drug</th><th>Patient</th><th>Witness</th><th>Detail</th><th>Id</th></tr></thead>
 <tbody id="doseaudit-tbody"></tbody></table></div></div>
 <div class="card" style="font-size:13px;opacity:.9">
 <h3 style="margin-top:0">What this record is, and what it is not</h3>
@@ -8890,6 +8890,47 @@ function svRenderDoseAudit(){
   });
 }
 
+// ── LOCAL TIME IS A DISPLAY, UTC IS THE RECORD ─────────────────────────────
+//
+// UTC stays the stored, immutable basis and nothing here writes a converted
+// value anywhere. That is not a convenience: FDA's Part 11 guidance says
+// outright that for systems spanning time zones the recorded time stamp is NOT
+// expected to be the signer's local time, and logDoseAudit() will go on writing
+// toISOString(). What was wrong was only ever the READING -- a US-Eastern
+// practice asked when a dose was given and was answered in a zone nobody in the
+// building uses, with the column header as the only clue.
+//
+// THE ZONE IS NAMED BESIDE THE TIME, ALWAYS, and that is the whole discipline
+// here -- the same rule as the source banner. A converted time with no zone on
+// it is worse than the raw UTC, because it looks like the answer.
+//
+// AND IT FAILS CLOSED. If Intl cannot resolve a zone, or the timestamp will not
+// parse, this returns null and the caller shows the UTC value alone rather than
+// a converted time it cannot label. "Could not convert" is a third state and is
+// never folded into a displayed local time.
+function svAuditZone(){
+  try{
+    var z = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return z || null;
+  }catch(e){ return null; }
+}
+
+function svAuditLocalTime(iso, zone){
+  var s = String(iso || '');
+  if(!/^\d{4}-\d{2}-\d{2}T/.test(s)) return null;   // same predicate as the filters
+  var d = new Date(s);
+  if(isNaN(d.getTime())) return null;
+  var tz = zone || svAuditZone();
+  if(!tz) return null;
+  try{
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+      hour12: false, timeZoneName: 'short'
+    }).format(d);
+  }catch(e){ return null; }
+}
+
 // The `YYYY-MM-DD` day this entry belongs to, or '' when it has none that can
 // be compared. '' means KEEP IT -- the filters treat an unanswerable entry as
 // passing, never as excluded.
@@ -8922,6 +8963,15 @@ function svRenderDoseAuditTable(){
   var tb = document.getElementById('doseaudit-tbody');
   var cnt = document.getElementById('doseaudit-count');
   if(!tb) return;
+  // THE ZONE GOES IN THE COLUMN HEADER, so it is on screen and in the printed
+  // page whether or not any row happens to convert. A column of local times
+  // whose zone is only in a tooltip is an unlabelled number.
+  var zth = document.getElementById('doseaudit-zone-th');
+  if(zth){
+    var _z = svAuditZone();
+    zth.textContent = _z ? '(Local time — ' + _z + ')'
+                         : '(local time UNAVAILABLE — this browser could not resolve a time zone)';
+  }
   var from = (document.getElementById('doseaudit-from')||{}).value || '';
   var to   = (document.getElementById('doseaudit-to')||{}).value || '';
   var q    = ((document.getElementById('doseaudit-q')||{}).value || '').toLowerCase().trim();
@@ -8965,7 +9015,7 @@ function svRenderDoseAuditTable(){
         + (undated ? ' — ' + undated + ' with no usable timestamp, kept rather than filtered out' : '');
   }
   if(!rows.length){
-    tb.innerHTML = '<tr><td colspan="7" style="opacity:.75">'
+    tb.innerHTML = '<tr><td colspan="8" style="opacity:.75">'
       + (!_svAuditLoaded
           ? 'Still reading the trail from the server — this is not yet an answer about whether anything was recorded.'
           : (_svAuditRows||[]).length
@@ -8984,6 +9034,7 @@ function svRenderDoseAuditTable(){
   // fields it knew about would quietly drop the reason a dose was REFUSED --
   // which is the entry an inspector is most likely to be asking about.
   var KNOWN = {timestamp:1,id:1,type:1,drug:1,patient:1,witness:1};
+  var zone = svAuditZone();
   tb.innerHTML = rows.map(function(e){
     var extra = Object.keys(e).filter(function(k){ return !KNOWN[k]; })
       .map(function(k){ return k + ': ' + (typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k]); })
@@ -8992,7 +9043,15 @@ function svRenderDoseAuditTable(){
     var idCell = id
       ? esc(id) + (id.indexOf('ac') === 0 ? ' <span title="computed later, from what the entry already contained">(computed)</span>' : '')
       : '<span title="written before ids existed and never synced">none</span>';
+    // BOTH COLUMNS, and the UTC one is never dropped. The local time is what a
+    // practice can act on; the UTC value is the record, and an audit trail that
+    // stopped showing its own stored value would be answering a different
+    // question from the one the database holds.
+    var local = svAuditLocalTime(e.timestamp, zone);
     return '<tr>'
+      + '<td>' + (local ? esc(local)
+                        : '<span style="opacity:.7" title="' + esc(zone ? 'this timestamp will not parse' : 'this browser could not resolve a time zone') + '">— see UTC</span>')
+              + '</td>'
       + '<td>' + esc(e.timestamp || '—') + '</td>'
       + '<td>' + esc(e.type || '—') + '</td>'
       + '<td>' + esc(e.drug || e.drug1 || '') + '</td>'
@@ -9035,6 +9094,13 @@ function svExportDoseAudit(){
        + ' to=' + (val('doseaudit-to') || '(none)')
        + ' text=' + (val('doseaudit-q') || '(none)')
        + ' — dates are compared against the UTC day in the timestamp column')],
+    // THE ZONE TRAVELS WITH THE FILE. A "When (local)" column in a spreadsheet
+    // with no zone beside it is an unlabelled number, and this file is the one
+    // an inspector reads away from the screen that labelled it.
+    [q('TIME ZONE OF THE "When (local)" COLUMN: '
+       + (svAuditZone() || 'UNAVAILABLE — this browser could not resolve one, so that column reads "— see UTC"')
+       + '. UTC is the stored, immutable basis; the local column is a DISPLAY '
+       + 'derived from it and nothing in this product writes a converted time.')],
     [q('THIS RECORD IS APPEND-ONLY AND IS NOT TAMPER-EVIDENT. Entry ids are a '
        + 'transport key, not a hash chain; anyone with database access could alter a '
        + 'row and neither the screen nor this file would know.')],
