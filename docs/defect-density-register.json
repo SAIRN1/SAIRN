@@ -1057,7 +1057,28 @@
       ],
       "severity": "high",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
-      "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all"
+      "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all",
+      "contributing_factors": [
+        {
+          "factor": "A HUNG FETCH NEITHER RESOLVES NOR REJECTS, so the whole well-built failure path never runs. Forty of the 43 writes read `var syncResult = await grdData(...)` and toast exactly what failed to sync -- and against a black-holed connection the await never returns, the catch never fires, and the user clicks Save and the screen says nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "AbortSignal.timeout(15000) inside grdData(), feature-detected, landing an AbortError in the catch that already returns null -- one edit rather than a push helper, because this file already had a shared failure vocabulary where null means 'did not reach the server' at all 43 sites."
+        },
+        {
+          "factor": "THE QUALITY OF THE REFUSAL PATH IS WHAT MADE THE GAP INVISIBLE. An app that reports every failed write looks like an app that handles failure; the one fault it cannot report is the one where nothing comes back at all, and that fault is indistinguishable from a slow save.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated at the site. The timeout bounds reads too, declared as intended rather than left incidental."
+        },
+        {
+          "factor": "THE TOOL THAT SHOULD HAVE FOUND IT SAID THE OPPOSITE. write_path_fault_scan.py printed `timeout? yes` because a signal-shaped probe matched two USER-FACING SENTENCES. The app read as protected in the one report anybody would consult.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Recorded as its own register entry and fixed in the same commit -- the scan runs over comment-stripped code and the column is three-state."
+        }
+      ],
+      "recurrence_open": "The timeout is fifteen seconds in ONE function in ONE app. Twelve other apps still have no timeout on any write path, and the sweep that measures that is the same tool that reported this app as bounded -- it is corrected, not independent. Nothing yet requires a new write path to declare a bound."
     },
     {
       "app": "sairngrounds",
@@ -1087,7 +1108,28 @@
       ],
       "severity": "moderate",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
-      "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured"
+      "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured",
+      "contributing_factors": [
+        {
+          "factor": "THE RETURN VALUE WAS DISCARDED AT THE ONE SITE THAT ANNOUNCED SUCCESS. All three callers toasted 'Point captured' unconditionally, so a course point that never reached the server was announced as captured -- the call-and-ignore shape, which reads as correct because the call is right there.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "cmSavePoints() reads its push result and the callers toast on the answer rather than on the attempt."
+        },
+        {
+          "factor": "THE HOUSE PATTERN WAS ALREADY RIGHT AND THIS SITE DID NOT FOLLOW IT. Forty of 43 writes in the same file read their result; three did not, and two of those three are DELIBERATE silences that are recorded as such. Only this one was an oversight, which is why reading all eight flagged sites before touching any mattered.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The two deliberate silences keep their silence with the reason stated at the site, and an arm asserts the reason is still there -- so a later reader cannot mistake a decision for this defect."
+        },
+        {
+          "factor": "A FALSE SUCCESS TOAST IS INDISTINGUISHABLE FROM A TRUE ONE AT THE ONLY MOMENT ANYBODY LOOKS. The user sees 'Point captured', leaves the screen, and the absence is found later by somebody who cannot reconstruct what was lost.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Covered by the platform's optimistic-success scan, which is what makes this a class rather than an incident."
+        }
+      ],
+      "recurrence_open": "Five of the eight sites this scan flagged were SAFE, and the classifier that produced the false ones is the same one relied on to find the next real one. An over-reporting detector trains readers to skim, which is the failure mode that hid this site's two innocent neighbours for as long as it hid this one."
     },
     {
       "app": "PLATFORM",
@@ -1118,7 +1160,28 @@
       ],
       "severity": "high",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
-      "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction"
+      "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction",
+      "contributing_factors": [
+        {
+          "factor": "A DETECTOR RUN OVER RAW SOURCE INSTEAD OF OVER CODE. The signal-shaped probe matched two user-facing sentences -- 'Weather Command Engine signal: ' -- in 324KB containing no timer race, no AbortController and no AbortSignal at all. PR 1.2, and the second instance of it in one session: the comment-counts-as-a-log defect in sairn_storage_wrapper_honesty.js was fixed an hour earlier.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Write sites and signals are found on comment-stripped source, which also cleared two other sessions' phantoms."
+        },
+        {
+          "factor": "THE COLUMN WAS FILE-WIDE, SO A READ-PATH TIMEOUT COUNTED AS PROTECTING WRITES. sairnbiz's only race bounds a hydrate; stonedesk's only AbortSignal.timeout is on /api/knowledge. Neither protects a write, and both made their app read as bounded.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The column is three-state and `read-only` is deliberately not spelled `yes`."
+        },
+        {
+          "factor": "THE ERROR RAN IN THE OPTIMISTIC DIRECTION, WHICH IS THE ONE NOBODY INVESTIGATES. An app reported as bounded is an app nobody opens; the corrected figure is worse than the original -- thirteen of fifteen rather than eleven -- so the tool had been under-reporting the platform's exposure the whole time.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both halves corrected in the same commit, and the revised figure is published rather than the old one quietly replaced."
+        }
+      ],
+      "recurrence_open": "The scan now strips comments and distinguishes read-path from write-path bounds. It still infers 'bounded' from the PRESENCE of a signal-shaped construct rather than from the write actually being cancelled, so a timeout attached to the wrong fetch in the right function would still read as yes."
     },
     {
       "app": "PLATFORM",
@@ -2941,7 +3004,34 @@
       "rules": [],
       "severity": "high",
       "subject": "feat(tools): item 40 -- and it found a LIVE unauthenticated route into a customer's billing",
-      "summary": "api/sairncash/portal.js returns a Stripe Billing Portal URL -- card on file, invoice history, the power to cancel -- to an UNAUTHENTICATED POST carrying only a subscription id, which Stripe puts in dashboards, webhooks, emails and CSV exports and never treated as a secret. The file refuses a cus_ id for exactly this reason and then accepts a sub_ id of comparable entropy. NOT EXPLOITABLE TODAY and the reason is an accident, not a control: production's STRIPE_SECRET_KEY is present but is an EXPIRED sk_test_ key, so every call dies before reaching a customer. The day a working key is installed, nothing announces it -- the same re-read-trigger failure that left the SOUP register claiming the key was unset"
+      "summary": "api/sairncash/portal.js returns a Stripe Billing Portal URL -- card on file, invoice history, the power to cancel -- to an UNAUTHENTICATED POST carrying only a subscription id, which Stripe puts in dashboards, webhooks, emails and CSV exports and never treated as a secret. The file refuses a cus_ id for exactly this reason and then accepts a sub_ id of comparable entropy. NOT EXPLOITABLE TODAY and the reason is an accident, not a control: production's STRIPE_SECRET_KEY is present but is an EXPIRED sk_test_ key, so every call dies before reaching a customer. The day a working key is installed, nothing announces it -- the same re-read-trigger failure that left the SOUP register claiming the key was unset",
+      "contributing_factors": [
+        {
+          "factor": "THE MITIGATION MOVED THE GUESSABLE IDENTIFIER INSTEAD OF REMOVING IT. The file REFUSES a cus_ id and reads the customer off the subscription -- the author thought about exactly this -- and then accepts a sub_ id of comparable entropy. The same argument one level up was not applied, so the header reads as a security consideration that was handled.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "NOT FIXED. What should prove a caller owns a subscription -- an emailed link, the licence key, a token minted at checkout -- differs in cost and in what it does to a real customer flow, and disabling the endpoint breaks the only working route a customer has to cancel."
+        },
+        {
+          "factor": "A STRIPE SUBSCRIPTION ID WAS NEVER DESIGNED TO BE A SECRET. Stripe puts it in dashboards, webhook payloads, emails and CSV exports. Nothing in this codebase treats it as one either -- it became a bearer credential for billing by accident, in a file whose author was guarding against exactly that.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No mechanism proposed. Nothing enumerates which external identifiers a third party considers public, and a hand-kept list of them would be a second copy of Stripe's documentation, going stale in the direction of false safety."
+        },
+        {
+          "factor": "THE SOUP REGISTER SAID THE BLAST RADIUS WAS ZERO AND THE MOMENT IT NAMED PASSED UNNOTICED. It recorded STRIPE_SECRET_KEY as unconfigured with an explicit 're-read this entry at that moment', and the only visible signal -- checkout.js still answering 'Stripe not configured' -- STAYED THE SAME FOR A DIFFERENT REASON: its guard is `!stripeKey || !priceId` and what is missing is STRIPE_PRICE_ID.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Register corrected, and the lesson recorded with it: a status message is a claim about the guard that produced it, not about the environment. Two endpoints, one env var, two different answers, and only the narrower guard told the truth."
+        },
+        {
+          "factor": "IT WAS VERIFIED LIVE RATHER THAN INFERRED, which is the only reason the contradiction surfaced. A POST with a deliberately invalid sub_ id returned 500 from the CATCH branch, proving the request reached Stripe and the if(!stripeKey) guard did not fire.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Kept as the method note on the record: a configuration claim is checked against the deployment, not against the document that recorded it."
+        }
+      ],
+      "recurrence_open": "THE DEFECT IS OPEN. The endpoint still accepts a subscription id from an unauthenticated POST, because every fix is a design decision with a real cost to a real customer flow and none has been chosen. Nothing prevents another SOUP entry from carrying a 're-read this at that moment' trigger that no mechanism watches -- that pattern is what made this survivable-looking for as long as it did."
     },
     {
       "commit": "5b4410f103f7",
