@@ -3483,6 +3483,106 @@
       "phase_note": "The classifier had buckets for single-row and append-only from the start and none for DERIVED. An omitted category in the original design, latent until 2026-09-15 when the first derived Tier A resource was registered."
     },
     {
+      "commit": "133b0989473d",
+      "date": "2026-09-16",
+      "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 10,
+      "lines_removed": 9,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sairndental/send-reminder.js returned 502 on a failed dnt_appointments read WITHOUT writing a heartbeat. This is the exact path that failed 23 times between 2026-09-12 and 2026-09-14 per the Vercel runtime-error table. Because the job succeeds most hours, the last successful beat stayed fresh and cron-watchdog went on reporting send-reminder=ok through the whole outage -- a FALSE GREEN, not a gap, and the failures were found in the provider error table instead of by the monitor built to find them.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "The dnt_appointments read failure returned 502 without calling beat(), while the success path and the generic catch both beat.",
+          "action_status": "done",
+          "action": "the refusal now beats failed with APPOINTMENT_LIST_FAILED, the HTTP status and retry_helps."
+        },
+        {
+          "kind": "detection",
+          "factor": "The job SUCCEEDS most hours, so the last successful beat stayed fresh and cron-watchdog reported send-reminder=ok throughout the outage. This is a FALSE GREEN rather than a gap -- worse than the NEVER_BEAT the same defect produced in audit-checkpoint, because a stale-looking job invites investigation and a green one does not.",
+          "action_status": "done",
+          "action": "an arm drives the real 504 that happened and asserts the beat; a paired control asserts a clean sweep still beats ok."
+        },
+        {
+          "kind": "process",
+          "factor": "The failures were found in the provider runtime-error table, which is the work the heartbeat exists so nobody has to do. Nothing in the monitoring layer surfaced them for two days.",
+          "action_status": "planned",
+          "action": "recurrence is named: nothing sweeps for cron endpoints whose refusal paths return without beating."
+        }
+      ],
+      "recurrence_open": "The sweep covered the four endpoints that use beat(). Nothing checks this automatically, and any cron endpoint added later can reintroduce it silently -- the defect is an ABSENT call, which no test of the response can see."
+    },
+    {
+      "commit": "133b0989473d",
+      "date": "2026-09-16",
+      "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 10,
+      "lines_removed": 9,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/cron-watchdog.js returned 502 on both a failed heartbeat read and a non-array read WITHOUT beating. It is the only reader of the heartbeat table and its self-beat is the only evidence the sweep ran, so the monitor went silent precisely when it was the broken component -- the worst instance of the silent-refusal defect found across the four cron endpoints, because nothing else watches the watchdog.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "kind": "technical",
+          "factor": "Two of the watchdog own refusal paths -- heartbeat read failed, and read returned a non-array -- returned 502 without beating, so the only reader of the heartbeat table wrote no row about itself when it was the broken component.",
+          "action_status": "done",
+          "action": "both now beat failed with distinct error codes and checked:0."
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "NOTHING ELSE WATCHES THE WATCHDOG. Its self-beat is the only evidence the sweep ran, so it went silent exactly when it was broken and its own staleness check for /api/cron-watchdog is what would otherwise have caught it.",
+          "action_status": "done",
+          "action": "the self-beat now survives both failure modes; a control arm asserts a healthy sweep still beats non-failed so the arms are not satisfied by unconditional beating."
+        },
+        {
+          "kind": "detection",
+          "factor": "The NOT_PROVISIONED path correctly does NOT beat -- the heartbeat table is the missing thing and beat() writes to it -- but nothing recorded that this omission was deliberate, so a later sweep of this same defect class would have FIXED it into a beat that cannot be written.",
+          "action_status": "done",
+          "action": "an arm pins that NOT_PROVISIONED does not beat, with the reason in its label."
+        }
+      ],
+      "recurrence_open": "The watchdog remains the only thing watching the watchdog. A beat it fails to write is still unnoticeable by anything except its own next run, and there is no second, structurally different observer of whether the sweep happened."
+    },
+    {
       "commit": "1b21ef1fb41e",
       "date": "2026-09-16",
       "subject": "fix(loader): the snapshot shrink guard could not see the two tables told to stay",
@@ -3833,6 +3933,63 @@
         }
       ],
       "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
+    },
+    {
+      "commit": "47827e9e6eef",
+      "date": "2026-09-16",
+      "subject": "fix(tools): FOURTH instance of the one-spelling blind spot -- three well-guarded probes were being reported UNGUARDED, and the signal was inverted again",
+      "files": [
+        "tests/run_literal_drift_determinism_probe.py",
+        "tests/run_master_plan_probe.py",
+        "tests/run_testability_gate_probe.py",
+        "tests/run_traceability_matrix_probe.py",
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 138,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sabotage_control_check.py reported three correctly-guarded probes as UNGUARDED because its vocabulary knew assert-in but not if-not-in-raise, under-crediting the more carefully written controls",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sabotage_control_check.py",
+      "injection": {
+        "unknown_reason": "The vocabulary predates the three probes that use this spelling; it was correct for the shapes that existed when written and went wrong as authors wrote refusals with readable messages instead of bare asserts. No single commit introduced the mismatch."
+      },
+      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the guard could not be READ, so a probe that refuses on a missing anchor scored identically to one that never checked. Same family -- a mechanism whose failure is indistinguishable from the absence of the thing it measures.",
+      "contributing_factors": [
+        {
+          "factor": "GUARDS held `assert old in src` but not `if old not in src: raise`, so three probes that refuse on a missing anchor were reported as having no guard at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The absence-and-refuse shape is accepted, narrowed to both operands being plain identifiers so a config check cannot match it."
+        },
+        {
+          "factor": "The better a probe's error message, the less likely it was to use a bare assert -- so the vocabulary systematically under-credited the more carefully written controls, inverting the signal the tool exists to give.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded in the file beside the two earlier instances of the same inversion, so the next spelling is read as a class rather than as a one-off."
+        },
+        {
+          "factor": "This is the FOURTH spelling of one class to be found this session -- after argparse in the selftest census, the path and .js forms in CONTROLS_FOR, and the aliased subprocess import. Every one was found by reading what a detector called empty, never by the detector going red.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No mechanism compares a detector vocabulary against the ways the thing it detects can actually be written. Each instance has been fixed individually."
+        },
+        {
+          "factor": "My first widening was too broad and matched a config check that guards nothing. The tool's own blind lock refused the criteria and reported that NOTHING WAS SCANNED rather than producing a number with a false credit in it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Narrowed to identifier-on-both-sides, with two must-guard and two must-NOT-guard fixtures added and CRITERIA_VERSION bumped."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS, and this is the fourth instance in one session. Nothing on this platform compares a detector's vocabulary against the ways the thing it detects can actually be written; each of the four was found by a human reading what the detector called empty."
     },
     {
       "commit": "53b0f9a475c5",
@@ -5614,106 +5771,6 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
-    },
-    {
-      "commit": "133b0989473d",
-      "date": "2026-09-16",
-      "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
-      "files": [
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md"
-      ],
-      "lines_added": 10,
-      "lines_removed": 9,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/sairndental/send-reminder.js returned 502 on a failed dnt_appointments read WITHOUT writing a heartbeat. This is the exact path that failed 23 times between 2026-09-12 and 2026-09-14 per the Vercel runtime-error table. Because the job succeeds most hours, the last successful beat stayed fresh and cron-watchdog went on reporting send-reminder=ok through the whole outage -- a FALSE GREEN, not a gap, and the failures were found in the provider error table instead of by the monitor built to find them.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "3d40c7d548a1",
-        "date": "2026-09-14",
-        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
-        "lag_days": 2
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "The dnt_appointments read failure returned 502 without calling beat(), while the success path and the generic catch both beat.",
-          "action_status": "done",
-          "action": "the refusal now beats failed with APPOINTMENT_LIST_FAILED, the HTTP status and retry_helps."
-        },
-        {
-          "kind": "detection",
-          "factor": "The job SUCCEEDS most hours, so the last successful beat stayed fresh and cron-watchdog reported send-reminder=ok throughout the outage. This is a FALSE GREEN rather than a gap -- worse than the NEVER_BEAT the same defect produced in audit-checkpoint, because a stale-looking job invites investigation and a green one does not.",
-          "action_status": "done",
-          "action": "an arm drives the real 504 that happened and asserts the beat; a paired control asserts a clean sweep still beats ok."
-        },
-        {
-          "kind": "process",
-          "factor": "The failures were found in the provider runtime-error table, which is the work the heartbeat exists so nobody has to do. Nothing in the monitoring layer surfaced them for two days.",
-          "action_status": "planned",
-          "action": "recurrence is named: nothing sweeps for cron endpoints whose refusal paths return without beating."
-        }
-      ],
-      "recurrence_open": "The sweep covered the four endpoints that use beat(). Nothing checks this automatically, and any cron endpoint added later can reintroduce it silently -- the defect is an ABSENT call, which no test of the response can see."
-    },
-    {
-      "commit": "133b0989473d",
-      "date": "2026-09-16",
-      "subject": "fix(cron): the silent-refusal sweep -- one endpoint was already right, one produced a FALSE GREEN, and the watchdog went silent about itself",
-      "files": [
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md"
-      ],
-      "lines_added": 10,
-      "lines_removed": 9,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/cron-watchdog.js returned 502 on both a failed heartbeat read and a non-array read WITHOUT beating. It is the only reader of the heartbeat table and its self-beat is the only evidence the sweep ran, so the monitor went silent precisely when it was the broken component -- the worst instance of the silent-refusal defect found across the four cron endpoints, because nothing else watches the watchdog.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "3d40c7d548a1",
-        "date": "2026-09-14",
-        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
-        "lag_days": 2
-      },
-      "contributing_factors": [
-        {
-          "kind": "technical",
-          "factor": "Two of the watchdog own refusal paths -- heartbeat read failed, and read returned a non-array -- returned 502 without beating, so the only reader of the heartbeat table wrote no row about itself when it was the broken component.",
-          "action_status": "done",
-          "action": "both now beat failed with distinct error codes and checked:0."
-        },
-        {
-          "kind": "latent-condition",
-          "factor": "NOTHING ELSE WATCHES THE WATCHDOG. Its self-beat is the only evidence the sweep ran, so it went silent exactly when it was broken and its own staleness check for /api/cron-watchdog is what would otherwise have caught it.",
-          "action_status": "done",
-          "action": "the self-beat now survives both failure modes; a control arm asserts a healthy sweep still beats non-failed so the arms are not satisfied by unconditional beating."
-        },
-        {
-          "kind": "detection",
-          "factor": "The NOT_PROVISIONED path correctly does NOT beat -- the heartbeat table is the missing thing and beat() writes to it -- but nothing recorded that this omission was deliberate, so a later sweep of this same defect class would have FIXED it into a beat that cannot be written.",
-          "action_status": "done",
-          "action": "an arm pins that NOT_PROVISIONED does not beat, with the reason in its label."
-        }
-      ],
-      "recurrence_open": "The watchdog remains the only thing watching the watchdog. A beat it fails to write is still unnoticeable by anything except its own next run, and there is no second, structurally different observer of whether the sweep happened."
     }
   ],
   "started": "2026-09-09"
