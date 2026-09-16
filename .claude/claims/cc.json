@@ -1442,8 +1442,8 @@
       "task": "register backlog band 2, untraced bound files continued, item 51 per-entity baselines data check, optimistic success toast platform triage",
       "claimed_at": "2026-09-16T03:56:04Z",
       "claimed_at_epoch": 1789530964.5164282,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T04:49:41Z"
     }
   ]
 }
