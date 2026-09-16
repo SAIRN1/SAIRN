@@ -308,9 +308,50 @@ def tiers():
     return out
 
 
+def derived_labels():
+    """Resources the criticality register says OWN NO TABLE.
+
+    ── WHY THIS IS A BUCKET AND NOT A SUPPRESSION ─────────────────────────────
+    A derived resource is computed from other rows. There is nothing to delete,
+    so "has no removal path" is not a finding about it -- it is a CATEGORY
+    ERROR, and one that inflates a queue people are meant to work through. That
+    matters more than two rows: a burn-down number that reads as outstanding
+    work while part of it is not work at all is the shape this repo polices
+    hardest, and it was found by asking why Tier A had gone 53 -> 58 rather than
+    by reading the list.
+
+    MEASURED 2026-09-16: of the five Tier A resources added since the 53 was
+    recorded, TWO are derived -- `dnt_rollup` ("a DERIVED resource -- it owns
+    no table") and `law_trust_reconcile` ("DERIVED -- it owns no table"), both
+    confirmed to have no `create table` anywhere in sql/. Two more, `sb_po` and
+    `sb_recv`, carry a void mechanism this tool structurally cannot see and are
+    already recorded as ASSESSED. So the real growth was ONE resource, `sb_ts`.
+
+    READ FROM THE REGISTER'S OWN SENTENCE, not re-decided here, for the same
+    reason append_only_labels() reads rather than decides: a second opinion on
+    what a resource IS would be a second source of truth. And the phrase is
+    required to be about THIS row -- the match is anchored on the row itself,
+    so a neighbouring row's prose cannot label a resource that owns a table.
+    A FALSE EXEMPTION IS WORSE THAN A FALSE FINDING: one gets read and argued
+    with, the other never appears.
+    """
+    path = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
+    if not os.path.exists(path):
+        return {}
+    out = {}
+    for line in read(path).split('\n'):
+        m = TIER_ROW.match(line.strip())
+        if not m:
+            continue
+        if re.search(r'DERIVED\b[^|]{0,40}\bowns no table', line, re.I):
+            out[m.group(1)] = 'the criticality register says it owns no table'
+    return out
+
+
 def classify():
     reg = registry()
     tier = tiers()
+    dv = derived_labels()
     api = read(os.path.join(REPO, 'api', 'sd-data.js'))
     sh = shapes(api)
     ao = append_only_labels()
@@ -329,6 +370,8 @@ def classify():
             'removal': removal,
             'append_only': name in ao,
             'append_only_note': ao.get(name, ''),
+            'derived': name in dv,
+            'derived_note': dv.get(name, ''),
             'tier': tier.get(name, 'UNTIERED'),
         })
     return rows
@@ -380,7 +423,7 @@ def main(argv):
     #   append-only -- the resource's own registry comment says so.
     stuck = [r for r in rows
              if not r['removal'] and r['shape'] != 'single-row'
-             and not r['append_only']]
+             and not r['append_only'] and not r['derived']]
     unresolved = [r for r in rows if r['shape'] == 'UNRESOLVED' and not r['removal']]
     findings = [r for r in stuck if r['resource'] not in baseline]
 
@@ -394,7 +437,14 @@ def main(argv):
             print('  shape %-24s  : %d' % (label, n))
         print('  append-only by their own registry comment: %d'
               % sum(1 for r in rows if r['append_only']))
-        print('  NO REMOVAL PATH (excl. single-row and append-only): %d'
+        # COUNTED AND NAMED rather than silently subtracted. An exclusion the
+        # reader cannot see is indistinguishable from a checker that stopped
+        # looking, which is the same rule the append-only line above follows.
+        dvr = [r for r in rows if r['derived']]
+        print('  DERIVED, owning no table (nothing to remove): %d%s'
+              % (len(dvr),
+                 (' -- ' + ', '.join(sorted(r['resource'] for r in dvr))) if dvr else ''))
+        print('  NO REMOVAL PATH (excl. single-row, append-only and derived): %d'
               % len(stuck))
         print('    grandfathered in the baseline : %d'
               % sum(1 for r in stuck if r['resource'] in baseline))

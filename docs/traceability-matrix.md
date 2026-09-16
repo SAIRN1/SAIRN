@@ -159,6 +159,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The no-removal-path burn-down had gone 53 &rarr; 58, and TWO of the five were resources that own no table at all** | **RE-DERIVED AND THE TOOL CORRECTED 2026-09-16 (Hank)** &mdash; `removal_path_check.py` gains a DERIVED bucket, counted and named; Tier A **58 &rarr; 56**. One real new arrival, `sb_ts`, left as a liv | `tests/run_removal_path_probe.py` |
 | **What is genuinely open AND unclaimed &mdash; the join nobody was doing, and it caught four of five queued items belonging to a live session** | **BUILT 2026-09-16 (Hank)** &mdash; `tools/dispatch_state.py`, report-only and registered; `tests/run_dispatch_state_probe.py` **38 arms, 0 failures** | `tests/run_dispatch_state_probe.py` |
 | **The measurement substrate was starved, and five tools reported vacuous numbers because of it &mdash; a defect closure can no longer complete without feeding the register** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/register_feed_gate.py`, BLOCKING on pre-push from its requirement date and report-only as `--backlog`; wired in `.githooks/pre-push`. `tests/run_register_fee | `tests/run_register_feed_gate_probe.py` |
 | **Item 40 continued: does anything holding the RLS-BYPASSING key write Tier A data without gating the caller** | **MEASURED AND BUILT 2026-09-15 (Hank)** &mdash; `tools/service_role_tier_a_gate_check.py`, report-only and registered, built THROUGH `checker_kit`. `tests/run_service_role_gate_probe.py` **26 arms, 0 | `tests/run_service_role_gate_probe.py` |
@@ -708,7 +709,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 482   tests/**, api/*.test.js
-  open-work rows citing a test       252   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       253   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  6   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                52   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     49   report_only_checks.NOT_PROMOTED
