@@ -345,9 +345,32 @@ def touched_tier_a(diff_text, resources):
             # hunks. A file deleted by this change is not on disk and is not
             # excluded, which is correct -- deleting a guard is a change worth
             # reviewing.
+            # ── AND A CLAIM FILE, ADDED 2026-09-16 ─────────────────────────
+            # THIRD false positive of this exact shape. The gate refused a push
+            # whose only Tier-A-naming file was `.claude/claims/cody.json` -- the
+            # coordination record written by `tools/sairn_claim.py`, containing
+            # the TASK STRING a session typed. Claiming work on `sv_controlled`
+            # necessarily names `sv_controlled`.
+            #
+            # It is the worklog case again with a different extension: a record
+            # of INTENT is not code serving a resource. `.claude/claims/` is
+            # written only by the claim tool, is never required by any handler,
+            # and naming it here is narrower than excluding `.claude/` -- which
+            # holds settings and hooks that genuinely can change behaviour.
+            #
+            # THE PATTERN IS WORTH NAMING NOW THAT IT IS THREE: every false
+            # positive this gate has had is a file whose JOB is to TALK ABOUT
+            # Tier A work -- a worklog, a review probe, a claim. The gate asks
+            # "does this hunk name a Tier A resource", and the one category that
+            # always names one without serving it is documentation OF the work.
+            # A fourth instance should be treated as evidence the predicate
+            # wants inverting -- allow-list the files that can SERVE a resource
+            # (api/, the app HTML) rather than deny-listing the ones that
+            # describe it.
             skip = (cur in SELF
                     or cur.startswith('docs/')
                     or cur.startswith('sql/')
+                    or cur.replace('\\', '/').startswith('.claude/claims/')
                     or cur.lower().endswith('.md'))
             if not skip and cur.replace('\\', '/').startswith('tests/'):
                 try:

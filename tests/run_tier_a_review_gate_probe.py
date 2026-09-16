@@ -100,6 +100,23 @@ check('...nor is any other root-level .md', md == {}, md)
 MD = g.touched_tier_a(diff_for('README.MD', "'sc_claims'"), RES)
 check('...and the test is case-insensitive on the extension', MD == {}, MD)
 
+# ── A CLAIM FILE IS A RECORD OF INTENT, NOT CODE (2026-09-16) ────────────────
+# THIRD false positive of this shape, after the worklog and the review probe. The
+# gate refused a push whose only Tier-A-naming file was `.claude/claims/cody.json`
+# -- the coordination record tools/sairn_claim.py writes, carrying the TASK STRING
+# a session typed. Claiming work on sv_controlled necessarily names sv_controlled.
+cl = g.touched_tier_a(
+    diff_for('.claude/claims/cody.json', '  "task": "item 46 parity for sc_claims"'), RES)
+check('a CLAIM FILE is not code serving a Tier A resource', cl == {}, cl)
+
+# THE OTHER DIRECTION, and it is why the exclusion names claims/ rather than
+# .claude/: settings and hooks under .claude/ genuinely can change behaviour, and
+# excluding the whole directory would hide a real change to what gates a push.
+st = g.touched_tier_a(
+    diff_for('.claude/settings.json', "'sc_claims'"), RES)
+check('...but .claude/settings.json is NOT excluded -- a hook change is real',
+      st == {'sc_claims': ['.claude/settings.json']}, st)
+
 # THE OTHER DIRECTION, and it is the one that matters. Excluding prose must not
 # start excluding code: a file whose NAME merely contains ".md" is not markdown,
 # and a real handler must still count.
