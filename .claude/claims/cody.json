@@ -1197,8 +1197,8 @@
       "task": "item 83 countersign suite sv-witness sairnvet",
       "claimed_at": "2026-09-15T10:34:00Z",
       "claimed_at_epoch": 1789468440.6861305,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789476274",
@@ -1207,8 +1207,8 @@
       "task": "circuit breaker bulkhead external dependency isolation, temporary workaround expiry audit, mutation control rebase guard",
       "claimed_at": "2026-09-15T12:44:34Z",
       "claimed_at_epoch": 1789476274.2989578,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789485003",
@@ -1217,8 +1217,8 @@
       "task": "sairndental complaint QR renderer, canonical safe-number split, recombination passes, item 78 FPV",
       "claimed_at": "2026-09-15T15:10:03Z",
       "claimed_at_epoch": 1789485003.0632207,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789486781",
@@ -1227,8 +1227,8 @@
       "task": "sairndental complaint QR renderer, date recombination, negative control recombination, CRLF recombination, item 78 FPV, AI approval gate audit, triage staleness tool, SOC2 status",
       "claimed_at": "2026-09-15T15:39:41Z",
       "claimed_at_epoch": 1789486781.6199806,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789488425",
@@ -1237,8 +1237,8 @@
       "task": "AI proposes human approves enforcement audit, SOC2 readiness, incident response plan, sairnlaw privacy scoping",
       "claimed_at": "2026-09-15T16:07:05Z",
       "claimed_at_epoch": 1789488425.587785,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789510602",
@@ -1247,8 +1247,8 @@
       "task": "item 18 metamorphic relations generator, item 32 reachability purpose, NHI credential inventory owners, sairnlaw privacy scoping",
       "claimed_at": "2026-09-15T22:16:42Z",
       "claimed_at_epoch": 1789510602.7513673,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789519734",
@@ -1257,8 +1257,8 @@
       "task": "money amount parsed type, item 38 completeness detector, item 67 OODA phase timing",
       "claimed_at": "2026-09-16T00:48:54Z",
       "claimed_at_epoch": 1789519734.1873407,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789520825",
@@ -1267,8 +1267,8 @@
       "task": "item 46 parity reconstruction sv_controlled, item 86 battleshort bypass log, item 89 look-elsewhere quarantine threshold",
       "claimed_at": "2026-09-16T01:07:05Z",
       "claimed_at_epoch": 1789520825.2350435,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789524523",
@@ -1277,8 +1277,8 @@
       "task": "item 86 battleshort bypass log, item 72 practitioner validation, item 74 schedule pressure crosscheck, item 26 phase 2 tiering recheck copy exactly sweep",
       "claimed_at": "2026-09-16T02:08:43Z",
       "claimed_at_epoch": 1789524523.9357111,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789525623",
@@ -1287,8 +1287,8 @@
       "task": "item 60 bullwhip derived source audit, item 47 FAI on tonight tools, item 79 defeater friction, skill ground truth audit",
       "claimed_at": "2026-09-16T02:27:03Z",
       "claimed_at_epoch": 1789525623.24359,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     },
     {
       "id": "cody-1789526601",
@@ -1297,8 +1297,8 @@
       "task": "tool selftest probe suite discovery item 47 ast parser",
       "claimed_at": "2026-09-16T02:43:21Z",
       "claimed_at_epoch": 1789526601.6453626,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T12:03:51Z"
     }
   ]
 }
