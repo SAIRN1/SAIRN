@@ -1915,6 +1915,16 @@
       "claimed_at_epoch": 1789518231.2398045,
       "status": "released",
       "released_at": "2026-09-16T00:42:50Z"
+    },
+    {
+      "id": "hank-1789519678",
+      "session": "hank",
+      "subject": "ai-rate-limit-landmine",
+      "task": "stale migration recreates dropped 3-arg consume function ambiguity",
+      "claimed_at": "2026-09-16T00:47:58Z",
+      "claimed_at_epoch": 1789519678.5581107,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
