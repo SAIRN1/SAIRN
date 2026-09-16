@@ -2045,6 +2045,16 @@
       "claimed_at_epoch": 1789535992.5734127,
       "status": "released",
       "released_at": "2026-09-16T12:25:16Z"
+    },
+    {
+      "id": "hank-1789562204",
+      "session": "hank",
+      "subject": "hank-queue2",
+      "task": "sb_ts frozen week access path, dose audit local time display, clone registry fifth, items.md item 45, dispatch_state item 47 FAI, license.js gate column",
+      "claimed_at": "2026-09-16T12:36:44Z",
+      "claimed_at_epoch": 1789562204.8911374,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
