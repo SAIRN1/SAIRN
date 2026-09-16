@@ -1404,6 +1404,16 @@
       "claimed_at_epoch": 1789512274.615404,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1789517922",
+      "session": "cc",
+      "subject": "cc",
+      "task": "item 45 PID trend alarm, item 47 first article inspection, item 50 condition number, item 53 weakness combination, item 55 pre-planned threshold response, item 58 three-way match, item 61 rotation blast radius",
+      "claimed_at": "2026-09-16T00:18:42Z",
+      "claimed_at_epoch": 1789517922.0043266,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
