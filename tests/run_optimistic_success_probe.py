@@ -141,6 +141,48 @@ check('CONTROL: no word list decides whether a message reads as success -- that 
       'would be wrong in both directions and is why the rule is structural',
       'success' not in src_tool.lower().split('def scan')[1].split('def ')[0])
 
+# ── ADDED 2026-09-16 BY THIS TOOL'S FIRST ARTICLE INSPECTION ────────────────
+# THE SAME TWO CLAIMS, A FOURTH TIME. assurance_case.py, risk_event_tree.py and
+# dora_metrics.py each stated an exit-2 COULD-NOT-RUN contract and a REPORT ONLY
+# contract with no arm for either; so does this one. Four tools by two sessions
+# is a habit, not a coincidence: the interesting exits carry a verdict, and the
+# exit that carries none is the one nobody writes a test for.
+import subprocess as _sp                                         # noqa: E402
+
+# CLAIM: exit 2 when the fixture lock fails -- "no app was read", which must not
+# be reachable as a clean run.
+_saved_fix = S.fixtures
+try:
+    S.fixtures = lambda: (['injected lock failure'], ['broken'])
+    check('CLAIM "exit 2": a FAILED FIXTURE LOCK is COULD-NOT-RUN, never a '
+          'clean scan', S.main([]) == 2, 'expected exit 2')
+finally:
+    S.fixtures = _saved_fix
+
+# CLAIM: exit 2 when no app could be listed. A zero-length target list with a
+# passing lock would otherwise report "nothing found" on an empty sweep.
+_saved_apps = S.apps
+try:
+    S.apps = lambda: []
+    check('CLAIM "exit 2": NO APPS LISTED is COULD-NOT-RUN, not a clean sweep '
+          'over zero files', S.main([]) == 2, 'expected exit 2')
+finally:
+    S.apps = _saved_apps
+
+# CLAIM: REPORT ONLY -- every hit needs a human.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _ROC                                # noqa: E402
+_RUNNER = [x['tool'] if isinstance(x, dict) else x[0] for x in _ROC.REGISTRY]
+check('CLAIM "report only": optimistic_success_scan.py is NOT in the '
+      'report-only RUNNER registry',
+      'optimistic_success_scan.py' not in _RUNNER, _RUNNER[:4])
+check('...and IS recorded as a deliberate NOT-PROMOTED decision',
+      'optimistic_success_scan.py' in [x[0] for x in _ROC.NOT_PROMOTED])
+_GATE = io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                encoding='utf-8', errors='replace').read()
+check('...and the push gate does not invoke it',
+      'optimistic_success_scan' not in _GATE)
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))

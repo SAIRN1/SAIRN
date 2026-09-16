@@ -36,6 +36,24 @@ halves have to exist.
 A dimension that clears bar 1 and fails bar 2 is NOT ready, and saying so is the
 whole point -- it is the case that looks ready and is not.
 
+── AND WHETHER THAT SHORTFALL IS REAL OR A FILING ARTEFACT ─────────────────
+ADDED 2026-09-16 by another session; THE HEADER CLAIM IS ADDED HERE BY THE
+FIRST ARTICLE RE-INSPECTION, because the capability shipped without one. The
+code answers a real question -- is `app` short of the bar because the platform
+genuinely has few per-app defects, or because work that IS single-app was filed
+under the catch-all -- and a reader of this header could not have known the
+tool answers it. An unclaimed capability is the inverse of an unverified claim:
+the arms exist and nothing points at them.
+
+  * `attribution_check()` counts how much of the catch-all touches exactly ONE
+    app's files, using the app list and prefix aliases
+    docs/traceability-matrix.md already derives -- NOT a second list here that
+    could disagree with that one.
+  * It answers REAL or FILING, and it must be able to answer both. A version
+    that always said REAL would be as useless as one that always said FILING.
+  * It returns None when traceability_matrix cannot be imported, and that is
+    reported as COULD-NOT-TELL rather than folded into either answer.
+
 ── THE CATCH-ALL BUCKET IS NOT AN ENTITY ───────────────────────────────────
 `PLATFORM` holds the majority of the register and is not an app. Counting it as
 a unit would make the `app` dimension look nearly ready off the strength of one

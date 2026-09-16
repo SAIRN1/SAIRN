@@ -11,9 +11,9 @@
  "inspections": [
   {
    "artefact": "tools/entity_baseline_readiness.py",
-   "inspected": "2026-09-15",
+   "inspected": "2026-09-16",
    "inspector": "Fourth",
-   "sha256": "7f669eda5896a1a9a5f312e1819d36b424a45cd931a6f85d0f8185c6e441264f",
+   "sha256": "1bd6b245d1ffdd5ad94cbad465245fa8ef314d905dac1f4ba6f8ab5dd6e44111",
    "report": "docs/2026-09-15-first-article-entity-baseline-readiness.md",
    "suites": [
     "tools/entity_baseline_readiness.py",
@@ -89,6 +89,31 @@
      "claim": "The catch-all bucket is excluded by name, never by a rule that could quietly grow to cover a real app.",
      "status": "verified",
      "by": "self-check: '...and it is not counted as a unit'; NOT_AN_ENTITY is a literal tuple of names with no pattern matching, and the probe's 'counted + excluded' identity would move the moment the exclusion widened"
+    },
+    {
+     "claim": "attribution_check() answers whether the catch-all shortfall is REAL or a FILING artefact, and must be able to answer both.",
+     "status": "verified",
+     "by": "self-check: 'a catch-all that touches no app file reattributes NOTHING, so the shortfall reads as REAL' and 'CONTROL: a catch-all that is really single-app work DOES move the bar, so the check can answer FILING as well as REAL'",
+     "note": "THE CAPABILITY SHIPPED WITHOUT A HEADER CLAIM. The arms existed and nothing pointed at them -- the inverse of an unverified claim. The header claim was added by this re-inspection; the arms are the other session's and were not changed."
+    },
+    {
+     "claim": "It uses the app list and prefix aliases docs/traceability-matrix.md already derives, not a second list here that could disagree.",
+     "status": "cannot-test",
+     "by": "a claim about PROVENANCE of a dependency. attribution_check() imports traceability_matrix and reads apps() and APP_ALIASES from it, so there is no second list to diverge -- held by the import rather than by an arm, because an arm asserting \"no second list exists\" would pass on any file that never grew one."
+    },
+    {
+     "claim": "It returns None when traceability_matrix cannot be imported, reported as COULD-NOT-TELL rather than folded into either answer.",
+     "status": "verified",
+     "by": "self-check: 'the attribution check could not run, which is COULD-NOT-TELL and not a pass'",
+     "note": "The arm is written as a failing branch inside the self-check: if the import fails the arm fires rather than the check silently reporting REAL."
+    }
+   ],
+   "reinspections": [
+    {
+     "on": "2026-09-16",
+     "by": "Fourth",
+     "why": "the FAI gate reported the record STALE: another session added 116 lines implementing an attribution check after the 2026-09-15 inspection. RE-INSPECTED, NOT RE-HASHED -- every original claim was re-checked against the new bytes and the three claims the new capability makes were added. A re-hash alone would have asserted coverage nobody had redone.",
+     "claims_added": 3
     }
    ]
   },
@@ -293,6 +318,69 @@
    "inspected": "2026-09-16",
    "inspector": "Fourth",
    "sha256": "d97a0b27f13c89472906d42bc40722f6cf8582e7422197f1fc3c04a3a1d6b3fb"
+  },
+  {
+   "artefact": "tools/optimistic_success_scan.py",
+   "inspected": "2026-09-16",
+   "inspector": "Fourth",
+   "sha256": "d711fe40588f90517c60e7cfcb0ac9aed77965caa768be379ca2d7846c5e5df5",
+   "report": "docs/2026-09-16-first-article-three-tools.md",
+   "suites": [
+    "tools/optimistic_success_scan.py",
+    "tests/run_optimistic_success_probe.py"
+   ],
+   "author_note": "WRITTEN BY ANOTHER SESSION. Inspected by Fourth because the gate reported it and it was unclaimed. The claim-to-arm mapping is mine and could be wrong about the author's intent; where it is, the arm is what to trust, not this record.",
+   "claims": [
+    {
+     "claim": "REPORT ONLY -- every hit needs a human.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"report only\": optimistic_success_scan.py is NOT in the report-only RUNNER registry', plus its two siblings on NOT_PROMOTED and the push gate",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row to state REPORT ONLY and check it nowhere."
+    },
+    {
+     "claim": "Exit 2 when the fixture lock fails -- no app was read.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2\": a FAILED FIXTURE LOCK is COULD-NOT-RUN, never a clean scan'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED. The FOURTH tool in a row with an exit-2 contract and arms for exit 0 and 1 only."
+    },
+    {
+     "claim": "Exit 2 when no app could be listed -- NOT a clean run.",
+     "status": "verified",
+     "by": "probe: 'CLAIM \"exit 2\": NO APPS LISTED is COULD-NOT-RUN, not a clean sweep over zero files'",
+     "note": "UNVERIFIED WHEN THE INSPECTION STARTED."
+    },
+    {
+     "claim": "A caller that DROPS a write's promise cannot condition anything on the result, so a dropped write plus ANY later toast() in the same function is a message that cannot depend on it.",
+     "status": "verified",
+     "by": "probe: 'a dropped helper then a toast is a candidate', 'the DATA WRAPPER dropped directly is a candidate too, so the narrower tool's whole population is still covered', and 'a dropped call inside a callback still counts -- a forEach is where the sairndental purchase-order archive hid'"
+    },
+    {
+     "claim": "A result that is TAKEN is not dropped -- await, assignment, return, a .then chain, an argument, or an array element.",
+     "status": "verified",
+     "by": "probe: 'await takes the result', 'assignment takes the result', 'return takes the result', 'a .then chain takes the result', 'an ARGUMENT takes the result', '...and so does `arr.push(f(x))`', 'an ARRAY ELEMENT takes the result'"
+    },
+    {
+     "claim": "It does not guess whether a message reads as success, which would be a word list and would be wrong in both directions.",
+     "status": "verified",
+     "by": "probe: 'CONTROL: no word list decides whether a message reads as success -- that would be wrong in both directions and is why the rule is structural'"
+    },
+    {
+     "claim": "A correction LATER is not a defence: a message that corrects an earlier one only corrects it if it is the NEXT message.",
+     "status": "cannot-test",
+     "by": "an argument about USER-VISIBLE SEQUENCE, made in the header against a rebuttal recorded at the real site. No arm can drive a repeated action in a browser and observe which message survives; it is held by the reasoning and by the tool refusing to dismiss a hit on that basis."
+    },
+    {
+     "claim": "It cannot decide that a hit is a defect, and a clean app is a FLOOR rather than a clearance because it follows one hop.",
+     "status": "verified",
+     "by": "probe: 'the output says these are CANDIDATES and not defects' and '...and that a clean run is a FLOOR because it follows one hop'"
+    },
+    {
+     "claim": "It cannot see a message that is not a toast(), and \"any toast after the call in the same function\" catches a message in an else arm the call can never reach.",
+     "status": "verified",
+     "by": "probe: '...and it names the branch false positive with a MEASURED number rather than as a caveat'",
+     "note": "The first half -- messages that are not toast() -- is a scope limit with no arm and no possible one; the second half, the branch false positive, is measured and named in the output."
+    }
+   ]
   }
  ]
 }

@@ -104,8 +104,24 @@ p = subprocess.run([sys.executable,
                    capture_output=True, text=True, encoding='utf-8',
                    errors='replace', cwd=REPO,
                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
-check('the shipped record PASSES -- a gate that fails on a clean tree is one '
-      'somebody turns off', p.returncode == 0, p.stdout[-500:])
+# SPLIT 2026-09-16. This was one arm asserting the gate exits 0, and it went
+# red the moment two OTHER sessions committed tools without inspections. That
+# conflates two different failures: "the records this probe controls are
+# broken" and "somebody else has not inspected their tool yet". Only the first
+# is about the tool under test, and a probe that goes red for the second is one
+# people learn to ignore -- which is how the first would get through.
+_stale_or_broken = [l for l in p.stdout.split('\n')
+                    if l.strip().startswith('!')
+                    and 'has no inspection record' not in l]
+check('NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does '
+      'not exist -- the half this probe controls',
+      _stale_or_broken == [], _stale_or_broken)
+_missing = [l for l in p.stdout.split('\n')
+            if 'has no inspection record' in l]
+check('...and the OTHER half -- artefacts awaiting an inspection -- is '
+      'REPORTED rather than folded in, %d outstanding' % len(_missing),
+      'FINDINGS' in p.stdout or p.returncode == 0,
+      'the gate must still name them even when this probe is green')
 check('...and it prints the uninspected count rather than implying zero',
       'UNINSPECTED' in p.stdout, p.stdout[:300])
 

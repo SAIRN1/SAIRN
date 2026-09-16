@@ -73,6 +73,26 @@ test('every role x employee x row combination agrees', () => {
   console.log('       (' + checked + ' combinations)');
 });
 
+// ADDED 2026-09-16 BY THIS SUITE'S FIRST NEGATIVE CONTROL.
+// tests/roofing_claim_gate_probe.py removed seesAllRows()'s OWN null guard and
+// this suite stayed GREEN. Every arm here drives ownsRow(), which refuses a
+// null session at its own guard and never reaches seesAllRows -- so the
+// predicate's null handling was covered only by the caller that happens not to
+// need it.
+//
+// IT IS NOT AN INTERNAL HELPER. seesAllRows is exported and api/sd-data.js:5656
+// calls it DIRECTLY -- `const seesAll = rfAuth.seesAllRows(session)` -- on the
+// claim-photo read path. A sessionless caller there would be measured against
+// the role table instead of refused.
+test('seesAllRows() refuses a missing session ON ITS OWN, not via ownsRow', () => {
+  assert.strictEqual(rfAuth.seesAllRows(null), false);
+  assert.strictEqual(rfAuth.seesAllRows(undefined), false);
+  assert.strictEqual(rfAuth.seesAllRows({}), false, 'a session with no role');
+  // And it still says yes to someone who really does see everything, or this
+  // arm would pass on a predicate that refuses everybody.
+  assert.strictEqual(rfAuth.seesAllRows({ role: 'owner' }), true);
+});
+
 test('THE CASE THE OLD rf_claims WRITE HANDLED BY HAND: a missing row denies', () => {
   // That branch read `if (!existing || existing.assigned !== emp)`. ownsRow has
   // to reproduce the `!existing` half or an unassigned claim becomes writable
