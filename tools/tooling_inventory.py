@@ -313,6 +313,7 @@ PURPOSES = {
                                             'needs an export and is COULD-NOT-RUN without one'),
     'checker_confidence.py': ('CHECKER', 'a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything'),
     'defect_dispersion.py': ('CHECKER', 'whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one'),
+    'entity_baseline_readiness.py': ('CHECKER', 'whether a PER-ENTITY defect baseline is buildable yet and on which entity -- two bars, records per unit AND a measurable exposure denominator, because a dimension with enough records and no denominator produces a count wearing a rate. Re-answered from the register every run so the day it flips, something says so'),
     'benford_check.py': ('CHECKER', 'money figures whose leading-digit distribution does not '
                                     'look measured -- a LOOK HERE pointer for the '
                                     'fabricated-KPI class, with a shape pre-check that '

@@ -1600,6 +1600,20 @@ NOT_PROMOTED = [
      'The fitters are proven against synthetic curves with known parameters, so the '
      'refusal is a statement about the data rather than about a fitter nobody has seen '
      'work; held by tests/run_reliability_growth_probe.py.'),
+    ('entity_baseline_readiness.py', 'ITEM 51, and it must not be promoted while '
+     'its answer cannot change on a push. It exits 1 -- NOT READY -- and will keep '
+     'doing so until the register grows by roughly a factor of three on the `app` '
+     'dimension, which is months of sessions away, so a runner entry would print '
+     'the same notice on every push until nobody read it. That is the same argument '
+     'already recorded for reliability_growth.py above. THE REASON IT IS A TOOL AT '
+     'ALL is that item 51 had been measured BY HAND twice -- 2026-09-14 at 68 '
+     'records and 2026-09-15 at 77 -- and both times the answer was NOT YET, which '
+     'is a claim with an expiry date that nothing was watching. Promote it the day '
+     'it exits 0, because that is the day its output starts varying and the day a '
+     'baseline becomes worth building. AND ONE OF ITS REFUSALS WILL NEVER CLEAR BY '
+     'WAITING: `layer` already clears the record bar and is still not ready, because '
+     'product/tooling/test is a classification and not a surface, so there is no '
+     'exposure to divide by; held by tests/run_baseline_readiness_probe.py.'),
     ('benford_check.py', "ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run "
      'exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the '
      'production question needs `--data <export>`, and ledger_entries, ledger_lines '
