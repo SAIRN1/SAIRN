@@ -1472,8 +1472,8 @@
       "task": "session lock flock kernel level, unbound tracing continued, claim reconciliation check",
       "claimed_at": "2026-09-16T12:31:22Z",
       "claimed_at_epoch": 1789561882.6825604,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-16T13:19:22Z"
     }
   ]
 }
