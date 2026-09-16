@@ -568,6 +568,10 @@ textarea{resize:vertical;min-height:80px;}
   <div class="mbox">
     <div class="mtitle">Record Hours &mdash; <span id="ts-emp-name"></span></div>
     <div class="psub" style="margin:-8px 0 14px;">Week of <span id="ts-modal-week"></span> &middot; Monday to Saturday. Leave a day blank for zero.</div>
+    <!-- CORRECTION MODE IS LABELLED, not inferred. An unlabelled correction
+         screen for a departed employee looks exactly like an entry screen for
+         a current one, and the two are different permissions. -->
+    <div id="ts-modal-correction" class="psub" style="display:none;color:var(--danger);margin:-8px 0 14px;font-weight:600;"></div>
     <div class="fr">
       <div class="fg"><label>Mon</label><input id="ts-d0" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
       <div class="fg"><label>Tue</label><input id="ts-d1" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
@@ -3028,20 +3032,68 @@ function sbTsFor(empId,week){
   }
   return null;
 }
+
+// ── A RECORDED WEEK MUST STAY REACHABLE AFTER THE EMPLOYEE LEAVES ──────────
+//
+// THE DEFECT THIS CLOSES (2026-09-16, found by removal_path_check.py asking a
+// different question). `sb_ts` declares no removal verb, and the answer to that
+// -- written in docs/CRITICALITY-TIERS.md and correct as far as it went -- was
+// that CORRECTING A WEEK IS A RE-SAVE: the id is derived server-side from
+// `<emp>|<week>` so a re-save UPDATEs, and tsReadDays() reads a blank cell as 0,
+// so a wrong week can be zeroed through the product.
+//
+// But that entire path ran through ONE panel, and the panel could not see a
+// departed employee. rTS() filtered `status === 'Active'` and openTsModal()
+// refused independently. So: record a week, deactivate the employee, and the
+// row FROZE -- not editable, not zeroable, not removable, not visible anywhere
+// in the app -- while it stayed in sb_ts, on the server, and in the backup. A
+// Tier A payroll record with no route back to it, in the one store the
+// criticality register says has no other copy.
+//
+// THE ROSTER IS THE FIX, AND IT IS DELIBERATELY NOT "SHOW EVERYONE". Two
+// different things were being conflated by one status check:
+//
+//   RECORDING a new week for a departed employee  -- still REFUSED. Nobody
+//     worked last week who left last month, and an entry path that allows it
+//     is a way to invent payroll.
+//   CORRECTING a week that was already recorded   -- now ALLOWED. The record
+//     exists, it is wrong, and somebody has to be able to reach it.
+//
+// So an inactive employee appears for a given week IF AND ONLY IF a row already
+// exists for that employee and that week. No row, no line, no way in.
+function sbTsRoster(week){
+  var emps=ld('sb_emps',[]);
+  var out=[];
+  emps.forEach(function(e){
+    if(!e) return;
+    if(e.status==='Active'){ out.push({emp:e,correctionOnly:false}); return; }
+    // Not active: included ONLY to correct a week already on the books.
+    if(sbTsFor(e.id,week)) out.push({emp:e,correctionOnly:true});
+  });
+  return out;
+}
 function rTS(){
-  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var roster=sbTsRoster(sbTsWeek);
+  var actives=roster.filter(function(r){return !r.correctionOnly;});
   var week=sbTsWeek;
   $('tsweek').textContent=week;
   var nx=$('ts-next');if(nx)nx.disabled=(week>=sbWeekStart(new Date()));
-  var th=0,tot=0,tc=0,recorded=0;
-  $('tstbody').innerHTML=emps.map(function(e){
+  var th=0,tot=0,tc=0,recorded=0,departed=0;
+  $('tstbody').innerHTML=roster.map(function(r){
+    var e=r.emp;
     var row=sbTsFor(e.id,week);
     var d=row&&row.hours;
-    var btn='<td style="text-align:center;"><button class="btn bo bs" onclick="openTsModal(\''+H(e.id)+'\')">'+(d?'Edit':'Enter')+'</button></td>';
+    var label=r.correctionOnly?'Correct':(d?'Edit':'Enter');
+    var btn='<td style="text-align:center;"><button class="btn bo bs" onclick="openTsModal(\''+H(e.id)+'\')">'+label+'</button></td>';
+    // THE STATUS IS ON THE ROW, not only in the note. A departed employee's
+    // week sitting unmarked among current staff is its own quiet wrong number.
+    var name='<strong>'+H(e.fn+' '+e.ln)+'</strong>'+
+      (r.correctionOnly?'<div style="font-size:11px;color:var(--danger)">'+H(e.status||'not active')+
+        ' &mdash; shown only because this week is already recorded and may need correcting</div>':'');
     // A missing record is six dashes and no contribution to any total. It is
     // NEVER a default week -- that fallback is the defect this replaced.
     if(!Array.isArray(d)){
-      return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+
+      return'<tr><td>'+name+'</td>'+
         '<td style="text-align:center;color:var(--muted);">--</td>'.repeat(6)+
         '<td style="text-align:center;">--</td>'+
         '<td style="text-align:center;color:var(--muted);">--</td>'+
@@ -3049,8 +3101,15 @@ function rTS(){
     }
     var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
     var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
+    // COUNTED IN THE TOTALS, and this is a decision rather than a consequence
+    // of rendering the row. Hours recorded against a week were WORKED in that
+    // week and were payable in it; whether the person is on the roster TODAY
+    // says nothing about what last March cost. Leaving them out would rebuild
+    // the exact defect the note below exists to disclose -- a labour cost drawn
+    // from some of the people, printed without saying which.
     th+=t;tot+=ot;tc+=c;recorded++;
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td>'+btn+'</tr>';
+    if(r.correctionOnly)departed++;
+    return'<tr><td>'+name+'</td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td>'+btn+'</tr>';
   }).join('');
   var note;
   if(SB_TS_HAVE_A_WRITE_PATH&&recorded>0){
@@ -3058,8 +3117,11 @@ function rTS(){
     // An excluded employee is disclosed rather than absorbed. A total drawn
     // from six of eight people, printed without saying so, is the same class
     // of quiet wrong number as the hours that used to be invented.
-    var missing=emps.length-recorded;
-    note=missing?recorded+' of '+emps.length+' active employees have hours recorded. The other '+missing+' are excluded from all three figures above.':'';
+    var missing=actives.length-(recorded-departed);
+    var parts=[];
+    if(missing)parts.push((recorded-departed)+' of '+actives.length+' active employees have hours recorded. The other '+missing+' are excluded from all three figures above.');
+    if(departed)parts.push(departed+' employee'+(departed===1?' is':'s are')+' no longer active but ha'+(departed===1?'s':'ve')+' a recorded week here. Those hours ARE included in the three figures above, because they were worked in this week.');
+    note=parts.join(' ');
   }else{
     $('ts-hrs').textContent='--';$('ts-ot').textContent='--';$('ts-cost').textContent='--';
     // THE TWO EMPTY STATES ARE DIFFERENT SENTENCES, and collapsing them would
@@ -3085,10 +3147,33 @@ var tsEditing=null;
 function openTsModal(empId){
   var e=ld('sb_emps',[]).find(function(x){return x.id===empId;});
   if(!e){toast('No such employee');return;}
-  if(e.status!=='Active'){toast('Hours can only be recorded for an active employee');return;}
+  var existing=sbTsFor(empId,sbTsWeek);
+  // RECORDING AND CORRECTING ARE DIFFERENT PERMISSIONS, and one status check
+  // used to refuse both. Recording a NEW week for a departed employee stays
+  // refused -- that is a way to invent payroll. Correcting a week ALREADY ON
+  // THE BOOKS is allowed, because the record exists, it may be wrong, and the
+  // alternative is a frozen Tier A payroll row with no route back to it. See
+  // sbTsRoster() for the full account.
+  var correctionOnly=(e.status!=='Active');
+  if(correctionOnly&&!existing){
+    toast('Hours can only be recorded for an active employee');
+    return;
+  }
   tsEditing=empId;
   $('ts-emp-name').textContent=e.fn+' '+e.ln;
   $('ts-modal-week').textContent=sbTsWeek;
+  // The modal says WHICH of the two it is. An unlabelled correction screen for
+  // a departed employee looks exactly like an entry screen for a current one.
+  var cn=$('ts-modal-correction');
+  if(cn){
+    cn.textContent=correctionOnly
+      ? 'CORRECTING A RECORDED WEEK. '+e.fn+' '+e.ln+' is '+(e.status||'not active')
+        +'. This week is already on the books, so it can be corrected here -- '
+        +'including to all-zero -- but no NEW week can be recorded for them. '
+        +'The row itself is never deleted; it is a payroll record.'
+      : '';
+    cn.style.display=correctionOnly?'':'none';
+  }
   var row=sbTsFor(empId,sbTsWeek);
   for(var i=0;i<6;i++){
     // A blank field is NOT a zero until somebody saves it as one. Prefilling
@@ -3117,6 +3202,16 @@ function tsReadDays(){
 }
 function saveTimesheet(){
   if(!tsEditing){toast('Nothing to save');return;}
+  // THE GUARD LIVES ON THE WRITE PATH, NOT ONLY ON THE BUTTON THAT OPENS IT.
+  // openTsModal() already refuses to open a NEW week for a departed employee,
+  // but a UI refusal is a refusal to offer, not a refusal to do -- and this is
+  // the function that actually writes a payroll row. Re-checked here so the
+  // rule holds however the modal was reached.
+  var _e=ld('sb_emps',[]).find(function(x){return x.id===tsEditing;});
+  if(_e&&_e.status!=='Active'&&!sbTsFor(tsEditing,sbTsWeek)){
+    toast('Hours can only be recorded for an active employee. NOTHING WAS SAVED');
+    return;
+  }
   var r=tsReadDays();
   if(r.bad){
     var days=['Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -4526,22 +4621,36 @@ function csv(type){
   // defect as a total that omits them, one file further from anyone who could
   // notice -- and a zero row would state that somebody worked no hours.
   else if(type==='timesheet'){
-    var tsEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-    var tsMissing=[];
-    rows=[['Employee','Week Of','Mon','Tue','Wed','Thu','Fri','Sat','Total Hrs','OT Hrs','Est. Pay']];
-    tsEmps.forEach(function(e){
+    // THE FILE AND THE SCREEN SHARE ONE ROSTER. They used to compute their own
+    // employee lists from the same filter, which agreed by luck rather than by
+    // construction -- so a departed employee's recorded week would have been on
+    // neither, and fixing one would have silently left the other behind. An
+    // export that disagrees with the panel it was taken from is worse than no
+    // export, which is the call this same function already makes elsewhere.
+    var tsRoster=sbTsRoster(sbTsWeek);
+    var tsActive=tsRoster.filter(function(r){return !r.correctionOnly;});
+    var tsMissing=[],tsDeparted=[];
+    rows=[['Employee','Status','Week Of','Mon','Tue','Wed','Thu','Fri','Sat','Total Hrs','OT Hrs','Est. Pay']];
+    tsRoster.forEach(function(rr){
+      var e=rr.emp;
       var row=sbTsFor(e.id,sbTsWeek);
       if(!row||!Array.isArray(row.hours)){tsMissing.push(e.fn+' '+e.ln);return;}
       var t=row.hours.reduce(function(a,b){return a+(Number(b)||0);},0);
       var ot=Math.max(0,t-40);
-      rows.push([e.fn+' '+e.ln,sbTsWeek].concat(row.hours).concat(
+      if(rr.correctionOnly)tsDeparted.push(e.fn+' '+e.ln+' ('+(e.status||'not active')+')');
+      rows.push([e.fn+' '+e.ln,e.status||'',sbTsWeek].concat(row.hours).concat(
         [t,ot,((t-ot)*e.rate+ot*e.rate*1.5).toFixed(2)]));
     });
     if(tsMissing.length){
       rows.push([]);
-      rows.push(['NOTE','No hours recorded for '+tsMissing.length+' of '+tsEmps.length+
+      rows.push(['NOTE','No hours recorded for '+tsMissing.length+' of '+tsActive.length+
                  ' active employees, and they are EXCLUDED from this file rather than exported as zero: '+
                  tsMissing.join('; ')]);
+    }
+    if(tsDeparted.length){
+      if(!tsMissing.length)rows.push([]);
+      rows.push(['NOTE','INCLUDED and no longer active -- these hours were worked in this week and are '+
+                 'part of its labour cost, so they are exported rather than dropped: '+tsDeparted.join('; ')]);
     }
   }
   else if(type==='performance'){rows=[['Employee','Type','Due','Reviewer','Score','Raise','PIP','Status']];ld('sb_perf',[]).forEach(function(r){rows.push([r.emp,r.type,r.due,r.rev,r.score,r.raise?'Yes':'No',r.pip?'Yes':'No',r.status]);});}

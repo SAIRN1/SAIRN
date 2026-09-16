@@ -128,6 +128,7 @@ function harness(opts) {
     + fnBody('function tsShiftWeek(') + '\n'
     + fnBody('function sbTsRows(') + '\n'
     + fnBody('function sbTsFor(') + '\n'
+    + fnBody('function sbTsRoster(') + '\n'
     + fnBody('function rTS()') + '\n'
     + 'var tsEditing=null;\n'
     + fnBody('function openTsModal(') + '\n'
@@ -667,6 +668,133 @@ test('an unrecorded employee is NAMED in a note, not exported as zero', () => {
   const body = fnBody('function csv(');
   assert.ok(/EXCLUDED from this file rather than exported as zero/.test(body),
     'the export no longer discloses who it left out');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('11. a recorded week stays reachable after the employee leaves');
+// THE DEFECT THESE ARMS EXIST FOR (2026-09-16). `sb_ts` declares no removal
+// verb and the stated answer -- CORRECTING A WEEK IS A RE-SAVE -- was true as
+// far as it went. But the whole path ran through one panel that filtered
+// `status === 'Active'`, so a week recorded for an employee who was later
+// DEACTIVATED froze: not editable, not zeroable, not removable, not visible,
+// while the row stayed in sb_ts, on the server and in the backup.
+//
+// TWO PERMISSIONS, NOT ONE, and every arm below pins the split:
+//   RECORDING a NEW week for a departed employee  -- still REFUSED
+//   CORRECTING a week ALREADY ON THE BOOKS        -- now ALLOWED
+
+function departedCtx(opts) {
+  opts = opts || {};
+  const roster = emps(3);
+  roster[1].status = 'Terminated';          // Last2, rate 12
+  const rows = opts.noRow ? [] : [tsRow('E002', [8, 8, 8, 8, 8, 0])];
+  if (!opts.noRow) rows.push(tsRow('E001', [8, 8, 8, 8, 4, 0]));
+  return harness({ stored: { sb_emps: roster, sb_ts: rows } });
+}
+
+test('a departed employee WITH a recorded week is on the roster and LABELLED', () => {
+  const ctx = departedCtx();
+  const body = ctx.__el.tstbody.innerHTML;
+  assert.ok(/Last2/.test(body), 'the departed employee vanished from the panel again');
+  assert.ok(/Terminated/.test(body), 'the row does not say the person is not active');
+  assert.ok(/already recorded and may need correcting/.test(body),
+    'the row does not say WHY a non-active person is listed');
+});
+
+test('...and the button says Correct, not Enter', () => {
+  // Read the RAW row, not rowCells(), which strips markup -- the assertion is
+  // about the button's own label and rowCells would flatten it into the cell
+  // text where "Correct" and "Enter" are indistinguishable from prose.
+  const rows = departedCtx().__el.tstbody.innerHTML.split('<tr>').slice(1);
+  const row = rows.find((r) => r.indexOf('Last2</strong>') !== -1);
+  assert.ok(row, 'no rendered row for Last2');
+  assert.ok(/openTsModal\('E002'\)">Correct</.test(row),
+    'a correction is offered as an ordinary entry');
+  const active = rows.find((r) => r.indexOf('Last1</strong>') !== -1);
+  assert.ok(/>Edit</.test(active) || /># Enter</.test(active) || />Enter</.test(active),
+    'an ACTIVE employee stopped getting the ordinary label');
+});
+
+test('a departed employee with NO recorded week is NOT on the roster at all', () => {
+  const ctx = departedCtx({ noRow: true });
+  assert.ok(!/Last2/.test(ctx.__el.tstbody.innerHTML),
+    'a departed employee with nothing to correct is being offered an entry row');
+});
+
+test('...and openTsModal REFUSES them, with the original message', () => {
+  const ctx = departedCtx({ noRow: true });
+  ctx.openTsModal('E002');
+  assert.ok(ctx.__toasts.some((t) => /only be recorded for an active employee/i.test(t)),
+    'a new week can be opened for a departed employee');
+  assert.strictEqual(ctx.tsEditing, null, 'the modal opened anyway');
+});
+
+test('openTsModal OPENS for a departed employee whose week is on the books', () => {
+  const ctx = departedCtx();
+  ctx.openTsModal('E002');
+  assert.strictEqual(ctx.tsEditing, 'E002', 'the recorded week is still unreachable');
+  assert.ok(/CORRECTING A RECORDED WEEK/.test(ctx.__el['ts-modal-correction'].textContent),
+    'correction mode is not labelled, so it looks like an ordinary entry screen');
+});
+
+test('THE CORRECTION ACTUALLY WRITES -- a frozen week can be zeroed', () => {
+  const ctx = departedCtx();
+  ctx.openTsModal('E002');
+  for (let i = 0; i < 6; i++) ctx.$('ts-d' + i).value = '';
+  ctx.saveTimesheet();
+  const saved = ctx.__stored.sb_ts.filter((r) => r.emp === 'E002' && r.week === WEEK);
+  assert.strictEqual(saved.length, 1, 'the correction added a second row for one week');
+  assert.deepStrictEqual(saved[0].hours, [0, 0, 0, 0, 0, 0],
+    'the week was not corrected to zero');
+});
+
+// THE GUARD IS ON THE WRITE PATH, NOT ONLY ON THE BUTTON. A UI refusal is a
+// refusal to OFFER; this is the function that writes a payroll row, and it is
+// driven here directly with the modal state a bypass would leave behind.
+test('saveTimesheet REFUSES a NEW week for a departed employee even when driven '
+  + 'directly, bypassing the modal', () => {
+  const ctx = departedCtx({ noRow: true });
+  ctx.tsEditing = 'E002';
+  for (let i = 0; i < 6; i++) ctx.$('ts-d' + i).value = '8';
+  ctx.saveTimesheet();
+  assert.ok(ctx.__toasts.some((t) => /NOTHING WAS SAVED/.test(t)),
+    'the write path did not refuse and did not say so');
+  const rows = (ctx.__stored.sb_ts || []).filter((r) => r.emp === 'E002');
+  assert.strictEqual(rows.length, 0, 'a payroll week was invented for a departed employee');
+});
+
+test('a departed employee\'s recorded hours ARE counted in the three figures', () => {
+  const ctx = departedCtx();
+  // E001 rate 11, 36h -> 396.00 ; E002 rate 12, 40h -> 480.00
+  assert.strictEqual(ctx.__el['ts-hrs'].textContent, 76,
+    'the departed week was silently dropped from total hours');
+  assert.strictEqual(ctx.__el['ts-cost'].textContent, '$876.00',
+    'the labour cost excludes hours that were worked in this week');
+});
+
+test('...and that INCLUSION is disclosed rather than absorbed', () => {
+  const note = departedCtx().__el['ts-note'].textContent;
+  assert.ok(/no longer active/.test(note), 'nothing says a departed week is in the totals');
+  assert.ok(/ARE included/.test(note), 'the note does not say which way the figures went');
+});
+
+test('...and with nobody departed the disclosure is ABSENT, because one that is '
+  + 'always on stops being read', () => {
+  const ctx = harness({ stored: { sb_emps: emps(2),
+    sb_ts: [tsRow('E001', [8, 8, 8, 8, 8, 0]), tsRow('E002', [8, 8, 8, 8, 8, 0])] } });
+  assert.ok(!/no longer active/.test(ctx.__el['ts-note'].textContent),
+    'the departed-week disclosure fires when there is nothing to disclose');
+});
+
+test('the CSV and the PANEL share one roster, so the file cannot disagree with '
+  + 'the screen it was taken from', () => {
+  const body = fnBody('function csv(');
+  assert.ok(/sbTsRoster\(sbTsWeek\)/.test(body),
+    'the export computes its own employee list again');
+  assert.ok(!/ld\('sb_emps',\[\]\)\.filter\(function\(e\)\{return e\.status==='Active';\}\)/
+    .test(body.replace(/\s+/g, '')), 'the old status filter is still in the export');
+  assert.ok(/INCLUDED and no longer active/.test(body),
+    'the file does not disclose a departed employee it exported');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
