@@ -18,7 +18,23 @@ example, a regex-based scanner matched it, and --fix rewrote the paragraph
 explaining the bug. That is CLAUDE.md's standing rule 1.2 -- grep cannot tell
 code from text that describes code -- reproduced inside a tool written to close
 a different fail-open. The tool walks the AST now and section 3 pins that.
+
+── IT WAS A CONTROL AND DID NOT SAY SO (2026-09-16) ─────────────────────────
+This file has driven subprocess_decode_check.py in both directions since it was
+written, and `tools/checker_confidence.py` still rated that checker LOW on all
+three signals -- "NO declared control: nothing has ever shown this checker can
+fire" -- because the declaration below was missing. With it read, the same tool
+rates it HIGH/HIGH/HIGH. The control had always been there.
+
+`tools/checker_control_check.py` refuses to INFER which checker a test controls,
+and it is right to: it records three inference models tried and all three wrong
+within an hour, each in a different direction. Which checker a test controls is
+a fact its author knows and nothing else reliably does, so it is declared. The
+cost of forgetting is not a wrong answer -- it is a real control counting for
+nothing.
 """
+CONTROLS_FOR = ['tools/subprocess_decode_check.py']
+
 import ast
 import io
 import os

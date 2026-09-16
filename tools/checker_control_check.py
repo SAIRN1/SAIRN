@@ -171,7 +171,29 @@ def strip(path, src):
 
 DECL_RE = re.compile(
     r"CONTROLS_FOR\s*=\s*[\[\(]([^\]\)]*)[\]\)]", re.S)
-NAME_RE = re.compile(r"['\"]([\w.-]+\.py)['\"]")
+# ── A DECLARATION THAT DOES NOT PARSE IS A CONTROL THAT COUNTS FOR NOTHING ──
+# This was `['\"]([\w.-]+\.py)['\"]`, which rejects a path separator and rejects
+# `.js` outright. MEASURED 2026-09-16: NINE of seventy CONTROLS_FOR
+# declarations under tests/ parsed to nothing.
+#
+#   FIVE wrote the path form -- CONTROLS_FOR = ['tools/subprocess_decode_check.py']
+#     -- which reads perfectly to a human and matched nothing here.
+#   FOUR are JavaScript controls naming JavaScript subjects. `.py` could never
+#     match them, so a JS checker could not be declared as controlled AT ALL and
+#     every one scored as though nobody had ever tried to break it.
+#
+# IT IS A FAIL-OPEN, WHICH IS WHY IT SURVIVED. The author writes the line, sees
+# no error, and `tools/checker_confidence.py` goes on reporting "NO declared
+# control: nothing has ever shown this checker can fire" about a checker whose
+# control is sitting beside it. Found exactly that way: confidence rated
+# subprocess_decode_check.py LOW on all three signals while its probe was
+# driving it in both directions across eight arms. With the declaration read,
+# the same tool rates it HIGH/HIGH/HIGH -- the control had always been there.
+#
+# Names normalise to a BASENAME because that is what every consumer compares
+# against -- REGISTRY's `tool` field and the checker list are bare filenames --
+# so `tools/x.py`, `./x.py` and `x.py` are one answer rather than three.
+NAME_RE = re.compile(r"['\"]([\w./\\-]+\.(?:py|js))['\"]")
 
 
 def declared_controls(code):
@@ -211,7 +233,8 @@ def declared_controls(code):
     """
     out = set()
     for m in DECL_RE.finditer(code):
-        out.update(NAME_RE.findall(m.group(1)))
+        for _name in NAME_RE.findall(m.group(1)):
+            out.add(os.path.basename(_name.replace('\\', '/')))
     return out
 
 

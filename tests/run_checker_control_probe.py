@@ -287,6 +287,70 @@ check(len(real) > 20, 'it reads %d promoted checkers from report_only_checks '
 check('checkblocks.py' in real or True,
       'a hand-maintained list would go stale the next time one is promoted')
 
+
+# ── THE DECLARATION FORM, BOTH DIRECTIONS (2026-09-16) ──────────────────────
+# NINE of seventy CONTROLS_FOR declarations under tests/ parsed to NOTHING, and
+# nothing said so. NAME_RE rejected any path separator and could not match `.js`
+# at all, so five controls written as CONTROLS_FOR = ['tools/x.py'] -- which
+# reads perfectly to a human -- declared nothing, and four JavaScript controls
+# naming JavaScript subjects could not be declared AT ALL.
+#
+# IT IS A FAIL-OPEN AND THAT IS WHY IT LASTED. The author writes the line, sees
+# no error, and checker_confidence.py goes on reporting "NO declared control:
+# nothing has ever shown this checker can fire" about a checker whose control is
+# beside it driving it in both directions. Found exactly that way, on
+# subprocess_decode_check.py: LOW on all three signals before, HIGH on all three
+# after, with no change to the control itself.
+print('\nthe declaration form: paths, extensions, and what is NOT one')
+
+
+def _D(s):
+    return M.declared_controls(M.strip('fixture.py', s))
+
+
+check(_D("CONTROLS_FOR = ['checkblocks.py']") == {'checkblocks.py'},
+      'a BARE filename declares -- the documented form')
+check(_D("CONTROLS_FOR = ['tools/checkblocks.py']") == {'checkblocks.py'},
+      'a PATH declares the same subject, normalised to the basename')
+check(_D("CONTROLS_FOR = ['role_gate_invariants.js']")
+      == {'role_gate_invariants.js'},
+      'a .js subject declares -- four JS controls could not before')
+check(_D("CONTROLS_FOR = ['_lib/wex.js', '_lib/intl-caselaw.js']")
+      == {'wex.js', 'intl-caselaw.js'},
+      'a nested .js path normalises too')
+check(len(_D("CONTROLS_FOR = ['x.py', 'tools/x.py', './x.py']")) == 1,
+      'three spellings of one subject are ONE answer, not three')
+
+# MUST NOT DECLARE. Widening a pattern is how it starts matching what is not its
+# subject, and OVER-crediting is the failure this whole tool exists to end -- a
+# control that named five checkers while testing three.
+check(_D("# CONTROLS_FOR = ['checkblocks.py']") == set(),
+      'CONTROL: a declaration in a COMMENT does not count')
+check(_D("import os\nprint('checkblocks.py')") == set(),
+      'CONTROL: a file with no declaration declares nothing')
+check(_D("CONTROLS_FOR = ['notes.md', 'data.json']") == set(),
+      'CONTROL: a non-source extension is not a subject')
+check(_D("MESSAGE = 'see tools/checkblocks.py for details'") == set(),
+      'CONTROL: prose naming a checker is not a declaration')
+
+# AND THE MEASUREMENT ITSELF, so a regression surfaces as a named list rather
+# than as a checker quietly scoring uncontrolled.
+_dead = []
+for _root, _dirs, _files in os.walk(os.path.join(REPO, 'tests')):
+    _dirs[:] = [d for d in _dirs if d != '__pycache__']
+    for _f in _files:
+        if not (_f.endswith('.py') or _f.endswith('.js')):
+            continue
+        _p = os.path.join(_root, _f)
+        _src = io.open(_p, encoding='utf-8', errors='replace').read()
+        if 'CONTROLS_FOR' not in _src:
+            continue
+        if not M.declared_controls(M.strip(_p, _src)):
+            _dead.append(os.path.relpath(_p, REPO).replace(os.sep, '/'))
+check(not _dead,
+      'EVERY CONTROLS_FOR under tests/ parses to a subject (these declare '
+      'nothing: %s)' % _dead)
+
 print('')
 if fails:
     print('%d FAILING CHECK(S)' % len(fails))

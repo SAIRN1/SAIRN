@@ -27,6 +27,14 @@
 // query and is not claimed here.
 
 'use strict';
+// THE DECLARATION EXISTED ONLY AS A COMMENT (fixed 2026-09-16). Line 10 carries
+// `CONTROLS_FOR` in prose, and tools/checker_control_check.py strips comments
+// before reading it -- deliberately, because counting prose as a declaration is
+// the over-crediting failure that tool was built to end. So this file declared
+// nothing and both its subjects scored as though no control existed. Its three
+// sibling JS controls all carry BOTH forms: the comment for a reader, the const
+// for the parser. This is the const.
+const CONTROLS_FOR = ['_lib/wex.js', '_lib/intl-caselaw.js'];
 const assert = require('assert');
 const path = require('path');
 
