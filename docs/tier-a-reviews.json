@@ -1,264 +1,279 @@
 {
-  "_what_this_is": "The standing rule that a Tier A change is reviewed by a session OTHER than the one that wrote it, made mechanical. Until 2026-09-15 it lived only in prose and in ad-hoc open-work-row warnings ('the session which wrote the code shares its own blind spot'), which is a rule enforced by remembering. Push-gate check 13 (tools/tier_a_review_gate.py) reads this file.",
-  "_how_it_works": "A push that changes code serving a Tier A resource must leave an OPEN obligation here naming this session and those resources. The gate DENIES a push that touches Tier A code with no covering obligation, and DENIES any record whose reviewer is its own author. Recording the obligation is the author's job and takes one entry; discharging it is somebody else's and cannot be faked by the author.",
-  "_what_it_does_NOT_claim": "That a review happened, or that it was any good. It is a record that the obligation EXISTS and was not self-signed. A gate cannot read a review; it can only refuse to let one be skipped silently or signed by its own author.",
-  "_scope": "Tier A resources, derived from docs/CRITICALITY-TIERS.md. Never a second hand-kept copy of that list -- if the register cannot be parsed the gate FAILS CLOSED and says so.",
-  "records": [
-    {
-      "author_session": "cc",
-      "opened_at": "2026-09-15T12:39:33Z",
-      "commit": "e442ca86",
-      "resources": [
-        "sc_ar",
-        "sc_claims",
-        "sc_compliance",
-        "sc_credential_scope",
-        "sc_denial",
-        "sc_denial_events",
-        "sc_revenue",
-        "sv_controlled"
-      ],
-      "files": [
-        "api/_resources/extra-actions.test.js",
-        "api/_resources/sairncode.js",
-        "api/sd-data.js",
-        "sairncode.html",
-        "tests/run_tier_a_replaceability_probe.py",
-        "tests/sairncode_gates.js",
-        "tools/sc_tier_a_write_gate_live_probe.py"
-      ],
-      "what": "Item 97: SAIRNcode's seven Tier A records moved from a destroying `delete` to `soft_delete`, with a read filter, a handler-level refusal and the client call sites repointed. RECORDED RETROACTIVELY on the day the gate was built -- the commit landed hours before check 13 existed, so nothing refused it, and leaving the first Tier A change under the new rule unrecorded would have been the exact gap the rule is about. The reviewer should look hardest at three things: whether the read filter really excludes marked rows on all seven and only those seven; whether repointing the seven client call sites missed one; and whether SC_TIER_A_SOFT_DELETE_ONLY agreeing with docs/CRITICALITY-TIERS.md is actually enforced in both directions or only one.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "fourth",
-      "opened_at": "2026-09-15T12:51:17Z",
-      "resources": [
-        "dnt_patients",
-        "dnt_rollup"
-      ],
-      "files": [
-        "SAIRN-ACTIVE-WORK-fourth.md"
-      ],
-      "what": "dnt_rollup cross-location roll-up (api/_lib/dnt-rollup.js + its sd-data.js branch, Tier A): the arithmetic, the owner-only gate, and specifically the rule that an unreadable resource yields null rather than 0 -- a wrong number there is a staffing decision made on a figure short by an unknown amount. Also worth an independent eye: whether the UNASSIGNED bucket can ever be read as an office by a client.",
-      "status": "reviewed",
-      "reviewer_session": "cody",
-      "reviewed_at": "2026-09-15T14:49:43Z",
-      "verdict": "REVIEWED. The substantive review is HANK'S, in ce7764fa -- I am not claiming it, and this record must not read as though cody found these. What cody adds is INDEPENDENT CONFIRMATION BY A DIFFERENT ROUTE plus one new observation. FINDING 1 (Hank's, reproduced): a metric reports {value:null,unreadable:'suppressed'} while disclosure.unreadable is EMPTY and complete is TRUE -- three parts of one object contradicting each other. Hank reached it through a legacy unstamped charge creating the UNASSIGNED bucket late; I reached it through an appointment at a location id that the charges resource had never seen, registry empty. Two different populations, same cause (dnt-rollup.js:151 seeds cells only on buckets existing when that metric runs; :178 then treats a MISSING cell identically to a SUPPRESSED one). Independent reproduction by a structurally different input is what makes this a property of the code rather than of one fixture. FINDING 2 (Hank's, reproduced): unreadable AMOUNTS contribute 0 and are counted -- 100 + null + '' + '$1,200' + '12abc' reports value 112 over 5 rows with complete:true. Agreed with Hank that this is a DISAGREEMENT not an oversight, since dnt-rollup.test.js:199 pins the zeroing deliberately; the objection is that nothing NAMES the unread fields and complete:true tells a client not to look. NEW, NOT IN HANK'S REVIEW: the sum accumulates in FLOATS. 0.1 + 0.2 reports 0.30000000000000004. Low severity for a display report and it is the same class as the recorded incident where two figures 4.5e-13 apart refused a correct bill and was fixed in integer cents -- raising it so the next person does not re-derive it. NOT FIXED BY ME: I hold a review, not the file, and a reviewer who lands the fix stops being independent of it -- Hank's own reasoning and it is right.",
-      "note": "REVERTED 2026-09-15 by cc. I discharged this by accident while TESTING --discharge against the real register, recording cc as the reviewer with a placeholder verdict. Both were false: HANK did this review, in ce7764fa, with two real findings. cc cannot sign for hank -- --discharge records the RUNNING session -- so the record is back to open and hank should run `python tools/tier_a_review_gate.py --discharge fourth \"<verdict>\"` to close it in their own name. The lesson is in the tool now: a probe must not drive a write command against the live register, and the probe added today uses a temporary file for exactly that reason."
-    },
-    {
-      "author_session": "cc",
-      "opened_at": "2026-09-15T13:00:06Z",
-      "commit": "pending -- the commit this record ships in",
-      "resources": [
-        "sc_ar",
-        "sc_claims",
-        "sc_compliance",
-        "sc_credential_scope",
-        "sc_denial",
-        "sc_denial_events",
-        "sc_revenue"
-      ],
-      "files": [
-        "api/sd-data.js",
-        "sairncode.html",
-        "tests/sairncode_gates.js",
-        "tests/sairncode_gates_mutation_control.js",
-        "tools/sc_tier_a_write_gate_live_probe.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "what": "A LIVE SECURITY GAP: sc_denial_events is Tier A in the register and was NOT in the hand-written six-name write gate, so it accepted a write from the LICENCE KEY ALONE. Measured against the deployed function, not inferred -- the other six answered 401 NO_SESSION and sc_denial_events answered 200. SC_TIER_A_WRITE_GATED is now DERIVED from the same pinned Tier A list the removal verbs use, so the two cannot diverge again. The reviewer should look hardest at: whether deriving the write gate from the soft-delete list is the RIGHT equivalence or a coincidence that will break when a Tier A resource legitimately needs one and not the other; whether the suite's three hand-moved counts (20 ungated, 7 gated, 8 refusal-helper callers) were each re-measured or just made to pass; and whether any OTHER app has the same shape -- a hand-written gate list beside a tier register nobody compares it to. ALSO IN THIS REVIEW PASS, added 2026-09-15 rather than opening a third record for the same resources: (a) tools/sc_tier_a_write_gate_live_probe.py carried its OWN hand-written list of six and so LIVE-VERIFIED six of seven while reporting 'all six refuse' -- true, over the wrong denominator; it is derived from the registry now; (b) tools/tier_a_review_gate.py had a real FAIL-OPEN: subprocess text=True decoded git output with the cp1252 locale default, the reader thread raised UnicodeDecodeError on this repo's box-drawing characters, and the call returned TRUNCATED stdout rather than failing -- a diff-reading gate silently getting a short diff under-detects and reports clean. Encoding is explicit now. THE REVIEWER SHOULD CHECK whether any OTHER tool on this platform reads git output with a bare text=True, because the same one-line defect is invisible until the diff happens to contain a non-ASCII byte.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cc",
-      "opened_at": "2026-09-15T14:23:47Z",
-      "resources": [
-        "sv_audit_log"
-      ],
-      "files": [
-        "tests/run_tier_a_replaceability_probe.py"
-      ],
-      "what": "The item 97 under-assignment sweep. NOTE FOR THE REVIEWER: this obligation is a FALSE POSITIVE of the gate and is recorded rather than excluded. The only Tier A name in the diff is sv_audit_log, appearing as a FIXTURE STRING in tests/run_tier_a_replaceability_probe.py -- t.SHAPE.search('sv_audit_log') -- so no code serving sv_audit_log changed. The gate's documented posture is that over-inclusion costs one register entry and under-inclusion is a Tier A change slipping through clean, so the honest response is to record it; adding a tests/ exclusion would blind the gate to real test-side changes to Tier A behaviour, which is a worse trade. What DID change and is worth a look: tools/tier_a_replaceability_check.py gained --under, whose ATTESTATION signal shipped with a literal backspace (byte 0x08) and reported zero hits platform-wide until a positive control caught it, then reported zero again until it learned to resolve constant aliases. Check whether the +/-300 window is the right narrowness and whether any OTHER signal on this platform has never been asserted to FIRE on a known case.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cc",
-      "opened_at": "2026-09-15T15:16:41Z",
-      "resources": [
-        "rf_certifications"
-      ],
-      "files": [
-        "tests/run_export_coverage_probe.py"
-      ],
-      "what": "The platform-wide subprocess decode sweep -- 358 text-mode subprocess calls given an explicit encoding. FOURTH FALSE POSITIVE OF THIS GATE, recorded rather than overridden. The only Tier A name in the diff is rf_certifications, appearing in CONTEXT around a touched line in tests/run_export_coverage_probe.py; no code serving rf_certifications changed. The pattern across all four is now clear and is worth a reviewer's judgement: the gate attributes a resource named in a hunk's CONTEXT lines as strongly as one named in an ADDED or REMOVED line, and a mechanical one-line-per-call sweep produces context lines everywhere. I proposed context-counting myself, on the argument that an edit three lines from law_trusttx is an edit about law_trusttx; four false positives and zero true positives from context alone say that argument is wrong in practice. THE REVIEWER SHOULD DECIDE whether attribution should require the name on a +/- line, with context demoted to a reported-but-not-blocking signal -- and should check that the item 97 commit would still fire under the narrower rule before agreeing. FIXED IN THE SAME SESSION, and the measurement is in the commit: attribution is now CHANGED LINES ONLY, with context demoted to a reported-but-never-blocking signal. Measured over every real case the gate has seen -- item 97 (context 8 / changed 8), sc_denial_events (7/7), the decode sweep (1/0), Hank's report-only fix (0/0): context added NOTHING to either true positive and produced the only remaining false one. THE REVIEWER SHOULD STILL CHECK whether four cases is enough to change a gate's rule on, and whether demoting rather than deleting the context signal actually helps anybody or is just a line nobody reads.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cody",
-      "opened_at": "2026-09-15T15:23:16Z",
-      "resources": [
-        "dnt_charges",
-        "dnt_patients"
-      ],
-      "files": [
-        "api/_lib/dnt-rollup.test.js"
-      ],
-      "what": "dnt_rollup: measureNumber() from the new api/_lib/safe-number.js replaces parseFloat in the sum, and the roll-up now reports unread_fields with complete going false when any amount could not be read. This closes finding 2 of Hank's review (ce7764fa) using the fix HE suggested -- the arithmetic is unchanged and dnt-rollup.test.js:199 still passes. TWO THINGS A REVIEWER SHOULD PUSH ON. (1) I discharged the review on this same file an hour ago, so I am no longer independent of it; Michael directed the fix and that is his call, but the second reader here should be somebody who has done neither. (2) parseFloat -> Number IS a behaviour change beyond the disclosure: '12abc' was silently 12 and '1,200' was silently 1, and both are now counted unread. I believe a plausible wrong number is worse than an unreadable one, but that is a judgement about real dental data I cannot see. FINDING 1 OF THAT REVIEW IS UNTOUCHED and still reproduces -- the missing-cell-read-as-suppressed defect belongs to the author.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "fourth",
-      "opened_at": "2026-09-15T15:37:53Z",
-      "resources": [
-        "dnt_charges",
-        "dnt_patients",
-        "dnt_rollup"
-      ],
-      "files": [
-        "api/_lib/dnt-rollup.js",
-        "api/_lib/dnt-rollup.test.js"
-      ],
-      "what": "dnt_rollup review fixes for Hank's two findings (ce7764fa): cells materialised in a second pass over the final bucket set so a later metric cannot make an earlier one unmeasurable and the answer no longer depends on metric order; unreadable summed fields counted per cell and per total and forcing disclosure.complete false. PRESS ON: that a suppressed RESOURCE is still null and never 0 after the refactor, and that readable() does not mistake a literal 0 for an unreadable field.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "fourth",
-      "opened_at": "2026-09-15T22:25:27Z",
-      "resources": [
-        "law_trust_reconcile",
-        "law_trusttx",
-        "scp_quotes"
-      ],
-      "files": [
-        "api/_lib/law-trust-reconcile-endpoint.test.js",
-        "api/_lib/law-trust-reconcile.js",
-        "api/_resources/sairnlaw.js",
-        "api/sd-data.js",
-        "sairnscape.html"
-      ],
-      "what": "SAIRNlaw IOLTA reconciliation and the sairnscape scp_quotes write fix. Press on: whether allocation_vs_ledger can genuinely disagree, the on-or-before statement-date boundary, the undated-transaction case where the bank leg can agree while the all-time ledger is larger, and the single Math.round at the cents boundary.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cody",
-      "opened_at": "2026-09-16T01:41:03Z",
-      "resources": [
-        "sv_controlled"
-      ],
-      "files": [
-        "api/_lib/record-parity.js",
-        "api/_lib/record-parity.test.js"
-      ],
-      "what": "item 46: api/_lib/record-parity.js and its control -- RAID-style single-parity XOR over append-only records, built FOR sv_controlled (SAIRNvet's DEA-relevant controlled-substance register). It CORRECTS where item 35's hash chain only detects: lose or corrupt one record in a group and its exact bytes are reconstructible from the survivors plus parity, verified against the digest recorded at build time. NOT WIRED INTO sv-witness.js -- the library and its control only. WHAT A REVIEWER SHOULD PUSH ON. (1) The single-erasure limit: two losses in a group is unrecoverable and recover() refuses rather than returning plausible bytes -- check that refusal cannot be bypassed, because on an append-only register a wrong reconstruction stands forever as a second row. (2) The changed-survivor check: a drifted survivor XORs in wrongly and produces nonsense, and ONLY the recorded digest makes that visible. Verify the digest is taken at BUILD time and not recomputed at recovery, or the check is circular. (3) groupSize >= 2 is enforced because with one member the parity block IS the record -- a second plaintext copy of a controlled-substance entry. Check that nothing can construct a group of one by another route. (4) The canonical form is reused in spirit from sv-witness.js rather than imported; if the two ever diverge, a reconstruction will be byte-different from an identical record and fail its own digest. That is a real coupling worth an opinion on. (5) THE HONEST-CLAIM ARMS ARE PART OF THE SUBJECT: the header says this is not a backup, narrows rather than closes the creation-time exposure window, and is not encryption. Three arms assert those sentences are present; a reviewer should judge whether they are TRUE, which no arm can do.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "hank",
-      "opened_at": "2026-09-16T02:10:50Z",
-      "resources": [
-        "dnt_patients",
-        "invoices",
-        "law_trusttx",
-        "sv_controlled"
-      ],
-      "files": [
-        "tests/run_service_role_gate_probe.py",
-        "tools/service_role_tier_a_gate_check.py"
-      ],
-      "what": "tools/service_role_tier_a_gate_check.py makes CLAIMS ABOUT WHETHER Tier A resources are gated (dnt_patients, sv_controlled, law_trusttx, invoices appear as fixtures and as live verdicts), and a wrong classifier here produces FALSE ASSURANCE about trust money and DEA-adjacent records rather than a wrong number. That is worth a second reader on its own merits, and unlike the two earlier false positives from this gate tonight I am NOT arguing it away: its classifier was wrong THREE times today and each error was caught only by asking why a module appeared or vanished between runs. REVIEW TARGETS: (1) the v3 rule is 'the resource is addressed in a /rest/v1/ or rest() PATH' -- find a real write that addresses its table some other way, because that is a silent miss, not a false alarm; (2) existence of a write is asked FILE-WIDE but ORDER is asked inside module.exports, and a module with no module.exports is scanned whole and says so -- check that split against a real handler shape I did not look at; (3) PUBLIC_BY_DESIGN requires a prose declaration AND a limiter before the write, so a public endpoint that limits AFTER its write reads as UNGATED and a private one that never declares itself reads as UNGATED too -- confirm both are the safe direction; (4) GATED is a byte-offset proxy and cannot see control flow or a gate in a required module, so it is biased toward GATED and therefore toward MISSING findings.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cc",
-      "opened_at": "2026-09-16T02:52:34Z",
-      "resources": [
-        "quotes"
-      ],
-      "files": [
-        "tools/first_article_inspection.py"
-      ],
-      "what": "first_article_inspection.py: added self-test detection (UNWIRED as a distinct state from UNVERIFIED), tightened the self-test flag detector to require comparison against argv, and narrowed the suite matcher so a tool named as a DICTIONARY KEY in an exclusion list no longer counts as covered. The second one matters most for review: it changed which artefacts this tool reports as unverified, and it was wrong in BOTH directions before -- it missed five tools with working self-tests, and it counted a production write path as verified by the one file that deliberately refuses to run it. A reviewer should check the suites() regex against a case I did not think of, because this tool has now been wrong about its own blind spot three times.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cody",
-      "opened_at": "2026-09-16T03:11:02Z",
-      "resources": [
-        "dnt_ar",
-        "dnt_payments",
-        "sb_payruns"
-      ],
-      "files": [
-        "tools/suite_control_triage.py"
-      ],
-      "what": "tools/suite_control_triage.py (new, report-only), tools/suite_control_coverage.py probe-universe fix, tests/run_tool_selftest_probe.py argparse fix, tests/run_tool_selftest_probe_control.py (new control). NOTE FOR THE REVIEWER: the Tier A names the gate matched are FIXTURE STRINGS in suite_control_triage.py's blind lock, not resources it serves -- dnt_ar is there specifically to assert that a substring match against dnt_area does NOT fire. None of these four files reads, writes or gates any resource. Review the checkers as checkers.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "cody",
-      "opened_at": "2026-09-16T04:10:46Z",
-      "resources": [
-        "quotes"
-      ],
-      "files": [
-        "tools/retry_backoff_check.py"
-      ],
-      "what": "tools/retry_backoff_check.py (new, report-only) and tests/retry_backoff_check_control.py (new control) for item 81. NOTE FOR THE REVIEWER: the gate matched the Tier A resource 'quotes' inside a FIXTURE STRING -- the must-not-fire arm 'Storage full - clear old quotes and retry.', which exists precisely to prove the tool does not fire on the English word retry in a user-facing message. Neither file reads, writes or gates any resource; retry_backoff_check.py only reads source text. Review the checker as a checker: its criteria, its blind lock, and whether the control discriminates.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    },
-    {
-      "author_session": "hank",
-      "opened_at": "2026-09-16T04:45:19Z",
-      "resources": [
-        "sv_audit_log"
-      ],
-      "files": [
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js"
-      ],
-      "what": "sv_audit_log: the controlled-substance dosing trail now has a READER in the product (panel-doseaudit). This is a NEW READ PATH on a DEA-relevant Tier A record, and the read is the point -- it is what a practice hands an inspector. FOUR REVIEW TARGETS, and the first two are where a reader lies rather than breaks. (1) COMPLETENESS: the banner claims the server copy is uncapped while this device holds N. Verify that claim against api/_resources/sairnvet.js and the generic SV_RESOURCES read branch -- if the server read is paginated, truncated, or bounded by MAX_PAYLOAD_BYTES anywhere, the banner is asserting completeness the transport does not deliver, and that is worse than showing nothing. (2) FAILED vs EMPTY: svData() answers null on every refusal AND every network error, so the reader cannot distinguish 'refused' from 'unreachable'. Both currently fall back to the local copy with the same wording. Decide whether a 401 or a 403 should fall back at all, or refuse -- falling back on an AUTH refusal shows a trail to somebody the server just declined. (3) The date filter compares ISO string PREFIXES, not parsed dates; an entry whose timestamp is present but malformed will compare lexically and may be excluded by a range it should match. Undated entries are deliberately kept; malformed ones are not distinguished from valid ones. (4) The detail column serialises every unnamed field with JSON.stringify -- confirm no call site of logDoseAudit() can put a credential, a licence key or free-text PII into an entry that this panel then prints and exports to CSV.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
-    }
-  ]
+ "_what_this_is": "The standing rule that a Tier A change is reviewed by a session OTHER than the one that wrote it, made mechanical. Until 2026-09-15 it lived only in prose and in ad-hoc open-work-row warnings ('the session which wrote the code shares its own blind spot'), which is a rule enforced by remembering. Push-gate check 13 (tools/tier_a_review_gate.py) reads this file.",
+ "_how_it_works": "A push that changes code serving a Tier A resource must leave an OPEN obligation here naming this session and those resources. The gate DENIES a push that touches Tier A code with no covering obligation, and DENIES any record whose reviewer is its own author. Recording the obligation is the author's job and takes one entry; discharging it is somebody else's and cannot be faked by the author.",
+ "_what_it_does_NOT_claim": "That a review happened, or that it was any good. It is a record that the obligation EXISTS and was not self-signed. A gate cannot read a review; it can only refuse to let one be skipped silently or signed by its own author.",
+ "_scope": "Tier A resources, derived from docs/CRITICALITY-TIERS.md. Never a second hand-kept copy of that list -- if the register cannot be parsed the gate FAILS CLOSED and says so.",
+ "records": [
+  {
+   "author_session": "cc",
+   "opened_at": "2026-09-15T12:39:33Z",
+   "commit": "e442ca86",
+   "resources": [
+    "sc_ar",
+    "sc_claims",
+    "sc_compliance",
+    "sc_credential_scope",
+    "sc_denial",
+    "sc_denial_events",
+    "sc_revenue",
+    "sv_controlled"
+   ],
+   "files": [
+    "api/_resources/extra-actions.test.js",
+    "api/_resources/sairncode.js",
+    "api/sd-data.js",
+    "sairncode.html",
+    "tests/run_tier_a_replaceability_probe.py",
+    "tests/sairncode_gates.js",
+    "tools/sc_tier_a_write_gate_live_probe.py"
+   ],
+   "what": "Item 97: SAIRNcode's seven Tier A records moved from a destroying `delete` to `soft_delete`, with a read filter, a handler-level refusal and the client call sites repointed. RECORDED RETROACTIVELY on the day the gate was built -- the commit landed hours before check 13 existed, so nothing refused it, and leaving the first Tier A change under the new rule unrecorded would have been the exact gap the rule is about. The reviewer should look hardest at three things: whether the read filter really excludes marked rows on all seven and only those seven; whether repointing the seven client call sites missed one; and whether SC_TIER_A_SOFT_DELETE_ONLY agreeing with docs/CRITICALITY-TIERS.md is actually enforced in both directions or only one.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "fourth",
+   "opened_at": "2026-09-15T12:51:17Z",
+   "resources": [
+    "dnt_patients",
+    "dnt_rollup"
+   ],
+   "files": [
+    "SAIRN-ACTIVE-WORK-fourth.md"
+   ],
+   "what": "dnt_rollup cross-location roll-up (api/_lib/dnt-rollup.js + its sd-data.js branch, Tier A): the arithmetic, the owner-only gate, and specifically the rule that an unreadable resource yields null rather than 0 -- a wrong number there is a staffing decision made on a figure short by an unknown amount. Also worth an independent eye: whether the UNASSIGNED bucket can ever be read as an office by a client.",
+   "status": "reviewed",
+   "reviewer_session": "cody",
+   "reviewed_at": "2026-09-15T14:49:43Z",
+   "verdict": "REVIEWED. The substantive review is HANK'S, in ce7764fa -- I am not claiming it, and this record must not read as though cody found these. What cody adds is INDEPENDENT CONFIRMATION BY A DIFFERENT ROUTE plus one new observation. FINDING 1 (Hank's, reproduced): a metric reports {value:null,unreadable:'suppressed'} while disclosure.unreadable is EMPTY and complete is TRUE -- three parts of one object contradicting each other. Hank reached it through a legacy unstamped charge creating the UNASSIGNED bucket late; I reached it through an appointment at a location id that the charges resource had never seen, registry empty. Two different populations, same cause (dnt-rollup.js:151 seeds cells only on buckets existing when that metric runs; :178 then treats a MISSING cell identically to a SUPPRESSED one). Independent reproduction by a structurally different input is what makes this a property of the code rather than of one fixture. FINDING 2 (Hank's, reproduced): unreadable AMOUNTS contribute 0 and are counted -- 100 + null + '' + '$1,200' + '12abc' reports value 112 over 5 rows with complete:true. Agreed with Hank that this is a DISAGREEMENT not an oversight, since dnt-rollup.test.js:199 pins the zeroing deliberately; the objection is that nothing NAMES the unread fields and complete:true tells a client not to look. NEW, NOT IN HANK'S REVIEW: the sum accumulates in FLOATS. 0.1 + 0.2 reports 0.30000000000000004. Low severity for a display report and it is the same class as the recorded incident where two figures 4.5e-13 apart refused a correct bill and was fixed in integer cents -- raising it so the next person does not re-derive it. NOT FIXED BY ME: I hold a review, not the file, and a reviewer who lands the fix stops being independent of it -- Hank's own reasoning and it is right.",
+   "note": "REVERTED 2026-09-15 by cc. I discharged this by accident while TESTING --discharge against the real register, recording cc as the reviewer with a placeholder verdict. Both were false: HANK did this review, in ce7764fa, with two real findings. cc cannot sign for hank -- --discharge records the RUNNING session -- so the record is back to open and hank should run `python tools/tier_a_review_gate.py --discharge fourth \"<verdict>\"` to close it in their own name. The lesson is in the tool now: a probe must not drive a write command against the live register, and the probe added today uses a temporary file for exactly that reason."
+  },
+  {
+   "author_session": "cc",
+   "opened_at": "2026-09-15T13:00:06Z",
+   "commit": "pending -- the commit this record ships in",
+   "resources": [
+    "sc_ar",
+    "sc_claims",
+    "sc_compliance",
+    "sc_credential_scope",
+    "sc_denial",
+    "sc_denial_events",
+    "sc_revenue"
+   ],
+   "files": [
+    "api/sd-data.js",
+    "sairncode.html",
+    "tests/sairncode_gates.js",
+    "tests/sairncode_gates_mutation_control.js",
+    "tools/sc_tier_a_write_gate_live_probe.py",
+    "tools/tier_a_review_gate.py"
+   ],
+   "what": "A LIVE SECURITY GAP: sc_denial_events is Tier A in the register and was NOT in the hand-written six-name write gate, so it accepted a write from the LICENCE KEY ALONE. Measured against the deployed function, not inferred -- the other six answered 401 NO_SESSION and sc_denial_events answered 200. SC_TIER_A_WRITE_GATED is now DERIVED from the same pinned Tier A list the removal verbs use, so the two cannot diverge again. The reviewer should look hardest at: whether deriving the write gate from the soft-delete list is the RIGHT equivalence or a coincidence that will break when a Tier A resource legitimately needs one and not the other; whether the suite's three hand-moved counts (20 ungated, 7 gated, 8 refusal-helper callers) were each re-measured or just made to pass; and whether any OTHER app has the same shape -- a hand-written gate list beside a tier register nobody compares it to. ALSO IN THIS REVIEW PASS, added 2026-09-15 rather than opening a third record for the same resources: (a) tools/sc_tier_a_write_gate_live_probe.py carried its OWN hand-written list of six and so LIVE-VERIFIED six of seven while reporting 'all six refuse' -- true, over the wrong denominator; it is derived from the registry now; (b) tools/tier_a_review_gate.py had a real FAIL-OPEN: subprocess text=True decoded git output with the cp1252 locale default, the reader thread raised UnicodeDecodeError on this repo's box-drawing characters, and the call returned TRUNCATED stdout rather than failing -- a diff-reading gate silently getting a short diff under-detects and reports clean. Encoding is explicit now. THE REVIEWER SHOULD CHECK whether any OTHER tool on this platform reads git output with a bare text=True, because the same one-line defect is invisible until the diff happens to contain a non-ASCII byte.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cc",
+   "opened_at": "2026-09-15T14:23:47Z",
+   "resources": [
+    "sv_audit_log"
+   ],
+   "files": [
+    "tests/run_tier_a_replaceability_probe.py"
+   ],
+   "what": "The item 97 under-assignment sweep. NOTE FOR THE REVIEWER: this obligation is a FALSE POSITIVE of the gate and is recorded rather than excluded. The only Tier A name in the diff is sv_audit_log, appearing as a FIXTURE STRING in tests/run_tier_a_replaceability_probe.py -- t.SHAPE.search('sv_audit_log') -- so no code serving sv_audit_log changed. The gate's documented posture is that over-inclusion costs one register entry and under-inclusion is a Tier A change slipping through clean, so the honest response is to record it; adding a tests/ exclusion would blind the gate to real test-side changes to Tier A behaviour, which is a worse trade. What DID change and is worth a look: tools/tier_a_replaceability_check.py gained --under, whose ATTESTATION signal shipped with a literal backspace (byte 0x08) and reported zero hits platform-wide until a positive control caught it, then reported zero again until it learned to resolve constant aliases. Check whether the +/-300 window is the right narrowness and whether any OTHER signal on this platform has never been asserted to FIRE on a known case.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cc",
+   "opened_at": "2026-09-15T15:16:41Z",
+   "resources": [
+    "rf_certifications"
+   ],
+   "files": [
+    "tests/run_export_coverage_probe.py"
+   ],
+   "what": "The platform-wide subprocess decode sweep -- 358 text-mode subprocess calls given an explicit encoding. FOURTH FALSE POSITIVE OF THIS GATE, recorded rather than overridden. The only Tier A name in the diff is rf_certifications, appearing in CONTEXT around a touched line in tests/run_export_coverage_probe.py; no code serving rf_certifications changed. The pattern across all four is now clear and is worth a reviewer's judgement: the gate attributes a resource named in a hunk's CONTEXT lines as strongly as one named in an ADDED or REMOVED line, and a mechanical one-line-per-call sweep produces context lines everywhere. I proposed context-counting myself, on the argument that an edit three lines from law_trusttx is an edit about law_trusttx; four false positives and zero true positives from context alone say that argument is wrong in practice. THE REVIEWER SHOULD DECIDE whether attribution should require the name on a +/- line, with context demoted to a reported-but-not-blocking signal -- and should check that the item 97 commit would still fire under the narrower rule before agreeing. FIXED IN THE SAME SESSION, and the measurement is in the commit: attribution is now CHANGED LINES ONLY, with context demoted to a reported-but-never-blocking signal. Measured over every real case the gate has seen -- item 97 (context 8 / changed 8), sc_denial_events (7/7), the decode sweep (1/0), Hank's report-only fix (0/0): context added NOTHING to either true positive and produced the only remaining false one. THE REVIEWER SHOULD STILL CHECK whether four cases is enough to change a gate's rule on, and whether demoting rather than deleting the context signal actually helps anybody or is just a line nobody reads.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cody",
+   "opened_at": "2026-09-15T15:23:16Z",
+   "resources": [
+    "dnt_charges",
+    "dnt_patients"
+   ],
+   "files": [
+    "api/_lib/dnt-rollup.test.js"
+   ],
+   "what": "dnt_rollup: measureNumber() from the new api/_lib/safe-number.js replaces parseFloat in the sum, and the roll-up now reports unread_fields with complete going false when any amount could not be read. This closes finding 2 of Hank's review (ce7764fa) using the fix HE suggested -- the arithmetic is unchanged and dnt-rollup.test.js:199 still passes. TWO THINGS A REVIEWER SHOULD PUSH ON. (1) I discharged the review on this same file an hour ago, so I am no longer independent of it; Michael directed the fix and that is his call, but the second reader here should be somebody who has done neither. (2) parseFloat -> Number IS a behaviour change beyond the disclosure: '12abc' was silently 12 and '1,200' was silently 1, and both are now counted unread. I believe a plausible wrong number is worse than an unreadable one, but that is a judgement about real dental data I cannot see. FINDING 1 OF THAT REVIEW IS UNTOUCHED and still reproduces -- the missing-cell-read-as-suppressed defect belongs to the author.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "fourth",
+   "opened_at": "2026-09-15T15:37:53Z",
+   "resources": [
+    "dnt_charges",
+    "dnt_patients",
+    "dnt_rollup"
+   ],
+   "files": [
+    "api/_lib/dnt-rollup.js",
+    "api/_lib/dnt-rollup.test.js"
+   ],
+   "what": "dnt_rollup review fixes for Hank's two findings (ce7764fa): cells materialised in a second pass over the final bucket set so a later metric cannot make an earlier one unmeasurable and the answer no longer depends on metric order; unreadable summed fields counted per cell and per total and forcing disclosure.complete false. PRESS ON: that a suppressed RESOURCE is still null and never 0 after the refactor, and that readable() does not mistake a literal 0 for an unreadable field.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "fourth",
+   "opened_at": "2026-09-15T22:25:27Z",
+   "resources": [
+    "law_trust_reconcile",
+    "law_trusttx",
+    "scp_quotes"
+   ],
+   "files": [
+    "api/_lib/law-trust-reconcile-endpoint.test.js",
+    "api/_lib/law-trust-reconcile.js",
+    "api/_resources/sairnlaw.js",
+    "api/sd-data.js",
+    "sairnscape.html"
+   ],
+   "what": "SAIRNlaw IOLTA reconciliation and the sairnscape scp_quotes write fix. Press on: whether allocation_vs_ledger can genuinely disagree, the on-or-before statement-date boundary, the undated-transaction case where the bank leg can agree while the all-time ledger is larger, and the single Math.round at the cents boundary.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cody",
+   "opened_at": "2026-09-16T01:41:03Z",
+   "resources": [
+    "sv_controlled"
+   ],
+   "files": [
+    "api/_lib/record-parity.js",
+    "api/_lib/record-parity.test.js"
+   ],
+   "what": "item 46: api/_lib/record-parity.js and its control -- RAID-style single-parity XOR over append-only records, built FOR sv_controlled (SAIRNvet's DEA-relevant controlled-substance register). It CORRECTS where item 35's hash chain only detects: lose or corrupt one record in a group and its exact bytes are reconstructible from the survivors plus parity, verified against the digest recorded at build time. NOT WIRED INTO sv-witness.js -- the library and its control only. WHAT A REVIEWER SHOULD PUSH ON. (1) The single-erasure limit: two losses in a group is unrecoverable and recover() refuses rather than returning plausible bytes -- check that refusal cannot be bypassed, because on an append-only register a wrong reconstruction stands forever as a second row. (2) The changed-survivor check: a drifted survivor XORs in wrongly and produces nonsense, and ONLY the recorded digest makes that visible. Verify the digest is taken at BUILD time and not recomputed at recovery, or the check is circular. (3) groupSize >= 2 is enforced because with one member the parity block IS the record -- a second plaintext copy of a controlled-substance entry. Check that nothing can construct a group of one by another route. (4) The canonical form is reused in spirit from sv-witness.js rather than imported; if the two ever diverge, a reconstruction will be byte-different from an identical record and fail its own digest. That is a real coupling worth an opinion on. (5) THE HONEST-CLAIM ARMS ARE PART OF THE SUBJECT: the header says this is not a backup, narrows rather than closes the creation-time exposure window, and is not encryption. Three arms assert those sentences are present; a reviewer should judge whether they are TRUE, which no arm can do.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "hank",
+   "opened_at": "2026-09-16T02:10:50Z",
+   "resources": [
+    "dnt_patients",
+    "invoices",
+    "law_trusttx",
+    "sv_controlled"
+   ],
+   "files": [
+    "tests/run_service_role_gate_probe.py",
+    "tools/service_role_tier_a_gate_check.py"
+   ],
+   "what": "tools/service_role_tier_a_gate_check.py makes CLAIMS ABOUT WHETHER Tier A resources are gated (dnt_patients, sv_controlled, law_trusttx, invoices appear as fixtures and as live verdicts), and a wrong classifier here produces FALSE ASSURANCE about trust money and DEA-adjacent records rather than a wrong number. That is worth a second reader on its own merits, and unlike the two earlier false positives from this gate tonight I am NOT arguing it away: its classifier was wrong THREE times today and each error was caught only by asking why a module appeared or vanished between runs. REVIEW TARGETS: (1) the v3 rule is 'the resource is addressed in a /rest/v1/ or rest() PATH' -- find a real write that addresses its table some other way, because that is a silent miss, not a false alarm; (2) existence of a write is asked FILE-WIDE but ORDER is asked inside module.exports, and a module with no module.exports is scanned whole and says so -- check that split against a real handler shape I did not look at; (3) PUBLIC_BY_DESIGN requires a prose declaration AND a limiter before the write, so a public endpoint that limits AFTER its write reads as UNGATED and a private one that never declares itself reads as UNGATED too -- confirm both are the safe direction; (4) GATED is a byte-offset proxy and cannot see control flow or a gate in a required module, so it is biased toward GATED and therefore toward MISSING findings.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cc",
+   "opened_at": "2026-09-16T02:52:34Z",
+   "resources": [
+    "quotes"
+   ],
+   "files": [
+    "tools/first_article_inspection.py"
+   ],
+   "what": "first_article_inspection.py: added self-test detection (UNWIRED as a distinct state from UNVERIFIED), tightened the self-test flag detector to require comparison against argv, and narrowed the suite matcher so a tool named as a DICTIONARY KEY in an exclusion list no longer counts as covered. The second one matters most for review: it changed which artefacts this tool reports as unverified, and it was wrong in BOTH directions before -- it missed five tools with working self-tests, and it counted a production write path as verified by the one file that deliberately refuses to run it. A reviewer should check the suites() regex against a case I did not think of, because this tool has now been wrong about its own blind spot three times.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cody",
+   "opened_at": "2026-09-16T03:11:02Z",
+   "resources": [
+    "dnt_ar",
+    "dnt_payments",
+    "sb_payruns"
+   ],
+   "files": [
+    "tools/suite_control_triage.py"
+   ],
+   "what": "tools/suite_control_triage.py (new, report-only), tools/suite_control_coverage.py probe-universe fix, tests/run_tool_selftest_probe.py argparse fix, tests/run_tool_selftest_probe_control.py (new control). NOTE FOR THE REVIEWER: the Tier A names the gate matched are FIXTURE STRINGS in suite_control_triage.py's blind lock, not resources it serves -- dnt_ar is there specifically to assert that a substring match against dnt_area does NOT fire. None of these four files reads, writes or gates any resource. Review the checkers as checkers.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "cody",
+   "opened_at": "2026-09-16T04:10:46Z",
+   "resources": [
+    "quotes"
+   ],
+   "files": [
+    "tools/retry_backoff_check.py"
+   ],
+   "what": "tools/retry_backoff_check.py (new, report-only) and tests/retry_backoff_check_control.py (new control) for item 81. NOTE FOR THE REVIEWER: the gate matched the Tier A resource 'quotes' inside a FIXTURE STRING -- the must-not-fire arm 'Storage full - clear old quotes and retry.', which exists precisely to prove the tool does not fire on the English word retry in a user-facing message. Neither file reads, writes or gates any resource; retry_backoff_check.py only reads source text. Review the checker as a checker: its criteria, its blind lock, and whether the control discriminates.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "hank",
+   "opened_at": "2026-09-16T04:45:19Z",
+   "resources": [
+    "sv_audit_log"
+   ],
+   "files": [
+    "sairnvet.html",
+    "tests/sairnvet_dose_audit_reader.js"
+   ],
+   "what": "sv_audit_log: the controlled-substance dosing trail now has a READER in the product (panel-doseaudit). This is a NEW READ PATH on a DEA-relevant Tier A record, and the read is the point -- it is what a practice hands an inspector. FOUR REVIEW TARGETS, and the first two are where a reader lies rather than breaks. (1) COMPLETENESS: the banner claims the server copy is uncapped while this device holds N. Verify that claim against api/_resources/sairnvet.js and the generic SV_RESOURCES read branch -- if the server read is paginated, truncated, or bounded by MAX_PAYLOAD_BYTES anywhere, the banner is asserting completeness the transport does not deliver, and that is worse than showing nothing. (2) FAILED vs EMPTY: svData() answers null on every refusal AND every network error, so the reader cannot distinguish 'refused' from 'unreachable'. Both currently fall back to the local copy with the same wording. Decide whether a 401 or a 403 should fall back at all, or refuse -- falling back on an AUTH refusal shows a trail to somebody the server just declined. (3) The date filter compares ISO string PREFIXES, not parsed dates; an entry whose timestamp is present but malformed will compare lexically and may be excluded by a range it should match. Undated entries are deliberately kept; malformed ones are not distinguished from valid ones. (4) The detail column serialises every unnamed field with JSON.stringify -- confirm no call site of logDoseAudit() can put a credential, a licence key or free-text PII into an entry that this panel then prints and exports to CSV.",
+   "status": "open",
+   "reviewer_session": null,
+   "reviewed_at": null,
+   "verdict": null
+  },
+  {
+   "author_session": "fourth",
+   "files": [
+    "tests/phi_cache_scope_probe.py"
+   ],
+   "opened_at": "2026-09-16T04:52:04Z",
+   "resources": [
+    "alf_billing"
+   ],
+   "reviewed_at": null,
+   "reviewer_session": null,
+   "status": "open",
+   "verdict": null,
+   "what": "tests/phi_cache_scope_probe.py is a NEGATIVE CONTROL over the PHI cache purge in sairncare, sairnsenior, sairndental and sairnbuild -- it plants seven defects in alf_/sen_/dnt_/bld_ scoped-cache code in a throwaway worktree and requires the suite to go red. It touches alf_billing only as one entry in ALF_SCOPED_CACHES. WHAT A REVIEWER SHOULD TRY TO BREAK, rather than read: the probe restores by byte hash and asserts this clone is no dirtier than it started, so construct a way for a mutation to survive the restore -- a mid-run kill, or a mutation whose anchor matches in a file the harness did not snapshot. Second: my new wiring arm in tests/phi_cache_scoped_to_user.js anchors a regex on the app's entry-function BODY; try to write a real alfEnterApp that passes that regex and still fails to purge. The arm exists because the suite previously tested a wiring it had written itself."
+  }
+ ]
 }
