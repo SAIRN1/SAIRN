@@ -2083,8 +2083,8 @@
       "task": "fault column disclosure for api-only apps",
       "claimed_at": "2026-09-17T02:07:54Z",
       "claimed_at_epoch": 1789610874.499324,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T02:39:22Z"
     }
   ]
 }
