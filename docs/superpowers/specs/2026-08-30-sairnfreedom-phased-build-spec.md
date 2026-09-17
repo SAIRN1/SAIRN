@@ -528,9 +528,34 @@ it was not scanned).
    a claim — including form auto-fill, drafting statements in support, or
    assembling an evidence package. **Two hard product rules** come out of it, in
    §9d below.
-2. **Tips received — tax treatment.** Already flagged. Reporting obligations,
+2. ~~**Tips received — tax treatment.** Already flagged. Reporting obligations,
    tip credit, allocation between employees and volunteers. **Do not build
-   fields until researched.**
+   fields until researched.**~~ **RESEARCHED 2026-09-17** —
+   `docs/2026-09-17-sairnfreedom-tips-tax-treatment.md`. **THE FIELDS ARE NOW
+   REQUIRED, and the sharpest finding is upstream of payroll.** Pub. 3386, on
+   the §513(a)(1) volunteer-labor exclusion: *"substantially all the work is
+   performed by volunteers without compensation. **Compensation may include tips
+   and non-cash benefits.**"* — and the IRS's own volunteer-labor page names
+   *"bartenders, waitresses, snack bar staff… as well as the tips that any
+   workers receive."* **A tip jar in the canteen is a TAX-EXEMPTION event, not a
+   payroll detail.** Pub. 3386 also makes the records mandatory: a post must keep
+   records *"to determine if there is tip income, employment tax owed"*, and
+   *"if records are inadequate, all income may be subject to UBIT, and tax
+   exemption may be jeopardized"* — which reverses "do not build fields"
+   outright. **AND THE LAW MOVED WHILE THIS SAT DEFERRED:** final regs **TD
+   10044** (13 April 2026) plus **two new 2026 Form W-2 fields that did not
+   exist when this line was written** — box 12 code **TP** (cash tips reported
+   to the employer) and box **14b** (Treasury Tipped Occupation Code). Anything
+   built to the pre-2026 shape would be built wrong. Seven build rules in the
+   doc; the ones that bite: volunteer and receives-tips are not independent
+   checkboxes, tips bucket **per worker per month** (the FICA trigger is *"$20
+   or more per month"*, so an annual total cannot answer it), a mandatory
+   hall-rental gratuity is a **service charge and not a tip** and needs its own
+   field, the TTOC is stored and never derived from a job-title string, and the
+   UBIT warning **must carry no percentage** because *"substantially all"* has
+   no percentage test. **STILL OPEN and named in §5 of the doc:** the §45B FICA
+   tip credit (named in this line and NOT answered), any de minimis threshold,
+   member-vs-nonmember interaction, Form 8027, and Ohio conformity.
 3. ~~**Liquor licensing — entirely unexamined.**~~ **RESEARCHED 2026-08-30** —
    `docs/2026-08-30-sairnfreedom-ohio-liquor-permits.md`. Headlines: the D-4
    officer certification must **also set forth the initiation fee and yearly
