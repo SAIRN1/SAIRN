@@ -1,6 +1,6 @@
 {
   "_what_this_is": "The test suites known to be RED, so a genuinely new regression can be told from the existing set. Read by tools/known_red_check.py. REPORT ONLY.",
-  "_how_it_was_measured": "python tools/run_all_tests.py in a DETACHED GIT WORKTREE at origin/main, isolated from every working-tree change in this clone. 396 files ran, 0 skipped, and the runner reported the tree was NOT dirtied -- so no row here is a cascade from a probe that left a file modified, which is the failure that has made this measurement wrong before.",
+  "_how_it_was_measured": "python tools/run_all_tests.py in a DETACHED GIT WORKTREE at origin/main, isolated from every working-tree change in this clone. 396 files ran, 0 skipped, and the runner reported the tree was NOT dirtied -- so no row here is a cascade from a probe that left a file modified, which is the failure that has made this measurement wrong before. DIAGNOSES added 2026-09-16 by running each suite ALONE in a detached worktree at origin/main and reading the failing arm -- never from the runner's one-line tail, which names the arm and not the cause.",
   "_what_an_empty_why_means": "NOT DIAGNOSED YET, recorded as empty rather than guessed. An invented cause is worse than a blank one because it ends the investigation. tools/known_red_check.py reports how many entries are undiagnosed, so a blank is a backlog rather than a shrug.",
   "_what_this_is_NOT": "Not an allow-list and not a gate. An entry does not make a failure acceptable -- it makes it ATTRIBUTABLE. An entry whose suite has gone GREEN is reported as RECOVERED and must be deleted: while it stands it swallows the next real failure of that file.",
   "measured": "2026-09-16",
@@ -12,144 +12,180 @@
       "kind": "node",
       "tail": "12/13 passed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "GREEN IN ISOLATION, RED UNDER FULL-SUITE LOAD. Measured 2026-09-16: exit 0 when run alone in a clean worktree at origin/main, red in the 396-file run. This is the concurrency shape run_all_tests.py already names and carries a retry set for (CONCURRENCY_SENSITIVE), and these files are not in it. NOT KNOWN TO BE A BROKEN SUITE -- and equally not known to be sound, because a suite that only fails under load may be failing for a real reason that only load exposes. The next step is to establish which, not to add it to the retry set.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/sairnlaw_hydrate.js",
       "kind": "node",
       "tail": "sairnlaw_hydrate: 13 passed, 2 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "The arm \"EVERY registered resource is read -- derived from the registry, not retyped\" fails: the SAIRNlaw resource registry has gained resources the hydrate path does not read. The arm is derived rather than hardcoded, which is why it noticed; a retyped list would have stayed green and been wrong.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/stonedesk_server_backup.js",
       "kind": "node",
       "tail": "stonedesk_server_backup: 22 passed, 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "GREEN IN ISOLATION, RED UNDER FULL-SUITE LOAD. Measured 2026-09-16: exit 0 when run alone in a clean worktree at origin/main, red in the 396-file run. This is the concurrency shape run_all_tests.py already names and carries a retry set for (CONCURRENCY_SENSITIVE), and these files are not in it. NOT KNOWN TO BE A BROKEN SUITE -- and equally not known to be sound, because a suite that only fails under load may be failing for a real reason that only load exposes. The next step is to establish which, not to add it to the retry set.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/sairncare/test-alf-alerts-endpoint.js",
       "kind": "node",
       "tail": "19 passed, 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "GREEN IN ISOLATION, RED UNDER FULL-SUITE LOAD. Measured 2026-09-16: exit 0 when run alone in a clean worktree at origin/main, red in the 396-file run. This is the concurrency shape run_all_tests.py already names and carries a retry set for (CONCURRENCY_SENSITIVE), and these files are not in it. NOT KNOWN TO BE A BROKEN SUITE -- and equally not known to be sound, because a suite that only fails under load may be failing for a real reason that only load exposes. The next step is to establish which, not to add it to the retry set.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "api/sd-data-memory-app-scope.test.js",
       "kind": "node",
       "tail": "}",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "An assertion on the SHAPE OF AN IMPORT LINE: it requires the source to match /ROLES_BY_APP \\} = require\\(\\'\\./_lib/auth\\'\\)/ and the import has been rewritten. A source-anchored arm whose anchor moved -- the same class as the stale anchor in run_invisible_in_pattern_probe, in a test rather than a probe.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/license_trial_gate_probe.py",
       "kind": "py",
       "tail": "PROBES THAT DID NOT BITE: ['9. the gate itself is deleted from sd-render.js']",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "PROBES THAT DID NOT BITE: [\"9. the gate itself is deleted from sd-render.js\"]. Mutation 9 plants the removal of the trial gate and the suite stays green, so that specific deletion is uncovered. A REAL COVERAGE GAP on a licensing gate, not test drift.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/local_only_self_evidence_probe.py",
       "kind": "py",
       "tail": "1 ARM(S) FAILED",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE A -- a PINNED COUNT against sairnbiz.html, which grew. The arm is a *_drift arm holding hand-written expected totals for that file, and sairnbiz.html legitimately gained rows. Three suites fail on the same fact: write_readback_shape_probe (arm5_drift want 10/10 got 13/13), local_only_self_evidence_probe (arm7_drift want covered=11 got 14) and local_only_shape_probe (arm5_drift want 13/11/2 got 14/14/0). NOT A REGRESSION IN THE APP -- the app changed and three pinned baselines did not. Re-baselining all three together is the fix; doing one leaves the other two looking like separate defects.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/local_only_shape_probe.py",
       "kind": "py",
       "tail": "1 ARM(S) FAILED",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE A -- a PINNED COUNT against sairnbiz.html, which grew. The arm is a *_drift arm holding hand-written expected totals for that file, and sairnbiz.html legitimately gained rows. Three suites fail on the same fact: write_readback_shape_probe (arm5_drift want 10/10 got 13/13), local_only_self_evidence_probe (arm7_drift want covered=11 got 14) and local_only_shape_probe (arm5_drift want 13/11/2 got 14/14/0). NOT A REGRESSION IN THE APP -- the app changed and three pinned baselines did not. Re-baselining all three together is the fix; doing one leaves the other two looking like separate defects.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_all_tests_floor_probe.py",
       "kind": "py",
       "tail": "2. _main_body() -- THE COPY A HUMAN RUNS",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE B -- both probes RECONSTRUCT run_all_tests.py's _main_body() and exec it, and both crash identically on `ValueError: not enough values to unpack (expected 3, got 2)` at `failures, skipped, retried = _run(...)`. The real _run() returns three values, so the reconstruction is what is wrong, not the runner. ONE defect in how these two probes extract the body, seen twice.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_all_tests_hook_gate_probe.py",
       "kind": "py",
       "tail": "2. a real push must still run it -- the gate must not be a mute button",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE B -- both probes RECONSTRUCT run_all_tests.py's _main_body() and exec it, and both crash identically on `ValueError: not enough values to unpack (expected 3, got 2)` at `failures, skipped, retried = _run(...)`. The real _run() returns three values, so the reconstruction is what is wrong, not the runner. ONE defect in how these two probes extract the body, seen twice.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_app_attribution_mutation_control.py",
       "kind": "py",
       "tail": "42 passed, 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE C -- the arm \"CONTROL: the UNALIASED app_of() still attributes 1 to SAIRNroofing\" fails, which says the control can no longer tell the alias layer from the baseline. run_app_attribution_mutation_control is a CASCADE of it: its first arm is \"run_app_attribution_probe passes unmutated\" and that probe is already red, so the control cannot establish a baseline to mutate against. Fixing the probe should clear the control; if it does not, that is a second defect and worth knowing.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_app_attribution_probe.py",
       "kind": "py",
       "tail": "91 passed, 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE C -- the arm \"CONTROL: the UNALIASED app_of() still attributes 1 to SAIRNroofing\" fails, which says the control can no longer tell the alias layer from the baseline. run_app_attribution_mutation_control is a CASCADE of it: its first arm is \"run_app_attribution_probe passes unmutated\" and that probe is already red, so the control cannot establish a baseline to mutate against. Fixing the probe should clear the control; if it does not, that is a second defect and worth knowing.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_condition_coverage_probe.py",
       "kind": "py",
       "tail": "4b  and it says WHY -- a restore cannot be verified against a modified baseline",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Arms 4a and 4b: \"a dirty tree exits 2, not 0 or 1\" got exit 1. The tool is meant to report COULD-NOT-RUN when the tree is modified, because a restore cannot be verified against a moving baseline, and it is returning a finding instead. A third state collapsing into a verdict -- the exact shape PR 1.11 names.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_defect_dispersion_probe.py",
       "kind": "py",
       "tail": "ok   layer has a population of exactly three",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "The arm \"every dimension is present\" fails. The dispersion report is expected to carry every dimension it declares and one is absent. Not traced further than the arm; the dimension that went missing is the next thing to establish.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_dependency_graph_probe.py",
       "kind": "py",
       "tail": "7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that refuses everything",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Arm 7e reports NO BASELINE: the SPOF register fixture \"has no BASELINE: N components at or above line. Without a frozen denominator a register that shrank by four and one that never moved print the same number.\" The probe is refusing to score against an unfrozen denominator, which is correct behaviour -- the fixture or the register needs the baseline line.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_first_article_probe.py",
       "kind": "py",
       "tail": "- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "The arm \"NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist\". Two records have drifted hashes: Hank's inspections of tools/dispatch_state.py and tools/retry_backoff_check.py, both of which were edited after being inspected. Deliberately NOT fixed by re-hashing -- re-hashing somebody else's inspection without re-inspecting would launder a stale record into a fresh-looking one. It needs those two artefacts re-inspected by a session that is not their author.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_fmea_probe.py",
       "kind": "py",
       "tail": "3b  1.7   fires on 43% of the tree (must be under 35%)",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Arm 3b: standing rule 1.7 fires on 43% of the tree and the criterion is under 35%. A calibration failure rather than a broken probe: the rule is matching too much of the platform to be evidence of anything. Either the rule needs narrowing or the threshold was set against a smaller tree.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_invisible_in_pattern_probe.py",
       "kind": "py",
       "tail": "--- C. an invisible character inside a real regex ---",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "A STALE ANCHOR, and its own guard is what reports it: \"AssertionError: the SABOTAGE did not land: anchor no longer in api/_lib/accounting-connector.js -- '/^\\\\d{4}-\\\\d{2}-\\\\d{2}$/'\". The date regex it plants into is gone from that file. This is the guarded failure mode working exactly as designed -- it refuses rather than running the checker against an unmodified file and reporting a pass. The fix is a new anchor, not a new guard.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_master_plan_probe.py",
@@ -164,16 +200,20 @@
       "kind": "py",
       "tail": "7a  the real repo has zero bad anchors and zero unguarded probes",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Arm 7a \"the real repo has zero bad anchors and zero unguarded probes\" fails while 7b confirms it inspected 198 anchors, so the sweep ran and found real ones. This entry is a POINTER: the bad anchors it names are themselves the defects, and at least one of them is the stale anchor recorded against run_invisible_in_pattern_probe.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_secrets_inventory_probe.py",
       "kind": "py",
       "tail": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Two arms, 5a \"--check passes against the committed document\" and 6c \"SILENT: against the real committed document the same entry point exits 0\". Both say the committed docs/SECRETS-INVENTORY.md no longer matches what the tool generates -- a generated document that has drifted from its sources, not a defect in the probe.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/run_selftest_sweep_probe.py",
@@ -204,64 +244,80 @@
       "kind": "py",
       "tail": "1 FAILED",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "The arm \"the real SAIRN tree currently has no UNBASELINED occurrence\" expects 0 and finds more. A NEW occurrence of the truthy-sum shape has appeared somewhere and is not in the baseline. This is the one entry in this registry most likely to be a REAL CURRENT DEFECT in product code rather than test drift, and it should be read before the others.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/suite_control_backfill_probe.py",
       "kind": "py",
       "tail": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "CONTROLS THAT DID NOT BITE: [\"0. green on the unmodified file\"]. The BASELINE arm is the one failing -- the subject is already red before any sabotage is planted -- so every verdict after it would be about two things at once. The probe is correctly refusing to report on a red baseline.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/write_readback_shape_probe.py",
       "kind": "py",
       "tail": "1 ARM(S) FAILED",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE A -- a PINNED COUNT against sairnbiz.html, which grew. The arm is a *_drift arm holding hand-written expected totals for that file, and sairnbiz.html legitimately gained rows. Three suites fail on the same fact: write_readback_shape_probe (arm5_drift want 10/10 got 13/13), local_only_self_evidence_probe (arm7_drift want covered=11 got 14) and local_only_shape_probe (arm5_drift want 13/11/2 got 14/14/0). NOT A REGRESSION IN THE APP -- the app changed and three pinned baselines did not. Re-baselining all three together is the fix; doing one leaves the other two looking like separate defects.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/claims/run_freshness_probe.py",
       "kind": "py",
       "tail": "61 passed, 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "Arm \"6 list goes quiet again -- SABOTAGE APPLIED\": the sabotage landed and the expected recovery did not happen. The guard confirms the mutation applied, so this is a real behavioural difference rather than an anchor that rotted.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/push_gate/check4_probe.py",
       "kind": "py",
       "tail": "FAILED TWICE, the second time on its own: CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam): False",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE D -- this probe drives a REAL push and the verdict it reads is the one the whole gate stack returns, not the one check 4 returns. It now reports \"CHECK 4 VERIFIED ...: False\" because an EARLIER gate refuses the push first, so check 4 never gets to answer. Same root as check7_probe and check8_probe, whose failures carry `rejected_by_remote` and \"failed to push some refs\" outright. The gate stack grew (register-feed, generated-docs) and these three probes assume they are the first refusal.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/push_gate/check7_probe.py",
       "kind": "py",
       "tail": "FAILED TWICE, the second time on its own: FAILED  check7_probe: 11 checks, 3 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE D, and the clearest evidence for it: all three failing arms report exit 1 with blocked_by_preauth False, names_the_file False AND rejected_by_remote in the same dict -- the push was refused before check 7 was reached. See check4_probe.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/push_gate/check8_probe.py",
       "kind": "py",
       "tail": "FAILED  check8_probe: 1 failed",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "SHARED CAUSE D. Fails on \"a PROBE-subject commit IS blocked\" with the raw git error \"failed to push some refs to origin\" -- the remote refused it, so the arm cannot distinguish check 8 blocking it from anything else blocking it. See check4_probe.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     },
     {
       "file": "tests/sql_preflight/run_probe.py",
       "kind": "py",
       "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
       "since": "2026-09-16",
-      "why": "",
-      "owner": "unassigned"
+      "why": "UNDECLARED_TABLE webhook_events in dead_bare_tables_evidence_2026-09-05.sql. The preflight refuses a table that no schema file declares. Either webhook_events needs declaring or that evidence file is stale -- and the second is likely, given its name carries a 2026-09-05 date.",
+      "owner": "unassigned",
+      "diagnosed": "2026-09-16",
+      "diagnosed_by": "cody"
     }
   ]
 }
