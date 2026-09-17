@@ -1572,8 +1572,8 @@
       "task": "item 39c class A gaps in DNT_EXPORTS",
       "claimed_at": "2026-09-17T01:15:10Z",
       "claimed_at_epoch": 1789607710.6327603,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T01:27:56Z"
     }
   ]
 }
