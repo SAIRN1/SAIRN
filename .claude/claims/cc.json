@@ -1692,8 +1692,8 @@
       "task": "row by row competitive gap reconciliation for sairnsenior and sairnmechanical against their audits",
       "claimed_at": "2026-09-17T15:06:02Z",
       "claimed_at_epoch": 1789657562.9074154,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T15:16:01Z"
     }
   ]
 }
