@@ -1543,8 +1543,8 @@
       "task": "LAW_RECONCILE_ROLES missing role mapping, sd-agent callClaude loop breaker, G5 controls, G7 factors, rebase resolve tool",
       "claimed_at": "2026-09-16T14:00:17Z",
       "claimed_at_epoch": 1789567217.4485605,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T14:50:52Z"
     },
     {
       "id": "fourth-1789570390",
@@ -1553,8 +1553,8 @@
       "task": "rebase resolve semantic merge for the two json registers",
       "claimed_at": "2026-09-16T14:53:10Z",
       "claimed_at_epoch": 1789570390.5941412,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T14:50:52Z"
     },
     {
       "id": "fourth-1789613678",
@@ -1563,8 +1563,8 @@
       "task": "hover process pass staleness, backup_reader ACL, item 78 concurrency, item 6 writes, item 101 settling, IOLTA reconciliation, supabase_admin ownership, reverify TTL",
       "claimed_at": "2026-09-17T02:54:38Z",
       "claimed_at_epoch": 1789613678.126873,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T14:50:52Z"
     },
     {
       "id": "fourth-1789619644",
@@ -1583,8 +1583,8 @@
       "task": "backup_reader_role supabase_admin union derivation, dnt complaint submit missing-column 503 message and comment, item 78 token deduction concurrency, sairnveterans phase 6 publish and three deferred",
       "claimed_at": "2026-09-17T13:56:33Z",
       "claimed_at_epoch": 1789653393.274042,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T14:50:52Z"
     }
   ]
 }
