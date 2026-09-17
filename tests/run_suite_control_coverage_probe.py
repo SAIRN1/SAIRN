@@ -35,7 +35,10 @@ def check(name, cond, detail=''):
         fails.append(name)
 
 
-names, ctl, unreadable = C.survey()
+# survey() returns a FOURTH value since 2026-09-17: the suites that mutate
+# their own source with no visible applied-check. Unpacked by name so this
+# probe fails loudly on the next shape change rather than swallowing it.
+names, ctl, unreadable, inline_unverified = C.survey()
 print('suite control coverage control -- %d suites, %d controlled\n'
       % (len(names), len(ctl)))
 
@@ -61,11 +64,25 @@ for p in sorted(C._default_probes()):
         if b in src:
             loose.setdefault(b, []).append(os.path.basename(p))
 
-over = sorted(set(ctl) - set(loose))
-check('the tool claims NO suite that a broader, dumber search cannot find -- '
-      'it never over-claims coverage', over == [], over)
+# THE BOUND IS ABOUT THE PROBE-FILE SEARCH, so an INLINE credit is outside it
+# by construction (2026-09-17). The loose search greps PROBE FILES for suite
+# names; a suite that carries its own mutation probes is named in no probe file
+# at all, so including those credits here would make the bound fail on exactly
+# the shape it was extended to see. They are checked instead in section 3,
+# against the suite's own source -- which is the evidence that actually backs
+# the claim, and a stricter test than this one.
+from_probe_files = set(b for b in ctl if any(p != '(inline)' for p in ctl[b]))
+inline_only = sorted(set(ctl) - from_probe_files)
+over = sorted(from_probe_files - set(loose))
+check('the tool claims NO suite from a PROBE FILE that a broader, dumber '
+      'search cannot find -- it never over-claims coverage', over == [], over)
 check('...and the broader search does find MORE, so the bound is not vacuous',
-      len(loose) > len(ctl), '%d loose vs %d strict' % (len(loose), len(ctl)))
+      len(loose) > len(from_probe_files),
+      '%d loose vs %d strict-from-probe-files' % (len(loose), len(from_probe_files)))
+check('CONTROL: the inline credits really are outside the probe-file universe '
+      '-- if this is empty the arms above have quietly gone back to testing '
+      'everything and the exclusion above is doing nothing',
+      inline_only != [], inline_only)
 
 # ── 2. THE DOCSTRING EXCLUSION IS DOING WORK ON THE REAL TREE ──────────────
 # If it were not, strict and loose would agree and arm 1 would be proving
@@ -77,6 +94,22 @@ check('at least one real suite is named ONLY in prose and is correctly NOT '
 # ── 3. EVERY CLAIMED CONTROLLER REALLY EXISTS AND REALLY HAS MUTATIONS ─────
 for suite, probes in sorted(ctl.items()):
     for pb in probes:
+        # '(inline)' IS A SENTINEL, NOT A FILENAME (2026-09-17). A suite may
+        # carry its own mutation probes, and crediting that under a made-up
+        # path would be worse than not crediting it -- so the sentinel is
+        # checked against the SUITE's own source instead, which is the thing it
+        # is actually claiming about.
+        if pb == '(inline)':
+            spath = os.path.join(REPO, 'tests', suite)
+            if not os.path.exists(spath):
+                spath = os.path.join(REPO, 'api', suite)
+            ssrc = (io.open(spath, encoding='utf-8', errors='replace').read()
+                    if os.path.exists(spath) else '')
+            m, applied = C.inline_control(ssrc)
+            check('%s: the (inline) credit is real -- it mutates its own source '
+                  'AND asserts the mutation applied' % suite, m and applied,
+                  (m, applied))
+            continue
         path = os.path.join(REPO, 'tests', pb)
         ok = os.path.exists(path)
         has = ok and 'MUTATIONS' in io.open(path, encoding='utf-8',
@@ -122,7 +155,7 @@ check('...and prints the uncontrolled count rather than a table and silence',
 
 # AND IT CAN SAY YES. Without this every arm passes on a tool that answers
 # "uncontrolled" for every input there will ever be.
-_n, _c, _u = C.survey([os.path.join(REPO, 'tests', 'dnt_vendor_write_confirmation.js')],
+_n, _c, _u, _iu = C.survey([os.path.join(REPO, 'tests', 'dnt_vendor_write_confirmation.js')],
                       [os.path.join(REPO, 'tests',
                                     'dnt_vendor_write_confirmation_probe.py')])
 check('a tree where every suite IS controlled reports every suite controlled',

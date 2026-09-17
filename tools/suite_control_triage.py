@@ -195,7 +195,14 @@ def main(argv):
               % os.path.basename(TIERS_DOC))
         return EXIT_COULD_NOT_RUN
 
-    suites, controllers, unreadable = suite_control_coverage.survey()
+    # survey() gained a fourth return on 2026-09-17 -- the suites that mutate
+    # their own source with no visible applied-check. Not used here (this file
+    # ranks what is UNCONTROLLED, and those are already uncontrolled), but it is
+    # unpacked by name rather than swallowed so the next reader can see it
+    # exists rather than discovering it through a tuple-length crash, which is
+    # how this line was found.
+    (suites, controllers, unreadable,
+     _inline_unverified) = suite_control_coverage.survey()
     uncontrolled = [s for s in suites if s not in controllers]
 
     buckets = {'A': [], 'B': [], 'C': [], 'UNCLASSIFIED': []}

@@ -170,6 +170,90 @@ def js_probe_literals(src, path='<probe>'):
     return bool(_JS_MUTATIONS.search(code)), lits
 
 
+# ── A CONTROL DOES NOT HAVE TO LIVE IN ITS OWN FILE (2026-09-17) ───────────
+# The hover auditor found this counter blind to a whole SHAPE of control: a
+# suite that carries its own mutation probes INLINE. Two confirmed --
+# tests/sairnbiz_server_backup.js (a `probes` table of [name, mutate, check]
+# triples, each asserting the arm goes red) and tests/quote_history_
+# duplication.js -- and both are strong. So the 48-of-163 headline was an
+# UNDERCOUNT, and every suite it named was named wrongly.
+#
+# THE DETECTOR WAS EXTENDED RATHER THAN THE SUITES REWRITTEN, and the choice is
+# not a preference. An inline control is not the weaker form: it sits beside the
+# assertion it protects and cannot drift away from the harness it needs, which
+# is the failure mode a separate file actually has. Standardising seven working
+# suites onto a file-naming convention so that a COUNTER can see them is the
+# tool dictating the code -- the same inversion this platform has now recorded
+# twice, in sabotage_control_check scoring the stronger guard worse and in
+# csv_formula_injection_check reporting the fix as the only defect. The tally is
+# what has to be true. The counter was what was wrong.
+#
+# ── AND THERE IS A THIRD STATE, WHICH IS THE POINT ────────────────────────
+# `str.replace` on an anchor that no longer matches does NOTHING, silently, and
+# the control then runs the suite against an UNMODIFIED file and passes. That is
+# sabotage_control_check.py's entire subject. So an inline control counts only
+# when it VERIFIES THE MUTATION APPLIED -- sairnbiz asserts
+# `probeSrc !== SYNC_SRC` and quote_history asserts
+# `notStrictEqual(out, src, 'save() was not found -- this mutation asserts
+# nothing')`. One that mutates without checking is reported SEPARATELY and is
+# NOT counted as covered: it is not a control, it is a control-shaped thing.
+# THE WINDOW CROSSES LINES ON PURPOSE. The first version kept the keyword and
+# the `.replace(` on ONE line, and both of the real instances this was written
+# for failed their own fixtures: sairnbiz announces `// MUTATION PROBES.` and
+# mutates three lines later, quote_history writes `section('MUTATION: ...')`
+# and mutates on the next line. A criterion that cannot match the two cases it
+# was built from is not a strict criterion, it is a broken one -- caught by the
+# lock before the real tree was read, which is the entire point of locking
+# first.
+#
+# AND THE WINDOW ALONE WAS TOO LOOSE, caught by spot-checking the output rather
+# than by the lock -- which is worth recording, because it means the lock did
+# not cover it. `tests/sairnvet_controlled_export.js` says "mutation" somewhere
+# and then normalises line endings with `.replace(/\r\n/g, '\n')` 800 characters
+# later, and was named as a control-shaped thing on that basis. A FORMATTING
+# replace is not a mutation. So two more conditions:
+#
+#   * the receiver must LOOK LIKE LIFTED SOURCE (src / source / html / code /
+#     probeSrc), or the replace must sit inside a mutate-table -- an arrow
+#     function in a `probes`/`MUTATIONS` array, which is sairnbiz's shape and
+#     whose receiver is a one-letter parameter;
+#   * a pure line-ending or whitespace normalisation does not count at all.
+_INLINE_KEYWORD = re.compile(r'mutation|sabotage|negative control', re.I)
+_INLINE_ON_SOURCE = re.compile(
+    r'\b\w*(?:src|source|html|code)\w*\s*\.\s*replace\s*\(', re.I)
+_INLINE_MUTATE_TABLE = re.compile(
+    r'(?:probes|MUTATIONS)\s*=\s*\[[\s\S]{0,4000}?=>\s*\w+\.replace\s*\(', re.I)
+# `.replace(/\r\n/g, ...)` and friends -- normalising, never sabotage.
+_INLINE_NORMALISE = re.compile(
+    r'\.replace\s*\(\s*/\s*(?:\\r\\n|\\r|\\s\+|\\n|<!--\[\\s\\S\]\*\?-->)\s*/')
+# The applied-check: the mutated text compared against the original, either way
+# round, with or without an assertion helper.
+_INLINE_APPLIED = re.compile(
+    r'notStrictEqual\s*\(|'
+    r'assert(?:\.\w+)?\s*\(\s*[A-Za-z_$][\w$.]*\s*!==\s*[A-Za-z_$][\w$.]*|'
+    r'!==\s*(?:SRC|SOURCE|ORIG|ORIGINAL)\b')
+
+
+def inline_control(src):
+    """(mutates_its_own_source, verifies_the_mutation_applied).
+
+    Deliberately crude and deliberately conservative: it must not credit a
+    suite that merely prints the word MUTATION. Under-claiming is the safe
+    direction here for the same reason it is in the probe scan -- a suite
+    wrongly called controlled is one nobody will ever come back to.
+    """
+    s = src or ''
+    if not _INLINE_KEYWORD.search(s):
+        return (False, False)
+    # Strip the normalising replaces before asking whether any mutation remains,
+    # so a suite whose ONLY replace is a line-ending fix cannot qualify on it.
+    stripped = _INLINE_NORMALISE.sub('.__normalise__(', s)
+    if not (_INLINE_ON_SOURCE.search(stripped)
+            or _INLINE_MUTATE_TABLE.search(stripped)):
+        return (False, False)
+    return (True, bool(_INLINE_APPLIED.search(s)))
+
+
 def _default_probes():
     """Python probes, plus the JS spellings MASTER-PLAN already counts as probes."""
     return (sorted(glob.glob(os.path.join(REPO, 'tests', '*.py')))
@@ -218,7 +302,28 @@ def survey(suite_paths=None, probe_paths=None):
             if any(l == b or l.endswith('/' + b) or l.endswith(os.sep + b)
                    for l in lits):
                 controllers.setdefault(b, []).append(os.path.basename(p))
-    return ([os.path.basename(s) for s in suites], controllers, unreadable)
+
+    # The inline pass. Runs over the SUITES, not the probes, because the file
+    # being examined is both at once.
+    inline_unverified = []
+    for s in suites:
+        b = os.path.basename(s)
+        try:
+            ssrc = io.open(s, encoding='utf-8', errors='replace').read()
+        except Exception as e:                                   # noqa: BLE001
+            unreadable.append((b, '%s: %s' % (type(e).__name__, e)))
+            continue
+        mutates, applied = inline_control(ssrc)
+        if not mutates:
+            continue
+        if applied:
+            # Credited under a sentinel rather than a filename, so a reader can
+            # never mistake it for a probe file that does not exist.
+            controllers.setdefault(b, []).append('(inline)')
+        elif b not in controllers:
+            inline_unverified.append(b)
+    return ([os.path.basename(s) for s in suites], controllers, unreadable,
+            inline_unverified)
 
 
 def _fixtures():
@@ -326,6 +431,82 @@ def self_check():
            any(l.endswith(real_suite) for l in ls),
            sorted(l for l in ls if l.endswith('.js'))[:8])
 
+    # ── THE INLINE CONTROL, LOCKED IN THREE DIRECTIONS (2026-09-17) ────────
+    # Criteria fixed against synthetic sources BEFORE the real tree is read.
+    # The third fixture is the one that matters: a suite that mutates and never
+    # checks the mutation APPLIED must NOT be credited, because str.replace on
+    # a stale anchor does nothing silently and the arm then passes against an
+    # unmodified file.
+    INLINE_OK = (
+        "// MUTATION PROBES. Each reverts a fix and asserts the arm goes red.\n"
+        "const probes = [['id minting removed', (s) => s.replace(/X/, ''), fn]];\n"
+        "for (const [name, mutate] of probes) {\n"
+        "  probeSrc = mutate(SRC);\n"
+        "  assert.ok(probeSrc !== SRC, 'probe did not change the source: ' + name);\n"
+        "}\n")
+    INLINE_OK2 = (
+        "section('MUTATION: the pre-fix save, restored, inflates the panel');\n"
+        "const out = src.replace(/function save\\(/, 'function save2(');\n"
+        "assert.notStrictEqual(out, src, 'save() was not found');\n")
+    INLINE_UNVERIFIED = (
+        "// MUTATION: put the old branch back\n"
+        "const out = src.replace('if (guard)', 'if (false && guard)');\n"
+        "runAgainst(out);\n")
+    INLINE_NONE = (
+        "// This suite asserts a lot and breaks nothing.\n"
+        "assert.strictEqual(fmt(1), '1.00');\n"
+        "const label = name.replace(/_/g, ' ');\n")
+    # THE REAL FALSE POSITIVE, verbatim in shape from
+    # tests/sairnvet_controlled_export.js: the word appears, and the only
+    # replace 800 characters later is a line-ending normalisation on the lifted
+    # source. It was named by the first criterion and is not a control.
+    #
+    # ⚠ THE FIRST VERSION OF THIS FIXTURE COULD NOT FAIL, which is the defect
+    # this file's own docstring records about the docstring fixture, reproduced
+    # by the same author one screen further down. It read
+    # `const SRC = fs.readFileSync(APP,'utf8').replace(/\r\n/g,'\n')` -- and the
+    # receiver there is a CALL, not a name, so _INLINE_ON_SOURCE never matched
+    # it and the arm passed whether the normalise-strip worked or not. The
+    # mutation that removes the strip came back SILENT and that is how it was
+    # found. The receiver is a named variable now, exactly as in the real
+    # tests/sairnlaw_csp.js that produced the false positive.
+    INLINE_NORMALISE_ONLY = (
+        "// The export is compared byte for byte; no mutation is attempted here.\n"
+        "const CODE = src.replace(/<!--[\\s\\S]*?-->/g, '');\n"
+        "assert.ok(CODE.length > 0);\n")
+
+    ck('an inline control that VERIFIES the mutation applied counts',
+       inline_control(INLINE_OK) == (True, True), inline_control(INLINE_OK))
+    ck('...and the notStrictEqual spelling of the same check counts',
+       inline_control(INLINE_OK2) == (True, True), inline_control(INLINE_OK2))
+    ck('an inline mutation with NO applied-check is MUTATES-BUT-UNVERIFIED',
+       inline_control(INLINE_UNVERIFIED) == (True, False),
+       inline_control(INLINE_UNVERIFIED))
+    ck('a suite that merely uses .replace() for FORMATTING is not a control -- '
+       'this is the over-claim the whole file must not make',
+       inline_control(INLINE_NONE) == (False, False), inline_control(INLINE_NONE))
+    ck('...nor is one whose only replace on the SOURCE normalises line endings '
+       '-- the real false positive the first criterion produced',
+       inline_control(INLINE_NORMALISE_ONLY) == (False, False),
+       inline_control(INLINE_NORMALISE_ONLY))
+
+    # END TO END, because the arms above test the predicate and a wiring
+    # mistake in survey() would leave every one of them green.
+    import tempfile
+    tmpi = tempfile.mkdtemp(prefix='suite_inline_')
+    io.open(os.path.join(tmpi, 'selfcontrolled.js'), 'w',
+            encoding='utf-8').write(INLINE_OK)
+    io.open(os.path.join(tmpi, 'unverified.js'), 'w',
+            encoding='utf-8').write(INLINE_UNVERIFIED)
+    io.open(os.path.join(tmpi, 'plain.js'), 'w', encoding='utf-8').write(INLINE_NONE)
+    _ni, _ci, _bi, _ii = survey(sorted(glob.glob(os.path.join(tmpi, '*.js'))), [])
+    ck('end to end: the self-controlled suite is CREDITED, tagged (inline)',
+       _ci.get('selfcontrolled.js') == ['(inline)'], _ci)
+    ck('end to end: the unverified one is NOT credited and IS named',
+       'unverified.js' not in _ci and 'unverified.js' in _ii, (_ci, _ii))
+    ck('end to end: the plain suite appears in neither',
+       'plain.js' not in _ci and 'plain.js' not in _ii, (_ci, _ii))
+
     ck('a *_mutation_control.js is NOT also counted as a suite needing a control',
        not any(n.endswith('_mutation_control.js') for n in survey()[0]),
        [n for n in survey()[0] if n.endswith('_mutation_control.js')])
@@ -337,7 +518,7 @@ def self_check():
     io.open(os.path.join(tmp, 'target_suite.js'), 'w', encoding='utf-8').write('//\n')
     io.open(os.path.join(tmp, 'lonely_suite.js'), 'w', encoding='utf-8').write('//\n')
     io.open(os.path.join(tmp, 'p_probe.py'), 'w', encoding='utf-8').write(f['controlled'])
-    names, ctl, bad = survey(
+    names, ctl, bad, inl = survey(
         sorted(glob.glob(os.path.join(tmp, '*.js'))),
         sorted(glob.glob(os.path.join(tmp, '*.py'))))
     ck('end to end: the controlled suite is reported controlled',
@@ -348,8 +529,8 @@ def self_check():
     # A PROBE THAT WILL NOT PARSE IS A THIRD STATE. Folding it into "no control"
     # would report a suite as uncovered on the strength of a syntax error.
     io.open(os.path.join(tmp, 'broken_probe.py'), 'w', encoding='utf-8').write('def (\n')
-    _n2, _c2, bad2 = survey(sorted(glob.glob(os.path.join(tmp, '*.js'))),
-                            sorted(glob.glob(os.path.join(tmp, '*.py'))))
+    _n2, _c2, bad2, _i2 = survey(sorted(glob.glob(os.path.join(tmp, '*.js'))),
+                                 sorted(glob.glob(os.path.join(tmp, '*.py'))))
     # THE DUPLICATE-BASENAME GUARD, exercised. It cannot fire on today's tree,
     # so without this arm it is a branch nobody has ever run -- and a guard that
     # has never run is a guard nobody knows works. Control attribution is keyed
@@ -385,16 +566,18 @@ def main(argv):
         return self_check()
 
     try:
-        names, ctl, unreadable = survey()
+        names, ctl, unreadable, inline_unverified = survey()
     except Exception as e:                                       # noqa: BLE001
         print('COULD NOT RUN: %s: %s' % (type(e).__name__, e))
         return EXIT_COULD_NOT_RUN
 
     uncontrolled = [n for n in names if n not in ctl]
+    inline_n = len([b for b in ctl if '(inline)' in ctl[b]])
 
     if args.json:
         print(json.dumps({'suites': len(names), 'controlled': sorted(ctl),
                           'uncontrolled': uncontrolled,
+                          'inline_unverified': inline_unverified,
                           'unreadable_probes': unreadable}, indent=1))
         return 1 if uncontrolled else 0
 
@@ -405,9 +588,24 @@ def main(argv):
               'asserts' % len(ctl))
         print('  the suite goes red); %d have never been sabotaged at all.'
               % len(uncontrolled))
+        print('  of the controlled ones, %d carry the control INLINE rather than in\n  a separate probe file -- invisible to this counter until 2026-09-17,\n  which is why every earlier headline was an undercount.' % inline_n)
+        if inline_unverified:
+            print('')
+            print('  MUTATES WITH NO VISIBLE APPLIED-CHECK -- not counted as')
+            print('  controlled, and READ THESE rather than fixing them blind.')
+            print('  str.replace on an anchor that stopped matching does NOTHING,')
+            print('  silently, and the arm then runs against an unmodified file and')
+            print('  passes -- which is what an applied-check exists to stop.')
+            print('  BUT THE CHECK CAN BE IMPLICIT AND THIS CANNOT SEE THAT:')
+            print('  tests/base_prompt_single_source.js asserts the mutated copy')
+            print('  counts TWO, which is only true if the replace applied, so it is')
+            print('  sound and is listed here anyway. Under-claiming on purpose:')
+            for b in inline_unverified:
+                print('    *** %s' % b)
         print('')
         for s in sorted(ctl):
-            print('  CONTROLLED    %-46s %s' % (s, ', '.join(ctl[s])))
+            tag = 'SELF-CONTROLLED' if '(inline)' in ctl[s] else 'CONTROLLED'
+            print('  %-15s %-46s %s' % (tag, s, ', '.join(ctl[s])))
         if unreadable:
             print('')
             print('  COULD NOT READ -- these probes did not parse, so whatever')
