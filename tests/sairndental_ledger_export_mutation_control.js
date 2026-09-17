@@ -65,6 +65,40 @@ function ok(cond, label) {
 function section(s) { console.log('\n' + s); }
 
 const ORIGINAL = fs.readFileSync(APP, 'utf8');
+// ── THE BASELINE, TAKEN BEFORE ANYTHING RUNS (2026-09-16) ─────────────
+// Section 6's git arm used to assert the working tree was clean for this app
+// file FULL STOP, under a heading that says "the shipped file was never
+// touched". Those are different claims and they agree only when nobody has
+// uncommitted work -- which is exactly when a control is least likely to be
+// run. It fired on my own unrelated edit to sairnvet.html minutes after I had
+// fixed the identical defect in hover_separation_ci_probe.py's arm 7.
+//
+// The byte-identity arm above it already proves THIS control changed nothing.
+// This captures the state before anything runs so the git arm can report the
+// DIFFERENCE, which is what its label claims.
+//
+// AND THE LIMIT, MEASURED RATHER THAN ASSUMED, BECAUSE IT IS NOT OBVIOUS:
+// `git status --porcelain <file>` prints the SAME line (" M file") whether the
+// file was modified once or twice. So this comparison detects a
+// control-introduced change only when the tree was CLEAN for that file
+// beforehand; on an already-dirty tree it cannot see a further one. Verified by
+// appending to an already-modified app file and watching the porcelain come
+// back byte-identical.
+//
+// THE BYTE-IDENTITY ARM IS THEREFORE THE ONE THAT CARRIES THE GUARANTEE, in
+// both cases, and this arm is corroboration. Said here for the same reason
+// sairncode_gates_mutation_control.js says it about its own mtime arm: an arm
+// that reads as proof and is only evidence is how a control comes to be
+// trusted for something it does not do.
+function gitPorcelain() {
+  try {
+    return execFileSync('git', ['-C', ROOT, 'status', '--porcelain', APP],
+                        { encoding: 'utf8' });
+  } catch (e) {
+    return null;
+  }
+}
+const PORCELAIN_BEFORE = gitPorcelain();
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'dnt-ledger-'));
 
 const MUTATIONS = [
@@ -190,17 +224,13 @@ section('6. the shipped file was never touched');
 {
   ok(fs.readFileSync(APP, 'utf8') === ORIGINAL,
      'sairndental.html is byte-identical to how this control found it');
-  let porcelain = '';
-  try {
-    porcelain = execFileSync('git', ['-C', ROOT, 'status', '--porcelain', 'sairndental.html'],
-                             { encoding: 'utf8' });
-  } catch (e) {
-    porcelain = null;
-  }
-  ok(porcelain === '' || porcelain === null,
-     porcelain === null
+  const porcelain = gitPorcelain();
+  ok(porcelain === PORCELAIN_BEFORE,
+     porcelain === null || PORCELAIN_BEFORE === null
        ? 'git could not be consulted -- reported, not folded into a pass'
-       : 'and git agrees the working tree is clean for it');
+       : 'and git sees no change this control did not make'
+         + (PORCELAIN_BEFORE ? '   [the tree was already dirty for this file '
+            + 'before the control started; the DIFFERENCE is what was measured]' : ''));
 }
 
 section('7. A MUTATION THIS SUITE DOES NOT CATCH, recorded rather than deleted');
