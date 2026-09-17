@@ -1752,8 +1752,8 @@
       "task": "independent review of hank service_role tier a gate classifier v3 path rule",
       "claimed_at": "2026-09-17T21:36:54Z",
       "claimed_at_epoch": 1789681014.5027592,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T21:41:53Z"
     }
   ]
 }
