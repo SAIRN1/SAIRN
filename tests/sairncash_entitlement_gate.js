@@ -198,24 +198,90 @@ const PAST = new Date(Date.now() - 86400000).toISOString();
       'the fresh server answer was not written back');
   });
 
-  await test('a NETWORK failure falls back to the last known real expiry -- documented', async () => {
-    // Deliberate, and stated in the source: "Falls back to the last known real
-    // expiresAt only on a network failure, never on an actual server
-    // rejection." A paying customer on a bad connection must not be locked out.
+  // ── THE FALLBACK IS STILL THERE AND IS NOW BOUNDED (2026-09-16) ─────────
+  // It used to be UNBOUNDED: "the server could not be reached" granted access
+  // forever, so blocking the request -- offline, a hosts entry, DevTools --
+  // made a stored record believed indefinitely with nothing ever re-asked.
+  // These four arms are the bound, and the first is the old arm with the one
+  // field the old fixture could not have carried.
+  const FRESH = () => Date.now() - 60 * 60 * 1000;          // 1h ago
+  const STALE = () => Date.now() - 96 * 60 * 60 * 1000;     // 96h ago, past 72
+
+  await test('a NETWORK failure INSIDE the grace still falls back to the last '
+    + 'known real expiry -- documented, and still true', async () => {
+    // Deliberate, and stated in the source: a paying customer on a bad
+    // connection must not be locked out.
     const c = harness({
-      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1' }) },
+      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1', lastVerifiedAt: FRESH() }) },
       network: 'down'
     });
     assert.strictEqual(await c.reverifySubscription(), true);
     assert.ok(c.__store.sairncash_sub, 'a network blip deleted a real subscription');
   });
 
-  await test('...but a network failure does NOT resurrect an expired one', async () => {
+  await test('...and OUTSIDE the grace it refuses -- an unreachable server '
+    + 'stops meaning yes', async () => {
     const c = harness({
-      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: PAST, subscriptionId: 'sub_1' }) },
+      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1', lastVerifiedAt: STALE() }) },
+      network: 'down'
+    });
+    assert.strictEqual(await c.reverifySubscription(), false,
+      'a record last verified 96 hours ago was still believed');
+  });
+
+  await test('...and a record that was NEVER verified in this browser gets NO '
+    + 'grace at all', async () => {
+    // The forged shape: valid, far-future expiry, a plausible id, and no
+    // evidence this browser ever got a server answer for it.
+    const c = harness({
+      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1' }) },
       network: 'down'
     });
     assert.strictEqual(await c.reverifySubscription(), false);
+  });
+
+  await test('...and a FUTURE lastVerifiedAt is not a grace -- the skew guard',
+    async () => {
+      // Without `age >= 0`, a stamp written ahead makes the age negative,
+      // `age <= GRACE` true, and the unbounded window returns through the very
+      // field that exists to bound it.
+      const c = harness({
+        local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1', lastVerifiedAt: Date.now() + 86400000 }) },
+        network: 'down'
+      });
+      assert.strictEqual(await c.reverifySubscription(), false);
+    });
+
+  await test('a successful verify STAMPS the grace, so the next offline load '
+    + 'has one', async () => {
+    const c = harness({
+      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1' }) },
+      reply: { valid: true, expiresAt: FUTURE, subscriptionId: 'sub_1' }
+    });
+    assert.strictEqual(await c.reverifySubscription(), true);
+    const saved = JSON.parse(c.__store.sairncash_sub);
+    assert.ok(Number(saved.lastVerifiedAt) > 0,
+      'a successful verify did not stamp lastVerifiedAt, so every offline load '
+      + 'after it is refused');
+    assert.ok(Math.abs(Date.now() - Number(saved.lastVerifiedAt)) < 5000,
+      'the stamp is not now');
+  });
+
+  await test('...but a network failure does NOT resurrect an expired one, EVEN '
+    + 'INSIDE the grace', async () => {
+    // THE STAMP IS FRESH ON PURPOSE. Without it the grace check refuses first
+    // and this arm passes without ever reaching the expiry comparison -- it
+    // would be asserting the bound, which the arms above already assert, and
+    // the EXPIRY guard underneath it would be untested. Measured: with no
+    // stamp, replacing the fallback with a bare `return true` is SILENT.
+    const c = harness({
+      local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: PAST, subscriptionId: 'sub_1', lastVerifiedAt: FRESH() }) },
+      network: 'down'
+    });
+    assert.strictEqual(await c.reverifySubscription(), false,
+      'an EXPIRED subscription was resurrected by an offline load inside the '
+      + 'grace period -- the grace bounds how long an answer is reused, not '
+      + 'whether the answer was yes');
   });
 
   await test('a real trial with a token the server confirms still opens the app', async () => {

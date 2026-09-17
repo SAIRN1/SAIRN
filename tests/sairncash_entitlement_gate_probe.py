@@ -75,8 +75,8 @@ MUTATIONS = [
      "should not lose the app -- but returning true regardless turns one "
      "offline load into permanent access",
      APP,
-     "  } catch(e) {\n    return isSubscribed();\n  }",
-     "  } catch(e) {\n    return true;\n  }"),
+     "    return isSubscribed();\n  }\n}",
+     "    return true;\n  }\n}"),
 
     ("5. the gate stops asking the server AT ALL and becomes the client-only "
      "check it was written to replace. The function still exists, still returns "
@@ -87,10 +87,38 @@ MUTATIONS = [
      "JSON.stringify({subscriptionId: s.subscriptionId})});",
      "    const res = { json: async () => ({ valid: true, "
      "expiresAt: s.expiresAt, subscriptionId: s.subscriptionId }) };"),
+
+    ("6. THE GRACE PERIOD GOES and the offline fallback is unbounded again -- "
+     "the 2026-09-16 finding verbatim. Block the verify request and a stored "
+     "record is believed FOREVER, with nothing ever re-asked",
+     APP,
+     "    if (!scGraceOk(s)) {",
+     "    if (false) {"),
+
+    ("7. the SKEW GUARD goes, so a lastVerifiedAt written AHEAD of now makes "
+     "the age negative, `age <= GRACE` true, and the unbounded window returns "
+     "through the very field that exists to bound it",
+     APP,
+     "  if (!(age >= 0)) return false;",
+     "  if (false) return false;"),
+
+    ("8. the SUCCESSFUL VERIFY STOPS STAMPING, so no browser ever earns a "
+     "grace and every offline load is refused -- the bound failing toward "
+     "lockout rather than toward trust, which is the other way it can be wrong",
+     APP,
+     "  var rec = Object.assign({}, d, { lastVerifiedAt: Date.now() });\n"
+     "  localStorage.setItem('sairncash_sub', JSON.stringify(rec));",
+     "  localStorage.setItem('sairncash_sub', JSON.stringify(d));"),
 ]
 
 if __name__ == '__main__':
     sys.exit(run_probe(
         SUITE, MUTATIONS,
         title='the SAIRNcash entitlement gate -- the suite must refuse a forged '
-              'localStorage grant'))
+              'localStorage grant',
+        # sairncash.html IS THE SUBJECT, so it has to be the working copy and not
+        # HEAD's. Without this the worktree holds the committed app while the
+        # author edits it, the baseline goes red for a reason unrelated to any
+        # mutation, and the probe reports "stopping" on a change that is fine.
+        # Third instance of f4397982 in one session, each in a different probe.
+        stage=[APP]))

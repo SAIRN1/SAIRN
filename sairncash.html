@@ -582,7 +582,45 @@ async function handleWaitlist() {
 
 // ── SUBSCRIPTION ──────────────────────────────────────────────────
 function getSub() { try { return JSON.parse(localStorage.getItem('sairncash_sub') || 'null'); } catch { return null; } }
-function saveSub(d) { localStorage.setItem('sairncash_sub', JSON.stringify(d)); }
+// ── THE OFFLINE FALLBACK WAS UNBOUNDED, AND THAT IS THE WHOLE GAP (2026-09-16)
+// reverifySubscription() and reverifyTrial() both fall back to the local check
+// when the verify request THROWS. That fallback is correct and deliberate -- a
+// paying customer with no network must not lose the app -- and it had no bound,
+// so "the server could not be reached" granted access FOREVER. Block the
+// request (offline, a hosts entry, DevTools) and a stored record is believed
+// indefinitely with nothing ever re-asked.
+//
+// The bound is a GRACE PERIOD measured from the last time THIS BROWSER got a
+// real server answer. Every successful verify stamps it, in saveSub/saveTrial
+// rather than at the four call sites, so a new call site cannot forget it --
+// the same argument the write-transport timeouts used.
+//
+// WHAT THIS DOES NOT DO, said plainly rather than implied: localStorage is
+// attacker-controlled, so a forger who knows this field can write
+// lastVerifiedAt themselves and buy another 72 hours. This does not
+// authenticate anything. It converts INDEFINITE trust of an unverifiable
+// record into BOUNDED trust, which is the finding it answers (auditor #191) and
+// is all a client-side check can do. The real gate is api/sairncash/ai.js,
+// which verifies server-side and does not believe this record at all.
+//
+// 72 HOURS: long enough that a customer on a flight, or through a weekend
+// outage, keeps working; short enough that a permanently offline machine
+// re-asks before a monthly subscription could have lapsed and been missed.
+var SC_OFFLINE_GRACE_MS = 72 * 60 * 60 * 1000;
+function scGraceOk(rec) {
+  var at = rec && Number(rec.lastVerifiedAt);
+  if (!at || !isFinite(at)) return false;   // never verified here -> no grace at all
+  var age = Date.now() - at;
+  // A FUTURE STAMP IS NOT A GRACE. Clock skew, or a stamp written ahead on
+  // purpose, would otherwise make `age <= GRACE` true forever -- an unbounded
+  // window reintroduced through the field that exists to bound it.
+  if (!(age >= 0)) return false;
+  return age <= SC_OFFLINE_GRACE_MS;
+}
+function saveSub(d) {
+  var rec = Object.assign({}, d, { lastVerifiedAt: Date.now() });
+  localStorage.setItem('sairncash_sub', JSON.stringify(rec));
+}
 // 2026-08-10: uses the real expiresAt Stripe returns (via /api/sairncash/verify)
 // instead of an arbitrary client-only 35-day timer -- see audit finding.
 function isSubscribed() {
@@ -649,6 +687,16 @@ async function reverifySubscription() {
     localStorage.removeItem('sairncash_sub');
     return false;
   } catch(e) {
+    // BOUNDED. The fallback stays -- a paying customer offline must not lose
+    // the app -- but only while this browser has had a real server answer
+    // inside SC_OFFLINE_GRACE_MS. Past that, an unreachable server stops
+    // meaning yes. See scGraceOk() for what this does and does not close.
+    if (!scGraceOk(s)) {
+      try { console.warn('SAIRNcash: could not reach the verify endpoint and '
+        + 'the last real verification is older than the offline grace period '
+        + '-- treating the subscription as unverified.'); } catch (_e) {}
+      return false;
+    }
     return isSubscribed();
   }
 }
@@ -714,7 +762,10 @@ function signOut() {
 // (api/sairncash/trial-renew.js) -- no self-service renew path exists
 // anywhere in this client code, by design.
 function getTrial() { try { return JSON.parse(localStorage.getItem('sairncash_trial') || 'null'); } catch { return null; } }
-function saveTrial(d) { localStorage.setItem('sairncash_trial', JSON.stringify(d)); }
+function saveTrial(d) {
+  var rec = Object.assign({}, d, { lastVerifiedAt: Date.now() });
+  localStorage.setItem('sairncash_trial', JSON.stringify(rec));
+}
 
 // ── SAIRNcash's AI CALLS NOW GO TO ITS OWN AUTHENTICATED ENDPOINT (2026-09-05)
 // They used to POST straight to /api/claude with no credential of any kind --
@@ -762,6 +813,14 @@ async function reverifyTrial() {
     if (data.valid) { saveTrial({ trialToken: t.trialToken, expiresAt: data.expiresAt, daysLeft: data.daysLeft, customerId: data.customerId, firebaseToken: data.firebaseToken }); return true; }
     return false;
   } catch (e) {
+    // BOUNDED, for the same reason and on the same clock as the subscription
+    // path. A trial that can never be re-verified is a trial that never ends.
+    if (!scGraceOk(t)) {
+      try { console.warn('SAIRNcash: could not reach trial-verify and the last '
+        + 'real verification is older than the offline grace period -- treating '
+        + 'the trial as unverified.'); } catch (_e) {}
+      return false;
+    }
     return isTrialActive();
   }
 }
