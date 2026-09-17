@@ -1349,6 +1349,16 @@
       "claimed_at_epoch": 1789608446.818008,
       "status": "released",
       "released_at": "2026-09-17T01:46:09Z"
+    },
+    {
+      "id": "cody-1789609618",
+      "session": "cody",
+      "subject": "cody",
+      "task": "negative control for tests/sairnfreedom_server_backup.js -- sf_ledger sf_disbursements tier A",
+      "claimed_at": "2026-09-17T01:46:58Z",
+      "claimed_at_epoch": 1789609618.8855438,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
