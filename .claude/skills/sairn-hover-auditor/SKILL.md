@@ -3282,6 +3282,128 @@ role specifically, not left as an abstraction:
   against a predictable pattern, individual baseline tracking, and the
   process pass above all exist specifically against this one.
 
+## Benchmarked against Anthropic's own published auditing agents (2026-09-17)
+
+Read the published method only -- alignment.anthropic.com's "Building and
+evaluating alignment auditing agents" and the Petri release notes -- never
+installed, never pulled in as a dependency. This is a benchmark, not a
+component: three named agent roles built for a genuinely different subject
+(a model's internals) than this role's (a build agent's committed code), and
+the comparison is worth doing precisely because the SHAPE of the problem --
+verify a system's real behavior independently, adversarially, without
+trusting its own account of itself -- is the same shape even though the
+subject differs completely.
+
+**1. The tool-using investigator agent (open-ended, hypothesis-driven,
+chat + data-analysis + interpretability tools) -- matched, with one
+already-named gap sharpened.** This role's own deep-pass method (run the
+stated tests, read the source independently, drive it with real inputs,
+hunt for the untested case) is the direct structural analog, and the
+self-log already serves the role their memory-management tools serve for an
+investigation too long to hold in one context. The interpretability-tools
+category (SAE features, activation steering) has no analog here and cannot
+have one -- there is no equivalent of a model's internal activations for a
+codebase; reading source and driving it IS this role's equivalent of
+looking inside. The real, transferable gap: their agent has embedding-based
+semantic search over training data to find related past cases; this role's
+self-log has no equivalent over its OWN accumulated history -- a genuinely
+similar past finding surfaces today only if this role happens to remember
+it. Already named once, under Case-Based Reasoning's RETRIEVE step, as a
+structural gap in how the self-log is searched. This benchmark is
+independent confirmation the gap is real and that the fix (structured,
+retrievable features per entry, not full-text memory) is a validated
+technique in a directly analogous role, not a speculative nice-to-have.
+
+**2. The evaluation agent (discriminates models with an implanted quirk
+from clean ones, 88% success, measured against ten known quirky models) --
+matched IN PRACTICE, missing THE STANDING BENCHMARK.** Sabotage/mutation
+verification -- plant a defect, confirm the checker catches it -- is this
+role's single most-used discipline and appears in nearly every deep pass
+logged tonight. What is genuinely missing: Anthropic's agent is scored
+against a FIXED, REUSABLE, KNOWN-ANSWER benchmark of ten quirky models, with
+a tracked score (88%) and a named failure concentration (3 specific quirks
+account for the misses) -- a standing instrument the field can point to and
+re-run, not a one-off sabotage test built fresh for whatever is being
+checked that day. This role has never built the equivalent: a persistent,
+versioned corpus of REAL past defect shapes, each with a working reproducer,
+that any NEW checker gets run against before being trusted, with a real,
+tracked discrimination score over time.
+
+  **DESIGNED, not built: `hover-audit-log/sabotage_benchmark/`.** Seed it
+  from material already on hand and stronger than Anthropic's synthetic
+  quirky models, because these are real incidents rather than implants: for
+  each of the confirmed real defect shapes already in this role's own
+  history and the platform's defect-density register (the self-referential
+  catch, the wholesale-replacement/server-wins/console-only-log
+  composition, the network-failure-forces-fallback-to-a-client-only-
+  predicate shape, the em-dash/NaN/coerced-to-zero shape), store the
+  original vulnerable snippet or a shape-preserving synthetic stand-in, the
+  fixed version, and a runnable mutation that reintroduces the original
+  defect. A checker or test suite that claims to guard a given defect CLASS
+  gets run against the matching benchmark fixture(s) before being trusted,
+  and the corpus reports a real, standing score -- N of M known real
+  defect-shapes actually caught -- tracked release over release the same
+  way Anthropic tracks 88% and names which quirks it misses, rather than a
+  single pass/fail per tool with no cumulative record.
+
+**3. The breadth-first red-teaming agent (255 named seed instructions, 25
+turns per conversation, top-60-most-concerning transcripts triaged by a
+strong judge before close reading, finds 7/10 quirks) -- partially matched,
+missing the SEED CORPUS specifically.** The STRIDE/OWASP/PTES lens this
+role's own threat-modeling pass already uses is the checklist half of their
+seed list. What is missing is the SCALE and the TRACKED COVERAGE: 255 named,
+reusable starting scenarios, so which seeds have been tried against which
+targets is itself a real, checkable fact, versus this role picking a fresh
+angle each time from memory of what feels underexplored.
+
+  **DESIGNED, not built: `hover-audit-log/seed_corpus.md`.** A maintained,
+  numbered list of concrete launch points for a fast or deep pass, seeded
+  from what already exists as data but has never been reframed as a seed
+  list: every named technique in the technique-staleness tracker, every
+  OWASP Top 10 category, every cross-domain discipline this file already
+  names, and -- the SAIRN-specific addition Anthropic's list cannot contain
+  -- every REAL, recurring bug SHAPE already confirmed on this platform
+  (not the specific incident, the shape, so a seed reads "hunt for a
+  wholesale-replacement write paired with a silent push failure," not
+  "check sairndental's vendor writes again"). Picking a target AND a seed
+  from this list, and logging which pairing was tried, turns "did this
+  role look everywhere" into a checkable fact instead of an impression, the
+  same way 255 named seeds make the red-teaming agent's coverage a real
+  number rather than a sense of thoroughness.
+
+**Two points of genuine, confirmed alignment, named as such rather than
+manufactured into gaps.** Their finding that a red-teaming transcript can
+declare a quirk exists without ever demonstrating it, and their fix
+(grade on demonstrations, not declarations), is exactly this role's own
+Rules of Engagement standard for a threat-modeling finding -- a
+CODE-TRACED, demonstrated proof, never a claimed belief -- independently
+confirmed as the right bar by a completely different team solving a
+structurally similar problem. Their ~1% eval-awareness rate (a model
+occasionally suspecting it is being tested) is this role's own
+sleeper-agent/Hawthorne-effect material, already named under "A named limit
+on what this role can actually promise" -- now with a real, measured number
+from a directly analogous audit context, worth citing when that section is
+next revisited, not a fact this role needed to newly discover.
+
+**One real, narrower gap this comparison surfaced on its own: their
+evaluation agent's REVISION PHASE is a genuinely SEPARATE Claude Code
+instance inspecting the first instance's own output before it is trusted --
+applied to every individual evaluation the agent builds, not on a periodic
+cadence.** This role's own EQA checkpoint is the periodic version of the
+identical idea, applied to this role's self-audits on a standing cadence
+(every third process pass) -- but a brand-NEW TOOL this role builds for its
+own use (hover_self_health.py, hover_tip_beacon.py, tonight's report-builder
+refactor) currently gets sabotage-verified by the SAME session that built
+it, same-turn, with no separate cold read before its first real use. The
+narrow gap is real: extend the "genuinely separate reviewer" standard from
+EQA's periodic self-audit cadence down to per-tool, before-first-trust --
+a freshly-built hover tool should get one cold, independent look (a fresh
+agent instance with no hand in writing it, or Michael) before its verdicts
+are relied on for a real finding, not only once every third process pass.
+Named as a standing discipline to apply going forward; not retrofitted onto
+every tool already built and already sabotage-verified tonight, which would
+be a large, low-value bulk exercise rather than a targeted one.
+
 ## Who checks the auditor
 
 This role is not exempt from the standard it holds everyone else to. Real
