@@ -537,6 +537,12 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div><b>Credentials &amp; Training Ledger</b><div style="font-size:12px;color:var(--muted)">Append-only. A correction is a new entry, never an edit.</div></div>
       <div style="display:flex;gap:8px">
         <button class="btn bo bs" onclick="crRefresh()">Refresh</button>
+        <!-- NOT hidden from non-management. The server already scopes the read
+             to the caller's own records and the file states that scope in its
+             own header, so a carer exporting their own training record is the
+             feature working, not a leak. Hiding it would remove the one
+             document that person may actually be asked for. -->
+        <button class="btn bo bs" onclick="alfExportDataset('credentials')">Export CSV</button>
         <button class="btn bo bs" id="cr-add-btn" onclick="openCredModal()">+ Record Entry</button>
       </div>
     </div>
@@ -3490,6 +3496,130 @@ function rCredentials(){
         '<td>'+H(c.completed_on||(c.created_at||'').slice(0,10)||'--')+'</td>'+
         '<td>'+expCell+'</td><td>'+H(c.recorded_by||'--')+'</td></tr>';
     }).join('')+'</tbody></table></div>';
+}
+// ── THE EXPORT REGISTRY (2026-09-16, item 39c) ──────────────────────────
+// `alf_staff_credentials` is Class A -- the app's own registry declares it
+// append-only -- and until now this facility could LOOK AT the credential
+// ledger and could not PRODUCE it. A state surveyor asking for training hours
+// and CPR cards is asking for a record, not a screenshot, and
+// docs/2026-09-14-class-a-retrievability.md has carried
+// "no -- app has no export machinery" against this resource since it was
+// written. There is no `createObjectURL` anywhere else in this file; this is
+// the first.
+//
+// THE SHAPE IS SAIRNdental's DNT_EXPORTS, deliberately and not by accident of
+// copying: a registry of named datasets, each with a label, a row source and a
+// list of [header, accessor] pairs, driven by one generic writer. Two apps
+// hand-rolling two CSV writers is two places for the quoting to be wrong.
+//
+// ── PLUS A PREAMBLE, WHICH DNT_EXPORTS DOES NOT HAVE, FOR A REASON THIS ──
+// ── RESOURCE HAS AND SAIRNdental's DO NOT ───────────────────────────────
+// This ledger is SCOPE-FILTERED BY THE SERVER. A non-management session gets
+// only its own rows and the panel says so in `cr-scope-note`; a file carrying
+// three of forty rows with no note on it is indistinguishable from a facility
+// with three records, and it is the one somebody hands to an inspector. The
+// scope goes IN THE FILE, next to the rows it describes, not on the screen the
+// file was made from.
+//
+// AND `_crRecords === null` IS REFUSED RATHER THAN EXPORTED AS EMPTY. Never
+// loaded and genuinely empty are two different facts and only one of them is a
+// statement about the ledger.
+function alfCsvField(v){
+  var t=String(v==null?'':v);
+  if(/[",\n\r]/.test(t))return '"'+t.replace(/"/g,'""')+'"';
+  return t;
+}
+var ALF_EXPORTS={
+  // `resource` / `action` DECLARE what this dataset is an export OF, in the
+  // shape SAIRNroofing's RF_REPORTS already uses. It is not decoration: it is
+  // the only thing that lets tools/export_coverage_check.py answer "can this
+  // Class A record be produced as a file" without inferring it through an
+  // accessor chain. SAIRNdental's registry has to be read by resolving
+  // `rows:` -> accessor -> `ld('dnt_x_list')` -> the sync-pair table, three
+  // hops that break quietly; a declaration cannot.
+  credentials:{label:'staff-credentials',resource:'alf_staff_credentials',action:'read',
+    rows:function(){
+      if(_crRecords===null)return null;
+      return _crRecords.slice().sort(function(a,b){
+        return (b.created_at||'')<(a.created_at||'')?-1:1;});
+    },
+    preamble:function(rows){
+      var lines=[
+        'SAIRNcare credentials and training ledger -- exported '+new Date().toISOString(),
+        'ROWS IN THIS FILE: '+rows.length,
+        'WHAT THIS IS: the append-only credential and training ledger '+
+        '(alf_staff_credentials). A correction is a new entry, never an edit, '+
+        'so a staff member may appear more than once and the latest row is the '+
+        'current one.'];
+      // The scope line is CONDITIONAL because saying "this is everything" when
+      // it is would be the claim; saying nothing when it is not would be the
+      // silence. Only one of the two can be printed and it is chosen from the
+      // server's own answer, not guessed from the row count.
+      lines.push(_crScopedToSelf
+        ? 'THIS FILE IS NOT THE WHOLE LEDGER. The server scoped this read to '+
+          'your own records because this session is not management. Rows for '+
+          'other staff exist and are not in this file.'
+        : 'SCOPE: the server returned the full ledger to this session. No '+
+          'per-staff filter was applied.');
+      lines.push('HOURS ARE AS RECORDED AND ARE NOT TOTALLED HERE. Training '+
+                 'categories have different requirements; a sum across them is '+
+                 'not a compliance figure.');
+      return lines;
+    },
+    columns:[
+      ['Staff',function(r){return alfStaffName(r.staff_id);}],
+      // The id stays beside the name rather than instead of it: a staff member
+      // removed from the roster still has ledger rows, and a name-only export
+      // would make those unattributable. Same call DNT_EXPORTS makes on
+      // charges.
+      ['Staff ID',function(r){return r.staff_id;}],
+      ['Entry ID',function(r){return r.id;}],
+      ['Type',function(r){return r.record_type==='training_hours'?'Training':'Credential';}],
+      ['Credential',function(r){return r.credential||'';}],
+      ['Training category',function(r){return r.category||'';}],
+      ['Hours',function(r){return r.hours==null?'':r.hours;}],
+      ['Completed on',function(r){return r.completed_on||'';}],
+      ['Expires on',function(r){return r.expires_on||'';}],
+      // DAYS IS DERIVED AND THE SCREEN ONLY SHOWS IT INSIDE 30 DAYS. The file
+      // carries it for every row that has an expiry, because a reader sorting
+      // a spreadsheet by "how close is this to lapsing" cannot recover it from
+      // a date alone without knowing when the file was made -- and the file
+      // says when it was made, one line up.
+      ['Days until expiry',function(r){
+        if(!r.expires_on)return '';
+        var d=certDaysUntil(r.expires_on);
+        return d===null?'':d;}],
+      ['Notes',function(r){return r.notes||'';}],
+      ['Recorded by',function(r){return r.recorded_by||'';}],
+      ['Recorded at',function(r){return r.created_at||'';}]]}
+};
+function alfExportDataset(key){
+  var def=ALF_EXPORTS[key];
+  if(!def){toast('No export is declared for '+key);return;}
+  var rows;
+  try{rows=def.rows();}catch(e){toast('Could not build the '+key+' export');return;}
+  if(rows===null){
+    toast('The ledger has not been loaded yet -- click Refresh first. An '+
+          'empty file would look like an empty ledger.',5000);
+    return;
+  }
+  var lines=(def.preamble?def.preamble(rows):[]).map(function(t){return alfCsvField(t);});
+  lines.push(def.columns.map(function(c){return alfCsvField(c[0]);}).join(','));
+  rows.forEach(function(r){
+    lines.push(def.columns.map(function(c){
+      var v;
+      try{v=c[1](r);}catch(e){v='';}
+      return alfCsvField(v);
+    }).join(','));
+  });
+  var blob=new Blob([lines.join('\r\n')],{type:'text/csv'});
+  var url=window.URL.createObjectURL(blob);
+  var link=document.createElement('a');
+  link.href=url;link.download='sairncare-'+def.label+'-'+alfLocalToday()+'.csv';link.click();
+  window.URL.revokeObjectURL(url);
+  toast(rows.length+' row'+(rows.length===1?'':'s')+' exported'+
+        (_crScopedToSelf?' -- YOUR OWN RECORDS ONLY, and the file says so':
+         ' -- the full ledger as the server returned it'),5000);
 }
 function alfStaffName(staffId){
   // Resolve against the real employee roster FIRST, then the alf_staff roster.

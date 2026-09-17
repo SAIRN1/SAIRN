@@ -814,6 +814,11 @@ async function callClaude(system, messages, maxTokens) {
         <input id="mc-expires" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
     </div>
     <button class="btn bp" onclick="mechCredAdd()">+ Record Credential</button>
+    <!-- Exports the FULL register, not the board above. See MECH_EXPORTS for
+         why: the board is one row per technician, type and section, and the
+         superseded renewals are the history an append-only register exists
+         to hold. -->
+    <button class="btn" onclick="mechExportDataset('credentials')">Export CSV</button>
     <div id="mech-cred-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
     <div id="mech-cred-note" style="font-size:12px;color:var(--g400);margin-top:8px"></div>
   </div>
@@ -1879,6 +1884,12 @@ function mechData(action, resource, payload) {
 
   function mechCredRefresh() {
     var note = document.getElementById('mech-cred-note');
+    // CLEARED BEFORE THE READ, not only on success. A failed refresh that left
+    // the previous read cached would let the Export button produce a file from
+    // a board the screen has already replaced with MECH_NOT_SHOWN -- the file
+    // and the screen disagreeing, which is the one thing both exports in this
+    // app are written to prevent.
+    _mechCredLast = null;
     return mechData('read', 'mech_credentials', {}).then(function (res) {
       if (res.status === 401 || res.status === 403) {
         // A refusal is not an empty registry. Same distinction StoneDesk had to
@@ -1910,10 +1921,178 @@ function mechData(action, resource, payload) {
           // Surfaced beside the totals rather than under them.
           (b.unknown_count ? ' The unknowns are not passes — a missing renewal date is missing evidence.' : '');
       }
+      _mechCredLast = { board: b, data: res.body.data || [] };
       mechCredRenderRows(b, res.body.data || []);
     });
   }
   window.mechCredRefresh = mechCredRefresh;
+
+  // ── THE EXPORT REGISTRY (2026-09-16, item 39c) ────────────────────────
+  // `mech_credentials` is Class A -- the app's own registry declares it
+  // append-only -- and until now this contractor could LOOK AT the credential
+  // board and could not PRODUCE it. An EPA inspector asking who was certified
+  // to recover refrigerant from which equipment is asking for a record, not a
+  // screenshot, and docs/2026-09-14-class-a-retrievability.md has carried
+  // "no -- app has no export machinery" against this resource since it was
+  // written. There is no `createObjectURL` anywhere else in this file.
+  //
+  // THE SHAPE IS SAIRNdental's DNT_EXPORTS: a registry of named datasets, each
+  // with a label, a row source and [header, accessor] pairs, driven by one
+  // generic writer, so two apps do not hand-roll two CSV quoters.
+  //
+  // ── IT EXPORTS THE RECORDS, NOT THE BOARD, AND THAT IS THE WHOLE POINT ──
+  // The table on screen is `board.rows`, which is `latestByKey()` -- ONE ROW
+  // PER (technician, type, section-or-jurisdiction), newest issue date wins.
+  // That is right for a board: a technician who renewed last month should not
+  // appear twice under "is this current". It is WRONG for the file. The
+  // superseded rows are the history that makes an append-only register worth
+  // having, and a file that silently drops them is the quietly-partial defect
+  // this platform keeps finding -- SAIRNdental's ageing buckets exported in
+  // place of the charges, one app over.
+  //
+  // So every record is exported, and each one says whether it is the row the
+  // board is showing. `Superseded` is derived from the board's own key rule
+  // rather than re-derived here: two places computing which record wins is two
+  // places to disagree, which is the reason the status word is taken from the
+  // server and not recomputed either.
+  //
+  // ── EPA SECTION GETS ITS OWN COLUMN, SEPARATE FROM JURISDICTION ────────
+  // The screen merges them into one "Section / jurisdiction" cell because only
+  // one is ever populated. In a file they must not share a column: the section
+  // is the REGULATED FIELD -- Type I, II, III and Universal are different
+  // EQUIPMENT under 40 CFR 82.161, not ranks -- and a spreadsheet filtered on
+  // "Universal" must not also match a jurisdiction that happens to read the
+  // same. The full label is carried beside the stored code so the file is
+  // legible to somebody who does not know the codes.
+  var _mechCredLast = null;
+  function mechCsvField(v) {
+    var t = String(v == null ? '' : v);
+    if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
+    return t;
+  }
+  function mechCredKey(r) {
+    return [String(r.technician_id || ''), String(r.record_type || ''),
+            String(r.epa_section || r.jurisdiction || '')].join('|').toLowerCase();
+  }
+  var MECH_EXPORTS = {
+    credentials: {
+      label: 'technician-credentials',
+      // DECLARED, not inferred -- the shape SAIRNroofing's RF_REPORTS uses and
+      // the only thing that lets tools/export_coverage_check.py answer whether
+      // this Class A record can be produced as a file. SAIRNdental's registry
+      // has to be read through `rows:` -> accessor -> `ld()` -> the sync-pair
+      // table, three hops that break quietly; a declaration cannot.
+      resource: 'mech_credentials', action: 'read',
+      rows: function () {
+        if (!_mechCredLast) return null;
+        var shown = {};
+        (_mechCredLast.board.rows || []).forEach(function (r) { shown[mechCredKey(r)] = r; });
+        // ── THE TIE, AND WHY MATCHING ON THE DATE ALONE IS NOT ENOUGH ────
+        // The board row is the CURRENT one for its key, and a record matches it
+        // only if it is that same record -- same issue date. But TWO records
+        // can share a key AND a date: the same technician's card entered twice,
+        // or a renewal issued the day the old one was superseded. Matching on
+        // the date alone marks BOTH as current, and the file then shows two
+        // current rows where the board shows one -- the file and the screen
+        // disagreeing, which is the one thing this export exists to prevent.
+        //
+        // The board row is CONSUMED on first match, which is not an arbitrary
+        // tie-break: the server's latestBy() keeps the FIRST record seen when
+        // the ranking does not prefer the next one, and this walks `data` in
+        // the same order. Re-deriving the winner here instead would be a second
+        // place computing it, which the status column already refuses to be.
+        return (_mechCredLast.data || []).map(function (r) {
+          var k = mechCredKey(r);
+          var b = shown[k];
+          var isCurrent = !!(b && (b.issued_on || '') === (r.issued_on || ''));
+          if (isCurrent) delete shown[k];
+          return { rec: r, board: isCurrent ? b : null };
+        });
+      },
+      preamble: function (rows) {
+        var c = (_mechCredLast.board.counts) || {};
+        var superseded = rows.filter(function (x) { return !x.board; }).length;
+        return [
+          'SAIRNmechanical technician credential register — exported ' + new Date().toISOString(),
+          'ROWS IN THIS FILE: ' + rows.length + ' (' + (rows.length - superseded) +
+            ' currently shown on the board, ' + superseded + ' superseded by a later record)',
+          'WHAT THIS IS: the full append-only credential register (mech_credentials). ' +
+            'The BOARD on screen shows one row per technician, type and section — the ' +
+            'newest by issue date. This file is every record, because a renewal ' +
+            'history is the reason an append-only register exists.',
+          'STATUS IS THE SERVER\'S CLASSIFICATION as of ' + ((_mechCredLast.board.today) || 'the read above') +
+            ', with a warning window of ' + ((_mechCredLast.board.warn_days) == null ? 'the default' : _mechCredLast.board.warn_days) +
+            ' days. It is not recomputed here and it is not recomputed when you open this file.',
+          'BOARD COUNTS: ' + (c.current || 0) + ' current, ' + (c.expiring || 0) +
+            ' expiring, ' + (c.expired || 0) + ' expired, ' + (c.unknown || 0) + ' unknown. ' +
+            'UNKNOWN IS NOT A PASS — it means no renewal date is on file, which is missing evidence.',
+          'EPA 608 SECTIONS ARE EQUIPMENT, NOT RANKS (40 CFR 82.161). Type I is small ' +
+            'appliances, Type II high pressure, Type III low pressure, Universal all three. ' +
+            'A Type I technician is not "less certified" than a Type II one, and "has an EPA ' +
+            'card" is not an answer to whether somebody may open a given machine.'
+        ];
+      },
+      columns: [
+        ['Technician ID', function (x) { return x.rec.technician_id; }],
+        ['Credential ID', function (x) { return x.rec.credential_id; }],
+        ['Type', function (x) { return MECH_TYPE_LABELS[x.rec.record_type] || x.rec.record_type; }],
+        ['Type code', function (x) { return x.rec.record_type; }],
+        ['EPA 608 section', function (x) {
+          return x.rec.epa_section ? (MECH_SECTION_LABELS[x.rec.epa_section] || x.rec.epa_section) : ''; }],
+        ['EPA 608 section code', function (x) { return x.rec.epa_section || ''; }],
+        ['Jurisdiction', function (x) { return x.rec.jurisdiction || ''; }],
+        ['Credential number', function (x) { return x.rec.credential_no || ''; }],
+        ['Issuer', function (x) { return x.rec.issuer || ''; }],
+        ['Issued on', function (x) { return x.rec.issued_on || ''; }],
+        // has_expiry is STATED at entry and never guessed -- the form refuses a
+        // record that leaves it blank. The file carries the stated answer
+        // rather than inferring it from a blank expiry date, which is the
+        // inference the form exists to prevent.
+        ['Expires?', function (x) { return x.rec.has_expiry === true ? 'yes'
+                                        : x.rec.has_expiry === false ? 'no — lifetime' : ''; }],
+        ['Expires on', function (x) { return x.rec.expires_on || ''; }],
+        ['Status (server, board rows only)', function (x) { return x.board ? x.board.status : ''; }],
+        ['Days until expiry', function (x) {
+          return x.board && x.board.days !== null && x.board.days !== undefined ? x.board.days : ''; }],
+        ['On the board?', function (x) {
+          return x.board ? 'yes — current for this technician, type and section'
+                         : 'no — superseded by a later record for the same key'; }]
+      ]
+    }
+  };
+  function mechExportDataset(key) {
+    var def = MECH_EXPORTS[key];
+    if (!def) { showToast('No export is declared for ' + key); return; }
+    var rows;
+    try { rows = def.rows(); } catch (e) { showToast('Could not build the ' + key + ' export'); return; }
+    // NEVER LOADED AND GENUINELY EMPTY ARE DIFFERENT FACTS, and only one of
+    // them is a statement about the register. Same distinction MECH_NOT_SHOWN
+    // makes on the table above, carried into the file.
+    if (rows === null) {
+      showToast('The credential register has not been loaded yet — open this page ' +
+                'or sign in first. An empty file would look like an empty register.', 7000);
+      return;
+    }
+    var lines = (def.preamble ? def.preamble(rows) : []).map(function (t) { return mechCsvField(t); });
+    lines.push(def.columns.map(function (c) { return mechCsvField(c[0]); }).join(','));
+    rows.forEach(function (r) {
+      lines.push(def.columns.map(function (c) {
+        var v;
+        try { v = c[1](r); } catch (e) { v = ''; }
+        return mechCsvField(v);
+      }).join(','));
+    });
+    var blob = new Blob([lines.join('\r\n')], { type: 'text/csv' });
+    var url = window.URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'sairnmechanical-' + def.label + '-' + new Date().toISOString().slice(0, 10) + '.csv';
+    link.click();
+    window.URL.revokeObjectURL(url);
+    showToast(rows.length + ' record' + (rows.length === 1 ? '' : 's') +
+              ' exported — the full register, including records the board supersedes', 5000);
+  }
+  window.mechExportDataset = mechExportDataset;
 
   window.mechCredAdd = function () {
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };

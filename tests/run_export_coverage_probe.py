@@ -88,9 +88,16 @@ _dn_pairs = len(set(a for a, _ in X.PAIR.findall(_dn_src)))
 ok('...and resolving it did NOT sweep in every resource the app holds',
    dn is not None and 0 < len(dn) < _dn_pairs,
    '%d resolved of %d sync pairs' % (len(dn or []), _dn_pairs))
+# ── THIS ARM WAS "sairnmechanical HAS NO EXPORT MACHINERY" UNTIL 2026-09-16 ──
+# It was a correct arm and it stopped describing the app the moment
+# sairnmechanical.html gained MECH_EXPORTS. What it was really defending is the
+# thing worth keeping: a resource declared by a registry must RESOLVE to itself,
+# not to an empty set that the reader then labels. So it now drives the same
+# app in the direction it actually goes, and the NONE state -- which no app is
+# in any more -- is driven directly in section C instead.
 mc, mc_state = X.app_exports('sairnmechanical')
-ok('sairnmechanical has NO export machinery, and that is not the same as an '
-   'empty registry', mc == set() and mc_state == X.NONE, (mc, mc_state))
+ok('sairnmechanical declares mech_credentials in its registry, and it resolves',
+   mc == {'mech_credentials'} and mc_state == X.REGISTRY, (mc, mc_state))
 nn, _ = X.app_exports('no_such_app_39c')
 ok('an app file that does not exist is unreadable, not empty', nn is None, nn)
 
@@ -223,7 +230,14 @@ print('\nE. the eleven answers, pinned by name as of 2026-09-16')
 # table pinned that verdict faithfully, which is what a pin does -- it makes an
 # answer stable, not true. The tool now has a third state and these two carry it.
 EXPECTED = {
-    ('sairncare', 'alf_staff_credentials'): 'NO MACHINERY',
+    # ── THE LAST TWO MOVED OFF `NO MACHINERY` ON 2026-09-16 ────────────────
+    # These two were the real thing the verdict described: no `createObjectURL`
+    # and no `text/csv` anywhere in either app. Both now carry an export
+    # registry in SAIRNdental's DNT_EXPORTS shape, each declaring its resource
+    # the way RF_REPORTS does. Eleven of eleven Class A records can now be
+    # produced as a file -- which is NOT a statement about who may produce one,
+    # and `alf_staff_credentials` is scope-filtered per session.
+    ('sairncare', 'alf_staff_credentials'): 'EXPORTABLE',
     # The four NOT IN REGISTRY verdicts became EXPORTABLE on 2026-09-14, in the
     # same commit as the app change, which is what this table is for: the edit
     # is the record that somebody decided, rather than a count quietly moving.
@@ -231,7 +245,7 @@ EXPECTED = {
     ('sairndental', 'dnt_credentials'): 'EXPORTABLE',
     ('sairndental', 'dnt_payments'): 'EXPORTABLE',
     ('sairndental', 'dnt_vendor_orders'): 'EXPORTABLE',
-    ('sairnmechanical', 'mech_credentials'): 'NO MACHINERY',
+    ('sairnmechanical', 'mech_credentials'): 'EXPORTABLE',
     ('sairnroofing', 'rf_certifications'): 'EXPORTABLE',
     ('sairnroofing', 'rf_claim_photos'): 'EXPORTABLE',
     ('sairnroofing', 'rf_proposals'): 'EXPORTABLE',
@@ -254,12 +268,16 @@ ok('the Class A set is exactly the eleven that were verified',
 wrong = {k: (EXPECTED.get(k), v) for k, v in actual.items()
          if k in EXPECTED and EXPECTED[k] != v}
 ok('every verdict still matches the hand-verified answer', not wrong, wrong)
-# Was 3 while four gaps were open, then 2, and is 3 again now that
-# NO REGISTRY TO READ is separated from NO MACHINERY. Stated rather than
-# loosened to `>= 1`, which would pass on a table that had stopped
-# distinguishing anything at all.
+# Was 3 while four gaps were open, then 2, then 3 when NO REGISTRY TO READ was
+# separated out, and is 2 again now that the last two NO MACHINERY verdicts have
+# become EXPORTABLE. Stated rather than loosened to `>= 1`, which would pass on
+# a table that had stopped distinguishing anything at all.
+#
+# NO MACHINERY IS NOW UNREACHABLE FROM THE REAL REPO and that is not the same
+# as untested: section C drives `X.NONE` directly through --check, so the state
+# that no longer occurs in any app is still pinned as NOT GATED.
 ok('and the answers are not all the same, so the table distinguishes anything',
-   len(set(actual.values())) == 3, sorted(set(actual.values())))
+   len(set(actual.values())) == 2, sorted(set(actual.values())))
 
 # ── THE ARM THAT KEEPS THE THIRD STATE FROM COLLAPSING BACK ────────────────
 # The whole repair is that "I cannot enumerate this app" stopped being reported

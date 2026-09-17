@@ -30,12 +30,14 @@ But the question splits in two, and the second half is where the finding is.
 | sairnroofing | `rf_certifications` | yes | `rfRenderCertBoard()`, `panel-certifications` | yes — `'certifications'` |
 | sairnroofing | `rf_claim_photos` | yes | `rfLoadClaimPhotos()` | yes — `'claim_photos'` **(added 2026-09-14)** |
 | sairnroofing | `rf_proposals` | yes | the job panel's proposal chain | yes — `'proposals'` |
-| sairncare | `alf_staff_credentials` | yes | `crRefresh()` → `rCredentials()` | **no** — app has no export machinery |
-| sairnmechanical | `mech_credentials` | yes | `mechCredRefresh()` → `mechRenderAccess()` | **no** — app has no export machinery |
+| sairncare | `alf_staff_credentials` | yes | `crRefresh()` → `rCredentials()` | **yes** — `alfExportDataset('credentials')`, via the new `ALF_EXPORTS` registry **(added 2026-09-16)** |
+| sairnmechanical | `mech_credentials` | yes | `mechCredRefresh()` → `mechRenderAccess()` | **yes** — `mechExportDataset('credentials')`, via the new `MECH_EXPORTS` registry **(added 2026-09-16)** |
 | sairnvet | `sv_controlled` | yes | `panel-controlled` | **yes** — `svExportControlled()`, on the panel's own "Export CSV" button **(added 2026-09-16, `ba8843df`)** |
 | sairnvet | `sv_audit_log` | **yes** — `panel-doseaudit`, "Dosing Audit Trail" **(added 2026-09-16, Hank)** | `svRenderDoseAudit()` | **yes** — `svExportDoseAudit()` **(same panel)** |
 
-**Eleven of eleven on screen. Nine of eleven as a file** (was eight, and seven before that; `sv_audit_log` closed BOTH halves on 2026-09-16 and `sv_controlled` closed the file half the same day) — three when this was written, and the four gaps below were closed the same day. The remaining **two** are in apps with no export machinery at all.
+**Eleven of eleven on screen. Eleven of eleven as a file, as of 2026-09-16** — was nine that morning, eight before that, and seven when this was written. The sequence is worth keeping rather than collapsing to the final number: the four gaps below were closed on 2026-09-14 in an app whose registry already existed; `sv_audit_log` closed both halves on 2026-09-16; `sv_controlled`'s file half turned out to have been closed already and only the record said otherwise (see below); and the last two, `alf_staff_credentials` and `mech_credentials`, needed export machinery that did not exist in either app — there was no `createObjectURL` anywhere in `sairncare.html` or `sairnmechanical.html` until that day.
+
+**This row of the table is now a claim with no gap behind it, which is the moment to say what it still does NOT mean.** Every answer here is about whether a file can be produced at all. It is not a statement about WHO may produce one — `alf_staff_credentials` is scope-filtered by the server and a carer's file carries their own rows only, which that file states in its own header — and it is not a statement about whether the file is complete relative to the server. `tools/export_coverage_check.py` reads neither.
 
 **`sv_controlled`'s row said "no — app has no export machinery" for most of 2026-09-16, while the export was already in the file.** It is worth recording which way that error ran. `tools/export_coverage_check.py` had two states where there are three: it could find an export REGISTRY or not, and the absence of one was printed as the absence of export MACHINERY. SAIRNvet has never had a registry and by that morning had two real CSV writers on two real buttons, so the tool reported a missing feature that existed, this table copied the tool, and `tests/run_export_coverage_probe.py` section E pinned the copy. **A pin makes an answer stable, not true** — all three artefacts agreed with each other and none of them agreed with the app. The tool now reports `NO REGISTRY TO READ` as its own third state and this row is hand-verified against `sairnvet.html` (`svExportControlled()` at the "Export CSV" button on `panel-controlled`), not against the tool.
 
@@ -77,11 +79,46 @@ carry them.** That is a gap in a built mechanism, not a missing feature:
   * `rf_claim_photos` — the registry exports `claims`, which is `rf_claims`.
     The photo evidence attached to a claim is not in it.
 
-The other **two** (`alf_staff_credentials`, `mech_credentials`) sit in apps with
+The other **two** (`alf_staff_credentials`, `mech_credentials`) sat in apps with
 **no export path at all** — no `createObjectURL`, no `text/csv`, anywhere in
-either file, verified by grep on 2026-09-16 and by the checker's own `NONE`
-state. That is a larger piece of work and a different decision, so the two are
-counted separately rather than summed into one number.
+either file. **Both were built on 2026-09-16** and both use SAIRNdental's
+`DNT_EXPORTS` shape rather than a third hand-rolled CSV writer: a registry of
+named datasets, each with a label, a row source and `[header, accessor]` pairs,
+driven by one generic writer.
+
+Two things were added to that shape and each closes a way the file could have
+overstated itself:
+
+* **A preamble.** `alf_staff_credentials` is scope-filtered by the server — a
+  non-management session gets only its own rows — and a file carrying three of
+  forty rows with no note on it is indistinguishable from a facility with three
+  records. The scope goes in the FILE, and **both** states are printed: silence
+  in one direction is how a reader learns to ignore the line.
+* **A `resource` / `action` declaration**, the shape `RF_REPORTS` already uses.
+  Without it the coverage checker has to infer the resource through
+  `rows:` → accessor → `ld()` → the sync-pair table, three hops that do not
+  exist at all for a server-backed resource — so a real export would have gone
+  on reporting as no export.
+
+**`mech_credentials` exports the RECORDS, not the board.** The table on screen
+is `latestByKey()`: one row per technician, type and section, newest issue date
+wins. That is right for a board and wrong for a file — the superseded renewals
+are the history an append-only register exists to hold, and this is the same
+near-miss as SAIRNdental exporting five ageing buckets in place of the charges
+that produced them. Every record is in the file and each says whether it is the
+one the board is showing. The **EPA 608 section gets its own column**, separate
+from jurisdiction, because it is the regulated field: Type I, II, III and
+Universal are different equipment under 40 CFR 82.161, not ranks, and the two
+share one cell on screen — a fixture where a jurisdiction is literally
+`universal` is in the suite for exactly that collision.
+
+Held by `tests/sairncare_credential_export.js` (16 arms) and
+`tests/sairnmechanical_credential_export.js` (17 arms), both of which RUN the
+column closures over seeded data and assert on the CSV text rather than reading
+the registry. Six mutations were driven against them — dropping the scope line,
+blanking the staff id, exporting an unloaded ledger as empty, building the file
+from the board, merging the section into the jurisdiction column, and dropping
+the cache-clear — and every one took at least one arm red.
 
 `sv_controlled` and `sv_audit_log` were the third and fourth of these and both
 are closed; SAIRNvet has export machinery and no registry, which is the case
