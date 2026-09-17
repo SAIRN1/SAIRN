@@ -4657,3 +4657,64 @@ least one other session has too (`chore(register): re-seat the record onto its
 rebased sha`). Not built here; named so somebody can decide.
 
 31 of 157 suites controlled.
+
+## 2026-09-16 (continued) -- the decided tool already existed, and two more controls
+
+### `--repoint` was already built. It is called `--reseat`.
+
+The decision was to build a repoint capability on `defect_register.py` on the
+strength of four hand-rolled repairs. **It has been there all along, documented
+on line 5 of that file's own usage block**, and it is better than what I would
+have written: it matches by SUBJECT, refuses on an ambiguous or absent match
+rather than guessing, writes through the register's own writer, and deliberately
+does not re-sort so the repair stays reviewable. Run against this clone:
+*"nothing to re-seat -- every SHA resolves AND is reachable from origin/main."*
+
+**So the capability was never missing. A pointer at the moment of failure was.**
+The gate refused with *"no register record cites it"* -- true about the sha and
+false about the work -- and sent the reader at `--add`, which writes a SECOND
+record for one defect. Four sessions hand-rolled a repair rather than run a
+documented command, **and one of those repairs came within a commit of
+reformatting 5,717 lines of the register by using its own JSON writer.**
+
+The refusal now matches the commit's SUBJECT against the register and, when it
+finds one, says the record EXISTS, names the stale sha, and points at
+`--reseat`. **Both directions held** by probe section H -- a pointer that
+appears on every refusal is noise and one that never appears is the bug coming
+back. **It changes no verdict**, which is why it is a message change and not a
+rule-table entry.
+
+**The residual is stated in the record:** the pointer fires on SUBJECT equality,
+so a rebase that also REWORDS the commit still reads as missing. An `--amend`
+that edits the message is exactly that case.
+
+### The lesson, which is not the tool
+
+I proposed building something because I had hit the problem three times and
+never checked whether the file I was editing already solved it. **The cost of
+not looking was four re-implementations across two sessions and one near-miss on
+a 5,717-line diff.** *Read the tool's own usage block before adding to it.*
+
+### Two more controls: 31 -> 33
+
+**SAIRNlaw billing codes** and **SAIRNbuild's server backup**. The SAIRNbuild
+one is built from the four failures the guarded suite's OWN HEADER names --
+pushes nothing, pushes everything, pushes during seed, pushes a record the
+browser failed to store -- rather than four I found convenient. **Its fourth
+mutation is ORDER, not logic**: it removes no condition, only `okWrite`'s grip
+on when the push may happen, which is the case a condition-shaped control would
+miss entirely.
+
+### And a record I wrote came out with a hole in it
+
+The review obligation went through a shell and **backticks ate the code
+fragment**: it read *"It changes  to drop okWrite"* -- a sentence with a hole
+that still reads as complete, which is the exact defect class I have been
+flagging all night, committed by me into a record whose purpose is to tell
+somebody what to check. Repaired through the register's own reader and writer,
+with the repair **stated inside the text** rather than done silently.
+
+**Never put backticks in a shell-quoted string.** The rebase conflict that
+followed was resolved with `tools/sairn_rebase_resolve.py` rather than by hand
+-- the tool fourth built after pushing conflict markers to main -- which is the
+same lesson as the first section, applied immediately.
