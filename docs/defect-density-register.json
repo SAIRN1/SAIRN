@@ -7775,6 +7775,64 @@
         }
       ],
       "recurrence_open": "NOT CLOSED. No scheduled run has yet been observed green; the proof is the first run after this lands and is hours away on the measured cadence. And nothing sweeps for the general shape: any other caller of sairn_http.fetch_json that treats the return value as the body has the identical defect, and no check looks for it."
+    },
+    {
+      "commit": "1eea269b95a1",
+      "date": "2026-09-17",
+      "subject": "fix(rate-limit-health): the check that answers \"is the fix in force\" could not see the second world, and would have called the upgrade a regression",
+      "files": [
+        "api/provisioner-health-rate-limit.test.js",
+        "api/provisioner-health.js"
+      ],
+      "lines_added": 265,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/provisioner-health.js's rate_limit_health answered \"The limit is real under concurrency\" on the strength of a single 3-argument probe. That probe cannot distinguish the 3-arg function from the 6-arg tenant-aware one -- the migration DROPS and REPLACES rather than overloading, so a 3-arg call succeeds against both -- and the two refuse an empty app_id differently: the old one RETURNS an error object as HTTP 200, the new one RAISES. The existence test demanded the 200 shape only, so running sql/sairn_ai_tenant_subbudget_2026-09-15.sql would have flipped the endpoint from ATOMIC to UNKNOWN, a correct upgrade reading as a broken limiter on the one check that reports whether the atomicity fix is in force. Meanwhile the tenant sub-budget was never probed at all, so a fairness failure -- one licence exhausting the entire app ceiling with the ceiling itself perfectly atomic -- was invisible and the message implicitly denied it.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "7986882376de",
+        "date": "2026-09-15",
+        "subject": "feat(platform): a per-tenant sub-budget inside the per-app AI ceiling, and the tenancy decision written down at the switch",
+        "lag_days": 2
+      },
+      "citation_note": "1.1 exactly: the check did not stop checking by drifting, it was INVALIDATED by a migration that introduced a second world it cannot see and a refusal shape it rejects -- and it was armed to fire on the repair, so the day it started lying is the day somebody fixes the thing it watches.",
+      "phase_note": "The endpoint was correct when written on 2026-09-02. The design choice that made it wrong later is a single-shape existence test plus a single probe, against a function whose signature and refusal style were both changed by 79868823.",
+      "contributing_factors": [
+        {
+          "factor": "The existence test pinned ONE refusal shape (HTTP 200 with a returned error object) when the same function name can refuse by RAISING instead, so a correct upgrade reads as UNKNOWN.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "present now accepts both shapes; an arm drives the raising world and would have caught the old form."
+        },
+        {
+          "factor": "One probe was used to answer two questions -- app ceiling atomicity and tenant sub-budgeting -- and the message spoke for both while testing one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A second probe carrying the tenant arguments reports tenant_state separately, and the message names the consequence and the migration."
+        },
+        {
+          "factor": "The endpoint had no test of any kind, so neither half could be observed until somebody read it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/provisioner-health-rate-limit.test.js, 7 arms over three worlds plus a control that the three do not collapse to one answer."
+        },
+        {
+          "factor": "The migration that invalidated the check changed a function SIGNATURE and a REFUSAL STYLE, and nothing links a migration to the health check that reads the function it replaces.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A general migration-to-monitor link is a platform-wide mechanism and is out of scope for this fix; named so the next instance is recognised rather than re-derived."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the NEXT monitor from pinning one response shape. This fixed one endpoint; no checker looks for a health probe whose pass condition is a literal body match against a function that could be replaced. Also unclosed: tenant_state is derived from HTTP status alone, so a future PostgREST that answers a missing signature with something other than 404 would read as SUB_BUDGETED."
     }
   ],
   "started": "2026-09-09"
