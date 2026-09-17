@@ -1,0 +1,267 @@
+{
+  "_what_this_is": "The test suites known to be RED, so a genuinely new regression can be told from the existing set. Read by tools/known_red_check.py. REPORT ONLY.",
+  "_how_it_was_measured": "python tools/run_all_tests.py in a DETACHED GIT WORKTREE at origin/main, isolated from every working-tree change in this clone. 396 files ran, 0 skipped, and the runner reported the tree was NOT dirtied -- so no row here is a cascade from a probe that left a file modified, which is the failure that has made this measurement wrong before.",
+  "_what_an_empty_why_means": "NOT DIAGNOSED YET, recorded as empty rather than guessed. An invented cause is worse than a blank one because it ends the investigation. tools/known_red_check.py reports how many entries are undiagnosed, so a blank is a backlog rather than a shrug.",
+  "_what_this_is_NOT": "Not an allow-list and not a gate. An entry does not make a failure acceptable -- it makes it ATTRIBUTABLE. An entry whose suite has gone GREEN is reported as RECOVERED and must be deleted: while it stands it swallows the next real failure of that file.",
+  "measured": "2026-09-16",
+  "measured_against": "2b979342a70f693a06dbb7c5048cf51b06ca4aeb",
+  "total_files": 396,
+  "entries": [
+    {
+      "file": "tests/sairnlaw_billing_codes.js",
+      "kind": "node",
+      "tail": "12/13 passed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/sairnlaw_hydrate.js",
+      "kind": "node",
+      "tail": "sairnlaw_hydrate: 13 passed, 2 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/stonedesk_server_backup.js",
+      "kind": "node",
+      "tail": "stonedesk_server_backup: 22 passed, 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/sairncare/test-alf-alerts-endpoint.js",
+      "kind": "node",
+      "tail": "19 passed, 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "api/sd-data-memory-app-scope.test.js",
+      "kind": "node",
+      "tail": "}",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/license_trial_gate_probe.py",
+      "kind": "py",
+      "tail": "PROBES THAT DID NOT BITE: ['9. the gate itself is deleted from sd-render.js']",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/local_only_self_evidence_probe.py",
+      "kind": "py",
+      "tail": "1 ARM(S) FAILED",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/local_only_shape_probe.py",
+      "kind": "py",
+      "tail": "1 ARM(S) FAILED",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_all_tests_floor_probe.py",
+      "kind": "py",
+      "tail": "2. _main_body() -- THE COPY A HUMAN RUNS",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_all_tests_hook_gate_probe.py",
+      "kind": "py",
+      "tail": "2. a real push must still run it -- the gate must not be a mute button",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_app_attribution_mutation_control.py",
+      "kind": "py",
+      "tail": "42 passed, 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_app_attribution_probe.py",
+      "kind": "py",
+      "tail": "91 passed, 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_condition_coverage_probe.py",
+      "kind": "py",
+      "tail": "4b  and it says WHY -- a restore cannot be verified against a modified baseline",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_defect_dispersion_probe.py",
+      "kind": "py",
+      "tail": "ok   layer has a population of exactly three",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_dependency_graph_probe.py",
+      "kind": "py",
+      "tail": "7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that refuses everything",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_first_article_probe.py",
+      "kind": "py",
+      "tail": "- NO RECORDED INSPECTION is stale, incomplete, or cites an arm that does not exist -- the half this probe controls",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_fmea_probe.py",
+      "kind": "py",
+      "tail": "3b  1.7   fires on 43% of the tree (must be under 35%)",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_invisible_in_pattern_probe.py",
+      "kind": "py",
+      "tail": "--- C. an invisible character inside a real regex ---",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_master_plan_probe.py",
+      "kind": "py",
+      "tail": "the matrix states its own traced ratio",
+      "since": "2026-09-16",
+      "why": "The arm \"the matrix states its own traced ratio\" compares a figure in MASTER-PLAN.md against the matrix. Confirmed red at origin/main independently of any local change on 2026-09-16, by running it in a detached worktree at origin/main.",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_mutation_anchor_probe.py",
+      "kind": "py",
+      "tail": "7a  the real repo has zero bad anchors and zero unguarded probes",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_secrets_inventory_probe.py",
+      "kind": "py",
+      "tail": "6c  SILENT: against the real committed document the same entry point exits 0 -- the pair is what makes 6a evidence rather than an observation",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_selftest_sweep_probe.py",
+      "kind": "py",
+      "tail": "- ooda_phases.py --selftest exits 0",
+      "since": "2026-09-16",
+      "why": "The same ooda_phases.py --selftest exit 2 as tests/run_tool_selftest_probe.py. Recorded separately because they are two suites, cross-referenced because they are one defect.",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_tool_selftest_probe.py",
+      "kind": "py",
+      "tail": "ooda_phases.py                         exit 2 (the tool could not tell):   ARMS FAILED",
+      "since": "2026-09-16",
+      "why": "ooda_phases.py --selftest exits 2 (the tool could not tell), which this probe correctly refuses to fold into a pass. THE DEFECT IS IN ooda_phases.py, NOT IN THE PROBE, and tests/run_selftest_sweep_probe.py is red on the same underlying fact -- so these two entries are ONE defect seen from two places. Fixing ooda_phases.py should clear both, and if it clears only one that is itself a finding.",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_traceability_matrix_probe.py",
+      "kind": "py",
+      "tail": "traceability-matrix: 34 checks, 1 failed",
+      "since": "2026-09-16",
+      "why": "Arm C2, \"and lists them\". Confirmed red at origin/main on 2026-09-16 by the same method: a local branch reported 34 checks 1 failed against 32 checks 1 failed at origin, i.e. the same single failure with two arms added beside it.",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/run_truthy_sum_probe.py",
+      "kind": "py",
+      "tail": "1 FAILED",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/suite_control_backfill_probe.py",
+      "kind": "py",
+      "tail": "CONTROLS THAT DID NOT BITE: ['0. green on the unmodified file']",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/write_readback_shape_probe.py",
+      "kind": "py",
+      "tail": "1 ARM(S) FAILED",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/claims/run_freshness_probe.py",
+      "kind": "py",
+      "tail": "61 passed, 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/push_gate/check4_probe.py",
+      "kind": "py",
+      "tail": "FAILED TWICE, the second time on its own: CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam): False",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/push_gate/check7_probe.py",
+      "kind": "py",
+      "tail": "FAILED TWICE, the second time on its own: FAILED  check7_probe: 11 checks, 3 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/push_gate/check8_probe.py",
+      "kind": "py",
+      "tail": "FAILED  check8_probe: 1 failed",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    },
+    {
+      "file": "tests/sql_preflight/run_probe.py",
+      "kind": "py",
+      "tail": "dead_bare_tables_evidence_2026-09-05.sql: UNDECLARED_TABLE webhook_events",
+      "since": "2026-09-16",
+      "why": "",
+      "owner": "unassigned"
+    }
+  ]
+}
