@@ -1562,8 +1562,8 @@
       "task": "negative control for tests/sairnbuild_server_backup.js",
       "claimed_at": "2026-09-17T00:59:55Z",
       "claimed_at_epoch": 1789606795.7668567,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T01:12:27Z"
     }
   ]
 }
