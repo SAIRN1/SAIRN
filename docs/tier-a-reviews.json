@@ -588,6 +588,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-17T22:01:31Z",
+      "resources": [
+        "invoices"
+      ],
+      "files": [
+        "api/bridge-push-auth.test.js",
+        "api/bridge.js"
+      ],
+      "what": "api/bridge.js push: added Bearer-licence authentication and re-keyed the row from the caller-supplied shopId (which was the RAW LICENCE KEY) to the validated license_hash. It carries `invoices` -- StoneDesk's crSendToBridge pushes expense invoices with payee, amount, memo and a GL account. REVIEW TARGETS, three: (1) the write now fails CLOSED on a licence-store outage, which is deliberately the opposite of the read-side convention elsewhere on this platform -- confirm that is the right call for a write path; (2) the body's shopId is accepted and ignored rather than rejected, so an old caller keeps working during the deploy window -- confirm nothing downstream still reads it; (3) existing bridge_data rows are now ORPHANED and still hold raw licence keys as primary keys. Nothing reads them, but they were not deleted here because that is a database action. The live caller in stonedesk.html was changed in the same commit so the two deploy together.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

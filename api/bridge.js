@@ -21,11 +21,17 @@
 //                it is it should key on license_hash and require a session.
 // So bridge_data is, today, written and never read.
 //
-// NO AUTHORIZATION ON push, deliberately (see the push section below):
-// anyone can write to any shop_id. Fine for shop metadata a shop pushes
-// about itself; NOT fine for personal or financial data. That bounds what
-// this endpoint can safely carry, and any future expansion of it should
-// start by revisiting that decision.
+// push NOW REQUIRES A LICENCE, CORRECTED 2026-09-17. This block used to read
+// "NO AUTHORIZATION ON push, deliberately: anyone can write to any shop_id.
+// Fine for shop metadata a shop pushes about itself; NOT fine for personal or
+// financial data." THE BOUND IT DESCRIBED HAD ALREADY BEEN CROSSED -- StoneDesk's
+// crSendToBridge pushes expense invoices with payee, amount, memo and a GL
+// account, which is financial data by any reading. A rule that names its own
+// limit and is not enforced does not hold the limit; it records that somebody
+// once knew where it was.
+//
+// It now takes Authorization: Bearer <licence key>, validates it, and keys the
+// row on the resulting license_hash. The body's shopId is accepted and IGNORED.
 // ---------------------------------------------------------------------------
 // SAIRN Bridge -- action-routed cross-app relay. Built 2026-07-31 to replace
 // a URL every caller already assumed existed but never did (confirmed live
@@ -83,6 +89,8 @@
 // REQUIRES env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (push only --
 // proxy_get needs neither).
 // ---------------------------------------------------------------------------
+
+const { validateLicenseKey } = require('./_lib/license');
 
 const ALLOWED_PROXY_HOSTS = ['api.stlouisfed.org', 'homebuyer.com'];
 const MAX_PUSH_BYTES = 64 * 1024; // matches api/sd-data.js's write cap
@@ -146,7 +154,7 @@ module.exports = async (req, res) => {
   if (action === 'proxy_get' || body.data_type === 'proxy_get') {
     return handleProxyGet(body, res);
   }
-  return handlePush(body, res);
+  return handlePush(body, res, req);
 };
 
 async function handleProxyGet(body, res) {
@@ -161,7 +169,20 @@ async function handleProxyGet(body, res) {
     return;
   }
   if (parsed.protocol !== 'https:' || !ALLOWED_PROXY_HOSTS.includes(parsed.hostname)) {
-    res.status(400).json({ error: { message: 'Host not allowed for proxy_get. Allowed: ' + ALLOWED_PROXY_HOSTS.join(', ') } });
+    // THE ALLOWLIST IS NO LONGER ECHOED TO AN UNAUTHENTICATED CALLER.
+    // proxy_get deliberately requires no licence, so every message it returns
+    // is pre-auth -- and until 2026-09-17 `push` had no auth either, so this
+    // file had no authenticated surface for tools/preauth_oracle_check.py to
+    // measure against. Adding one made this line visible as what it always
+    // was: an unauthenticated enumeration of the allowlist.
+    //
+    // THE LIST IS PUBLIC ANYWAY -- this repository is public and the constant
+    // is three lines up -- which is exactly the argument that would erode the
+    // rule if it were accepted. It costs nothing to log it instead, so it is
+    // logged instead.
+    console.error('bridge proxy_get: host not allowed: ' + parsed.hostname
+      + '. Allowed: ' + ALLOWED_PROXY_HOSTS.join(', '));
+    res.status(400).json({ error: { message: 'Host not allowed for proxy_get' } });
     return;
   }
   try {
@@ -180,12 +201,56 @@ async function handleProxyGet(body, res) {
   }
 }
 
-async function handlePush(body, res) {
-  const shopId = body.shopId;
-  if (!shopId) {
-    res.status(400).json({ error: { message: 'shopId is required' } });
+// ── PUSH IS AUTHENTICATED AND KEYED ON license_hash (2026-09-17) ──────────
+// It shared the read side's exact defect. `shopId` came from the BODY with no
+// Authorization header, and stonedesk.html's `sdShopId()` is
+// `return sdLicenseKey()` -- so `bridge_data.shop_id` was the customer's RAW
+// LICENCE KEY, and anyone could overwrite any shop's row by naming it.
+//
+// TWO THINGS ARE FIXED AND THEY ARE SEPARATE. The endpoint now requires a
+// Bearer licence -- the same header api/sd-data.js has always used, so this is
+// the platform's existing convention rather than a new one -- and it keys the
+// row on the validated `license_hash` instead of the raw key, which is what
+// every other table on this platform already does.
+//
+// THE BODY'S `shopId` IS NO LONGER TRUSTED FOR ANYTHING. It is accepted and
+// ignored: a caller cannot name a row, it gets the row its licence proves it
+// owns. That is the same correction made to api/claude.js's `app_id` earlier
+// today -- a scope key the caller supplies is not a scope key.
+//
+// EXISTING ROWS ARE ORPHANED BY THIS, DELIBERATELY AND HARMLESSLY. Nothing
+// reads bridge_data (the read side was removed the same day), and the old rows
+// are keyed by raw licence keys, which is precisely what should stop being
+// stored. THEY ARE NOT DELETED HERE -- that is a database action, and it is
+// named in the open-work row rather than done silently from an endpoint.
+async function handlePush(body, res, req) {
+  const auth = (req && req.headers && (req.headers.authorization
+    || req.headers.Authorization)) || '';
+  const licenceKey = String(auth).replace(/^Bearer\s+/i, '').trim();
+  if (!licenceKey) {
+    res.status(401).json({ error: { code: 'NO_LICENCE', message:
+      'A licence is required: send Authorization: Bearer <licence key>. '
+      + 'Until 2026-09-17 this endpoint accepted an unauthenticated write keyed '
+      + 'on a shopId taken from the body.' } });
     return;
   }
+  let lic;
+  try {
+    lic = await validateLicenseKey(licenceKey);
+  } catch (err) {
+    // FAILS CLOSED. A write path is not a read path: allowing an unverified
+    // write because the licence store blinked would let the outage do the
+    // thing the gate exists to prevent.
+    console.error('bridge push: licence check failed:', err && err.message);
+    res.status(503).json({ error: { code: 'LICENCE_UNCHECKED', message:
+      'The licence could not be verified right now. Nothing was written.' } });
+    return;
+  }
+  if (!lic || !lic.valid || !lic.license_hash) {
+    res.status(403).json({ error: { code: 'BAD_LICENCE', message: 'That licence is not valid' } });
+    return;
+  }
+  const shopId = lic.license_hash;
   const data = {
     jobs: body.jobs || null,
     invoices: body.invoices || null,

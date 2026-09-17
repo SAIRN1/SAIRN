@@ -19669,8 +19669,15 @@ function crSendToBridge() {
   // Push to bridge
   var shopId = sdShopId();
   var bridgeUrl = (typeof BRIDGE !== 'undefined' ? BRIDGE : 'https://sairn.vercel.app/api/bridge');
+  // THE LICENCE GOES IN A BEARER HEADER, 2026-09-17. This used to send no
+  // Authorization at all and identify the shop by putting the RAW LICENCE KEY
+  // in the body as `shopId` -- so any caller could overwrite any shop's row.
+  // The endpoint now derives the row key from the validated licence and
+  // ignores `shopId`; it is still sent so an older deployment keeps working
+  // during the minutes between this file and api/bridge.js going live.
   fetch(bridgeUrl + '?action=push', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json',
+      'Authorization': 'Bearer ' + (typeof sdLicenseKey==='function' ? (sdLicenseKey()||'') : '')},
     body: JSON.stringify({ shopId: shopId, invoices: [{ id: entry.id, type: 'expense',
       date: entry.date, payee: entry.payee, amount: entry.amount, memo: entry.memo,
       category: entry.category, app_id: 'stonedesk', gl_account: 'Accounts Payable' }] })
