@@ -3631,6 +3631,59 @@
       "recurrence_open": "The watchdog remains the only thing watching the watchdog. A beat it fails to write is still unnoticeable by anything except its own next run, and there is no second, structurally different observer of whether the sweep happened."
     },
     {
+      "commit": "1a64e873128e",
+      "date": "2026-09-16",
+      "subject": "fix(test): swept the platform for the floor-instead-of-exact shape -- one more real instance, and the rest are honest ratchets",
+      "files": [
+        "tests/run_testability_gate_probe.py"
+      ],
+      "lines_added": 48,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "A probe arm labelled 'every section of the matrix yields requirements' was backed by a floor on the section count, so a section the extractor silently skipped would stay green",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The arm was written when the matrix had four sections, where a floor of four and an exact set happen to agree. It became wrong when a fifth section was added rather than at any commit that touched the arm."
+      },
+      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the check RAN and its comparison could not express the claim its label made. Same family -- a green indistinguishable from coverage it does not have.",
+      "contributing_factors": [
+        {
+          "factor": "The arm's label said EVERY section yields requirements while the check was a floor on the count of sections that did yield, so a section the extractor silently stopped reading would be invisible once a fifth section existed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Replaced with an exact set difference that names the section, plus a reverse arm so requirements cannot arrive from a table with no requirement column."
+        },
+        {
+          "factor": "A floor is the RIGHT tool for a ratchet and the wrong one for a coverage claim, and nothing distinguishes the two at review time. Of 57 floor-compared assertions swept, most are honest ratchets or not-empty checks; two had labels claiming a relationship the comparison could not see.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "No check compares an assertion's LABEL against the SHAPE of its comparison. Both instances were found by reading labels for the word every."
+        },
+        {
+          "factor": "It was found only because the identical shape had just been found by an independent reviewer in a different file. Nothing on the platform was looking for it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Swept all 57 occurrences by hand and recorded which are legitimate, so the next sweep starts from a classification rather than from the raw count."
+        },
+        {
+          "factor": "My first replacement criterion was stricter than the extractor it measures -- it flagged a section that deliberately has no requirement column -- and would have shipped a false finding about a correct tool.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The expected set is now defined the way the extractor defines it, by the column header, and the ablation proves the arm fires on a real skip."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS. Second instance in one day; the first was found by an independent reviewer in tests/failsafe/witness_countersign.js. Nothing compares an assertion's label against the shape of its comparison, and the other 55 floor comparisons were classified by hand rather than by any tool."
+    },
+    {
       "commit": "1b21ef1fb41e",
       "date": "2026-09-16",
       "subject": "fix(loader): the snapshot shrink guard could not see the two tables told to stay",
@@ -3687,59 +3740,6 @@
         }
       ],
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
-    },
-    {
-      "commit": "1a64e873128e",
-      "date": "2026-09-16",
-      "subject": "fix(test): swept the platform for the floor-instead-of-exact shape -- one more real instance, and the rest are honest ratchets",
-      "files": [
-        "tests/run_testability_gate_probe.py"
-      ],
-      "lines_added": 48,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "A probe arm labelled 'every section of the matrix yields requirements' was backed by a floor on the section count, so a section the extractor silently skipped would stay green",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "The arm was written when the matrix had four sections, where a floor of four and an exact set happen to agree. It became wrong when a fifth section was added rather than at any commit that touched the arm."
-      },
-      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the check RAN and its comparison could not express the claim its label made. Same family -- a green indistinguishable from coverage it does not have.",
-      "contributing_factors": [
-        {
-          "factor": "The arm's label said EVERY section yields requirements while the check was a floor on the count of sections that did yield, so a section the extractor silently stopped reading would be invisible once a fifth section existed.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Replaced with an exact set difference that names the section, plus a reverse arm so requirements cannot arrive from a table with no requirement column."
-        },
-        {
-          "factor": "A floor is the RIGHT tool for a ratchet and the wrong one for a coverage claim, and nothing distinguishes the two at review time. Of 57 floor-compared assertions swept, most are honest ratchets or not-empty checks; two had labels claiming a relationship the comparison could not see.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "No check compares an assertion's LABEL against the SHAPE of its comparison. Both instances were found by reading labels for the word every."
-        },
-        {
-          "factor": "It was found only because the identical shape had just been found by an independent reviewer in a different file. Nothing on the platform was looking for it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Swept all 57 occurrences by hand and recorded which are legitimate, so the next sweep starts from a classification rather than from the raw count."
-        },
-        {
-          "factor": "My first replacement criterion was stricter than the extractor it measures -- it flagged a section that deliberately has no requirement column -- and would have shipped a false finding about a correct tool.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The expected set is now defined the way the extractor defines it, by the column header, and the ablation proves the arm fires on a real skip."
-        }
-      ],
-      "recurrence_open": "NOT CLOSED AS A CLASS. Second instance in one day; the first was found by an independent reviewer in tests/failsafe/witness_countersign.js. Nothing compares an assertion's label against the shape of its comparison, and the other 55 floor comparisons were classified by hand rather than by any tool."
     },
     {
       "commit": "25f2194d16ab",
@@ -3857,62 +3857,6 @@
         }
       ],
       "recurrence_open": "NOT CLOSED AS A CLASS, and this is the fourth instance in one session. Nothing on this platform compares a detector's vocabulary against the ways the thing it detects can actually be written; each of the four was found by a human reading what the detector called empty."
-    },
-    {
-      "commit": "93da0922b7d2",
-      "date": "2026-09-16",
-      "subject": "fix(test): the billing-codes suite was RED, and a count pin is why",
-      "files": [
-        "tests/sairnlaw_billing_codes.js"
-      ],
-      "lines_added": 26,
-      "lines_removed": 3,
-      "app": "sairnlaw",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tests/sairnlaw_billing_codes.js was RED on origin/main for roughly 26 hours -- from 4eaa3f05 on 2026-09-15 18:26 to the repair on 2026-09-16 20:19. The cause is not a defect in the app: that commit registered a TWENTIETH law_* resource, law_trust_reconcile, and the suite's exact-count arm fired as a count pin is supposed to. What failed is that nobody cleared it, and a suite that is red for a non-defect reason is one people learn to skip -- which this repo already has the receipt for. Found only because a negative control cannot be built on a red suite: the clean-copy control arm would fail and every mutation would 'fail' for the wrong reason.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 1
-      },
-      "citation_note": "1.1 is a check that stopped checking. This is its neighbour rather than the thing itself: the check never stopped, it went red and STAYED red, which ends in the same place -- a check nobody reads -- by the opposite route. Recorded as arguable for that reason.",
-      "contributing_factors": [
-        {
-          "factor": "An exact-count pin on the law_* registry fired when a legitimate twentieth resource was added, which is the pin working -- nothing was wrong with the app or with the arm",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The count was raised to 20 and the comment names law_trust_reconcile and 4eaa3f05 as what moved it, with the instruction to do the same next time rather than raise the number quietly"
-        },
-        {
-          "factor": "Nothing connects the session that ADDS a resource to the suite whose pin that addition will break, so the person who caused the red is never the person who sees it",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "A count pin is a deliberate trade: it catches drift at the cost of firing on legitimate change. The alternative -- a floor -- stays green through every addition and detects nothing."
-        },
-        {
-          "factor": "Nothing runs the per-app suites on a cadence that reaches a person, so a red one stays red until somebody happens to open it. This one was found only because a negative control cannot be built on a red suite",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "cody holds an active claim for a known-red suite registry as of 2026-09-17, which is the mechanism this needs; recorded here as the data point rather than built twice"
-        },
-        {
-          "factor": "The first draft of the repair bundled the pin fix and the new negative control into ONE commit, which is the thing the commit message itself said not to do -- two different claims, one changeset",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Split into two commits before pushing, and the message records that the first draft got it wrong"
-        }
-      ],
-      "recurrence_open": "The pin will fire again on the twenty-first law_* resource, BY DESIGN, and the next session to add one will not know this suite exists. Nothing links a registry addition to the suites that pin its size, and the known-red registry cody is building will catch the RED but not shorten the 26 hours unless something runs the per-app suites on a cadence that reaches a person."
     },
     {
       "commit": "3e94cbb24b20",
@@ -4584,6 +4528,60 @@
         }
       ],
       "recurrence_open": "The structural scan finds callers that DROP a write's promise. This caller did not drop anything -- it added a message -- so the scan that found its three siblings could not have found this one, and it was caught by reading the same file. Nothing looks for a second toast raised over a helper that already reported."
+    },
+    {
+      "commit": "555b30bc3d14",
+      "date": "2026-09-16",
+      "subject": "fix(register-gate): a STALE record is told apart from a MISSING one",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 97,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/register_feed_gate.py refused with 'no register record cites it' for a commit whose record EXISTED and whose sha a rebase had moved. True about the sha, false about the work, and it sent the reader at --add -- which would write a SECOND record for one defect -- instead of at --reseat, which has always existed for exactly this and is documented on line 5 of defect_register.py's own usage block. Measured cost of the missing pointer: FOUR hand-rolled repairs in one evening, three by CC and at least one by another session, one of which used its own json.dumps and came within a commit of reformatting 5,717 lines of a register whose merge policy is union-by-identity across four clones.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The wording is how the gate was written rather than something a commit introduced, so naming the commit that created it would record a lag that never elapsed."
+      },
+      "citation_note": "1.5 is the confident line printed after an error. This is its close relative: a CORRECT refusal whose explanation names the wrong cause, which sends the reader somewhere that makes things worse rather than somewhere that helps. Recorded as arguable because nothing here was reported as a pass.",
+      "contributing_factors": [
+        {
+          "factor": "The refusal said 'no register record cites it', which is true about the SHA and false about the work -- the record existed and its sha had been moved by a rebase",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The refusal now matches the commit's SUBJECT against the register and, when it finds one, says the record EXISTS, names the stale sha, and points at --reseat"
+        },
+        {
+          "factor": "--reseat has always existed and is documented on line 5 of defect_register.py's own usage block, so the capability was never missing -- only a pointer at the moment somebody needs it",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The pointer is now printed at the refusal, which is the only moment the reader is looking"
+        },
+        {
+          "factor": "A rebase between recording and pushing is the ORDINARY case on a four-clone night, not an exception, so this refusal is hit routinely and its wording is read under time pressure",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing can stop another session pushing between a rebase and a push. What can change is what the refusal says when it happens, which is what changed."
+        },
+        {
+          "factor": "Four hand-rolled repairs in one evening and none of the four authors reached for the documented command -- the failure is discoverability, and one of the repairs used its own JSON writer and came within a commit of reformatting 5,717 lines of a union-by-identity register",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Probe section H holds the pointer in BOTH directions, so a refusal that stops distinguishing stale from missing goes red rather than quietly reverting to the old wording"
+        }
+      ],
+      "recurrence_open": "The pointer fires on SUBJECT equality, so a rebase that also REWORDS the commit still reads as missing rather than stale -- and an --amend that changes the message is exactly that case. Nothing here detects it, and the reader would again be told to --add. Stated rather than left to be found the fifth time."
     },
     {
       "commit": "56e204d85f12",
@@ -5281,6 +5279,62 @@
         }
       ],
       "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
+    },
+    {
+      "commit": "93da0922b7d2",
+      "date": "2026-09-16",
+      "subject": "fix(test): the billing-codes suite was RED, and a count pin is why",
+      "files": [
+        "tests/sairnlaw_billing_codes.js"
+      ],
+      "lines_added": 26,
+      "lines_removed": 3,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/sairnlaw_billing_codes.js was RED on origin/main for roughly 26 hours -- from 4eaa3f05 on 2026-09-15 18:26 to the repair on 2026-09-16 20:19. The cause is not a defect in the app: that commit registered a TWENTIETH law_* resource, law_trust_reconcile, and the suite's exact-count arm fired as a count pin is supposed to. What failed is that nobody cleared it, and a suite that is red for a non-defect reason is one people learn to skip -- which this repo already has the receipt for. Found only because a negative control cannot be built on a red suite: the clean-copy control arm would fail and every mutation would 'fail' for the wrong reason.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "1.1 is a check that stopped checking. This is its neighbour rather than the thing itself: the check never stopped, it went red and STAYED red, which ends in the same place -- a check nobody reads -- by the opposite route. Recorded as arguable for that reason.",
+      "contributing_factors": [
+        {
+          "factor": "An exact-count pin on the law_* registry fired when a legitimate twentieth resource was added, which is the pin working -- nothing was wrong with the app or with the arm",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The count was raised to 20 and the comment names law_trust_reconcile and 4eaa3f05 as what moved it, with the instruction to do the same next time rather than raise the number quietly"
+        },
+        {
+          "factor": "Nothing connects the session that ADDS a resource to the suite whose pin that addition will break, so the person who caused the red is never the person who sees it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A count pin is a deliberate trade: it catches drift at the cost of firing on legitimate change. The alternative -- a floor -- stays green through every addition and detects nothing."
+        },
+        {
+          "factor": "Nothing runs the per-app suites on a cadence that reaches a person, so a red one stays red until somebody happens to open it. This one was found only because a negative control cannot be built on a red suite",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "cody holds an active claim for a known-red suite registry as of 2026-09-17, which is the mechanism this needs; recorded here as the data point rather than built twice"
+        },
+        {
+          "factor": "The first draft of the repair bundled the pin fix and the new negative control into ONE commit, which is the thing the commit message itself said not to do -- two different claims, one changeset",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Split into two commits before pushing, and the message records that the first draft got it wrong"
+        }
+      ],
+      "recurrence_open": "The pin will fire again on the twenty-first law_* resource, BY DESIGN, and the next session to add one will not know this suite exists. Nothing links a registry addition to the suites that pin its size, and the known-red registry cody is building will catch the RED but not shorten the 26 hours unless something runs the per-app suites on a cadence that reaches a person."
     },
     {
       "commit": "a744ceb5e0eb",
