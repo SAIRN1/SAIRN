@@ -4963,6 +4963,62 @@
       "recurrence_open": "PARTLY CLOSED. The central redirect covers every probe the SUITE spawns, and one probe run BY HAND still writes the real log unless it sets the env itself -- only check9_probe.py does. The wider shape is untouched: nothing prevents any tool from writing a real record from a test context, and the bypass log is append-only BY CONVENTION rather than by enforcement, so the retraction relies on the same trust the original row did."
     },
     {
+      "commit": "72b040988b2e",
+      "date": "2026-09-16",
+      "subject": "test(G5): the employees read -- and `hourly_rate` was in NO test on the platform",
+      "files": [
+        "api/sd-data-employees-refusal.test.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/employees_refusal_probe.py"
+      ],
+      "lines_added": 175,
+      "lines_removed": 11,
+      "app": "stonedesk",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "api/sd-data-employees-refusal.test.js asserted nothing about the manager payroll strip: deleting `if (session.role !== 'owner') { delete copy.hourly_rate; }` from api/sd-data.js left the suite GREEN, and `hourly_rate` appeared in NO test anywhere on the platform. 'Manager: full roster visibility, but never payroll' was a promise made in a comment and asserted by nothing -- a second guarantee living inside the branch of the first, which the existing arms could not reach because their fixture row carries no payroll field",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "employees_refusal_probe.py",
+      "injection": {
+        "unknown_reason": "The strip and the suite were written at different times and no commit shows an arm for it being removed, so there is no injection point to cite -- the assertion was never there. Recorded as unknown rather than attributed to whichever commit added the strip."
+      },
+      "citation_note": "1.1 is a check that cannot fail. Here the check did not EXIST, and the suite around it was strong enough that its absence read as coverage. Cited because the end state is the same and because the probe that found it is 1.1's own prescribed mechanism.",
+      "contributing_factors": [
+        {
+          "factor": "THE PROMISE LIVED IN A COMMENT. 'Manager: full roster visibility, but never payroll' is a sentence in the source, and the code implementing it was correct -- so every reader who checked was reassured, and nothing mechanical ever asked.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Three arms: a manager gets no hourly_rate and KEEPS title, an owner still gets hourly_rate, and the stored row is not mutated."
+        },
+        {
+          "factor": "IT IS A SECOND GUARANTEE LIVING INSIDE THE FIRST ONE'S BRANCH. The role deny-list decides WHO reads the roster; the strip decides WHAT they see. A suite organised around the first question has no natural place to ask the second, and the arms that do exist assert on a fixture row carrying no payroll field at all -- so they could not have reached it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The new arms use a fixture row that DOES carry hourly_rate, which is the change that makes the question askable."
+        },
+        {
+          "factor": "ONE ARM WOULD HAVE BEEN WEAKER THAN IT LOOKED. 'The manager sees no hourly_rate' is satisfied by an empty response, by a refusal, and by a strip that removed everything -- so it is paired with an OWNER arm that requires the field to still be there, and with a title assertion, because full visibility is the other half of the same sentence.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Three arms rather than one, each named for what it rules out."
+        },
+        {
+          "factor": "THE STRIP MUTATES A COPY FOR A REASON THE SOURCE STATES AND NOTHING CHECKED: a delete on the upstream object would remove payroll from whatever the client library cached, so the next OWNER read would be missing it too. A correctness property of the fix that fails silently and in the opposite direction from the one being guarded.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Driven: the fixture row is inspected after a manager read."
+        }
+      ],
+      "recurrence_open": "The three arms cover ONE field on ONE resource. Nothing enumerates which other fields are stripped by role anywhere on the platform, and a strip is invisible to every check that asserts on a fixture row not carrying the field -- which is how this one survived. The general form needs a list of role-conditional field removals, and no such list exists."
+    },
+    {
       "commit": "769667475cb5",
       "date": "2026-09-16",
       "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
