@@ -4829,3 +4829,65 @@ existing at all. Worth carrying: *the exit code is not the evidence; the arm
 that fired is.*
 
 39 of 157 suites controlled.
+
+## 2026-09-16 (continued) -- sv_controlled already had an export, and it was silent about itself
+
+### The job was not "wire up a missing export"
+
+`sv_controlled` has had an Export CSV button **since the original rebuild**,
+wired to the generic `exportTableCSV()` -- which writes the rendered cells and
+**nothing else**. No timestamp, no statement of which copy, no caveats. **The
+export existed and was silent about itself, which is the harder thing to
+notice** than an absent one.
+
+For a DEA Schedule II-IV register that is the difference between a file an
+inspector can rely on and a spreadsheet of numbers with no provenance.
+`svExportControlled()` now says three things the file could not:
+
+1. **What the record IS.** One row per DRUG with a running balance, **rewritten
+   in place** on every use. NOT a transaction history -- `lastTransaction` is a
+   single prose line and the previous one is overwritten. The per-event trail is
+   `sv_audit_log`, which exports separately. **An inspector handed this file
+   alone has balances, no history, and no way to know that from the file.**
+2. **That it is NOT append-only.** The dosing trail's export already says it is
+   append-only and not tamper-evident; this one is weaker still.
+3. **That On Hand is per-drug in that drug's own unit** and the column must not
+   be summed. Not hypothetical -- the KPI directly above `renderControlled()`
+   records a real defect where millilitres were added to milligrams and printed
+   as a controlled-substance balance.
+
+### The checker's label is why the document was wrong
+
+`export_coverage_check.py` prints **"NO EXPORT MACHINERY"** for both SAIRNvet
+resources. The app plainly HAS machinery -- `text/csv`, `createObjectURL`,
+`exportTableCSV`, `svExportDoseAudit`. What it has no is an **enumerable
+REGISTRY** of the `DNT_EXPORTS`/`RF_REPORTS` shape. **Two different facts under
+one sentence**, and that sentence is why the retrievability document said
+`sv_controlled` had no export path at all -- and why I repeated it last round.
+Reported, not fixed: the probe pins that checker's answers, and changing the
+label is a change to a pinned verdict.
+
+### AND THE SAME DEFECT AS ARM 7, IN TEN COPIES I WROTE MYSELF
+
+Every mutation control ends with *"the shipped file was never touched"* and then
+asserts `git status --porcelain <app>` is **EMPTY**. **That is a claim about the
+whole tree wearing a label about the probe.** Found by running my own SAIRNvet
+controls while `sairnvet.html` was dirty from the export work **minutes after
+fixing the identical defect in `hover_separation_ci_probe.py`'s arm 7** -- and
+nine of the ten copies were written AFTER that fix.
+
+Baseline captured before anything runs; the arm reports the DIFFERENCE.
+
+**And the replacement is weaker than it reads, which is written into all ten
+files rather than discovered later.** `git status --porcelain <file>` prints the
+SAME line whether a file was modified once or twice, so the comparison detects a
+control-introduced change **only when the tree was clean for that file to begin
+with**. Measured: appending to an already-modified app file left the porcelain
+byte-identical. **The byte-identity arm above it is what carries the guarantee**;
+this one is corroboration. Same note `sairncode_gates_mutation_control.js`
+already makes about its own mtime arm.
+
+Two older controls do not carry the arm in this shape and were **skipped and
+named** rather than guessed at -- population 12, fix covered 10.
+
+41 of 157 suites controlled.
