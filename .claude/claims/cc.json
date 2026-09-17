@@ -1664,6 +1664,16 @@
       "claimed_at_epoch": 1789652432.9136865,
       "status": "released",
       "released_at": "2026-09-17T13:55:46Z"
+    },
+    {
+      "id": "cc-1789654473",
+      "session": "cc",
+      "subject": "sairncash-debris-verify",
+      "task": "credential free verification that the probe trial delete landed",
+      "claimed_at": "2026-09-17T14:14:33Z",
+      "claimed_at_epoch": 1789654473.5750759,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
