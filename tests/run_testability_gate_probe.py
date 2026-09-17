@@ -107,7 +107,54 @@ shutil.rmtree(tmp, ignore_errors=True)
 print('3. the requirement column is found by HEADER, never by index')
 reqs = G.matrix_requirements()
 secs = sorted(set(s for s, _ in reqs))
-check('3a  every section of the matrix yields requirements', len(secs) >= 4, secs)
+# ── THE LABEL SAID "EVERY" AND THE CHECK WAS A FLOOR (fixed 2026-09-16) ─────
+# This read `len(secs) >= 4`. It counts the sections that DID yield and
+# compares against a constant, so a matrix section that yields NOTHING is
+# invisible the moment a fifth section exists -- the extractor could silently
+# stop reading a whole section and this arm would still be green.
+#
+# That is the identical shape found in tests/failsafe/witness_countersign.js on
+# the same day, where `listed >= 6` let a seventh probe mutation with no arm
+# pass silently. A floor cannot answer a question whose word is EVERY.
+#
+# Swept for deliberately: of 57 floor-compared assertions on this platform, most
+# are honestly-labelled ratchets ("SD_SYNCED shrank to N -- read why") or
+# not-empty sanity checks. This one and that one are the two whose LABEL claims
+# a coverage relationship the comparison cannot see.
+#
+# THE FIX IS AN EXACT SET DIFFERENCE, and it names the section rather than
+# reporting a number: every `## ` heading in the matrix that CONTAINS TABLE ROWS
+# must appear among the sections that yielded requirements.
+# THE EXPECTED SET IS DEFINED THE WAY THE EXTRACTOR DEFINES IT -- a section
+# whose header row carries a column starting `Requirement`. My first version
+# used "any section with table rows" and immediately flagged section 5, THE
+# GAPS, which has rows and deliberately no requirement column: the extractor
+# sets col = -1 and yields nothing, correctly. A criterion stricter than the
+# thing it measures produces a finding about itself.
+_expected, _cur, _hdr_seen = set(), '(none)', set()
+for _line in io.open(G.MATRIX, encoding='utf-8'):
+    if _line.startswith('## '):
+        _cur = _line[3:].strip()
+        continue
+    if not _line.startswith('|') or set(_line.strip()) <= set('|-: '):
+        continue
+    if _cur in _hdr_seen:
+        continue
+    _hdr_seen.add(_cur)                      # the first row of a table is its header
+    if any(c.strip().strip('*` ').lower().startswith('requirement')
+           for c in _line.split('|')):
+        _expected.add(_cur)
+_silent = sorted(_expected - set(secs))
+check('3a  EVERY matrix section with a Requirement column yields requirements '
+      '-- an exact set difference, not a floor', not _silent,
+      'these sections HAVE a requirement column and yielded NOTHING, so the '
+      'extractor is silently skipping them: %s' % _silent)
+check('3a2 ...and the comparison had something to compare',
+      len(_expected) >= 1, sorted(_expected))
+check('3a3 ...and every section that yielded was one we expected -- no '
+      'requirements arriving from a table with no requirement column',
+      not (set(secs) - _expected - {'(none)'}),
+      sorted(set(secs) - _expected - {'(none)'}))
 # Section 3's second column is `Tool` and section 4's is `Status`. If the
 # extractor were taking cell 2 those sections would be full of filenames and
 # status strings, not sentences.
