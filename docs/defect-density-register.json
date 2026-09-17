@@ -6955,6 +6955,65 @@
       "recurrence_open": "The sweep finds `!== <literal status>` inside an asserting line. It does NOT find `assert.notStrictEqual(code, 401)`, which is the same claim with no literal operator, and it cannot see a disjunction whose weak term is not a status comparison at all -- `reached || somethingElse` would be invisible. It found this one because one term happened to carry the shape it scans for."
     },
     {
+      "commit": "479aba75430b",
+      "date": "2026-09-16",
+      "subject": "fix(sairnlaw): the IOLTA leg that reconciles clients against the ledger CANNOT FAIL",
+      "files": [
+        "api/_lib/law-trust-reconcile-endpoint.test.js",
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "tests/law_trust_reconcile_probe.py"
+      ],
+      "lines_added": 209,
+      "lines_removed": 18,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "api/_lib/law-trust-reconcile.js's allocation_vs_ledger leg -- the one that reconciles every client's balance against the ledger-wide total on attorney IOLTA trust money -- CANNOT DISAGREE. Both traversals skip on identical predicates (isVoided, cents() returning null), so the two sums are the same arithmetic over the same survivors; driven with five input shapes it returns agrees:true every time, while its own comment claims it can genuinely fail. It also counted toward legs_compared, so a reconciliation could report comparing something when the only leg compared was arithmetic with itself",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "law_trust_reconcile_probe.py",
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "1.1 is a check that cannot fail, which is exactly this -- but the file is the REPLACEMENT for a check with the same defect and its commit is named after it, so the citation is arguable rather than clean: the rule was known, applied, and reproduced.",
+      "contributing_factors": [
+        {
+          "factor": "THE TWO TRAVERSALS SKIP ON IDENTICAL PREDICATES, so they are the same arithmetic over the same survivors and differ only in which bucket they add to. The second traversal was written deliberately -- 'rather than a sum of the buckets' -- to avoid a tautology, and it produced a different tautology instead.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The leg is labelled structural and excluded from legs_compared, and a ROW CONSERVATION identity was added as the falsifiable half: it counts rows rather than money, so it can see a row both money passes dropped."
+        },
+        {
+          "factor": "THE FILE IS THE REPLACEMENT FOR A CHECK WITH EXACTLY THIS DEFECT. Its own commit is named 'the leg the existing check was asked about could not fail'. Knowing the failure mode, naming the commit after it, and writing a second traversal specifically to avoid it was not enough.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded, because it is the second time in this register that knowing a rule did not prevent reproducing it -- the argument for driving a leg rather than reasoning about whether it can fail."
+        },
+        {
+          "factor": "AN UNFALSIFIABLE LEG INFLATES THE COMPARED COUNT. It contributed a guaranteed agreement to legs_compared, so a reconciliation could report having compared something when the only leg it compared was arithmetic with itself.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Excluded from the count. AGREES now requires both legs that can actually disagree."
+        },
+        {
+          "factor": "IT WAS FOUND BY DRIVING THE LIBRARY WITH FIVE INPUT SHAPES, not by reading it. The comment asserting the leg can fail is adjacent to the code that makes it impossible, and reads as evidence.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/law_trust_reconcile_probe.py, whose first mutation is the one-sided skip the leg was documented as catching -- it does catch that one, because the predicates have genuinely diverged."
+        }
+      ],
+      "recurrence_open": "The conservation identity is falsifiable only by a SOURCE change -- no input can break an invariant over the code -- so it is driven by a mutation and not by a fixture. Nothing scans for the general shape: a leg, arm or check whose two sides apply the same predicates. That shape has now produced two defects in this one file."
+    },
+    {
       "commit": "e71683cc0ecd",
       "date": "2026-09-16",
       "subject": "fix(sabotage-check): the uniqueness guard was Python-only, and the first fix over-credited",
