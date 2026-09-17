@@ -7,15 +7,15 @@ this file assert a check that did not happen.
 | | |
 |---|---|
 | **State** | **OK** |
-| Last run | 2026-09-17 17:16:50Z |
+| Last run | 2026-09-17 20:34:18Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
 | Job | Status | Last run | Age (s) | Headroom (s) |
 |---|---|---|---|---|
-| `/api/alf-alerts` | **ok** | 2026-09-17T16:37:42.099+00:00 | 2348 | 5152 |
-| `/api/audit-checkpoint` | **ok** | 2026-09-17T03:30:11.761+00:00 | 49598 | 123502 |
-| `/api/cron-watchdog` | **ok** | 2026-09-17T17:15:29.314+00:00 | 81 | 7419 |
-| `/api/sairndental/send-reminder` | **ok** | 2026-09-17T17:07:43.975+00:00 | 546 | 6954 |
+| `/api/alf-alerts` | **ok** | 2026-09-17T19:37:41.814+00:00 | 3396 | 4104 |
+| `/api/audit-checkpoint` | **ok** | 2026-09-17T03:30:11.761+00:00 | 61446 | 111654 |
+| `/api/cron-watchdog` | **ok** | 2026-09-17T20:15:29.427+00:00 | 1128 | 6372 |
+| `/api/sairndental/send-reminder` | **ok** | 2026-09-17T20:07:54.514+00:00 | 1583 | 5917 |
 
 ---
 
@@ -24,26 +24,26 @@ file says COULD NOT TELL, nothing was checked -- that is not a clean run,
 and the previous clean verdict was deliberately overwritten rather than
 left standing.
 
-**WHAT THIS CANNOT SEE.** `api/cron-watchdog.js` runs on the same Vercel
+**WHAT THIS CANNOT SEE, AND HOW OFTEN IT LOOKS.** Read this document
+as **a check every two to six hours**. It is ASKED for hourly from
+`.github/workflows/cron-liveness.yml`, and over the first 30.8 hours of
+scheduled runs the gaps were **152 to 347 minutes, median ~292** — so
+**roughly three runs in four never happen**, and not one fired at the
+declared `:45`. **The stated schedule is a request, not a cadence.**
+
+**WHY THAT IS A FINDING AND NOT A COMPLAINT:** the other two scheduled
+workflows in this repository are late and NEVER dropped —
+`nightly-backup` asks 03:40 and lands 08:52 with a daily cadence that
+holds exactly. Delay affects all of them; dropping affects only the
+hourly one. GitHub also disables scheduled workflows on a repository
+with no activity for 60 days.
+
+**WHAT IT BUYS ANYWAY.** `api/cron-watchdog.js` runs on the SAME Vercel
 cron scheduler as the jobs it watches, so a total scheduler outage
 silences both. THIS tool runs outside Vercel and is what survives that.
-Since 2026-09-15 it is also ASKED for hourly from
-`.github/workflows/cron-liveness.yml` — a genuinely different scheduler,
-at no spend — so it no longer depends on somebody remembering to run it.
-
-**AND WHAT THAT STILL IS NOT, MEASURED RATHER THAN CAVEATED.** GitHub
-Actions is not an uptime vendor. Over the first 30.8 hours of scheduled
-runs the gaps were **152 to 347 minutes, median ~292**, against an
-asked-for 60 — **roughly three runs in four never happen** — and not one
-fired at the declared `:45`. The other two scheduled workflows in this
-repository are late and never dropped (`nightly-backup` asks 03:40 and
-lands 08:52, daily cadence exact), so **delay affects all of them and
-dropping affects only the hourly one.** Read this document as **a check
-every two to six hours**, not hourly. GitHub also disables scheduled
-workflows on a repository with no activity for 60 days. A second
-INDEPENDENT scheduler is a real improvement over one; it is not a
-guaranteed one, and the difference is measured here rather than implied
-by the word "automated".
+A second INDEPENDENT scheduler is a real improvement over one; it is
+not a guaranteed one, and the difference is measured above rather than
+implied by the word "automated".
 
 <details><summary>Raw response</summary>
 
@@ -54,11 +54,11 @@ by the word "automated".
   "jobs": [
     {
       "job": "/api/alf-alerts",
-      "last_run_at": "2026-09-17T16:37:42.099+00:00",
-      "age_seconds": 2348,
+      "last_run_at": "2026-09-17T19:37:41.814+00:00",
+      "age_seconds": 3396,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 5152,
+      "seconds_until_late": 4104,
       "detail": {
         "emailed": 1,
         "skipped": 0,
@@ -70,10 +70,10 @@ by the word "automated".
     {
       "job": "/api/audit-checkpoint",
       "last_run_at": "2026-09-17T03:30:11.761+00:00",
-      "age_seconds": 49598,
+      "age_seconds": 61446,
       "expected_interval_seconds": 86400,
       "last_outcome": "ok",
-      "seconds_until_late": 123502,
+      "seconds_until_late": 111654,
       "detail": {
         "action": "checkpoint",
         "written": 3,
@@ -83,11 +83,11 @@ by the word "automated".
     },
     {
       "job": "/api/cron-watchdog",
-      "last_run_at": "2026-09-17T17:15:29.314+00:00",
-      "age_seconds": 81,
+      "last_run_at": "2026-09-17T20:15:29.427+00:00",
+      "age_seconds": 1128,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 7419,
+      "seconds_until_late": 6372,
       "detail": {
         "not_ok": [],
         "checked": 4,
@@ -113,11 +113,11 @@ by the word "automated".
     },
     {
       "job": "/api/sairndental/send-reminder",
-      "last_run_at": "2026-09-17T17:07:43.975+00:00",
-      "age_seconds": 546,
+      "last_run_at": "2026-09-17T20:07:54.514+00:00",
+      "age_seconds": 1583,
       "expected_interval_seconds": 3600,
       "last_outcome": "ok",
-      "seconds_until_late": 6954,
+      "seconds_until_late": 5917,
       "detail": {
         "sent": 0,
         "failed": 0,
