@@ -4714,6 +4714,65 @@
       "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
     },
     {
+      "commit": "479aba75430b",
+      "date": "2026-09-16",
+      "subject": "fix(sairnlaw): the IOLTA leg that reconciles clients against the ledger CANNOT FAIL",
+      "files": [
+        "api/_lib/law-trust-reconcile-endpoint.test.js",
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "tests/law_trust_reconcile_probe.py"
+      ],
+      "lines_added": 209,
+      "lines_removed": 18,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "api/_lib/law-trust-reconcile.js's allocation_vs_ledger leg -- the one that reconciles every client's balance against the ledger-wide total on attorney IOLTA trust money -- CANNOT DISAGREE. Both traversals skip on identical predicates (isVoided, cents() returning null), so the two sums are the same arithmetic over the same survivors; driven with five input shapes it returns agrees:true every time, while its own comment claims it can genuinely fail. It also counted toward legs_compared, so a reconciliation could report comparing something when the only leg compared was arithmetic with itself",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "law_trust_reconcile_probe.py",
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "1.1 is a check that cannot fail, which is exactly this -- but the file is the REPLACEMENT for a check with the same defect and its commit is named after it, so the citation is arguable rather than clean: the rule was known, applied, and reproduced.",
+      "contributing_factors": [
+        {
+          "factor": "THE TWO TRAVERSALS SKIP ON IDENTICAL PREDICATES, so they are the same arithmetic over the same survivors and differ only in which bucket they add to. The second traversal was written deliberately -- 'rather than a sum of the buckets' -- to avoid a tautology, and it produced a different tautology instead.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The leg is labelled structural and excluded from legs_compared, and a ROW CONSERVATION identity was added as the falsifiable half: it counts rows rather than money, so it can see a row both money passes dropped."
+        },
+        {
+          "factor": "THE FILE IS THE REPLACEMENT FOR A CHECK WITH EXACTLY THIS DEFECT. Its own commit is named 'the leg the existing check was asked about could not fail'. Knowing the failure mode, naming the commit after it, and writing a second traversal specifically to avoid it was not enough.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded, because it is the second time in this register that knowing a rule did not prevent reproducing it -- the argument for driving a leg rather than reasoning about whether it can fail."
+        },
+        {
+          "factor": "AN UNFALSIFIABLE LEG INFLATES THE COMPARED COUNT. It contributed a guaranteed agreement to legs_compared, so a reconciliation could report having compared something when the only leg it compared was arithmetic with itself.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Excluded from the count. AGREES now requires both legs that can actually disagree."
+        },
+        {
+          "factor": "IT WAS FOUND BY DRIVING THE LIBRARY WITH FIVE INPUT SHAPES, not by reading it. The comment asserting the leg can fail is adjacent to the code that makes it impossible, and reads as evidence.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/law_trust_reconcile_probe.py, whose first mutation is the one-sided skip the leg was documented as catching -- it does catch that one, because the predicates have genuinely diverged."
+        }
+      ],
+      "recurrence_open": "The conservation identity is falsifiable only by a SOURCE change -- no input can break an invariant over the code -- so it is driven by a mutation and not by a fixture. Nothing scans for the general shape: a leg, arm or check whose two sides apply the same predicates. That shape has now produced two defects in this one file."
+    },
+    {
       "commit": "4f757c3fc5c2",
       "date": "2026-09-16",
       "subject": "fix(test): the repair for the `!== 401` arm contained the same defect, 38 lines down",
@@ -6955,65 +7014,6 @@
       "recurrence_open": "The sweep finds `!== <literal status>` inside an asserting line. It does NOT find `assert.notStrictEqual(code, 401)`, which is the same claim with no literal operator, and it cannot see a disjunction whose weak term is not a status comparison at all -- `reached || somethingElse` would be invisible. It found this one because one term happened to carry the shape it scans for."
     },
     {
-      "commit": "479aba75430b",
-      "date": "2026-09-16",
-      "subject": "fix(sairnlaw): the IOLTA leg that reconciles clients against the ledger CANNOT FAIL",
-      "files": [
-        "api/_lib/law-trust-reconcile-endpoint.test.js",
-        "api/_lib/law-trust-reconcile.js",
-        "api/_lib/law-trust-reconcile.test.js",
-        "tests/law_trust_reconcile_probe.py"
-      ],
-      "lines_added": 209,
-      "lines_removed": 18,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "mutation-testing",
-      "summary": "api/_lib/law-trust-reconcile.js's allocation_vs_ledger leg -- the one that reconciles every client's balance against the ledger-wide total on attorney IOLTA trust money -- CANNOT DISAGREE. Both traversals skip on identical predicates (isVoided, cents() returning null), so the two sums are the same arithmetic over the same survivors; driven with five input shapes it returns agrees:true every time, while its own comment claims it can genuinely fail. It also counted toward legs_compared, so a reconciliation could report comparing something when the only leg compared was arithmetic with itself",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "law_trust_reconcile_probe.py",
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 1
-      },
-      "citation_note": "1.1 is a check that cannot fail, which is exactly this -- but the file is the REPLACEMENT for a check with the same defect and its commit is named after it, so the citation is arguable rather than clean: the rule was known, applied, and reproduced.",
-      "contributing_factors": [
-        {
-          "factor": "THE TWO TRAVERSALS SKIP ON IDENTICAL PREDICATES, so they are the same arithmetic over the same survivors and differ only in which bucket they add to. The second traversal was written deliberately -- 'rather than a sum of the buckets' -- to avoid a tautology, and it produced a different tautology instead.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The leg is labelled structural and excluded from legs_compared, and a ROW CONSERVATION identity was added as the falsifiable half: it counts rows rather than money, so it can see a row both money passes dropped."
-        },
-        {
-          "factor": "THE FILE IS THE REPLACEMENT FOR A CHECK WITH EXACTLY THIS DEFECT. Its own commit is named 'the leg the existing check was asked about could not fail'. Knowing the failure mode, naming the commit after it, and writing a second traversal specifically to avoid it was not enough.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Recorded, because it is the second time in this register that knowing a rule did not prevent reproducing it -- the argument for driving a leg rather than reasoning about whether it can fail."
-        },
-        {
-          "factor": "AN UNFALSIFIABLE LEG INFLATES THE COMPARED COUNT. It contributed a guaranteed agreement to legs_compared, so a reconciliation could report having compared something when the only leg it compared was arithmetic with itself.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Excluded from the count. AGREES now requires both legs that can actually disagree."
-        },
-        {
-          "factor": "IT WAS FOUND BY DRIVING THE LIBRARY WITH FIVE INPUT SHAPES, not by reading it. The comment asserting the leg can fail is adjacent to the code that makes it impossible, and reads as evidence.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/law_trust_reconcile_probe.py, whose first mutation is the one-sided skip the leg was documented as catching -- it does catch that one, because the predicates have genuinely diverged."
-        }
-      ],
-      "recurrence_open": "The conservation identity is falsifiable only by a SOURCE change -- no input can break an invariant over the code -- so it is driven by a mutation and not by a fixture. Nothing scans for the general shape: a leg, arm or check whose two sides apply the same predicates. That shape has now produced two defects in this one file."
-    },
-    {
       "commit": "e71683cc0ecd",
       "date": "2026-09-16",
       "subject": "fix(sabotage-check): the uniqueness guard was Python-only, and the first fix over-credited",
@@ -7069,6 +7069,53 @@
         }
       ],
       "recurrence_open": "GUARDS remains a flat list of regexes with no notion of which idiom belongs to which language, so a third language's spelling of any accepted shape would be invisible the same way. The blind lock now carries JS fixtures for the uniqueness and difference shapes, which means the gap is closed for the two languages in this repo and not for the general case."
+    },
+    {
+      "commit": "ea821a7e3b46",
+      "date": "2026-09-16",
+      "subject": "fix(claims-probe): control 6 stopped testing anything the day cmd_audit landed",
+      "files": [
+        "tests/claims/run_freshness_probe.py"
+      ],
+      "lines_added": 10,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tests/claims/run_freshness_probe.py control 6 anchored its sabotage on a trailing backslash-n-backslash-n-backslash-n def main, which encoded the FACT THAT cmd_list WAS THE LAST FUNCTION in sairn_claim.py rather than anything about the code being mutated. cmd_audit was added after cmd_list, the anchor stopped matching, and the control applied no mutation and asserted nothing for as long as that was true. Re-anchored on three lines of function body, verified unique.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/claims/run_freshness_probe.py",
+      "injection": {
+        "unknown_reason": "The anchor died when cmd_audit was appended after cmd_list, which is a commit that added a feature and changed nothing about this probe. No commit introduced the defect; a commit elsewhere invalidated a positional assumption nobody had written down as an assumption."
+      },
+      "citation_note": "An anchor that still matches is not an anchor that still points at the right thing -- here it stopped matching entirely, and the control it armed mutated nothing while the probe went on printing its other 62 arms green.",
+      "contributing_factors": [
+        {
+          "factor": "the sabotage anchor included a POSITIONAL suffix -- the next def in the file -- alongside the code it was actually about",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-anchored on the three body lines alone, verified to occur exactly once"
+        },
+        {
+          "factor": "adding a new command to the tool silently invalidated a control in a probe that names neither",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "no general fix: any textual anchor can be invalidated by an edit elsewhere. The count-exactly-once assertion is the mitigation and it is the thing that caught this one."
+        },
+        {
+          "factor": "the probe printed 62 green arms beside the dead one, so a reader scanning for a pass line would have seen a healthy file",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "none needed -- the arm already reported SABOTAGE ANCHOR NO LONGER MATCHES and exited 1; it worked, and this record exists because it worked"
+        }
+      ],
+      "recurrence_open": "The other six controls in this file carry anchors of the same shape; only this one was checked against the current source today."
     },
     {
       "commit": "ee221abe02e4",
@@ -7280,6 +7327,62 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
+    },
+    {
+      "commit": "1f25f8bf6613",
+      "date": "2026-09-17",
+      "subject": "fix(claims): the duplicate this tool could not see was your own claim",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/claims/run_own_claim_overlap_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 600,
+      "lines_removed": 18,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_claim.py could not see a session duplicating its OWN claim. Every collision check skips the caller's session, so the only guards against two claims for one piece of work were an exact subject+task byte-match and a same-subject-while-unpublished check. Both live recurrences (fourth 2026-09-16T14:53, cc 2026-09-17T02:32) were retyped and had a published earlier claim, so neither guard could fire, while  reported ZERO duplicates -- correctly, on a definition that counts only exact groups. Fixed by running the tool's own block_reason() over the caller's concurrently-active claims with the subject dropped: refuse on a shared identifier or phrase, report on a shared app only.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The self-skip is in the tool's first version and was correct for the problem it was written for -- two SESSIONS doing one piece of work. No commit introduced it as a defect; it became one when sessions began holding several concurrent claims under one subject, which no commit marks either."
+      },
+      "citation_note": "A check that stopped checking: every collision path in sairn_claim.py opens 'if c.get(session) == me: continue', so the matcher was never pointed at the caller's own claims and the duplicate it exists to prevent was structurally invisible to it.",
+      "contributing_factors": [
+        {
+          "factor": "the collision matcher was excluded by construction from the claims of the session running it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "self_overlap() and my_active_overlaps() run the same block_reason() over my own active claims; cmd_claim refuses, cmd_check reports"
+        },
+        {
+          "factor": "the two earlier guards were written against the specific incident each followed, so each closed one shape and neither closed the class",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the new guard is the general case both are special cases of, and its refuse/report line was set by measuring all 411 concurrent same-session pairs rather than by argument"
+        },
+        {
+          "factor": "`audit` measured exact (session, subject, task) groups and reported ZERO after the guards, so the metric said FIXED while the defect recurred twice in two clones",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "audit gains a same-work count beside the exact one, concurrency-scoped, which surfaces both live incidents by name"
+        },
+        {
+          "factor": "every session uses its own name as the claim subject for a whole days work, so the strongest cross-session signal carries no information within one session",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "not worth changing the convention: one subject per session is what makes `list` readable across four clones. The matcher drops the subject for the self case instead, which is measured -- leaving it in produced nine extra refusals on plainly unrelated work."
+        }
+      ],
+      "recurrence_open": "Two claims for one piece of work that share no identifier, no phrase and no app still pass -- block_reason() names that residual in its own body and records why a rare-token rule was measured at 74 extra blocks and rejected."
     }
   ],
   "started": "2026-09-09"
