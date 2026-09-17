@@ -1764,6 +1764,16 @@
       "claimed_at_epoch": 1789681335.9391732,
       "status": "released",
       "released_at": "2026-09-17T21:47:08Z"
+    },
+    {
+      "id": "cc-1789681664",
+      "session": "cc",
+      "subject": "trades-audit-rederive",
+      "task": "reconcile the 2026-08-21 plumbing electrical hvac worldwide research rows against head",
+      "claimed_at": "2026-09-17T21:47:44Z",
+      "claimed_at_epoch": 1789681664.6891387,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
