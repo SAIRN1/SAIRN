@@ -3811,6 +3811,62 @@
       "recurrence_open": "NOT CLOSED AS A CLASS, and this is the fourth instance in one session. Nothing on this platform compares a detector's vocabulary against the ways the thing it detects can actually be written; each of the four was found by a human reading what the detector called empty."
     },
     {
+      "commit": "93da0922b7d2",
+      "date": "2026-09-16",
+      "subject": "fix(test): the billing-codes suite was RED, and a count pin is why",
+      "files": [
+        "tests/sairnlaw_billing_codes.js"
+      ],
+      "lines_added": 26,
+      "lines_removed": 3,
+      "app": "sairnlaw",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/sairnlaw_billing_codes.js was RED on origin/main for roughly 26 hours -- from 4eaa3f05 on 2026-09-15 18:26 to the repair on 2026-09-16 20:19. The cause is not a defect in the app: that commit registered a TWENTIETH law_* resource, law_trust_reconcile, and the suite's exact-count arm fired as a count pin is supposed to. What failed is that nobody cleared it, and a suite that is red for a non-defect reason is one people learn to skip -- which this repo already has the receipt for. Found only because a negative control cannot be built on a red suite: the clean-copy control arm would fail and every mutation would 'fail' for the wrong reason.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 1
+      },
+      "citation_note": "1.1 is a check that stopped checking. This is its neighbour rather than the thing itself: the check never stopped, it went red and STAYED red, which ends in the same place -- a check nobody reads -- by the opposite route. Recorded as arguable for that reason.",
+      "contributing_factors": [
+        {
+          "factor": "An exact-count pin on the law_* registry fired when a legitimate twentieth resource was added, which is the pin working -- nothing was wrong with the app or with the arm",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The count was raised to 20 and the comment names law_trust_reconcile and 4eaa3f05 as what moved it, with the instruction to do the same next time rather than raise the number quietly"
+        },
+        {
+          "factor": "Nothing connects the session that ADDS a resource to the suite whose pin that addition will break, so the person who caused the red is never the person who sees it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A count pin is a deliberate trade: it catches drift at the cost of firing on legitimate change. The alternative -- a floor -- stays green through every addition and detects nothing."
+        },
+        {
+          "factor": "Nothing runs the per-app suites on a cadence that reaches a person, so a red one stays red until somebody happens to open it. This one was found only because a negative control cannot be built on a red suite",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "cody holds an active claim for a known-red suite registry as of 2026-09-17, which is the mechanism this needs; recorded here as the data point rather than built twice"
+        },
+        {
+          "factor": "The first draft of the repair bundled the pin fix and the new negative control into ONE commit, which is the thing the commit message itself said not to do -- two different claims, one changeset",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Split into two commits before pushing, and the message records that the first draft got it wrong"
+        }
+      ],
+      "recurrence_open": "The pin will fire again on the twenty-first law_* resource, BY DESIGN, and the next session to add one will not know this suite exists. Nothing links a registry addition to the suites that pin its size, and the known-red registry cody is building will catch the RED but not shorten the 26 hours unless something runs the per-app suites on a cadence that reaches a person."
+    },
+    {
       "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
