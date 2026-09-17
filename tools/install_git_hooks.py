@@ -31,6 +31,77 @@ def git(*args):
     return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 
+def git_actually_fires(hookdir):
+    """Does GIT ITSELF invoke the hook? Not "does the file run when I run it".
+
+    Returns (fired, detail). `fired` is True, False, or None for COULD NOT TELL
+    -- which is a third state and is never folded into either of the others.
+
+    ── WHY THE OTHER CHECKS DO NOT ANSWER THIS (added 2026-09-16) ─────────────
+    --check already reads core.hooksPath, reads the file's bytes, and executes
+    the wrapper with `sh <file>`. Every one of those is a statement about the
+    FILE. None of them is a statement about GIT: hooksPath can be right and the
+    file present and executable while git still does not run it -- a wrong file
+    name, a permission bit, an interpreter git resolves differently from the
+    shell this checker happens to be running under.
+    `sh <file>` in particular never consults the shebang at all, which
+    runs_cleanly() already says about itself.
+
+    ── HOW IT IS ANSWERED, WITHOUT TOUCHING THIS CLONE OR ANY REAL REMOTE ─────
+    A throwaway repo is created in a temp directory, its core.hooksPath is
+    pointed at THIS clone's .githooks, and a DRY-RUN push is made to a
+    throwaway BARE repo beside it. `git push --dry-run` runs pre-push -- checked
+    on this platform rather than assumed.
+
+    THE DETECTION IS UNAMBIGUOUS BECAUSE THE HOOK CANNOT SUCCEED THERE. The
+    hook resolves ROOT from `git rev-parse --show-toplevel`, which in the
+    scratch repo is the scratch repo, so `python $ROOT/tools/register_feed_gate.py`
+    cannot be opened and the hook exits 1. So:
+
+        push refused, with that failure in the output -> THE HOOK FIRED
+        push succeeded                                 -> GIT DID NOT RUN IT
+
+    Nothing is pushed anywhere real: the remote is a bare repo in the same temp
+    directory, and --dry-run on top of that. This clone's config is untouched.
+    """
+    import shutil
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix='sairn-hookfire-')
+    try:
+        src = os.path.join(tmp, 'src')
+        bare = os.path.join(tmp, 'remote.git')
+        for cmd in (['init', '-q', '-b', 'main', src],
+                    ['init', '-q', '--bare', bare]):
+            if subprocess.run(['git'] + cmd, capture_output=True).returncode != 0:
+                return (None, 'could not create the throwaway repos')
+        def g(*a):
+            return subprocess.run(['git', '-C', src] + list(a), capture_output=True,
+                                  text=True, encoding='utf-8', errors='replace')
+        g('config', 'user.email', 'hookfire@example.invalid')
+        g('config', 'user.name', 'hookfire')
+        g('config', 'core.hooksPath', hookdir.replace('\\', '/'))
+        with open(os.path.join(src, 'f.txt'), 'w') as f:
+            f.write('x\n')
+        g('add', '-A')
+        if g('commit', '-q', '-m', 'probe').returncode != 0:
+            return (None, 'could not commit in the throwaway repo')
+        r = g('push', '--dry-run', bare.replace('\\', '/'), 'main')
+        out = (r.stdout or '') + (r.stderr or '')
+        if r.returncode != 0 and 'register_feed_gate.py' in out:
+            return (True, 'git ran .githooks/pre-push (it refused the dry-run '
+                          'from the scratch repo, as it must)')
+        if r.returncode == 0:
+            return (False, 'git did NOT run .githooks/pre-push -- a dry-run push '
+                           'with core.hooksPath pointed at it succeeded, and it '
+                           'cannot succeed if the hook executes')
+        return (None, 'the dry-run failed for a reason that is not the hook: '
+                      + out.strip()[:200])
+    except Exception as e:                                       # noqa: BLE001
+        return (None, 'could not run the fire test: %s' % e)
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
 def runs_cleanly(repo, hookfile):
     """Do the gate script and the shell wrapper actually EXECUTE?
 
@@ -107,9 +178,34 @@ def main():
         except Exception as e:
             problems.append('could not read .githooks/pre-push: %s' % e)
         problems.extend(runs_cleanly(repo, hookfile))
+        # ── AND THE ONLY QUESTION THAT MATTERS: DOES GIT RUN IT? ────────────
+        # Everything above is a statement about the FILE. This one is about
+        # GIT, and it is the difference between "installed" and "protected".
+        # ── THE CONFIGURED PATH, NOT THE TRACKED ONE, AND THE PROBE CAUGHT ME
+        # ── PASSING THE WRONG ONE (2026-09-16) ──────────────────────────────
+        # The first version handed this the directory the tracked hook lives
+        # in, which proves "git would fire .githooks/pre-push IF POINTED AT
+        # IT" -- a fact about the repository, not about this clone. With
+        # core.hooksPath pointed at a decoy directory named `.githooks` holding
+        # no pre-push, every file-level check passed AND the fire test passed,
+        # and --check printed OK on a clone git was not running any hook for.
+        # Caught by arm 3 of tests/install_git_hooks_check_probe.py, which
+        # exists to build exactly that state.
+        hooks_cfg = current if os.path.isabs(current or '') else os.path.join(repo, current or '')
+        fired, why = git_actually_fires(hooks_cfg)
+        if fired is False:
+            problems.append(why)
+        elif fired is None:
+            # COULD NOT TELL is a third state. It does not join the problems
+            # list -- that would report a defect nobody found -- and it does not
+            # pass silently either.
+            print('COULD NOT TELL whether git fires the hook: %s' % why)
+            print('That is not a pass. The checks below still ran.')
         if not problems:
-            print('OK -- core.hooksPath = %s, hook is LF, gate and wrapper both run' % current)
-            return 0
+            print('OK -- core.hooksPath = %s, hook is LF, gate and wrapper both '
+                  'run, and GIT ITSELF FIRES IT%s'
+                  % (current, '' if fired else ' (unverified -- see above)'))
+            return 0 if fired else 2
         print('NOT INSTALLED, or installed and DEAD:')
         for p in problems:
             print('  - %s' % p)

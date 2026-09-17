@@ -926,8 +926,12 @@ REGISTRY = [
         'verdict': by_exit,
         'promoted': '2026-09-13, the day --check was widened to answer the real question',
         'catches': 'a clone whose pre-push hook is not installed, is CRLF and '
-                   'therefore silently skipped by git, or whose gate script or '
-                   'shell wrapper does not execute',
+                   'therefore silently skipped by git, whose gate script or '
+                   'shell wrapper does not execute, or -- added 2026-09-16 -- '
+                   'that GIT ITSELF DOES NOT FIRE, which every other check here '
+                   'is blind to because they are all statements about the FILE. '
+                   'hooksPath can be right, the bytes LF and `sh <file>` clean '
+                   'while git runs nothing',
         'why_it_matters': "the pre-push hook is the ONLY thing that gates a push "
                           "made by subprocess -- which is how sairn_claim.py "
                           "pushes -- and .git/ is not versioned, so a fresh clone "
