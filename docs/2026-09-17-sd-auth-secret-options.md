@@ -117,6 +117,50 @@ from. Named so it is a considered rejection rather than an omission.
 
 ---
 
+## BUILT 2026-09-17 — B, C and D all landed, and one design choice changed
+
+All three stages shipped the same day this was written. **One thing in the plan
+above turned out to be the weaker option and was replaced:**
+
+**B did NOT use trial decryption.** The plan said GCM's auth tag makes trying
+both keys safe — that is true, and it is not sufficient. **Trial decryption
+cannot tell you whether a backfill has finished**, so the legacy fallback could
+never be removed with confidence. The format carries the key instead:
+`iv.tag.ct` is legacy, `v2.iv.tag.ct` is the dedicated key. A `v2` value is
+**never** tried against the signing secret — a fallback there would quietly
+re-couple the duties the stage exists to separate.
+
+**C** is as planned: `kid` (8 hex of `sha256(key)`, derived not hand-named),
+`SD_AUTH_SECRET_PREVIOUS` accepted on verify only, four-step rotation that
+drains itself over the 12-hour TTL.
+
+**D** added one rule the plan did not state: **an app with its own key stops
+accepting the platform key entirely.** Keeping the platform key as a permanent
+fallback would be a blast-radius reduction that reduces nothing. The rollout
+uses C's window — set `SD_AUTH_SECRET_SAIRNLAW_PREVIOUS` to the platform secret,
+set `SD_AUTH_SECRET_SAIRNLAW`, wait one TTL, clear the previous.
+
+**Two arms exist only because a sabotage killed nothing.** "A v2 value fails
+when the dedicated key is removed" passes whether or not a legacy fallback
+exists, because the two keys differ so the fallback fails anyway — the arm that
+tells them apart feeds a `v2`-prefixed value the legacy key *can* read. And
+"verify against the current key only" killed nothing because the `kid` reorder
+had already moved the right key to the front; the real no-dual-key sabotage is
+dropping `PREVIOUS` from the key list. A third arm covers the case
+kid-bearing tokens never exercise: a **pre-`kid` token during a rotation
+window**, which is every session issued before 2026-09-17.
+
+23 arms → 45. Eight sabotages, all killing at least one arm after the three
+above were strengthened.
+
+**THE RUNBOOK LINE IS NOW THE OPPOSITE ONE:** `SD_AUTH_SECRET` *is* rotatable,
+provided `SD_ENCRYPTION_KEY` is set first and existing ciphertexts have been
+re-written. Until that backfill runs, legacy (`iv.tag.ct`) values are still tied
+to the signing secret and a rotation still orphans them — an arm pins exactly
+that, so the hazard is measured rather than assumed gone.
+
+---
+
 ## Recommendation
 
 **B, then C, then D.** B is the only one that removes a real, currently-live

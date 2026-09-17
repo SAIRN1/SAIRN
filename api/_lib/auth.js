@@ -246,6 +246,146 @@ function getSecret() {
   return s;
 }
 
+// ── STAGE C: KEY ID + DUAL-KEY VERIFICATION, SO ROTATION IS POSSIBLE ──────
+// 2026-09-17. Before this there was no way to tell which key signed a token,
+// so rotating the signing secret meant invalidating every live session at once.
+//
+// THE BACKWARD-COMPATIBLE PATTERN IS THE ONE THIS FILE ALREADY USED FOR `typ`
+// on 2026-08-08: a claim that is ABSENT is treated as the legacy case and no
+// already-issued token is invalidated. A token with no `kid` is simply tried
+// against every configured key, which is exactly what it would have needed.
+//
+// HOW A ROTATION RUNS, and why it needs no mass logout: SESSION_TTL_MS is 12
+// hours, so
+//   1. set SD_AUTH_SECRET_PREVIOUS to the current secret,
+//   2. set SD_AUTH_SECRET to the new one,
+//   3. wait 12 hours -- every token signed with the old key has expired,
+//   4. clear SD_AUTH_SECRET_PREVIOUS.
+// Nobody is signed out; the window drains itself.
+//
+// THE KEY ID IS DERIVED FROM THE KEY, not named by hand. A hand-kept name is a
+// second thing to get wrong during the one operation where being wrong logs
+// everybody out, and this platform has recorded that shape (a hand-written list
+// drifting from the thing it names) enough times to stop writing them.
+//
+// IT IS NOT A SECRET AND IS NOT TREATED AS ONE: eight hex characters of
+// sha256(key), which identifies which key without narrowing a search for it.
+// Selecting a key by the token's own `kid` is safe even though `kid` is
+// attacker-controlled -- picking a key does not verify anything, and forging a
+// signature still requires the key itself.
+function keyId(secret) {
+  return crypto.createHash('sha256').update(String(secret)).digest('hex').slice(0, 8);
+}
+
+// ── STAGE D: PER-APP SIGNING SECRETS ──────────────────────────────────────
+// 2026-09-17. `SD_AUTH_SECRET_<APP>` (e.g. SD_AUTH_SECRET_SAIRNLAW) makes one
+// app's sessions unforgeable with any other app's key. Entirely optional: an
+// app with no dedicated secret uses the platform one exactly as before, so this
+// rolls out app by app rather than as one cutover.
+//
+// AN APP WITH ITS OWN KEY DOES NOT ALSO ACCEPT THE PLATFORM KEY, and that is
+// the whole point. Keeping the platform key as a permanent fallback would mean
+// the platform secret could still mint SAIRNlaw tokens after SAIRNlaw had its
+// own -- a blast-radius reduction that reduces nothing. The migration uses the
+// SAME window stage C built: set SD_AUTH_SECRET_SAIRNLAW_PREVIOUS to the
+// platform secret, set SD_AUTH_SECRET_SAIRNLAW to the new one, wait one
+// SESSION_TTL_MS, clear the previous. Nobody is signed out and the platform key
+// stops working for that app at the end.
+//
+// THE SUBTLETY, NAMED BEFORE ANYBODY TRIPS ON IT: a verifier has to choose a
+// key BEFORE it has verified anything, and the only hint available is the
+// token's own `app` claim -- which an attacker supplies. That is safe in fact
+// (choosing a key is not trusting a claim, and forging a signature still needs
+// the key) but it reads backwards against "verify before you trust", so it is
+// written here rather than left for a reviewer to rediscover and mistake for a
+// bug. The claim is re-checked properly after verification by
+// verifySessionToken's ROLES_BY_APP and expectedApp checks.
+function appEnvSuffix(app) {
+  return String(app || '').toUpperCase().replace(/[^A-Z0-9]+/g, '_');
+}
+
+function signingKeys(app) {
+  // Current first. Order is load-bearing: signPayload() always uses [0], and
+  // verification tries them in order, so a token with no `kid` is checked
+  // against the CURRENT key before the outgoing one.
+  const suffix = appEnvSuffix(app);
+  const appCur = suffix ? process.env['SD_AUTH_SECRET_' + suffix] : null;
+  const out = [];
+  const push = (v) => {
+    const sv = String(v == null ? '' : v);
+    if (!sv.trim()) return;
+    if (out.some((k) => k.secret === sv)) return;   // a no-op rotation is a no-op
+    out.push({ id: keyId(sv), secret: sv });
+  };
+  if (appCur && String(appCur).trim()) {
+    push(appCur);
+    push(process.env['SD_AUTH_SECRET_' + suffix + '_PREVIOUS']);
+    return out;                                     // NO platform fallback -- see above
+  }
+  push(getSecret());
+  push(process.env.SD_AUTH_SECRET_PREVIOUS);
+  return out;
+}
+
+// EVERY token this file issues goes through here, and that is deliberate. A
+// rotation that applied to session tokens but not to the SSO state token would
+// be a partial rotation -- the subtlest possible version of this bug, and one
+// that only shows up as a broken login half a day later.
+function signPayload(payload) {
+  // Keyed on the payload's own app. Every signer in this file includes one.
+  const key = signingKeys(payload && payload.app)[0];
+  const payloadB64 = b64url(JSON.stringify(
+    Object.assign({ kid: key.id }, payload)));
+  const sig = crypto.createHmac('sha256', key.secret).update(payloadB64).digest();
+  return payloadB64 + '.' + b64url(sig);
+}
+
+// Returns the parsed payload when SOME configured key signed it, else null.
+// Constant-time comparison per candidate, and a length check first because
+// timingSafeEqual throws on a mismatch rather than returning false.
+function verifySignedPayload(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 2) return null;
+  const [payloadB64, sigB64] = parts;
+  let givenSig;
+  try { givenSig = b64urlDecode(sigB64); } catch (e) { return null; }
+  // The app is read from the UNVERIFIED payload purely to choose which keys to
+  // try -- see the note on signingKeys(). If it is absent or names an app with
+  // no dedicated key, the platform keys are what get tried, which is exactly
+  // what a pre-stage-D token needs.
+  let claimedApp = null;
+  let claimedKid = null;
+  try {
+    const peek = JSON.parse(b64urlDecode(payloadB64).toString('utf8'));
+    if (peek && typeof peek.app === 'string') claimedApp = peek.app;
+    if (peek && typeof peek.kid === 'string') claimedKid = peek.kid;
+  } catch (e) { /* unparseable payload fails the signature check below anyway */ }
+
+  let keys;
+  try { keys = signingKeys(claimedApp); } catch (e) { return null; }
+
+  // If the token names a key we hold, try that one FIRST -- it is the common
+  // case and it keeps the expensive path short. It is not a shortcut around
+  // verification: the signature is still checked, and an unknown or absent
+  // `kid` falls through to trying every key.
+  if (claimedKid) {
+    keys = keys.slice().sort(function (a2, b2) {
+      return (b2.id === claimedKid ? 1 : 0) - (a2.id === claimedKid ? 1 : 0);
+    });
+  }
+
+  for (const k of keys) {
+    const expected = crypto.createHmac('sha256', k.secret).update(payloadB64).digest();
+    if (givenSig.length !== expected.length) continue;
+    if (crypto.timingSafeEqual(givenSig, expected)) {
+      try { return JSON.parse(b64urlDecode(payloadB64).toString('utf8')); }
+      catch (e) { return null; }
+    }
+  }
+  return null;
+}
+
 // ── PIN hashing (scrypt, per-credential random salt) ──────────────────────
 function hashPin(pin) {
   const salt = crypto.randomBytes(16).toString('hex');
@@ -289,7 +429,6 @@ function signSessionToken(claims) {
   if (roles.indexOf(claims.role) === -1) {
     throw new Error('signSessionToken: invalid role "' + claims.role + '" for app "' + app + '"');
   }
-  const secret = getSecret();
   const payload = {
     typ: 'session', // added 2026-08-08 -- see verifySessionToken's own comment for why this is a safe, non-breaking addition
     app: app,
@@ -299,10 +438,7 @@ function signSessionToken(claims) {
     iat: Date.now(),
     exp: Date.now() + SESSION_TTL_MS
   };
-  const payloadStr = JSON.stringify(payload);
-  const payloadB64 = b64url(payloadStr);
-  const sig = crypto.createHmac('sha256', secret).update(payloadB64).digest();
-  return payloadB64 + '.' + b64url(sig);
+  return signPayload(payload);
 }
 
 // verifySessionToken(token, license_hash, expectedApp) -> {employee_id, role, app} or null
@@ -316,20 +452,10 @@ function signSessionToken(claims) {
 // without either app being able to just claim to be the other the way the
 // old body.app_id string could.
 function verifySessionToken(token, license_hash, expectedApp) {
-  if (!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 2) return null;
-  const [payloadB64, sigB64] = parts;
-  let secret;
-  try { secret = getSecret(); } catch (e) { return null; }
-  const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest();
-  let givenSig;
-  try { givenSig = b64urlDecode(sigB64); } catch (e) { return null; }
-  if (givenSig.length !== expectedSig.length) return null;
-  if (!crypto.timingSafeEqual(givenSig, expectedSig)) return null;
-
-  let payload;
-  try { payload = JSON.parse(b64urlDecode(payloadB64).toString('utf8')); } catch (e) { return null; }
+  // SIGNATURE FIRST, through the shared verifier, so a rotation reaches this
+  // path too. Everything below is unchanged -- the claim checks were already
+  // right and are not what this stage is about.
+  const payload = verifySignedPayload(token);
   // SECURITY (found while adding SAIRNlaw's MFA pre-auth token, 2026-08-08):
   // a pre-auth token (issued after PIN success, BEFORE the MFA code is
   // verified) has the same payload shape as a session token (app,
@@ -375,11 +501,7 @@ function tokenFromRequest(req) {
 // below refuses any token whose typ isn't 'session').
 const PREAUTH_TTL_MS = 5 * 60 * 1000;
 function signPreAuthToken(claims) {
-  const secret = getSecret();
-  const payload = { typ: 'preauth', app: claims.app, employee_id: claims.employee_id, role: claims.role, license_hash: claims.license_hash, iat: Date.now(), exp: Date.now() + PREAUTH_TTL_MS };
-  const payloadB64 = b64url(JSON.stringify(payload));
-  const sig = crypto.createHmac('sha256', secret).update(payloadB64).digest();
-  return payloadB64 + '.' + b64url(sig);
+  return signPayload({ typ: 'preauth', app: claims.app, employee_id: claims.employee_id, role: claims.role, license_hash: claims.license_hash, iat: Date.now(), exp: Date.now() + PREAUTH_TTL_MS });
 }
 function verifyPreAuthToken(token, license_hash, expectedApp) {
   const claims = verifyRawToken(token);
@@ -393,19 +515,7 @@ function verifyPreAuthToken(token, license_hash, expectedApp) {
 // Shared signature/expiry verification, used by both verifySessionToken and
 // verifyPreAuthToken so the two never drift on the actual crypto check.
 function verifyRawToken(token) {
-  if (!token || typeof token !== 'string') return null;
-  const parts = token.split('.');
-  if (parts.length !== 2) return null;
-  const [payloadB64, sigB64] = parts;
-  let secret;
-  try { secret = getSecret(); } catch (e) { return null; }
-  const expectedSig = crypto.createHmac('sha256', secret).update(payloadB64).digest();
-  let givenSig;
-  try { givenSig = b64urlDecode(sigB64); } catch (e) { return null; }
-  if (givenSig.length !== expectedSig.length) return null;
-  if (!crypto.timingSafeEqual(givenSig, expectedSig)) return null;
-  let payload;
-  try { payload = JSON.parse(b64urlDecode(payloadB64).toString('utf8')); } catch (e) { return null; }
+  const payload = verifySignedPayload(token);
   if (!payload || !payload.exp || Date.now() > payload.exp) return null;
   return payload;
 }
@@ -500,25 +610,81 @@ function totpProvisioningUri(secretBase32, accountLabel, issuer) {
 // matters even with RLS/service-role-only access already in place).
 // Reuses SD_AUTH_SECRET (already treated as a real secret, never committed,
 // set in Vercel env) rather than requiring a second secret to provision.
-function getEncryptionKey() {
-  // A 32-byte key is required for AES-256 -- SD_AUTH_SECRET's own length is
-  // whatever Michael generated it as, so this derives a real fixed-length
-  // key from it via SHA-256 rather than assuming the raw secret is exactly
-  // 32 bytes.
+// ── STAGE B: THE ENCRYPTION DUTY IS SPLIT FROM THE SIGNING DUTY ───────────
+// 2026-09-17. `getEncryptionKey()` used to be sha256(SD_AUTH_SECRET), so ONE
+// string was both the session-signing HMAC key and the AES-256-GCM key for
+// secrets at rest: attorney MFA/TOTP secrets (api/law-auth.js) and a stored
+// Stedi API key (api/sc-credentials.js, api/sc-eligibility.js).
+//
+// TWO CONSEQUENCES, AND THE SECOND IS WHY THIS IS STAGE B RATHER THAN A NICETY.
+// A leak did not only forge sessions, it decrypted every secret at rest. And
+// the secret was effectively UNROTATABLE: changing it makes every stored
+// ciphertext undecryptable, NOTHING ERRORS AT DEPLOY TIME, and MFA starts
+// failing per-attorney as each one next signs in. "Rotate the shared secret"
+// reads as routine hygiene and was a data-loss event with a delayed fuse.
+//
+// THE FORMAT CARRIES THE KEY IT USED, rather than the trial decryption the
+// options document proposed. Trial decryption is SAFE here -- GCM's auth tag
+// makes a wrong key fail cleanly instead of yielding garbage -- but it cannot
+// tell you whether a backfill has finished, so the fallback could never be
+// removed with confidence. A version segment can:
+//
+//   legacy   iv.tag.ciphertext          -> sha256(SD_AUTH_SECRET)
+//   v2       v2.iv.tag.ciphertext       -> sha256(SD_ENCRYPTION_KEY)
+//
+// UNTIL `SD_ENCRYPTION_KEY` IS SET THIS DEPLOY CHANGES NOTHING. New writes stay
+// in the legacy format and old values keep decrypting, so the code can land
+// before the environment does -- the opposite order is what turns a migration
+// into an outage.
+const ENC_V2 = 'v2';
+
+function dedicatedEncryptionKey() {
+  const s = process.env.SD_ENCRYPTION_KEY;
+  if (!s || !String(s).trim()) return null;
+  // Derived rather than used raw for the same reason as before: AES-256 needs
+  // exactly 32 bytes and whatever is pasted into the dashboard is not.
+  return crypto.createHash('sha256').update(String(s)).digest();
+}
+
+function legacyEncryptionKey() {
   return crypto.createHash('sha256').update(getSecret()).digest();
 }
 function encryptSecret(plaintext) {
-  const key = getEncryptionKey();
+  const dedicated = dedicatedEncryptionKey();
+  const key = dedicated || legacyEncryptionKey();
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv('aes-256-gcm', key, iv);
   const encrypted = Buffer.concat([cipher.update(String(plaintext), 'utf8'), cipher.final()]);
   const authTag = cipher.getAuthTag();
-  return b64url(iv) + '.' + b64url(authTag) + '.' + b64url(encrypted);
+  const body = b64url(iv) + '.' + b64url(authTag) + '.' + b64url(encrypted);
+  return dedicated ? (ENC_V2 + '.' + body) : body;
 }
 function decryptSecret(stored) {
-  const parts = String(stored || '').split('.');
-  if (parts.length !== 3) return null;
-  const key = getEncryptionKey();
+  let parts = String(stored || '').split('.');
+  // WHICH KEY, DECIDED BY THE STORED FORMAT rather than by trying both. A `v2`
+  // value was written with the dedicated key and must not silently fall back to
+  // the signing secret: that fallback would quietly re-couple the two duties
+  // this split exists to separate.
+  let key;
+  if (parts.length === 4 && parts[0] === ENC_V2) {
+    const dedicated = dedicatedEncryptionKey();
+    if (!dedicated) {
+      // LOUD, because a null here is read by every caller as "no secret
+      // stored" -- which for MFA means "MFA is not set up". A v2 ciphertext
+      // with SD_ENCRYPTION_KEY unset is a CONFIGURATION error, not an absent
+      // credential, and the two must not look alike in a log.
+      console.error('auth: a v2 ciphertext was found but SD_ENCRYPTION_KEY is '
+        + 'not set. This is a configuration error, not a missing secret -- the '
+        + 'value was written by a deployment that had the key.');
+      return null;
+    }
+    key = dedicated;
+    parts = parts.slice(1);
+  } else if (parts.length === 3) {
+    key = legacyEncryptionKey();
+  } else {
+    return null;
+  }
   const iv = b64urlDecode(parts[0]);
   const authTag = b64urlDecode(parts[1]);
   const encrypted = b64urlDecode(parts[2]);
@@ -664,14 +830,10 @@ async function oidcVerifyIdToken(endpoints, idToken) {
 // verifyPreAuthToken/verifySessionToken do for their own typ).
 const SSO_STATE_TTL_MS = 10 * 60 * 1000;
 function signSsoState(claims) {
-  const secret = getSecret();
-  const payload = {
+  return signPayload({
     typ: 'sso_state', app: claims.app, license_hash: claims.license_hash,
     code_verifier: claims.code_verifier, iat: Date.now(), exp: Date.now() + SSO_STATE_TTL_MS
-  };
-  const payloadB64 = b64url(JSON.stringify(payload));
-  const sig = crypto.createHmac('sha256', secret).update(payloadB64).digest();
-  return payloadB64 + '.' + b64url(sig);
+  });
 }
 function verifySsoState(token, expectedApp) {
   const claims = verifyRawToken(token);

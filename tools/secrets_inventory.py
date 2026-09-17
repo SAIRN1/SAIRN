@@ -68,7 +68,10 @@ DOC = os.path.join(REPO, 'docs', 'SECRETS-INVENTORY.md')
 SECRETS = {
     'SUPABASE_SERVICE_ROLE_KEY': ('CREDENTIAL', 'the service-role key for the ONE Supabase project holding every app\'s data -- it bypasses RLS by design, so it is the single most consequential value on the platform'),
     'SUPABASE_URL': ('ENDPOINT', 'the one Supabase project every app reads and writes; not permission, but nothing works without it'),
-    'SD_AUTH_SECRET': ('CREDENTIAL', 'signs and verifies EVERY app\'s employee session token -- one secret, no per-app key and no overlap window, so a rotation logs everyone out of everything at once'),
+    'SD_AUTH_SECRET': ('CREDENTIAL', 'signs and verifies employee session tokens for every app that has no key of its own. CORRECTED 2026-09-17: it is no longer also the encryption key for secrets at rest (see SD_ENCRYPTION_KEY), and a rotation no longer logs everyone out -- SD_AUTH_SECRET_PREVIOUS gives it an overlap window and SD_AUTH_SECRET_<APP> scopes it per app'),
+    # -- ADDED 2026-09-17 WITH THE THREE-STAGE SPLIT --------------------------
+    'SD_ENCRYPTION_KEY': ('CREDENTIAL', 'the AES-256-GCM key for secrets at rest -- attorney MFA/TOTP secrets and a stored Stedi API key. Until this existed that duty was carried by SD_AUTH_SECRET, so rotating the SIGNING secret silently made every stored ciphertext undecryptable with nothing erroring at deploy time. ABSENCE IS NOT A FAILURE: with no value, writes stay in the legacy format and old values keep reading, which is what let the code land before the environment did'),
+    'SD_AUTH_SECRET_PREVIOUS': ('CREDENTIAL', 'the OUTGOING session-signing key, accepted on verify and never used to sign. Set it to the current secret, change SD_AUTH_SECRET, wait one SESSION_TTL_MS (12h) for every old token to expire, then clear it -- that is the whole rotation and nobody is signed out. Leaving it set indefinitely is the real hazard: it keeps a retired key valid for ever'),
     'OIDC_CLIENT_SECRET': ('CREDENTIAL', 'the OIDC client secret; the only one of the four OIDC values whose exposure is a security event rather than a misconfiguration'),
     # ── CLASSIFIED 2026-09-15, AND WHY THE ANSWER CHANGED ────────────────────
     # These two blocked this tool from generating for several hours, and I
