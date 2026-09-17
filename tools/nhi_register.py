@@ -475,10 +475,24 @@ class CouldNotTell(Exception):
 # clone is the defect, so leaving it out is not the safe option.
 def sibling_clones():
     import subprocess
+    # ── encoding= IS PINNED, AND I INTRODUCED THIS DEFECT MYSELF (2026-09-17)
+    # `text=True` decodes with the LOCALE DEFAULT, which is cp1252 on this
+    # platform. cc recorded the same one-line fail-open in tier_a_review_gate.py
+    # on 2026-09-15 -- its reader thread raised UnicodeDecodeError on this repo's
+    # box-drawing characters and the call returned TRUNCATED stdout rather than
+    # failing, so a diff-reading gate silently got a short diff and under-
+    # detected. I wrote these two calls the day AFTER that was recorded, and
+    # found them while reviewing the record that asks whether any other tool has
+    # the same shape. tools/subprocess_decode_check.py is the sweep.
+    #
+    # A remote URL is ASCII in practice, so this one would not have bitten --
+    # which is exactly why it is worth pinning rather than reasoning about: the
+    # defect is invisible until the bytes happen to be non-ASCII.
     try:
         mine = subprocess.run(
             ['git', '-C', REPO, 'config', '--get', 'remote.origin.url'],
-            capture_output=True, text=True, timeout=20).stdout.strip()
+            capture_output=True, text=True, encoding='utf-8', errors='replace',
+            timeout=20).stdout.strip()
     except Exception as e:
         raise CouldNotTell('could not read this clone\'s own origin (%s), so '
                            'no sibling can be compared to it' % e)
@@ -500,7 +514,8 @@ def sibling_clones():
         try:
             url = subprocess.run(
                 ['git', '-C', path, 'config', '--get', 'remote.origin.url'],
-                capture_output=True, text=True, timeout=20).stdout.strip()
+                capture_output=True, text=True, encoding='utf-8',
+                errors='replace', timeout=20).stdout.strip()
         except Exception:
             continue
         if url == mine:
