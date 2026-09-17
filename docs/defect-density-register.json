@@ -930,7 +930,22 @@
       ],
       "severity": "high",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
-      "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so"
+      "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+      "contributing_factors": [
+        {
+          "factor": "NO TIMEOUT ANYWHERE, so svData() never settled and the caller's await never returned. The backup neither succeeded nor failed -- it stopped, and nothing in the app is written to notice a promise that does not resolve.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A bound on the transport, landing an AbortError in the catch the callers already understand."
+        },
+        {
+          "factor": "A BACKUP IS THE ONE OPERATION WHOSE FAILURE IS DISCOVERED AT THE WORST POSSIBLE MOMENT. Silence here is not a missing toast; it is a veterinary practice believing it has a copy of its records and finding out otherwise on the day it needs one.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the record, because the severity of this one is not in the code path -- it is in when the consequence arrives."
+        }
+      ],
+      "recurrence_open": "The bound is per transport and the backup path shares it with every other write in the app. Nothing makes the BACKUP specifically prove it completed -- an unbounded hang is now reported, and a backup that returns success having written nothing would still read as a success."
     },
     {
       "app": "sairnvet",
@@ -962,7 +977,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
-      "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site"
+      "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+      "contributing_factors": [
+        {
+          "factor": "FIRE-AND-FORGET WITH NO TIMEOUT IS TWO FAULTS THAT LOOK LIKE ONE. Dropping the promise is deliberate for a best-effort counter; having no bound means the request can hang forever, holding a connection nobody will ever read the result of.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The transport bound covers it, so the deliberate fire-and-forget stays deliberate and stops being unbounded."
+        },
+        {
+          "factor": "A DELIBERATE SILENCE AND AN ACCIDENTAL ONE ARE THE SAME SHAPE IN THE SOURCE. This site is best-effort by decision; the site beside it was silent by omission, and only a comment distinguishes them.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The reason is stated at the site, and an arm asserts the reason is still there -- so a later reader cannot mistake the decision for the defect."
+        }
+      ],
+      "recurrence_open": "Nothing distinguishes a deliberate fire-and-forget from an accidental one mechanically; the distinction lives in prose beside each site, and prose is what the last three defects in this register were hiding behind."
     },
     {
       "app": "PLATFORM",
@@ -995,7 +1025,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
-      "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
+      "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+      "contributing_factors": [
+        {
+          "factor": "THE SCAN LOOKED FOR ONE SPELLING OF ERROR HANDLING. A two-argument `.then(ok, err)` handles failure exactly as well and contains no `.catch(`, so every site written that way was reported as unhandled -- a false finding produced by a syntactic test standing in for a semantic one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The two-argument form is recognised."
+        },
+        {
+          "factor": "THE ERROR RAN TOWARD FALSE FINDINGS, WHICH IS THE SELF-CORRECTING DIRECTION AND STILL COSTS. Somebody reads each one, and an over-reporting scan trains readers to skim -- which is how the REAL findings in the same output get skipped.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the reason to fix a false positive at all, since 'it only over-reports' is the usual argument for leaving one."
+        }
+      ],
+      "recurrence_open": "Recognising two spellings is not recognising handling. A promise handed to a helper that catches internally, or an await inside a try three frames up, still reads as unhandled -- and each new spelling is added the same way this one was, after somebody reads a false finding."
     },
     {
       "app": "sairnmechanical",
@@ -1650,7 +1695,34 @@
       ],
       "severity": "high",
       "subject": "fix(stonedesk): the only transport on the platform that said nothing",
-      "summary": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result"
+      "summary": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result",
+      "contributing_factors": [
+        {
+          "factor": "A STATE FLAG IS NOT A REPORT, and this one was a READ-path flag. sdData() set `_sdReadFailed[resource] = true` and returned null; that flag is consumed by read-path UI -- sdReadFailedNote, the public-catalog guard -- and does NOTHING WHATEVER for a write. So a failed write left no trace at the two sites that read no result.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A console call on the failure branches, matching the fourteen other transports. Deliberately not a toast: three of the six sites already toast, and the two that do not are a best-effort topic counter and a render-path save documented as non-blocking."
+        },
+        {
+          "factor": "FOUR OF THE SIX FLAGGED SITES WERE SAFE, and all six were read before anything was touched. The scan looks for a literal `.catch(` and sdData() cannot reject, so correct call sites -- logging on saved===null, toasting from the result, showing an inline error -- were reported alongside the real ones.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Reading every flagged site before touching any is the rule the scan prints on every run, and it is what saved five of SAIRNgrounds' eight the day before."
+        },
+        {
+          "factor": "ONE OF THE SILENT SITES IS saveSD3Data, WHOSE OWN COMMENT NOTES AN ORDER-TRACKING LINK RESOLVES TO THE SERVER COPY. A stage changed locally and nowhere else leaves a CUSTOMER reading a status that is no longer true -- the failure leaves the building.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the consequence, because 'a write was not reported' understates it: the audience for the stale value is outside the shop."
+        },
+        {
+          "factor": "STONEDESK IS THE LEAST SWEPT APP, NOT THE CLEANEST -- 2 records across 40,388 lines by two methods, fault injection not among them. A low defect count on a large app is a statement about attention, and it reads as a statement about quality.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The cluster was chosen for that reason rather than for size, and the reasoning is in the claim."
+        }
+      ],
+      "recurrence_open": "Fifteen transports now carry a console call. Nothing requires a SIXTEENTH to, and the sweep that measures it is the same tool corrected in this commit for accepting a state flag as evidence -- so the measurement and the thing measured share an author and a blind spot."
     },
     {
       "app": "PLATFORM",
@@ -1681,7 +1753,28 @@
       ],
       "severity": "high",
       "subject": "fix(stonedesk): the only transport on the platform that said nothing",
-      "summary": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result"
+      "summary": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result",
+      "contributing_factors": [
+        {
+          "factor": "AN ALTERNATION DECIDED NOTHING FOR FOURTEEN APPS AND EVERYTHING FOR ONE. The arm tested `console.(warn|error)` OR `LastErr|_sdReadFailed|provisioned =`; fourteen transports satisfied the first branch, so the second was never load-bearing until StoneDesk -- THE ONE APP THE ARM HAD TO CATCH IS THE ONE IT CLEARED.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The rule now requires a console call or ONE hop to a named logger, with controls asserting that a bare state flag FAILS and a hop to a SILENT helper FAILS."
+        },
+        {
+          "factor": "A PERMISSIVE ALTERNATION IS INVISIBLE WHILE THE STRICT HALF HAPPENS TO HOLD. Every passing run was evidence about the first branch and said nothing about the second, and there is no output difference between 'passed strictly' and 'passed on the loose clause'.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All 15 apps were measured against the STRICT rule before the change, so tightening could not red a working app -- the tightening is separable from the finding."
+        },
+        {
+          "factor": "IT SLIPPED THE AUTHOR'S OWN SWEEP THE DAY BEFORE. The tool and the defect it missed were written by the same session, one day apart, which is the independence problem in its smallest form.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded rather than smoothed over; the controls are what make the corrected rule checkable by somebody else."
+        }
+      ],
+      "recurrence_open": "The rule now accepts ONE hop to a named logger, which is a bounded generalisation and not a proof: a two-hop chain ending in a real console call FAILS, and a one-hop chain to a logger that later goes silent PASSES until something re-reads it."
     },
     {
       "app": "PLATFORM",
@@ -2657,7 +2750,22 @@
       "rules": [],
       "severity": "moderate",
       "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
-      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around"
+      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+      "contributing_factors": [
+        {
+          "factor": "THE SAME CHANGE THAT GAVE THE DOCUMENTS A SERVER GAVE THEM TIER A STATUS, and a resource becomes Tier A the moment it is durable -- not when somebody classifies it. The classification is a separate action and it did not happen in the same commit.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded so the pairing is visible: syncing a collection and tiering it are one decision made in two places."
+        },
+        {
+          "factor": "A REMOVAL PATH IS NOT PART OF MAKING SOMETHING WORK, so it is the half that gets deferred. Nothing about a purchase order or a receipt fails without one -- until a customer asks for their data to be deleted, or a row is created in error and cannot be taken back.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The removal path is named as owed rather than written here; the grant line and the soft-delete shape are a scoped change of their own."
+        }
+      ],
+      "recurrence_open": "Nothing refuses a new Tier A resource that has no removal path. The tier register records the tier and the schema records the grants, and the two are not joined -- so the next durable resource arrives the same way this one did."
     },
     {
       "app": "PLATFORM",
