@@ -2095,6 +2095,16 @@
       "claimed_at_epoch": 1789615824.5821314,
       "status": "released",
       "released_at": "2026-09-17T03:46:04Z"
+    },
+    {
+      "id": "hank-1789657297",
+      "session": "hank",
+      "subject": "fetch-json-response-shape",
+      "task": "sweep for callers treating Response as the body",
+      "claimed_at": "2026-09-17T15:01:37Z",
+      "claimed_at_epoch": 1789657297.3761852,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
