@@ -1732,8 +1732,8 @@
       "task": "independent review of hank soft_delete spread assertion naming the seven sairncode tier A resources",
       "claimed_at": "2026-09-17T17:56:16Z",
       "claimed_at_epoch": 1789667776.1967854,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T18:34:24Z"
     }
   ]
 }
