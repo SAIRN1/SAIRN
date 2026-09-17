@@ -42,7 +42,7 @@ It was built the same day. Everything except the caller exists:
 | Registry | `api/_resources/sairndental.js` — `dnt_rollup`, with a comment explaining that an unregistered name is refused by the envelope before any handler runs |
 | Tier | `docs/CRITICALITY-TIERS.md:222` — **A**, reasoning from *"a practice-group owner makes staffing and investment decisions from per-office production"* |
 | Tests | `api/_lib/dnt-rollup.test.js` **27** arms, `api/_lib/dnt-rollup-endpoint.test.js` 12 arms — both run for this pass, 39 passing, 0 failing. (`SAIRN-OPEN-WORK-INDEX.md:176` says 19 for the first; it was 19 when written and the suite has grown. Counted, not quoted) |
-| Independent review | **Twice.** Hank's review (`ce7764fa`, `tests/dnt_rollup_review_probe.js`) found 2 real findings; Cody and Fourth carry further obligations on it |
+| Independent review | **Twice, and both findings are now CLOSED.** Hank's review (`ce7764fa`, `tests/dnt_rollup_review_probe.js`) found 2 real findings; both were fixed and discharged in `91618cc6` — **which landed 40 minutes after this pass read the file, and is corrected here rather than left standing.** The suites are 27/27 and 12/12. None of it touches reachability |
 | **Caller** | **NONE.** `dnt_rollup` appears **0 times** in `sairndental.html` — and 0 times in every `.html` file in the repo |
 
 Beyond the resource name, the app has no vocabulary for the feature at all:
@@ -107,8 +107,11 @@ test suites, `tests/dnt_rollup_review_probe.js` and the resource registry.
 ### 0.3 What I am NOT claiming
 
 **Not that the code is wrong.** It is careful, owner-gated, reviewed twice, and
-its two open review findings are about null-vs-zero precision, not about
-reachability. Nothing here re-opens those.
+its two review findings were about null-vs-zero precision, not about
+reachability — and both were closed in `91618cc6` while this document was being
+written. Nothing here re-opens them, and the correction is recorded rather than
+silently applied, because "two open findings" is exactly the kind of tense a
+status document gets wrong by being right at the moment it was read.
 
 **Not that a panel was forgotten rather than deferred.** I looked for a written
 deferral and found none — `rollup` and `roll-up` appear **0 times** in
