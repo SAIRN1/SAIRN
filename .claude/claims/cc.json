@@ -1594,6 +1594,16 @@
       "claimed_at_epoch": 1789609925.0933838,
       "status": "released",
       "released_at": "2026-09-17T02:06:22Z"
+    },
+    {
+      "id": "cc-1789611046",
+      "session": "cc",
+      "subject": "tier-a-discharge-and-exports",
+      "task": "discharge mechanism, export_coverage label plus pin, alf and mech export registries",
+      "claimed_at": "2026-09-17T02:10:46Z",
+      "claimed_at_epoch": 1789611046.2180629,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
