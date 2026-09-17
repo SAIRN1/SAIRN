@@ -7387,6 +7387,61 @@
       "recurrence_open": "NOT CLOSED. The sweep only sees a plain local name bound in the same function: a Response passed into another function, stored on an attribute or put in a dict is invisible to it, and that is stated in the tool rather than discovered later. Nothing checks OTHER transports with the same shape -- a namedtuple return that a caller treats as its payload is a general Python shape and only sairn_http is swept."
     },
     {
+      "commit": "155e5b8f7f1e",
+      "date": "2026-09-17",
+      "subject": "fix(sairnmechanical): the panel now computes the dispatch eligibility its own subtitle claimed",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "sairnmechanical.html",
+        "tests/sairnmechanical_credential_export.js"
+      ],
+      "lines_added": 230,
+      "lines_removed": 0,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnmechanical.html claimed a capability it never invoked. The Technician Credentials panel subtitle read 'Licences, certifications and expiry -- the record dispatch eligibility is computed from', while every mechData() call in the file was read or write. api/_lib/mech-credentials.js evaluateEligibility, the eligibility action in api/sd-data.js, the registry entry in api/_resources/sairnmechanical.js and ten engine test arms all existed and nothing in the product reached them; the word eligibility appeared exactly once in the app, in that sentence. Not a security hole -- nothing was bypassed because nothing was called -- but a claim the product did not support. Fixed by wiring a dispatch-eligibility card that sends the action, renders the server verdict without recomputing any expiry, and distinguishes a refusal from an empty answer.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The eligibility engine, endpoint and registry entry landed 2026-09-02 and the panel subtitle predates them; no single commit both made the claim and omitted the call, so there is no injection commit that introduced the mismatch -- it opened when the server half shipped without a client half."
+      },
+      "citation_note": "A check that stopped checking, in its UI form: the credentials panel asserted that dispatch eligibility is computed from the credential board, and no code in the app ever requested that computation. The sentence read as a description of behaviour and was the only occurrence of the word in the file.",
+      "contributing_factors": [
+        {
+          "factor": "the server half of the capability shipped without a client caller, and nothing required the two to land together",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the credentials panel now sends the eligibility action from its own inputs and renders the server verdict"
+        },
+        {
+          "factor": "the module suite drives the ENGINE, so it could never observe whether the product calls it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "7 wiring arms in tests/sairnmechanical_credential_export.js search the APP file for the action being sent and for a control that invokes it"
+        },
+        {
+          "factor": "a UI subtitle asserted behaviour, and prose in a panel is not checked by anything the way a function is",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "no general mechanism proposed: checking every descriptive sentence in an app against the code behind it is the fabricated-KPI problem generalised, and this platform has not found a tractable form of it. Named so the next instance is recognised rather than re-derived."
+        },
+        {
+          "factor": "the 2026-08-27 research already named this exact shape as a market-wide failing (G3, enforcement claimed not documented) and the app was not checked against its own audit row",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the 2026-09-17 row-by-row re-derivation is what found it, and its method now includes a wiring check -- panel, nav target and caller -- rather than marker counts alone"
+        }
+      ],
+      "recurrence_open": "Gating scheduling on the eligibility answer is still open and is a product decision; nothing refuses a dispatch today. The same server-half-without-a-caller shape is not checked for anywhere else on the platform."
+    },
+    {
       "commit": "1f25f8bf6613",
       "date": "2026-09-17",
       "subject": "fix(claims): the duplicate this tool could not see was your own claim",
@@ -7727,6 +7782,63 @@
       "recurrence_open": "the worktree-at-HEAD pattern is used by other probes in tests/ that do not push, where it is harmless today and would not be if one of them gained a network step"
     },
     {
+      "commit": "a8fe1485d2c0",
+      "date": "2026-09-17",
+      "subject": "fix(dental): the CDT catalogue was versioned and the charges were not -- a posted charge re-read whatever the catalogue said today",
+      "files": [
+        "api/_lib/dental-bi.js",
+        "api/_lib/dental-bi.test.js",
+        "sairndental.html",
+        "tests/sairndental_outbound_queue.js"
+      ],
+      "lines_added": 144,
+      "lines_removed": 1,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairndental.html's addChargeEntry() recorded only procedure_type_id, and a procedure type is a mutable row carrying cdt_code, cdt_version and the effective window. The ADA publishes a new CDT edition annually, so the day a practice updates its catalogue every historical charge silently re-reads the new code and edition -- a charge correctly billed as D1110 under CDT 2025 renders, exports through dnt_charges and reports as whatever the row says today, with no error and no warning. The catalogue had full versioning (cdtStatusFor, cdtMaintenance, effective windows); the transactions had none, so the ledger stopped describing what was actually claimed. cdt_code and cdt_version are now stamped at posting and exported from the charge rather than joined.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The charge record shape predates the CDT versioning work entirely; there is no single commit where storing the code became wrong, because it became wrong when the catalogue gained an edition field that charges could then drift from. Naming a sha would be picking one arbitrarily."
+      },
+      "citation_note": "2.3 in its data form: the charge carried a POINTER to a fact rather than the fact, so every read of a historical charge re-derived its CDT code from a mutable row -- a value with a tense, read without a read of when it was true.",
+      "phase_note": "addChargeEntry() has recorded procedure_type_id and not the code since the ledger was built. The versioning work that came later added cdt_version and effective windows to the CATALOGUE and never revisited the transaction, so the defect is the join, not a slip.",
+      "contributing_factors": [
+        {
+          "factor": "The charge stored a foreign key to a MUTABLE catalogue row instead of the billed values, so history was re-derived on every read rather than recorded.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "cdt_code and cdt_version are stamped onto the charge at posting, alongside estimated_insurance_portion which was already stored for the same reason."
+        },
+        {
+          "factor": "The CDT versioning pass added editions and effective windows to the CATALOGUE and never asked what the TRANSACTIONS needed, so a feature that was about time left the time-sensitive record untouched.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The charge now records what it was billed under; the historical compliance verdict is named as deliberately out of scope rather than half-built."
+        },
+        {
+          "factor": "Nothing could observe the drift: the client harness had no catalogue at all, so no arm could move a procedure type underneath a posted charge.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "procedureTypes() is overridable per-harness and five arms exercise the stamp, including the catalogue moving after the post."
+        },
+        {
+          "factor": "The failure is SILENT and DELAYED by a year -- it fires when the ADA publishes the next edition and the practice updates the catalogue, which is a routine maintenance action nobody would connect to the ledger changing.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Existing charges written before this commit still have no stamp and cannot be back-filled -- the catalogue may already have moved, so inferring what they were billed under would invent it. Recorded rather than papered over."
+        }
+      ],
+      "recurrence_open": "Charges posted BEFORE this commit carry no stamp and must not be back-filled: if the catalogue has already moved there is no way to recover what they were billed under, and guessing would be worse than a blank. Also unclosed: treatment-plan items and the denial/AR tiers resolve the same way through procedure_type_id and were not changed here -- only the charge, which is what goes on a claim."
+    },
+    {
       "commit": "b135eaa27620",
       "date": "2026-09-17",
       "subject": "fix(item6): the four \"re-read or drop\" entries could never be discharged, and the register's denominator was a sentence",
@@ -7783,6 +7895,62 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
+    },
+    {
+      "commit": "b95dd3fc257b",
+      "date": "2026-09-17",
+      "subject": "fix(claims): a brief restatement of an active claim no longer answers CLEAR",
+      "files": [
+        "tests/claims/run_claim_audit_probe.py",
+        "tests/claims/run_matcher_probe.py",
+        "tests/claims/run_own_claim_overlap_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_claim.py returned CLEAR against a readable, active, overlapping claim. Fourth checked 'tier A rotation' while cody held 'invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation'; both share the significant tokens tier and rotation, which are adjacent in the short phrasing and four apart in the long one. Every rule in block_reason rests on adjacent word pairs, so two intervening words made the match vanish and the gate said CLEAR on work another session was actively doing. Fixed with a containment rule -- one task's significant words entirely inside the other's -- measured at ONE extra block over all 171,477 cross-session pairs in the record, against 294 for the windowed-pair alternative whose extra blocks read as generic engineering vocabulary.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "Adjacency has been block_reason's evidence since the matcher was written and the residual is named in its own body; no commit introduced the brittleness, and none is identifiable as the moment it became a defect rather than a documented limit."
+      },
+      "citation_note": "Grep cannot tell code from text that describes code -- the same limitation one level up: block_reason's evidence is an ADJACENT word pair, so two words that are adjacent in one phrasing and separated in another produce no match, and a restatement of the same task reads as unrelated.",
+      "contributing_factors": [
+        {
+          "factor": "every rule in block_reason rests on ADJACENT word pairs, so an inserted word destroys the evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a containment rule added after the phrase rule, keyed on the task only, measured at +1 block over 171477 cross-session pairs"
+        },
+        {
+          "factor": "the residual was already documented in block_reason own body and left open because the obvious widening measured badly, and no narrower rule was attempted",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the narrower rule was measured against the same corpus before being written, and the rejected windowed alternative is recorded with its counts and its worst false pairs"
+        },
+        {
+          "factor": "every rule in this function is a POSITIVE signal and nothing fires on absence, so every gap in the rule set resolves to CLEAR rather than to an error or a doubt",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "stated at the top of block_reason as the shared cause linking this to the duplicate-claim family, so the next gap is recognised as the same shape rather than re-derived"
+        },
+        {
+          "factor": "no arm existed for a brief restatement of a longer claim, which is the commonest way a person retypes their own task into check",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "8 arms in tests/claims/run_matcher_probe.py including the live case both ways round and two controls pinning that generic vocabulary must not block"
+        }
+      ],
+      "recurrence_open": "The synonym case is unchanged and pinned as open: triage plan staleness checker against triage staleness tool, where neither token set contains the other and checker/tool are synonyms no matcher here can know."
     },
     {
       "commit": "d8d000e0cffd",
@@ -7891,118 +8059,6 @@
         }
       ],
       "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
-    },
-    {
-      "commit": "155e5b8f7f1e",
-      "date": "2026-09-17",
-      "subject": "fix(sairnmechanical): the panel now computes the dispatch eligibility its own subtitle claimed",
-      "files": [
-        "docs/tier-a-reviews.json",
-        "sairnmechanical.html",
-        "tests/sairnmechanical_credential_export.js"
-      ],
-      "lines_added": 230,
-      "lines_removed": 0,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "sairnmechanical.html claimed a capability it never invoked. The Technician Credentials panel subtitle read 'Licences, certifications and expiry -- the record dispatch eligibility is computed from', while every mechData() call in the file was read or write. api/_lib/mech-credentials.js evaluateEligibility, the eligibility action in api/sd-data.js, the registry entry in api/_resources/sairnmechanical.js and ten engine test arms all existed and nothing in the product reached them; the word eligibility appeared exactly once in the app, in that sentence. Not a security hole -- nothing was bypassed because nothing was called -- but a claim the product did not support. Fixed by wiring a dispatch-eligibility card that sends the action, renders the server verdict without recomputing any expiry, and distinguishes a refusal from an empty answer.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "The eligibility engine, endpoint and registry entry landed 2026-09-02 and the panel subtitle predates them; no single commit both made the claim and omitted the call, so there is no injection commit that introduced the mismatch -- it opened when the server half shipped without a client half."
-      },
-      "citation_note": "A check that stopped checking, in its UI form: the credentials panel asserted that dispatch eligibility is computed from the credential board, and no code in the app ever requested that computation. The sentence read as a description of behaviour and was the only occurrence of the word in the file.",
-      "contributing_factors": [
-        {
-          "factor": "the server half of the capability shipped without a client caller, and nothing required the two to land together",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the credentials panel now sends the eligibility action from its own inputs and renders the server verdict"
-        },
-        {
-          "factor": "the module suite drives the ENGINE, so it could never observe whether the product calls it",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "7 wiring arms in tests/sairnmechanical_credential_export.js search the APP file for the action being sent and for a control that invokes it"
-        },
-        {
-          "factor": "a UI subtitle asserted behaviour, and prose in a panel is not checked by anything the way a function is",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "no general mechanism proposed: checking every descriptive sentence in an app against the code behind it is the fabricated-KPI problem generalised, and this platform has not found a tractable form of it. Named so the next instance is recognised rather than re-derived."
-        },
-        {
-          "factor": "the 2026-08-27 research already named this exact shape as a market-wide failing (G3, enforcement claimed not documented) and the app was not checked against its own audit row",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the 2026-09-17 row-by-row re-derivation is what found it, and its method now includes a wiring check -- panel, nav target and caller -- rather than marker counts alone"
-        }
-      ],
-      "recurrence_open": "Gating scheduling on the eligibility answer is still open and is a product decision; nothing refuses a dispatch today. The same server-half-without-a-caller shape is not checked for anywhere else on the platform."
-    },
-    {
-      "commit": "a8fe1485d2c0",
-      "date": "2026-09-17",
-      "subject": "fix(dental): the CDT catalogue was versioned and the charges were not -- a posted charge re-read whatever the catalogue said today",
-      "files": [
-        "api/_lib/dental-bi.js",
-        "api/_lib/dental-bi.test.js",
-        "sairndental.html",
-        "tests/sairndental_outbound_queue.js"
-      ],
-      "lines_added": 144,
-      "lines_removed": 1,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairndental.html's addChargeEntry() recorded only procedure_type_id, and a procedure type is a mutable row carrying cdt_code, cdt_version and the effective window. The ADA publishes a new CDT edition annually, so the day a practice updates its catalogue every historical charge silently re-reads the new code and edition -- a charge correctly billed as D1110 under CDT 2025 renders, exports through dnt_charges and reports as whatever the row says today, with no error and no warning. The catalogue had full versioning (cdtStatusFor, cdtMaintenance, effective windows); the transactions had none, so the ledger stopped describing what was actually claimed. cdt_code and cdt_version are now stamped at posting and exported from the charge rather than joined.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "The charge record shape predates the CDT versioning work entirely; there is no single commit where storing the code became wrong, because it became wrong when the catalogue gained an edition field that charges could then drift from. Naming a sha would be picking one arbitrarily."
-      },
-      "citation_note": "2.3 in its data form: the charge carried a POINTER to a fact rather than the fact, so every read of a historical charge re-derived its CDT code from a mutable row -- a value with a tense, read without a read of when it was true.",
-      "phase_note": "addChargeEntry() has recorded procedure_type_id and not the code since the ledger was built. The versioning work that came later added cdt_version and effective windows to the CATALOGUE and never revisited the transaction, so the defect is the join, not a slip.",
-      "contributing_factors": [
-        {
-          "factor": "The charge stored a foreign key to a MUTABLE catalogue row instead of the billed values, so history was re-derived on every read rather than recorded.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "cdt_code and cdt_version are stamped onto the charge at posting, alongside estimated_insurance_portion which was already stored for the same reason."
-        },
-        {
-          "factor": "The CDT versioning pass added editions and effective windows to the CATALOGUE and never asked what the TRANSACTIONS needed, so a feature that was about time left the time-sensitive record untouched.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The charge now records what it was billed under; the historical compliance verdict is named as deliberately out of scope rather than half-built."
-        },
-        {
-          "factor": "Nothing could observe the drift: the client harness had no catalogue at all, so no arm could move a procedure type underneath a posted charge.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "procedureTypes() is overridable per-harness and five arms exercise the stamp, including the catalogue moving after the post."
-        },
-        {
-          "factor": "The failure is SILENT and DELAYED by a year -- it fires when the ADA publishes the next edition and the practice updates the catalogue, which is a routine maintenance action nobody would connect to the ledger changing.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "Existing charges written before this commit still have no stamp and cannot be back-filled -- the catalogue may already have moved, so inferring what they were billed under would invent it. Recorded rather than papered over."
-        }
-      ],
-      "recurrence_open": "Charges posted BEFORE this commit carry no stamp and must not be back-filled: if the catalogue has already moved there is no way to recover what they were billed under, and guessing would be worse than a blank. Also unclosed: treatment-plan items and the denial/AR tiers resolve the same way through procedure_type_id and were not changed here -- only the charge, which is what goes on a claim."
     }
   ],
   "started": "2026-09-09"

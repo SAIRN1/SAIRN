@@ -130,10 +130,39 @@ real = C.load_all(from_origin=False)
 check('the real claim record loads', isinstance(real, list) and len(real) > 50,
       real and len(real))
 rc, out = audit(real)
-check('every exact duplicate in the real record PREDATES its guard -- the '
-      'finding this command exists to make legible',
-      'AFTER THE GUARD' not in out,
-      [l for l in out.split('\n') if 'AFTER' in l][:3])
+# -- THIS ARM ASSERTED "NO POST-GUARD DUPLICATE AT ALL" AND THAT IS TOO
+# -- STRONG (2026-09-17). It went red on a pair the guard was never able to
+# -- catch, and the guard is not at fault.
+#
+# fourth held `... supabase_admin ownership ...` from 02:54 to 14:50 -- 11.9
+# hours, never released -- and took a second overlapping claim at 13:56. The
+# own-claim guard reads is_active(), and STALE_HOURS had expired the first one
+# hours earlier, so there was nothing live to block against. `audit` reads the
+# real held-span from `released_at`, by which measure the session genuinely held
+# two claims on one piece of work.
+#
+# BOTH READINGS ARE RIGHT AND THEY MUST STAY DIFFERENT. If the guard used the
+# held-span it would block for ever on a row somebody forgot to release; if
+# `audit` used expiry it would under-count what the record actually shows.
+#
+# So this now asserts what the guard is ACCOUNTABLE for: no post-guard pair
+# where BOTH claims were live when the second was made. A pair the expiry let
+# through is a finding about release discipline, not about the guard -- and the
+# second arm pins that distinction so it cannot be folded into a clean number.
+_post = [q for q in C.same_work_pairs(real)
+         if (q[2].get('claimed_at_epoch') or 0) > C.SELF_GUARDED_FROM]
+_catchable = [q for q in _post
+              if (q[2].get('claimed_at_epoch') or 0)
+              - (q[1].get('claimed_at_epoch') or 0) < C.STALE_HOURS * 3600]
+check('no post-guard duplicate was one the guard COULD have caught -- both '
+      'claims live at the moment the second was made',
+      not _catchable,
+      [(q[0], q[1].get('claimed_at'), q[2].get('claimed_at'), q[3]) for q in _catchable])
+check('CONTROL: a post-guard pair the EXPIRY let through is still REPORTED '
+      'rather than folded into a clean count',
+      ('AFTER THE GUARD' in out) == bool(_post),
+      'audit says AFTER-THE-GUARD=%s, direct count says %d'
+      % ('AFTER THE GUARD' in out, len(_post)))
 check('CONTROL: and there really ARE duplicates to bin, so the arm above is '
       'not passing over an empty set',
       'duplicates (same session, subject and task): 0' not in out.lower(),

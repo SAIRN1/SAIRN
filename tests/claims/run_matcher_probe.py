@@ -224,6 +224,60 @@ arm('CONTROL: sharing two NON-adjacent words still does not block',
 arm('CONTROL: a genuinely empty comparison is None, not a match',
     _r('', '', '', '') is None)
 
+# ── CONTAINMENT: ONE TASK ENTIRELY INSIDE THE OTHER (2026-09-17) ──────────
+# THE LIVE CASE, verbatim. Fourth checked `tier A rotation` while cody held,
+# active and readable, `... tier A negative control rotation` -- and got CLEAR.
+# Nothing was stale and nothing failed to fetch. `tier` and `rotation` are
+# ADJACENT in the short phrasing and FOUR APART in the long one, and every rule
+# before this one rests on adjacency.
+CODY_ROTATION = ('invisible_in_pattern probe stale anchor, sairnlaw citation '
+                 'format rule convergence, tier A negative control rotation')
+arm('THE LIVE CASE: a brief restatement of an active claim now BLOCKS',
+    _r('fourth', 'tier A rotation', 'cody', CODY_ROTATION) is not None,
+    'the false CLEAR is back: two words inserted between `tier` and `rotation` '
+    'makes every adjacency rule miss it')
+arm('...and it blocks SYMMETRICALLY, whichever side checks first',
+    _r('cody', CODY_ROTATION, 'fourth', 'tier A rotation') is not None)
+arm('...and the reason NAMES the contained words rather than a bare token',
+    'rotation tier' in (_r('fourth', 'tier A rotation', 'cody', CODY_ROTATION) or ''),
+    _r('fourth', 'tier A rotation', 'cody', CODY_ROTATION))
+
+# ── THE TASK ONLY, NEVER THE SUBJECT ─────────────────────────────────────
+# Three of the four sessions use their own session name as the subject for a
+# whole day's work. Folding the subject into the containment test makes every
+# pair of one session's claims contain each other, which is unusable -- measured
+# before the rule was written. This arm is what catches a later "simplification"
+# that passes the subject through.
+arm('the SUBJECT is not part of the containment test',
+    _r('cc', 'alpha beta gamma', 'cody', 'delta epsilon') is None,
+    'two unrelated tasks matched, so the subject or a bucket name is leaking in')
+
+# ── IT MUST NOT FIRE ON A SINGLE SHARED WORD ─────────────────────────────
+# A one-token task inside a long one is `tier` against everything. Both sides
+# need two significant words or the rule is a rare-token rule wearing a
+# different name -- the one measured at +74 blocks and removed.
+arm('a ONE-word task does not contain anything',
+    _r('cc', 'rotation', 'cody', CODY_ROTATION) is None,
+    'a single shared word is now blocking, which is the rare-token rule the '
+    'block above records as measured and rejected')
+arm('...and a one-word task on the OTHER side does not either',
+    _r('cc', CODY_ROTATION, 'cody', 'rotation') is None)
+
+# ── THE COST, PINNED AS A NUMBER ─────────────────────────────────────────
+# Measured over all 171,477 cross-session pairs in the record: the windowed-pair
+# alternative added 294 blocks at k=3, whose commonest new pairs were
+# `validation + write` (x10), `controls + suite` (x9), `path + write` (x8) and
+# `only + read` (x7) -- ordinary engineering vocabulary. Containment added ONE.
+# These arms pin the SHAPE of that difference so a later widening has to face it.
+arm('CONTROL: generic engineering vocabulary in common does NOT block',
+    _r('cc', 'generic write validation on the dnt money resource',
+       'hank', 'validation public write endpoints versus in-app rules') is None,
+    'a windowed or rare-token rule has been reintroduced -- `validation` and '
+    '`write` in common is the commonest false pair in the corpus')
+arm('CONTROL: read-only against write-only does not block',
+    _r('cc', 'material and regional code coverage read only',
+       'cody', 'system settings write only never read') is None)
+
 # ── THE RESIDUAL, PINNED AS OPEN ──────────────────────────────────────────
 # `triage plan staleness checker` vs an active `triage staleness tool` is the
 # same work and still answers CLEAR: no adjacent pair exists in either

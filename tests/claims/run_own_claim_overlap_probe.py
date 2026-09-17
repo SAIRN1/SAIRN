@@ -277,9 +277,18 @@ MUTATIONS = [
     ('the subject is passed back into the self matcher',
      "    reason = block_reason('', mine_task, '', their_task)",
      '    reason = block_reason(mine_task, mine_task, their_task, their_task)'),
-    ('an expired claim is treated as held',
-     '        if not is_active(c):\n            continue\n        reason, kind = self_overlap(task, c.get(\'task\'))',
-     '        if c.get(\'status\') != \'active\':\n            continue\n        reason, kind = self_overlap(task, c.get(\'task\'))'),
+    # ── THIS ANCHOR WENT STALE WHEN THE CODE UNDER IT CHANGED (2026-09-17)
+    # It mutated `if not is_active(c): continue` into a raw status check --
+    # which is now exactly what the function does, because expired-but-
+    # unreleased became a REPORTED third state rather than a skipped one. The
+    # probe's count-exactly-once assertion caught that rather than the control
+    # quietly passing, which is that arm working.
+    #
+    # The equivalent sabotage today is to collapse the third state back into a
+    # verdict: treat an expired own claim as held, and refuse on it.
+    ('an expired claim BLOCKS instead of being reported',
+     "        out.append((c, reason, 'expired' if not is_active(c) else kind))",
+     '        out.append((c, reason, kind))'),
 ]
 src = io.open(SUBJECT, encoding='utf-8', newline='').read()
 before_hash = hashlib.sha256(src.encode('utf-8')).hexdigest()

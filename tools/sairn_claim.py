@@ -262,6 +262,19 @@ def apps_in(*parts):
 def block_reason(mine_subj, mine_task, their_subj, their_task):
     """Why these two claims collide, or None if they only share vocabulary.
 
+    ── EVERY RULE HERE IS A POSITIVE SIGNAL, AND THAT IS THE SHARED CAUSE ────
+    Worth stating once, at the top, because this file has now had two defects
+    of apparently different shapes and they are the same defect underneath.
+    2026-09-17's false CLEAR (a brief restatement of an active claim, below)
+    and the duplicate-claim family the GUARDS table records both end the same
+    way: NO BLOCK. Nothing in this function fires on absence. It is an OR of
+    things that must be spotted, so every gap in the rule set -- a scope the
+    matcher was never pointed at, a phrasing it cannot survive -- resolves to
+    CLEAR rather than to an error or a doubt.
+    That is why each one costs real work before anybody notices, and why the
+    honest fix is always a NARROWER new signal measured against the corpus,
+    never a looser existing one.
+
     Returns a human-readable reason so the printed block names the EVIDENCE
     rather than a bare token -- "same app: sairnvet" is actionable, "overlap
     on: name" is what six sessions had to argue with.
@@ -284,6 +297,65 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
     if shared_phrase:
         pair = sorted(sorted(shared_phrase, key=lambda p: sorted(p))[0])
         return 'shared phrase: "%s"' % ' '.join(pair)
+    # ── ONE TASK'S WORDS ARE ALL INSIDE THE OTHER'S (2026-09-17) ───────────
+    # THE FALSE CLEAR THIS CLOSES, reproduced exactly. Fourth checked
+    #
+    #     "tier A rotation"
+    #
+    # while cody held, active and readable,
+    #
+    #     "invisible_in_pattern probe stale anchor, sairnlaw citation format
+    #      rule convergence, tier A negative control rotation"
+    #
+    # and the answer was CLEAR. Nothing was stale and nothing failed to fetch:
+    # the matcher simply could not see it. `tier` and `rotation` are ADJACENT in
+    # the short phrasing and FOUR APART in the long one, and every rule above
+    # this line rests on adjacency -- `bigrams()` forms adjacent pairs only. Two
+    # words inserted between them makes the match vanish.
+    #
+    # THAT IS THE RESIDUAL THE BLOCK BELOW ALREADY NAMED, arriving for real:
+    # "one intervening word breaks adjacency". A person restating their own task
+    # more briefly is the commonest way it happens, and a brief restatement is
+    # exactly what somebody types into `check`.
+    #
+    # ── THE OBVIOUS FIX WAS MEASURED AND REJECTED, AGAIN ──────────────────
+    # Widening adjacency to a WINDOW (two significant tokens within k places)
+    # was implemented and run over all 171,477 cross-session claim pairs in the
+    # record:
+    #
+    #     current 5074 blocks | k=2 +154 | k=3 +294 | k=4 +440 | k=5 +575
+    #
+    # k=3 is the smallest that catches the incident, and READING its 294 extra
+    # blocks kills it: the commonest new pairs are `validation + write` (x10),
+    # `controls + suite` (x9), `path + write` (x8), `only + read` (x7). That is
+    # ordinary engineering vocabulary, and a gate that fires on `only + read` is
+    # one sessions learn to override -- the same verdict, for the same reason,
+    # that the rare-token rule got.
+    #
+    # ── CONTAINMENT IS THE NARROWER RULE, AND IT COSTS ALMOST NOTHING ─────
+    # If EVERY significant word of one task appears in the other, the shorter is
+    # a restatement or a subset of the longer. Measured over the same 171,477
+    # pairs: **+1 block.** One. (cody's "multi-tenant scope lookup ... claim
+    # verification" against fourth's "v1 scope verification" -- a fair thing to
+    # make somebody read, and arguably not even wrong.)
+    #
+    # THE TASK ONLY, NOT THE SUBJECT. The subject is a bucket name -- three of
+    # the four sessions use their own session name for a whole day's work -- so
+    # including it would make every pair of one session's claims contain each
+    # other. Measured with it in: unusable.
+    #
+    # WHAT THIS STILL DOES NOT FIX, and it is the case the block below names:
+    # `triage plan staleness checker` against `triage staleness tool`. Neither
+    # token set contains the other (`plan`/`checker` against `tool`), and
+    # `checker`/`tool` are synonyms no matcher here can know. That residual is
+    # unchanged and is still open.
+    mine_words = set(word_seq(mine_task))
+    their_words = set(word_seq(their_task))
+    if (len(mine_words) >= 2 and len(their_words) >= 2
+            and (mine_words <= their_words or their_words <= mine_words)):
+        smaller = mine_words if mine_words <= their_words else their_words
+        return ('one task is entirely inside the other: "%s"'
+                % ' '.join(sorted(smaller)))
     # ── A RARE-TOKEN RULE WAS WRITTEN HERE, MEASURED, AND REMOVED ──────────
     # Recorded rather than deleted, so the next person to notice the residual
     # gap below does not spend the afternoon rediscovering why it is still open.
@@ -585,11 +657,28 @@ def my_active_overlaps(doc, task):
     """
     out = []
     for c in doc.get('claims', []):
-        if not is_active(c):
+        if c.get('status') != 'active':
             continue
         reason, kind = self_overlap(task, c.get('task'))
-        if kind:
-            out.append((c, reason, kind))
+        if not kind:
+            continue
+        # ── EXPIRED-BUT-UNRELEASED IS A THIRD ANSWER (2026-09-17) ─────────
+        # It used to be skipped outright and that hid a real case. `audit`
+        # found a post-guard same-work pair by fourth: a claim held from
+        # 02:54 to 14:50 -- 11.9 hours, never released -- with a second
+        # overlapping claim taken at 13:56. The guard did not fire, correctly,
+        # because STALE_HOURS had already expired the first one.
+        #
+        # The two readings disagree and BOTH are right. The guard must use
+        # expiry or a forgotten row locks a session out for ever. `audit` uses
+        # the real held-span, because `released_at` is the ground truth of when
+        # it stopped being held -- and by that measure the session genuinely
+        # held two claims on one piece of work.
+        #
+        # So it is REPORTED and never blocks. "You have an expired claim on
+        # this; did you finish it?" is the question, and silence was the wrong
+        # answer to it.
+        out.append((c, reason, 'expired' if not is_active(c) else kind))
     return out
 
 
@@ -1193,6 +1282,7 @@ def cmd_claim(args):
     mine = my_active_overlaps(doc, task)
     refuse = [x for x in mine if x[2] == 'refuse']
     report = [x for x in mine if x[2] == 'report']
+    expired = [x for x in mine if x[2] == 'expired']
     if refuse:
         print('\nNOT CLAIMED -- and nothing was added, deliberately.')
         print('')
@@ -1219,6 +1309,20 @@ def cmd_claim(args):
         print('IF IT IS GENUINELY DIFFERENT WORK, release the one above first. A')
         print('session holding one claim at a time is what makes `list` readable.')
         return 3
+    if expired:
+        # Never blocks -- see my_active_overlaps(). An expired claim is one this
+        # tool has already decided is not held; saying nothing about it is how a
+        # session takes a second claim on work it never closed the first one on.
+        print('')
+        print('Note: you have %d EXPIRED but UNRELEASED claim(s) on work this '
+              'overlaps. NOT blocking -- this tool treats a claim older than '
+              '%gh as dead -- but the record still shows it open, and another '
+              'session reading it sees a phantom:' % (len(expired), STALE_HOURS))
+        for c, reason, _k in expired:
+            print('  %s -- %s  (%s, %s)'
+                  % (c.get('subject'), c.get('task') or '(no task)', reason, age_str(c)))
+        print('  If that work is done: python tools/sairn_claim.py release %s'
+              % expired[0][0].get('subject'))
     if report:
         # Same app and nothing more. Real and common; said out loud and never
         # blocked, the same policy cmd_check applies to another session's weak
