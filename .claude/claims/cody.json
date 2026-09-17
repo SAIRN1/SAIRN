@@ -1377,8 +1377,8 @@
       "task": "invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation",
       "claimed_at": "2026-09-17T13:50:59Z",
       "claimed_at_epoch": 1789653059.7040827,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T15:10:22Z"
     }
   ]
 }
