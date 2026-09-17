@@ -139,9 +139,9 @@ line or the 08-21 line.
 
 | Item | Why it is open |
 |---|---|
-| **AIM Act / 40 CFR 84.106 not modelled** | In force since 2026-01-01. Needs a second threshold, a GWP > 53 test, and the 30-day repair clock. **Buildable in-house and un-gated** — the only one in this pass |
-| Leak-rate calculation + repair countdown | The other half of the same row |
-| Manual J as a compliance artefact | **Not buildable as such** — jurisdictions require ACCA-approved software, which is a certification, not an engineering task. What IS available is saying so on screen next to the assistant that offers to apply the principles |
+| ~~**AIM Act / 40 CFR 84.106 not modelled**~~ | **CLOSED 2026-09-17.** Modelled as a second, independent rule: `aimScope` (15 lb, GWP floor 53, its own citation) and `aimRepairClock` (30-day window, 10-day follow-up) in `api/_lib/mech-assets.js`, three nullable columns in `sql/mech_site_assets_schema.sql`, fetched/validated/stored in `api/sd-data.js`, three form fields and its own board column in `sairnmechanical.html`. The two rules are reported side by side and **never summed**. 17 new assertions; sabotage-verified against nine deliberate defects |
+| Leak RATE calculation | **Still open, and deliberately so.** The repair COUNTDOWN shipped with the row above; the rate did not. Leak-rate percentages differ by appliance category, and encoding one would be this app asserting current federal law from a hardcoded number — the refusal `api/_lib/mech-assets.js` has carried since it was written. The clock runs from a date the contractor recorded as the day the leak was found, and the app does not decide whether that leak exceeded the applicable rate |
+| ~~Manual J as a compliance artefact~~ | **Disclosed 2026-09-17, still NOT buildable.** ACCA approval is a certification, not an engineering task, and nothing in this repo earns it. What shipped is the sentence: `MECH_MANUAL_J_NOTE` on screen beside all three sizing outputs, and `MECH_MANUAL_J_SYS` appended to all four system prompts so the model's own output does not present itself as a Manual J. One constant, not four copies — four prompts already carried the pasted "Apply Manual J principles" line, which is how a fifth caller ships without the disclosure |
 | Backflow testing flow, geothermal, permits | Real §6 needs, none built |
 | Electrical and plumbing needs (NEC 220, Part P, low-voltage, EV/solar) | **Not gaps** — no such trade is unlocked in the product |
 | Data portability | Disclosed, not built. §8 rates it the dominant pain in the category |

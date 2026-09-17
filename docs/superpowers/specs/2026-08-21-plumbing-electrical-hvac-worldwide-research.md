@@ -2,6 +2,18 @@
 
 Research pass, 2026-08-21. No code written, no repository files touched beyond this doc. Findings only, per Michael's explicit instruction — no architecture decision made here.
 
+> **RE-DERIVED 2026-09-17 — read [`docs/2026-09-17-trades-audit-rederived.md`](../../2026-09-17-trades-audit-rederived.md) alongside this.**
+> §8 of this report flagged two regulatory dates and told the reader to treat
+> them as *"a moving target, not a static requirement."* Both dates have now
+> passed and both were re-checked against primary reporting. **One moved, one
+> did not, and the one that moved went LATER, not sooner** — a date in an audit
+> is habitually read as a floor that only gets closer, and twice now that has
+> been wrong. The specific corrections are marked inline below at §4, §6 and
+> §8 — every place either date appears. The AIM Act finding is now shipped code:
+> `40 CFR 84.106` is
+> modelled as a second, independent rule in `api/_lib/mech-assets.js` as of
+> 2026-09-17, reported beside 40 CFR 82.157 and never summed with it.
+
 Scope note up front: search access is US-search-engine-mediated (results skew English/US even for non-English queries), and several claims below come from vendor marketing copy or SEO-content sites rather than primary sources — flagged inline where that's the case. Pricing and feature claims should be treated as directionally accurate, not contract-grade.
 
 ---
@@ -92,6 +104,22 @@ Sources: [Kore Komfort Solutions on migration](https://korekomfortsolutions.com/
 - Plumbing: journeyman/master tiers almost everywhere; code adherence splits the country roughly in two — **Uniform Plumbing Code (UPC)**, published by IAPMO, dominates ~12 western states (CA, OR, WA, NV); **International Plumbing Code (IPC)** covers ~35 states/DC/territories. UPC is self-contained and prescriptive; IPC is performance-based and cross-references the International Residential Code. This is a genuine, code-level fork a shared platform would need to model (different fixture-unit tables, different venting rules).
 - Electrical: near-universal **NEC (NFPA 70)** adoption with state-by-state amendment cycles and adoption-year lag (some states still on older NEC editions) — less forked than plumbing but still versioned per jurisdiction.
 - HVAC: state licensing plus **EPA Section 608** (federal, Clean Air Act) — the one genuinely federal, trade-specific compliance regime among the three. As of the **AIM Act expansion effective January 2026**, the mandatory refrigerant-transaction-logging threshold dropped from 50 lbs to **15 lbs of HFC refrigerant**, materially expanding which jobs require documented leak-rate calculations, technician cert numbers, and 30-day-repair countdowns.
+
+> **CORRECTED 2026-09-17 — the DATE was right and the FRAMING was wrong, which
+> is the more dangerous half.** "The threshold dropped from 50 lbs to 15 lbs"
+> reads as one rule whose number changed, and acting on that reading would have
+> meant editing `EPA_LEAK_THRESHOLD_LB` from 50 to 15 and citing 40 CFR 82.157
+> for it. That would have been a false statement about federal law in shipped
+> code. **They are two different regulations and both are in force.** 40 CFR
+> 82.157 is the Section 608 leak-repair rule and **50 lb is still correct for
+> it**; 40 CFR 84.106 (Part 84 subpart C) is the AIM Act's HFC rule, in force
+> since 2026-01-01 at **15 lb for HFCs with GWP above 53**, with a 30-day
+> repair window. A 20 lb R-410A unit is correctly *below* under the first and
+> *in scope* under the second. `api/_lib/mech-assets.js` models both
+> independently as of 2026-09-17 and reports them side by side; it never sums
+> them, because a single "in scope" figure would be the app deciding which
+> federal rule governs a customer's machine. See
+> `docs/2026-09-17-trades-audit-rederived.md` §2.1.
 - Medical gas piping inside healthcare facilities requires **ASSE 6010** certification (a plumbing crossover — Texas's plumbing board has adopted it directly) — separate from standard plumbing licensure, tied to NFPA 99/NFPA 55.
 - Water treatment/softener installation: **WQA Certified Installer** — plumbing-adjacent but a separate certification track referencing NSF/ANSI 44, not part of standard plumbing licensure.
 - Fire sprinkler layout/design: **NICET** certification (Water-Based Systems Layout) — required by name in some states (e.g., Wisconsin requires NICET Level III for the fire-sprinkler contractor credential) — a genuinely separate trade track that borders plumbing/mechanical.
@@ -107,6 +135,19 @@ Sources: [NICEIC](https://niceic.com/), [Gas Safe Register](https://www.gassafer
 
 **European Union:**
 - **F-Gas Regulation (EU 2015/2067)** governs refrigerant handling EU-wide with **mutual recognition of certificates across member states** (unlike US, which is state-by-state with no such reciprocity structure) — split into Category I/II/III by equipment size and refrigerant charge. New EU-wide standardized training requirements are due by **March 12, 2026**, with all existing F-gas certifications required to be updated to the new standard by **March 11, 2027** — an active near-term regulatory change.
+
+> **CORRECTED 2026-09-17. Both dates in the sentence above are wrong, and the
+> error is a year in the LATER direction.** Re-checked against primary
+> reporting (`docs/2026-09-17-trades-audit-rederived.md` §2.2): Member States
+> must establish or adapt certification **programmes** by **11 March 2027** —
+> that is the obligation the "March 11, 2027" above was attached to the wrong
+> side of. Refresher training becomes mandatory (at least every seven years)
+> from **12 March 2027**, not March 2026. Holders of certificates under the old
+> 517/2014 regime have until **12 March 2029**. So the 2026 training date does
+> not exist as written, and 11 March 2027 is the programme obligation rather
+> than a certification-update deadline. **Bearing on SAIRNmechanical today:
+> none** — there is no EU customer and no F-Gas field. Anyone building one
+> should read the regulation, not this line and not the correction.
 - **Germany**: electrical work is a licensed craft (**Meisterpflicht** — master-craftsman requirement) with registration in the local **Handwerksrolle**; a fallback "Altgesellenregelung" allows non-master journeymen with 6 years' experience (4 in a leadership role) to self-certify. Refrigeration work requires the separate **Kälteschein**, which notably has **no master-craftsman requirement** — a structural asymmetry between electrical and HVAC/refrigeration licensing within the same country.
 
 Sources: [Business.gov.nl F-gas certificates](https://business.gov.nl/regulations/certificates-working-with-f-gases/), [Gluckman Consulting F-Gas guidance](http://www.gluckmanconsulting.com/wp-content/uploads/2016/08/IS-21-Training-and-Certification-RACHP-v2.pdf), [Kälteschein](https://www.streit-software.de/wissen/kaelteschein), [Meisterpflicht/Handwerksrolle](https://www.gewerbeanmeldung.de/gewerbe-anmelden/elektriker)
@@ -167,6 +208,13 @@ Confirmed and expanded beyond the three examples given in the prompt:
 
 **HVAC:**
 - Refrigerant tracking + **EPA 608** (US) / **F-Gas Category I–III** (EU, with March 2026/2027 regulatory update) / equivalents — leak-rate calculation, 30-day repair countdowns, per-technician cert-number logging, appliance-level charge tracking.
+  > **CORRECTED 2026-09-17.** "March 2026/2027" carries the same error as §4:
+  > the F-Gas obligations are **11 March 2027** (Member States establish or
+  > adapt certification programmes), **12 March 2027** (refresher training
+  > mandatory, at least every seven years) and **12 March 2029** (old 517/2014
+  > certificates). There is no March 2026 obligation. And "EPA 608" understates
+  > the US half — 40 CFR 84.106 (AIM Act) is a **second** federal rule at 15 lb
+  > for HFCs with GWP above 53, alongside 608's 50 lb, not a replacement for it.
 - **Manual J / Manual D / Manual S** load-calculation compliance — most US jurisdictions require Manual J on file for new construction/replacement systems, and many require it be generated by **ACCA-approved software specifically** (Wrightsoft Right-Suite, Cool Calc, Elite RHVAC/CHVAC, Adtek) — this is a *procurement-grade* requirement (a shared platform's internal load-calc tool would need ACCA approval to satisfy code officials, not just be "good enough").
 - Geothermal crossover: sits across **three** licensing domains simultaneously — well-drilling license (for the bore), HVAC/mechanical license (for the heat pump), and the driller/HVAC contractor separately pull different permits (well-drilling permit vs. building/electrical permit) under their own license numbers. Certifications: IGSHPA Certified GeoExchange Designer, IGSHPA Accredited Installer, NATE with heat-pump specialization.
 
@@ -222,6 +270,29 @@ Sources: [PHCC](https://www.phccweb.org/), [ACCA/PHCC collaboration](https://www
 - **Japan gap**: no evidence found of a Japan-specific ServiceTitan/Jobber equivalent — Japanese search results returned generic construction-management software (BUILDY NOTE and similar) rather than trade-specific field-service platforms. Flagging as a genuine unresolved gap rather than assuming none exists.
 - **EU F-Gas regulatory deadline (training standardization by March 12, 2026; certification updates required by March 11, 2027)** is a live, near-term compliance change that would directly affect any HVAC module's cert-tracking logic if SAIRN targets EU customers — worth tracking as a moving target, not a static requirement.
 - **AIM Act threshold change (50 lbs → 15 lbs HFC refrigerant, effective January 2026)** similarly just took effect and materially widens which US HVAC jobs require EPA 608 documentation — relevant to sizing how much of the customer base a refrigerant-tracking module would actually need to cover.
+
+> **BOTH BULLETS ABOVE CORRECTED 2026-09-17, and this is the section the
+> re-derivation was aimed at** — it is where both dates were called *"a moving
+> target, not a static requirement,"* which was the right instruction and was
+> then not acted on for eight months.
+>
+> **EU F-Gas:** the dates are **11 March 2027** (Member States establish or
+> adapt certification programmes), **12 March 2027** (refresher training
+> mandatory, at least every seven years) and **12 March 2029** (old 517/2014
+> certificates). There is no March 2026 obligation, and the "March 11, 2027"
+> above was attached to a certification-update deadline rather than the
+> programme obligation it actually is. The error runs a year LATER than
+> recorded. **Bearing on SAIRNmechanical today: none** — no EU customer, no
+> F-Gas field.
+>
+> **AIM Act:** the date was right; the framing was not. It is not one rule
+> whose threshold moved. 40 CFR 82.157 (Section 608) still applies at 50 lb and
+> 40 CFR 84.106 (Part 84 subpart C) applies at 15 lb for HFCs with GWP above
+> 53, and an appliance can be out of scope under one and in scope under the
+> other. **Acted on 2026-09-17:** `api/_lib/mech-assets.js` models both
+> independently with their own thresholds, citations and repair clock, and
+> `sairnmechanical.html` reports them side by side without ever summing them.
+> Full reconciliation: `docs/2026-09-17-trades-audit-rederived.md` §2.
 - Areas searched with **no solid finding** (explicitly flagged, not guessed): (a) any vendor's documented technical process for adding a second/third trade to an existing account; (b) verbatim r/HVAC, r/electricians, or r/Plumbing thread content (only secondhand characterizations of those communities were retrievable); (c) a Japanese-market multi-trade FSM platform; (d) any trade association (PHCC/NECA/WPC) publishing a software certification/endorsement program comparable to ACCA's Manual J Approved Software list.
 
 ---
