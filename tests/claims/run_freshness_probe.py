@@ -484,10 +484,18 @@ def main():
 
         # 6. list goes quiet again -- the copy most likely to be read as a
         #    roster rather than as a verdict.
+        # ── THE `\n\n\ndef main` SUFFIX WAS DROPPED FROM THIS ANCHOR ────
+        # It went stale the day `cmd_audit` was added: cmd_list stopped being
+        # the last function before main(), so the anchor stopped matching and
+        # THIS CONTROL STOPPED TESTING ANYTHING. The probe's own count-exactly-
+        # once assertion is what surfaced it -- which is the arm working, not
+        # failing. Anchoring on position is what rots; the three lines of BODY
+        # below are unique on their own (verified: 1 occurrence), and they are
+        # the thing the control is actually about.
         control('6 list goes quiet again',
                 '    for ln in freshness_lines(fetched, ferr, args.no_fetch):\n'
-                '        print(ln)\n    return 0 if fetched else STALE_RC\n\n\ndef main',
-                '    return 0\n\n\ndef main',
+                '        print(ln)\n    return 0 if fetched else STALE_RC',
+                '    return 0',
                 arm_list_reports)
 
         # 7. THE MISTAKE THIS PROBE ACTUALLY CAUGHT, kept as a control so it
