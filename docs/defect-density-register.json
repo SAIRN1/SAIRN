@@ -4244,6 +4244,64 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
+      "commit": "1dfd3e001ff1",
+      "date": "2026-09-16",
+      "subject": "fix(export-coverage): \"no export machinery\" was a claim, and SAIRNvet had some",
+      "files": [
+        "docs/2026-09-14-class-a-retrievability.md",
+        "tests/run_export_coverage_probe.py",
+        "tools/export_coverage_check.py"
+      ],
+      "lines_added": 142,
+      "lines_removed": 39,
+      "app": "sairnvet",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/export_coverage_check.py reported NO EXPORT MACHINERY for sairnvet's sv_controlled and sv_audit_log while sairnvet.html carried svExportControlled() and svExportDoseAudit(), two real CSV writers on two real buttons. app_exports() had two states -- registry found, or not -- and printed the absence of a REGISTRY as the absence of export MACHINERY, which is a claim rather than a shrug. The claim then propagated: docs/2026-09-14-class-a-retrievability.md copied it into a hand-verified table and tests/run_export_coverage_probe.py section E pinned it, so three artefacts agreed with each other and none agreed with the app. Fixed with a third state, NO REGISTRY TO READ, never gated by --check.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "ba8843dfcadd",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled register gets an export that says what it is",
+        "lag_days": 0
+      },
+      "citation_note": "PR 1.11 in its other direction: could-not-tell folded into one of the two answers. The stated case is a check that cannot run reporting a PASS; this is a check that cannot enumerate an app reporting a FINDING -- 'NO EXPORT MACHINERY' for an app that has two.",
+      "contributing_factors": [
+        {
+          "factor": "app_exports() returned a boolean for a question with three answers",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "REGISTRY / UNLISTED / NONE, with app_has_registry kept meaning exactly what it says so --check still gates only on a real registry"
+        },
+        {
+          "factor": "the verdict pin recorded the tool output rather than a re-verification against the app, so it stabilised the error instead of catching it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "section E gains an arm asserting the PREMISE -- that sairnvet.html really does contain svExportControlled and text/csv -- so re-folding UNLISTED into NONE and re-pinning cannot pass"
+        },
+        {
+          "factor": "a registry-shaped detector was written against the two apps that had registries, and the third shape -- per-panel export functions with no registry -- was never a case",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "not worth a third detector: enumerating per-function exports would be a second thing to drift, and the honest answer for an app with no registry is that this tool cannot enumerate it"
+        },
+        {
+          "factor": "an export added on 2026-09-16 (ba8843df) changed what the tool should say about an app, and nothing re-ran the hand verification behind the pin",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the general problem is the cadence convention -- a pin is only true as of its capture -- and no measured drift rate exists for this table to set one from. Naming it rather than inventing a number."
+        }
+      ],
+      "recurrence_open": "The other two NONE verdicts (alf_staff_credentials, mech_credentials) are still tool answers, not hand-verified ones -- they were re-grepped on 2026-09-16 and hold, but nothing re-checks them if either app gains an export."
+    },
+    {
       "commit": "2090f74a8585",
       "date": "2026-09-16",
       "subject": "fix(controls): ten git arms named the probe and measured the whole tree",
@@ -6186,6 +6244,60 @@
         }
       ],
       "recurrence_open": "The pin will fire again on the twenty-first law_* resource, BY DESIGN, and the next session to add one will not know this suite exists. Nothing links a registry addition to the suites that pin its size, and the known-red registry cody is building will catch the RED but not shorten the 26 hours unless something runs the per-app suites on a cadence that reaches a person."
+    },
+    {
+      "commit": "9aa9a8bd0d2c",
+      "date": "2026-09-16",
+      "subject": "fix(tier-a-gate): one write point for every closure, and the arm that proves it",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 425,
+      "lines_removed": 13,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py: _discharge() documented itself as shared by both discharge paths so the self-review refusal could not be forgotten on one, and cmd_auto_discharge bypassed it entirely -- setting status, reviewer_session, reviewed_at and verdict inline. Two write points, a guard on one, a comment claiming otherwise. Fixed by making _discharge the only write point, taking status as an argument and refusing a self-signed write and an empty verdict against the record's own stored author_session.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The helper and the auto-discharge path were written in the same interrupted session; no commit separates the moment the docstring's claim stopped being true from the moment it was written, because it was never true."
+      },
+      "citation_note": "A check that stopped checking: _discharge()'s docstring asserted a shared self-review refusal while cmd_auto_discharge wrote the same four fields inline, so one closure path carried no guard under a comment saying it did.",
+      "contributing_factors": [
+        {
+          "factor": "the shared helper was extracted but only one caller was migrated to it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_discharge is now the single write point and takes the status as an argument; cmd_auto_discharge calls it"
+        },
+        {
+          "factor": "the docstring asserted the control, so a reader checking for the guard found prose instead of code",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "probe section 6b replaces _discharge with a stub and fails if any record still closes -- verified RED against a reconstructed pre-fix build"
+        },
+        {
+          "factor": "the session was interrupted at 1% context mid-build, between writing the docstring and wiring the second caller",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "context exhaustion mid-edit is a standing condition of this platform; the durable answer is the arm, not a rule about when to stop"
+        },
+        {
+          "factor": "DEFECT_REGISTER was a path literal inside a function body, so the auto-discharge path could only be exercised against the live register",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "hoisted to a module constant so the probe can point it at a fixture"
+        }
+      ],
+      "recurrence_open": "Nothing prevents a FOURTH closure path being written that calls neither _discharge nor the probe; the stub arm only proves the paths that exist today route through it."
     },
     {
       "commit": "a744ceb5e0eb",
