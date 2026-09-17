@@ -7498,6 +7498,62 @@
       "recurrence_open": "Two claims for one piece of work that share no identifier, no phrase and no app still pass -- block_reason() names that residual in its own body and records why a rare-token rule was measured at 74 extra blocks and rejected."
     },
     {
+      "commit": "2eea5198c797",
+      "date": "2026-09-17",
+      "subject": "fix(claims): a brief restatement of an active claim no longer answers CLEAR",
+      "files": [
+        "tests/claims/run_claim_audit_probe.py",
+        "tests/claims/run_matcher_probe.py",
+        "tests/claims/run_own_claim_overlap_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 10,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_claim.py returned CLEAR against a readable, active, overlapping claim. Fourth checked 'tier A rotation' while cody held 'invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation'; both share the significant tokens tier and rotation, which are adjacent in the short phrasing and four apart in the long one. Every rule in block_reason rests on adjacent word pairs, so two intervening words made the match vanish and the gate said CLEAR on work another session was actively doing. Fixed with a containment rule -- one task's significant words entirely inside the other's -- measured at ONE extra block over all 171,477 cross-session pairs in the record, against 294 for the windowed-pair alternative whose extra blocks read as generic engineering vocabulary.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "Adjacency has been block_reason's evidence since the matcher was written and the residual is named in its own body; no commit introduced the brittleness, and none is identifiable as the moment it became a defect rather than a documented limit."
+      },
+      "citation_note": "Grep cannot tell code from text that describes code -- the same limitation one level up: block_reason's evidence is an ADJACENT word pair, so two words that are adjacent in one phrasing and separated in another produce no match, and a restatement of the same task reads as unrelated.",
+      "contributing_factors": [
+        {
+          "factor": "every rule in block_reason rests on ADJACENT word pairs, so an inserted word destroys the evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a containment rule added after the phrase rule, keyed on the task only, measured at +1 block over 171477 cross-session pairs"
+        },
+        {
+          "factor": "the residual was already documented in block_reason own body and left open because the obvious widening measured badly, and no narrower rule was attempted",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the narrower rule was measured against the same corpus before being written, and the rejected windowed alternative is recorded with its counts and its worst false pairs"
+        },
+        {
+          "factor": "every rule in this function is a POSITIVE signal and nothing fires on absence, so every gap in the rule set resolves to CLEAR rather than to an error or a doubt",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "stated at the top of block_reason as the shared cause linking this to the duplicate-claim family, so the next gap is recognised as the same shape rather than re-derived"
+        },
+        {
+          "factor": "no arm existed for a brief restatement of a longer claim, which is the commonest way a person retypes their own task into check",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "8 arms in tests/claims/run_matcher_probe.py including the live case both ways round and two controls pinning that generic vocabulary must not block"
+        }
+      ],
+      "recurrence_open": "The synonym case is unchanged and pinned as open: triage plan staleness checker against triage staleness tool, where neither token set contains the other and checker/tool are synonyms no matcher here can know."
+    },
+    {
       "commit": "31574fceecdf",
       "date": "2026-09-17",
       "subject": "fix(sairnlaw): one citation rule -- the critique step was told to produce a real reporter citation",
@@ -7782,6 +7838,62 @@
       "recurrence_open": "the worktree-at-HEAD pattern is used by other probes in tests/ that do not push, where it is harmless today and would not be if one of them gained a network step"
     },
     {
+      "commit": "97e848039fd1",
+      "date": "2026-09-17",
+      "subject": "fix(claude,bridge,cron): the app_id nobody verified, an unauthenticated read of one shop's finances, and a correction buried below the sentence it corrects",
+      "files": [
+        "api/bridge.js",
+        "api/claude-cost-controls.test.js",
+        "api/claude.js",
+        "tools/cron_liveness_check.py"
+      ],
+      "lines_added": 212,
+      "lines_removed": 81,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/claude.js charged its AI daily budget to a body-supplied app_id checked only against a public allowlist, so an unlicensed caller could exhaust a paying app's ceiling. Separately api/bridge.js served ?action=pull -- zero callers -- to an unauthenticated GET, returning a shop's jobs, invoices and employees keyed on the customer's RAW LICENCE KEY.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "both predate the sub-budget work and neither has a single introducing commit: the app_id trust is as old as the proxy allowlist and the bridge read side shipped with the endpoint. Naming one commit would be a guess."
+      },
+      "citation_note": "1.2 is about a check matching text that DESCRIBES code rather than code. This is the sibling: a check matching a value the CALLER supplies rather than one the server verified. Arguable because 1.2's examples are all about greps, not inputs.",
+      "contributing_factors": [
+        {
+          "factor": "api/claude.js took app_id from the request BODY and validated it only against KNOWN_APP_IDS, a list that ships inside every app's frontend, so an unlicensed caller could spend against any licensed app's daily AI ceiling by naming it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the budget is charged to the app the verified licence names, and callers with no valid licence are counted under an isolated anon:<app_id> pool"
+        },
+        {
+          "factor": "api/bridge.js served ?action=pull to an unauthenticated GET, returning one shop's stored jobs, invoices and employees, keyed on bridge_data.shop_id -- which is the customer's RAW LICENCE KEY, where every other table on this platform keys on license_hash",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the read side is removed; a GET answers 405 NO_READ_SIDE. It had zero callers so there was no behaviour to preserve"
+        },
+        {
+          "factor": "the per-licence sub-budget added 2026-09-15 was correct and was read as closing the tenancy question -- a sub-budget divides a pool between tenants and says nothing about who is allowed near the pool, and nobody asked the second question until the shared-backend map forced it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the two dimensions are now named separately in the code and in docs/2026-09-17-shared-backend-tenancy-map.md"
+        },
+        {
+          "factor": "api/bridge.js's own header called the unused read side 'correct and harmless'; it was correct and it was not harmless, and that sentence is why it survived two audits that read the file",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "corrected in place rather than deleted, so the next reader sees why the claim was wrong rather than finding no claim at all"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The anonymous pool is per claimed app, so an attacker can still exhaust one app's DEMO budget -- accepted and pinned by an arm so it cannot widen silently. api/bridge.js's push still writes rows keyed on the RAW LICENCE KEY and still requires no Authorization, so one shop can overwrite another's row; it has a live caller (stonedesk crSendToBridge) so removing it changes user-visible text and is a product decision, not a cleanup. And nothing sweeps for the general shape: any other endpoint trusting a client-supplied scope key has the same defect and none has been looked for."
+    },
+    {
       "commit": "a8fe1485d2c0",
       "date": "2026-09-17",
       "subject": "fix(dental): the CDT catalogue was versioned and the charges were not -- a posted charge re-read whatever the catalogue said today",
@@ -7895,62 +8007,6 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
-    },
-    {
-      "commit": "2eea5198c797",
-      "date": "2026-09-17",
-      "subject": "fix(claims): a brief restatement of an active claim no longer answers CLEAR",
-      "files": [
-        "tests/claims/run_claim_audit_probe.py",
-        "tests/claims/run_matcher_probe.py",
-        "tests/claims/run_own_claim_overlap_probe.py",
-        "tools/sairn_claim.py"
-      ],
-      "lines_added": 206,
-      "lines_removed": 10,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/sairn_claim.py returned CLEAR against a readable, active, overlapping claim. Fourth checked 'tier A rotation' while cody held 'invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation'; both share the significant tokens tier and rotation, which are adjacent in the short phrasing and four apart in the long one. Every rule in block_reason rests on adjacent word pairs, so two intervening words made the match vanish and the gate said CLEAR on work another session was actively doing. Fixed with a containment rule -- one task's significant words entirely inside the other's -- measured at ONE extra block over all 171,477 cross-session pairs in the record, against 294 for the windowed-pair alternative whose extra blocks read as generic engineering vocabulary.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "Adjacency has been block_reason's evidence since the matcher was written and the residual is named in its own body; no commit introduced the brittleness, and none is identifiable as the moment it became a defect rather than a documented limit."
-      },
-      "citation_note": "Grep cannot tell code from text that describes code -- the same limitation one level up: block_reason's evidence is an ADJACENT word pair, so two words that are adjacent in one phrasing and separated in another produce no match, and a restatement of the same task reads as unrelated.",
-      "contributing_factors": [
-        {
-          "factor": "every rule in block_reason rests on ADJACENT word pairs, so an inserted word destroys the evidence",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a containment rule added after the phrase rule, keyed on the task only, measured at +1 block over 171477 cross-session pairs"
-        },
-        {
-          "factor": "the residual was already documented in block_reason own body and left open because the obvious widening measured badly, and no narrower rule was attempted",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the narrower rule was measured against the same corpus before being written, and the rejected windowed alternative is recorded with its counts and its worst false pairs"
-        },
-        {
-          "factor": "every rule in this function is a POSITIVE signal and nothing fires on absence, so every gap in the rule set resolves to CLEAR rather than to an error or a doubt",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "stated at the top of block_reason as the shared cause linking this to the duplicate-claim family, so the next gap is recognised as the same shape rather than re-derived"
-        },
-        {
-          "factor": "no arm existed for a brief restatement of a longer claim, which is the commonest way a person retypes their own task into check",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "8 arms in tests/claims/run_matcher_probe.py including the live case both ways round and two controls pinning that generic vocabulary must not block"
-        }
-      ],
-      "recurrence_open": "The synonym case is unchanged and pinned as open: triage plan staleness checker against triage staleness tool, where neither token set contains the other and checker/tool are synonyms no matcher here can know."
     },
     {
       "commit": "d8d000e0cffd",
