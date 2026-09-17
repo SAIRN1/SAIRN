@@ -145,14 +145,20 @@ grant select on all sequences in schema public to sairn_backup_reader;
 -- anything else.
 --
 -- On Supabase that is not a corner case. The dashboard's table editor, the
--- migration runner and several extensions create objects as `supabase_admin`.
--- A table created that way would carry no grant for this role, `pg_dump` would
--- skip it without an error, and the backup would be missing a table WHILE
--- EXITING ZERO -- the identical silent-omission shape as the RLS gap above,
--- arriving months later and only for the tables added after today.
+-- migration runner and several extensions HAVE created objects as
+-- `supabase_admin` -- past tense as of 2026-09-17, because Supabase's 2022
+-- security patch moved that ownership onto `postgres` and this project measured
+-- 100% `postgres` on 2026-08-26 (see 2c). The hazard is unchanged whoever the
+-- role turns out to be: a table created by a role with no default-ACL entry
+-- carries no grant, `pg_dump` skips it without an error, and the backup is
+-- missing a table WHILE EXITING ZERO -- the identical silent-omission shape as
+-- the RLS gap above, arriving months later and only for the tables added after
+-- today. Which is why the grantor list is derived and not named.
 --
--- Found by review before the role was ever created. Both grantors are covered
--- explicitly.
+-- Found by review before the role was ever created. Every grantor that owns a
+-- table in `public` is covered -- read from the catalog, not named here. See
+-- the derivation note below, and 2026-09-17 for why naming them was worse than
+-- deriving them.
 --
 -- AND IT FAILS LOUDLY IF IT CANNOT. `FOR ROLE x` requires membership in x, and
 -- `postgres` is not always a member of `supabase_admin`. A statement that
@@ -172,15 +178,61 @@ grant select on all sequences in schema public to sairn_backup_reader;
 -- transport-name table, and this).
 --
 -- So the loop runs over the roles that ACTUALLY OWN TABLES in `public` today,
--- read from pg_tables, UNIONED with the two known creators. The union matters
--- in both directions: a role that owns nothing yet but will create tables
--- later is still covered, and a creator nobody predicted is covered the moment
--- it owns one table.
+-- read from pg_tables, unioned with `current_user`.
 --
--- ON SUPABASE THIS IS THE QUESTION THAT DECIDES IT. The dashboard table editor
--- and the migration runner are widely reported to create objects as
--- `supabase_admin` rather than `postgres`. VERIFY 2c BELOW ANSWERS IT FOR THIS
--- DEPLOYMENT rather than repeating the report -- run it and read the owners.
+-- ── AND THE `supabase_admin` HALF OF THAT UNION MADE THE FILE UNRUNNABLE
+-- ── (2026-09-17). THIS IS THE CORRECTION, AND IT IS NOT A LOOSENING.
+--
+-- The previous version unioned in a HARDCODED array['postgres',
+-- 'supabase_admin']. That was written to be safe and it was the one thing here
+-- that could not work:
+--
+--   * `supabase_admin` EXISTS on every Supabase project, so the `no such role`
+--     skip below never fires for it;
+--   * `postgres` is NOT a member of `supabase_admin` on hosted Supabase, and
+--     `ALTER DEFAULT PRIVILEGES FOR ROLE x` requires membership in x;
+--   * so the loop reaches it, raises `insufficient_privilege`, and the
+--     exception handler below RAISES -- correctly, by its own design;
+--   * and this is ONE `do` block in ONE transaction with `order by 1`, so
+--     `postgres` sorts first, succeeds, and is ROLLED BACK with it.
+--
+-- NOTHING TOOK. The file failed at the one clause that was pure insurance, and
+-- took the load-bearing one down with it.
+--
+-- THE ANSWER TO THE QUESTION THAT CLAUSE WAS GUESSING AT IS ON DISK AND WAS
+-- MEASURED: Michael ran `sql/supabase_admin_default_acl_check_2026-08-26.sql`
+-- on 2026-08-26 and ownership across `public` was 100% `postgres` -- all 251
+-- tables, 4 sequences and 11 functions, ZERO owned by `supabase_admin`.
+-- Supabase's own 2022 security patch moved dashboard and SQL-editor entity
+-- ownership off `supabase_admin` onto `postgres`, which is why. So the widely
+-- reported behaviour this clause was written against is REAL HISTORY and is
+-- not this project's present.
+--
+-- THAT EVIDENCE IS STALE AND THE FIX DOES NOT DEPEND ON IT. 380 tables now
+-- against the 251 it was measured on -- `tools/ownership_evidence_drift.py`
+-- is RED and says 129 is a LOWER bound. The repair is therefore NOT "we
+-- checked, drop the clause": it is that a DERIVED loop cannot need the clause.
+-- If `supabase_admin` ever does own a table in `public`, `pg_tables` returns
+-- it, the loop covers it, and -- if this role cannot grant for it -- the
+-- exception below fires FOR A REAL REASON, on a deployment where tables really
+-- would be missing from the backup. That is the failure worth aborting on, and
+-- it is now the only one that can.
+--
+-- `current_user` replaces the other half of the hardcoded pair, and is the one
+-- addition that can never raise: you are always a member of yourself. It
+-- covers the role that runs migrations even on the day it owns nothing yet,
+-- which is the forward-looking property the array was reaching for.
+--
+-- WHAT IS GIVEN UP, SAID PLAINLY RATHER THAN LEFT FOR SOMEBODY TO FIND: a role
+-- that owns nothing today and creates its first table tomorrow is NOT
+-- pre-covered any more. It is DETECTED rather than prevented -- verify 2d
+-- below reports `uncovered` non-zero the next time anybody runs it, and 2c
+-- names the owner. Prevention was never real for that case anyway: the array
+-- only pre-covered two names somebody thought of, which is the hand-written
+-- list this same comment block already records being bitten by four times.
+--
+-- VERIFY 2c BELOW STILL ANSWERS THE OWNERSHIP QUESTION FOR THIS DEPLOYMENT
+-- rather than repeating any report -- run it and read the owners.
 do $$
 declare
   r text;
@@ -189,7 +241,7 @@ begin
     select rolname from (
       select tableowner as rolname from pg_tables where schemaname = 'public'
       union
-      select unnest(array['postgres', 'supabase_admin'])
+      select current_user
     ) x
     where rolname is not null
     order by 1
@@ -209,12 +261,20 @@ begin
         'grant select on sequences to sairn_backup_reader', r);
       raise notice 'default privileges set for objects created by %', r;
     exception when insufficient_privilege then
+      -- REACHING THIS NOW MEANS SOMETHING, WHICH IT DID NOT BEFORE 2026-09-17.
+      -- The loop is derived from pg_tables, so % is a role that ACTUALLY OWNS
+      -- TABLES in public on this deployment. Aborting is right: those tables,
+      -- and everything that role creates from today on, would be absent from
+      -- the backup with pg_dump exiting zero.
       raise exception
         'Could not set default privileges FOR ROLE % -- you must be a member '
-        'of that role. Run this file as a role that is (supabase_admin), or '
-        'grant membership first. STOPPING: leaving it unset would mean every '
-        'table % creates from today on is silently absent from the backup, '
-        'which is the exact failure this clause exists to prevent.', r, r;
+        'of that role, and `ALTER DEFAULT PRIVILEGES FOR ROLE` requires it. '
+        'THIS ROLE OWNS TABLES IN public (see verify 2c), so this is not a '
+        'precaution firing on a role that owns nothing -- run `grant % to '
+        'current_user` as a role that can, or run this file as a member of %. '
+        'STOPPING: leaving it unset would mean every table % creates from '
+        'today on is silently absent from the backup, which is the exact '
+        'failure this clause exists to prevent.', r, r, r, r;
     end;
   end loop;
 end
@@ -264,14 +324,25 @@ select (select count(*) from present)                     as tables_in_public,
           from present
          where table_name not in (select table_name from granted)) as missing_names;
 
--- 2b. THE DEFAULT ACLs ACTUALLY TOOK, AND FOR WHICH GRANTOR. Expect ONE ROW PER
---     GRANTOR that exists on this deployment -- `postgres` and `supabase_admin`
---     -- each showing a grant to sairn_backup_reader.
+-- 2b. THE DEFAULT ACLs ACTUALLY TOOK, AND FOR WHICH GRANTOR. Expect one row per
+--     object_type for EVERY ROLE 2c LISTS AS OWNING TABLES, plus `current_user`.
 --
---     A SINGLE ROW HERE IS THE FAILURE, not a pass: it means only the role that
---     ran this file is covered, and every table the OTHER one creates from
---     today on is silently absent from the backup. That is what `FOR ROLE`
---     exists to prevent and this is the only query that proves it worked.
+--     ⚠ THIS EXPECTATION WAS REWRITTEN 2026-09-17 AND THE OLD ONE WOULD NOW
+--     REPORT A CORRECT RESULT AS A FAILURE. It read: "Expect ONE ROW PER
+--     GRANTOR -- `postgres` and `supabase_admin`... A SINGLE ROW HERE IS THE
+--     FAILURE, not a pass." That was written when the loop unioned in a
+--     hardcoded pair. The loop is now DERIVED from pg_tables, and on this
+--     deployment ownership was measured at 100% `postgres` -- so ONE ROW PER
+--     OBJECT TYPE IS THE CORRECT AND EXPECTED ANSWER, and reading it as a
+--     failure would send somebody chasing a gap that does not exist.
+--
+--     THE REAL PASS CONDITION IS NOT A ROW COUNT AT ALL, WHICH IS WHY IT MOVED
+--     TO 2d. "Is there an entry for every role that creates tables here" is a
+--     comparison against a population, and a number typed into a comment
+--     cannot make it. 2d makes it: `uncovered = 0`. Read 2b to see WHICH
+--     grantors took, read 2c to see who actually owns tables, and read 2d for
+--     the verdict. If 2b shows a grantor that 2c does not list, that is not an
+--     error either -- it is `current_user` covered ahead of owning anything.
 select pg_get_userbyid(d.defaclrole) as objects_created_by,
        d.defaclobjtype                as object_type,
        d.defaclacl                    as acl
@@ -289,15 +360,31 @@ select pg_get_userbyid(d.defaclrole) as objects_created_by,
 --     THAT ROLE, and a grant set only FOR ROLE postgres would silently miss all
 --     of them.
 --
+--     ANSWERED 2026-08-26 BY MEASUREMENT, and re-asked here because the answer
+--     has a shelf life. Michael ran
+--     `sql/supabase_admin_default_acl_check_2026-08-26.sql`: ownership across
+--     `public` was 100% `postgres` -- 251 tables, 4 sequences, 11 functions,
+--     ZERO `supabase_admin`. Supabase's 2022 security patch moved dashboard and
+--     SQL-editor ownership off `supabase_admin` onto `postgres`, which is why.
+--     THAT WAS 251 TABLES AGO AND THERE ARE 380 NOW -- run this query; do not
+--     quote the paragraph you just read.
+--
 --     READ THE RESULT LIKE THIS:
---       * only `postgres` appears      -> the dashboard is creating as postgres
---                                         on this project, and the supabase_admin
---                                         clause is harmless insurance
---       * `supabase_admin` appears     -> confirmed, and the FOR ROLE clause is
---                                         load-bearing rather than defensive
---       * a THIRD role appears         -> the old hardcoded pair was incomplete.
---                                         The derived loop above now covers it;
---                                         2d proves it did
+--       * only `postgres` appears      -> matches the 2026-08-26 measurement.
+--                                         The loop covered it because it OWNS
+--                                         tables, not because it was named
+--       * `supabase_admin` appears     -> the 2022 patch did not fully take on
+--                                         this project, or something re-created
+--                                         objects as it. The derived loop picks
+--                                         it up automatically -- and if this
+--                                         role cannot grant for it, section 4
+--                                         ABORTS, which is now correct rather
+--                                         than collateral
+--       * a THIRD role appears         -> exactly what deriving the list is for.
+--                                         2d proves it was covered
+--
+--     WHATEVER APPEARS, 2d IS THE VERDICT. This query informs; it does not pass
+--     or fail anything on its own.
 select tableowner                       as objects_created_by,
        count(*)                         as tables_owned,
        min(tablename)                   as example_table
