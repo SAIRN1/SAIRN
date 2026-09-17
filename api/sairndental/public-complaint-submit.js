@@ -101,8 +101,18 @@ module.exports = async (req, res) => {
     } else if (dupRes.status !== 404 && dupRes.status !== 400) {
       // REFUSE RATHER THAN FILE UNCHECKED. A failed duplicate check is not the
       // same answer as "no duplicate", and treating it as one is how a retry
-      // storm becomes a duplicate storm. 404/400 means the column is not there
-      // yet, which is handled below by simply proceeding.
+      // storm becomes a duplicate storm.
+      //
+      // 404/400 means the column is not there yet, and this branch lets that
+      // case fall through to the insert. ⚠ FALLING THROUGH IS NOT THE SAME AS
+      // SUCCEEDING, and this comment claimed it was until 2026-09-17: it said
+      // the case was "handled below by simply proceeding". IT IS NOT. The
+      // insert below carries submission_key, PostgREST rejects an unknown
+      // column outright, and the request ends as a 503 -- so before
+      // sql/sairndental_complaint_idempotency_2026-09-13.sql has run, THIS
+      // ENDPOINT REFUSES EVERY COMPLAINT. Fail-closed rather than silent, but
+      // the public form is down, and the 503 below now says which of the two
+      // things is missing instead of blaming the table.
       console.error('SAIRNdental public-complaint-submit: duplicate check failed, HTTP',
                     dupRes.status, '-- refusing rather than filing unchecked');
       res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'Temporarily unavailable -- please call the office or try again shortly' } });
@@ -132,7 +142,25 @@ module.exports = async (req, res) => {
     });
     if (insertRes.status === 404 || insertRes.status === 400) {
       const bodyText = await insertRes.text().catch(function () { return ''; });
-      if (/relation .* does not exist|does not exist/i.test(bodyText)) {
+      // TWO DIFFERENT MISSING THINGS, AND THEY WERE ANSWERED WITH ONE MESSAGE
+      // UNTIL 2026-09-17. `/does not exist/i` matches BOTH "relation
+      // dnt_complaints does not exist" (42P01, no table) and "column
+      // submission_key of relation dnt_complaints does not exist" (42703,
+      // table is fine, one column is missing). Both returned "complaint tables
+      // are not set up yet", which sends whoever reads the support ticket at
+      // the wrong file: the table has existed for months and what is actually
+      // missing is one ALTER TABLE.
+      //
+      // The column case is tested FIRST because its text contains the table
+      // case's text -- ordering these the other way round would make the
+      // specific branch unreachable.
+      if (/column\b/i.test(bodyText) && /does not exist/i.test(bodyText)) {
+        console.error('SAIRNdental public-complaint-submit: the idempotency COLUMN is missing --',
+                      'run sql/sairndental_complaint_idempotency_2026-09-13.sql.', bodyText);
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental complaint intake is not finished being set up -- the table exists but one column is missing. Run sql/sairndental_complaint_idempotency_2026-09-13.sql.' } });
+        return;
+      }
+      if (/does not exist/i.test(bodyText)) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental complaint tables are not set up yet.' } });
         return;
       }

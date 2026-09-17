@@ -125,7 +125,14 @@ async function main() {
   //
   // Every arm drives the REAL handler with a fetch that records the calls, so
   // it asserts what the endpoint actually does rather than what it intends.
-  function withFetch(calls, dupRows, dupStatus) {
+  // `insert` is the fourth argument and it exists because THIS HARNESS COULD
+  // EMIT A RESPONSE PAIR NO DATABASE CAN PRODUCE (found 2026-09-17). It
+  // answered the lookup with whatever dupStatus said and then answered the
+  // INSERT with 201 unconditionally -- so the "the column is not there yet"
+  // test drove a world where PostgREST rejects submission_key in a filter and
+  // accepts it in an insert body. A column is present or it is not; it cannot
+  // be both, and the arm that rested on it asserted something false.
+  function withFetch(calls, dupRows, dupStatus, insert) {
     global.fetch = async function (url, opts) {
       calls.push({ url: String(url), method: (opts && opts.method) || 'GET',
                    body: opts && opts.body ? JSON.parse(opts.body) : null });
@@ -138,6 +145,11 @@ async function main() {
         return { ok: true, status: 200, json: async function () { return dupRows || []; },
                  text: async function () { return ''; } };
       }
+      if (insert) {
+        return { ok: false, status: insert.status,
+                 json: async function () { return null; },
+                 text: async function () { return insert.text; } };
+      }
       return { ok: true, status: 201,
                json: async function () { return [opts && opts.body ? JSON.parse(opts.body) : {}]; },
                text: async function () { return ''; } };
@@ -145,6 +157,14 @@ async function main() {
     delete require.cache[require.resolve('./public-complaint-submit.js')];
     return require('./public-complaint-submit.js');
   }
+
+  // The two real PostgREST bodies, written out rather than paraphrased: the
+  // whole point of the split below is that one string CONTAINS the other.
+  var PGRST_NO_COLUMN =
+    '{"code":"42703","message":"column \\"submission_key\\" of relation ' +
+    '\\"dnt_complaints\\" does not exist"}';
+  var PGRST_NO_TABLE =
+    '{"code":"42P01","message":"relation \\"public.dnt_complaints\\" does not exist"}';
 
   await test('the duplicate check runs BEFORE the insert, and against the table', async () => {
     var calls = [];
@@ -224,14 +244,56 @@ async function main() {
     assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 0);
   });
 
-  await test('a 400 from the lookup means the COLUMN is not there yet, and it proceeds',
+  await test('a 400 from the lookup FALLS THROUGH to the insert rather than refusing there',
     async () => {
       var calls = [];
-      var h = withFetch(calls, null, 400);
+      var h = withFetch(calls, null, 400, { status: 400, text: PGRST_NO_COLUMN });
       var res = mockRes();
       await h(mockReq({ slug: 'p', message: 'no column yet', patient_name: 'Jane' }), res);
       assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 1,
-        'before the migration runs, the endpoint must still accept complaints');
+        'a 400 on the LOOKUP must not be treated as a failed check -- it reaches the insert');
+    });
+
+  // ── WHAT THE ARM ABOVE USED TO CLAIM, AND WHY IT IS SPLIT IN TWO ─────────
+  // It was one arm named "...and it proceeds", asserting "before the migration
+  // runs, the endpoint must still accept complaints". Reaching the insert is
+  // true. Accepting the complaint is NOT, and was never driven: the harness
+  // returned 201 for the insert no matter what, so the arm stopped exactly
+  // where its own claim became false. The real database answers the insert
+  // with 42703 too, because it is the same missing column.
+  await test('...and the request then FAILS, because the insert carries the same missing column',
+    async () => {
+      var calls = [];
+      var h = withFetch(calls, null, 400, { status: 400, text: PGRST_NO_COLUMN });
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'no column yet', patient_name: 'Jane' }), res);
+      assert.strictEqual(res.statusCode, 503,
+        'before the migration runs this endpoint refuses every complaint -- the public form is DOWN, ' +
+        'and a test that says otherwise is worse than no test');
+      assert.strictEqual(res.body.error.code, 'NOT_PROVISIONED');
+    });
+
+  await test('the missing-COLUMN message names the column and the migration, not the table',
+    async () => {
+      var h = withFetch([], null, 400, { status: 400, text: PGRST_NO_COLUMN });
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'x', patient_name: 'Jane' }), res);
+      var m = res.body.error.message;
+      assert.ok(/column is missing/i.test(m) && /sairndental_complaint_idempotency/.test(m),
+        'whoever reads the support ticket must be sent at the ALTER TABLE, not at the schema file');
+      assert.ok(!/tables are not set up yet/i.test(m),
+        'the table has existed for months -- saying it does not is a wrong answer, not a vague one');
+    });
+
+  await test('a missing TABLE still says the table is missing -- the two are not merged',
+    async () => {
+      var h = withFetch([], null, 200, { status: 400, text: PGRST_NO_TABLE });
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'x', patient_name: 'Jane' }), res);
+      assert.strictEqual(res.statusCode, 503);
+      assert.ok(/tables are not set up yet/i.test(res.body.error.message),
+        'the column branch must not swallow the table case: its text contains the table case text, ' +
+        'so only the ORDER of the two tests keeps this reachable');
     });
 
   await test('the insert carries the key, so the NEXT retry can find it', async () => {
