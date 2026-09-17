@@ -22,10 +22,18 @@ and it splits cleanly in two:
     a generic sync layer names every key and everything it touches inherits it.
     Read the document; its answers were hand-verified against the source.
 
-  * CAN A PERSON PRODUCE IT AS A FILE -- this is enumerable, and it is what
-    this tool checks. Two apps carry an explicit export registry and the other
-    two carry no export machinery at all, so "is this resource in its app's
-    export registry" has a definite answer per resource.
+  * CAN A PERSON PRODUCE IT AS A FILE -- this is enumerable WHERE THE APP HAS A
+    REGISTRY, and that is what this tool checks. Two apps carry an explicit
+    export registry, so "is this resource in its app's export registry" has a
+    definite answer per resource.
+
+    ── AND WHERE IT IS NOT ENUMERABLE, THAT IS ITS OWN ANSWER (2026-09-16) ──
+    This said "the other two carry no export machinery at all", and by
+    2026-09-16 that was no longer true of SAIRNvet -- which had gained
+    `svExportDoseAudit()` and already carried `svExportControlled()`, two real
+    CSV writers on two real buttons, and no registry. The tool printed
+    NO EXPORT MACHINERY for both its resources, which is not a shrug but a
+    claim, and the wrong one. There are THREE states, see app_exports().
 
 ── WHY THE FILE HALF IS THE HALF WORTH GATING ────────────────────────────
 An inspector, an auditor or a subpoena asks for a RECORD, not a screenshot. A
@@ -91,23 +99,55 @@ def class_a():
     return out, None
 
 
+# ── THE THREE STATES AN APP CAN BE IN, AND THE THIRD WAS BEING LIED ABOUT ───
+# `REGISTRY`  an export registry this tool can enumerate, so "is this resource
+#             exportable" has a mechanical answer.
+# `UNLISTED`  the app HAS export machinery -- real CSV writers, wired to real
+#             buttons -- but no registry in either shape this tool reads, so it
+#             can enumerate nothing and the answer must be hand-verified.
+# `NONE`      no export path at all. A missing FEATURE.
+#
+# ── WHY THIS IS A FIX AND NOT A REFINEMENT (2026-09-16) ────────────────────
+# There were two states and three realities, so UNLISTED was being reported as
+# NONE -- and NONE is a claim, not a shrug. SAIRNvet was printed as
+# "NO EXPORT MACHINERY" for both `sv_controlled` and `sv_audit_log` while
+# sairnvet.html carried `svExportControlled()` at line 9152 and
+# `svExportDoseAudit()` at line 9080, each writing a real CSV and each wired to
+# a visible button. The tool was not wrong about its own registry test; it was
+# wrong about what the absence of a registry MEANS.
+#
+# THE DIRECTION OF THE ERROR IS THE BAD ONE. "This app cannot produce the
+# record as a file" reads as a finding somebody should act on, and it would
+# have sent the next session to build an export that already existed -- while
+# `docs/2026-09-14-class-a-retrievability.md` was simultaneously recording, in
+# hand-verified prose, that `sv_audit_log` closed BOTH halves on 2026-09-16.
+# The tool and the document disagreed and only the document was right.
+#
+# THIS IS PR 1.11 IN ITS OTHER DIRECTION. The usual shape is a check that
+# cannot run and reports a PASS. This is a check that cannot answer and reports
+# a FINDING. Both are the same defect -- could-not-tell folded into one of the
+# two answers -- and the repair is the same: make it a third state and say so.
+REGISTRY, UNLISTED, NONE = 'registry', 'unlisted', 'none'
+
+
 def app_exports(app):
-    """(set_of_exported_resources, has_registry) for one app file."""
+    """(set_of_exported_resources, state) for one app file, state as above."""
     p = os.path.join(REPO, app + '.html')
     if not os.path.isfile(p):
         return None, None
     code = io.open(p, encoding='utf-8', errors='replace').read()
     if not CSV.search(code):
-        return set(), False          # no export machinery at all
+        return set(), NONE           # no export machinery at all
     found = set(ROOFING_ENTRY.findall(code))
     if found:
-        return found, True
+        return found, REGISTRY
     # Registry keyed by short label: resolve each key through the accessor its
     # rows: function calls, then through the app's sync-pair table.
     pairs = dict((b, a) for a, b in PAIR.findall(code))   # localkey -> resource
     keys = REGISTRY_ENTRY.findall(code)
     if not keys:
-        return set(), False
+        # CSV machinery, no registry. NOT "no export machinery" -- see above.
+        return set(), UNLISTED
     for k in keys:
         at = code.find('\n  ' + k + ':{label:')
         body = code[at:at + 1200]
@@ -119,7 +159,7 @@ def app_exports(app):
             for m in re.finditer(r"ld\(\s*'([a-z_]+)'", acc):
                 if m.group(1) in pairs:
                     found.add(pairs[m.group(1)])
-    return found, True
+    return found, REGISTRY
 
 
 def main(argv):
@@ -133,31 +173,39 @@ def main(argv):
     for app, res in pairs:
         if app not in cache:
             cache[app] = app_exports(app)
-        exported, has_registry = cache[app]
+        exported, state = cache[app]
         if exported is None:
             unreadable.append(app)
             continue
         rows.append({'app': app, 'resource': res,
                      'exported': res in exported,
-                     'app_has_registry': bool(has_registry)})
+                     'app_state': state,
+                     # Kept, and kept meaning EXACTLY what it says: a registry
+                     # this tool can enumerate. UNLISTED is not one, and folding
+                     # it in here is what would put SAIRNvet back into --check's
+                     # gated set on an answer the tool does not have.
+                     'app_has_registry': state == REGISTRY})
     if unreadable:
         print('COULD NOT CHECK: no app file for %s' % ', '.join(sorted(set(unreadable))))
         return 2
 
     gaps = [r for r in rows if not r['exported'] and r['app_has_registry']]
-    nomech = [r for r in rows if not r['exported'] and not r['app_has_registry']]
+    unlisted = [r for r in rows if not r['exported'] and r['app_state'] == UNLISTED]
+    nomech = [r for r in rows if not r['exported'] and r['app_state'] == NONE]
     if '--json' in argv:
-        print(json.dumps({'rows': rows, 'gaps': gaps, 'no_machinery': nomech},
-                         indent=1))
+        print(json.dumps({'rows': rows, 'gaps': gaps, 'unlisted': unlisted,
+                          'no_machinery': nomech}, indent=1))
         return 0
 
     head = ('EXPORT COVERAGE OF THE CLASS A SET -- can the record be produced '
             'as a FILE')
     if '--check' in argv:
         print('%s : %d resource(s), %d exportable, %d gap(s) in an app that '
-              'already has a registry, %d in an app with no export machinery '
-              '(NOT gated)' % (head, len(rows), len([r for r in rows if r['exported']]),
-                               len(gaps), len(nomech)))
+              'already has a registry, %d in an app with export machinery but '
+              'NO REGISTRY TO READ (NOT gated, hand-verify), %d in an app with '
+              'no export machinery (NOT gated)'
+              % (head, len(rows), len([r for r in rows if r['exported']]),
+                 len(gaps), len(unlisted), len(nomech)))
         if not gaps:
             return 0
         # `  - ` PREFIX, DELIBERATELY. report_only_checks.by_exit keeps only
@@ -174,11 +222,21 @@ def main(argv):
     print(head)
     print('  Class A resources parsed from the scoping doc : %d' % len(rows))
     print('')
+    MARK = {REGISTRY: 'NOT IN REGISTRY', UNLISTED: 'NO REGISTRY TO READ',
+            NONE: 'NO EXPORT MACHINERY'}
     for r in sorted(rows, key=lambda x: (x['app'], x['resource'])):
-        mark = 'EXPORTABLE' if r['exported'] else (
-            'NOT IN REGISTRY' if r['app_has_registry'] else 'NO EXPORT MACHINERY')
+        mark = 'EXPORTABLE' if r['exported'] else MARK[r['app_state']]
         print('  %-14s %-24s %s' % (r['app'], r['resource'], mark))
     print('')
+    if unlisted:
+        print('  NO REGISTRY TO READ IS A THIRD ANSWER AND NOT A FINDING. Those')
+        print('  apps DO have export machinery -- real CSV writers on real')
+        print('  buttons -- but no registry in either shape this tool reads, so')
+        print('  it can enumerate nothing and is saying so instead of printing')
+        print('  NO EXPORT MACHINERY, which it used to and which is a claim.')
+        print('  Hand-verify against the app; the answers live in')
+        print('  docs/2026-09-14-class-a-retrievability.md.')
+        print('')
     print('  THIS IS HALF THE QUESTION AND THE OTHER HALF IS NOT MECHANICAL.')
     print('  Whether a person can SEE these rows on screen is a backing-variable')
     print('  trace that two detectors got wrong in opposite directions; the')

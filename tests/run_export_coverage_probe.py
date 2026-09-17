@@ -88,9 +88,9 @@ _dn_pairs = len(set(a for a, _ in X.PAIR.findall(_dn_src)))
 ok('...and resolving it did NOT sweep in every resource the app holds',
    dn is not None and 0 < len(dn) < _dn_pairs,
    '%d resolved of %d sync pairs' % (len(dn or []), _dn_pairs))
-mc, mc_has = X.app_exports('sairnmechanical')
+mc, mc_state = X.app_exports('sairnmechanical')
 ok('sairnmechanical has NO export machinery, and that is not the same as an '
-   'empty registry', mc == set() and mc_has is False, (mc, mc_has))
+   'empty registry', mc == set() and mc_state == X.NONE, (mc, mc_state))
 nn, _ = X.app_exports('no_such_app_39c')
 ok('an app file that does not exist is unreadable, not empty', nn is None, nn)
 
@@ -111,13 +111,22 @@ ok('the real repo PASSES --check -- all four gaps found on 2026-09-14 are '
 
 _real = X.app_exports
 try:
-    X.app_exports = lambda app: ((set(), True) if app == 'sairnroofing'
+    X.app_exports = lambda app: ((set(), X.REGISTRY) if app == 'sairnroofing'
                                  else _real(app))
     ok('a registry that EXISTS and drops a Class A resource fails --check',
        X.main(['--check']) == 1)
-    X.app_exports = lambda app: (set(), False)
+    X.app_exports = lambda app: (set(), X.NONE)
     ok('...but an app with NO export machinery at all does NOT fail -- that is '
        'a feature nobody built, not a gap in one that exists',
+       X.main(['--check']) == 0)
+    # ── AND NEITHER DOES THE THIRD STATE, WHICH IS THE POINT OF HAVING IT ──
+    # UNLISTED means the tool could not enumerate the app. Gating on it would
+    # be a blocking gate firing on a question it never answered -- PR 1.11
+    # exactly -- and folding it back into REGISTRY is the single edit that
+    # would do that silently, so it is driven here rather than assumed.
+    X.app_exports = lambda app: (set(), X.UNLISTED)
+    ok('...and an app with export machinery but NO REGISTRY TO READ does NOT '
+       'fail either -- a could-not-tell must never be gated as a gap',
        X.main(['--check']) == 0)
 finally:
     X.app_exports = _real
@@ -199,9 +208,20 @@ finally:
     shutil.rmtree(TMP, ignore_errors=True)
     ok('the throwaway copy is gone', not os.path.isdir(TMP))
 
-print('\nE. the eleven answers, pinned by name as of 2026-09-14')
+print('\nE. the eleven answers, pinned by name as of 2026-09-16')
 # EXPORTABLE / NOT IN REGISTRY (the app has one and this is not in it) /
+# NO REGISTRY TO READ (the app HAS export machinery and no registry this tool
+# can enumerate -- a could-not-tell, hand-verified elsewhere) /
 # NO MACHINERY (the app has no export path at all).
+#
+# ── SAIRNVET'S TWO MOVED OFF `NO MACHINERY` ON 2026-09-16 ──────────────────
+# Not because the app changed under this pin -- because the pin was recording
+# the tool's mislabel. sairnvet.html has carried `svExportControlled()` since
+# before this table was written and gained `svExportDoseAudit()` on 2026-09-16,
+# two real CSV writers on two real buttons; it has no registry, and the tool
+# reported the absence of a registry as the absence of export machinery. This
+# table pinned that verdict faithfully, which is what a pin does -- it makes an
+# answer stable, not true. The tool now has a third state and these two carry it.
 EXPECTED = {
     ('sairncare', 'alf_staff_credentials'): 'NO MACHINERY',
     # The four NOT IN REGISTRY verdicts became EXPORTABLE on 2026-09-14, in the
@@ -215,17 +235,18 @@ EXPECTED = {
     ('sairnroofing', 'rf_certifications'): 'EXPORTABLE',
     ('sairnroofing', 'rf_claim_photos'): 'EXPORTABLE',
     ('sairnroofing', 'rf_proposals'): 'EXPORTABLE',
-    ('sairnvet', 'sv_audit_log'): 'NO MACHINERY',
-    ('sairnvet', 'sv_controlled'): 'NO MACHINERY',
+    ('sairnvet', 'sv_audit_log'): 'NO REGISTRY TO READ',
+    ('sairnvet', 'sv_controlled'): 'NO REGISTRY TO READ',
 }
+LABEL = {X.REGISTRY: 'NOT IN REGISTRY', X.UNLISTED: 'NO REGISTRY TO READ',
+         X.NONE: 'NO MACHINERY'}
 pairs, _ = X.class_a()
 cache, actual = {}, {}
 for app, res in pairs:
     if app not in cache:
         cache[app] = X.app_exports(app)
-    exported, has = cache[app]
-    actual[(app, res)] = ('EXPORTABLE' if res in exported
-                          else 'NOT IN REGISTRY' if has else 'NO MACHINERY')
+    exported, state = cache[app]
+    actual[(app, res)] = 'EXPORTABLE' if res in exported else LABEL[state]
 ok('the Class A set is exactly the eleven that were verified',
    set(actual) == set(EXPECTED),
    'added %s / gone %s' % (sorted(set(actual) - set(EXPECTED)),
@@ -233,11 +254,28 @@ ok('the Class A set is exactly the eleven that were verified',
 wrong = {k: (EXPECTED.get(k), v) for k, v in actual.items()
          if k in EXPECTED and EXPECTED[k] != v}
 ok('every verdict still matches the hand-verified answer', not wrong, wrong)
-# Was 3 while four gaps were open. Now 2 -- EXPORTABLE and NO MACHINERY -- and
-# that is stated rather than loosened to `>= 1`, which would pass on a table
-# that had stopped distinguishing anything at all.
+# Was 3 while four gaps were open, then 2, and is 3 again now that
+# NO REGISTRY TO READ is separated from NO MACHINERY. Stated rather than
+# loosened to `>= 1`, which would pass on a table that had stopped
+# distinguishing anything at all.
 ok('and the answers are not all the same, so the table distinguishes anything',
-   len(set(actual.values())) == 2, sorted(set(actual.values())))
+   len(set(actual.values())) == 3, sorted(set(actual.values())))
+
+# ── THE ARM THAT KEEPS THE THIRD STATE FROM COLLAPSING BACK ────────────────
+# The whole repair is that "I cannot enumerate this app" stopped being reported
+# as "this app cannot export". An arm on the LABELS alone would still pass if
+# somebody re-folded UNLISTED into NONE and re-pinned the table, so this one
+# asserts the underlying fact the label rests on: sairnvet HAS export machinery.
+sv_src = io.open(os.path.join(REPO, 'sairnvet.html'), encoding='utf-8',
+                 errors='replace').read()
+ok('SAIRNvet really does have export machinery, which is why NO MACHINERY was '
+   'the wrong word',
+   'svExportControlled(' in sv_src and 'svExportDoseAudit(' in sv_src
+   and 'text/csv' in sv_src,
+   'the premise of the third state has gone -- re-check before re-pinning')
+ok('...and still no registry in either shape the tool reads, so the answer is '
+   'a could-not-tell and not a gap',
+   X.app_exports('sairnvet')[1] == X.UNLISTED, X.app_exports('sairnvet'))
 
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:

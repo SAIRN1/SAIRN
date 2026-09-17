@@ -32,10 +32,12 @@ But the question splits in two, and the second half is where the finding is.
 | sairnroofing | `rf_proposals` | yes | the job panel's proposal chain | yes — `'proposals'` |
 | sairncare | `alf_staff_credentials` | yes | `crRefresh()` → `rCredentials()` | **no** — app has no export machinery |
 | sairnmechanical | `mech_credentials` | yes | `mechCredRefresh()` → `mechRenderAccess()` | **no** — app has no export machinery |
-| sairnvet | `sv_controlled` | yes | `panel-controlled` | **no** — app has no export machinery |
+| sairnvet | `sv_controlled` | yes | `panel-controlled` | **yes** — `svExportControlled()`, on the panel's own "Export CSV" button **(added 2026-09-16, `ba8843df`)** |
 | sairnvet | `sv_audit_log` | **yes** — `panel-doseaudit`, "Dosing Audit Trail" **(added 2026-09-16, Hank)** | `svRenderDoseAudit()` | **yes** — `svExportDoseAudit()` **(same panel)** |
 
-**Eleven of eleven on screen. Eight of eleven as a file** (was nine and seven; `sv_audit_log` closed BOTH halves on 2026-09-16) — three when this was written, and the four gaps below were closed the same day. The remaining four are in apps with no export machinery at all.
+**Eleven of eleven on screen. Nine of eleven as a file** (was eight, and seven before that; `sv_audit_log` closed BOTH halves on 2026-09-16 and `sv_controlled` closed the file half the same day) — three when this was written, and the four gaps below were closed the same day. The remaining **two** are in apps with no export machinery at all.
+
+**`sv_controlled`'s row said "no — app has no export machinery" for most of 2026-09-16, while the export was already in the file.** It is worth recording which way that error ran. `tools/export_coverage_check.py` had two states where there are three: it could find an export REGISTRY or not, and the absence of one was printed as the absence of export MACHINERY. SAIRNvet has never had a registry and by that morning had two real CSV writers on two real buttons, so the tool reported a missing feature that existed, this table copied the tool, and `tests/run_export_coverage_probe.py` section E pinned the copy. **A pin makes an answer stable, not true** — all three artefacts agreed with each other and none of them agreed with the app. The tool now reports `NO REGISTRY TO READ` as its own third state and this row is hand-verified against `sairnvet.html` (`svExportControlled()` at the "Export CSV" button on `panel-controlled`), not against the tool.
 
 ---
 
@@ -75,10 +77,15 @@ carry them.** That is a gap in a built mechanism, not a missing feature:
   * `rf_claim_photos` — the registry exports `claims`, which is `rf_claims`.
     The photo evidence attached to a claim is not in it.
 
-The other **three** (`alf_staff_credentials`, `mech_credentials`, `sv_controlled`) sit in apps with **no export path at all** — `sv_audit_log` was the fourth and is closed, which means SAIRNvet now has export machinery and `sv_controlled` is a missing REPORT rather than a missing feature — no
-`createObjectURL`, no `text/csv`, anywhere in the file. That is a larger piece
-of work and a different decision, so the two are counted separately rather than
-summed into one number.
+The other **two** (`alf_staff_credentials`, `mech_credentials`) sit in apps with
+**no export path at all** — no `createObjectURL`, no `text/csv`, anywhere in
+either file, verified by grep on 2026-09-16 and by the checker's own `NONE`
+state. That is a larger piece of work and a different decision, so the two are
+counted separately rather than summed into one number.
+
+`sv_controlled` and `sv_audit_log` were the third and fourth of these and both
+are closed; SAIRNvet has export machinery and no registry, which is the case
+the checker used to mislabel and now reports as `NO REGISTRY TO READ`.
 
 `tools/export_coverage_check.py` checks this half mechanically. It **failed on
 its first day** on those four and **passes now**; the probe's gating direction
