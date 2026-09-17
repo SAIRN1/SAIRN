@@ -672,6 +672,136 @@ test('D: the env suffix is derived from the app name, not hand-mapped', () => {
   });
 });
 
+
+// ══ PRE-KID TOKENS, THE WHOLE POPULATION ═════════════════════════════════
+// Every session, pre-auth and SSO-state token issued before 2026-09-17 has no
+// `kid`. One arm above covers the SESSION case across a rotation. These cover
+// what it does not, and the last one is the case neither C nor D exercises on
+// its own -- their intersection.
+//
+// A HELPER THAT SIGNS THE WAY THE OLD CODE DID, so the fixture is a real
+// pre-kid token rather than a new one with a field deleted by hand in three
+// places.
+function signWithoutKid(secret, payload) {
+  const crypto = require('crypto');
+  const b64 = Buffer.from(JSON.stringify(payload)).toString('base64')
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const sig = crypto.createHmac('sha256', secret).update(b64).digest()
+    .toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  return b64 + '.' + sig;
+}
+
+test('C: a pre-kid PRE-AUTH token survives a rotation too -- it is the token '
+   + 'that stands between a PIN and MFA', () => {
+  // If this one were rejected mid-rotation an attorney would be bounced back to
+  // the PIN screen after passing it, which reads as a broken login rather than
+  // as a key change and would be debugged in the wrong file.
+  const claims = { typ: 'preauth', app: 'sairnlaw', employee_id: 'e1',
+                   role: 'attorney', license_hash: LIC_A,
+                   iat: Date.now(), exp: Date.now() + 5 * 60 * 1000 };
+  const tok = signWithoutKid(SIGN_1, claims);
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null }, () => {
+    assert.ok(AUTHMOD.verifyPreAuthToken(tok, LIC_A, 'sairnlaw'),
+      'a pre-kid pre-auth token does not verify even before a rotation');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1 }, () => {
+    assert.ok(AUTHMOD.verifyPreAuthToken(tok, LIC_A, 'sairnlaw'),
+      'a pre-kid pre-auth token was rejected during the rotation window');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: null }, () => {
+    assert.strictEqual(AUTHMOD.verifyPreAuthToken(tok, LIC_A, 'sairnlaw'), null);
+  });
+});
+
+test('C: a pre-kid SSO STATE token survives a rotation -- it is in flight at an '
+   + 'identity provider and cannot be re-issued', () => {
+  // The others are held by a browser we control. This one is round-tripping
+  // through somebody else's login page, so rejecting it mid-rotation fails a
+  // sign-in that was already half-complete and cannot be retried transparently.
+  const claims = { typ: 'sso_state', app: 'sairnlaw', license_hash: LIC_A,
+                   code_verifier: 'v'.repeat(43),
+                   iat: Date.now(), exp: Date.now() + 10 * 60 * 1000 };
+  const tok = signWithoutKid(SIGN_1, claims);
+  // verifySsoState(token, expectedApp) -- TWO arguments, not three. It does not
+  // check license_hash the way the session and pre-auth verifiers do; it
+  // RETURNS it, because the state token is what carries the licence forward
+  // through the identity provider's round trip and there is nothing to compare
+  // it against until it comes back. Written down because my first version of
+  // this arm passed LIC_A as expectedApp and failed for that reason rather than
+  // for anything about keys.
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_PREVIOUS: null }, () => {
+    assert.ok(AUTHMOD.verifySsoState(tok, 'sairnlaw'), 'baseline');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1 }, () => {
+    assert.ok(AUTHMOD.verifySsoState(tok, 'sairnlaw'),
+      'an in-flight SSO login was broken by the rotation');
+  });
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: null }, () => {
+    assert.strictEqual(AUTHMOD.verifySsoState(tok, 'sairnlaw'), null);
+  });
+});
+
+test('C+D: a PRE-KID token survives a per-app rollout -- the case NEITHER stage '
+   + 'exercises on its own', () => {
+  // THE INTERSECTION, and the reason it is the sharpest of the three. Stage D's
+  // signingKeys(app) returns ONLY the app's own keys once it has one -- no
+  // platform fallback, deliberately. So a pre-kid token signed with the
+  // PLATFORM secret is invisible to that app unless the rollout puts the
+  // platform secret in the app's _PREVIOUS. Every session issued before today
+  // is exactly that token, so getting this wrong logs out every attorney at the
+  // moment SAIRNlaw gets its own key.
+  const claims = { typ: 'session', app: 'sairnlaw', employee_id: 'e1',
+                   role: 'attorney', license_hash: LIC_A,
+                   iat: Date.now(), exp: Date.now() + 12 * 3600 * 1000 };
+  const tok = signWithoutKid(SIGN_1, claims);
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_SAIRNLAW: null,
+            SD_AUTH_SECRET_PREVIOUS: null }, () => {
+    assert.ok(verifySessionToken(tok, LIC_A, 'sairnlaw'), 'baseline');
+  });
+  // The documented rollout: the app's PREVIOUS carries the platform secret.
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_SAIRNLAW: APP_KEY,
+            SD_AUTH_SECRET_SAIRNLAW_PREVIOUS: SIGN_1 }, () => {
+    assert.ok(verifySessionToken(tok, LIC_A, 'sairnlaw'),
+      'a pre-kid session was logged out by the per-app rollout -- every '
+      + 'attorney signed in before 2026-09-17');
+  });
+  // And the rollout DOES eventually retire it, or it retired nothing.
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_SAIRNLAW: APP_KEY,
+            SD_AUTH_SECRET_SAIRNLAW_PREVIOUS: null }, () => {
+    assert.strictEqual(verifySessionToken(tok, LIC_A, 'sairnlaw'), null,
+      'the platform secret still signs SAIRNlaw sessions after the window '
+      + 'closed, so stage D reduced nothing');
+  });
+});
+
+test('C+D: TEETH -- a per-app rollout with NO _PREVIOUS does reject the pre-kid '
+   + 'token, so the arm above is about the window and not about nothing', () => {
+  const claims = { typ: 'session', app: 'sairnlaw', employee_id: 'e1',
+                   role: 'attorney', license_hash: LIC_A,
+                   iat: Date.now(), exp: Date.now() + 12 * 3600 * 1000 };
+  const tok = signWithoutKid(SIGN_1, claims);
+  withEnv({ SD_AUTH_SECRET: SIGN_1, SD_AUTH_SECRET_SAIRNLAW: APP_KEY,
+            SD_AUTH_SECRET_SAIRNLAW_PREVIOUS: null }, () => {
+    assert.strictEqual(verifySessionToken(tok, LIC_A, 'sairnlaw'), null);
+  });
+});
+
+test('C: a pre-kid token is checked against EVERY key, not just the first -- '
+   + 'order must not decide it', () => {
+  // A kid-less token cannot be key-selected, so it depends entirely on the loop
+  // trying each candidate. Signed with the key that ends up SECOND.
+  const claims = { typ: 'session', app: 'stonedesk', employee_id: 'e1',
+                   role: 'owner', license_hash: LIC_A,
+                   iat: Date.now(), exp: Date.now() + 12 * 3600 * 1000 };
+  const signedWithOld = signWithoutKid(SIGN_1, claims);
+  const signedWithNew = signWithoutKid(SIGN_2, claims);
+  withEnv({ SD_AUTH_SECRET: SIGN_2, SD_AUTH_SECRET_PREVIOUS: SIGN_1 }, () => {
+    assert.ok(verifySessionToken(signedWithNew, LIC_A, 'stonedesk'), 'first key');
+    assert.ok(verifySessionToken(signedWithOld, LIC_A, 'stonedesk'),
+      'the loop stops at the first key, so a kid-less token signed by the '
+      + 'outgoing one is rejected');
+  });
+});
 test('C: a pre-auth token is STILL refused where a session is expected, after '
    + 'the refactor moved both through one verifier', () => {
     // The 2026-08-08 finding. Routing both through verifySignedPayload() must

@@ -307,6 +307,41 @@ of one shape with nothing to cite.)*
 
 ---
 
+### 1.12 An arm whose failure mode is a HANG must be preceded by one that fails loudly
+
+**The rule: if removing the thing under test would make an arm STALL rather
+than fail, put a cheap arm that fails on the same cause BEFORE it.**
+
+**A HANG IS NOT A RED, IT IS A SILENCE.** When a sabotage removes a timeout
+guard, the arm that drives a hanging upstream never returns. The run is killed
+by whatever outer limit exists, every arm after it never executes, and the
+grep for `FAIL` finds nothing. **The sabotage reports as a clean pass.** That
+is strictly worse than the arm not existing, because the suite now carries
+evidence it never produced.
+
+**MEASURED, THREE TIMES IN ONE DAY, 2026-09-17.** In
+`api/bridge-push-auth.test.js` a sabotage that removed the proxy_get timeout
+killed zero arms and looked clean; the wiring arm sat after the hang arm and
+was never reached. Moving it first made the same sabotage kill one arm
+immediately. Hours later the identical mistake was made again in
+`api/cron-watchdog.test.js` — two sabotages, zero arms, both hangs — and fixed
+the same way. **A lesson recorded in one suite does not travel to the next one
+on its own, which is the argument for a rule here rather than a comment there.**
+
+**THE CHEAP ARM IS USUALLY A SOURCE ASSERTION**, and that is acceptable
+precisely because it is not the only arm: it fails in milliseconds when the
+wiring is gone, and the behavioural arm behind it still proves the wiring
+works. Neither alone is enough — a source check passes against a guard that is
+present and broken, and a behavioural check goes silent when the guard is
+absent.
+
+**AND THE RELATED TRAP, which cost a separate hour:** a fake that does not
+honour an abort signal turns a timeout arm into a hang. `withTimeout()` aborts
+a controller and relies on the fetch implementation rejecting — real `fetch`
+does. **A stub returning `new Promise(() => {})` never rejects, so the arm
+hangs instead of passing.** Any fake standing in for a cancellable call must
+reject on `signal`'s abort event.
+
 ## Part 2 — Editing standing documents
 
 ### 2.1 Never edit an index row by splitting on `|`
@@ -363,6 +398,51 @@ A struck-through line shows the next reader that the error was found. A deleted
 one lets them make it again with no trace.
 
 ---
+
+### 2.4 Never `--amend` after a rebase you did not verify landed your commit
+
+**The rule, in one line: after any `git rebase`, run `git log --oneline -1`
+and confirm the subject is YOURS before any `--amend`, `--continue`, or
+`add -A`.**
+
+**THE FAILURE IS NOT THE AMEND, IT IS AMENDING SOMEBODY ELSE'S COMMIT.** A
+rebase onto a moved `origin/main` replays the other clones' commits too. If your
+own commit was never created — because a push gate refused the compound command
+it was chained into — or it was dropped as empty, then HEAD is *their* commit,
+and `git commit --amend` silently folds your working tree into it. The result
+pushes another session's message over your change, or (worse) never pushes your
+change at all while `git status` reads clean.
+
+**IT HAS HAPPENED TWICE, AND THE SECOND TIME THE FIRST LESSON DID NOT COVER
+IT.** 2026-09-15 recorded *"do not chain a regenerate helper into a commit, and
+never while a rebase is in progress"* — correct, and about the COMMIT MESSAGE.
+On 2026-09-17 the same shape cost a whole change: a `git commit -q -F -` was
+refused by the push gate inside a `&&` chain, the rebase that followed put
+`chore(claims): fourth releases fourth` at HEAD, and `--amend` attached the
+bridge work to it. Recovered from the reflog and cherry-picked, so nothing was
+lost — but recovery is not prevention, and the first rule's wording did not
+reach the second case.
+
+**WHY THE OBVIOUS GUARD DOES NOT WORK:** `git status` is *clean* in this state.
+The working tree is committed; it is committed to the wrong object. Nothing
+about the tree tells you, which is why the check has to be on HEAD's SUBJECT
+and not on whether there are changes.
+
+**THREE THINGS THAT WOULD EACH HAVE PREVENTED IT**, in order of cheapness:
+
+1. **Do not chain `commit` behind `&&` with anything that can refuse.** A gate
+   that blocks the commit leaves the rest of the chain running against a HEAD
+   you did not expect. Commit as its own command, then look at it.
+2. **`git log --oneline -1` between a rebase and an amend.** One line, and it
+   is the only signal that distinguishes the two states.
+3. **Prefer a new commit to `--amend` when the tree has been rebased.** An
+   extra commit is cheap and reviewable; an amend onto the wrong parent is
+   neither.
+
+**AND A DETECTION NOTE, because prevention will eventually be skipped:** if a
+push is rejected with *"could not be read"* on an outgoing range whose base you
+do not recognise, or the gate names commits with somebody else's subject, stop
+and read `git reflog` before retrying. Retrying compounds it.
 
 ## Part 3 — Push protocol, in full
 

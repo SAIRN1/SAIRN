@@ -854,6 +854,106 @@ t('FOLLOW-UP WINS when both would fire -- and this arm found that it can', () =>
     'the two branches are no longer else-if, so both can fire in one run');
 });
 
+// ── 4d. THE MONITOR DOES NOT HANG ON ITS OWN ALERT PROVIDER ────────────────
+// Added 2026-09-17. Both Resend calls here were unbounded. That is worse in
+// this file than almost anywhere else: if sendAlert() hangs, the run never
+// reaches beat(), no heartbeat is written, and the out-of-band reader concludes
+// the WATCHDOG is dead -- a false alarm about the platform caused by the alert
+// provider being slow.
+section('4d. a slow Resend does not take the watchdog down with it');
+
+t('TEETH -- the timeout is WIRED, not just imported', () => {
+  // ORDERED FIRST, AND I PUT IT LAST ONCE BEFORE FIXING IT. If withTimeout is
+  // dropped, the hang arms BELOW stall rather than fail and the suite reports
+  // nothing at all -- which is exactly what happened when this arm sat after
+  // them: two sabotages killed zero arms and looked like clean passes.
+  //
+  // THE SAME MISTAKE, IN A SECOND FILE, THE SAME DAY. api/bridge-push-auth.test.js
+  // learned this hours earlier. A lesson recorded in one suite does not move to
+  // the next one on its own, which is the argument for a rule rather than a
+  // comment: any arm whose failure mode is a HANG must be preceded by a cheap
+  // arm that fails LOUDLY on the same cause.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, 'cron-watchdog.js'), 'utf8');
+  assert.ok(src.indexOf('RESIL.withTimeout(fetch') !== -1,
+    'the Resend calls no longer go through withTimeout');
+  assert.strictEqual((src.match(/RESIL\.withTimeout\(fetch/g) || []).length, 2,
+    'only one of the two Resend calls is bounded');
+});
+
+t('a HANGING Resend returns sent:false with a reason, not a hung run', async () => {
+  const realFetch = global.fetch;
+  const realKey = process.env.RESEND_API_KEY;
+  const realFrom = process.env.RESEND_FROM_EMAIL;
+  process.env.RESEND_API_KEY = 'k';
+  process.env.RESEND_FROM_EMAIL = 'a@b.c';
+  process.env.SAIRN_RESEND_TIMEOUT_MS = '60';
+  // THE FAKE HONOURS THE ABORT SIGNAL, and it has to: withTimeout() aborts a
+  // controller and relies on fetch rejecting. A fake that ignored it would HANG
+  // rather than fail, which is a test that proves nothing and looks like a pass.
+  global.fetch = (u, opts) => new Promise((_res, rej) => {
+    const sig = opts && opts.signal;
+    if (sig) {
+      if (sig.aborted) return rej(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      sig.addEventListener('abort',
+        () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })),
+        { once: true });
+    }
+  });
+  try {
+    const out = await W.sendAlert('ops@example.invalid', 's', 't');
+    assert.strictEqual(out.sent, false, JSON.stringify(out));
+    assert.ok(out.error, 'a timed-out send reported no reason');
+  } finally {
+    global.fetch = realFetch;
+    delete process.env.SAIRN_RESEND_TIMEOUT_MS;
+    if (realKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = realKey;
+    if (realFrom === undefined) delete process.env.RESEND_FROM_EMAIL; else process.env.RESEND_FROM_EMAIL = realFrom;
+  }
+});
+
+t('...and the follow-up event read is bounded too -- it runs on EVERY hourly '
+  + 'run until the proof resolves', async () => {
+  const realFetch = global.fetch;
+  const realKey = process.env.RESEND_API_KEY;
+  process.env.RESEND_API_KEY = 'k';
+  process.env.SAIRN_RESEND_TIMEOUT_MS = '60';
+  global.fetch = (u, opts) => new Promise((_res, rej) => {
+    const sig = opts && opts.signal;
+    if (sig) sig.addEventListener('abort',
+      () => rej(Object.assign(new Error('aborted'), { name: 'AbortError' })), { once: true });
+  });
+  try {
+    const out = await W.resendEvent('some-id');
+    assert.strictEqual(out.ok, false, JSON.stringify(out));
+    assert.ok(out.why, 'a timed-out event read reported no reason');
+  } finally {
+    global.fetch = realFetch;
+    delete process.env.SAIRN_RESEND_TIMEOUT_MS;
+    if (realKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = realKey;
+  }
+});
+
+t('CONTROL: a NORMAL Resend reply still succeeds -- the bound is not a refusal '
+  + 'of everything', async () => {
+  const realFetch = global.fetch;
+  const realKey = process.env.RESEND_API_KEY;
+  const realFrom = process.env.RESEND_FROM_EMAIL;
+  process.env.RESEND_API_KEY = 'k';
+  process.env.RESEND_FROM_EMAIL = 'a@b.c';
+  global.fetch = async () => ({ ok: true, status: 200,
+    json: async () => ({ id: 'msg-1' }), text: async () => '{}' });
+  try {
+    const out = await W.sendAlert('ops@example.invalid', 's', 't');
+    assert.strictEqual(out.sent, true, JSON.stringify(out));
+    assert.strictEqual(out.id, 'msg-1');
+  } finally {
+    global.fetch = realFetch;
+    if (realKey === undefined) delete process.env.RESEND_API_KEY; else process.env.RESEND_API_KEY = realKey;
+    if (realFrom === undefined) delete process.env.RESEND_FROM_EMAIL; else process.env.RESEND_FROM_EMAIL = realFrom;
+  }
+});
+
 (async () => {
   for (const [name, fn] of queue) {
     if (!fn) { console.log('--- ' + name + ' ---'); continue; }

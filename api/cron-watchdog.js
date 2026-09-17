@@ -254,9 +254,10 @@ async function resendEvent(id) {
   // reported as `unknown` with the reason, never as a delivery.
   if (!process.env.RESEND_API_KEY) return { ok: false, why: 'no RESEND_API_KEY' };
   try {
-    const r = await fetch('https://api.resend.com/emails/' + encodeURIComponent(id), {
-      headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY }
-    });
+    const r = await RESIL.withTimeout(fetch,
+      'https://api.resend.com/emails/' + encodeURIComponent(id), {
+        headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY }
+      }, RESEND_TIMEOUT_MS, 'resend:event');
     if (!r.ok) {
       const t = await r.text().catch(function () { return ''; });
       return { ok: false, why: 'Resend returned ' + r.status + ' ' + t.slice(0, 160) };
@@ -269,12 +270,39 @@ async function resendEvent(id) {
   }
 }
 
+// ── THE MONITOR MUST NOT HANG ON THE THING IT USES TO COMPLAIN (2026-09-17) ─
+// Both Resend calls in this file were unbounded, and that is worse here than
+// almost anywhere else on the platform: THIS IS THE WATCHDOG. If sendAlert()
+// hangs, the run never reaches beat(), no heartbeat is written, and the
+// out-of-band reader concludes the WATCHDOG is dead -- a false alarm about the
+// platform, caused by the alert provider being slow. The monitor would be
+// reporting its own dependency's latency as everyone else's outage.
+//
+// A TIMEOUT, AND DELIBERATELY NOT THE OTHER TWO GUARDS. This is not the same
+// treatment api/bridge.js got and copying it would be wrong:
+//   * NO BULKHEAD. A bulkhead caps concurrency, and this is a cron firing once
+//     an hour with at most a handful of sequential sends. There is no
+//     concurrency to isolate, so a bulkhead here would be decoration.
+//   * NO BREAKER. Its store would be per-instance, which this platform measured
+//     doing nothing in 2026-09-05.
+//   * NO SIZE CAP. Resend's reply is a small JSON object with an id; the risk
+//     here is latency, not volume.
+//
+// AND THE TIMEOUT MAPS ONTO THE EXISTING FAILURE SHAPE rather than adding a new
+// one. sendAlert already returns { sent: false, error } for every other way a
+// send can fail, and every caller already handles that -- an undelivered alert
+// degrades this job's own outcome and is reported on its own axis. A timeout is
+// one more reason a send did not happen, not a new kind of event.
+const RESIL = require('./_lib/resilience.js');
+const RESEND_TIMEOUT_MS = Number(process.env.SAIRN_RESEND_TIMEOUT_MS) > 0
+  ? Number(process.env.SAIRN_RESEND_TIMEOUT_MS) : 8000;
+
 async function sendAlert(to, subject, text) {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
     return { sent: false, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL not configured' };
   }
   try {
-    const r = await fetch('https://api.resend.com/emails', {
+    const r = await RESIL.withTimeout(fetch, 'https://api.resend.com/emails', {
       method: 'POST',
       headers: {
         Authorization: 'Bearer ' + process.env.RESEND_API_KEY,
@@ -283,7 +311,7 @@ async function sendAlert(to, subject, text) {
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL, to: [to], subject: subject, text: text
       })
-    });
+    }, RESEND_TIMEOUT_MS, 'resend:send');
     if (!r.ok) {
       const t = await r.text().catch(function () { return ''; });
       return { sent: false, error: 'Resend returned ' + r.status + ' ' + t.slice(0, 200) };
@@ -615,6 +643,11 @@ module.exports = async (req, res) => {
 module.exports.EXPECTED_JOBS = EXPECTED_JOBS;
 module.exports.assess = assess;
 module.exports.selfOutcome = selfOutcome;
+// Exported for the control only. Both are bounded by RESIL.withTimeout and
+// the arms drive them directly, because a timeout that is never exercised is
+// a timeout nobody has seen fire.
+module.exports.sendAlert = sendAlert;
+module.exports.resendEvent = resendEvent;
 module.exports.proofIsDue = proofIsDue;
 module.exports.proofNeedsFollowUp = proofNeedsFollowUp;
 module.exports.PROOF_TERMINAL = PROOF_TERMINAL;

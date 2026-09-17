@@ -41,10 +41,10 @@
         "tools/sc_tier_a_write_gate_live_probe.py"
       ],
       "what": "Item 97: SAIRNcode's seven Tier A records moved from a destroying `delete` to `soft_delete`, with a read filter, a handler-level refusal and the client call sites repointed. RECORDED RETROACTIVELY on the day the gate was built -- the commit landed hours before check 13 existed, so nothing refused it, and leaving the first Tier A change under the new rule unrecorded would have been the exact gap the rule is about. The reviewer should look hardest at three things: whether the read filter really excludes marked rows on all seven and only those seven; whether repointing the seven client call sites missed one; and whether SC_TIER_A_SOFT_DELETE_ONLY agreeing with docs/CRITICALITY-TIERS.md is actually enforced in both directions or only one.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "status": "reviewed",
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-09-17T22:46:12Z",
+      "verdict": "REVIEWED BY DRIVING IT. The judgement holds and the controls hold. (1) GRANT: drove the real registry -- 0 violations across all 28 sc_* resources; the seven resolve to ['soft_delete'] and the other 21 keep ['delete']. (2) NON-DESTRUCTIVE IN FACT, not just in name: soft_delete marks _deleted_at and the READ filters on data->>_deleted_at=is.null, and that filter is load-bearing rather than cosmetic -- hydration merges by id and never deletes, so an unfiltered read pushes a deleted record straight back. (3) THE PIN HOLDS IN BOTH DIRECTIONS, driven not read: adding a Tier A sc_ row to docs/CRITICALITY-TIERS.md alone FAILS, and dropping a name from the registry alone FAILS. Restoring a destroying delete on the seven fails sairncode_gates AND tests/stonedesk_server_backup.js, one app over. (4) THE ONE THING THIS COMMIT DELIBERATELY DID NOT DO WAS DONE A DAY LATER AND NOT LOST: it flagged sc_denial_events as Tier A but absent from SC_TIER_A_WRITE_GATED, declining to widen a role gate inside a destroy-verb change. da33d96a closed that after finding it live -- 'the SEVENTH Tier A record took a write from the licence key alone'. Flagging rather than widening is only the right call if somebody comes back, and somebody did. ONE RESIDUAL, NOT A DEFECT: line 206 aliases SC_TIER_A_WRITE_GATED to SC_TIER_A_SOFT_DELETE_ONLY. The two concepts coincide today and the derivation is better than the hand-kept copy it replaced, but a future Tier A resource needing a write gate while keeping a destroying delete -- or the reverse -- would be silently forced to both. Worth a comment at the alias if that case ever appears. No change requested."
     },
     {
       "author_session": "fourth",
