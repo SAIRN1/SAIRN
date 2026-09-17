@@ -141,6 +141,43 @@ def git(*args):
     return r.returncode, r.stdout, r.stderr
 
 
+def cited_subjects():
+    """{subject: cited sha} for every register record that carries a subject.
+
+    ── WHY THIS EXISTS, AND IT IS A DISCOVERABILITY FIX RATHER THAN A CHECK ──
+    A rebase moves a commit's sha AFTER a record has been written against it,
+    and this gate then refuses with "no register record cites it" -- which is
+    true and is the wrong thing for the reader to be told. The record EXISTS;
+    its sha is stale.
+
+    `tools/defect_register.py --reseat` has always repaired exactly this, and
+    is documented on line 5 of that file's own usage block. It was still
+    re-implemented by hand FOUR times in one evening -- three by CC, at least
+    once by another session (`chore(register): re-seat the record onto its
+    rebased sha`) -- and one of those hand repairs nearly rewrote 5,717 lines
+    of the register by using its own JSON writer instead of the module's.
+
+    So the missing thing was never the capability. It was a pointer AT THE
+    MOMENT OF FAILURE, which is here. Matching on the SUBJECT is what makes the
+    pointer specific rather than a general note nobody reads: the gate can say
+    "this one has a record, its sha moved" instead of "record it".
+    """
+    try:
+        d = json.load(io.open(REGISTER, encoding='utf-8'))
+    except (OSError, ValueError):
+        return {}
+    recs = d['records'] if isinstance(d, dict) and 'records' in d else d
+    if not isinstance(recs, list):
+        return {}
+    out = {}
+    for r in recs:
+        s = (r.get('subject') or '').strip()
+        c = (r.get('commit') or '').strip()
+        if s and c:
+            out.setdefault(s, c)
+    return out
+
+
 def cited_commits():
     """The set of 8-char shas any register record cites. (set, problem)."""
     try:
@@ -455,9 +492,33 @@ def deny(owed, escaped):
     print('recorded". This is the requirement moved to where the work already')
     print('has to pass.')
     print('')
+    by_subject = cited_subjects()
+    stale = []
     for sha, date, subject, why in owed:
         print('  %s  %s  %s' % (sha, date, subject[:62]))
         print('      %s' % why)
+        cited = by_subject.get(subject.strip())
+        if cited:
+            stale.append((sha, cited))
+            print('      ^ BUT A RECORD FOR THIS SUBJECT ALREADY EXISTS, citing %s.'
+                  % cited)
+            print('        That sha is not in this history -- a rebase or an --amend')
+            print('        moved the commit after the record was written. The record')
+            print('        is not missing; it is pointing at a commit that no longer')
+            print('        exists.')
+    if stale:
+        print('')
+        print('  RE-SEAT THE %d STALE RECORD(S) -- do not write a second one:'
+              % len(stale))
+        print('')
+        print('    python tools/defect_register.py --reseat')
+        print('')
+        print('  It matches by SUBJECT, refuses when the match is ambiguous or')
+        print('  absent rather than guessing, and writes through the register\'s own')
+        print('  writer. THAT LAST PART IS NOT A DETAIL: a hand repair on 2026-09-16')
+        print('  used its own json.dumps and was one commit away from reformatting')
+        print('  5,717 lines of a file whose merge policy is union-by-identity')
+        print('  across four clones.')
     print('')
     print('  Record it:')
     print('    python tools/defect_register.py --add --commit <sha> ...')

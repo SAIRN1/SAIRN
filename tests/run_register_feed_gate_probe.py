@@ -192,6 +192,42 @@ ok('...over every case in BOTH rule tables',
    % (rg.stdout.count('-> '), len(G.CASES), len(G.REUSE_CASES), rg.stdout[-300:]))
 
 
+print('\nH. a STALE record is told apart from a MISSING one')
+# Added 2026-09-16. The refusal used to say "no register record cites it" about
+# a commit whose record exists and whose sha a rebase had moved, which sent four
+# separate hand-repairs at a capability the register has always had.
+#
+# BOTH DIRECTIONS, because a pointer that appears on every refusal is noise and
+# a pointer that never appears is the bug coming back. Driven through the real
+# deny(), with no repository involved.
+import contextlib                                                # noqa: E402
+import io as _io                                                 # noqa: E402
+
+_subs = G.cited_subjects()
+ok('the register yields subjects to match against at all', bool(_subs), len(_subs))
+if _subs:
+    _known = next(iter(_subs))
+    _buf = _io.StringIO()
+    with contextlib.redirect_stdout(_buf):
+        G.deny([('deadbeef', '2026-09-20', _known, 'no register record cites it')], [])
+    _stale = _buf.getvalue()
+    ok('a commit whose SUBJECT is already recorded names --reseat',
+       '--reseat' in _stale, _stale[-300:])
+    ok('...and says the record EXISTS rather than that it is missing',
+       'ALREADY EXISTS' in _stale, _stale[-300:])
+    ok('...and names the stale sha it is pointing at',
+       _subs[_known] in _stale, _stale[-300:])
+
+_buf = _io.StringIO()
+with contextlib.redirect_stdout(_buf):
+    G.deny([('deadbeef', '2026-09-20', 'fix(zz): a subject no record carries',
+             'no register record cites it')], [])
+_fresh = _buf.getvalue()
+ok('CONTROL: a genuinely unrecorded commit does NOT name --reseat',
+   '--reseat' not in _fresh, _fresh[-300:])
+ok('...and is still told how to record it',
+   '--add --commit' in _fresh, _fresh[-300:])
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:
