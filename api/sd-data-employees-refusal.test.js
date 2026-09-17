@@ -165,6 +165,63 @@ async function main() {
     assert.match(asked, /source_app=eq\.sairnbiz/, 'the tenant scoping changed');
   });
 
+  // ── AND WHAT THEY SEE, WHICH NO ROLE CHECK CAN PROMISE ───────────────────
+  // Added 2026-09-16 after a negative control deleted the manager payroll strip
+  // -- `if (session.role !== 'owner') { delete copy.hourly_rate; }` -- and this
+  // suite stayed GREEN. `hourly_rate` appeared in NO test anywhere on the
+  // platform, so "Manager: full roster visibility, but never payroll" was a
+  // promise made in a comment and asserted by nothing.
+  //
+  // It is a SECOND guarantee living in the same branch as the first. The role
+  // deny-list decides WHO reads the roster; this decides WHAT they see, and the
+  // arms above cannot reach it because they assert on a fixture row that
+  // carries no payroll field at all.
+  await test('a MANAGER reads the roster and never sees payroll', async () => {
+    const handler = loadHandler(async function () {
+      return { ok: true, status: 200, json: async () => [
+        { data: { first_name: 'A', hourly_rate: 42, title: 'Fabricator' } }] };
+    });
+    const res = mockRes();
+    await handler(mockReq(tokenFor('stonedesk', 'admin')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.strictEqual(res.body.data.length, 1, 'the manager lost the roster');
+    assert.strictEqual(res.body.data[0].hourly_rate, undefined,
+      'a manager was served hourly_rate');
+    assert.strictEqual(res.body.data[0].title, 'Fabricator',
+      'the strip took more than payroll -- full roster visibility is the other '
+      + 'half of the same promise');
+  });
+
+  await test('...and an OWNER does -- so the arm above is a STRIP, not an '
+    + 'empty response', async () => {
+      const handler = loadHandler(async function () {
+        return { ok: true, status: 200, json: async () => [
+          { data: { first_name: 'A', hourly_rate: 42, title: 'Fabricator' } }] };
+      });
+      const res = mockRes();
+      await handler(mockReq(tokenFor('stonedesk', 'owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+      assert.strictEqual(res.body.data[0].hourly_rate, 42,
+        'the owner lost payroll too, so the manager arm proves nothing');
+    });
+
+  await test('...and the STORED row is not mutated -- the strip is a copy',
+    async () => {
+      // A delete on the upstream object would remove payroll from whatever the
+      // client library cached, so the NEXT read -- by an owner -- would be
+      // missing it too. The source says "shallow-copy so we're not mutating
+      // whatever the upstream client library cached"; this is that sentence,
+      // driven.
+      const row = { data: { first_name: 'A', hourly_rate: 42 } };
+      const handler = loadHandler(async function () {
+        return { ok: true, status: 200, json: async () => [row] };
+      });
+      await handler(mockReq(tokenFor('stonedesk', 'admin')), mockRes());
+      assert.strictEqual(row.data.hourly_rate, 42,
+        'the manager read mutated the stored row, so an owner reading next '
+        + 'would find payroll gone');
+    });
+
   section('3. THE DIAGNOSIS IS NOT THE AUTHORIZATION');
 
   // The fix verifies a second time WITHOUT expectedApp so the message can name
