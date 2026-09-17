@@ -581,6 +581,20 @@ _PROSE_CASES = (
      False),
     ('a prose fixture label',
      "  ('names a Tier A resource and %s must not count here', 1),", False),
+    # ── ADDED 2026-09-17, FROM A REAL BLOCK ────────────────────────────────
+    # The body excluded EVERY quote character rather than just the delimiter,
+    # so a sentence containing the OTHER one never matched and nothing was
+    # blanked. The line that hit it was an ordinary English comment in
+    # tests/run_master_plan_probe.py -- nine words with one possessive -- and
+    # the gate read it as a Tier A touch. The docstring already claimed to
+    # handle "clear old quotes and retry."; it did, right up until somebody
+    # wrote a contraction.
+    ('a sentence with a POSSESSIVE inside double quotes',
+     '  msg = "the plan cites the matrix\'s own %s verbatim"', False),
+    ('a sentence with a CONTRACTION inside double quotes',
+     '  msg = "don\'t let %s be read as a touch"', False),
+    ('a sentence with a DOUBLE quote inside single quotes -- the mirror case',
+     '  msg = \'the "%s" row is prose here, not a lookup\'', False),
 )
 for _label, _tpl, _must in _PROSE_CASES:
     _line = _tpl % _name

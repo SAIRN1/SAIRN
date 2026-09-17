@@ -355,7 +355,25 @@ def is_report_only_artefact(path, content):
 # at least three whitespace-separated words. `'sb_ts'`,
 # `'sb_ts?license_hash=eq.'` and `'ts_id'` are tokens; "Storage full -- clear
 # old quotes and retry." is a sentence.
-_PROSE = re.compile(r'''(['"`])((?:[^'"`\\\n]|\\.)*?)\1''')
+# FIXED 2026-09-17: the body excluded EVERY quote character, not just the
+# delimiter, so a prose string containing the other one never matched at all --
+# and the commonest prose in this repo is a possessive or a contraction.
+#
+#     "the plan quotes the matrix's own numerator"
+#
+# is nine words of English in a comment. The apostrophe in `matrix's` is not in
+# `[^'"`...]`, so the `"`-delimited match could never span it, nothing was
+# blanked, and the gate read the word `quotes` -- a Tier A resource name -- as
+# a Tier A touch in a test file. That is the THIRD recorded false positive of
+# this shape and the first one the prose rule was already meant to cover: the
+# docstring below cites "clear old quotes and retry." as the case it handles,
+# and it does, right up until somebody writes "don't".
+#
+# `(?!\1)` EXCLUDES ONLY THE DELIMITER, which is the whole widening. It does
+# not change what counts as prose -- that is still three or more whitespace-
+# separated words, decided in _blank() -- and it does not touch the true
+# positive this rule was narrowed for: `'sb_ts'` is one word either way.
+_PROSE = re.compile(r'''(['"`])((?:(?!\1)[^\\\n]|\\.)*?)\1''')
 
 
 def strip_diff_noise(line):
