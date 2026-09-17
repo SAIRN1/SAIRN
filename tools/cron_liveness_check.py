@@ -191,8 +191,21 @@ def main(argv):
         ], msg=str(e))
 
     try:
-        payload = fetch_json(url, method='POST', payload={},
-                             headers={'Authorization': 'Bearer ' + secret})
+        # ── fetch_json RETURNS Response(status, body), NOT THE BODY ─────────
+        # FOUND 2026-09-17, and it means this tool could never once have said
+        # anything but COULD NOT TELL. `payload` was the namedtuple; the
+        # `isinstance(payload, dict)` guard below is therefore ALWAYS true, so
+        # every run took the unreadable-answer branch and exited 2 -- including
+        # the runs where the watchdog answered 200 with all four jobs `ok`.
+        #
+        # It survived because it was never REACHED. Locally the tool stopped at
+        # `CRON_SECRET is not set`; in Actions it stopped at an empty
+        # SAIRN_WATCHDOG_URL. The first time a real answer ever arrived was
+        # 2026-09-17T06:40:53Z, after the URL fix -- and the run still failed,
+        # which is what exposed this. Two defects stacked, and the outer one
+        # hid the inner one for the tool's entire life.
+        resp = fetch_json(url, method='POST', payload={},
+                          headers={'Authorization': 'Bearer ' + secret})
     except Exception as e:
         return cannot_tell([
             '**The watchdog could not be reached or did not answer usefully.**',
@@ -204,6 +217,22 @@ def main(argv):
             'report, so this is the one COULD NOT TELL worth acting on immediately.',
         ], msg='%s: %s' % (type(e).__name__, e))
 
+    # THE HTTP STATUS IS READ RATHER THAN ASSUMED. fetch_json does NOT raise on
+    # an HTTP error -- it returns the parsed error body with its code -- so a
+    # 401 from a stale CRON_SECRET would otherwise be parsed as an answer. A
+    # monitor that reads its own rejection as data is the failure this file's
+    # header is about.
+    status, payload = resp.status, resp.body
+    if status != 200:
+        return cannot_tell([
+            '**The watchdog rejected or could not serve this request: HTTP %s.**'
+            % status,
+            '',
+            '`401` means the `CRON_SECRET` this tool sent does not match the one',
+            'the deployment holds -- the secret is SET and WRONG, which looks',
+            'identical to a healthy monitor from the outside. No job was checked.',
+        ], payload if isinstance(payload, dict) else None,
+           msg='HTTP %s from the watchdog.' % status)
     if not isinstance(payload, dict):
         return cannot_tell(['**The watchdog answered something this tool cannot read.**'],
                            msg='unreadable answer.')

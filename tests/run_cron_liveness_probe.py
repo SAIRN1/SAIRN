@@ -68,12 +68,28 @@ def payload(jobs=None, channel=None, actions=None, **kw):
     return p
 
 
-def run_against(p):
+def run_against(p, status=200):
     """Drive main() with the network and the status document both faked.
 
     The document path is redirected so a probe run never rewrites the real
     docs/CRON-LIVENESS-STATUS.md -- a test that overwrites the live status file
     would make this repo assert a check that was a fixture.
+
+    ── THE FAKE RETURNS WHAT THE REAL FUNCTION RETURNS (fixed 2026-09-17) ───
+    THIS IS THE DEFECT THAT HID THE OTHER ONE, and it is the more important of
+    the two. `sairn_http.fetch_json` returns `Response(status, body)`, a
+    namedtuple. This fake returned the BODY -- a bare dict -- so every arm below
+    proved the tool worked against a function that does not exist, while the
+    real tool assigned the namedtuple to `payload`, failed its own
+    `isinstance(payload, dict)` guard, and exited 2 COULD NOT TELL on every
+    input it would ever see.
+
+    A fake whose return SHAPE disagrees with the function it replaces does not
+    weaken a test, it inverts it: the suite went green precisely because the
+    tool was broken in a way the fake could not express. The `status` parameter
+    exists so an HTTP error can be driven too -- fetch_json does NOT raise on
+    one, it returns the parsed error body with its code, and nothing here had
+    ever exercised that.
     """
     tmp = tempfile.mkdtemp(prefix='cronlive_')
     real_doc, real_fetch = C.DOC, None
@@ -82,7 +98,7 @@ def run_against(p):
     try:
         import sairn_http
         real_fetch = sairn_http.fetch_json
-        sairn_http.fetch_json = lambda *a, **k: p
+        sairn_http.fetch_json = lambda *a, **k: sairn_http.Response(status, p)
         code = C.main([])
         doc = io.open(C.DOC, encoding='utf-8').read() if os.path.isfile(C.DOC) else ''
         return code, doc
@@ -145,9 +161,14 @@ try:
         'import sys, json, os\n'
         'sys.path.insert(0, %r)\n' % TMP +
         'import sairn_http\n'
-        'sairn_http.fetch_json = lambda *a, **k: json.loads(os.environ["PAYLOAD"])\n'
+        # Response(status, body), NOT the bare body. The teeth driver carried
+        # the identical fake-shape defect as run_against(): it returned the
+        # body, so the arm it holds was proving the neutering worked against a
+        # function that does not exist.
+        'sairn_http.fetch_json = lambda *a, **k: sairn_http.Response(\n'
+        '    200, json.loads(os.environ[\"PAYLOAD\"]))\n'
         'import broken_check as B\n'
-        'B.DOC = os.path.join(%r, "S.md")\n' % TMP +
+        'B.DOC = os.path.join(%r, \"S.md\")\n' % TMP +
         'sys.exit(B.main([]))\n')
     env = dict(os.environ, CRON_SECRET='probe', PAYLOAD=json.dumps(
         payload(channel={'configured': False, 'missing': ['SAIRN_OPS_EMAIL']})))
@@ -302,6 +323,51 @@ _wf = io.open(WORKFLOW, encoding='utf-8').read()
 ok('the workflow shell still uses :- so it agrees with the tool on empty',
    '${SAIRN_WATCHDOG_URL:-' in _wf,
    'the shell default changed shape; re-check it against watchdog_url()')
+
+
+# ── 6. THE TOOL CAN REACH A VERDICT AT ALL (2026-09-17) ────────────────────
+# `sairn_http.fetch_json` returns `Response(status, body)`. The tool assigned
+# that namedtuple straight to `payload` and then guarded with
+# `isinstance(payload, dict)` -- ALWAYS true -- so EVERY run took the
+# unreadable-answer branch and exited 2, including the two production runs
+# where the watchdog answered 200 with all four jobs ok. The independent second
+# opinion was structurally incapable of holding one.
+#
+# IT WAS THE FAKE THAT HID IT. run_against() returned the BODY, so the arms
+# above proved the tool worked against a function that does not exist. Both
+# fakes now return a real Response; these arms drive all three verdicts so a
+# tool that has collapsed onto one can never satisfy them.
+print(chr(10) + '6. the tool can actually reach a verdict, not only COULD NOT TELL')
+
+_HEALTHY2 = payload(jobs=[{'job': '/api/a', 'status': 'ok'}],
+                    channel={'configured': True, 'missing': []})
+_DEAD2 = payload(jobs=[{'job': '/api/a', 'status': 'DEAD'}],
+                 channel={'configured': True, 'missing': []})
+
+_c0, _d0 = run_against(_HEALTHY2)
+ok('a HEALTHY 200 exits 0 -- the verdict this tool could never once reach',
+   _c0 == 0, 'exit %s' % _c0)
+ok('...and the document says OK, not COULD NOT TELL',
+   '| **State** | **OK** |' in _d0, _d0[:400])
+
+_c1, _d1 = run_against(_DEAD2)
+ok('a DEAD job is a FINDING (exit 1), which is not could-not-tell',
+   _c1 == 1, 'exit %s' % _c1)
+
+# fetch_json does NOT raise on an HTTP error -- it returns the parsed error
+# body with its code -- so without reading `status` a 401 from a stale secret
+# would be parsed as an answer. Nothing had ever driven that.
+_c2, _d2 = run_against({'error': {'message': 'Unauthorized'}}, status=401)
+ok('a 401 is COULD NOT TELL (exit 2), not an answer', _c2 == 2, 'exit %s' % _c2)
+ok('...and it names the stale-secret cause instead of blaming the jobs',
+   'CRON_SECRET' in _d2 and '401' in _d2, _d2[:400])
+
+# TEETH. Three different inputs must give three different codes; if they ever
+# collapse, the arms above are satisfied by a tool that distinguishes nothing --
+# which is precisely the state that shipped.
+ok('clean, finding and could-not-tell are three DIFFERENT exit codes',
+   len({_c0, _c1, _c2}) == 3,
+   'the tool has collapsed onto %s' % sorted({_c0, _c1, _c2}))
 
 
 print('\n' + '=' * 66)
