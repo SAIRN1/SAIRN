@@ -170,6 +170,187 @@ const PAYLOAD = { shopId: 'SD-SOMEBODY-ELSES-LICENCE', invoices: [{ id: 'i1', am
       assert.notStrictEqual(res._s, 401, 'proxy_get now demands a licence');
     });
 
+
+  // == proxy_get: THE UNTRUSTED PARSE IS ISOLATED BEFORE IT IS TRUSTED =====
+  // The platform's most exposed untrusted-input path: any caller, no licence,
+  // a third-party body parsed into the app. The allowlist bounds WHO answers,
+  // not what they say or how long they take.
+  const RESIL = require('./_lib/resilience.js');
+
+  function withUpstream(impl, fn) {
+    const saved = global.fetch;
+    global.fetch = impl;
+    return fn().finally(function () { global.fetch = saved; });
+  }
+
+  async function proxy() {
+    const res = mockRes();
+    await handler({ method: 'POST', url: '/api/bridge', headers: {},
+                    body: { data_type: 'proxy_get',
+                            payload: { url: 'https://api.stlouisfed.org/series' } } }, res);
+    return { status: res._s, body: res._j };
+  }
+
+  function upstreamOf(text, headers) {
+    const h = headers || {};
+    return async function () {
+      return {
+        ok: true, status: 200,
+        headers: { get: function (k) { return h[String(k).toLowerCase()] || null; } },
+        text: async function () { return text; },
+        body: null
+      };
+    };
+  }
+
+  await t('proxy_get: a NORMAL upstream body still works -- the bounds are not '
+    + 'a refusal of everything', async () => {
+      await withUpstream(upstreamOf('{"observations":[1,2,3]}'), async () => {
+        const r = await proxy();
+        assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+        assert.deepStrictEqual(r.body.result.observations, [1, 2, 3]);
+      });
+    });
+
+  await t('proxy_get: an OVERSIZE body is REFUSED, not truncated', async () => {
+      // Truncation is the dangerous option: a cut-off JSON body either fails to
+      // parse or parses as a valid SMALLER structure, which is silently wrong.
+      const huge = 'x'.repeat(3 * 1024 * 1024);
+      await withUpstream(upstreamOf(huge), async () => {
+        const r = await proxy();
+        assert.strictEqual(r.status, 502, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'UPSTREAM_TOO_LARGE');
+      });
+    });
+
+  await t('proxy_get: a LYING content-length does not get past the reader',
+    async () => {
+      // The header is a claim by the same party whose body is in question.
+      const huge = 'x'.repeat(3 * 1024 * 1024);
+      await withUpstream(upstreamOf(huge, { 'content-length': '10' }), async () => {
+        const r = await proxy();
+        assert.strictEqual(r.body.error.code, 'UPSTREAM_TOO_LARGE',
+          'a small declared length let an enormous body through');
+      });
+    });
+
+  await t('proxy_get: an honest oversize content-length is refused BEFORE the '
+    + 'body is read at all', async () => {
+      let read = false;
+      await withUpstream(async function () {
+        return {
+          ok: true, status: 200,
+          headers: { get: function (k) {
+            return String(k).toLowerCase() === 'content-length'
+              ? String(9 * 1024 * 1024) : null;
+          } },
+          text: async function () { read = true; return 'x'; },
+          body: null
+        };
+      }, async () => {
+        const r = await proxy();
+        assert.strictEqual(r.body.error.code, 'UPSTREAM_TOO_LARGE');
+        assert.strictEqual(read, false, 'the body was read despite the declaration');
+      });
+    });
+
+  await t('proxy_get: TEETH -- the guard really is in the path, so the arms '
+    + 'above are not passing on a code path nobody uses', async () => {
+      // ORDERED BEFORE THE HANG ARM ON PURPOSE, and that order was chosen
+      // after a sabotage proved it mattered: removing the guard made the
+      // hanging-upstream arm STALL, so the suite never reached this one and
+      // reported no failure at all. A hang that masks a failure is worse than
+      // the failure. This arm is cheap, it does not touch the network, and it
+      // goes red immediately if the wiring is gone.
+      const src = require('fs').readFileSync(
+        require('path').join(__dirname, 'bridge.js'), 'utf8');
+      assert.ok(src.indexOf('RESIL.guardedFetch(') !== -1,
+        'proxy_get no longer goes through the guard');
+      assert.ok(src.indexOf("createBulkhead('bridge:proxy_get'") !== -1,
+        'the bulkhead is gone');
+      assert.ok(RESIL.TimeoutError && RESIL.BulkheadFullError,
+        'resilience no longer exports the refusals bridge.js catches');
+    });
+
+
+  function streamingUpstream(totalBytes, chunk) {
+    // EXERCISES THE READER PATH. The fakes above hand back `text()` with a null
+    // body, which takes readCapped's non-stream branch -- so the per-chunk cap
+    // and the refuse-rather-than-truncate rule were both untested until a
+    // sabotage removed them and killed nothing.
+    const size = chunk || 64 * 1024;
+    let sent = 0;
+    return async function () {
+      return {
+        ok: true, status: 200,
+        headers: { get: function () { return null; } },
+        text: async function () { throw new Error('text() must not be used when a body exists'); },
+        body: {
+          getReader: function () {
+            return {
+              read: async function () {
+                if (sent >= totalBytes) return { done: true, value: undefined };
+                const n = Math.min(size, totalBytes - sent);
+                sent += n;
+                return { done: false, value: new Uint8Array(n) };
+              },
+              cancel: async function () { sent = totalBytes; }
+            };
+          }
+        }
+      };
+    };
+  }
+
+  await t('proxy_get: a STREAMED oversize body is refused mid-read, with no '
+    + 'content-length to warn us', async () => {
+      await withUpstream(streamingUpstream(3 * 1024 * 1024), async () => {
+        const r = await proxy();
+        assert.strictEqual(r.status, 502, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'UPSTREAM_TOO_LARGE',
+          'the streaming reader let an oversize body through');
+      });
+    });
+
+  await t('proxy_get: ...and it REFUSES rather than truncating -- a cut-off '
+    + 'body parses as a valid smaller structure', async () => {
+      await withUpstream(streamingUpstream(3 * 1024 * 1024), async () => {
+        const r = await proxy();
+        assert.notStrictEqual(r.status, 200,
+          'an oversize stream was truncated and returned as a 200, which is '
+          + 'silently wrong rather than loudly refused');
+      });
+    });
+
+  await t('proxy_get: a STREAMED body UNDER the cap still comes through', () =>
+    withUpstream(streamingUpstream(1024), async () => {
+      const r = await proxy();
+      assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+    }));
+
+  await t('proxy_get: a HANGING upstream times out instead of holding the '
+    + 'function to the platform limit', async () => {
+      // THE FAKE HONOURS THE ABORT SIGNAL, and it has to. withTimeout() aborts a
+      // controller and relies on the fetch implementation to reject on it --
+      // real fetch does. A fake that ignored the signal would HANG rather than
+      // fail, which is a test that proves nothing and looks like a pass.
+      await withUpstream(function (u, opts) {
+        return new Promise(function (_resolve, reject) {
+          const sig = opts && opts.signal;
+          if (sig) {
+            if (sig.aborted) return reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+            sig.addEventListener('abort', function () {
+              reject(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+            }, { once: true });
+          }
+        });
+      }, async () => {
+        const r = await proxy();
+        assert.strictEqual(r.status, 504, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'UPSTREAM_TIMEOUT');
+      });
+    });
+
   global.fetch = realFetch;
   console.log('\nbridge push auth: ' + pass + ' passed, ' + fail + ' failed');
   if (fail) process.exit(1);

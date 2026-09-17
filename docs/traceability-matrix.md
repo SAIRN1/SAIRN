@@ -188,6 +188,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; TEN OF ELEVEN third-party fetches have NO timeout at all &mdash; and the most exposed one had no size limit either, on an endpoint anyone can call** | **AUDITED AND HIGHEST-RISK HARDENED 2026-09-17 (Hank)** &mdash; `api/bridge.js` `proxy_get` now bounded in time, size and concurrency; 18 arms in `api/bridge-push-auth.test.js`, 4 mutations killed. ** | `api/bridge-push-auth.test.js` |
 | **&#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two stacked defects, and the outer one had hidden the inner one for the tool&rsquo;s entire life** | **VERIFIED END TO END 2026-09-17 (Hank)** at 14:47:29Z, GitHub Actions run **#9 success**. `watchdog_url()` + the `Response` unpack in `tools/cron_liveness_check.py`; `tests/run_cron_liveness_probe.py | `tests/run_cron_liveness_probe.py` |
 | **Twelve red suites cleared &mdash; and ELEVEN OF TWELVE were the PROBE, not the thing it tests** | **FIXED 2026-09-17 (Cody)** &mdash; 32 &rarr; 17 red over 411 files; `docs/known-red-suites.json` re-measured; 3 new Tier A negative controls (41 &rarr; 44 of 157) | `api/license-trial-gate.test.js` |
 | **`audit-checkpoint` refused SILENTLY on both of its two refusal paths &mdash; a job failing daily was indistinguishable from a job that never fired** | **FIXED 2026-09-16 (Hank)** &mdash; `api/audit-checkpoint.js` beats on `NOT_PROVISIONED` and `WINDOW_INCOMPLETE`; 4 new arms in `api/audit-checkpoint.test.js` (46 total), 3 sabotages, all bite | `api/audit-checkpoint.test.js` |
@@ -553,8 +554,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 269 |
-| `declared` | 233 |
-| `declared+index` | 7 |
+| `declared` | 232 |
+| `declared+index` | 8 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 
@@ -628,7 +629,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 548   tests/**, api/*.test.js
-  open-work rows citing a test       269   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       270   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                60   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

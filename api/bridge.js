@@ -91,6 +91,26 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const RESIL = require('./_lib/resilience.js');
+
+// LOOSE ON PURPOSE. Nothing has been measured about these upstreams' real
+// latency or size, and a tight number chosen from nothing trips on ordinary
+// traffic and teaches its readers the guard is noise.
+const MAX_PROXY_BYTES = 2 * 1024 * 1024;   // 2MB
+const PROXY_TIMEOUT_MS = 10000;
+const PROXY_BULKHEAD = 8;
+
+let _proxyGuard = null;
+function proxyGuard() {
+  if (!_proxyGuard) {
+    _proxyGuard = {
+      bulkhead: RESIL.createBulkhead('bridge:proxy_get', PROXY_BULKHEAD),
+      timeoutMs: PROXY_TIMEOUT_MS,
+      key: 'bridge:proxy_get'
+    };
+  }
+  return _proxyGuard;
+}
 
 const ALLOWED_PROXY_HOSTS = ['api.stlouisfed.org', 'homebuyer.com'];
 const MAX_PUSH_BYTES = 64 * 1024; // matches api/sd-data.js's write cap
@@ -185,20 +205,106 @@ async function handleProxyGet(body, res) {
     res.status(400).json({ error: { message: 'Host not allowed for proxy_get' } });
     return;
   }
+  // ── THE PARSE IS ISOLATED BEFORE IT IS TRUSTED (2026-09-17) ───────────
+  // This is the platform's most exposed untrusted-input path: ANY caller can
+  // reach it with no licence, it fetches a third party, and it parsed whatever
+  // came back with `await r.text()` then `JSON.parse` -- unbounded in SIZE and
+  // unbounded in TIME.
+  //
+  // THE ALLOWLIST IS NOT THE ISOLATION. It bounds WHO answers, not what they
+  // say or how long they take. A slow or enormous response from an
+  // allowlisted host is the same failure as a hostile one, and neither needs
+  // the host to be compromised -- api.stlouisfed.org having a bad afternoon is
+  // enough.
+  //
+  // THREE BOUNDS, and they are different failures:
+  //   TIMEOUT   the function is not held until Vercel's own limit
+  //   SIZE      the body cannot exhaust the instance's memory
+  //   BULKHEAD  proxy_get cannot consume every socket this instance has, so a
+  //             slow upstream does not starve the rest of the endpoint
+  //
+  // The bulkhead and timeout come from api/_lib/resilience.js rather than being
+  // written here. NO BREAKER: the store lives in Supabase and would be a
+  // per-instance counter otherwise, which this platform measured doing nothing
+  // in 2026-09-05.
+  const guard = proxyGuard();
   try {
-    const r = await fetch(parsed.toString(), { method: 'GET' });
-    const text = await r.text();
-    let data;
-    try { data = JSON.parse(text); } catch (e) { data = { text: text }; }
+    const out = await RESIL.guardedFetch(guard, parsed.toString(), { method: 'GET' });
+    const r = out.res;
+    // CHECKED BEFORE READING A BYTE, and again while reading: a content-length
+    // is a claim by the same party whose body is in question, so it is worth
+    // refusing early and worth not believing.
+    const declared = Number(r.headers && r.headers.get && r.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > MAX_PROXY_BYTES) {
+      res.status(502).json({ error: { code: 'UPSTREAM_TOO_LARGE', message:
+        'Upstream (' + parsed.hostname + ') declared ' + declared + ' bytes; the limit is '
+        + MAX_PROXY_BYTES } });
+      return;
+    }
+    let text;
+    try {
+      text = await readCapped(r, MAX_PROXY_BYTES);
+    } catch (e) {
+      if (e && e.code === 'TOO_LARGE') {
+        res.status(502).json({ error: { code: 'UPSTREAM_TOO_LARGE', message:
+          'Upstream (' + parsed.hostname + ') exceeded ' + MAX_PROXY_BYTES + ' bytes' } });
+        return;
+      }
+      throw e;
+    }
     if (!r.ok) {
       res.status(502).json({ error: { message: 'Upstream (' + parsed.hostname + ') returned ' + r.status } });
       return;
     }
+    // PARSED ONLY AFTER IT IS BOUNDED. A parse is the step that turns bytes
+    // into structure the rest of the app will act on, so every limit that
+    // matters has to be applied on the near side of it.
+    let data;
+    try { data = JSON.parse(text); } catch (e) { data = { text: text }; }
     res.status(200).json({ ok: true, result: data });
   } catch (err) {
+    if (err instanceof RESIL.TimeoutError) {
+      console.error('bridge proxy_get: ' + parsed.hostname + ' timed out');
+      res.status(504).json({ error: { code: 'UPSTREAM_TIMEOUT', message:
+        'Upstream did not answer in time' } });
+      return;
+    }
+    if (err instanceof RESIL.BulkheadFullError) {
+      console.error('bridge proxy_get: bulkhead full, refusing rather than queueing');
+      res.status(503).json({ error: { code: 'BUSY', message:
+        'Too many upstream fetches in flight — try again' } });
+      return;
+    }
     console.error('bridge proxy_get error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
   }
+}
+
+// Reads at most `cap` bytes and REFUSES past it, rather than truncating. A
+// truncated JSON body parses as garbage or, worse, as a valid smaller
+// structure -- silently wrong is the outcome this whole file argues against.
+async function readCapped(r, cap) {
+  if (!r.body || typeof r.body.getReader !== 'function') {
+    const t = await r.text();
+    if (Buffer.byteLength(t, 'utf8') > cap) {
+      const e = new Error('too large'); e.code = 'TOO_LARGE'; throw e;
+    }
+    return t;
+  }
+  const reader = r.body.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.length;
+    if (total > cap) {
+      try { await reader.cancel(); } catch (e) { /* already closing */ }
+      const err = new Error('too large'); err.code = 'TOO_LARGE'; throw err;
+    }
+    chunks.push(Buffer.from(value));
+  }
+  return Buffer.concat(chunks).toString('utf8');
 }
 
 // ── PUSH IS AUTHENTICATED AND KEYED ON license_hash (2026-09-17) ──────────
