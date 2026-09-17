@@ -2123,8 +2123,8 @@
       "task": "app_id licence verification, bridge push deletion, cron-liveness doc ordering, SD_AUTH_SECRET options",
       "claimed_at": "2026-09-17T17:26:02Z",
       "claimed_at_epoch": 1789665962.7397738,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T17:50:08Z"
     }
   ]
 }
