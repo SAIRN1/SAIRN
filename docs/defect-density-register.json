@@ -4579,6 +4579,72 @@
       "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
     },
     {
+      "commit": "9cf392af3bac",
+      "date": "2026-09-16",
+      "subject": "fix(master-plan): the fault column's two invisibilities, and a probe arm that had been red while switching off the two checks under it",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_master_plan_probe.py",
+        "tools/master_plan.py"
+      ],
+      "lines_added": 200,
+      "lines_removed": 17,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/master_plan.py's fault column credits a probe to an app only on an <app>.html basename, so 15 of 58 declarers are credited to no app and a *_fault_probe.py resolving to no .html (tests/sairncash_fault_probe.py) is absent from the column AND the total. The generated document also published `targets None`, a filename that does not exist, inside the one column about fabricated coverage.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "master_plan.py",
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "citation_note": "1.7 is written about a SAMPLING WINDOW silently exempting what it does not reach; this is the same shape with an attribution rule as the window -- probes outside  are never reached and the column reads 0 with no sign anything was skipped. Cited as arguable because 1.7's examples are about reads and pagination, not attribution.",
+      "contributing_factors": [
+        {
+          "factor": "attribution resolves a MUTATIONS target or a filename-declared probe to a BASENAME and credits an app only on `<app>.html`, so an app whose product is entirely `api/<app>/` endpoints can never be credited -- 15 of 58 declarers resolve to a real target and are credited to no app",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "the attribution rule is deliberately NOT changed: inferring an app from an api/<app>/ path puts inference back into the one column that exists to say whether a guard has been seen to DENY, and that inference is what reported nineteen fault probes for StoneDesk. Disclosed instead, which is the decision the three-app cap already made"
+        },
+        {
+          "factor": "a file NAMED *_fault_probe.py whose targets all resolve to non-.html basenames, and which declares no parseable MUTATIONS block, has an EMPTY target set and is dropped before it reaches `declarers` -- so tests/sairncash_fault_probe.py is absent from the per-app column AND from the total, which is worse than the open-work row recorded",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the declaration is printed by name in its own bullet; the count is deliberately not raised, because crediting a probe with no resolvable target is the same inference"
+        },
+        {
+          "factor": "the generated document published `targets None` -- a MUTATIONS entry can resolve to a tuple whose first element is None and os.path.basename(str(...)) turns that into four characters, so a generated document asserted a FILE THAT DOES NOT EXIST inside the one column about fabricated coverage",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_targets_phrase() renders it as 'no resolvable target name'; the COUNT is untouched and the reason is written into the helper"
+        },
+        {
+          "factor": "the gap was measured on 2026-09-15 and filed as a row saying the total 'does move, so nothing is lost, only mis-summarised' -- a judgement about damage recorded without being measured, and it was wrong for the very probe that motivated it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the row is rebuilt whole with the corrected account and the two invisibilities separated"
+        },
+        {
+          "factor": "nothing in tests/ asserted anything about probes the generator drops, so the column could read 0 for an app with real fault coverage and no control would notice; it took writing a new probe for an api/-only app to surface it at all",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "8 arms incl. one asserting the unattributed list is NON-EMPTY, so if it ever reaches zero it says the disclosure has become a property of nothing; 3 sabotages killed"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The attribution rule is unchanged by choice, so the 15 stay uncredited and only the disclosure moves -- a reader who does not read the bullet still reads a 0. The COUNT question raised by the `None` target is open and undecided: tests/failsafe/countersign_coverage_probe.py is in `declarers` only because a non-target made its set non-empty, so the declared total is inflated by one and nobody has decided whether to drop it. And nothing checks the general shape -- a future app with no .html file will read 0 again with no new signal."
+    },
+    {
       "commit": "4f757c3fc5c2",
       "date": "2026-09-16",
       "subject": "fix(test): the repair for the `!== 401` arm contained the same defect, 38 lines down",
@@ -5240,6 +5306,63 @@
         }
       ],
       "recurrence_open": "PARTLY CLOSED. The central redirect covers every probe the SUITE spawns, and one probe run BY HAND still writes the real log unless it sets the env itself -- only check9_probe.py does. The wider shape is untouched: nothing prevents any tool from writing a real record from a test context, and the bypass log is append-only BY CONVENTION rather than by enforcement, so the retraction relies on the same trust the original row did."
+    },
+    {
+      "commit": "1a79c8a08a1d",
+      "date": "2026-09-16",
+      "subject": "fix(gate): the prose rule never saw a sentence containing an apostrophe",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 33,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/tier_a_review_gate.py's _PROSE regex excluded every quote character from the string body rather than only the delimiter, so a double-quoted sentence containing an apostrophe never matched and was never blanked. An ordinary English comment -- \"the plan quotes the matrix's own numerator\" -- on a DELETED line made the push gate block a test file as a Tier A code change. Third recorded false positive of this shape and the first the prose rule was already meant to cover.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "5796a85139e2",
+        "date": "2026-09-16",
+        "subject": "fix(audit,gate): a probe wrote a real override into the real audit log, and the Tier A gate counted resource names inside sentences",
+        "lag_days": 0
+      },
+      "citation_note": "1.2 is `grep cannot tell code from text that describes code`, and this is that rule's own defence failing: the prose-stripper exists to make exactly that distinction and could not see a sentence containing an apostrophe. Arguable because 1.2 is written about checks that lack the defence, not about one whose defence has a hole.",
+      "contributing_factors": [
+        {
+          "factor": "_PROSE excluded EVERY quote character from the string body rather than only the delimiter, so a double-quoted sentence containing an apostrophe could never match and nothing was blanked",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "(?!\u0001) excludes only the delimiter; what counts as prose is unchanged at three or more whitespace-separated words"
+        },
+        {
+          "factor": "the rule's own docstring cited 'Storage full -- clear old quotes and retry.' as the case it handles, which is true and is a sentence with no apostrophe in it -- the example chosen to prove the rule was the one shape that never exercised the bug",
+          "kind": "process",
+          "action_status": "done",
+          "action": "three arms, one per shape: possessive and contraction in double quotes, and the mirror case of a double quote in single quotes"
+        },
+        {
+          "factor": "the gate's two halves disagreed and nothing reconciled them: --explain reported 'No file in this change names a Tier A resource on a changed line' while the push path blocked on exactly that, so a reader who checked first would have been told the opposite of what happened",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "not fixed here -- the divergence between the --explain range and the push range is a separate question about one tool's two entry points, recorded rather than repaired inside a regex fix"
+        },
+        {
+          "factor": "a false positive on this gate has an override that a session under time pressure will reach for, and the gate itself says that is how it gets hollowed out -- so every false positive is a standing incentive to weaken the check whose subject is somebody not being told",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the override must exist; the answer is fewer false positives, not a harder gate. This record is the third of this shape and the first the prose rule was already meant to cover"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The gate's two entry points still disagree: --explain reported no Tier A resource on a changed line while the push path blocked on exactly that, and nothing reconciles the two ranges -- a reader who checks before pushing is still told the opposite of what will happen. The BARE-TOKEN limit is unchanged and unfixable by string analysis, as the file's own docstring says. And the override remains a standing incentive: every false positive on this gate is a reason to reach for SAIRN_SEED_GATE=off on the check whose subject is somebody not being told."
     },
     {
       "commit": "72b040988b2e",
