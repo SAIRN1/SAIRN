@@ -1,0 +1,190 @@
+-- sql/alf_sen_demo_license_seed_2026-09-17.sql
+--
+-- TWO demo licence rows: one ALF- for SAIRNcare, one SEN- for SAIRNsenior.
+-- NOT RUN by the session that wrote this. Run in the Supabase SQL editor.
+--
+-- ═══ READ THIS BEFORE RUNNING IT, BECAUSE YOU MAY NOT NEED TO ═══════════
+-- BOTH APPS ALREADY HAVE A WORKING DEMO LICENCE. Verified live against the
+-- deployed endpoints on 2026-09-17, not inferred from this directory:
+--
+--   ALF-TEST-2026      POST /api/alf-auth {"action":"check_license"}
+--                      -> 200 {"ok":true,"active":true,"app_id":"sairncare"}
+--
+--   SEN-PINNACLE-2026  POST /api/sd-data  {"action":"read",
+--                                          "resource":"sen_clients",
+--                                          "app_id":"sairnsenior"}
+--                      -> 401 NO_SESSION "Sign in first"
+--
+-- THE SECOND ONE IS THE INTERESTING RESULT AND IT IS EASY TO MISREAD. A 401
+-- is not a licence failure here: NO_SESSION means the LICENCE VALIDATED and
+-- the request was then refused at the employee-session gate. The licence
+-- failure has a different code, and the same probe produced it in the same
+-- second for a key that really is absent:
+--
+--   SEN-DEMO-2026      -> 401 INVALID_LICENSE "Unknown license key"
+--   ALF-PINNACLE-2026  -> 401 INVALID_LICENSE "Unknown license key"
+--   ALF-DEMO-2026      -> 401 INVALID_LICENSE "Unknown license key"
+--
+-- and a known-good control answered 200 in the same run
+-- (SV-PINNACLE-2026 -> {"ok":true,"data":[],"provisioned":true}), so the
+-- method was demonstrated to work rather than assumed to.
+--
+-- So if the goal is "make these two apps testable", IT IS ALREADY DONE and
+-- this file is unnecessary. What this file adds is the missing half of the
+-- house convention: SAIRNcare has a TEST key and no PINNACLE demo-tenant key;
+-- SAIRNsenior has a PINNACLE key and no TEST key. Both new keys were
+-- confirmed ABSENT live in the run above, so neither insert can collide.
+--
+-- ═══ THE COLUMN LIST IS NOT GUESSED ════════════════════════════════════
+-- It is the shape proven against this live table by all nineteen licence rows
+-- this repo has seeded, and it is uniform across every one of them:
+--
+--   key, status, customer_email, app_id, plan, stripe_subscription_id
+--
+-- (id, created_at and updated_at are defaulted by the table. shop_name and
+-- stripe_customer_id are left unset: nothing in api/_lib/license.js reads
+-- either, and every existing row omits them.)
+--
+-- THE HISTORY BEHIND THAT LIST MATTERS. An earlier attempt included
+-- `trial_ends_at`, copied from api/_lib/license.js's OUTPUT shape rather than
+-- from the table, and failed 42703 because the column did not exist. See
+-- sql/demo_license_keys_seed.sql. Do not re-derive the column list from what
+-- the validator returns.
+--
+-- ═══ EXPIRATION: THE CONVENTION IS THAT THERE ISN'T ONE, AND THAT IS ════
+-- ═══ A DECISION SOMEBODY MADE RATHER THAN A GAP ═════════════════════════
+-- Every licence row on this platform has a NULL trial expiry and always has.
+-- sql/license_keys_trial_ends_at_2026-09-16.sql added the column and states
+-- plainly that it does NOT backfill, because "a backfill is the ONLY way this
+-- migration could refuse a real customer".
+--
+-- The gate refuses a licence only when BOTH are true:
+--   * trial_ends_at is in the past, AND
+--   * stripe_subscription_id IS NULL  (= KNOWN NOT PAID)
+-- A licence WITH a subscription id is a cannot-tell and is never refused.
+--
+-- A DEMO LICENCE HAS stripe_subscription_id = NULL BY DEFINITION, so it is
+-- exactly the kind of row a past trial_ends_at WILL refuse with a 402. That
+-- is the whole point of the optional block at the bottom -- and it is why the
+-- expiry is NOT in the inserts themselves. A demo key that silently starts
+-- 402ing in ninety days is a support call nobody will connect to this file.
+--
+-- ⚠ COULD NOT TELL whether that migration has been RUN. db/schema_snapshot.json
+-- was captured 2026-09-13 18:39:55+00, three days before the migration was
+-- written, and lists license_keys as eleven columns with no trial_ends_at. The
+-- snapshot has not been recaptured since. This is stated rather than assumed
+-- in either direction: the inserts below do not name the column, so THEY WORK
+-- EITHER WAY. Only the optional block at the bottom needs it, and it says so.
+--
+-- Check it in one line before running that block:
+--
+--   select column_name from information_schema.columns
+--    where table_schema = 'public' and table_name = 'license_keys'
+--    order by ordinal_position;
+--
+-- ═══ WHY THESE TWO KEY NAMES ════════════════════════════════════════════
+-- ALF-PINNACLE-2026 -- the demo-tenant convention every other app follows
+--   (SB-, DNT-, SV-, LAW-, LEG-, MECH-, SDN-, SF-, SEN- all have PINNACLE
+--   keys). The `ALF-` prefix is already accepted client-side with no code
+--   change: sairncare.html:1218  VALID=['ALF-','DEMO-','SAIRN-'].
+--
+-- SEN-TEST-2026 -- the verification-key convention (SB-TEST-2026,
+--   ALF-TEST-2026, LAW-TEST-2026). sairnsenior.html:1361 carries
+--   VALID=['SEN-','DEMO-','SAIRN-'], so no code change either.
+--
+-- ═══ app_id IS LOAD-BEARING FOR SAIRNCARE AND NOT FOR SAIRNSENIOR ══════
+-- Stated because the two rows below look symmetrical and are not.
+--   api/alf-pharmacy.js:80 and api/alf-alerts.js:375 both 403 WRONG_APP on
+--   `lic.app_id !== 'sairncare'`, so an ALF row with the wrong app_id
+--   authenticates for most of the app and then fails confusingly at the
+--   pharmacy intake only.
+--   SAIRNsenior has no such check on api/sd-data.js. Its real app-scoping
+--   control is verifySessionToken(token, license_hash, expectedApp) in
+--   api/sen-auth.js. Setting app_id correctly there is correctness and
+--   documentation, not a security boundary -- do not mistake it for one.
+--
+-- ON CONFLICT (key) DO NOTHING. The constraint is confirmed:
+-- license_keys_key_key, UNIQUE (key). DO NOTHING rather than DO UPDATE so an
+-- existing row always wins and a re-run cannot reactivate or overwrite one.
+-- Safe to re-run.
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- BLOCK 1 -- SAIRNcare demo tenant
+-- ─────────────────────────────────────────────────────────────────────────
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+values ('ALF-PINNACLE-2026', 'active', 'demo@pinnaclecare.example', 'sairncare', 'demo', null)
+on conflict (key) do nothing;
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- BLOCK 2 -- SAIRNsenior verification key
+-- ─────────────────────────────────────────────────────────────────────────
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+values ('SEN-TEST-2026', 'active', 'test@sairnsenior-verification.example', 'sairnsenior', 'demo', null)
+on conflict (key) do nothing;
+
+
+-- ─────────────────────────────────────────────────────────────────────────
+-- VERIFY AGAINST THE DEPLOYED ENDPOINT, NOT BY RE-SELECTING THE ROW.
+-- The standing rule on this platform is that an insert succeeding is not
+-- proof the live app sees it. Read the CODE, not just the status number --
+-- 401 NO_SESSION means the licence WORKED and only the employee session is
+-- missing, while 401 INVALID_LICENSE means the row is absent.
+-- ─────────────────────────────────────────────────────────────────────────
+--
+--   curl -s -X POST https://sairn.vercel.app/api/alf-auth \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer ALF-PINNACLE-2026' \
+--     -d '{"action":"check_license"}'
+--
+--   200 {"ok":true,"active":true,"app_id":"sairncare"} -> provisioned
+--   401 INVALID_LICENSE   -> the row is still absent
+--   403 LICENSE_INACTIVE  -> status is not the literal 'active'
+--   403 WRONG_APP         -> app_id is not 'sairncare'
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SEN-TEST-2026' \
+--     -d '{"action":"read","resource":"sen_clients","app_id":"sairnsenior"}'
+--
+--   401 NO_SESSION        -> provisioned correctly (licence passed, no login)
+--   401 INVALID_LICENSE   -> the row is still absent
+--   403 LICENSE_INACTIVE  -> status is not the literal 'active'
+--
+-- NOTE FOR SAIRNcare: the licence alone does not let anyone log in. The
+-- employee-credential table must exist too -- sql/sairncare_employee_auth_schema.sql
+-- -- or api/alf-auth.js's bootstrap and login fail against a missing table.
+
+
+-- ═════════════════════════════════════════════════════════════════════════
+-- OPTIONAL, AND DELIBERATELY NOT PART OF EITHER INSERT ABOVE.
+--
+-- DO NOT RUN THIS unless you have decided these demo keys should STOP
+-- WORKING on a date. Nothing on this platform currently expires, and these
+-- two rows have stripe_subscription_id NULL, which is precisely the
+-- KNOWN-NOT-PAID case the trial gate refuses with a 402. The first row that
+-- gets a date is the first row that can be refused.
+--
+-- It also REQUIRES sql/license_keys_trial_ends_at_2026-09-16.sql to have been
+-- run. If it has not, this fails 42703 -- which is the safe direction, but
+-- check first with the information_schema query at the top rather than
+-- finding out from an error.
+--
+-- Three handlers read this field with an identical inline copy of the check:
+-- api/sd-data.js, api/sd-render.js and api/_lib/sd-store.js.
+-- ═════════════════════════════════════════════════════════════════════════
+--
+-- update public.license_keys
+--    set trial_ends_at = timestamptz '2026-12-31 23:59:59+00'
+--  where key in ('ALF-PINNACLE-2026', 'SEN-TEST-2026')
+--    and stripe_subscription_id is null;
+--
+-- After running it, list exactly who became refusable -- the migration file
+-- asks for this and it is one query:
+--
+--   select key, app_id, customer_email, status, trial_ends_at
+--     from public.license_keys
+--    where stripe_subscription_id is null
+--      and trial_ends_at is not null
+--    order by trial_ends_at;
