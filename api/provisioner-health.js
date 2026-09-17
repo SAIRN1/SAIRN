@@ -124,30 +124,88 @@ module.exports = async (req, res) => {
       res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
       return;
     }
-    let status = null, payload = null;
-    try {
-      const rr = await fetch(sbrl.rest('rpc/sairn_ai_rate_limit_consume'), {
-        method: 'POST',
-        headers: sbrl.headers,
-        body: JSON.stringify({ p_app_id: '', p_limit: 1, p_window_seconds: 86400 })
-      });
-      status = rr.status;
-      payload = await rr.json().catch(() => null);
-    } catch (err) {
-      res.status(502).json({ ok: false, atomic: false, state: 'UNKNOWN',
-        message: 'Could not reach Supabase to probe the rate-limit function. Nothing is claimed about atomicity.' });
-      return;
+    // ── TWO PROBES, BECAUSE THERE ARE TWO QUESTIONS AND THIS ANSWERED ONE
+    // ── WHILE SPEAKING FOR BOTH (2026-09-17).
+    //
+    // The old message read "The limit is real under concurrency." That is true
+    // of the APP CEILING and says nothing about the TENANT SUB-BUDGET, which
+    // is a separate migration (sql/sairn_ai_tenant_subbudget_2026-09-15.sql)
+    // and a separate failure: with the app ceiling perfectly atomic, ONE
+    // TENANT CAN STILL EXHAUST ALL OF IT. A reader acting on that sentence
+    // would turn enforcement on believing a property nothing here had tested.
+    //
+    // THE 3-ARG CALL CANNOT TELL THE TWO APART, AND THAT IS STRUCTURAL rather
+    // than an oversight. The tenant migration DROPS the 3-arg function and
+    // replaces it with a 6-arg one whose last three parameters default to
+    // null -- deliberately, because an overload would make every 3-arg call
+    // ambiguous and take the platform down. So a 3-arg call succeeds against
+    // BOTH, and only a call carrying the tenant arguments discriminates: with
+    // the old function alone, PostgREST finds no matching signature and 404s.
+    // That is the same discriminator api/_lib/ai-rate-limit.js already uses
+    // for its 6-arg -> 3-arg fallback.
+    //
+    // BOTH PROBES ARE READ-ONLY BY CONSTRUCTION, verified by reading both
+    // function bodies rather than by trusting the endpoint's name: p_app_id ''
+    // is refused first, before the advisory lock and before any insert.
+    //
+    // AND THE TWO FUNCTIONS REFUSE DIFFERENTLY, which is why `present` below
+    // accepts two shapes. The 3-arg one RETURNS jsonb_build_object('error',
+    // 'app_id required') as HTTP 200; the 6-arg one RAISES, which reaches us
+    // as a 4xx. The previous test demanded the 200-with-object shape ONLY, so
+    // RUNNING THE TENANT MIGRATION WOULD HAVE FLIPPED THIS ENDPOINT FROM
+    // ATOMIC TO UNKNOWN -- a correct upgrade reading as a regression, on a
+    // check whose whole job is to say whether the fix is in force.
+    async function probe(args) {
+      try {
+        const rr = await fetch(sbrl.rest('rpc/sairn_ai_rate_limit_consume'), {
+          method: 'POST', headers: sbrl.headers, body: JSON.stringify(args)
+        });
+        return { status: rr.status, payload: await rr.json().catch(() => null) };
+      } catch (err) {
+        return { status: null, payload: null, unreachable: true };
+      }
     }
 
-    const present = status === 200 && payload && payload.error === 'app_id required';
+    const base = await probe({ p_app_id: '', p_limit: 1, p_window_seconds: 86400 });
+    if (base.unreachable) {
+      res.status(502).json({ ok: false, atomic: false, tenant_subbudget: false,
+        state: 'UNKNOWN', tenant_state: 'UNKNOWN',
+        message: 'Could not reach Supabase to probe the rate-limit function. Nothing is claimed about atomicity or about tenant sub-budgeting.' });
+      return;
+    }
+    const status = base.status, payload = base.payload;
+    const refusedByReturn = status === 200 && payload && payload.error === 'app_id required';
+    const refusedByRaise = (status === 400 || status === 500)
+      && /p_app_id is required/i.test(JSON.stringify(payload || ''));
+    const present = refusedByReturn || refusedByRaise;
     const absent = status === 404;
+
+    // Only worth asking if there is a function at all. A 404 here against an
+    // absent function would be indistinguishable from a 404 against a 3-arg
+    // one, and reporting "no sub-budget" about a limiter that does not exist
+    // would be a true sentence pointing at the wrong problem.
+    let tenantState = 'NOT_APPLICABLE';
+    if (present) {
+      const t = await probe({ p_app_id: '', p_limit: 1, p_window_seconds: 86400,
+                              p_tenant_key: '', p_tenant_limit: 1, p_contention_floor: 1 });
+      tenantState = t.unreachable ? 'UNKNOWN'
+        : t.status === 404 ? 'APP_CEILING_ONLY'
+        : (t.status === 200 || t.status === 400 || t.status === 500) ? 'SUB_BUDGETED'
+        : 'UNKNOWN';
+    }
+    const subBudgeted = tenantState === 'SUB_BUDGETED';
+
     res.status(200).json({
       ok: true,
       atomic: present,
+      tenant_subbudget: subBudgeted,
       state: present ? 'ATOMIC' : (absent ? 'RACY_FALLBACK' : 'UNKNOWN'),
+      tenant_state: tenantState,
       probe_status: status,
       message: present
-        ? 'public.sairn_ai_rate_limit_consume exists and is callable by service_role, so the limiter counts and records inside one transaction under an advisory lock. The limit is real under concurrency.'
+        ? (subBudgeted
+            ? 'public.sairn_ai_rate_limit_consume exists and is callable by service_role, so the limiter counts and records inside one transaction under an advisory lock. THE APP CEILING is real under concurrency, AND the tenant sub-budget is live, so one licence cannot exhaust the whole ceiling.'
+            : 'THE APP CEILING is real under concurrency -- the RPC counts and records in one transaction under an advisory lock. BUT THE TENANT SUB-BUDGET IS NOT LIVE: only the 3-argument signature answers, so every call is counted against the app and ONE LICENCE CAN EXHAUST THE ENTIRE CEILING. api/_lib/ai-rate-limit.js handles this correctly by falling back, so nothing is broken -- it is a fairness gap, not an outage. Run sql/sairn_ai_tenant_subbudget_2026-09-15.sql to close it.')
         : absent
           ? 'The RPC is absent, so api/_lib/ai-rate-limit.js is running its count-then-insert fallback. THE LIMIT IS APPROXIMATE UNDER CONCURRENCY -- do not set SAIRN_AI_RATE_LIMIT_MODE=enforce until sql/sairn_ai_rate_limit_consume_fn.sql has been run.'
           : 'The RPC answered unexpectedly (HTTP ' + status + '). Treat the limiter as racy until this is explained; nothing is claimed either way.'
