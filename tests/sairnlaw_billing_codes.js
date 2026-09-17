@@ -38,7 +38,12 @@ const assert = require('assert');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-const html = fs.readFileSync(path.join(ROOT, 'sairnlaw.html'), 'utf8').replace(/\r\n/g, '\n');
+// LAW_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Same convention SB_HTML, SV_HTML and DNT_HTML already carry. Unset -- every
+// ordinary run, including CI -- this is exactly what it was.
+const html = fs.readFileSync(process.env.LAW_HTML || path.join(ROOT, 'sairnlaw.html'),
+                             'utf8').replace(/\r\n/g, '\n');
 const registry = require(path.join(ROOT, 'api', '_resources', 'sairnlaw.js'));
 
 let pass = 0, fail = 0;
@@ -182,9 +187,27 @@ test('law_billingcodes is absent from the registry, and that is the decision', (
     + 'question to answer first.');
 });
 
-test('the nineteen that ARE registered are untouched by this change', () => {
+// ── 19 -> 20, AND THE PIN IS NOT LOOSENED ─────────────────────────────────
+// This suite was RED on origin/main before 2026-09-16 and the count is why:
+// `4eaa3f05` (feat(sairnlaw): IOLTA reconciliation) registered a TWENTIETH
+// law_* resource, `law_trust_reconcile`. The arm fired exactly as a count pin
+// is supposed to -- somebody added a resource and something made a person look.
+//
+// IT STAYS AN EXACT COUNT rather than becoming `>= 19`. A floor would have
+// stayed green through this addition and through every future one, which turns
+// a drift detector into decoration -- and the thing it is really guarding is
+// one addition in particular: `law_billingcodes` itself, held by the arm above.
+//
+// SO IT WILL FIRE AGAIN ON THE NEXT REGISTRATION, BY DESIGN. The correct
+// response is to name the resource that moved it and the commit that added it,
+// here, the way this comment does -- not to raise the number quietly and not to
+// relax the comparison.
+test('the twenty that ARE registered are untouched by this change', () => {
   const law = registry.resources.filter((r) => r.indexOf('law_') === 0);
-  assert.strictEqual(law.length, 19, 'registered law_* count moved: ' + law.length);
+  assert.strictEqual(law.length, 20,
+    'registered law_* count moved to ' + law.length + ' -- name the resource '
+    + 'that was added and the commit that added it in the comment above, rather '
+    + 'than raising this number on its own: ' + law.join(', '));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
