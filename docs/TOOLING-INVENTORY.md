@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**198 files in `tools/`.** By what actually invokes them:
+**199 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 62 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 2 |
-| CHECKER | 138 |
+| CHECKER | 139 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -119,7 +119,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (62)
+## REPORT-ONLY (63)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -162,6 +162,7 @@ quiet in practice.
 | `invisible_in_pattern_check.py` | 2026-09-14, the day it was built | an invisible character INSIDE a regex literal or a string handed to a regex constructor -- a zero-width space, an NBSP, or a bidi override, where it silently changes what the pattern matches and no reader can see it |
 | `key_collision_check.py` | 2026-09-10 | a localStorage key written by more than one feature, where the two writers disagree about the shape |
 | `literal_drift_check.py` | 2026-09-10 | a duplicated literal whose copies have DIVERGED -- the same constant written twice and then changed once |
+| `log_cluster.py` | 2026-09-17 report-only, and --self-check rather than the full run: the live pass harvests ~2,000 strings and scores thousands of pairs, which is real time inside a sweep budget already tight. The part that can silently rot is the TEMPLATER and the SCORER, and the fixtures hold both. The corpus pass is a deliberate manual run | a templating pattern that has stopped matching, or a similarity scorer that has collapsed toward always-similar or always-different -- driven over fixtures whose answer is known, in both directions |
 | `master_plan.py` | 2026-09-14, a day after it was built -- see `evidence` | docs/MASTER-PLAN.md no longer matching the repo -- a resource, a test file, a tier or a trace moved and the one document that compounds four gates into a single FINISHED verdict was not regenerated |
 | `md_table_check.py` | 2026-09-10 | a markdown row whose prose pipes broke its own columns, so trailing cells fall off and an edit-by-index writes into the wrong one |
 | `metamorphic_check.py` | 2026-09-13 | a checker whose ANSWER changes under a transform that cannot legitimately change it -- a byte-identical copy at another path, flipped line endings, trailing whitespace, inserted blank lines -- and a finding ERASED by duplicating the file |
@@ -390,11 +391,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      198   git ls-files tools/
+  tools on disk                      199   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                60   report_only_checks.REGISTRY
-  tools invoked by tests/            144   tests/**/*.py, *.js
+  report-only registry                61   report_only_checks.REGISTRY
+  tools invoked by tests/            145   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

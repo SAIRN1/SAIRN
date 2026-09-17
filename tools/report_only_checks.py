@@ -1575,6 +1575,33 @@ REGISTRY = [
                     'ever touched sql/',
     },
     {
+        'tool': 'log_cluster.py',
+        'mode': 'once',
+        'args': ['--self-check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-17 report-only, and --self-check rather than the '
+                    'full run: the live pass harvests ~2,000 strings and scores '
+                    'thousands of pairs, which is real time inside a sweep budget '
+                    'already tight. The part that can silently rot is the '
+                    'TEMPLATER and the SCORER, and the fixtures hold both. The '
+                    'corpus pass is a deliberate manual run',
+        'catches': 'a templating pattern that has stopped matching, or a '
+                   'similarity scorer that has collapsed toward always-similar '
+                   'or always-different -- driven over fixtures whose answer is '
+                   'known, in both directions',
+        'why_it_matters': 'ONE OF ITS OWN PATTERNS SHIPPED WITH A LITERAL '
+                          'BACKSPACE WHERE \b SHOULD HAVE BEEN, written '
+                          'through a non-raw Python string. The pattern PRINTS '
+                          'correctly in an editor and can never match anything; '
+                          'the fixture went red and nothing else would have. '
+                          'That is the exact defect this repository has already '
+                          'recorded once. AND THE TOOL EXISTS BECAUSE LOG LINES '
+                          'ARE HOSTILE TO SIMILARITY SCORING: two messages about '
+                          'different subjects that share boilerplate measure '
+                          '0.91 here, so a threshold picked by intuition '
+                          'produces clusters that look meaningful and are not',
+    },
+    {
         'tool': 'allan_deviation_check.py',
         'mode': 'once',
         'args': ['--self-check'],

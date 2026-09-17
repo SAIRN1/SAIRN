@@ -102,6 +102,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists | `export_coverage_check.py` | real run 2026-09-14: 11 Class A resources parsed from docs/2026-09-13-irreversible-write-witnessing-scoping.md rather than hardcoded. FIRST run: 3 exportable, 4 gaps in an existing registry, 4 in apps with no export path at all. AFTER the fix: 7 exportable, 0 gaps, the same 4 with no machinery -- and the probe now drives the FAILING direction against a planted registry, so closing the real gaps did not disarm it. The ON-SCREEN half of item 39 is NOT attempted here and the tool says so in its own header: two detectors for it were wrong in opposite directions, one missing alf_staff_credentials entirely and one binding most of SAIRNdental. 21-arm probe; blinding the registry reader collapses the EXPORTABLE answers, and section E pins all eleven verdicts by name so a registry change flips an arm -- which is exactly what happened when the four were fixed, and the table was edited in the same commit as the apps. 26 arms. 0.2s |
 | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify | `hover_separation_audit.py` | 2026-09-15 first run: 5,241 commits, 20 auditor commits, 0 violations; self-log 105 entries, chain INTACT, 33 SHAs claimed, 16 resolve and all 16 in scope. 15 of 15 "Committed a, pushed b" pairs have the local sha absent and the pushed one present, which is what explains 15 of the 17 that do not resolve here rather than a plausible story doing it. EXIT 2 TODAY, not 0, on the remaining 2 |
 | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one | `advisory_lock_isolation_check.py` | FIRST RUN 2026-09-15 over 9 advisory-lock functions found THREE unguarded, and the sharpest was law_check_and_insert_disbursement -- attorney IOLTA trust money, where two concurrent disbursements each compute the balance from before the other committed and BOTH pass the sufficiency check. Its sibling law_check_and_void_deposit already DESCRIBED the hazard in a comment and nothing enforced it. All three guarded the same day; 31-arm probe at tests/run_advisory_lock_isolation_probe.py. The blind lock runs on EVERY run, not only --self-check, and its own fixtures caught two real bugs in the first draft before it ever touched sql/ |
+| a templating pattern that has stopped matching, or a similarity scorer that has collapsed toward always-similar or always-different -- driven over fixtures whose answer is known, in both directions | `log_cluster.py` |  |
 | an estimator that has stopped separating white noise from drift -- driven over synthetic series whose answer is known, in both directions, plus the power and stationarity refusals | `allan_deviation_check.py` |  |
 | a caller binding sairn_http fetch()/fetch_json() Response and using it AS THE BODY -- isinstance(resp, dict) is ALWAYS False for a namedtuple, so the tool takes its unreadable-answer branch on every input forever | `response_shape_check.py` |  |
 | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample | `check_precedence.py` | FIRST LIVE RUN 2026-09-15 over 48 checkers rated by both checker_confidence.py and checker_estimate_fusion.py found FOUR real disagreements, and rule 1 resolves all four with no tiebreak -- including master_plan.py and traceability_matrix.py, which confidence rates HIGH while fusion reports UNCORRECTED: a HIGH rating does not outrank "its corrector failed its own check". ZERO CONFLICTs on live data so far, said out loud rather than left to be assumed exercised; case 3 is driven on fixtures. 48-arm probe at tests/run_check_precedence_probe.py, including 125 rating combinations that must not move any verdict, and teeth showing a broken rule 1 OR rule 4 exits COULD NOT RUN rather than reporting clean |
@@ -542,11 +543,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 42 test files are traced to no stated requirement
+### 43 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 510 of 552 traced, 92.4%.
+For context and not as the headline: 510 of 553 traced, 92.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -567,10 +568,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 4 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **bound to a subject, tied to no requirement** | 5 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
 | **no subject binding either** | 38 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 4 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 5 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/csv-cell.test.js`
 - `api/_lib/roofing-gl-export.test.js`
@@ -600,6 +601,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_allan_deviation_probe.py`
 - `tests/run_claim_search_probe.py`
 - `tests/run_known_red_probe.py`
+- `tests/run_log_cluster_probe.py`
 - `tests/run_response_shape_probe.py`
 - `tests/run_shape_search_probe.py`
 - `tests/sairncash_entitlement_gate_probe.py`
@@ -634,10 +636,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 552   tests/**, api/*.test.js
+  test files on disk                 553   tests/**, api/*.test.js
   open-work rows citing a test       270   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                60   report_only_checks.REGISTRY
+  report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
