@@ -1544,6 +1544,16 @@
       "claimed_at_epoch": 1789603924.6534753,
       "status": "released",
       "released_at": "2026-09-17T00:33:25Z"
+    },
+    {
+      "id": "cc-1789605838",
+      "session": "cc",
+      "subject": "defect-register-repoint",
+      "task": "re-seat a record onto its post-rebase sha",
+      "claimed_at": "2026-09-17T00:43:58Z",
+      "claimed_at_epoch": 1789605838.5324078,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
