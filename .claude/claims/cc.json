@@ -1794,6 +1794,16 @@
       "claimed_at_epoch": 1789685898.6560795,
       "status": "released",
       "released_at": "2026-09-17T23:13:55Z"
+    },
+    {
+      "id": "cc-1789686862",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "competitive-gap audit reconciliation re-derive the 2026-08-26 audit rows against HEAD plus caller-level check",
+      "claimed_at": "2026-09-17T23:14:22Z",
+      "claimed_at_epoch": 1789686862.413103,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
