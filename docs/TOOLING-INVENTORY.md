@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**193 files in `tools/`.** By what actually invokes them:
+**194 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 60 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 61 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 135 |
+| CHECKER | 136 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -117,7 +117,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (60)
+## REPORT-ONLY (61)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -170,6 +170,7 @@ quiet in practice.
 | `panel_nesting_check.py` | 2026-09-10, after three defects found by running it | a panel that is not a sibling of the others, so the show/hide CSS cannot reach it |
 | `register_feed_gate.py` | 2026-09-15 as --backlog, report-only, ALONGSIDE its BLOCKING pre-push half. The two halves answer different questions: the gate refuses a NEW defect closure that does not feed the register, and this keeps the HISTORICAL gap visible so the requirement date cannot quietly forgive it | the defect register starving -- a `fix(` commit touching code that no register record cites. The blocking half applies only from its requirement date; this one counts everything before it |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
+| `response_shape_check.py` | 2026-09-17 report-only, and report-only is right for it: the FIX differs per call site -- one of the two real instances needed a non-200 branch that had never existed, the other needed both halves -- so a blocking gate would be demanding a mechanical edit that is not always the correct one. It is cheap (AST, two directories, under a second) so it runs bare rather than --self-check; the blind lock runs on every invocation anyway | a caller binding sairn_http fetch()/fetch_json() Response and using it AS THE BODY -- isinstance(resp, dict) is ALWAYS False for a namedtuple, so the tool takes its unreadable-answer branch on every input forever |
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
@@ -383,11 +384,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      193   git ls-files tools/
+  tools on disk                      194   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                58   report_only_checks.REGISTRY
-  tools invoked by tests/            140   tests/**/*.py, *.js
+  report-only registry                59   report_only_checks.REGISTRY
+  tools invoked by tests/            141   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

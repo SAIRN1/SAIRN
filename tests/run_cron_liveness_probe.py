@@ -213,8 +213,14 @@ if yaml:
     names = [s.get('name') or s.get('uses') for s in steps]
     ok('there is a step that refuses to run without the secret',
        any('blind' in str(n).lower() for n in names), names)
+    # COUNTS INVOCATIONS, NOT MENTIONS (tightened 2026-09-17). This matched any
+    # step whose `run` contained the tool's NAME, and the commit step added the
+    # same day names the tool in its commit message -- so a correct change made
+    # a structural arm go red for a reason that had nothing to do with the
+    # structure. `python tools/...` is the thing being counted.
     ok('there are TWO reads with a soft attempt between them',
-       sum(1 for s in steps if 'cron_liveness_check.py' in str(s.get('run', ''))) == 2,
+       sum(1 for s in steps
+           if 'python tools/cron_liveness_check.py' in str(s.get('run', ''))) == 2,
        names)
     verdict = [s for s in steps if s.get('name') == 'Verdict']
     ok('the verdict step exists and runs even when a read failed',
@@ -368,6 +374,150 @@ ok('...and it names the stale-secret cause instead of blaming the jobs',
 ok('clean, finding and could-not-tell are three DIFFERENT exit codes',
    len({_c0, _c1, _c2}) == 3,
    'the tool has collapsed onto %s' % sorted({_c0, _c1, _c2}))
+
+
+
+# == D. THE COMMIT-BACK STEP, EXECUTED AGAINST A REAL GIT REPO ==============
+# Added 2026-09-17 with the step itself. The status document used to be
+# uploaded as an artifact and never committed, so the copy a human reads
+# asserted a verdict from three days earlier -- and THAT is why nobody looked
+# at the run history while nine real runs failed.
+#
+# THE SCRIPT IS EXTRACTED AND RUN, not read. A commit step that has stopped
+# committing looks exactly like one that had nothing to commit, so the only
+# honest arm is one that checks whether a commit object actually appeared.
+print(chr(10) + 'D. the commit-back step -- driven against a throwaway repo')
+if not shutil.which('git') or not shutil.which('sh'):
+    print('    (COULD NOT RUN: git or sh missing -- reported, not skipped)')
+    FAILS.append('git/sh unavailable, section D did not run')
+elif wf:
+    _job = wf['jobs']['liveness']
+    # JOB-SCOPED, NOT WORKFLOW-SCOPED, and both halves are asserted: a write at
+    # the top would hand push rights to every job added to this file later.
+    ok('the WORKFLOW default is still contents: read',
+       (wf.get('permissions') or {}).get('contents') == 'read',
+       wf.get('permissions'))
+    ok('the JOB asks for contents: write, which is what lets it commit',
+       (_job.get('permissions') or {}).get('contents') == 'write',
+       _job.get('permissions'))
+
+    _commit = [s for s in _job['steps']
+               if s.get('name') == 'Commit the status document']
+    ok('the commit step exists', len(_commit) == 1,
+       [s.get('name') for s in _job['steps']])
+    ok('...and runs even when the verdict failed -- COULD NOT TELL and NOT OK '
+       'are exactly the states worth landing',
+       len(_commit) == 1 and _commit[0].get('if') == 'always()', _commit)
+
+    if _commit:
+        _script = _commit[0]['run']
+        ok('the commit script was extracted from the real workflow file',
+           'CRON-LIVENESS-STATUS.md' in _script,
+           'extraction anchor stale -- section D is driving a script that is '
+           'not the one in the workflow')
+
+        def _repo_pair():
+            """A bare origin plus a clone, so `git push origin HEAD:main` is real."""
+            d = tempfile.mkdtemp(prefix='cronlive_commit_')
+            bare = os.path.join(d, 'origin.git')
+            work = os.path.join(d, 'work')
+            subprocess.run(['git', 'init', '-q', '--bare', '-b', 'main', bare],
+                           check=True)
+            subprocess.run(['git', 'clone', '-q', bare, work], check=True)
+            for k, v in (('user.name', 'probe'),
+                         ('user.email', 'probe@example.invalid')):
+                subprocess.run(['git', '-C', work, 'config', k, v], check=True)
+            os.makedirs(os.path.join(work, 'docs'), exist_ok=True)
+            io.open(os.path.join(work, 'docs', 'CRON-LIVENESS-STATUS.md'), 'w',
+                    encoding='utf-8', newline='').write('# base' + chr(10))
+            subprocess.run(['git', '-C', work, 'add', '.'], check=True)
+            subprocess.run(['git', '-C', work, 'commit', '-qm', 'base'], check=True)
+            subprocess.run(['git', '-C', work, 'push', '-q', 'origin', 'main'],
+                           check=True)
+            return d, bare, work
+
+        def _count(work):
+            r = subprocess.run(['git', '-C', work, 'rev-list', '--count', 'HEAD'],
+                               capture_output=True, text=True)
+            return int((r.stdout or '0').strip() or 0)
+
+        def _head(path):
+            return subprocess.run(['git', '-C', path, 'rev-parse', 'HEAD'],
+                                  capture_output=True, text=True).stdout.strip()
+
+        def _drive(work, script):
+            env = dict(os.environ, GITHUB_RUN_NUMBER='77',
+                       GITHUB_WORKFLOW='cron-liveness')
+            return subprocess.run(['sh', '-c', script], cwd=work, env=env,
+                                  capture_output=True, text=True,
+                                  encoding='utf-8', errors='replace')
+
+        # 1. THE DOCUMENT CHANGED -> A COMMIT MUST APPEAR.
+        _d, _bare, _work = _repo_pair()
+        try:
+            io.open(os.path.join(_work, 'docs', 'CRON-LIVENESS-STATUS.md'), 'w',
+                    encoding='utf-8', newline='').write('# changed' + chr(10))
+            _before = _count(_work)
+            _r = _drive(_work, _script)
+            _after = _count(_work)
+            ok('a CHANGED status document lands a real commit',
+               _after == _before + 1,
+               'commits %d -> %d %s' % (_before, _after, _r.stdout + _r.stderr))
+            _origin_head = subprocess.run(
+                ['git', '-C', _bare, 'rev-parse', 'main'],
+                capture_output=True, text=True).stdout.strip()
+            ok('...and it reaches ORIGIN, not just the local branch',
+               _origin_head == _head(_work), _r.stdout + _r.stderr)
+            _author = subprocess.run(
+                ['git', '-C', _work, 'log', '-1', '--format=%an <%ae>'],
+                capture_output=True, text=True).stdout.strip()
+            ok('...under the bot identity, not a person',
+               'github-actions[bot]' in _author, _author)
+        finally:
+            shutil.rmtree(_d, ignore_errors=True)
+
+        # 2. THE OTHER DIRECTION. Without it, arm 1 passes against a step that
+        #    commits unconditionally -- an empty commit on main every run.
+        _d, _bare, _work = _repo_pair()
+        try:
+            _before = _count(_work)
+            _r = _drive(_work, _script)
+            ok('an UNCHANGED document commits nothing',
+               _count(_work) == _before, _r.stdout + _r.stderr)
+            ok('...and says so rather than exiting silently',
+               'Nothing to commit' in (_r.stdout + _r.stderr), _r.stdout)
+        finally:
+            shutil.rmtree(_d, ignore_errors=True)
+
+        # 3. A MISSING DOCUMENT IS A WARNING, NOT A CRASH AND NOT A PASS.
+        _d, _bare, _work = _repo_pair()
+        try:
+            os.remove(os.path.join(_work, 'docs', 'CRON-LIVENESS-STATUS.md'))
+            _r = _drive(_work, _script)
+            ok('a MISSING document warns rather than failing the job',
+               _r.returncode == 0
+               and 'no status document' in (_r.stdout + _r.stderr),
+               'rc=%s %s' % (_r.returncode, _r.stdout + _r.stderr))
+        finally:
+            shutil.rmtree(_d, ignore_errors=True)
+
+    # 4. THE RETROACTIVE ARM: the version BEFORE this step must not commit. A
+    #    step added today is trivially present; what needs proving is that its
+    #    absence was the defect.
+    _prev = subprocess.run(
+        ['git', '-C', REPO, 'log', '--format=%H', '-2', '--',
+         '.github/workflows/cron-liveness.yml'],
+        capture_output=True, text=True).stdout.split()
+    if _prev:
+        _old = subprocess.run(
+            ['git', '-C', REPO, 'show',
+             '%s:.github/workflows/cron-liveness.yml' % _prev[-1]],
+            capture_output=True, text=True, encoding='utf-8',
+            errors='replace').stdout
+        ok('the pre-change workflow had NO commit step -- only the artifact '
+           'upload, which is the gap this closes',
+           'Commit the status document' not in _old and 'upload-artifact' in _old,
+           'the historical anchor moved; this arm proves nothing as written')
 
 
 print('\n' + '=' * 66)

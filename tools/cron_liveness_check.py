@@ -16,9 +16,32 @@ This file used to say the remaining gap needed "a third-party monitor pinging
 the endpoint on its own schedule", and that this was "a decision about spend
 and vendors rather than something to invent quietly in a file". **That was
 true when written and is now out of date in the cheapest possible direction:**
-`.github/workflows/cron-liveness.yml` runs this tool hourly on GitHub's
+`.github/workflows/cron-liveness.yml` ASKS for this tool hourly on GitHub's
 infrastructure, which is a genuinely different scheduler from Vercel's, at no
 spend, using a workflow pattern this repository already runs twice.
+
+── AND "HOURLY" IS WHAT IS ASKED FOR, NOT WHAT HAPPENS. MEASURED 2026-09-17 ──
+**The runs are not merely late -- roughly three in four never happen at all.**
+Over 30.8 hours of the first eight scheduled runs the gaps were 152, ~292
+(median) and 347 minutes against an asked-for 60, and NOT ONE fired at the
+declared `:45`; the observed minutes were 6, 8, 10, 18, 21, 40 and 53.
+
+**THE COMPARISON IS WHAT MAKES THAT A FINDING RATHER THAN A COMPLAINT.** The
+other two scheduled workflows in this same repository are DELAYED AND NEVER
+DROPPED: `nightly-backup.yml` asks for 03:40 and lands at 08:52-08:56, over
+five hours late, with gaps of 1433/1444/1444 minutes -- a daily cadence that
+holds exactly. `codeql.yml` asks for Friday 19:21 and its gaps are ~10,000
+minutes, one week, also intact. **Delay affects all three. Dropping affects
+only the hourly one**, because a new scheduled trigger arrives before the
+previous one has been serviced and GitHub does not queue them.
+
+**THE SCHEDULE IS DELIBERATELY LEFT AT HOURLY.** Asking for less would get
+less; asking hourly is what yields the four-to-six runs a day actually
+observed. What is corrected is the CLAIM, not the cron -- an hourly figure in
+a document is a coverage statement somebody will rely on, and the real one is
+**a read every two to six hours**. A job that dies just after a read can
+therefore sit unnoticed for that long before this half notices, which is a
+property of the second scheduler and not of the watchdog it reads.
 
 The correction is recorded rather than quietly overwritten because the OLD
 sentence was the reason nobody built it, and a future reader who finds only the
@@ -143,16 +166,23 @@ def write_status(state, lines, payload=None):
         '**WHAT THIS CANNOT SEE.** `api/cron-watchdog.js` runs on the same Vercel',
         'cron scheduler as the jobs it watches, so a total scheduler outage',
         'silences both. THIS tool runs outside Vercel and is what survives that.',
-        'Since 2026-09-15 it also runs hourly from',
+        'Since 2026-09-15 it is also ASKED for hourly from',
         '`.github/workflows/cron-liveness.yml` — a genuinely different scheduler,',
         'at no spend — so it no longer depends on somebody remembering to run it.',
         '',
-        '**AND WHAT THAT STILL IS NOT.** GitHub Actions is not an uptime vendor:',
-        'scheduled workflows can be delayed under load, and GitHub disables them',
-        'on a repository with no activity for 60 days. A second INDEPENDENT',
-        'scheduler is a real improvement over one; it is not a guaranteed one,',
-        'and the difference is stated here rather than implied by the word',
-        '"automated".',
+        '**AND WHAT THAT STILL IS NOT, MEASURED RATHER THAN CAVEATED.** GitHub',
+        'Actions is not an uptime vendor. Over the first 30.8 hours of scheduled',
+        'runs the gaps were **152 to 347 minutes, median ~292**, against an',
+        'asked-for 60 — **roughly three runs in four never happen** — and not one',
+        'fired at the declared `:45`. The other two scheduled workflows in this',
+        'repository are late and never dropped (`nightly-backup` asks 03:40 and',
+        'lands 08:52, daily cadence exact), so **delay affects all of them and',
+        'dropping affects only the hourly one.** Read this document as **a check',
+        'every two to six hours**, not hourly. GitHub also disables scheduled',
+        'workflows on a repository with no activity for 60 days. A second',
+        'INDEPENDENT scheduler is a real improvement over one; it is not a',
+        'guaranteed one, and the difference is measured here rather than implied',
+        'by the word "automated".',
     ]
     if payload is not None:
         out += ['', '<details><summary>Raw response</summary>', '',

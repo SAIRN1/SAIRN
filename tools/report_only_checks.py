@@ -1575,6 +1575,38 @@ REGISTRY = [
                     'ever touched sql/',
     },
     {
+        'tool': 'response_shape_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-17 report-only, and report-only is right for it: '
+                    'the FIX differs per call site -- one of the two real '
+                    'instances needed a non-200 branch that had never existed, '
+                    'the other needed both halves -- so a blocking gate would '
+                    'be demanding a mechanical edit that is not always the '
+                    'correct one. It is cheap (AST, two directories, under a '
+                    'second) so it runs bare rather than --self-check; the '
+                    'blind lock runs on every invocation anyway',
+        'catches': 'a caller binding sairn_http fetch()/fetch_json() Response '
+                   'and using it AS THE BODY -- isinstance(resp, dict) is '
+                   'ALWAYS False for a namedtuple, so the tool takes its '
+                   'unreadable-answer branch on every input forever',
+        'why_it_matters': 'BOTH REAL INSTANCES WERE MONITORS, AND BOTH COULD '
+                          'ONLY EVER REPORT COULD NOT TELL. '
+                          'cron_liveness_check.py -- the out-of-band reader '
+                          'that exists to survive a Vercel outage -- exited 2 '
+                          'on every input for its entire life, including runs '
+                          'where the watchdog answered 200 with all four jobs '
+                          'ok; audit_checkpoint_status.py had the identical '
+                          'line. Response.__contains__ ALREADY RAISES on the '
+                          'other silent spelling of this mistake, and in the '
+                          'second instance that guard was short-circuited by '
+                          'the `or` in front of it -- the defence was present, '
+                          'correct and unreachable because of the thing it '
+                          'defended against, which is why a guard inside the '
+                          'type is not enough on its own',
+    },
+    {
         'tool': 'check_precedence.py',
         'mode': 'once',
         'args': ['--self-check'],

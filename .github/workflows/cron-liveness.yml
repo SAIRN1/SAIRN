@@ -43,9 +43,26 @@
 # makes the log look like flapping. Those fail on the FIRST read.
 #
 # ── WHAT THIS IS NOT ───────────────────────────────────────────────────────
-# GitHub Actions is not an uptime vendor. Scheduled workflows can be delayed
-# under load, and GitHub DISABLES scheduled workflows on a repository with no
-# activity for 60 days. So this is a second INDEPENDENT scheduler, not a
+# GitHub Actions is not an uptime vendor, and since 2026-09-17 that is MEASURED
+# rather than caveated. Over the first 30.8 hours of scheduled runs the gaps
+# were 152 to 347 minutes, median ~292, against the 60 asked for here -- roughly
+# THREE RUNS IN FOUR NEVER HAPPEN -- and not one fired at `:45`; observed
+# minutes were 6, 8, 10, 18, 21, 40, 53.
+#
+# THE COMPARISON IS WHAT MAKES THAT A FINDING. The other two scheduled workflows
+# in this repository are DELAYED AND NEVER DROPPED: nightly-backup asks 03:40
+# and lands 08:52-08:56 with gaps of 1433/1444/1444 minutes, a daily cadence
+# that holds exactly; codeql's weekly gaps are ~10,000 minutes, also intact.
+# Delay affects all three. Dropping affects only the hourly one, because the
+# next scheduled trigger arrives before the previous has been serviced and
+# GitHub does not queue them.
+#
+# THE CRON IS DELIBERATELY LEFT AT HOURLY. Asking for less would get less;
+# asking hourly is what yields the four-to-six runs a day actually observed. The
+# CLAIM is what was corrected, not the schedule -- an hourly figure in a comment
+# is a coverage statement somebody relies on, and the real one is a read every
+# two to six hours. GitHub also disables scheduled workflows on a repository
+# with no activity for 60 days. So this is a second INDEPENDENT scheduler, not a
 # guaranteed one. It is a real improvement over one scheduler watching itself
 # and it is not a replacement for a paid monitor, and saying so here is cheaper
 # than somebody later discovering the difference during an outage.
@@ -81,6 +98,21 @@ concurrency:
 jobs:
   liveness:
     runs-on: ubuntu-latest
+    # -- JOB-SCOPED WRITE, NOT WORKFLOW-SCOPED (2026-09-17) -----------------
+    # The workflow default above stays `contents: read`. This job needs write
+    # for exactly one reason -- committing the status document it generates --
+    # and scoping it HERE rather than at the top means a job added to this file
+    # later does NOT silently inherit push rights to `main`.
+    #
+    # WHY IT IS WORTH ANY WRITE AT ALL. docs/CRON-LIVENESS-STATUS.md was
+    # uploaded as an artifact and never committed, so the copy a human reads
+    # asserted a locally-produced COULD NOT TELL from 2026-09-14 while nine real
+    # runs had happened. THAT STALE FILE IS WHY NOBODY LOOKED AT THE RUN HISTORY
+    # FOR TWO DAYS, and a generated status file the generator never writes back
+    # is a document asserting a check that did not happen -- the one thing its
+    # own header forbids.
+    permissions:
+      contents: write
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -167,6 +199,45 @@ jobs:
           echo "Read 1 exit: $C1   Read 2 exit: ${C2:-not attempted}"
           echo "::error title=CRON LIVENESS FAILED::The watchdog was not clean, and a soft recovery attempt did not fix it (or the failure was one no retry can fix). See the cron-liveness-status artifact. THREE DIFFERENT CAUSES LOOK ALIKE HERE and need different fixes: a JOB is down; the watchdog CANNOT NOTIFY anybody (notify_channel.configured false, alerts end 'nobody was told'); or the watchdog itself is unreachable, unprovisioned, or checked zero jobs."
           exit 1
+
+      # -- COMMIT THE DOCUMENT THIS RUN JUST GENERATED ---------------------
+      # `if: always()` because COULD NOT TELL and NOT OK are exactly the states
+      # worth landing -- committing only on success would recreate the stale
+      # file in a subtler form, current only while everything is fine.
+      #
+      # IT CAN NEVER FAIL THE JOB, deliberately: the Verdict above is the
+      # monitor's answer, and a push race with another clone is not a statement
+      # about the platform's health. It is LOUD either way, because a commit
+      # step that quietly gives up rebuilds the stale file it exists to prevent.
+      - name: Commit the status document
+        if: always()
+        run: |
+          set -u
+          if [ ! -f docs/CRON-LIVENESS-STATUS.md ]; then
+            echo "::warning title=no status document::The tool wrote no document, so there is nothing to commit. That is itself a finding -- see the Verdict step."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if git diff --quiet -- docs/CRON-LIVENESS-STATUS.md; then
+            echo "Unchanged from what is already on main. Nothing to commit."
+            exit 0
+          fi
+          git add docs/CRON-LIVENESS-STATUS.md
+          git commit -q -m "chore(cron): cron-liveness status, run ${GITHUB_RUN_NUMBER:-?}" -m "Generated by tools/cron_liveness_check.py. Committed rather than only uploaded: an artifact nobody downloads left this file asserting a verdict from three days earlier."
+          n=0
+          until git push origin HEAD:main; do
+            n=$((n+1))
+            if [ "$n" -ge 5 ]; then
+              echo "::warning title=status document not committed::Five push attempts lost the race with another clone. The run's verdict is unaffected and the artifact below is still this run's record."
+              exit 0
+            fi
+            echo "push race, attempt $n -- fetching and rebasing"
+            git fetch -q origin main || true
+            git rebase -q origin/main || { git rebase --abort || true; exit 0; }
+            sleep 3
+          done
+          echo "Committed and pushed the status document."
 
       - name: Upload the status document
         if: always()
