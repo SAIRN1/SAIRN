@@ -2085,6 +2085,16 @@
       "claimed_at_epoch": 1789610874.499324,
       "status": "released",
       "released_at": "2026-09-17T02:39:22Z"
+    },
+    {
+      "id": "hank-1789615824",
+      "session": "hank",
+      "subject": "mech-credentials-export",
+      "task": "independent review of CC mech export board fixture derived from server",
+      "claimed_at": "2026-09-17T03:30:24Z",
+      "claimed_at_epoch": 1789615824.5821314,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
