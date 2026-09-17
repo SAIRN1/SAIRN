@@ -1712,8 +1712,8 @@
       "task": "sairn_claim false CLEAR against a readable active claim -- root cause",
       "claimed_at": "2026-09-17T17:03:50Z",
       "claimed_at_epoch": 1789664630.4483676,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T17:34:42Z"
     }
   ]
 }
