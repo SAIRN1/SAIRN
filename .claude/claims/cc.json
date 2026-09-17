@@ -1584,6 +1584,16 @@
       "claimed_at_epoch": 1789608864.6194265,
       "status": "released",
       "released_at": "2026-09-17T01:48:51Z"
+    },
+    {
+      "id": "cc-1789609925",
+      "session": "cc",
+      "subject": "sv-controlled-export",
+      "task": "wire the controlled substance register to SAIRNvet export machinery",
+      "claimed_at": "2026-09-17T01:52:05Z",
+      "claimed_at_epoch": 1789609925.0933838,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
