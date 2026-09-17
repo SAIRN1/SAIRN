@@ -508,6 +508,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`tests/stonedesk_server_backup.js` had been RED on `main` since item 97 landed and nobody had read the red** | **FIXED 2026-09-16 (Hank)** &mdash; the `soft_delete` spread assertion now names the seven SAIRNcode resources. 23/23 green | `tests/stonedesk_server_backup.js` |
 | **Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise was wrong, which is stated before anything was built** | **BUILT 2026-09-15 (Hank)** &mdash; `9bc2dd2b`. `tests/stonedesk_inside_corner_radius.js` 14 arms + `tests/stonedesk_fixture_catalog.js` 15 arms | `tests/stonedesk_fixture_catalog.js`, `tests/stonedesk_inside_corner_radius.js` |
 | **`tests/stonedesk_server_backup.js` is RED on origin/main right now, and the arm that is red is the one written to stop exactly this** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED, item 97 is CC&rsquo;s active claim** | `tests/stonedesk_server_backup.js` |
 | **The competitive-gap STATUS doc is stale in exactly the way it was written to prevent &mdash; #5 is BUILT, and there is no un-gated item left in it** | **RE-VERIFIED 2026-09-14 (Cody)** &mdash; correction appended to `docs/2026-09-02-competitive-gap-status-rederived.md` | `api/sd-data-approvals.test.js` |
@@ -598,7 +599,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 516   tests/**, api/*.test.js
-  open-work rows citing a test       265   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       266   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                57   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

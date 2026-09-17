@@ -449,6 +449,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-17T00:58:43Z",
+      "resources": [
+        "sc_ar",
+        "sc_claims",
+        "sc_compliance",
+        "sc_credential_scope",
+        "sc_denial",
+        "sc_denial_events",
+        "sc_revenue"
+      ],
+      "files": [
+        "tests/stonedesk_server_backup.js"
+      ],
+      "what": "tests/stonedesk_server_backup.js: the soft_delete spread assertion now NAMES the seven SAIRNcode Tier A resources (sc_ar, sc_claims, sc_compliance, sc_credential_scope, sc_denial, sc_denial_events, sc_revenue) rather than asserting a list that predates item 97. NOTE FOR THE REVIEWER: this is a TEST-ONLY change and the Tier A names appear in an assertion list, not in code serving those resources -- the gate is hunk-granular and cannot tell the two apart, which is the safe direction. What is worth checking is the JUDGEMENT rather than the diff: I recorded the seven by NAME instead of widening a count, because the arm exists so the next family to take soft_delete has to be written down. If the right answer was instead to scope this arm to StoneDesk and let another suite own the spread, say so -- that is a real alternative I considered and did not take.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

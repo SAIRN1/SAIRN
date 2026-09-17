@@ -305,7 +305,25 @@ test("the verb is 'soft_delete', not 'delete'", () => {
   //     watched a deletion succeed that was already scheduled to reverse.
   assert.strictEqual(sdGranted.length, 23,
     'soft_delete is granted to ' + sdGranted.length + ' StoneDesk resources, not 23');
-  assert.deepStrictEqual(elsewhere.sort(), ['dnt_supplies'],
+  //
+  // ── AND AGAIN ON 2026-09-16, WITH SEVEN AT ONCE (recorded by Hank) ────────
+  // `e442ca86` -- item 97, "the seven Tier A records may be hidden and never
+  // destroyed" -- moved SAIRNcode's seven Tier A resources from a destroying
+  // `delete` to `soft_delete`. Another CORRECT change in another app, and this
+  // arm went red on it for the second time, which is exactly what its design
+  // above says it is for.
+  //
+  // THE SUITE HAD BEEN RED ON `main` SINCE THAT LANDED AND NOBODY HAD NOTICED,
+  // which is worth more than the two lines it took to fix: an arm that catches
+  // a real widening is only useful if somebody reads the red. Found here while
+  // verifying an UNRELATED claim about this same file.
+  //
+  // Written down by name rather than absorbed into a widened count, for the
+  // reason the comment above already gives -- the next family to take this
+  // verb has to appear here too.
+  assert.deepStrictEqual(elsewhere.sort(),
+    ['dnt_supplies', 'sc_ar', 'sc_claims', 'sc_compliance',
+     'sc_credential_scope', 'sc_denial', 'sc_denial_events', 'sc_revenue'],
     'a family outside StoneDesk gained or lost soft_delete: ' + JSON.stringify(elsewhere)
     + '. That is a real decision about who may delete -- record it here rather than '
     + 'widening a count past it.');
