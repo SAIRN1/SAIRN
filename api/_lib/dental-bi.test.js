@@ -407,6 +407,36 @@ test('charges: an UNRECORDED edition exports as empty, not as an invented one', 
     'the code is still there -- an unrecorded EDITION must not blank the CODE too');
 });
 
+// ── location_id: A RAISE OF MINE THAT WAS WRONG (2026-09-17) ──────────────
+// I reported this column as "exported but never written" on the strength of
+// grepping sairndental.html and finding no `location_id`. The client does not
+// write it and NEVER SHOULD: api/sd-data.js stamps it server-side via
+// location-scope.js's stampLocation() on the generic dnt_* write path,
+// DELIBERATELY, "so a row can never be written without an attributable
+// location -- that is the one part of the location model that cannot be added
+// retroactively". A client-side grep cannot see a server-side stamp.
+//
+// WHAT WAS ACTUALLY MISSING IS THIS ARM. stampLocation() is well covered and
+// the projection is covered, and nothing tied the two together -- so "the
+// column is fed" was an inference from two separate green suites, which is how
+// the wrong raise survived long enough to be written into a commit message.
+test('charges: location_id is exported from the SERVER-STAMPED field', () => {
+  const stamped = require('./location-scope.js').stampLocation(
+    { id: 'CH-5', patient_id: 'PT-1', amount: 100, date: '2026-09-17' });
+  const row = bi.projectRow('charges', stamped, CTX);
+  assert.strictEqual(row.location_id, require('./location-scope.js').DEFAULT_LOCATION_ID,
+    'the export column and the write-side stamp have drifted apart');
+});
+
+test('charges: a REAL location survives the round trip, not just the default', () => {
+  // Without this the arm above would pass on a projection that hardcoded the
+  // default, which is the shape that made the original raise plausible.
+  const stamped = require('./location-scope.js').stampLocation(
+    { id: 'CH-6', patient_id: 'PT-1', amount: 100, date: '2026-09-17',
+      location_id: 'LOC-NORTH' });
+  assert.strictEqual(bi.projectRow('charges', stamped, CTX).location_id, 'LOC-NORTH');
+});
+
 test('charges: THE STAMP IS NOT A JOIN -- the charge wins over any current catalogue value',
   () => {
     // The catalogue has moved on; the charge says what it was billed under.
