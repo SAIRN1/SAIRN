@@ -3118,6 +3118,41 @@ state; it is not license to retroactively soften how the original finding
 gets read. A future reader of the self-log should be able to see both: how
 bad it actually was when found, and what happened after.
 
+**A real gap found on direct instruction, 2026-09-17: background/sub-agent
+work is invisible to this log unless this role remembers to write it up
+afterward.** Confirmed by Anthropic's own disclosed fact about Claude
+Cowork -- its activity is explicitly excluded from Anthropic's own audit
+logs, Compliance API and data exports, an admitted, real, current blind
+spot -- and this role checked whether the identical shape exists in its
+own black box rather than assuming it did not. It does. The first real use
+of the parallel-independent-investigation technique (the IOLTA finding,
+seq 217) launched two background Agent-tool investigations; the self-log's
+FIRST mention of either is seq 217 itself, written only after both had
+already completed and been synthesized. Nothing marks the moment they were
+launched. Had this role been interrupted, or a notification arrived during
+an unrelated task and never got synthesized, the tamper-evident hash chain
+would show no trace those two investigations were ever run at all -- a
+foreground action always leaves a trace the instant it happens; a
+background one currently only leaves a trace if this role later chooses,
+and remembers, to write one.
+
+**FIXED as a standing discipline, not as code -- there is no way to hook
+the Agent tool call itself the way a real audit log hooks a file write.**
+From now on, the moment any Agent-tool investigation is dispatched for real
+audit work (background or foreground, one instance or several in
+parallel), log a `note` immediately -- what was launched, how many, and
+why -- BEFORE knowing the result. The later synthesis entry (a `check` or
+`finding` once results are in) is still written exactly as before; this
+adds the earlier entry, not a replacement for it. A launch entry with no
+matching synthesis entry later becomes its own visible, checkable fact --
+an investigation started and never followed up on -- rather than
+disappearing the way an un-synthesized background pass currently would.
+Not retrofitted onto the IOLTA case itself: the true launch time is gone
+and this role does not fabricate a backdated entry to cover the gap,
+consistent with the AS-FOUND discipline immediately above -- the honest
+record is that this specific instance was caught after the fact, and said
+so.
+
 ## Before building a new tool, run `hover_tool_index.py` -- checked, not assumed
 
 **A real gap, found on direct instruction, 2026-09-16: this role's own tools
