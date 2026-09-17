@@ -441,7 +441,28 @@
       "rules": [],
       "severity": "high",
       "subject": "fix(tests): two suite runs at once made every probe restore the wrong file",
-      "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\""
+      "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\"",
+      "contributing_factors": [
+        {
+          "factor": "EACH PROBE WAS CORRECT ALONE AND THE SET WAS NOT. A probe snapshots the bytes it reads at its own start and restores them in a finally -- right, in isolation. With two runs alive, run B snapshots run A's MUTATION as its 'original' and restores it after A has cleaned up, so the mutation stays on disk. No individual probe is wrong.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The runs are serialised, so the invariant each probe assumes -- that it is the only writer -- is actually true."
+        },
+        {
+          "factor": "THE TRIGGER FIRED AUTOMATICALLY AND ASYNCHRONOUSLY. run_all_tests.py --hook ran on every git push, so THREE concurrent runs were alive in one tree within 43 seconds, plus two copies of one probe started in the same second. Nobody chose that concurrency and nothing reported it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The --hook trigger is paused, with the conditions for re-enabling it written down rather than left to judgement."
+        },
+        {
+          "factor": "THE SYMPTOM WAS A FILE REVERTING OVERNIGHT, WHICH LOOKS LIKE ANYTHING BUT THIS. sairnvet.html repeatedly lost the corrupt-store guard, and an exemptions file kept an entry no run had failed to remove -- both read as a bad merge, a stale editor, or somebody else's clone.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The mechanism is written down with the timestamps, because the next occurrence will present the same way and the diagnosis is not reachable from the symptom."
+        }
+      ],
+      "recurrence_open": "Serialising the runs removes the concurrency this trigger created. It does not make a probe safe to run beside anything else -- two humans, or a human and a cron, still produce the same interleaving, and no probe detects that it is not the only writer."
     },
     {
       "app": "sairnvet",
@@ -1378,7 +1399,28 @@
       ],
       "severity": "high",
       "subject": "fix(sairndental): a refused vendor write showed success and the next sync erased it",
-      "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays"
+      "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays",
+      "contributing_factors": [
+        {
+          "factor": "THREE CORRECT DECISIONS COMPOSED INTO DATA LOSS. Wholesale replacement is the RIGHT design -- it is what makes a REMOVAL expressible, which a merge cannot do. Server-wins on sync is a real choice. A push helper that logs a refusal to console is a real choice. Together: set a discount, the push fails, the toast says it worked, AND THE NEXT SYNC PUTS THE OLD NUMBER BACK, silently.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The write is confirmed before it is trusted -- the missing half, which changes none of the three decisions."
+        },
+        {
+          "factor": "THE TOAST WAS UNCONDITIONAL AND THE PUSH WAS NOT AWAITED. `dntPushVendorPricing(rules)` on one line and `toast('... set to 12%')` on the next reads as a sequence and is not one: the message is written before the result exists.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The result is read and the message conditioned on it."
+        },
+        {
+          "factor": "THE SCHEMA HAS BEEN RUN, so this is live rather than prospective. A defect in a code path nobody reaches is a different severity from one a dental practice hits when it changes a vendor discount.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the record, because 'is this reachable' is the question that separates this from the same shape elsewhere in the same file."
+        }
+      ],
+      "recurrence_open": "dntPushOne still reports refusals to console.warn only, so every OTHER caller that does not read its result has this shape. The structural scan finds callers that DROP the promise; it does not find a caller that keeps it and then ignores what it says."
     },
     {
       "app": "PLATFORM",
@@ -2081,7 +2123,28 @@
       ],
       "severity": "high",
       "subject": "fix(sairncare): a failed rule read rendered as an empty rule set, and advised the seed",
-      "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels"
+      "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels",
+      "contributing_factors": [
+        {
+          "factor": "A COALESCE UPSTREAM MADE A DOWNSTREAM NULL TEST DEAD. The refresh coalesced a failed read to `[]`, so the `=== null` guard written to distinguish 'the read failed' from 'there is nothing there' could never fire -- and an empty rule set rendered, with the seed advised on top of it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The coalesce is removed so the guard is reachable, which is the smaller change than rewriting the guard."
+        },
+        {
+          "factor": "IT WAS FOUND BY SWEEPING FOR THE SHAPE RATHER THAN THE SYMPTOM -- a coalesce whose variable is tested for null elsewhere. The symptom is an empty list, which is also what correct code produces, so no amount of looking at the output would have found it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The shape query is the transferable part and is recorded as such."
+        },
+        {
+          "factor": "THE AUTHOR'S PREMISE WAS WRONG AND MEASURING IS WHAT SHOWED IT. The sweep started from 'a read caller with no named failure flag is a defect', measured 8 of 15 apps that way -- and SEVEN OF THE EIGHT ARE FINE. Hydrators return false on null and leave the local copy alone; the renderers that need the distinction read the response SHAPE carefully. THE ABSENCE OF A FLAG IS NOT THE DEFECT.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The premise is corrected in the record rather than quietly dropped, because 'no failure flag' is exactly the kind of rule a future sweep would re-adopt."
+        }
+      ],
+      "recurrence_open": "Exactly two instances were found and fixed. The shape query -- a coalesce whose variable is null-tested elsewhere -- is written down but not automated, so the third instance is found by somebody running it again from memory."
     },
     {
       "app": "PLATFORM",
@@ -2567,7 +2630,22 @@
       ],
       "severity": "moderate",
       "subject": "feat(api): item 8 -- the three untested proxy guardrails, and garbage was buying the ceiling",
-      "summary": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file"
+      "summary": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file",
+      "contributing_factors": [
+        {
+          "factor": "`Number(x) || DEFAULT` RESOLVES A MALFORMED VALUE TO THE DEFAULT, AND THE DEFAULT WAS THE CEILING. Every falsy result -- NaN, 0, '' -- became the most permissive setting available, so a malformed input bought the widest limit rather than the narrowest.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Malformed resolves to the FLOOR. A value nobody supplied cannot be more permissive than one somebody did."
+        },
+        {
+          "factor": "THE IDIOM IS THE COMMONEST IN JAVASCRIPT AND IS WRONG EXACTLY WHERE THE DEFAULT IS A LIMIT. `|| default` is correct for a label and dangerous for a cap, and nothing in the expression distinguishes the two cases.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the class rather than the instance, because the same expression appears throughout the platform and is usually fine."
+        }
+      ],
+      "recurrence_open": "Nothing scans for `|| <limit>`, and it cannot be found by shape alone: the same expression is correct wherever the default is not a bound. Whether a default is a LIMIT is a judgement about what the variable means."
     },
     {
       "app": "PLATFORM",
