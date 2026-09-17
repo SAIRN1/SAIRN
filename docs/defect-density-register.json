@@ -5298,6 +5298,56 @@
       "recurrence_open": "The three arms cover ONE field on ONE resource. Nothing enumerates which other fields are stripped by role anywhere on the platform, and a strip is invisible to every check that asserts on a fixture row not carrying the field -- which is how this one survived. The general form needs a list of role-conditional field removals, and no such list exists."
     },
     {
+      "commit": "72db9dc9b952",
+      "date": "2026-09-16",
+      "subject": "fix(grounds,scape): a vanished write also vanished from the console in two of three apps",
+      "files": [
+        "sairngrounds.html",
+        "sairnscape.html",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 36,
+      "lines_removed": 2,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairngrounds and sairnscape reported a refused localStorage write to the USER and to nothing else: their storage catch toasted and logged nothing, so a write that vanished also vanished from the console and a support read of a browser log showed no trace. sairndental's copy of the same wrapper carries a console.error with the reason written beside it -- the line was added to one of three near-identical files when the stamping catch was split out on 2026-09-13",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "d6b3f6e929ec",
+        "date": "2026-09-13",
+        "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
+        "lag_days": 3
+      },
+      "citation_note": "No section covers a fix landing in one of several near-identical files. It is adjacent to the byte-identical-is-not-safe-in-context discipline, but that one is about propagating a pattern TO a new context; this is about failing to propagate it at all.",
+      "contributing_factors": [
+        {
+          "factor": "ONE FIX APPLIED TO ONE OF THREE FILES. The stamping catch was split out of the storage catch in all three apps on 2026-09-13, and the console line that makes the STORAGE failure reportable was added in sairndental only. The three wrappers are near-identical and are edited one at a time.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both other apps log, naming the key and saying nothing was saved. The toast is unchanged -- the visitor-facing half was never the missing one."
+        },
+        {
+          "factor": "A TOAST IS NOT A LOG AND THEY FAIL IN OPPOSITE DIRECTIONS. The toast reaches the person in front of the screen and is gone in eight seconds; the console reaches whoever reads the browser log afterwards, which is the only channel a support read has. Having one is indistinguishable from having both at the moment of the failure.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the code at both sites, quoting the sentence sairndental already carried."
+        },
+        {
+          "factor": "THE SUITE COUNTED ALL LOGS WHEN IT MEANT ONE. `logs.length === 1` was true only while the storage catch logged nothing, so adding a legitimate second log turned an improvement into two red arms. An assertion coupled to the ABSENCE of an unrelated behaviour fails when that behaviour is correctly added.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Asked by CONTENT -- filter for the UNSTAMPED entry -- plus a new arm for the added behaviour, so both are pinned rather than one constraining the other."
+        }
+      ],
+      "recurrence_open": "Three near-identical wrappers are still three files. Nothing compares them, so the next edit to one of them is the next instance -- and the two arms that would have caught this one were added AFTER the divergence, by the change that created it."
+    },
+    {
       "commit": "769667475cb5",
       "date": "2026-09-16",
       "subject": "fix(sairnvet): the dosing audit trail told a clinic its DEA record was empty when the table did not exist",
