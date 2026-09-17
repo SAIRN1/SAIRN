@@ -4718,3 +4718,59 @@ with the repair **stated inside the text** rather than done silently.
 followed was resolved with `tools/sairn_rebase_resolve.py` rather than by hand
 -- the tool fourth built after pushing conflict markers to main -- which is the
 same lesson as the first section, applied immediately.
+
+## 2026-09-16 (continued) -- the four export gaps were already closed, and what was actually missing
+
+### The brief described the pre-fix state as current
+
+Item 39c's four Class A export gaps -- `dnt_charges` and `dnt_payments`
+exporting derived ageing buckets, `dnt_vendor_orders` exporting `dnt_supplies`,
+`rf_claim_photos` with no photo export -- were **closed on 2026-09-14 by
+`c2430a3a`**, which is on `origin/main`. Verified three ways rather than from the
+commit message: the shipped `DNT_EXPORTS` now carries row-level `charges`,
+`payments` and a `vendororders` reading `vendorOrderHistory()`; `RF_REPORTS`
+carries `claim_photos` with a per-claim fan-out; and
+`tests/run_export_coverage_probe.py` **pins all eleven Class A answers BY NAME**
+and passes.
+
+**Nothing in that list needed fixing.** One correction to the brief while I am
+here: `rf_claim_photos` is SAIRNroofing, not SAIRNdental -- three of the four
+were dental, the fourth was not.
+
+### What WAS missing is one step behind it
+
+The retrievability document records that the work shipped with *"three sabotage
+controls"*. **They were RUN. They were not LEFT BEHIND.** One-off sabotages
+performed during that day's work, no `MUTATIONS` table on either export suite,
+and `suite_control_triage.py` has gone on listing
+`tests/roofing_claim_photo_export.js` among the UNCONTROLLED Tier A suites ever
+since. **It was right and the document reads as though it were not.**
+
+**A sabotage that happened once is evidence about the day it happened.** Built
+the repeatable version: two of its four mutations are the document's own -- drop
+the fan-out's failure list, swap the inventory columns for a `photo_base64`
+column -- and two are the refusal paths beside them.
+
+The first is the one that matters on this resource: **an adjuster dispute is
+about the photographs, and an evidence export that quietly drops the claims
+somebody could not see is worse than no export, because it looks like a complete
+answer.**
+
+### The four remaining gaps, named and NOT started
+
+All four are apps with **no export machinery at all**, which is why they are a
+different size of job from the four that were missing rows in a registry that
+already existed:
+
+| App | Resource | On screen by |
+|---|---|---|
+| `sairncare` | `alf_staff_credentials` | `crRefresh()` -> `rCredentials()` |
+| `sairnmechanical` | `mech_credentials` | `mechCredRefresh()` -> `mechRenderAccess()` |
+| `sairnvet` | `sv_controlled` | `panel-controlled` |
+| `sairnvet` | `sv_audit_log` | **not on screen either** |
+
+`sv_audit_log` is the sharpest of the four and the only one failing BOTH halves:
+a DEA-relevant dosing trail that can be neither viewed nor produced as a file.
+**Not started, per the brief.**
+
+37 of 157 suites controlled.
