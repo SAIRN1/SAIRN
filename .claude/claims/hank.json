@@ -2065,6 +2065,16 @@
       "claimed_at_epoch": 1789574870.6798556,
       "status": "released",
       "released_at": "2026-09-16T18:27:06Z"
+    },
+    {
+      "id": "hank-1789607400",
+      "session": "hank",
+      "subject": "cron-watchdog",
+      "task": "watchdog self outcome latch SAIRN_OPS_EMAIL verification",
+      "claimed_at": "2026-09-17T01:10:00Z",
+      "claimed_at_epoch": 1789607400.741717,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
