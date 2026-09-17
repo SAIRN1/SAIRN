@@ -36,9 +36,30 @@ EP = 'api/sb-auth.js'
 # A detached worktree has no branch tip to strand a commit on. The pre-push
 # hook still fires from it: `core.hooksPath` is `.githooks` and worktrees share
 # the common git dir -- measured, not assumed.
+#
+# ── AND IT IS BUILT ON THE FETCHED REMOTE TIP, NOT ON LOCAL HEAD (2026-09-16) ─
+# This said `HEAD`, and in a five-clone repo local HEAD is behind origin/main
+# most of the time. The gate then refuses with "the outgoing range
+# <remote>..<local> could not be read" -- CORRECTLY, since the remote tip is not
+# an object this clone has yet -- and that refusal lands before check 7 is ever
+# reached. Measured 2026-09-16: all three failing arms reported exit 1 with
+# blocked_by_preauth False and names_the_file False, which reads as "check 7 did
+# not fire" and actually meant "the push never got that far".
+#
+# Built on the fetched tip, the outgoing range is exactly the fixture commit.
+_fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                        capture_output=True, text=True, encoding='utf-8', errors='replace')
+if _fetch.returncode != 0:
+    print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
+    print('built on the tip the gate compares against, and nothing about check 7')
+    print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
+    sys.exit(3)
+BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
+                      capture_output=True, text=True, encoding='utf-8',
+                      errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check7-probe-%d' % os.getpid())
 _add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+                       WT, BASE], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if _add.returncode != 0:
     print('SKIPPED: could not create the throwaway worktree this probe needs, so')
     print('nothing about check 7 was verified: %s' % (_add.stderr or '').strip()[:200])
@@ -101,10 +122,34 @@ start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 R = {}
 
 
+# The gate's own words when it cannot compute what is being pushed. Matched
+# rather than inferred from the exit code, because "could not tell" and "no"
+# are different answers and this probe must not read one as the other.
+RANGE_UNREADABLE = 'could not be read'
+
+
 def dry_push():
     r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
     err = (r.stderr or '') + (r.stdout or '')
+    # ── THE REMOTE TIP MOVES UNDER THIS PROBE, SO ONE RETRY AFTER A FETCH ────
+    # Five clones push to this branch and a run takes a minute. When origin/main
+    # advances between one arm and the next, the sha git hands the hook is an
+    # object this clone does not have yet, and the gate refuses -- correctly --
+    # before check 7 is reached. Measured mid-run on 2026-09-16: arm 1 passed
+    # and the three arms after it all carried exactly this refusal, which is
+    # what made it look like check 7 had stopped firing.
+    #
+    # The fetch puts the new tip in the object store the worktree shares, and
+    # the range becomes the fixture commit again -- BASE is an ancestor of the
+    # new tip, so nothing else is in it. If it persists, `could_not_run` below
+    # says so rather than letting the arms call it a check-7 failure.
+    if r.returncode != 0 and RANGE_UNREADABLE in err:
+        subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                       capture_output=True)
+        r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
+        err = (r.stderr or '') + (r.stdout or '')
     return {
+        'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
         'exit': r.returncode,
         # MATCHED ON A FRAGMENT THAT SURVIVES THE LINE WRAP. The first version
         # looked for 'BEFORE the caller is authenticated' and the deny message
@@ -116,6 +161,10 @@ def dry_push():
         'unchecked': 'UNCHECKED for pre-auth disclosures' in err,
         'blocked_undeclared': 'NO authentication' in err and 'no declaration' in err,
         'rejected_by_remote': 'fetch first' in err or 'rejected' in err,
+        # THE TEXT, NOT JUST THE FLAGS. Every flag above is a marker somebody
+        # chose; a refusal none of them names leaves the whole dict reading
+        # False, which is indistinguishable from "nothing blocked it".
+        'err': err.strip()[-400:],
     }
 
 
@@ -221,6 +270,21 @@ def check(name, cond, detail=''):
 print('push-gate check 7 -- a pre-auth disclosure must not reach origin\n')
 
 a = R['clean_change']
+# ── THE CLEAN PUSH IS THE PRECONDITION, NOT ONLY AN ARM (2026-09-16) ───────
+# If a CLEAN change cannot get through, every refusal below is attributable to
+# whatever stopped this one and not to check 7. Reporting those arms as check-7
+# failures is a failure report about check 7 written on evidence that says
+# nothing about check 7. Could-not-run is a third state: exit 3, with the text.
+_unattributable = [k for k, v in R.items() if v.get('could_not_run')]
+if a['exit'] != 0 or _unattributable:
+    print('SKIPPED: a push was refused before check 7 could answer, so nothing')
+    print('here is attributable to it. Nothing about check 7 was verified.')
+    if _unattributable:
+        print('  the gate could not read the outgoing range for: %s'
+              % ', '.join(sorted(_unattributable)))
+    print('  the refusal: %s' % (R[_unattributable[0]]['err'] if _unattributable
+                                 else a['err']))
+    sys.exit(3)
 check('a clean change to a touched endpoint is NOT blocked by check 7',
       not a['blocked_by_preauth'], str(a))
 check('...and check 7 did not silently fail open on it',

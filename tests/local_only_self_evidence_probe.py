@@ -144,8 +144,15 @@ results['arm6_declaration_is_narrow'] = L.declared_not_synced(
 # ── ARM 7: every app's covered count is unchanged except the four fixed ────
 # Measured immediately before and after. Only the apps whose setter pushes --
 # and StoneDesk's and SAIRNbuild's self-clearing wrappers -- move.
+#
+# RE-MEASURED 2026-09-16: sairnbiz 11 -> 14 covered, and all three files are
+# real work rather than drift. 20afb167 gave sb_po and sb_recv a server call
+# each (they were the open 2 that local_only_shape_probe records), and sb_ts
+# arrived with the timesheet work (b8f40738, a3c44c24) already covered. Same
+# pass as local_only_shape_probe and write_readback_shape_probe -- all three
+# pin counts against this one file and one fixed alone reads as three defects.
 BASELINE = {
-    'sairnbiz.html': '11', 'sairncare.html': '6', 'sairncode.html': '27',
+    'sairnbiz.html': '14', 'sairncare.html': '6', 'sairncode.html': '27',
     'sairndental.html': '22', 'sairndesign.html': '18', 'sairnfreedom.html': '35',
     'sairngrounds.html': '30', 'sairnlegacy.html': '36', 'sairnmechanical.html': '4',
     'sairnscape.html': '12', 'sairnsenior.html': '14', 'stonedesk-hr.html': '2',

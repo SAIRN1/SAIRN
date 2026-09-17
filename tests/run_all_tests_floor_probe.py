@@ -63,13 +63,28 @@ def check(cond, label):
         fails.append(label)
 
 
+# ── THE GREEN RESULT IS ASKED OF THE REAL FUNCTION, NOT RETYPED ─────────────
+# `_run` with nothing to run spawns no subprocess and returns its own empty
+# result, so this IS the green case rather than a hand-written imitation of it.
+#
+# IT WAS HAND-WRITTEN, AS `return [], []`, AND THAT IS THE DEFECT THIS CLEARS.
+# `_run()` grew a third value -- `retried`, the one re-run CONCURRENCY_SENSITIVE
+# files get -- and every arm in this file began dying on `ValueError: not enough
+# values to unpack (expected 3, got 2)` before it reached a single assertion.
+# The runner was fine; its stand-in was a SECOND COPY of a signature, which is
+# the same two-copies-of-one-idea shape the header describes for
+# _main_body/_hook_body. Derived, it cannot go stale: a fourth value would
+# appear here the day it appears there.
+_GREEN = R._run([], [], quiet=True)
+
+
 def fake_run(js, py, quiet=True):
-    """Every discovered file passes and none skips -- the green case.
+    """Every discovered file passes, none skips, none was retried -- green.
 
     The floor has to be the ONLY thing that can speak in these arms, otherwise
     a fired guard cannot be told apart from an ordinary failure.
     """
-    return [], []
+    return _GREEN
 
 
 @contextlib.contextmanager

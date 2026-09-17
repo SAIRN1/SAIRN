@@ -262,10 +262,27 @@ check('...and every one of them really is a roofing file by name',
                 and 'sairnroofing' not in t)[:300])
 # BEFORE-AND-AFTER, so the arm above is not passing on a number that was always
 # there. app_of() is the unaliased function and is still exported unchanged.
-before = len([t for t in TESTS if TM.app_of(t, APPS) == 'sairnroofing'])
-check('CONTROL: the UNALIASED app_of() still attributes %d to SAIRNroofing, so '
-      'the arm above measures the alias layer and not the baseline' % before,
-      before == 0, 'unaliased count is ' + str(before))
+#
+# ── THIS WAS `before == 0` AND THAT WAS THE WRONG PROPERTY (2026-09-16) ──────
+# It held only while NO test file was literally named `sairnroofing*`. One was
+# added -- tests/sairnroofing_fault_probe.py, c03646fb -- and the unaliased
+# function reached it by plain name match, exactly as it should. The arm went
+# red over a correctly-added file, which is a pinned baseline failing, not the
+# alias layer failing.
+#
+# What the control actually needs is the DELTA: that the alias layer, not the
+# name matcher, is what moves the bulk of these files. Stated that way it does
+# not rot the next time somebody names a file after the app.
+before = [t for t in TESTS if TM.app_of(t, APPS) == 'sairnroofing']
+check('CONTROL: the ALIAS LAYER is what attributes these -- the unaliased '
+      'app_of() reaches %d of %d, so the arm above is measuring the alias and '
+      'not a baseline that was always there' % (len(before), len(roofing)),
+      len(roofing) - len(before) >= 27,
+      'unaliased: ' + '; '.join(os.path.basename(t) for t in before[:5]))
+check('...and every file the unaliased function DOES reach carries the app name '
+      'outright, so it is a literal match rather than the alias leaking in',
+      all('sairnroofing' in t.replace('\\', '/').lower() for t in before),
+      '; '.join(before[:5]))
 plat_before = len([t for t in TESTS if TM.app_of(t, APPS) == 'PLATFORM'])
 plat_after = len(by_app.get('PLATFORM', []))
 check('PLATFORM falls from %d to %d -- %d files moved to a vertical'

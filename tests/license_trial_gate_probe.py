@@ -12,6 +12,7 @@ Run:  python tests/license_trial_gate_probe.py
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -119,9 +120,24 @@ MUTATIONS = [
     ("8. sd-data.js stops pointing at the suite that pins this",
      DATA, "  // plan to expire. api/license-trial-gate.test.js pins this AS-IS -- the day",
      "  // plan to expire. Nothing pins this -- the day"),
+    # ── A RENAME KILLED THIS ONE, AND IT IS THE ARM THAT MATTERS MOST ───────
+    # The anchor was the literal line `if (!isPaid && lic.trial_ends_at && ...`.
+    # `isPaid` was split into knownPaid/knownNotPaid/cannot-tell (the three-state
+    # fix at sd-render.js:164-177), the line no longer existed byte-for-byte, and
+    # this arm reported ANCHOR-0 from then on -- so the one mutation that asks
+    # "does deleting the whole licensing gate get noticed" was never actually
+    # run. It reported, rather than skipping, which is the only reason it was
+    # found; a probe that treats a dead anchor as a pass would have been
+    # reporting nine-of-nine green over a gate nothing was testing.
+    #
+    # A REGEX, NOT THE LINE, for the same reason arms 1 and 2 became JSON
+    # transforms: say what to change, not what the bytes around it look like.
+    # This one survives the indentation, the trailing comparison and the CRLF
+    # question, and main() still requires exactly one match -- a second copy
+    # appearing in this file is itself something to look at.
     ("9. the gate itself is deleted from sd-render.js",
-     RENDER, "  if (!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {",
-     "  if (false) {"),
+     RENDER, re.compile(r'if \(knownNotPaid && lic\.trial_ends_at &&[^\n]*\{'),
+     "if (false) {"),
 ]
 
 
@@ -150,6 +166,21 @@ def main():
                     results.append((name, 'NO-OP'))
                     continue
                 open(os.path.join(ROOT, target), 'wb').write(mutated)
+                r = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True)
+                results.append((name, 'BITES' if r.returncode != 0 else 'SILENT'))
+                open(os.path.join(ROOT, target), 'wb').write(src)
+                continue
+            # A COMPILED PATTERN is the third anchor kind. Same contract as the
+            # literals below -- exactly one match or the arm reports ANCHOR-n
+            # and fails; it is only the matching that is looser.
+            if isinstance(old, re.Pattern):
+                text = src.decode('utf-8')
+                n = len(old.findall(text))
+                if n != 1:
+                    results.append((name, 'ANCHOR-%d' % n))
+                    continue
+                open(os.path.join(ROOT, target), 'wb').write(
+                    old.sub(new.replace('\\', '\\\\'), text, count=1).encode('utf-8'))
                 r = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True)
                 results.append((name, 'BITES' if r.returncode != 0 else 'SILENT'))
                 open(os.path.join(ROOT, target), 'wb').write(src)

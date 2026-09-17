@@ -65,9 +65,30 @@ EP = 'api/legal-deadlines.js'
 #     worktrees share the common git dir, so `git push --dry-run` from the
 #     worktree runs the real gate. Measured before this was written, not
 #     assumed: a planted seam violation blocked with the real refusal text.
+#
+# ── AND IT IS BUILT ON THE FETCHED REMOTE TIP, NOT ON LOCAL HEAD (2026-09-16) ─
+# This said `HEAD`, and in a five-clone repo local HEAD is behind origin/main
+# most of the time. The gate then refuses with "the outgoing range
+# <remote>..<local> could not be read" -- CORRECTLY, because the remote tip is
+# not an object this clone has yet -- and that refusal lands before check 4 is
+# ever reached. Measured 2026-09-16: both arms exited 1 with every reason flag
+# False, so the probe was failing while verifying nothing.
+#
+# Built on the fetched tip, the outgoing range is exactly the fixture commit,
+# which is the range these arms are actually about.
+_fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                        capture_output=True, text=True, encoding='utf-8', errors='replace')
+if _fetch.returncode != 0:
+    print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
+    print('built on the tip the gate compares against, and nothing about check 4')
+    print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
+    sys.exit(3)
+BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
+                      capture_output=True, text=True, encoding='utf-8',
+                      errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check4-probe-%d' % os.getpid())
 _add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+                       WT, BASE], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if _add.returncode != 0:
     print('SKIPPED: could not create the throwaway worktree this probe needs, so')
     print('nothing about check 4 was verified: %s' % (_add.stderr or '').strip()[:200])
@@ -141,15 +162,41 @@ START_UNTRACKED = {l for l in clean_tree().split('\n') if l.startswith('??')}
 R = {}
 
 
+# The gate's own words when it cannot compute what is being pushed. Matched
+# rather than inferred from the exit code, because "could not tell" and "no" are
+# different answers and this probe must not read one as the other.
+RANGE_UNREADABLE = 'could not be read'
+
+
 def dry_push():
     r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
     err = r.stderr or ''
+    # ── THE REMOTE TIP MOVES UNDER THIS PROBE, SO ONE RETRY AFTER A FETCH ────
+    # Five clones push to this branch and a run takes a minute. When origin/main
+    # advances between one arm and the next, the sha git hands the hook is an
+    # object this clone does not have yet, and the gate refuses -- correctly --
+    # before check 4 is reached. The fetch puts the new tip in the object store
+    # the worktree shares and the range becomes the fixture commit again, since
+    # BASE is an ancestor of the new tip. If it persists, `could_not_run` says
+    # so rather than letting the arms report it as a check-4 failure.
+    if r.returncode != 0 and RANGE_UNREADABLE in err:
+        subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                       capture_output=True)
+        r = run('git', 'push', '--dry-run', 'origin', 'HEAD:main')
+        err = r.stderr or ''
     return {
         'exit': r.returncode,
+        'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
         'blocked_by_seam': 'does not forward every input its engine reads' in err,
         'blocked_by_sql': 'no live schema snapshot' in err,
         'rejected_by_remote': 'fetch first' in err or 'rejected' in err,
         'names_field': 'service_methods' in err,
+        # THE TEXT, NOT JUST THE FLAGS. Every flag above is a marker somebody
+        # chose; when a refusal arrives that none of them names, the flags all
+        # read False and the dict looks exactly like "nothing blocked it". That
+        # is how this probe spent a day reporting a bare False for a push the
+        # gate had stopped for a reason nobody could see from the output.
+        'err': err.strip()[-400:],
     }
 
 
@@ -161,6 +208,19 @@ run('git', 'commit', '-q', '-m', 'PROBE clean api change')
 R['clean_api_change'] = dry_push()
 run('git', 'reset', '--mixed', start)
 os.remove(p)
+
+# ── AND IT IS THE PRECONDITION, NOT ONLY AN ARM (2026-09-16) ───────────────
+# If a CLEAN push cannot get through, then every later arm's refusal is
+# attributable to whatever stopped this one and not to check 4. Asserting
+# `blocked_by_seam` in that state produces a FAILURE REPORT ABOUT CHECK 4 on
+# evidence that says nothing about check 4 -- the exact shape CLAUDE.md names:
+# could-not-run is a third state and is never folded into either of the others.
+# Exit 3, with the refusal text, so the runner records a SKIP rather than a red.
+if R['clean_api_change']['exit'] != 0:
+    print('SKIPPED: a CLEAN push is already being refused, so nothing below could')
+    print('be attributed to check 4. Nothing about check 4 was verified.')
+    print('  the refusal: %s' % R['clean_api_change']['err'])
+    sys.exit(3)
 
 # ---- ARM 2: PLANTED seam violation must block ----
 path = os.path.join(REPO, EP)
@@ -230,6 +290,20 @@ R['clone_untouched'] = (
 for k, v in R.items():
     print('%-20s %s' % (k, v))
 print()
+
+# COULD-NOT-RUN IS THE THIRD STATE AND IS NOT FOLDED INTO EITHER OTHER. If the
+# gate never reached check 4 -- because the outgoing range was unreadable even
+# after the retry -- then `blocked_by_seam: False` means "not asked", not "not
+# blocked", and calling that a check-4 failure is a verdict on evidence that
+# carries none.
+_unattributable = [k for k, v in R.items()
+                   if isinstance(v, dict) and v.get('could_not_run')]
+if _unattributable:
+    print('SKIPPED: the gate could not read the outgoing range for %s, so it never'
+          % ', '.join(sorted(_unattributable)))
+    print('reached check 4. Nothing about check 4 was verified.')
+    print('  the refusal: %s' % R[_unattributable[0]]['err'])
+    sys.exit(3)
 ok = (R['planted_violation']['blocked_by_seam'] and R['planted_violation']['names_field']
       and not R['clean_api_change']['blocked_by_seam']
       and R['restored'] and R['head_restored'] and R['clone_untouched'])

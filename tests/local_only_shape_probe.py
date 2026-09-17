@@ -137,8 +137,23 @@ results['arm4_bare_mention_is_not'] = not L.WRITE_LIT_RE.findall(MENTION)
 # never goes green trains people to skip it, which is the argument this platform
 # already makes about report-only checkers. tools/local_only_collection_check.py
 # names both keys on every run, which is where the finding lives.
+#
+# RE-MEASURED 2026-09-16, AND THE OPEN FINDING ABOVE IS CLOSED:
+#   sairnbiz    13/11/2 -> 14/14/0   two separate real moves, checked one at a
+#                                    time rather than read off the totals.
+#                                    20afb167 gave sb_po and sb_recv a server
+#                                    call each -- the checker now lists both as
+#                                    `named resource`, which is what took the
+#                                    third column to 0, so the finding recorded
+#                                    above was RESOLVED and not relaxed. The
+#                                    fourteenth collection is sb_ts, from the
+#                                    timesheet work (b8f40738, a3c44c24), and it
+#                                    reaches a server too.
+# Re-baselined in the same pass as local_only_self_evidence_probe and
+# write_readback_shape_probe: all three pin counts against this one file, and
+# fixing one of them leaves the other two reading as separate defects.
 BASELINE = {
-    'sairnbiz.html': ('13', '11', '2'), 'sairnbuild.html': ('34', '31', '0'),
+    'sairnbiz.html': ('14', '14', '0'), 'sairnbuild.html': ('34', '31', '0'),
     'sairncare.html': ('6', '6', '0'), 'sairndental.html': ('22', '22', '0'),
     'sairndesign.html': ('18', '18', '0'), 'sairnfreedom.html': ('35', '35', '0'),
     'sairngrounds.html': ('30', '30', '0'), 'sairnlaw.html': ('20', '19', '0'),

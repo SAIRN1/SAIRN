@@ -48,6 +48,11 @@ import run_all_tests as rt              # noqa: E402
 
 fails = 0
 
+# The green result ASKED OF the real _run() rather than retyped: with nothing
+# to run it spawns no subprocess and returns its own empty result, so a value
+# added to that tuple arrives here the day it is added there.
+_GREEN = rt._run([], [], quiet=True)
+
 
 def check(label, actual, expected):
     global fails
@@ -78,7 +83,11 @@ def ran(stdin_text):
     saved = (rt.discover, rt._run, rt.acquire_lock, rt.release_lock,
              sys.stdin, sys.stdout)
     rt.discover = lambda: ([], [], [])
-    rt._run = lambda js, py, quiet: (seen.__setitem__('run', True), ([], []))[1]
+    # `_GREEN`, not a retyped `([], [])`. That literal was a second copy of
+    # _run()'s signature; _run() grew a third value and every arm here crashed
+    # on `ValueError: not enough values to unpack (expected 3, got 2)` before
+    # reaching an assertion. See the note beside _GREEN.
+    rt._run = lambda js, py, quiet: (seen.__setitem__('run', True), _GREEN)[1]
     rt.acquire_lock = lambda: (seen.__setitem__('lock', True), True)[1]
     rt.release_lock = lambda: None
     sys.stdin = io.StringIO(stdin_text)

@@ -393,7 +393,11 @@ module.exports = async (req, res) => {
       expected_interval_seconds: 86400,
       detail: {
         action: action, failures: bad.length,
-        written: results.reduce(function (n, r) { return n + (r.written || 0); }, 0)
+        // `Number(...)`, not a bare `|| 0`: checkpointTable() returns a real
+        // number here and verifyTable() returns no `written` at all, so this
+        // one is provably numeric today -- but `|| 0` is not what makes it so,
+        // and the next field summed beside it may not be (tools/truthy_sum_check.py).
+        written: results.reduce(function (n, r) { return n + Number(r.written || 0); }, 0)
       }
     });
     res.status(200).json({

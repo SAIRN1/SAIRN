@@ -187,8 +187,14 @@ results['arm4_negative_gate_still_works'] = {'zz_a', 'zz_b'} <= W.resolve_generi
 #   sairnbiz    9 -> 10   sb_incidents gained a real writer (Hank's OSHA log)
 #   sairndental 16 -> 20  the four vendor/supply resources were registered
 # Every app is still N writes / N read back, which is what this arm is for.
+# RE-MEASURED 2026-09-16: sairnbiz 10 -> 13, and it is still N/N, which is the
+# property this arm actually holds. The three are sb_po and sb_recv, which got a
+# server call each in 20afb167, and sb_ts from the timesheet work (b8f40738,
+# a3c44c24). Re-baselined together with local_only_shape_probe and
+# local_only_self_evidence_probe: all three pin counts against sairnbiz.html and
+# one fixed on its own leaves the other two looking like separate defects.
 BASELINE = {
-    'sairnbiz.html': ('10', '10'), 'sairnbuild.html': ('32', '32'),
+    'sairnbiz.html': ('13', '13'), 'sairnbuild.html': ('32', '32'),
     'sairncare.html': ('9', '9'), 'sairncode.html': ('28', '28'),
     'sairndental.html': ('20', '20'), 'sairndesign.html': ('18', '18'),
     'sairngrounds.html': ('30', '30'), 'sairnlaw.html': ('19', '19'),

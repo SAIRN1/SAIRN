@@ -48,9 +48,29 @@ MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 # commit on. The pre-push hook still fires from it -- `core.hooksPath` is
 # `.githooks` and worktrees share the common git dir -- which this probe
 # depends on absolutely, since its entire subject is what that hook decides.
+#
+# ── AND IT IS BUILT ON THE FETCHED REMOTE TIP, NOT ON LOCAL HEAD (2026-09-16) ─
+# This said `HEAD`, and in a five-clone repo local HEAD is behind origin/main
+# most of the time. The gate then refuses with "the outgoing range
+# <remote>..<local> could not be read" -- CORRECTLY, since the remote tip is not
+# an object this clone has yet -- and that refusal lands before check 8 is ever
+# reached. Measured 2026-09-16: "a PROBE-subject commit IS blocked" failed with
+# a bare "failed to push some refs", so the arm could not tell check 8 blocking
+# the push from anything else blocking it, which is the whole thing it exists
+# to establish.
+_fetch = subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                        capture_output=True, text=True, encoding='utf-8', errors='replace')
+if _fetch.returncode != 0:
+    print('SKIPPED: could not fetch origin/main, so the fixture below could not be')
+    print('built on the tip the gate compares against, and nothing about check 8')
+    print('was verified: %s' % (_fetch.stderr or '').strip()[:200])
+    sys.exit(3)
+BASE = subprocess.run(['git', '-C', MAIN, 'rev-parse', 'FETCH_HEAD'],
+                      capture_output=True, text=True, encoding='utf-8',
+                      errors='replace').stdout.strip()
 WT = os.path.join(tempfile.gettempdir(), 'check8-probe-%d' % os.getpid())
 _add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
+                       WT, BASE], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if _add.returncode != 0:
     print('SKIPPED: could not create the throwaway worktree this probe needs, so')
     print('nothing about check 8 was verified: %s' % (_add.stderr or '').strip()[:200])
@@ -107,6 +127,12 @@ START_UNTRACKED = {l for l in clean_tree().split('\n') if l.startswith('??')}
 R = {}
 
 
+# The gate's own words when it cannot compute what is being pushed. Matched
+# rather than inferred from the exit code, because "could not tell" and "no" are
+# different answers and this probe must not read one as the other.
+RANGE_UNREADABLE = 'could not be read'
+
+
 def dry_push(probe_env=False):
     """A --dry-run push, which publishes nothing but still runs the pre-push hook."""
     env = dict(BARE_ENV)
@@ -115,8 +141,24 @@ def dry_push(probe_env=False):
     r = subprocess.run(['git', 'push', '--dry-run', 'origin', 'HEAD:main'],
                        cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env)
     err = (r.stderr or '') + (r.stdout or '')
+    # ── THE REMOTE TIP MOVES UNDER THIS PROBE, SO ONE RETRY AFTER A FETCH ────
+    # Five clones push to this branch and a run takes a minute. When origin/main
+    # advances between one arm and the next, the sha git hands the hook is an
+    # object this clone does not have yet and the gate refuses -- correctly --
+    # before check 8 is reached. The fetch puts the new tip in the object store
+    # the worktree shares; BASE is an ancestor of it, so the range is the
+    # fixture commit again. If it persists, `could_not_run` says so rather than
+    # letting an arm report it as check 8 failing to block.
+    if r.returncode != 0 and RANGE_UNREADABLE in err:
+        subprocess.run(['git', '-C', MAIN, 'fetch', '--quiet', 'origin', 'main'],
+                       capture_output=True)
+        r = subprocess.run(['git', 'push', '--dry-run', 'origin', 'HEAD:main'],
+                           cwd=REPO, capture_output=True, text=True,
+                           encoding='utf-8', errors='replace', env=env)
+        err = (r.stderr or '') + (r.stdout or '')
     return {
         'exit': r.returncode,
+        'could_not_run': r.returncode != 0 and RANGE_UNREADABLE in err,
         'blocked_by_check8': 'PROBE fixture commit' in err,
         'names_the_commit': R.get('sha', 'zzzz')[:8] in err,
         'err': err,
@@ -196,6 +238,21 @@ def check(name, cond, detail=''):
 
 
 print('push-gate check 8 -- a PROBE fixture commit must not reach origin\n')
+
+# ── COULD-NOT-RUN IS THE THIRD STATE AND IS NOT FOLDED INTO EITHER OTHER ───
+# If the gate could not read the outgoing range even after the retry, it never
+# reached check 8, and `blocked_by_check8: False` means "not asked" rather than
+# "not blocked". An arm that calls that a check-8 failure is a verdict written
+# on evidence that carries none -- which is what the raw "failed to push some
+# refs" was doing here before the range was fixed.
+_unattributable = [k for k, v in R.items()
+                   if isinstance(v, dict) and v.get('could_not_run')]
+if _unattributable:
+    print('SKIPPED: the gate could not read the outgoing range for %s, so it never'
+          % ', '.join(sorted(_unattributable)))
+    print('reached check 8. Nothing about check 8 was verified.')
+    print('  the refusal: %s' % str(R[_unattributable[0]]['err'])[-400:])
+    sys.exit(3)
 
 n = R['normal']
 check('an ORDINARY commit is not blocked by check 8', not n['blocked_by_check8'],
