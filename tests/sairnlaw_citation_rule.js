@@ -148,6 +148,141 @@ section('6. the work-product surfaces still carry the strict rule');
   });
 });
 
+section('8. EVERY AI call site carries a citation rule -- the sweep, not a list');
+// DISCOVERED, NOT ENUMERATED. A hand-written list of call sites is a second
+// copy of the page and would miss the one somebody adds next -- which is how
+// the critique step's divergence survived. Both call shapes this app uses are
+// matched: lawAuth('ai_generate', ...) and fetch(PROXY, ...).
+const CALL_LINES = src.split('\n').map(function (l, i) { return [i + 1, l]; })
+  .filter(function (p) {
+    return /lawAuth\(\s*'ai_generate'/.test(p[1]) || /fetch\(\s*PROXY\b/.test(p[1]);
+  });
+t('the sweep finds every AI call site in the file (at least 7)', function () {
+  assert.ok(CALL_LINES.length >= 7, 'found ' + CALL_LINES.length + ' AI call sites');
+});
+// ── COMMENTS ARE STRIPPED BEFORE THE SEARCH, AND THAT IS NOT TIDINESS ────
+// The first version of the arm below searched the raw segment, and the
+// sabotage control came back SILENT: a new AI call site planted with NO rule
+// still "passed", because the long comment block above lawCiteGuard MENTIONS
+// LAW_CITATION_RULE and sat inside the 70-line window. A marker search that
+// cannot tell code from prose about code is PR 1.2 exactly -- the `esign`
+// matching 47 occurrences of `design` case -- and this suite committed it
+// while testing a rule about prompts.
+//
+// String-aware, because `'https://sairn.vercel.app/api/claude'` contains `//`
+// and a naive stripper would eat the rest of that line.
+function stripJsComments(code) {
+  let out = '', i = 0, q = null;
+  while (i < code.length) {
+    const c = code[i], n = code[i + 1];
+    if (q) {
+      if (c === '\\') { out += '  '; i += 2; continue; }
+      if (c === q) q = null;
+      out += c; i++; continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { q = c; out += c; i++; continue; }
+    if (c === '/' && n === '/') { while (i < code.length && code[i] !== '\n') i++; continue; }
+    if (c === '/' && n === '*') {
+      i += 2;
+      while (i < code.length && !(code[i] === '*' && code[i + 1] === '/')) {
+        if (code[i] === '\n') out += '\n';
+        i++;
+      }
+      i += 2; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
+
+t('CONTROL: the comment stripper keeps code and drops prose about code', function () {
+  assert.ok(stripJsComments("var a='x';// LAW_CITATION_RULE\n").indexOf('LAW_CITATION_RULE') === -1,
+    'a line comment survived stripping');
+  assert.ok(stripJsComments("/* LAW_CITATION_RULE */ var b=1;").indexOf('LAW_CITATION_RULE') === -1,
+    'a block comment survived stripping');
+  assert.ok(stripJsComments("var u='https://x/y';var s=LAW_CITATION_RULE;")
+    .indexOf('LAW_CITATION_RULE') !== -1,
+    'the stripper ate real code after a // inside a string literal');
+});
+
+// THE WINDOW IS THE CALL EXPRESSION, NOT A LINE COUNT. A fixed "+5 lines
+// forward" hid a real miss: the trust-reconciliation call spans twenty lines
+// and puts `system:'...'+LAW_CITATION_RULE` well past the opening paren, so
+// with comments stripped the arm failed against a site that is correctly
+// guarded. Balanced parens from the call site cover the whole argument object
+// however long it is, and 70 lines back cover a prompt assembled into a
+// variable beforehand (`var sys = ...`).
+function callExpression(line0) {
+  const lines = src.split('\n');
+  const start = lines.slice(0, line0 - 1).join('\n').length + 1;
+  let i = src.indexOf('(', start), depth = 0;
+  if (i < 0) return '';
+  for (let j = i; j < src.length && j < i + 20000; j++) {
+    if (src[j] === '(') depth++;
+    else if (src[j] === ')') { depth--; if (!depth) return src.slice(start, j + 1); }
+  }
+  return src.slice(start, start + 4000);
+}
+
+CALL_LINES.forEach(function (p) {
+  t('the AI call at line ' + p[0] + ' is under a citation rule', function () {
+    const before = src.split('\n').slice(Math.max(0, p[0] - 71), p[0] - 1).join('\n');
+    const seg = stripJsComments(before + '\n' + callExpression(p[0]));
+    assert.ok(RULE_NAMES.some(function (n) { return seg.indexOf(n) !== -1; }),
+      'no citation-rule constant reaches the call at line ' + p[0]);
+  });
+});
+
+section('9. the work-product surfaces have a CHECK, not only a rule');
+// THE SWEEP'S REAL FINDING. Until 2026-09-17 the checking was inverted: the two
+// mock-trial surfaces -- practice and training -- extracted and verified every
+// citation, while the assistant, the AI draft and the document review did not.
+// The draft one is the sharpest because saveDraft() PERSISTS that text as a
+// matter document, so a fabricated citation reaches the client's own file.
+t('lawCiteGuard exists and is ONE implementation, not a fourth copy', function () {
+  assert.ok(/function lawCiteGuard\s*\(/.test(src), 'lawCiteGuard is gone');
+  assert.strictEqual((src.match(/function lawCiteGuard\s*\(/g) || []).length, 1,
+    'more than one definition of the guard');
+});
+t('it degrades SILENT rather than claiming a check it did not run', function () {
+  const i = src.indexOf('function lawCiteGuard');
+  const body = src.slice(i, i + 3000);
+  assert.ok(/typeof mtExtractCitations !== 'function'/.test(body),
+    'the guard does not check the extractor is loaded before using it');
+  // ── TWO SEPARATE COULD-NOT-CHECK STATES, ASSERTED SEPARATELY ───────────
+  // This was one loose alternation -- /could not be resolved either way|could
+  // not be checked/ -- and the sabotage control came back SILENT: deleting the
+  // first phrase left the SECOND one, which lives in the per-citation state
+  // map for a verifier that answered `unavailable`. Two different facts about
+  // two different failures, and an `|` between them meant either could stand
+  // in for both.
+  assert.ok(body.indexOf('citation checking is unavailable here') !== -1,
+    'the VERIFIER-MISSING branch has no could-not-check wording, so it would read as clean');
+  assert.ok(body.indexOf("'could not be checked'") !== -1,
+    'the per-citation `unavailable` state has no wording of its own');
+});
+[
+  ["$('draftresult').value=text+'\\n\\n--- '+grounded.note;", 'the AI draft'],
+  ["$('draftresult').value='--- REVIEW OF: '", 'the document review'],
+  ['thinking.textContent=rep;', 'the assistant first reply'],
+  ['thinking.textContent=rep2;', 'the assistant tool-use reply']
+].forEach(function (pair) {
+  t(pair[1] + ' runs lawCiteGuard on the model text', function () {
+    const i = src.indexOf(pair[0]);
+    assert.ok(i > 0, 'render site not found: ' + pair[0]);
+    const seg = src.slice(i, i + 700);
+    assert.ok(seg.indexOf('lawCiteGuard(') !== -1,
+      pair[1] + ' renders model prose with no citation guard');
+  });
+});
+t('and the draft guard fires BEFORE the text can be saved as a matter document',
+  function () {
+    const g = src.indexOf("lawCiteGuard(text,$('draftresult').parentNode,'draft')");
+    const s = src.indexOf("content_text:text,ocr_text:''");
+    assert.ok(g > 0 && s > 0, 'one of the two sites moved');
+    assert.ok(g < s, 'the guard now runs after the save path, which is no guard at all');
+  });
+
 section('7. the user-facing promise matches the rule');
 t('the AI Assistant panel still promises never to output an unverified citation',
   function () {

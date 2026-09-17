@@ -2211,12 +2211,24 @@ var LAW_GROUNDED_DEFINITIONS_RULE='CRITICAL RULE ON LEGAL DEFINITIONS: you have 
 // forbidden it is a backstop on the rule rather than the licence for breaking
 // it -- which is what it was being used as.
 //
-// THE DECOMPOSITION PATH HAS NO SUCH CHECK. mtExtractCitations is called at
-// exactly one site, and it is not this one; mtRenderPoints displays the
-// model's own `claim` text with an Anchored / Not-in-your-text badge that
-// covers `source_span` and NOT `claim`. So a citation-shaped string reaching
-// the screen here would carry no badge at all. Same rule on both paths now,
-// and the weaker guarantee is the reason the rule is the strict one.
+// ── "THE DECOMPOSITION PATH HAS NO SUCH CHECK" WAS TRUE AND IS NOT ──────
+// That sentence stood here until 2026-09-17 and said mtExtractCitations "is
+// called at exactly one site, and it is not this one". IT IS CALLED AT FOUR --
+// trust reconciliation (:3372), the decomposition (:5724), the critique
+// (:5853) and now lawCiteGuard -- and the decomposition was wired on
+// 2026-09-14, by the commit whose own note four hundred lines down says THE
+// GAP IS CLOSED, NOT JUST LABELLED. So this file contained two comments
+// contradicting each other about the same function, and the stale one was
+// carried forward once more on 2026-09-17 by a reader who trusted it.
+//
+// CORRECTED RATHER THAN DELETED, because the reason it went stale is the
+// reason to keep reading it: a count of call sites written into prose is a
+// number nothing recomputes, and this one survived the change that falsified
+// it. What remains TRUE is the narrower fact the rule rests on -- the Anchored
+// badge covers `source_span` and never the model's own `claim` text, so the
+// citation check is what covers `claim`, not the anchoring.
+//
+// Same rule on both paths now, and both are checked afterwards.
 var MT_CITATION_RULE='CITATION RULE FOR THIS STEP: do not generate a case citation, statute citation or docket number in citable-reference format (the volume/reporter/page/year pattern, or a statute section number). You MAY repeat such a string back if -- and only if -- it appears verbatim in the position the user wrote, because this step decomposes their argument rather than adding authority to it. Otherwise refer to authority narratively: the holding, the parties, the principle, the era. Nothing you emit here is citation-checked before it is shown, so a citation you compose is one nobody verifies.';
 
 // The CRITIQUE step's rule. IT USED TO BE THE ONE PLACE PERMITTED TO EMIT A
@@ -2672,6 +2684,11 @@ async function sendAI(){
     if(!toolUse){
       var rep=(blocks[0]&&blocks[0].text)||'No response text returned.';
       thinking.textContent=rep;
+      // The assistant is under LAW_CITATION_RULE outright, so a citation here
+      // is a broken rule rather than an unverified one. Flagged AND resolved:
+      // a real citation that should not have been emitted and a fabricated one
+      // are different findings and a reader needs to know which.
+      if(typeof lawCiteGuard==='function')lawCiteGuard(rep,thinking,'answer');
       aiHist.push({role:'assistant',content:rep});
       chat.scrollTop=chat.scrollHeight;
       return;
@@ -2695,6 +2712,9 @@ async function sendAI(){
     if(aiErr2){thinking.textContent=aiErr2;chat.scrollTop=chat.scrollHeight;return;}
     var rep2=(data2.content&&data2.content[0]&&data2.content[0].text)||'No response text returned.';
     thinking.textContent=rep2;
+    // BOTH LEGS, not just the first. This is the tool-use reply -- the one a
+    // user is most likely to treat as grounded, because a tool really did run.
+    if(typeof lawCiteGuard==='function')lawCiteGuard(rep2,thinking,'answer');
     aiHist.push({role:'assistant',content:rep2});
   }catch(e){thinking.textContent='Could not connect to Claude. Check your connection and try again.';}
   finally{lawAiBusy=false;}
@@ -3329,9 +3349,12 @@ async function explainReconciliation(){
       // model explaining a discrepancy has every reason to reach for a
       // professional-conduct rule -- "Ohio Prof.Cond.R. 1.15", an ABA Model
       // Rule -- in exactly the citable format the platform rule forbids.
-      // Nothing stopped it and nothing checked it: this output is displayed
-      // as raw prose and is NOT citation-verified (mtExtractCitations is
-      // called at one site and it is not this one).
+      // Nothing stopped it and nothing checked it: this output was displayed
+      // as raw prose and was NOT citation-verified. (The parenthetical that
+      // used to sit here said mtExtractCitations "is called at one site and it
+      // is not this one" -- true when written, false since 2026-09-14, and the
+      // block immediately below is now one of the four callers. A call-site
+      // count written into prose is a number nothing recomputes.)
       //
       // IT GETS THE AIRTIGHT RULE, NOT THE SIMULATOR'S SCOPED ONE, per
       // Michael's decision: the narrow permission belongs to the mock-trial
@@ -3752,6 +3775,10 @@ async function runAiDraft(){
     // The grounding outcome is shown, always, including when nothing was
     // retrieved. A step the user cannot see is a step they cannot rely on.
     $('draftresult').value=text+'\n\n--- '+grounded.note;
+    // THE CHECK, NOT JUST THE RULE. This text is about to be SAVED as a matter
+    // document by saveDraft() below -- a fabricated citation here is persisted
+    // into the client's own file, which is the one path that ends in a filing.
+    if(typeof lawCiteGuard==='function')lawCiteGuard(text,$('draftresult').parentNode,'draft');
   }catch(e){
     if(myDraftSeq!==lawDraftSeq)return;
     $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
@@ -3805,6 +3832,9 @@ async function reviewDocument(docId){
     if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
     $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text+'\n\n--- '+grounded.note;
+    // Same surface, same textarea, same saveDraft() -- so the same guard. A
+    // review is prose a lawyer acts on, and it reaches the same Save button.
+    if(typeof lawCiteGuard==='function')lawCiteGuard(text,$('draftresult').parentNode,'review');
   }catch(e){
     if(myDraftSeq!==lawDraftSeq)return;
     $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
@@ -5223,6 +5253,88 @@ function mtVerifyCitations(cites) {
       return { citation: c, state: 'unavailable', reason: 'Citation checking is unavailable.' };
     });
   });
+}
+
+// ══ THE FORBIDDEN-SURFACE CITATION GUARD (2026-09-17) ════════════════════
+// ONE implementation, four surfaces. Written after a sweep of every AI call
+// site in this file found the checking INVERTED: the two mock-trial surfaces
+// -- a practice/training feature -- extracted and verified every citation
+// against CourtListener, while the three that produce REAL WORK PRODUCT did
+// not. Trust reconciliation had been fixed on 2026-09-14 and the other three
+// were not.
+//
+//   assistant chat    -> rendered as prose, no check
+//   AI drafting       -> rendered AND SAVED as a matter document
+//                        (`content_text`, source 'AI Draft'), no check
+//   document review   -> rendered as prose, no check
+//
+// THE DRAFTING ONE IS THE SHARPEST AND IT IS WHY THIS IS NOT COSMETIC. A
+// fabricated citation there does not sit on a screen to be squinted at; it is
+// PERSISTED into the matter's own document record, which is the artifact that
+// later gets attached, quoted or filed. That is the Mata v. Avianca path in
+// full, and LAW_CITATION_RULE names that case for exactly this reason.
+//
+// ON THESE SURFACES A CITATION IS FORBIDDEN OUTRIGHT, so finding one is not an
+// "unverified citation" -- it is the model having broken a hard rule, and it
+// is reported in those words. It is still VERIFIED as well as flagged, because
+// the two facts are different and a reader needs both: a real citation that
+// should not have been emitted is a rule breach, and a FABRICATED one in a
+// document about to be filed is the thing that ends in sanctions.
+//
+// A PROMPT IS AN INSTRUCTION, NOT A CONTROL. LAW_CITATION_RULE reaches all
+// three of these prompts and always did; "we told it not to" is the thing
+// this platform refuses to accept as a guard, and the whole reason the mock
+// trial's rule was rewritten today rather than merely re-read.
+//
+// EXTRACTED RATHER THAN COPIED A FOURTH TIME. The trust-reconciliation block
+// at :3372 is the original and is left in place unchanged -- it carries panel-
+// specific wording about client money that a generic helper would flatten --
+// but nothing new gets a private copy of this logic. Seven separate
+// strip_comments implementations, three of them destroying 90% of their input,
+// is what the copy route looks like on this platform.
+//
+// It degrades to SILENT, not to a false all-clear: if the extractor is not
+// loaded there is no warning and no claim that anything was checked.
+function lawCiteGuard(text, host, label) {
+  if (!host || typeof mtExtractCitations !== 'function') return 0;
+  var cites = mtExtractCitations(String(text || ''));
+  var old = host.querySelector('.law-cite-guard');
+  if (old) old.parentNode.removeChild(old);
+  if (!cites.length) return 0;
+  var box = document.createElement('div');
+  box.className = 'law-cite-guard';
+  box.style.cssText = 'background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;' +
+    'padding:8px 12px;margin-top:8px;color:#991B1B;font-size:12px';
+  var many = cites.length === 1 ? '' : 's';
+  var them = cites.length === 1 ? 'it' : 'them';
+  box.innerHTML = '<b>This ' + H(label) + ' contains ' + cites.length + ' citation' + many +
+    ', which this app instructs the model never to produce.</b> Do not rely on ' + them +
+    '. Checking against a real reporter&hellip;';
+  host.appendChild(box);
+  if (typeof mtVerifyCitations !== 'function') {
+    // COULD NOT CHECK is its own answer and is never folded into "not found".
+    box.innerHTML = '<b>This ' + H(label) + ' contains ' + cites.length + ' citation' + many +
+      ', which this app instructs the model never to produce.</b> Do not rely on ' + them +
+      ' &mdash; and citation checking is unavailable here, so ' + them +
+      ' could not be resolved either way.';
+    return cites.length;
+  }
+  mtVerifyCitations(cites).then(function (checked) {
+    if (!box.parentNode) return;
+    box.innerHTML = '<b>This ' + H(label) + ' contains ' + checked.length + ' citation' +
+      (checked.length === 1 ? '' : 's') + ', which this app instructs the model never to ' +
+      'produce.</b> Do not rely on ' + (checked.length === 1 ? 'it' : 'them') +
+      ' &mdash; confirm in Westlaw, Lexis or the court&rsquo;s own site.' +
+      '<div style="margin-top:6px">' +
+      checked.map(function (c) {
+        var state = c.state === 'verified' ? 'exists, but should not have been cited here'
+          : c.state === 'not_found' ? 'NOT FOUND &mdash; it appears to be fabricated'
+            : c.state === 'ambiguous' ? 'ambiguous &mdash; check by hand'
+              : 'could not be checked';
+        return '<div><code>' + H(c.citation) + '</code> &mdash; ' + state + '</div>';
+      }).join('') + '</div>';
+  });
+  return cites.length;
 }
 
 // ══ ARGUMENT DECOMPOSITION (LeMAJ-style legal data points) ═══════════════

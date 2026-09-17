@@ -88,6 +88,41 @@ MUTATIONS = [
      "and nothing checks it any more",
      SRC, "      mtVerifyCitations(cites).then(function (checked) {",
      "      Promise.resolve(cites).then(function (checked) {"),
+    # ── 7-11 GUARD THE SWEEP'S OWN FINDING ─────────────────────────────────
+    # The three work-product surfaces had a RULE and no CHECK while the two
+    # practice surfaces had both. These arms keep that from silently reverting
+    # -- a prompt is an instruction and this platform does not accept one as a
+    # control, which is the whole reason the critique rule was rewritten rather
+    # than merely re-read.
+    ("7. the AI DRAFT stops being citation-checked -- the one output that is "
+     "PERSISTED into a matter document",
+     SRC,
+     "    if(typeof lawCiteGuard==='function')lawCiteGuard(text,$('draftresult').parentNode,'draft');",
+     "    /* draft guard removed */"),
+    ("8. the assistant's TOOL-USE reply stops being checked -- the reply a "
+     "user is most likely to read as grounded",
+     SRC,
+     "    if(typeof lawCiteGuard==='function')lawCiteGuard(rep2,thinking,'answer');",
+     "    /* tool-use reply guard removed */"),
+    ("9. the guard runs without confirming the extractor is loaded, so an "
+     "unavailable check would throw instead of degrading",
+     SRC, "  if (!host || typeof mtExtractCitations !== 'function') return 0;",
+     "  if (!host) return 0;"),
+    ("10. the could-not-check wording goes, so an unavailable verifier reads "
+     "as a clean result",
+     SRC,
+     "      ' &mdash; and citation checking is unavailable here, so ' + them +",
+     "      ' &mdash; no further detail is available, so ' + them +"),
+    # THE SWEEP ARM ITSELF. Section 8 discovers call sites rather than listing
+    # them; this proves the discovery bites when a NEW one arrives carrying no
+    # rule -- which is exactly how the critique divergence got in.
+    ("11. a NEW AI call site is added with no citation rule anywhere near it",
+     SRC, "function lawCiteGuard(text, host, label) {",
+     "async function lawZzUnguardedAiCall(q){\n"
+     "  return await lawAuth('ai_generate',{system:'You answer questions about "
+     "this firm.',messages:[{role:'user',content:q}],max_tokens:200});\n"
+     "}\n"
+     "function lawCiteGuard(text, host, label) {"),
 ]
 
 if __name__ == '__main__':
