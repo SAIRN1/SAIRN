@@ -1614,6 +1614,16 @@
       "claimed_at_epoch": 1789612342.7207701,
       "status": "released",
       "released_at": "2026-09-17T03:14:31Z"
+    },
+    {
+      "id": "cc-1789615283",
+      "session": "cc",
+      "subject": "claim-tool-self-overlap",
+      "task": "sairn_claim.py duplicate active claims by one session -- own-claim overlap root cause",
+      "claimed_at": "2026-09-17T03:21:23Z",
+      "claimed_at_epoch": 1789615283.7273686,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
