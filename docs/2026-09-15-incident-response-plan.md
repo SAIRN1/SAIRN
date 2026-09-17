@@ -41,18 +41,37 @@ but a part of managing cybersecurity risk continuously. This document follows
 Rev 3.
 
 **IT IS NOT A FLAT LIST OF SIX PEER FUNCTIONS, and reading it as one is the
-easiest way to misuse it.** The six sit at two different levels:
+easiest way to misuse it.** ⚠ **AND IT IS NOT TWO LEVELS EITHER — IT IS THREE.
+Corrected 2026-09-17 against the publication itself**, which this document had
+never been read against; see the provenance note below. Rev 3 §2.1, describing
+its own Fig. 2, verbatim:
+
+> "Incident response is shown in the **top level** of the figure: Detect,
+> Respond, and Recover. Additionally, the need for continuous improvement is
+> indicated as the **middle level** with the Improvement Category (ID.IM) within
+> the Identify Function… Lessons learned from performing all activities in all
+> Functions are fed into Improvement, and those lessons are analyzed,
+> prioritized, and used to inform all of the Functions."
 
 ```
-  PREPARATION  (supports incident response; is not itself incident response)
-    GOVERN   ──┐
-    IDENTIFY ──┤──────────►  INCIDENT RESPONSE
-    PROTECT  ──┘               DETECT  ──►  RESPOND  ──►  RECOVER
-                   ▲                                          │
-                   └───────  IMPROVEMENT  ◄────────────────────┘
-                        (a Category INSIDE Identify, feeding
-                         lessons back into all six Functions)
+  TOP    — INCIDENT RESPONSE      DETECT  ──►  RESPOND  ──►  RECOVER
+                                     │            │            │
+  MIDDLE — CONTINUOUS IMPROVEMENT    └──────► IMPROVEMENT ◄─────┘
+                                          (ID.IM, a Category inside
+                                           IDENTIFY — its OWN level,
+                                           not an arrow between two)
+                                                  │
+  BOTTOM — PREPARATION                            ▼
+    GOVERN  ·  IDENTIFY  ·  PROTECT   ◄───────────┘
+      (supports incident response; is not itself incident response)
 ```
+
+**Why the missing level is not a diagram nicety.** Demoting Improvement to a
+feedback arrow between the other two levels is exactly the reading Rev 3 was
+written to kill — it makes lessons learned a thing that happens *after*, on the
+way back. NIST gives it a level of its own precisely because lessons are fed in
+from **all** activities in **all** Functions and flow out to **all** of them,
+continuously, not at the end of an incident.
 
 - **GOVERN, IDENTIFY and PROTECT are the preparation level.** They are broader
   risk-management work that *supports* incident response without being it. That
@@ -70,12 +89,24 @@ easiest way to misuse it.** The six sit at two different levels:
 Most people know the Rev 2 phases, so the mapping is stated once rather than
 left implicit:
 
-| Rev 2 phase | Where it lives here | Level |
-|---|---|---|
-| Preparation | GOVERN, IDENTIFY, PROTECT (§1–§3) | preparation |
-| Detection & Analysis | DETECT (§4) and Triage (§5) | incident response |
-| Containment, Eradication & Recovery | RESPOND (§6) and RECOVER (§7) | incident response |
-| Post-Incident Activity | §8 — Improvement, inside IDENTIFY, feeding back | preparation |
+⚠ **THIS TABLE WAS WRONG IN TWO ROWS AND IT CONTRADICTED THE PARAGRAPH ABOVE IT.
+Corrected 2026-09-17 against Rev 3's own Table 1.** It confined Improvement to
+the Post-Incident row — which is the Rev 2 habit the revision exists to break,
+and the paragraph above had already said so. NIST puts Improvement in **three of
+the four rows**. Reproduced exactly, then mapped:
+
+| Rev 2 phase | CSF 2.0 Functions *(NIST SP 800-61r3, Table 1)* | Where it lives here | Level |
+|---|---|---|---|
+| Preparation | Govern · Identify (all Categories) · Protect | GOVERN, IDENTIFY, PROTECT (§1–§3) | preparation |
+| Detection & Analysis | Detect · **Identify (Improvement Category)** | DETECT (§4) and Triage (§5), **feeding §8** | incident response |
+| Containment, Eradication & Recovery | Respond · Recover · **Identify (Improvement Category)** | RESPOND (§6) and RECOVER (§7), **feeding §8** | incident response |
+| Post-Incident Activity | Identify (Improvement Category) | §8 — Improvement (ID.IM) | improvement |
+
+**The practical consequence for this platform, not just for the table:** a lesson
+is owed at the moment it is learned, during detection and during containment —
+not only at the write-up. §8 requires a *control* rather than a resolution for
+the same reason, so the two were already consistent in intent; the table was the
+part that still read like Rev 2.
 
 **Provenance of this section, because it changed after review.** The first
 version was written from knowledge of Rev 3's structure with no access to the
@@ -87,8 +118,41 @@ hierarchy plus Improvement's placement inside IDENTIFY is the correction that
 came back. It is recorded as a correction rather than silently absorbed, because
 "written from memory" and "checked against the source" are different claims and
 a reader of a compliance document is entitled to know which one they are
-holding. **The remaining unverified part is the Category-level naming below
-§1–§7**, which has still not been read against the publication.
+holding.
+
+⚠ **READ AGAINST THE PUBLICATION ITSELF, 2026-09-17 (Fourth) — and two of the
+things "confirmed" above were confirmed against a WEB PAGE ABOUT the standard,
+not against the standard.** `NIST.SP.800-61r3.pdf` was downloaded from
+`nvlpubs.nist.gov` and text-extracted locally: **1,040,566 bytes, `sha256
+e5593d6bb85daece…`, 48 pages.** Three things changed, and the sentence *"no
+clone here has network access to NIST"* is simply **false** and has been left
+standing above so the correction is legible rather than tidy.
+
+- **The hierarchy is THREE levels, not two** — Improvement (ID.IM) has a level
+  of its own in Rev 3's Fig. 2. Corrected above, with the quotation.
+- **The Rev 2 mapping table was wrong in two rows** — Improvement belongs in
+  Detection & Analysis and in Containment/Eradication/Recovery as well.
+  Corrected above, against Rev 3's own Table 1.
+- **The two-level split of the SIX FUNCTIONS is exactly right** and is now
+  verified against the Executive Summary rather than against a summary of it:
+  *"Govern, Identify, and Protect help organizations prevent some incidents,
+  prepare to handle incidents… Detect, Respond, and Recover help organizations
+  discover, manage, prioritize, contain, eradicate, and recover."*
+
+**Status of Rev 3 itself, verified the same day:** FINAL, April 2025, supersedes
+SP 800-61r2 (August 2012), **no newer revision and no errata** — checked on
+`csrc.nist.gov` at both the publication page and the Incident Response project
+page. The four-phase lifecycle is genuinely retired and this document is built
+on the right structure.
+
+**The Category-level gap is now CLOSED at the naming level.** The Profile's
+Categories, extracted from the publication: `GV.OC GV.RM GV.RR GV.PO GV.OV
+GV.SC` · `ID.AM ID.RA ID.IM` · `PR.AA PR.DS PR.PR PR.IR` · `DE.AE DE.CM` ·
+`RS.MA RS.AN RS.CO RS.MI` · `RC.RP RC.CO`. **What is still NOT claimed:** that
+§1–§7 below are complete against those Categories, or mapped to them
+Subcategory by Subcategory. Naming is verified; coverage is not, and a
+Community Profile's value is in the Subcategory rows — that is the next real
+piece of work on this document and it is named in §9 rather than implied here.
 
 ---
 
@@ -400,7 +464,24 @@ Listed so its absence is a decision rather than a discovery:
 - **no customer-facing commitment** about response or notification times, in
   any contract or ToS — deliberately, since committing to a target this
   platform cannot currently meet would be worse than having none;
-- **no legal review.**
+- **no legal review;**
+- **no Subcategory-level mapping to the Rev 3 Community Profile** (added
+  2026-09-17). The Function and Category naming is now verified against the
+  publication, but §1–§7 have never been walked against the Profile's
+  Subcategory rows, which is where a Community Profile's actual content lives —
+  Rev 3's Tables 2 and 3 are the document, and the Function headings are only
+  its filing system. **So this plan is FAITHFUL TO REV 3'S STRUCTURE and has
+  never been measured for COVERAGE against it**, and those are different claims.
+  Until that pass is done, no completeness against SP 800-61r3 should be
+  asserted anywhere — in a SOC 2 readiness discussion, a customer questionnaire,
+  or an RFP.
 
 **The single highest-value thing that would improve this plan is not in this
 document.** It is a backup. Everything in §7 is a workaround for its absence.
+**And that has moved since this was written:** the nightly backup workflow now
+exists and **has failed on both of its only two runs** (2026-09-15 and
+2026-09-16, both at the dump step, before the size floor and before the restore
+proof). So the state is no longer "no backup mechanism" — it is "a backup
+mechanism that has never once produced a dump", which is a different and more
+dangerous thing to be wrong about, because a scheduled job that exists reads as
+protection.
