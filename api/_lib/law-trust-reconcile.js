@@ -194,15 +194,34 @@ function reconcileTrustLedger(input) {
     ? supplied : null;
 
   const legs = {
-    // Leg 1. CAN genuinely fail: the two passes traverse the same rows but
-    // attribute them differently, so a row the attribution pass loses shows up
-    // here as a difference.
+    // ── LEG 1 CANNOT FAIL TODAY, AND SAYING SO IS THE POINT (2026-09-16) ──
+    // This was described as one that "CAN genuinely fail: a row the attribution
+    // pass loses shows up here as a difference". DRIVEN, IT DOES NOT. Both
+    // traversals skip on the same two predicates -- isVoided(), and cents()
+    // returning null -- and differ only in which bucket they add to, so the
+    // two sums are the same arithmetic over the same survivors. Every shape
+    // tried returns agrees:true: an unreadable amount, a missing client_id, a
+    // non-string client_id, a voided row, and all of them mixed.
+    //
+    // That is the same defect this file's own commit was named for -- "the leg
+    // the existing check was asked about could not fail" -- reappearing in its
+    // replacement. It is left in place because the arithmetic is worth
+    // reporting, and it is LABELLED so a reader cannot mistake agreement here
+    // for evidence, and EXCLUDED from legs_compared so it cannot make a
+    // reconciliation look more compared than it is.
+    //
+    // The conservation check below is the falsifiable half: it asks whether
+    // every row ENDED UP SOMEWHERE, which the two sums cannot ask because they
+    // both drop the same rows before summing.
     allocation_vs_ledger: {
       allocation_cents: allocationCents,
       ledger_cents: ledgerCents,
       agrees: allocationCents === ledgerCents,
-      independence: 'same record, two traversals -- catches an attribution '
-        + 'error, NOT a wrong ledger',
+      structural: true,
+      independence: 'NOT independent -- same survivors, same arithmetic, two '
+        + 'traversals that skip on identical predicates. It cannot disagree '
+        + 'while those predicates match, so it is reported and NOT counted '
+        + 'among the compared legs.',
     },
     // Leg 2. Two different STORES of the same record.
     device_vs_server: deviceCents === null ? {
@@ -237,19 +256,48 @@ function reconcileTrustLedger(input) {
     },
   };
 
-  const compared = Object.keys(legs).filter((k) => legs[k].agrees !== null);
+  // ── ROW CONSERVATION: DID EVERY ROW END UP SOMEWHERE? ──────────────────
+  // The falsifiable half of leg 1. The two sums cannot see a row that both
+  // passes drop; this can, because it counts rows rather than money and the
+  // buckets are built by the attribution pass alone.
+  //
+  // THE IDENTITY: every row is either VOIDED or in exactly one client bucket,
+  // and every unreadable amount is counted inside the bucket it landed in. It
+  // holds today by construction, and it BREAKS the moment a future edit adds a
+  // skip to one pass and not the other -- which is precisely the change leg 1
+  // was supposed to catch and cannot.
+  const bucketedRows = clients.reduce((s2, c) => s2 + c.rows, 0);
+  const bucketedUnreadable = clients.reduce((s2, c) => s2 + c.unreadable_rows, 0);
+  const conservation = {
+    rows_in: rows.length,
+    rows_voided: voided,
+    rows_bucketed: bucketedRows,
+    holds: (voided + bucketedRows) === rows.length
+      && bucketedUnreadable === unreadable,
+    why: 'every row is either voided or in exactly one client bucket, and '
+      + 'every unreadable amount is counted inside its bucket. A row dropped '
+      + 'by one pass and kept by the other breaks this and moves nothing in '
+      + 'the money legs.',
+  };
+
+  const compared = Object.keys(legs).filter(
+    (k) => legs[k].agrees !== null && !legs[k].structural);
   const disagreeing = compared.filter((k) => legs[k].agrees === false);
 
   // NO SINGLE `matches` BOOLEAN. The client's version returns one, and it is
   // TRUE when there is no bank statement -- a green verdict from a comparison
   // that was never made. `status` names what actually happened instead.
+  // A BROKEN CONSERVATION IDENTITY IS A DISAGREEMENT, not a note. If rows are
+  // going missing between the passes, every figure below is computed over an
+  // unknown subset and none of it should read as agreement.
   let status;
-  if (disagreeing.length) status = 'DISAGREES';
-  else if (compared.length < 3) status = 'PARTIAL';
+  if (disagreeing.length || !conservation.holds) status = 'DISAGREES';
+  else if (compared.length < 2) status = 'PARTIAL';
   else status = 'AGREES';
 
   return {
     status: status,
+    row_conservation: conservation,
     legs_compared: compared.length,
     legs_disagreeing: disagreeing,
     legs: legs,

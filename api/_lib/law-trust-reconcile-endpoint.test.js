@@ -104,8 +104,18 @@ function eq(a, b, m) {
   await t('owner CAN', async () => {
     eq((await call('owner')).statusCode, 200);
   });
-  await t('admin CAN', async () => {
-    eq((await call('admin')).statusCode, 200);
+  // ── `admin` IS NOT A SAIRNlaw ROLE AND NEVER WAS (corrected 2026-09-16) ──
+  // This asserted `admin` gets 200, matching LAW_RECONCILE_ROLES when it read
+  // `{ owner: true, admin: true }`. ROLES_BY_APP.sairnlaw is owner / attorney /
+  // paralegal, so verifySessionToken refuses an `admin` token for this app
+  // before the role gate is reached -- the key could never match and
+  // reconciliation was owner-only in practice. The literal was corrected in
+  // 7884c4a5 and THIS ARM WAS LEFT ASSERTING THE IMPOSSIBLE, which made this
+  // suite red from that commit until now. Mine, and I did not run this file.
+  await t('admin is REFUSED -- it is not a role SAIRNlaw can issue', async () => {
+    const r = await call('admin');
+    eq(r.statusCode === 401 || r.statusCode === 403, true,
+       'admin answered ' + r.statusCode);
   });
 
   // ── THE ARITHMETIC, THROUGH THE REAL HANDLER ─────────────────────────────
@@ -119,13 +129,21 @@ function eq(a, b, m) {
     const d = (await call('owner')).body.data;
     eq(d.legs.bank_vs_ledger.statement_date, '2026-09-30');
     eq(d.legs.bank_vs_ledger.agrees, true);
-    eq(d.status, 'PARTIAL', 'no device total supplied, so two legs of three');
+    eq(d.status, 'PARTIAL', 'no device total supplied, so one comparable leg of two');
   });
-  await t('supplying the device total makes it three legs and AGREES', async () => {
-    const d = (await call('owner', { client_total_cents: 550000 })).body.data;
-    eq(d.legs_compared, 3);
-    eq(d.status, 'AGREES');
-  });
+  await t('supplying the device total makes it BOTH comparable legs and AGREES',
+    async () => {
+      // TWO, not three, as of 2026-09-16: allocation_vs_ledger is labelled
+      // structural and excluded, because driven it cannot disagree -- both
+      // traversals skip on identical predicates, so the two sums are the same
+      // arithmetic over the same survivors. AGREES still requires every leg
+      // that CAN disagree to have been compared.
+      const d = (await call('owner', { client_total_cents: 550000 })).body.data;
+      eq(d.legs_compared, 2);
+      eq(d.status, 'AGREES');
+      eq(d.legs.allocation_vs_ledger.structural, true);
+      eq(d.row_conservation.holds, true);
+    });
   await t('...and a WRONG device total is caught as a sync divergence', async () => {
     const d = (await call('owner', { client_total_cents: 500000 })).body.data;
     eq(d.legs.device_vs_server.agrees, false);

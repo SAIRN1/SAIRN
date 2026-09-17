@@ -53,7 +53,12 @@ t('no bank statement and no device total is PARTIAL, never AGREES', () => {
   // there is no statement, because `ledgerVsBank === null` is treated as fine.
   const out = reconcile({ rows: [D('T1', 'CL-1', 100, '2026-09-01')] });
   assert.strictEqual(out.status, 'PARTIAL');
-  assert.strictEqual(out.legs_compared, 1);
+  // ZERO, not one. allocation_vs_ledger is STRUCTURAL as of 2026-09-16 and is
+  // not counted: driven, it cannot disagree -- both traversals skip on the
+  // same two predicates, so the two sums are the same arithmetic over the same
+  // survivors. Counting it made a reconciliation with no external leg and no
+  // device leg look like it had compared something.
+  assert.strictEqual(out.legs_compared, 0);
   assert.strictEqual(out.legs.bank_vs_ledger.agrees, null);
   assert.ok(/NOT COMPARED/.test(out.legs.bank_vs_ledger.why));
 });
@@ -65,7 +70,24 @@ t('...and all three present and agreeing IS AGREES', () => {
     clientTotalCents: 10000,
   });
   assert.strictEqual(out.status, 'AGREES');
-  assert.strictEqual(out.legs_compared, 3);
+  assert.strictEqual(out.legs_compared, 2, 'the two legs that can actually '
+    + 'disagree are the device leg and the bank leg');
+});
+
+// ── AND THE FALSIFIABLE HALF OF WHAT LEG 1 WAS SUPPOSED TO BE ──────────────
+t('row conservation holds: every row is voided or in exactly one bucket', () => {
+  const out = reconcile({
+    rows: [D('T1', 'CL-1', 100, '2026-09-01'),
+           D('T2', 'CL-2', 50, '2026-09-02'),
+           { id: 'T3', client_id: 'CL-1', type: 'Deposit', amount: 25,
+             date: '2026-09-03', status: 'Voided' },
+           { id: 'T4', client_id: 'CL-2', type: 'Deposit', amount: 'abc',
+             date: '2026-09-04' }],
+  });
+  assert.strictEqual(out.row_conservation.rows_in, 4);
+  assert.strictEqual(out.row_conservation.rows_voided, 1);
+  assert.strictEqual(out.row_conservation.rows_bucketed, 3);
+  assert.strictEqual(out.row_conservation.holds, true);
 });
 
 // ── THE AS-OF FIX, WHICH IS THE REAL DEFECT IN THE EXISTING CHECK ──────────
