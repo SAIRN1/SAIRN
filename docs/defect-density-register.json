@@ -3641,6 +3641,59 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
+      "commit": "22455bccc2f3",
+      "date": "2026-09-16",
+      "subject": "fix(test): swept the platform for the floor-instead-of-exact shape -- one more real instance, and the rest are honest ratchets",
+      "files": [
+        "tests/run_testability_gate_probe.py"
+      ],
+      "lines_added": 48,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "A probe arm labelled 'every section of the matrix yields requirements' was backed by a floor on the section count, so a section the extractor silently skipped would stay green",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The arm was written when the matrix had four sections, where a floor of four and an exact set happen to agree. It became wrong when a fifth section was added rather than at any commit that touched the arm."
+      },
+      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the check RAN and its comparison could not express the claim its label made. Same family -- a green indistinguishable from coverage it does not have.",
+      "contributing_factors": [
+        {
+          "factor": "The arm's label said EVERY section yields requirements while the check was a floor on the count of sections that did yield, so a section the extractor silently stopped reading would be invisible once a fifth section existed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Replaced with an exact set difference that names the section, plus a reverse arm so requirements cannot arrive from a table with no requirement column."
+        },
+        {
+          "factor": "A floor is the RIGHT tool for a ratchet and the wrong one for a coverage claim, and nothing distinguishes the two at review time. Of 57 floor-compared assertions swept, most are honest ratchets or not-empty checks; two had labels claiming a relationship the comparison could not see.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "No check compares an assertion's LABEL against the SHAPE of its comparison. Both instances were found by reading labels for the word every."
+        },
+        {
+          "factor": "It was found only because the identical shape had just been found by an independent reviewer in a different file. Nothing on the platform was looking for it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Swept all 57 occurrences by hand and recorded which are legitimate, so the next sweep starts from a classification rather than from the raw count."
+        },
+        {
+          "factor": "My first replacement criterion was stricter than the extractor it measures -- it flagged a section that deliberately has no requirement column -- and would have shipped a false finding about a correct tool.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The expected set is now defined the way the extractor defines it, by the column header, and the ablation proves the arm fires on a real skip."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS. Second instance in one day; the first was found by an independent reviewer in tests/failsafe/witness_countersign.js. Nothing compares an assertion's label against the shape of its comparison, and the other 55 floor comparisons were classified by hand rather than by any tool."
+    },
+    {
       "commit": "25f2194d16ab",
       "date": "2026-09-16",
       "subject": "fix(tools): third confirmed instance of the one-spelling blind spot -- the decode checker could not see an aliased subprocess import",
@@ -5126,62 +5179,6 @@
       "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
     },
     {
-      "commit": "debb3b674068",
-      "date": "2026-09-16",
-      "subject": "feat(tools): a sweep for the class -- and it found a second instance on its first run",
-      "files": [
-        "api/sairndental/public-book.test.js",
-        "docs/TOOLING-INVENTORY.md",
-        "tools/negated_status_assertion_scan.py",
-        "tools/tooling_inventory.py"
-      ],
-      "lines_added": 302,
-      "lines_removed": 12,
-      "app": "sairndental",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "api/sairndental/public-book.test.js asserted `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` for an arm titled \"passes validation and REACHES THE NETWORK STAGE\". Any one term satisfied it, and the request was 502ing before it reached anything -- because the block's resolveSlug stub throws unconditionally and public-book.js destructures it at module load, so NO arm in that block could ever get past validation. The arm was green the whole time",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "negated_status_assertion_scan.py",
-      "injection": {
-        "unknown_reason": "The arm and its harness stub appear to have arrived together, and no commit in the file's history shows the disjunction being ADDED to a previously-strict assertion. Recorded as unknown rather than attributed to the file's creation commit on a guess."
-      },
-      "citation_note": "The arm could fail, and could not fail for the state it described. Same end state as 1.1 -- an assertion that cannot go red when its claim stops being true -- reached through a disjunction rather than through decay.",
-      "contributing_factors": [
-        {
-          "factor": "THE ASSERTION WAS A THREE-WAY DISJUNCTION, SO ANY ONE TERM SATISFIED IT. `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` is green whenever the handler dies early, refuses with a 500, or refuses with a 400 carrying any other code. The arm already recorded its own claim exactly, in `reached`; the other two terms could only weaken it.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Reduced to `assert.ok(reached, ...)`, with the observed status and error code interpolated into the failure message so the next reader gets the diagnosis rather than a bare false."
-        },
-        {
-          "factor": "THE HARNESS MADE THE ARM IMPOSSIBLE TO PASS HONESTLY, WHICH IS WHY THE WEAK PREDICATE WAS LOAD-BEARING. public-book.js DESTRUCTURES resolveSlug at module load, and the block's stub throws unconditionally, so no arm in it could get past validation -- including the one whose entire subject is getting past validation. The disjunction was what let it look like it had.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The stub is switchable and exactly one arm turns it on; every validation arm keeps the refusal it relies on."
-        },
-        {
-          "factor": "IT WAS FOUND BY A SWEEP BUILT FOR A DIFFERENT FILE, ON ITS FIRST RUN, over 330 suites. Nothing about this suite was suspected -- it was green, in an app with no open findings, and the title read correctly.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tools/negated_status_assertion_scan.py, registered report-only in PURPOSES. Deliberately a READ-LIST: `!== <code>` is correct when the claim is that some OTHER lock answered, and no mechanical rule separates that from 'it got through'."
-        },
-        {
-          "factor": "A GREEN ARM WITH A TRUE-SOUNDING TITLE IS THE HARDEST KIND TO DOUBT. 'passes validation and reaches the network stage' is exactly what a reader wants to be true, and the only thing contradicting it was a status code nobody printed.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The failure message prints the status and the error code, so the arm cannot fail without saying which stage it stopped at."
-        }
-      ],
-      "recurrence_open": "The sweep finds `!== <literal status>` inside an asserting line. It does NOT find `assert.notStrictEqual(code, 401)`, which is the same claim with no literal operator, and it cannot see a disjunction whose weak term is not a status comparison at all -- `reached || somethingElse` would be invisible. It found this one because one term happened to carry the shape it scans for."
-    },
-    {
       "commit": "a744ceb5e0eb",
       "date": "2026-09-16",
       "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
@@ -5675,6 +5672,62 @@
         }
       ],
       "recurrence_open": "NOT CLOSED FOR THE CLASS. Every probe this session wrote over a SHARED artefact -- the register, the inspection record, the open-work index -- has the same exposure: an arm authored against one author's records cannot tell 'this is the rule' from 'this is how I write it', and only a second author writing a record surfaces it."
+    },
+    {
+      "commit": "debb3b674068",
+      "date": "2026-09-16",
+      "subject": "feat(tools): a sweep for the class -- and it found a second instance on its first run",
+      "files": [
+        "api/sairndental/public-book.test.js",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/negated_status_assertion_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 302,
+      "lines_removed": 12,
+      "app": "sairndental",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/sairndental/public-book.test.js asserted `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` for an arm titled \"passes validation and REACHES THE NETWORK STAGE\". Any one term satisfied it, and the request was 502ing before it reached anything -- because the block's resolveSlug stub throws unconditionally and public-book.js destructures it at module load, so NO arm in that block could ever get past validation. The arm was green the whole time",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "negated_status_assertion_scan.py",
+      "injection": {
+        "unknown_reason": "The arm and its harness stub appear to have arrived together, and no commit in the file's history shows the disjunction being ADDED to a previously-strict assertion. Recorded as unknown rather than attributed to the file's creation commit on a guess."
+      },
+      "citation_note": "The arm could fail, and could not fail for the state it described. Same end state as 1.1 -- an assertion that cannot go red when its claim stops being true -- reached through a disjunction rather than through decay.",
+      "contributing_factors": [
+        {
+          "factor": "THE ASSERTION WAS A THREE-WAY DISJUNCTION, SO ANY ONE TERM SATISFIED IT. `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` is green whenever the handler dies early, refuses with a 500, or refuses with a 400 carrying any other code. The arm already recorded its own claim exactly, in `reached`; the other two terms could only weaken it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Reduced to `assert.ok(reached, ...)`, with the observed status and error code interpolated into the failure message so the next reader gets the diagnosis rather than a bare false."
+        },
+        {
+          "factor": "THE HARNESS MADE THE ARM IMPOSSIBLE TO PASS HONESTLY, WHICH IS WHY THE WEAK PREDICATE WAS LOAD-BEARING. public-book.js DESTRUCTURES resolveSlug at module load, and the block's stub throws unconditionally, so no arm in it could get past validation -- including the one whose entire subject is getting past validation. The disjunction was what let it look like it had.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The stub is switchable and exactly one arm turns it on; every validation arm keeps the refusal it relies on."
+        },
+        {
+          "factor": "IT WAS FOUND BY A SWEEP BUILT FOR A DIFFERENT FILE, ON ITS FIRST RUN, over 330 suites. Nothing about this suite was suspected -- it was green, in an app with no open findings, and the title read correctly.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/negated_status_assertion_scan.py, registered report-only in PURPOSES. Deliberately a READ-LIST: `!== <code>` is correct when the claim is that some OTHER lock answered, and no mechanical rule separates that from 'it got through'."
+        },
+        {
+          "factor": "A GREEN ARM WITH A TRUE-SOUNDING TITLE IS THE HARDEST KIND TO DOUBT. 'passes validation and reaches the network stage' is exactly what a reader wants to be true, and the only thing contradicting it was a status code nobody printed.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The failure message prints the status and the error code, so the arm cannot fail without saying which stage it stopped at."
+        }
+      ],
+      "recurrence_open": "The sweep finds `!== <literal status>` inside an asserting line. It does NOT find `assert.notStrictEqual(code, 401)`, which is the same claim with no literal operator, and it cannot see a disjunction whose weak term is not a status comparison at all -- `reached || somethingElse` would be invisible. It found this one because one term happened to carry the shape it scans for."
     },
     {
       "commit": "e71683cc0ecd",
