@@ -1534,6 +1534,16 @@
       "claimed_at_epoch": 1789601901.263379,
       "status": "released",
       "released_at": "2026-09-17T00:06:09Z"
+    },
+    {
+      "id": "cc-1789603924",
+      "session": "cc",
+      "subject": "sairnlaw-billing-codes",
+      "task": "negative control for tests/sairnlaw_billing_codes.js",
+      "claimed_at": "2026-09-17T00:12:04Z",
+      "claimed_at_epoch": 1789603924.6534753,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
