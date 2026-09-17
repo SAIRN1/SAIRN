@@ -3641,7 +3641,7 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
-      "commit": "22455bccc2f3",
+      "commit": "1a64e873128e",
       "date": "2026-09-16",
       "subject": "fix(test): swept the platform for the floor-instead-of-exact shape -- one more real instance, and the rest are honest ratchets",
       "files": [
