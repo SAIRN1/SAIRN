@@ -51,11 +51,29 @@ async function main() {
   var originalRequire = require;
 
   // Set up mocks before requiring public-book
+  //
+  // ── resolveSlug IS SWITCHABLE, AND IT HAD TO BECOME SO (2026-09-16) ───────
+  // public-book.js DESTRUCTURES resolveSlug at module load, so the stub in
+  // place at `require` time is the only one it will ever call. An
+  // unconditionally-throwing stub therefore made it IMPOSSIBLE for any arm in
+  // this block to get past validation -- including the last one, whose title is
+  // "passes validation and reaches the network stage".
+  //
+  // That arm was green anyway, on a three-way disjunction that was satisfied by
+  // the 502 the throwing stub produced. Found by
+  // tools/negated_status_assertion_scan.py. The flag is the smallest change
+  // that lets exactly one arm through while every validation arm keeps the
+  // refusal it relies on.
+  var allowSlug = false;
   delete require.cache[require.resolve('../_lib/dental-public')];
   require.cache[require.resolve('../_lib/dental-public')] = {
     exports: {
-      resolveSlug: function () { throw new Error('resolveSlug should not be called in validation tests'); },
-      checkAndIncrementRateLimit: async function () { return { allowed: true }; }
+      resolveSlug: async function () {
+        if (!allowSlug) throw new Error('resolveSlug should not be called in validation tests');
+        return 'lic-hash-fixture';
+      },
+      checkAndIncrementRateLimit: async function () { return { allowed: true }; },
+      readRows: async function () { return []; }
     }
   };
 
@@ -123,9 +141,29 @@ async function main() {
     var reached = false;
     global.fetch = async function () { reached = true; throw new Error('stop here'); };
     var body = Object.assign({}, VALID_BASE, { patient_notes: 'Chipped a molar on Saturday.' });
+    allowSlug = true;                     // this arm is the one that must pass
     try { await handler(mockReq(body), res); } catch (e) { /* expected */ }
-    assert.ok(reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG',
-      'valid notes must not be rejected by the cap');
+    allowSlug = false;                    // every other arm keeps the refusal
+    // ── WAS A THREE-WAY DISJUNCTION AND PASSED WITHOUT REACHING ANYTHING ───
+    // Until 2026-09-16 this read:
+    //
+    //   assert.ok(reached || res.statusCode !== 400 ||
+    //             res.body.error.code !== 'NOTES_TOO_LONG', ...)
+    //
+    // Satisfied if ANY of the three held -- so a handler that threw before the
+    // network stage, or refused with a 500, or refused with a 400 carrying any
+    // OTHER code, left `reached` false and the arm GREEN while the title claims
+    // the request "reaches the network stage". The arm already records the
+    // claim exactly, in `reached`; the other two terms could only weaken it.
+    //
+    // Found by tools/negated_status_assertion_scan.py on its first real run.
+    // Same class as the 2026-09-16 app-session-isolation defect, where a
+    // control over attorney trust money asserted `!== 401` against a gate that
+    // refuses 403 and printed "is reachable ... and answers 403" in green.
+    assert.ok(reached,
+      'valid notes must not be rejected by the cap -- the request never reached '
+      + 'the network stage at all (status ' + res.statusCode + ', code '
+      + ((res.body && res.body.error && res.body.error.code) || 'none') + ')');
   });
 
   global.fetch = originalFetch;

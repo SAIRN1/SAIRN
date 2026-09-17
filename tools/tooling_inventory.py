@@ -73,6 +73,24 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'negated_status_assertion_scan.py': ('CHECKER',
+        'a READ-LIST of assertions that express "the caller got through" as the '
+        'NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 '
+        'and by the harness throwing -- and on 2026-09-16 exactly that arm, in '
+        'tests/app_session_isolation.js, printed "law_trusttx is reachable with '
+        'the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a '
+        'gate that had just been put in front of attorney IOLTA trust money. '
+        'DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is '
+        '"some OTHER lock answered first", and nothing mechanical can tell that '
+        'from "it got through" -- so every row is printed with its assertion '
+        'and its message for a human, and the tool says so in its own output. '
+        'It does NOT classify by message text, because keyword-matching '
+        '"reaches" would be wrong in both directions, which this platform has '
+        'paid for twice. Reads comment-stripped source, since the repo now '
+        'contains several comments DISCUSSING the defect. FOUND A SECOND '
+        'INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js '
+        'asserted a three-way disjunction for "reaches the network stage" and '
+        'was green while the request 502ed before reaching anything'),
     'sairn_status.py': ('REPORTER',
         'what every agent on this machine says it is doing, RIGHT NOW, without a '
         'push/pull. The gap tools/session_lock_check.py names in its own header '
