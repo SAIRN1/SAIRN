@@ -64,6 +64,38 @@ const EXPECTED_JOBS = {
 // this job retrying itself into an HTTP 508 and latching itself FAILING.
 const SELF_JOB = '/api/cron-watchdog';
 
+// ── AND IT MUST NOT GRADE ITSELF EITHER (2026-09-17) ───────────────────────
+// FOUND LIVE, from production logs rather than from reading the code.
+// `SAIRN_OPS_EMAIL` was set in production and the channel came back CONFIGURED
+// at 00:15:28Z -- the "CANNOT NOTIFY ANYBODY" line stopped being printed, which
+// is the whole proof the fix landed -- and the self row went on reading PARTIAL
+// anyway. The outcome written each run was derived from a `bad` list that
+// CONTAINED THIS JOB'S OWN PREVIOUS ROW: partial -> PARTIAL -> partial, a loop
+// closed entirely inside this function with no input from the world.
+//
+// THE ITEM 55 FIX REMOVED THE WATCHDOG RESPONDING TO ITSELF AND LEFT IT
+// GRADING ITSELF, which latches exactly as hard and is far quieter. No retry,
+// no HTTP 508, no alert storm -- just a monitor that is red for ever, an `ok`
+// field that can never be true again, and a `cron_liveness_check.py` that can
+// never exit 0. A monitor stuck red is this repository's own most recently
+// repaired defect (ccf38216, a suite RED on main that nobody read); a fix that
+// cannot be seen to have worked is indistinguishable from one that did not.
+//
+// ANOTHER job being bad still degrades this one to `partial`, and that is
+// deliberately unchanged: it does not latch, because that job recovering
+// empties the list. Only the SELF term is self-referential, so only the SELF
+// term is removed -- and the self row is still REPORTED, still logged, still in
+// `not_ok`. What is removed is it feeding its own next verdict.
+//
+// Pure and exported because the expression it replaces lived inline in the
+// handler, where nothing could drive it, which is why five consecutive live
+// runs were needed to see the latch at all.
+function selfOutcome(bad, realUndelivered, channelConfigured, selfJob) {
+  if (realUndelivered.length) return 'failed';
+  const others = bad.filter(function (x) { return x.job !== selfJob; });
+  return (others.length || !channelConfigured) ? 'partial' : 'ok';
+}
+
 // ── CAN THIS WATCHDOG TELL ANYBODY ANYTHING? ASKED EVERY RUN ───────────────
 // FOUND LIVE 2026-09-15: SAIRN_OPS_EMAIL is not set in production, so every
 // alert this thing has ever planned ended `"nobody was told"`. That was
@@ -435,8 +467,10 @@ module.exports = async (req, res) => {
     const realUndelivered = channel.configured ? undelivered : [];
     await beat({
       job: SELF_JOB,
-      outcome: realUndelivered.length ? 'failed'
-             : (bad.length || !channel.configured) ? 'partial' : 'ok',
+      // SELF-EXCLUDED -- see selfOutcome() above. This expression used to read
+      // `bad.length`, which includes this job's own previous row, and that is
+      // the latch that kept the self status PARTIAL after the channel was fixed.
+      outcome: selfOutcome(bad, realUndelivered, channel.configured, SELF_JOB),
       expected_interval_seconds: 3600,
       detail: {
         checked: report.length,
@@ -474,6 +508,8 @@ module.exports = async (req, res) => {
 
 module.exports.EXPECTED_JOBS = EXPECTED_JOBS;
 module.exports.assess = assess;
+module.exports.selfOutcome = selfOutcome;
+module.exports.SELF_JOB = SELF_JOB;
 module.exports.lateAfter = lateAfter;
 module.exports.deadAfter = deadAfter;
 module.exports.GRACE_SECONDS = GRACE_SECONDS;

@@ -699,6 +699,85 @@ section('6. the schema');
   });
 }
 
+// ── 4b-ter. A MONITOR DOES NOT GRADE ITSELF EITHER ─────────────────────────
+// Added 2026-09-17 from production logs, same as 4b-bis and the same shape one
+// layer down. 4b-bis stopped the watchdog RESPONDING to its own row. The
+// outcome it WRITES about itself was still derived from a `bad` list containing
+// that row, so `partial` read back as PARTIAL and wrote `partial` again, for
+// ever, with no input from the world. The first latch was loud -- HTTP 508 and
+// an hourly alert storm. This one is silent: a monitor simply red for ever.
+//
+// EVERY ARM BELOW THAT ASSERTS `ok` IS PAIRED WITH ONE MAKING THE SAME CALL
+// SAY SOMETHING ELSE, because `selfOutcome` returning a constant `'ok'` would
+// satisfy the release arm on its own and that is the exact defect being fixed.
+section('4b-ter. the watchdog does not grade itself');
+const badSelf = [{ job: SELF, status: 'PARTIAL' }];
+const badOther = { job: '/api/alf-alerts', status: 'DEAD' };
+
+t('CONTROL -- with no selfJob the OLD behaviour is unchanged: self row => partial', () => {
+  // Without this, every arm after it could pass against a function that had
+  // stopped looking at `bad` at all.
+  assert.strictEqual(W.selfOutcome(badSelf, [], true, undefined), 'partial');
+});
+t('THE LATCH IS RELEASED -- self PARTIAL alone, channel configured => ok', () => {
+  assert.strictEqual(W.selfOutcome(badSelf, [], true, SELF), 'ok');
+});
+t('...and it is the EXCLUSION doing it, not the channel: same call, self absent => ok', () => {
+  assert.strictEqual(W.selfOutcome([], [], true, SELF), 'ok');
+});
+t('ANOTHER job in trouble still degrades this one -- that term is NOT self-referential', () => {
+  assert.strictEqual(W.selfOutcome([badOther], [], true, SELF), 'partial');
+  assert.strictEqual(W.selfOutcome(badSelf.concat([badOther]), [], true, SELF), 'partial');
+});
+t('...and that one RECOVERS rather than latching: the other job clears => ok', () => {
+  assert.strictEqual(W.selfOutcome([], [], true, SELF), 'ok');
+});
+t('AN UNCONFIGURED CHANNEL is still partial with nothing else wrong', () => {
+  assert.strictEqual(W.selfOutcome([], [], false, SELF), 'partial');
+});
+t('A REAL UNDELIVERED ALERT is still `failed`, and it outranks everything', () => {
+  assert.strictEqual(W.selfOutcome([], [{ job: '/api/alf-alerts' }], true, SELF), 'failed');
+  assert.strictEqual(W.selfOutcome(badSelf, [{ job: '/api/alf-alerts' }], false, SELF), 'failed');
+});
+t('SELF_JOB is the SAME STRING the report is keyed on -- not a second spelling', () => {
+  assert.strictEqual(W.SELF_JOB, SELF);
+  assert.ok(W.EXPECTED_JOBS[W.SELF_JOB], 'SELF_JOB is not a key of EXPECTED_JOBS');
+});
+
+// THE LATCH DRIVEN END TO END THROUGH THE TWO REAL FUNCTIONS, because the bug
+// was never visible in either one alone -- it lived in the handoff between
+// them. assess() turns last_outcome `partial` into status PARTIAL; selfOutcome
+// decides what gets written back. Five runs is the production shape: that is
+// how many consecutive live runs it took to be sure the old one never left.
+t('FIVE CONSECUTIVE RUNS: the self row heals in one and stays healed', () => {
+  let outcome = 'partial';                       // the state found live at 00:15Z
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    const rows = ALL_FRESH().filter((r) => r.job !== SELF)
+      .concat([hb(SELF, 60, outcome)]);
+    const report = W.assess(NOW, rows);
+    const bad = report.filter((x) => x.status !== 'ok');
+    outcome = W.selfOutcome(bad, [], true, SELF);
+    seen.push(outcome);
+  }
+  assert.deepStrictEqual(seen, ['ok', 'ok', 'ok', 'ok', 'ok']);
+});
+t('TEETH -- the OLD expression latches on the same five runs, or this proves nothing', () => {
+  // If this arm ever goes green, the fixture stopped reproducing the bug and
+  // the arm above is asserting a property of nothing.
+  let outcome = 'partial';
+  const seen = [];
+  for (let i = 0; i < 5; i++) {
+    const rows = ALL_FRESH().filter((r) => r.job !== SELF)
+      .concat([hb(SELF, 60, outcome)]);
+    const bad = W.assess(NOW, rows).filter((x) => x.status !== 'ok');
+    outcome = bad.length ? 'partial' : 'ok';     // the expression that shipped
+    seen.push(outcome);
+  }
+  assert.deepStrictEqual(seen, ['partial', 'partial', 'partial', 'partial', 'partial'],
+    'the fixture no longer reproduces the latch -- the arm above tests nothing');
+});
+
 (async () => {
   for (const [name, fn] of queue) {
     if (!fn) { console.log('--- ' + name + ' ---'); continue; }
