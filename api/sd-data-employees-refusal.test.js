@@ -185,8 +185,23 @@ async function main() {
     await handler(mockReq(tokenFor('stonedesk', 'admin')), res);
     assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
     assert.strictEqual(res.body.data.length, 1, 'the manager lost the roster');
+    // ── GENUINELY ABSENT, NOT MERELY UNDEFINED (tightened 2026-09-16) ──────
+    // `=== undefined` is satisfied by `copy.hourly_rate = undefined`, which
+    // LEAVES THE KEY ON THE OBJECT. Over the wire that serialises away and the
+    // two are indistinguishable to a client -- but this arm reads the object
+    // BEFORE serialisation, so the weaker form would accept a strip that is not
+    // one. hasOwnProperty is the question actually being asked.
+    assert.ok(!Object.prototype.hasOwnProperty.call(res.body.data[0], 'hourly_rate'),
+      'a manager was served hourly_rate (own property present: '
+      + JSON.stringify(res.body.data[0]) + ')');
     assert.strictEqual(res.body.data[0].hourly_rate, undefined,
       'a manager was served hourly_rate');
+    // And what the client ACTUALLY receives, which is the contract that
+    // matters: the arms above read an in-process object, and res.json() is a
+    // mock. A field re-appearing through serialisation would pass both.
+    const onTheWire = JSON.parse(JSON.stringify(res.body));
+    assert.ok(!Object.prototype.hasOwnProperty.call(onTheWire.data[0], 'hourly_rate'),
+      'hourly_rate survives serialisation to the client');
     assert.strictEqual(res.body.data[0].title, 'Fabricator',
       'the strip took more than payroll -- full roster visibility is the other '
       + 'half of the same promise');
@@ -201,6 +216,8 @@ async function main() {
       const res = mockRes();
       await handler(mockReq(tokenFor('stonedesk', 'owner')), res);
       assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+      assert.ok(Object.prototype.hasOwnProperty.call(res.body.data[0], 'hourly_rate'),
+        'the owner lost the payroll KEY, so the manager arm proves nothing');
       assert.strictEqual(res.body.data[0].hourly_rate, 42,
         'the owner lost payroll too, so the manager arm proves nothing');
     });
@@ -217,9 +234,21 @@ async function main() {
         return { ok: true, status: 200, json: async () => [row] };
       });
       await handler(mockReq(tokenFor('stonedesk', 'admin')), mockRes());
+      assert.ok(Object.prototype.hasOwnProperty.call(row.data, 'hourly_rate'),
+        'the manager read DELETED payroll from the stored row, so an owner '
+        + 'reading next would find it gone');
       assert.strictEqual(row.data.hourly_rate, 42,
         'the manager read mutated the stored row, so an owner reading next '
         + 'would find payroll gone');
+      // AND THE READ ORDER THAT MAKES IT BITE. A mutation is only observable if
+      // somebody reads AFTER it, so the owner read is driven against the SAME
+      // row object the manager read already touched. Without this the arm above
+      // asserts on an object nothing has consumed.
+      const res2 = mockRes();
+      await handler(mockReq(tokenFor('stonedesk', 'owner')), res2);
+      assert.strictEqual(res2.body.data[0].hourly_rate, 42,
+        'an OWNER reading after a MANAGER got no payroll -- the strip leaked '
+        + 'into the shared row');
     });
 
   section('3. THE DIAGNOSIS IS NOT THE AUTHORIZATION');

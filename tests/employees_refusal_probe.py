@@ -30,7 +30,17 @@ malicious in a diff:
   * the role deny-list stops applying, which is the original gate and the only
     thing standing between a denied StoneDesk role and the roster;
   * the manager payroll strip goes, so a non-owner reads hourly_rate -- a
-    separate promise in the same branch, and the one a role check cannot make.
+    separate promise in the same branch, and the one a role check cannot make;
+  * the strip SETS the field to undefined instead of DELETING it, leaving the
+    key on the object;
+  * the strip mutates the UPSTREAM ROW rather than a copy, so the next OWNER
+    read finds payroll gone.
+
+MEASURED, NOT ASSERTED: mutation 6 is BLIND to the arms as they stood before
+2026-09-16's tightening. Applied to a worktree at the previous commit, the suite
+printed 10/10 -- because `=== undefined` is satisfied by a key that is still
+there. That is the difference hasOwnProperty makes, and it is the only evidence
+that the tightening was worth making.
 
 AND THAT LAST ONE WAS SILENT. `hourly_rate` appeared in NO test anywhere on the
 platform: "Manager: full roster visibility, but never payroll" was a promise
@@ -97,6 +107,26 @@ MUTATIONS = [
      API,
      "      if (session.role !== 'owner') {",
      "      if (false) {"),
+
+    ("6. the strip SETS THE FIELD TO undefined instead of DELETING it. The key "
+     "stays on the object, `=== undefined` is satisfied, and only "
+     "hasOwnProperty can tell -- which is why the arm asserts genuine absence "
+     "rather than an undefined read. Over the wire the two serialise "
+     "identically, so this is a mutation the client contract cannot see and the "
+     "in-process arm can",
+     API,
+     "          delete copy.hourly_rate;",
+     "          copy.hourly_rate = undefined;"),
+
+    ("7. the strip MUTATES THE UPSTREAM ROW rather than a copy, so payroll is "
+     "removed from whatever the client library cached and THE NEXT OWNER READ "
+     "FINDS IT GONE. The source says 'shallow-copy so we're not mutating "
+     "whatever the upstream client library cached'; this deletes the sentence's "
+     "reason for existing while leaving the sentence",
+     API,
+     "          var copy = Object.assign({}, e);\n          delete copy.hourly_rate;\n"
+     "          return copy;",
+     "          delete e.hourly_rate;\n          return e;"),
 ]
 
 if __name__ == '__main__':
