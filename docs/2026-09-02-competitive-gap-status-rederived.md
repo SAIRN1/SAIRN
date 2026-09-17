@@ -364,3 +364,46 @@ audit's decay rate, not a better one.** This file was right on 2026-09-02 and
 is wrong on 2026-09-14 about at least one row, which is the same seven-to-twelve
 day half-life the original had. Re-derive before reaching for anything here;
 the grep is cheap and the wasted build is not.
+
+---
+
+## Re-derived again against HEAD, 2026-09-17 (Hank) — StoneDesk only
+
+**NOTHING MOVED, AND THE TWO REMAINING ROWS ARE BOTH MICHAEL'S.** Rows 1, 2, 3,
+5, 7 and 8 are BUILT and unchanged. Row 4 is OPEN and hardware-blocked; row 6 is
+HELD OPEN by decision. That is the same answer as the 2026-09-16 pass, re-derived
+rather than re-read, after a day of commits.
+
+**ROW 4 IS A KEYWORD TRAP AND THIS PASS WALKED UP TO IT AGAIN.** `scanner`
+returns seven hits in `stonedesk.html` and **every one is row 3's barcode
+feature** — `sdSlabScanLookup()` reads a handheld barcode scanner typing into a
+field, which is why it needs no driver and no camera permission. Row 4 is
+DIGITAL TEMPLATING hardware, a different product category: `proliner`,
+`etemplate` and `laserproducts` return **zero** hits across the app file and
+`api/**`. The row is genuinely open, and the hits that look like progress belong
+to the row above it.
+
+**ROW 6'S CODE IS HONEST ABOUT ITSELF, WHICH IS WHY IT STAYS CREDIBLE.**
+`api/accounting.js` reports the real state rather than implying one: *"No Intuit
+application is registered: QB_CLIENT_ID, QB_CLIENT_SECRET and QB_REDIRECT_URI
+are not set"*, and separately distinguishes credentials-present-but-OAuth-never-
+exercised from nothing-registered. `stonedesk.html:25101` records that the
+integration was deleted on 2026-07-29 with no panel or nav entry ever.
+
+**THE INTEGRATIONS TILE WAS ALREADY HAND-CHECKED TODAY BY CC AND I AM NOT
+REDOING IT.** `docs/2026-09-17-caller-level-gap-check-senior-stonedesk.md`
+reaches the same place and goes further than I was about to: the tile is a
+TRACKER (`status: "Pending Setup"`), `.qbo-status`/`.qbo-dot` are dead CSS from
+the deleted integration, and — the part I had flagged as borderline — the stored
+property is `sync` while **every user-facing string says "reviewed"**. A button
+labelled *Sync* that only stamps a timestamp would be the fabricated-status
+defect; somebody already named it correctly. Recording the agreement rather than
+writing a second finding.
+
+**ONE THING THAT DID MOVE, IN A NEIGHBOURING APP, AND IT BEARS ON ROW 6'S
+EVENTUAL SCOPE.** `325e1294` built SAIRNroofing's A5 general-ledger export, and
+its own subject says *"it is not a QuickBooks connection"*. So the EXPORT half
+of the accounting story now exists one app over, built and named honestly. If
+row 6 is ever reopened, the question to ask first is whether StoneDesk needs a
+connection or the same export — they are different amounts of work and only one
+of them has a vendor dependency.
