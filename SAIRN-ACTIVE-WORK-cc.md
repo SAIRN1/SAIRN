@@ -4598,3 +4598,62 @@ that an edit path EXISTS is satisfied by one that appends a duplicate, which is
 the bug"* -- so none of its mutations removes the edit path. They leave it there
 and make it append, re-stamp, or drop its refusal, which is the shape that
 passed for working before anybody looked.
+
+## 2026-09-16 (continued) -- the claim block I caused myself, a suite red for 26 hours, and one more control
+
+### The collision check blocked me, and the blocking token was my own courtesy
+
+Cody's claim reads *"known-red suite registry build, floor-threshold
+coverage-visibility sweep -- **NOT the sairndental suite controls, which cc has
+been working**"* -- they carved the boundary explicitly.
+
+So I wrote mine to reciprocate: *"...negative control -- law_timeentries and
+invoices, **NOT the coverage-visibility tooling cody holds**"*. **BLOCKED on
+`coverage-visibility`** -- the exact phrase I had written in order to disclaim
+it. **A session trying to be precise about scope gets blocked by its own
+courtesy**, and the matcher cannot tell a disclaimer from a claim.
+
+Verified rather than assumed (PR 4.3): cody's subject is a registry and a sweep,
+mine is one file in a different app. **The block is lexical.** Re-claimed as
+`sairnlaw-billing-codes` -- **naming the subject accurately, which PR 4.3 says
+is the honest fix for a namespace collision, and which is not the same as
+rewording to slip past the matcher. Saying which one I did, as that rule
+requires: I removed a phrase describing SOMEBODY ELSE'S work, not a phrase
+describing mine.**
+
+### The suite was RED on main for 26 hours
+
+`tests/sairnlaw_billing_codes.js` failed on origin/main from **2026-09-15 18:26
+to 2026-09-16 20:19**. Not a defect in the app: `4eaa3f05` (IOLTA
+reconciliation) registered a TWENTIETH `law_*` resource and the suite's
+exact-count arm fired **exactly as a count pin is supposed to**.
+
+**The pin stays an exact count.** `>= 19` would have stayed green through this
+addition and every future one -- a drift detector turned into decoration. The
+comment now names `law_trust_reconcile` and the commit, and says the correct
+response to the next firing is to do the same rather than raise the number
+quietly. **It will fire again on the twenty-first, by design.**
+
+**Found only because a negative control cannot be built on a red suite** -- the
+clean-copy arm would fail and every mutation would "fail" for the wrong reason.
+That is the useful generalisation: **building a control is itself a way of
+discovering that a suite is red**, and it discovered one nobody had looked at
+for a day.
+
+### And I bundled the two commits after writing that they must not be bundled
+
+The first draft put the pin fix and the new control in ONE commit, under a
+message whose own words were *"'this suite is green' and 'this suite can be made
+to go red' are different claims"*. Split before pushing, and recorded as a
+contributing factor rather than quietly amended.
+
+### The third rebase-rewrites-my-record collision tonight
+
+Three times now a rebase has moved a commit's sha after I recorded a defect
+against it, and the push gate has caught all three -- correctly. Repointed
+through the module's own `save()`, never my own writer. **A `--repoint` on
+`defect_register.py` would pay for itself**: I have hit it three times and at
+least one other session has too (`chore(register): re-seat the record onto its
+rebased sha`). Not built here; named so somebody can decide.
+
+31 of 157 suites controlled.
