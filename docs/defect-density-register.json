@@ -2470,7 +2470,28 @@
       ],
       "severity": "high",
       "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
-      "summary": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save"
+      "summary": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save",
+      "contributing_factors": [
+        {
+          "factor": "ONE CATCH ANSWERED FOR TWO UNRELATED THINGS. The stamping helper ran inside the try guarding localStorage.setItem, so anything it threw skipped the write entirely and told the user 'this browser storage is full or unavailable' -- A FALSE REASON FOR A BROWSER WHOSE STORAGE WAS FINE, and a lost save.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Stamping has its own try. The failure is LOGGED, naming the key and the consequence, and the write goes ahead UNSTAMPED -- the designed-safe direction, because a missing _m already means the server wins, which is how every record written before the stamp behaves."
+        },
+        {
+          "factor": "CENTRALISING THE STAMP WAS THE RIGHT CALL AND IS WHAT CREATED THE COUPLING. Adding it once in st()/scpSt() rather than at 486 save sites is correct; the cost is that the one place it lives is inside somebody else's error boundary, and nothing about the diff shows that.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the shape: a helper added centrally inherits the error handling of wherever it lands."
+        },
+        {
+          "factor": "THE TEST FOUND IT BY BREAKING FOR THE WRONG REASON. The harness builds each wrapper with new Function and injects only the globals it names, so the new helper was an unbound identifier; the ReferenceError landed in the STORAGE catch and every good-path arm failed. In a browser the wrapper was fine.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "THE EASY FIX WAS TO INJECT THE HELPER AND MOVE ON. Chasing why the harness could not tell the two causes apart is what surfaced the real defect -- because that is exactly the reason a USER could not tell them apart either."
+        }
+      ],
+      "recurrence_open": "The two halves are now pinned by arms, in three apps. Nothing prevents the NEXT central helper from being added inside the same try, and the only thing that would catch it is a harness failing confusingly again -- which was luck, not a mechanism."
     },
     {
       "app": "PLATFORM",
@@ -2503,7 +2524,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
-      "summary": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries"
+      "summary": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries",
+      "contributing_factors": [
+        {
+          "factor": "AN EXACT COUNT PINNED TO PROVE NON-EMPTINESS FAILS ON EVERY LEGITIMATE CHANGE. `occurrences : 135` goes red when a developer adds a save site, which is ordinary work -- so the arm's signal is indistinguishable from noise and gets updated reflexively, which is the same as deleting it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A FLOOR rather than an equality: the question was 'did the scan see anything', and a floor answers it without going red on growth."
+        },
+        {
+          "factor": "THE INTENT WAS RIGHT AND THE MECHANISM WAS NOT. Proving a scan is non-empty is exactly the empty-subject class this platform has recorded elsewhere -- an exact pin is the obvious way to do it and the one that decays fastest.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded so the next non-emptiness guard reaches for a floor rather than rediscovering this."
+        }
+      ],
+      "recurrence_open": "A floor is a number somebody chose once. It cannot distinguish 'the scan found 40 because the tree has 40' from 'the scan found 40 because it stopped looking after 40', and nothing re-derives the floor from anything."
     },
     {
       "app": "PLATFORM",
@@ -2562,7 +2598,34 @@
       ],
       "severity": "high",
       "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run",
-      "summary": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all"
+      "summary": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all",
+      "contributing_factors": [
+        {
+          "factor": "--check ASKED A WEAKER QUESTION THAN install DID. It compared core.hooksPath and stopped; the install path went on to repair CRLF, run the gate and run the shell wrapper. Two entry points to one guarantee, and only one of them checked the whole thing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--check now asks everything install asks, and CHECKS WITHOUT REPAIRING -- a report-only checker that rewrote a tracked file or this clone's config would be worse than a weak one, and an arm asserts the CRLF is still there afterwards."
+        },
+        {
+          "factor": "A CRLF SHEBANG NAMES AN INTERPRETER WHOSE NAME ENDS IN A CARRIAGE RETURN, AND GIT SKIPS THE HOOK SILENTLY. On 2026-09-01 all four clones held a CRLF copy and two had core.hooksPath set -- so --check would have printed OK on a hook that had NEVER ONCE EXECUTED.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The byte check is part of --check, because the failure is invisible from every other angle: the file is present, the config is right, and nothing runs."
+        },
+        {
+          "factor": "AND NOTHING RAN IT ANYWAY. The inventory classified the tool LIBRARY, so no hook, no suite and no gate ever invoked --check. A verifier nobody calls reports nothing, which is indistinguishable from a verifier reporting no problems.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Registered as a report-only checker with args ['--check'], because a BARE invocation installs -- and installing is the one thing report-only must never do."
+        },
+        {
+          "factor": ".git/ IS NOT VERSIONED, so hooks are per clone and a fresh clone has none until somebody runs the installer. The protection is opt-in by construction and the pre-push hook is the ONLY thing gating a push made by subprocess -- the Claude Code PreToolUse hook keys on Bash command text, and the claim tool pushes from Python.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the tool's own header, because the scope of what the hook protects is not derivable from the hook."
+        }
+      ],
+      "recurrence_open": "--check and install now ask the same questions because somebody made them agree, not because anything holds them together. A fifth clone with no hooks is still only found by running the checker, and a sixth check added to install will not appear in --check by itself."
     },
     {
       "app": "PLATFORM",
@@ -2594,7 +2657,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run",
-      "summary": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead"
+      "summary": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead",
+      "contributing_factors": [
+        {
+          "factor": "A THROWAWAY CLONE IS AT COMMITTED HEAD, so a probe driving one tests the tool AS IT WAS COMMITTED and not as it is being changed. The baseline it reports is about a different file from the one the author is editing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The working copy is staged into the clone, which is the same fix the sabotage harness carries for the same reason."
+        },
+        {
+          "factor": "IT ONLY MATTERS BEFORE THE PUSH, WHICH IS WHEN IT MATTERS MOST. After the commit lands the two agree, so the defect is invisible in exactly the window where a control is supposed to be telling the author whether the change works.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the class: a control that can only run after its subject is pushed is a control in the wrong order."
+        }
+      ],
+      "recurrence_open": "Staging is per probe and opt-in. Any future probe that clones or worktrees without staging tests HEAD while its author edits the working copy, and the symptom -- a green run on a broken change -- looks like success."
     },
     {
       "app": "PLATFORM",
