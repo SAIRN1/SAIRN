@@ -1347,8 +1347,8 @@
       "task": "diagnose the known-red registry undiagnosed entries -- my own registry, docs/known-red-suites.json",
       "claimed_at": "2026-09-17T01:27:26Z",
       "claimed_at_epoch": 1789608446.818008,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T01:46:09Z"
     }
   ]
 }
