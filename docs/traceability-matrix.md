@@ -244,6 +244,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The four Class A export gaps item 39c found are CLOSED &mdash; and a concurrency-sensitive test is now retried once rather than read as a failure** | **BUILT 2026-09-14 (Hank)** &mdash; `sairndental.html` (`charges`, `payments`, `vendororders` datasets plus their buttons), `sairnroofing.html` (`claim_photos` report + `rfLoadClaimPhotosAcrossClaims( | `tests/roofing_claim_photo_export.js`, `tests/run_concurrency_retry_probe.py`, `tests/sairndental_ledger_export.js` |
 | **The route-vs-resource unit mismatch is NOT unique to `/api/sd-data`: 182 individually addressable ACTIONS sit behind 27 routes, and 17 of them are named by nothing in this repo** | **SWEPT AND BUILT 2026-09-14 (CC)** &mdash; R7 inside the EXISTING `tools/sairn_reachability_check.py`, alongside R6. Held by `tests/reachability/action_demand_probe.py` (16 arms, three mutation contr | `tests/reachability/action_demand_probe.py` |
 | **Item 39c: the nine UNASSESSED Class A resources, answered &mdash; and a record you can look at is not a record you can hand over** | **BUILT 2026-09-14 (Hank)** &mdash; `docs/2026-09-14-class-a-retrievability.md`, `tools/export_coverage_check.py` held by `tests/run_export_coverage_probe.py` (21 arms). **Report-only, registered as ` | `tests/run_export_coverage_probe.py` |
+| **Item 39c is CLOSED: eleven of eleven Class A records can now be produced as a FILE &mdash; and the last gap was the TOOL, not the app** | **BUILT 2026-09-16 (CC)** &mdash; `sairncare.html` (`ALF_EXPORTS` / `alfExportDataset`), `sairnmechanical.html` (`MECH_EXPORTS` / `mechExportDataset`), `tools/export_coverage_check.py` (third state),  | `tests/run_export_coverage_probe.py`, `tests/sairncare_credential_export.js`, `tests/sairnmechanical_credential_export.js`, `tests/sairnvet_controlled_export.js` |
 | **Item 8's attack-generation half, deterministically: 5 metamorphic relations over the proxy's own request envelope, ZERO Anthropic calls** | **BUILT 2026-09-14 (Cody)** &mdash; `api/claude-guardrail-metamorphic.test.js`, 30 arms, blind lock on hand-built clamps, **4 mutation controls bite** | `api/claude-guardrail-metamorphic.test.js` |
 | **Item 34: state meant to be temporary that silently outlives its invocation &mdash; and the declaration that has to come first** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/temporary_state_check.py`, held by `tests/run_temporary_state_probe.py` (24 arms, the sabotage asserts its own anchor first). **Report-only, registered as `- | `tests/run_temporary_state_probe.py` |
 | **Item 43: the one literal Copy-Exactly block no longer matches its own app &mdash; 0 of 5 identical** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/copy_exactly_check.py`, `tests/run_copy_exactly_probe.py` (17 arms), `docs/2026-09-14-copy-exactly-audit.md` | `tests/run_copy_exactly_probe.py` |
@@ -534,19 +535,19 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 27 test files are traced to no stated requirement
+### 24 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 504 of 531 traced, 94.9%.
+For context and not as the headline: 507 of 531 traced, 95.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 510 citations come from
+### Where the 513 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 266 |
+| `index` | 269 |
 | `declared` | 230 |
 | `declared+index` | 7 |
 | `GUARD_TESTS+index` | 5 |
@@ -559,7 +560,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 27 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 24 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -582,11 +583,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_accepted_risk_expiry_control.py`
 - `tests/run_ai_action_approval_control.py`
 - `tests/run_known_red_probe.py`
-- `tests/sairncare_credential_export.js`
 - `tests/sairncash_entitlement_gate_probe.py`
 - `tests/sairnfreedom_server_backup_probe.py`
-- `tests/sairnmechanical_credential_export.js`
-- `tests/sairnvet_controlled_export.js`
 - `tests/sc_credentials_probe.py`
 - `tests/sd_agent_budget_probe.py`
 - `tests/session_gate_table_probe.py`
@@ -611,7 +609,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 531   tests/**, api/*.test.js
-  open-work rows citing a test       266   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       267   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                57   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
