@@ -1652,8 +1652,8 @@
       "task": "close the remaining sairncash billing flow gap after verifying stripe test mode is live",
       "claimed_at": "2026-09-17T05:01:14Z",
       "claimed_at_epoch": 1789621274.1545558,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T13:40:15Z"
     }
   ]
 }
