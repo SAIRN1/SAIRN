@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**192 files in `tools/`.** By what actually invokes them:
+**193 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 59 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 60 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 134 |
+| CHECKER | 135 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -117,7 +117,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (59)
+## REPORT-ONLY (60)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -152,6 +152,7 @@ quiet in practice.
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `flaky_checker_quarantine.py` | 2026-09-16, report-only. 2.6 seconds, and it is one of the few checks whose subject is THIS REGISTRY -- it reports which registered checks have evidence of ever having been measured, so it is the thing that would notice the rest going quiet. | a registered checker with no evidence either way -- never measured, as distinct from measured and stable |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
+| `hover_process_pass_freshness.py` | 2026-09-16, report-only. 0.2 seconds, read-only, and it answers a question nothing else on the build side asks. | the hover auditor going quiet on PROCESS PASSES -- the check on the machinery across all four build agents, as distinct from any single claim -- past a 48-hour bound, with a warning at 36 |
 | `hover_separation_audit.py` | 2026-09-15, report-only from the first day and it should never be anything else: it reports on a role that is not this clone, and a tool that could block a build agent's push over the hover auditor's behaviour would be punishing the wrong session. Its job is to be READ | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
 | `install_git_hooks.py` | 2026-09-13, the day --check was widened to answer the real question | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, whose gate script or shell wrapper does not execute, or -- added 2026-09-16 -- that GIT ITSELF DOES NOT FIRE, which every other check here is blind to because they are all statements about the FILE. hooksPath can be right, the bytes LF and `sh <file>` clean while git runs nothing |
@@ -382,11 +383,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      192   git ls-files tools/
+  tools on disk                      193   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                57   report_only_checks.REGISTRY
-  tools invoked by tests/            139   tests/**/*.py, *.js
+  report-only registry                58   report_only_checks.REGISTRY
+  tools invoked by tests/            140   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
