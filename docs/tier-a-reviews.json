@@ -502,6 +502,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T01:44:41Z",
+      "resources": [
+        "sv_audit_log",
+        "sv_patients"
+      ],
+      "files": [
+        "tests/sairnvet_dose_audit_reader_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL for tests/sairnvet_dose_audit_reader.js plus a correction to docs/2026-09-14-class-a-retrievability.md. No product code: sairnvet.html is untouched, the control asserts byte-identity and asks git. It names sv_audit_log and sv_patients because that is what the reader it exercises reads. WHAT A REVIEWER SHOULD CHECK: (1) THE DOCUMENT CORRECTION. I changed four passages -- the table row, the headline, the summary count and the remaining-four list -- on the strength of a live fetch of sairn.vercel.app/sairnvet. Re-fetch it rather than trusting my numbers; if the panel is not there, every one of those four edits is wrong in the same direction. (2) Two of the four mutations were RE-AIMED after the first versions made the suite crash rather than fail on the arm. Confirm the current versions exercise the intended arms and not some adjacent path -- specifically mutation 1, which now replaces a whole done() call rather than disabling a branch. (3) Whether the timed-out read deserves a fifth mutation; the suite has an arm for it and I did not drive it, because the timing path needs a fake clock and I judged that out of scope rather than impossible.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

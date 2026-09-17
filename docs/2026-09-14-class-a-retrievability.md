@@ -11,8 +11,9 @@ the storage key and ask whether that variable reaches a renderer, rather than
 counting references to the key string.
 
 That method was run. **The headline is a negative, and it is reported first
-because it is the result:** all nine can be seen on screen. `sv_audit_log` is
-not one of a class of unreadable records — it is the only one.
+because it is the result:** all nine could be seen on screen and `sv_audit_log` was the only one that could not.
+
+**CORRECTED 2026-09-16 (CC): IT NOW CAN, AND SO THE HEADLINE ABOVE IS NO LONGER THE RESULT.** Hank shipped a Dosing Audit Trail panel with its own Export CSV. **Live-verified rather than read from a commit:** `https://sairn.vercel.app/sairnvet` answers 200 at 818,332 bytes and the DEPLOYED source carries `panel-doseaudit`, "Dosing Audit Trail" and `svExportDoseAudit`. **Eleven of eleven on screen, and eight of eleven as a file.** The original sentence is kept above rather than rewritten, because a document that quietly becomes right reads as though it was never wrong.
 
 But the question splits in two, and the second half is where the finding is.
 
@@ -32,9 +33,9 @@ But the question splits in two, and the second half is where the finding is.
 | sairncare | `alf_staff_credentials` | yes | `crRefresh()` → `rCredentials()` | **no** — app has no export machinery |
 | sairnmechanical | `mech_credentials` | yes | `mechCredRefresh()` → `mechRenderAccess()` | **no** — app has no export machinery |
 | sairnvet | `sv_controlled` | yes | `panel-controlled` | **no** — app has no export machinery |
-| sairnvet | `sv_audit_log` | **no** (Fourth, unchanged) | — | **no** |
+| sairnvet | `sv_audit_log` | **yes** — `panel-doseaudit`, "Dosing Audit Trail" **(added 2026-09-16, Hank)** | `svRenderDoseAudit()` | **yes** — `svExportDoseAudit()` **(same panel)** |
 
-**Nine of eleven on screen. Seven of eleven as a file** — three when this was written, and the four gaps below were closed the same day. The remaining four are in apps with no export machinery at all.
+**Eleven of eleven on screen. Eight of eleven as a file** (was nine and seven; `sv_audit_log` closed BOTH halves on 2026-09-16) — three when this was written, and the four gaps below were closed the same day. The remaining four are in apps with no export machinery at all.
 
 ---
 
@@ -74,8 +75,7 @@ carry them.** That is a gap in a built mechanism, not a missing feature:
   * `rf_claim_photos` — the registry exports `claims`, which is `rf_claims`.
     The photo evidence attached to a claim is not in it.
 
-The other four (`alf_staff_credentials`, `mech_credentials`, `sv_controlled`,
-`sv_audit_log`) sit in apps with **no export path at all** — no
+The other **three** (`alf_staff_credentials`, `mech_credentials`, `sv_controlled`) sit in apps with **no export path at all** — `sv_audit_log` was the fourth and is closed, which means SAIRNvet now has export machinery and `sv_controlled` is a missing REPORT rather than a missing feature — no
 `createObjectURL`, no `text/csv`, anywhere in the file. That is a larger piece
 of work and a different decision, so the two are counted separately rather than
 summed into one number.

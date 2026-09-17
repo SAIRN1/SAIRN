@@ -39,7 +39,10 @@ const fs = require('fs');
 const path = require('path');
 
 const HTML = path.join(__dirname, '..', 'sairnvet.html');
-const src = fs.readFileSync(HTML, 'utf8');
+// SV_HTML is honoured here too, so a negative control can point this suite at a
+// MUTATED COPY rather than patching the tracked file. Same convention four
+// other SAIRNvet and platform suites already carry.
+const src = fs.readFileSync(process.env.SV_HTML || HTML, 'utf8');
 
 let pass = 0, fail = 0;
 function ok(name, cond, detail) {
