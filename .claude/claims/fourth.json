@@ -1605,6 +1605,16 @@
       "claimed_at_epoch": 1789667216.9052467,
       "status": "released",
       "released_at": "2026-09-17T22:21:23Z"
+    },
+    {
+      "id": "fourth-1789684115",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tier A review obligations discharge oldest first, suite_control_coverage inline mutation control detection, sairnlaw next jurisdiction gate",
+      "claimed_at": "2026-09-17T22:28:35Z",
+      "claimed_at_epoch": 1789684115.5661452,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
