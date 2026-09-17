@@ -85,6 +85,11 @@ function harness(opts) {
     ld: (k, d) => (k in store ? JSON.parse(JSON.stringify(store[k])) : d),
     st: (k, v) => { if (opts.storageFull) return false; store[k] = JSON.parse(JSON.stringify(v)); return true; },
     patients: () => [{ id: 'PT-1', insurance_payer: 'Delta' }],
+    // addChargeEntry() reads the catalogue to STAMP the code and edition onto
+    // the charge (2026-09-17). Overridable per-harness so an arm can move the
+    // catalogue underneath a posted charge, which is the whole hazard.
+    procedureTypes: () => (opts.procedureTypes
+      || [{ id: 'PR-1', cdt_code: 'D1110', cdt_version: 'CDT 2025' }]),
     computeEstimatedInsurance: () => ({ amount: 40, found: true }),
     charges: () => (store.dnt_charges_list || []),
     payments: () => (store.dnt_payments_list || []),
@@ -368,6 +373,63 @@ test('the three ledger callers say the row will upload, not that it is stranded'
   });
   assert.strictEqual(stripComments(html).indexOf('will not upload by itself'), -1,
     'a caller still tells the person the row is stranded, which is no longer true');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('the CDT code a charge was billed under (2026-09-17)');
+
+test('a posted charge STAMPS the code and the edition', async () => {
+  const c = harness({ mode: 'accepted' });
+  const r = await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(r.rec.cdt_code, 'D1110');
+  assert.strictEqual(r.rec.cdt_version, 'CDT 2025');
+});
+
+// THE ARM THE WHOLE CHANGE EXISTS FOR. Before this, a charge carried only
+// procedure_type_id and the code was LOOKED UP from a mutable catalogue row.
+// The ADA publishes a new CDT edition every year, so the day the practice
+// updates the catalogue every historical charge silently re-read the new value.
+test('THE CATALOGUE MOVING AFTERWARDS DOES NOT REWRITE A POSTED CHARGE', async () => {
+  const c = harness({ mode: 'accepted' });
+  const r = await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  // The practice updates to the next edition and revises the code.
+  c.procedureTypes = () => [{ id: 'PR-1', cdt_code: 'D1111', cdt_version: 'CDT 2026' }];
+  const stored = c.charges().find((x) => x.id === r.rec.id);
+  assert.strictEqual(stored.cdt_version, 'CDT 2025',
+    'the stored charge followed the catalogue -- the ledger has stopped describing what was claimed');
+  assert.strictEqual(stored.cdt_code, 'D1110');
+});
+
+test('an UNVERSIONED procedure type stamps EMPTY, not an invented edition', async () => {
+  const c = harness({ mode: 'accepted',
+    procedureTypes: [{ id: 'PR-1', cdt_code: 'D0120' }] });
+  const r = await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(r.rec.cdt_version, '',
+    'cdtMaintenance() counts exactly these as unverifiable; a placeholder would invent one');
+  assert.strictEqual(r.rec.cdt_code, 'D0120',
+    'an unrecorded EDITION must not blank the CODE too');
+});
+
+test('a procedure type that is GONE stamps empty rather than throwing', async () => {
+  // A charge posted against a deleted catalogue row still has to be recordable
+  // -- refusing the charge would be a worse answer than an unstamped one.
+  const c = harness({ mode: 'accepted', procedureTypes: [] });
+  const r = await c.addChargeEntry('PT-1', '', 'PR-MISSING', 100);
+  assert.strictEqual(r.rec.cdt_code, '');
+  assert.strictEqual(r.rec.cdt_version, '');
+  assert.strictEqual(r.rec.procedure_type_id, 'PR-MISSING',
+    'the link is still recorded even when the row behind it is not there');
+});
+
+test('the QUEUED copy carries the stamp too', async () => {
+  // A row that uploads later must upload what it was billed under, not what the
+  // catalogue says whenever the connection comes back.
+  const c = harness({ mode: 'offline' });
+  await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  const pending = c.dntPendingAll();
+  assert.strictEqual(pending.length, 1);
+  assert.strictEqual(pending[0].rec.cdt_version, 'CDT 2025');
+  assert.strictEqual(pending[0].rec.cdt_code, 'D1110');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

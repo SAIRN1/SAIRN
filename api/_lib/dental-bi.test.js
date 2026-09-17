@@ -379,6 +379,46 @@ test('charges: addChargeEntry()\'s record projects with nothing missing', () => 
   assert.strictEqual(row.procedure_type_id, 'PC-1');
 });
 
+// ── THE CODE A CHARGE WAS BILLED UNDER IS ON THE CHARGE (2026-09-17) ───────
+// Until now a charge carried only procedure_type_id, and a procedure type is a
+// MUTABLE row. The ADA publishes a new CDT edition every year, so the day the
+// practice updates the catalogue every historical charge silently re-reads the
+// new code. These arms pin the stamp; the third is the one that matters,
+// because a join would satisfy the first two.
+test('charges: the CDT code and edition are exported FROM THE CHARGE', () => {
+  const row = bi.projectRow('charges', { id: 'CH-2', patient_id: 'PT-1', amount: 100,
+    procedure_type_id: 'PC-1', date: '2026-09-17',
+    cdt_code: 'D1110', cdt_version: 'CDT 2025' }, CTX);
+  assert.strictEqual(row.cdt_code, 'D1110');
+  assert.strictEqual(row.cdt_version, 'CDT 2025');
+});
+
+test('charges: an UNRECORDED edition exports as empty, not as an invented one', () => {
+  const row = bi.projectRow('charges', { id: 'CH-3', patient_id: 'PT-1', amount: 100,
+    procedure_type_id: 'PC-1', date: '2026-09-17', cdt_code: 'D0120', cdt_version: '' }, CTX);
+  // NULL, not '' -- coerce() maps every empty string to null platform-wide, and
+  // that is the right answer rather than a quirk to work around: in an export,
+  // "recorded as blank" and "not recorded" are the same fact, and a BI tool
+  // should not have to know which one the app happened to write.
+  assert.strictEqual(row.cdt_version, null,
+    'a procedure type with no edition is the common case -- cdtMaintenance() counts ' +
+    'exactly those as unverifiable, and a placeholder here would invent one');
+  assert.strictEqual(row.cdt_code, 'D0120',
+    'the code is still there -- an unrecorded EDITION must not blank the CODE too');
+});
+
+test('charges: THE STAMP IS NOT A JOIN -- the charge wins over any current catalogue value',
+  () => {
+    // The catalogue has moved on; the charge says what it was billed under.
+    // If this ever starts resolving through procedure_type_id, this arm goes
+    // red and the historical ledger has stopped describing what was claimed.
+    const row = bi.projectRow('charges', { id: 'CH-4', patient_id: 'PT-1', amount: 100,
+      procedure_type_id: 'PC-1', date: '2025-03-01',
+      cdt_code: 'D1110', cdt_version: 'CDT 2025' }, CTX);
+    assert.strictEqual(row.cdt_version, 'CDT 2025');
+    assert.notStrictEqual(row.cdt_version, 'CDT 2026');
+  });
+
 test('payments: addPaymentEntry()\'s record projects with nothing missing', () => {
   const row = bi.projectRow('payments',
     { id: 'PM-1', patient_id: 'PT-1', amount: 80, method: 'card', date: '2026-09-02' }, CTX);

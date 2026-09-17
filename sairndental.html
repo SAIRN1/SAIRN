@@ -5387,11 +5387,42 @@ function patientBalance(patientId){
 // whenever the server did not take it, `refused` says whether that was a
 // judgement, and the caller says why using dntWriteFailText(), which carries
 // the server's own words.
+// ── THE CATALOGUE WAS VERSIONED AND THE CHARGES WERE NOT (2026-09-17) ─────
+// cdt_version, effective_from/effective_to, cdtStatusFor() and the maintenance
+// panel all exist and are right. But a CHARGE recorded only
+// `procedure_type_id`, and a procedure type is a MUTABLE ROW. So the code a
+// charge was billed under was never stored -- it was LOOKED UP, every time,
+// from a row the practice edits.
+//
+// WHAT THAT COSTS, and it is not hypothetical: the ADA publishes a new CDT
+// edition every year. The day the practice updates the catalogue -- changes
+// cdt_version, closes an effective_to, or revises a cdt_code outright --
+// EVERY HISTORICAL CHARGE SILENTLY RE-READS THE NEW VALUE. A charge correctly
+// billed as D1110 under CDT 2025 renders, exports and reports as whatever that
+// row says today. Nothing fails, nothing warns, and the ledger quietly stops
+// describing what was actually claimed.
+//
+// So the code and the edition are STAMPED AT POSTING. Same rule and the same
+// reason as the estimated insurance portion three lines down, which is stored
+// rather than recomputed because it is a record of what was decided then.
+//
+// DELIBERATELY NOT STAMPED: the effective window. Re-deriving the historical
+// COMPLIANCE VERDICT for a past charge is a bigger question than recording
+// what was billed -- it needs the window, the service date and a decision
+// about which one governs when they disagree -- and inventing half of it here
+// would look like the whole thing. Named so the absence is a decision.
+//
+// EMPTY IS A LEGITIMATE VALUE. A procedure type with no cdt_version is the
+// common case today (cdtMaintenance() counts exactly those as `unverifiable`),
+// and writing a placeholder would invent an edition nobody recorded.
 async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount){
   var pt=patients().find(function(p){return p.id===patientId;});
+  var proc=procedureTypes().find(function(p){return p.id===procedureTypeId;});
   var est=computeEstimatedInsurance(amount, pt?pt.insurance_payer:'', procedureTypeId);
   var rec={id:newId('CH'), patient_id:patientId, appointment_id:appointmentId||'', procedure_type_id:procedureTypeId,
-    amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday()};
+    amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday(),
+    cdt_code:proc&&proc.cdt_code?String(proc.cdt_code):'',
+    cdt_version:proc&&proc.cdt_version?String(proc.cdt_version):''};
   var syncResult=await sdnData('write','dnt_charges',rec);
   var refused=!syncResult&&dntWriteRefused('dnt_charges');
   // st()'s RETURN IS READ, because keeping a row locally is now a claim this

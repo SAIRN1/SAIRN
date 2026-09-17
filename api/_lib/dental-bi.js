@@ -298,6 +298,16 @@ const DATASETS = {
       // payments. The column name says estimated for that reason.
       ['estimated_insurance_portion', 'number', 'estimated_insurance_portion'],
       ['charge_date', 'date', 'date'],
+      // STAMPED ON THE CHARGE, not joined from the procedure type (2026-09-17).
+      // A procedure type is mutable and the ADA publishes a new CDT edition
+      // every year, so resolving the code through procedure_type_id makes every
+      // historical row re-read whatever the catalogue says today. These two
+      // columns are what the charge was actually billed under. EMPTY IS REAL --
+      // a procedure type with no recorded edition is the common case and is
+      // what cdtMaintenance() counts as `unverifiable`; a placeholder here
+      // would invent an edition nobody recorded.
+      ['cdt_code', 'string', 'cdt_code'],
+      ['cdt_version', 'string', 'cdt_version'],
       ['location_id', 'string', 'location_id']
     ]
   },
