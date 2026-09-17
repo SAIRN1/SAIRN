@@ -7777,7 +7777,7 @@
       "recurrence_open": "NOT CLOSED. No scheduled run has yet been observed green; the proof is the first run after this lands and is hours away on the measured cadence. And nothing sweeps for the general shape: any other caller of sairn_http.fetch_json that treats the return value as the body has the identical defect, and no check looks for it."
     },
     {
-      "commit": "1eea269b95a1",
+      "commit": "3785be046dc4",
       "date": "2026-09-17",
       "subject": "fix(rate-limit-health): the check that answers \"is the fix in force\" could not see the second world, and would have called the upgrade a regression",
       "files": [
