@@ -1,7 +1,22 @@
 -- sql/sairncash_verification_trial_cleanup.sql
 -- Removes the throwaway trial rows created by verification runs.
 --
--- ⚠ NOT RUN. Flagged for Michael.
+-- ⚠ PARTLY VERIFIED, AND THE TWO HALVES ARE NOT THE SAME. Read both.
+--
+--   `probe@example.test`  RUN 2026-09-17 and PROVEN GONE through the product.
+--                         Full evidence at the bottom of this file.
+--   the `%@sairncash-verification.example` rows
+--                         STATUS UNKNOWN. Almost certainly removed in the same
+--                         sitting, but NOT PROVEN: none of those rows has a
+--                         token recorded anywhere, so there is no way to ask
+--                         the product about them, and the only check available
+--                         is the in-editor count -- which is the weak version
+--                         this file argues against everywhere else.
+--
+-- SAYING "THIS FILE HAS BEEN RUN" WOULD OVERSTATE IT. One row was verified by
+-- a method that cannot lie; the others rest on the same sitting having applied
+-- both statements, which is an inference about the operator rather than an
+-- observation of the database.
 --
 -- WHY THIS FILE EXISTS INSTEAD OF AN API CALL: api/sairncash/ exposes
 -- trial-start, trial-verify, trial-renew, checkout, verify, waitlist and
@@ -120,13 +135,28 @@ delete from public.sairncash_trial
 -- everything -- and 2 and 3 were both measured passing on 2026-09-17 WHILE the
 -- row was still live, so they are known to discriminate rather than assumed to.
 --
--- ⚠ NOT RUN BY THE SESSION THAT WROTE THIS, and the reason is capability, not
--- approval. Michael approved the cleanup on 2026-09-17. This clone has no
--- Supabase credentials, no tool in tools/ executes SQL, and no SAIRNcash
--- endpoint has a delete verb -- api/sairncash/trial-renew.js is admin-secret
--- gated and only moves `expires_at` FORWARD from now, so it cannot expire a
--- row either. Re-confirmed live at 2026-09-17: the token above still returns
--- valid:true, so as of that read the delete had not been run by anybody.
+-- ✅ RUN, AND VERIFIED LANDED -- 2026-09-17, by Michael in the Supabase
+-- editor. This clone could not run it: no Supabase credentials, no tool in
+-- tools/ executes SQL, and no SAIRNcash endpoint has a delete verb
+-- (trial-renew.js is admin-secret gated and only moves `expires_at` FORWARD
+-- from now, so it cannot expire a row either).
+--
+-- ALL THREE STEPS WERE RUN, not just the first, and the results are recorded
+-- here rather than summarised as "it worked":
+--
+--   1. the real token        -> 200 {"valid": false}      (was valid:true)
+--   2. empty trialToken      -> 400 "Missing trialToken"  (endpoint alive)
+--   3. 64 zeroes             -> 200 {"valid": false}      (not-found answer)
+--
+-- Step 1 ALONE WOULD NOT HAVE BEEN PROOF. An endpoint that had started
+-- answering false to everything produces the same line, which is why 2 and 3
+-- exist and why they were measured passing BEFORE the delete, while the row
+-- was still live -- they were known to discriminate rather than assumed to.
+--
+-- The `probe@example.test` delete below is therefore SPENT. It is kept rather
+-- than removed, because a cleanup file that deletes its own history cannot
+-- answer "who removed this row and when", which is the question the next
+-- reader asks. Re-running it is a no-op.
 --
 -- TABLE NAME VERIFIED, not assumed: api/sairncash/trial-start.js line 40
 -- posts to /rest/v1/sairncash_trial (singular), and its own 503 names
