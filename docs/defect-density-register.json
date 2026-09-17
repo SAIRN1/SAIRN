@@ -3864,6 +3864,67 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. The new arm covers CONTROLS_FOR under tests/ only. Every other declared-metadata convention here -- MUTATIONS blocks, report_only_checks REGISTRY fields, criteria version stamps -- is read by a pattern somewhere, and nothing asserts that what an author wrote is what a parser resolved. Third instance this session of a detector that knows one spelling reporting every other as absent."
     },
     {
+      "commit": "0fe5e00dcba7",
+      "date": "2026-09-16",
+      "subject": "fix(tools): --check now asks whether GIT fires the hook, not whether the file looks right",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/install_git_hooks_check_probe.py",
+        "tools/install_git_hooks.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 294,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "install_git_hooks.py --check verified only FILE-level facts -- core.hooksPath, the hook's bytes, and `sh <file>` executing -- none of which is a statement about whether GIT runs the hook. With core.hooksPath pointed at a directory named `.githooks` containing no pre-push, every one of those passes and git fires nothing, so the flag reports a clone as protected while the only gate on a subprocess push is absent",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "f43979822284",
+        "date": "2026-09-13",
+        "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 is a check that cannot fail. This one could fail and could not fail for the state that matters, because it was asking a different question from the one its output claimed to answer -- the same end state, reached by a narrower subject rather than a dead assertion.",
+      "contributing_factors": [
+        {
+          "factor": "EVERY CHECK IT HAD WAS A STATEMENT ABOUT THE FILE, NOT ABOUT GIT. core.hooksPath, the bytes, and `sh <file>` can all be right while git runs nothing -- a wrong file name, a permission bit, an interpreter git resolves differently from the shell the checker happens to run under. `sh <file>` never consults the shebang at all, which the function already said about itself.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--check fires the hook THROUGH GIT: a throwaway repo, core.hooksPath set to the path this clone is configured with, and a dry-run push to a throwaway bare repo. Push refused means it fired; push succeeded means git never ran it."
+        },
+        {
+          "factor": "THE WIDENING WAS DONE ONCE BEFORE AND STOPPED SHORT. On 2026-09-13 --check gained the byte check and the wrapper execution after it would have printed OK on four clones holding a CRLF hook git was skipping silently. Both additions answered the same KIND of question as the one they replaced, so the gap moved rather than closed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The distinction is now stated in the tool: file-level checks and the git-level check are separate, and the OK line names both."
+        },
+        {
+          "factor": "I HANDED THE FIRE TEST THE TRACKED DIRECTORY INSTEAD OF THE CONFIGURED ONE, which proves 'git would fire .githooks/pre-push IF POINTED AT IT' -- a fact about the repository, not about this clone. With core.hooksPath aimed at a decoy directory named `.githooks` holding no pre-push, every file check passed AND the new fire test passed, and --check printed OK for a clone git was running no hook for.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The configured path is resolved and passed. Caught by arm 3 of the probe, which exists to build exactly that state -- not by reading the code."
+        },
+        {
+          "factor": "AND THE PROBE'S FIRST RUN TESTED THE TOOL AS COMMITTED WHILE I WAS EDITING IT. A throwaway clone is at HEAD, so two arms failed for a reason that had nothing to do with their subject. That is the defect already recorded as f4397982 -- which this same session back-filled contributing factors for an hour earlier, and then reproduced by hand.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The working copy is staged into the clone, with the reason at the line. The general repair -- the harness carrying it so each probe does not have to remember -- is what tests/sabotage_harness.py already does and what this probe could not use, because it drives a CLONE rather than a worktree."
+        }
+      ],
+      "recurrence_open": "The fire test proves git runs the hook AT THE MOMENT IT IS ASKED. Nothing runs it on a schedule, so a clone whose config is changed after the last check is unprotected until somebody asks again -- and the report-only runner is invoked by a human. It also cannot distinguish a hook that fires and does its job from one that fires and exits 0 for the wrong reason: the detection is 'the push was refused', which is a statement about invocation and not about the gate's verdict."
+    },
+    {
       "commit": "1231c342e643",
       "date": "2026-09-16",
       "subject": "fix(tools): the removal-path burn-down counted two resources that own no table",
