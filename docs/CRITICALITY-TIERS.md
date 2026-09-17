@@ -40,7 +40,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `sairngrounds` | 30 | **4** | 26 | 0 | **RE-TIERED** — `grd_invoices`, `msb_food_cost_log`, `msb_licenses`, `quotes` |
 | `sairnlaw` | 20 | **6** | 14 | 0 | **RE-TIERED** — `law_barcerts`, `law_deadlines`, `law_invoices`, `law_opaccounts`, `law_trust_reconcile`, `law_trusttx` |
 | `sairnlegacy` | 36 | **3** | 33 | 0 | **RE-TIERED** — `leg_certs`, `leg_invoices`, `leg_preneed` |
-| `sairnmechanical` | 6 | **2** | 4 | 0 | **RE-TIERED** — `mech_credentials`, `mech_quotes` |
+| `sairnmechanical` | 6 | **3** | 3 | 0 | **RE-TIERED** — `mech_credentials`, `mech_quotes`, `mech_site_assets` |
 | `sairnroofing` | 27 | **7** | 19 | 1 | **RE-TIERED** — `rf_cert_rules`, `rf_certifications`, `rf_claim_agreements`, `rf_claim_photos`, `rf_claims`, `rf_contingency_rules`, `rf_invoices` |
 | `sairnscape` | 12 | **2** | 10 | 0 | **RE-TIERED** — `invoices`, `scp_quotes` |
 | `sairnsenior` | 15 | **3** | 11 | 1 | **RE-TIERED** — `sen_claims`, `sen_pay_rates`, `sen_payer_contracts` |
@@ -399,7 +399,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `mech_credentials` | **A** | A lapsed technician credential shown as current | REGULATED: licensure on a mechanical trade |
 | `mech_docs` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `mech_quotes` | **A** | A job quoted wrong | Money |
-| `mech_site_assets` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
+| `mech_site_assets` | **A** | An appliance reported as out of scope under a federal refrigerant rule that in fact reaches it | REGULATED, **re-tiered from B on 2026-09-17 and the old row is why this one exists**. The B evidence said *"neither money nor a regulated record ... classified by the stated B rule rather than individually read"* — true when written, and the table has since grown four columns that are nothing but regulated record. `refrigerant_charge_lb` is keyed to **40 CFR 82.157** (Section 608, 50 lb), and `hfc_gwp_over_53`, `leak_detected_on`, `leak_repair_verified_on` are keyed to **40 CFR 84.106** (AIM Act, 15 lb, GWP over 53, 30-day repair window) — added in `7439c410`. A wrong or defaulted value here is a clearance under federal law that no evidence supports, which is the same consequence `mech_credentials` carries one row up. The gap was invisible because the sibling table was hand-read and this one was rule-classified |
 | `mech_takeoffs` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 
 ### `sairnroofing` — 27 resources
@@ -519,7 +519,19 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 
 ## The gaps — read this section first
 
-- **All 17 apps are re-tiered: 382 resources, 78 A, 299 B, 5 C.** That is **20% Tier A**, and the distribution is the point. The app-level version put 21 of 22 verticals at A and told a reader nothing; this says which fifth of the platform carries the consequence.
+- **All 17 apps are re-tiered: 387 resources, 84 A, 298 B, 5 C.** That is **22% Tier A**, and the distribution is the point. The app-level version put 21 of 22 verticals at A and told a reader nothing; this says which fifth of the platform carries the consequence.
+  > **THIS LINE WAS STALE AND NOTHING SAID SO (corrected 2026-09-17).** It read
+  > *"382 resources, 78 A, 299 B, 5 C ... 20% Tier A"* while the table under it
+  > held 387 rows and 83 A — five resources and five A rows arrived without the
+  > summary moving. `tools/criticality_tier_check.py` reported `PROBLEMS:0`
+  > throughout, correctly: it reconciles the **rollup table** against
+  > `api/_resources/`, and this prose paragraph is not either of those, so no
+  > check has ever read it. A summary nothing verifies drifts silently and is
+  > still quoted as the platform figure. Recompute it from the table before
+  > citing it:
+  > `python -c "import re,io;t=[m.group(2) for m in re.finditer(r'^\|\s*\`([a-z0-9_]+)\`\s*\|\s*\*\*([ABC])\*\*\s*\|',io.open('docs/CRITICALITY-TIERS.md',encoding='utf-8').read(),re.M)];print(len(t),{x:t.count(x) for x in 'ABC'})"`
+  > The 84/298 above already includes the `mech_site_assets` promotion in the
+  > same commit.
 - **Tier A is hand-verified, one written evidence each. B and C are classified by the stated rule.** A row's tier is a judgement either way, but the A rows are the ones a reader acts on, so they carry individually-written evidence naming a commit, an incident, a regulation or a registry line. **Saying all 382 had each been individually read would not be true**, and the checker enforces the difference: a Tier A row with an empty evidence cell is refused.
 - **⚠ THE KEYWORD PASS WAS WRONG IN BOTH DIRECTIONS, which is exactly why A is not rule-classified.** It proposed `sf_accounts` and `law_opaccounts` as Tier C because *"accounts"* contains *"counts"* — two money resources one character away from being filed as preferences. It also missed `dnt_coverage_rules`, `dnt_txplans`, `leg_preneed` and `rf_contingency_rules`, all of which are money and none of which match a money keyword. Every one was corrected by hand, and each correction is named in its own row.
 - **Every hand-written A entry was reconciled against the registries and none was orphaned.** An entry naming a resource that does not exist would be evidence written for nothing; the generator fails if one appears.

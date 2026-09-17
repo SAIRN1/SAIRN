@@ -291,6 +291,26 @@ GUARD_TESTS = [
      'held too: CLAUDE_PID unset or an unreadable process handle must fall back '
      'to the 2h staleness rule and block nothing, because failing CLOSED here '
      'would brick the session the lock exists to protect.'),
+    ('api/sd-data-mech-assets.test.js',
+     'the two federal refrigerant rules the engine computes are actually '
+     'FETCHED and STORED by the endpoint that feeds it',
+     'A SEAM, AND IT WAS BROKEN ON ARRIVAL. api/_lib/mech-assets.js computes 40 '
+     'CFR 84.106 scope from hfc_gwp_over_53, leak_detected_on and '
+     'leak_repair_verified_on; api/sd-data.js owns the select list and the '
+     'write body those three have to travel through, and on 2026-09-17 it named '
+     'none of them. The engine was complete, its own unit suite was green, and '
+     'the rule would have reported `unknown_substance` for every asset forever '
+     '-- a check that CANNOT FIRE, which on screen is indistinguishable from '
+     'one that fired and found nothing. Neither side is wrong in isolation, '
+     'which is why this is the seam class and not the author-runs-it class: the '
+     'next person to edit that select list breaks it again with a change that '
+     'looks local and leaves both suites green. mech_site_assets was promoted '
+     'to Tier A in the same commit, and docs/CRITICALITY-TIERS.md holds that a '
+     'Tier A resource with no guard is a finding -- this is that guard. Also '
+     'held here: the GWP flag is refused rather than coerced (Boolean(\'false\') '
+     'is true), and a malformed leak date is refused rather than stored as '
+     'null, because a silently dropped date shows the technician who just typed '
+     'one a saved asset with no repair clock running.'),
     ('api/_lib/deadline-coverage-contract.test.js',
      'every disclosed coverage gap is actually disclosed, in the channel that '
      'was decided on',
