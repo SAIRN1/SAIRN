@@ -1807,7 +1807,34 @@
       ],
       "severity": "high",
       "subject": "fix(tools): the second half of the sweep -- three checkers reported clean while scanning nothing",
-      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep"
+      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep",
+      "contributing_factors": [
+        {
+          "factor": "AN EMPTY SUBJECT LIST PRODUCES A REPORT BYTE-IDENTICAL TO A CLEAN ONE. There is no output difference between 'I looked at fifteen apps and found nothing' and 'I looked at nothing', and the second is what git failing, a wrong directory, or a glob that stopped matching all produce.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The subject count is pinned, so zero is a refusal rather than a pass."
+        },
+        {
+          "factor": "A CHECKER'S SUBJECT IS USUALLY THE FILESYSTEM, AND 'WHATEVER IS THERE' CANNOT BE ZERO-CHECKED AGAINST ITSELF. That is why twelve of thirteen derived-subject SUITES already pinned a count and three of nine checkers did not: a suite's subject is a registry somebody curated and has a number attached.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the structural reason, because it predicts where the next instance will be -- in a checker, not in a suite."
+        },
+        {
+          "factor": "THE JUDGEMENT IS PER CHECKER AND HAS THREE ANSWERS, NOT TWO: the risk leaves with the subject (an api/ handler -- not a defect), the risk stays and the guard leaves (a test file -- always a defect), or NOBODY CHOSE IT AT ALL. Only the third is this class, and collapsing it into the first is how an empty scan gets accepted.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The three-way judgement is written down and was made once per checker rather than inferred from a rule."
+        },
+        {
+          "factor": "run_all_tests.py PRINTED A TRUE SENTENCE ABOUT A SUITE THAT HAD LOST TWENTY GUARDS -- 'ALL N TEST FILES PASS' for whatever N the walk returned. The sentence is not wrong; it is answering a question nobody asked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A FLOOR at runtime so a clone mid-addition does not false-alarm, and an EQUALITY at commit time via a probe, so there is no dead zone between the two."
+        }
+      ],
+      "recurrence_open": "Three checkers were pinned; the other six were judged and left. Nothing prevents a TENTH checker arriving with a filesystem subject and no pin, and the review that would catch it is the same per-checker judgement that has to be made by hand each time."
     },
     {
       "app": "PLATFORM",
@@ -2618,7 +2645,28 @@
       ],
       "severity": "high",
       "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
-      "summary": "sairnlaw trust-accounting reconciliation explainer (explainReconciliation) displayed raw model prose about CLIENT MONEY with no citation rule in its system prompt and no citation verification on its output, so a fabricated professional-conduct citation in citable-reference format could reach a bookkeeper unmarked. LAW_CITATION_RULE appended."
+      "summary": "sairnlaw trust-accounting reconciliation explainer (explainReconciliation) displayed raw model prose about CLIENT MONEY with no citation rule in its system prompt and no citation verification on its output, so a fabricated professional-conduct citation in citable-reference format could reach a bookkeeper unmarked. LAW_CITATION_RULE appended.",
+      "contributing_factors": [
+        {
+          "factor": "THE RULE EXISTED AND DID NOT COVER THIS SURFACE. LAW_CITATION_RULE is airtight everywhere that produces real work product, and explainReconciliation() was simply not under it -- so nothing stopped the model citing a professional-conduct rule in citable format about CLIENT MONEY, which is the most disciplinarily dangerous area of practice.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The surface is brought under the citation rule."
+        },
+        {
+          "factor": "ITS OUTPUT IS NOT CITATION-VERIFIED, WHICH IS THE PART THAT MAKES THE ABSENCE MATTER. The critique step routes through mtExtractCitations -> mtVerifyCitations -> CourtListener and badges every citation Verified / Not found / Ambiguous -- model asserts, code checks. This explainer displays raw model prose, so a fabricated rule number would have arrived with no badge and no footnote.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated in the record: the danger is the ASYMMETRY between two AI surfaces in one app, not the prompt."
+        },
+        {
+          "factor": "THE PROMPT-LEVEL FINDING OVERSTATED IT AND THE REAL DEFECT WAS NARROWER. The critique step was already the safest AI surface in the app -- the route-through-the-citator option was not a build, it was already there -- so a reviewer working from the prompt audit alone would have proposed work that existed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The verification path was read before anything was proposed, and the finding narrowed to the surfaces actually missing the rule."
+        }
+      ],
+      "recurrence_open": "Two rules coexist ON PURPOSE -- the mock-trial simulator keeps its permission to emit citations, by decision -- so 'which surfaces are under which rule' is a per-surface fact with no registry. A new AI surface in this app inherits neither by default."
     },
     {
       "app": "sairnlaw",
@@ -2644,7 +2692,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
-      "summary": "sairnlaw argument-decomposition step (mtDecompose) had NO citation rule and its renderer mtRenderPoints displayed the model's own claim text with no citation check, beside Anchored badges that cover source_span only -- so a citation-shaped string reached the screen unbadged on a card that looked verified. New MT_CITATION_RULE permits echoing only a citation verbatim in the user's own text, plus an on-screen ILLUSTRATIVE ONLY disclaimer naming each unverified citation."
+      "summary": "sairnlaw argument-decomposition step (mtDecompose) had NO citation rule and its renderer mtRenderPoints displayed the model's own claim text with no citation check, beside Anchored badges that cover source_span only -- so a citation-shaped string reached the screen unbadged on a card that looked verified. New MT_CITATION_RULE permits echoing only a citation verbatim in the user's own text, plus an on-screen ILLUSTRATIVE ONLY disclaimer naming each unverified citation.",
+      "contributing_factors": [
+        {
+          "factor": "A SECOND SURFACE WITH THE SAME GAP, FOUND ONLY BECAUSE THE FIRST WAS. Nothing enumerates the app's AI surfaces against the citation rule, so the second was found by reading adjacent code rather than by asking the question once.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both surfaces brought under the rule in one change."
+        },
+        {
+          "factor": "ITS RENDERER DISPLAYS MODEL PROSE DIRECTLY, so the absence of the rule is the whole exposure -- there is no downstream verification step to catch a citation that should not have been emitted.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The rule is applied at the prompt, which is the only place it can be for an unverified surface."
+        }
+      ],
+      "recurrence_open": "The count of AI surfaces in sairnlaw is not recorded anywhere, so 'both are fixed' is a statement about the two that were read. A third would be found the same way."
     },
     {
       "app": "PLATFORM",
@@ -2670,7 +2733,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
-      "summary": "tools/ai_prompt_refusal_check.py cannot see a mechanical control applied AFTER the model call, so it flagged sairnlaw's critique step -- the one surface whose citations are verified against CourtListener and badged -- identically to the trust-accounting explainer, which had no control at all. A text-presence checker over-implies severity on exactly the best-protected site. Mitigated by naming the exception (MT_CRITIQUE_CITATION_RULE) rather than by widening the checker, and recorded in its NOT_PROMOTED reason."
+      "summary": "tools/ai_prompt_refusal_check.py cannot see a mechanical control applied AFTER the model call, so it flagged sairnlaw's critique step -- the one surface whose citations are verified against CourtListener and badged -- identically to the trust-accounting explainer, which had no control at all. A text-presence checker over-implies severity on exactly the best-protected site. Mitigated by naming the exception (MT_CRITIQUE_CITATION_RULE) rather than by widening the checker, and recorded in its NOT_PROMOTED reason.",
+      "contributing_factors": [
+        {
+          "factor": "THE CHECKER READS PROMPTS AND THE CONTROL IS DOWNSTREAM OF THE MODEL. A surface whose output is verified against CourtListener after generation is SAFER than one with a strict prompt, and the tool scores it worse -- so its ranking inverts exactly where the strongest control is.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The limitation is stated in the tool's own output rather than left for a reader to infer from a low score."
+        },
+        {
+          "factor": "A TOOL THAT CANNOT SEE A CONTROL REPORTS ITS ABSENCE, AND AN ABSENCE IS INDISTINGUISHABLE FROM A GAP. The finding it produced here was real in one place and misleading in another, in the same run, with the same confidence.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No mechanism proposed. Seeing a post-generation control means following the output through arbitrary application code, which is the whole-program analysis this platform has repeatedly declined in favour of narrow tools that say what they cannot see."
+        }
+      ],
+      "recurrence_open": "The tool now says what it cannot see, in prose, in its output -- which is the same kind of guarantee as the comment that carried the manager payroll promise. Nothing makes a reader act on it, and nothing fails when a post-model control is added or removed."
     },
     {
       "app": "PLATFORM",
