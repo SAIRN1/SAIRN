@@ -1170,7 +1170,7 @@
 <p class="panel-desc">DEA Schedule II-IV logging with running balance and discrepancy alerts</p>
 </div>
 <div class="panel-actions">
-<button class="btn btn-sm" onclick="exportTableCSV('panel-controlled-table','panel-controlled')">Export CSV</button>
+<button class="btn btn-sm" onclick="svExportControlled()">Export CSV</button>
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="controlled-kpis"></div>
@@ -9119,6 +9119,74 @@ function svExportDoseAudit(){
   a.download = 'dosing-audit-trail.csv';
   a.click();
   showToast('Exported dosing-audit-trail.csv','success');
+}
+
+// ── THE CONTROLLED REGISTER GETS ITS OWN EXPORT (2026-09-16) ──────────
+// This panel used exportTableCSV(), which writes the rendered cells and NOTHING
+// ELSE -- no timestamp, no statement of which copy, no caveats. For a DEA
+// Schedule II-IV register that is the difference between a file an inspector
+// can rely on and a spreadsheet of numbers with no provenance.
+//
+// THE THREE THINGS THIS FILE HAS TO SAY, and none of them were in it:
+//
+//   1. WHAT THIS RECORD IS. sv_controlled holds ONE ROW PER DRUG carrying a
+//      running balance, mutated in place on every use. It is NOT a transaction
+//      history -- `lastTransaction` is a single prose line, the previous one is
+//      overwritten, and the per-event trail lives in the Dosing Audit Trail
+//      (sv_audit_log). An inspector handed this file alone has balances and no
+//      history, and would have no way to know that from the file.
+//
+//   2. THAT IT IS NOT APPEND-ONLY. The dosing trail's export already says it is
+//      append-only and not tamper-evident. This one is weaker still: rows are
+//      REWRITTEN, so a corrected balance leaves no trace of what it replaced.
+//      Saying so is the difference between a limitation and a misrepresentation.
+//
+//   3. THAT ON HAND IS PER-DRUG, IN THAT DRUG’S OWN UNIT. Summing the column
+//      is meaningless, and this is not hypothetical -- the KPI directly above
+//      renderControlled() records a real defect where millilitres were added to
+//      milligrams and printed as a controlled-substance balance.
+//
+// The rows are still taken from the RENDERED TABLE, deliberately and for the
+// same reason svExportDoseAudit does it: the file and the screen must not be
+// able to disagree.
+function svExportControlled(){
+  var table = document.getElementById('panel-controlled-table');
+  if(!table){ showToast('Nothing to export','error'); return; }
+  var q = function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; };
+  var rowCount = 0;
+  try { rowCount = Math.max(0, table.querySelectorAll('tbody tr').length); } catch(e){}
+  var lines = [
+    [q('SAIRNvet controlled-substance register — exported ' + new Date().toISOString())],
+    [q('WHICH COPY: the LOCAL record on this device. sv_controlled is backed up to '
+       + 'the server, but this panel renders the local copy and this file is that '
+       + 'copy — it is not a statement about what the server holds.')],
+    [q('ROWS IN THIS FILE: ' + rowCount)],
+    [q('WHAT THIS IS: one row per DRUG with its CURRENT balance. It is NOT a '
+       + 'transaction history. Each row is rewritten on every use and '
+       + '"Last Transaction" keeps only the most recent one; the per-event trail '
+       + 'is the Dosing Audit Trail (sv_audit_log), which exports separately.')],
+    [q('THIS RECORD IS NOT APPEND-ONLY AND IS NOT TAMPER-EVIDENT. Rows are '
+       + 'updated in place, so a corrected balance leaves no trace of the value '
+       + 'it replaced, and anyone with database access could alter a row without '
+       + 'the screen or this file knowing.')],
+    [q('ON HAND IS PER-DRUG, IN THAT DRUG’S OWN UNIT. Do not sum the column: '
+       + 'the units differ between rows and a total across them is not a quantity '
+       + 'of anything.')],
+    [q('')]
+  ];
+  var csv = lines.map(function(r){ return r.join(','); }).join('\n') + '\n';
+  table.querySelectorAll('tr').forEach(function(row){
+    var rowData = [];
+    row.querySelectorAll('th,td').forEach(function(cell){ rowData.push(q(cell.textContent)); });
+    csv += rowData.join(',') + '\n';
+  });
+  var blob = new Blob([csv], {type:'text/csv'});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'controlled-substance-register.csv';
+  a.click();
+  showToast('Exported controlled-substance-register.csv','success');
 }
 
 function exportTableCSV(tableId,filename){
