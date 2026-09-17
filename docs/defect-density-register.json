@@ -7893,7 +7893,7 @@
       "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
     },
     {
-      "commit": "39e938893774",
+      "commit": "155e5b8f7f1e",
       "date": "2026-09-17",
       "subject": "fix(sairnmechanical): the panel now computes the dispatch eligibility its own subtitle claimed",
       "files": [
