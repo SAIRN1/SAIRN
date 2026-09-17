@@ -1987,6 +1987,10 @@ function scpSt(k,v){
   catch(e){try{console.error('SAIRNscape: _m stamping failed for "'+k+'" -- saving UNSTAMPED, so the server wins this record on the next merge. '+(e&&e.message||e));}catch(_e){}}
   try{localStorage.setItem(k,JSON.stringify(v));return true;}
   catch(e){
+    // LOGGED, ALWAYS (2026-09-16). Same note as the SAIRNgrounds copy: the
+    // toast was the only half, so a vanished write also vanished from the
+    // console and a support read of a browser log showed nothing.
+    try{console.error('SAIRNscape: localStorage write FAILED for "'+k+'" -- nothing was saved. '+(e&&e.message||e));}catch(_e){}
     if(typeof scpToast==='function')scpToast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
     return false;
   }

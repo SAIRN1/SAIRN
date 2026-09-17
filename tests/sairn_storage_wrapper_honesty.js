@@ -115,8 +115,20 @@ const stampThrows = () => { throw new Error('stamp exploded'); };
   // NOT SILENT EITHER. A swallowed stamping failure would be the same defect
   // in a smaller disguise, so the console must carry it and say which
   // direction the record will now lose in.
+  // COUNTED BY CONTENT, NOT BY TOTAL (2026-09-16). This read
+  // `logs.length === 1`, which was true only while the STORAGE catch
+  // logged nothing. Giving that catch its own console line -- so a
+  // vanished write does not also vanish from the console, which
+  // SAIRNdental already did and these two did not -- made the total 2
+  // and turned an improvement into a red arm. A count of all logs was
+  // never the question; the question is whether the STAMPING failure
+  // is carried, and it is asked by content now.
+  const stampLogs = logs.filter((l) => /UNSTAMPED/.test(l));
   check('grounds: ...but the console IS told, naming the key and the consequence',
-    logs.length === 1 && /grd_jobs/.test(logs[0]) && /UNSTAMPED/.test(logs[0]), true);
+    stampLogs.length === 1 && /grd_jobs/.test(stampLogs[0]), true);
+  check('grounds: ...and a REFUSED WRITE is logged too -- a write that '
+    + 'vanished must not vanish from the console as well',
+    logs.some((l) => /write FAILED/.test(l) && /grd_jobs/.test(l)), true);
 }
 
 // SAIRNscape -- scpSt()
@@ -141,8 +153,20 @@ const stampThrows = () => { throw new Error('stamp exploded'); };
     make(st2.store, t2, stampThrows)('scp_jobs', [1]), true);
   check('scape: ...and the data really landed', st2.data.scp_jobs, '[1]');
   check('scape: ...and the user is NOT told storage failed', t2.length, 0);
+  // COUNTED BY CONTENT, NOT BY TOTAL (2026-09-16). This read
+  // `logs.length === 1`, which was true only while the STORAGE catch
+  // logged nothing. Giving that catch its own console line -- so a
+  // vanished write does not also vanish from the console, which
+  // SAIRNdental already did and these two did not -- made the total 2
+  // and turned an improvement into a red arm. A count of all logs was
+  // never the question; the question is whether the STAMPING failure
+  // is carried, and it is asked by content now.
+  const stampLogs = logs.filter((l) => /UNSTAMPED/.test(l));
   check('scape: ...but the console IS told, naming the key and the consequence',
-    logs.length === 1 && /scp_jobs/.test(logs[0]) && /UNSTAMPED/.test(logs[0]), true);
+    stampLogs.length === 1 && /scp_jobs/.test(stampLogs[0]), true);
+  check('scape: ...and a REFUSED WRITE is logged too -- a write that '
+    + 'vanished must not vanish from the console as well',
+    logs.some((l) => /write FAILED/.test(l) && /scp_jobs/.test(l)), true);
 }
 
 // SAIRNdental -- st(), which grew the same dependency

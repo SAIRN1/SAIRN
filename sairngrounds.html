@@ -1500,6 +1500,12 @@ function st(k,v){
   catch(e){try{console.error('SAIRNgrounds: _m stamping failed for "'+k+'" -- saving UNSTAMPED, so the server wins this record on the next merge. '+(e&&e.message||e));}catch(_e){}}
   try{localStorage.setItem(k,JSON.stringify(v));return true;}
   catch(e){
+    // LOGGED, ALWAYS (2026-09-16). The toast is the visitor-facing half and it
+    // was the ONLY half: a write that vanished also vanished from the console,
+    // so a support read of a browser log showed nothing at all. SAIRNdental
+    // gained this line when the stamping catch was split out of this one, and
+    // the other two apps did not -- one fix applied to one of three files.
+    try{console.error('SAIRNgrounds: localStorage write FAILED for "'+k+'" -- nothing was saved. '+(e&&e.message||e));}catch(_e){}
     if(typeof toast==='function')toast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
     return false;
   }
