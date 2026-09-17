@@ -1602,8 +1602,8 @@
       "task": "discharge mechanism, export_coverage label plus pin, alf and mech export registries",
       "claimed_at": "2026-09-17T02:10:46Z",
       "claimed_at_epoch": 1789611046.2180629,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T03:14:03Z"
     },
     {
       "id": "cc-1789612342",
