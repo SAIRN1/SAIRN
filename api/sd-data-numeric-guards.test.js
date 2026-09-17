@@ -110,9 +110,25 @@ section('2. the guards are where they have to be');
     assert.ok(!/holding_kind/.test(seg.slice(-300)),
       'the temperature guard is gated on holding_kind, so a reading without one skips it');
   });
+  // ── ONE ARM PER SITE, BECAUSE THERE ARE TWO (2026-09-16) ────────────────
+  // This was ONE arm testing `/!\(Number\(payload\.rate_per_hour\) > 0\)/`
+  // against the whole file. That expression appears TWICE -- sen_payer_contracts
+  // and sen_pay_rates, four hundred lines apart -- so rewriting either one back
+  // to `<= 0` left the other satisfying the regex and the arm stayed green over
+  // a money guard that had lost its ability to see NaN. Measured, not reasoned:
+  // tests/sd_data_numeric_guards_probe.py plants exactly that on
+  // sen_payer_contracts and the suite was SILENT.
+  //
+  // ANCHORED ON THE PUSH TARGET, which is what makes each arm site-specific:
+  // `pcProblems` belongs to sen_payer_contracts and `prProblems` to
+  // sen_pay_rates, and neither name appears in the other branch.
   t('sen_payer_contracts KEEPS the negated form -- it is the one that catches NaN', () => {
-    assert.ok(/!\(Number\(payload\.rate_per_hour\) > 0\)/.test(SRC),
-      'the rate_per_hour guard was rewritten to `<= 0`, which cannot see NaN');
+    assert.ok(/!\(Number\(payload\.rate_per_hour\) > 0\)\) pcProblems\.push/.test(SRC),
+      'the sen_payer_contracts rate_per_hour guard was rewritten to `<= 0`, which cannot see NaN');
+  });
+  t('...and so does sen_pay_rates -- the same shape on a wage', () => {
+    assert.ok(/!\(Number\(payload\.rate_per_hour\) > 0\)\) prProblems\.push/.test(SRC),
+      'the sen_pay_rates rate_per_hour guard was rewritten to `<= 0`, which cannot see NaN');
   });
 }
 
