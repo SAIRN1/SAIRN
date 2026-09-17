@@ -182,6 +182,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-prequal" onclick="nav('prequal')">Prequalification<span class="badge" id="prequal-badge" style="display:none"></span></button>
       <button class="sb" id="sb-entities" onclick="nav('entities')">Entities<span class="badge" id="entities-badge" style="display:none"></span></button>
       <button class="sb" id="sb-supplier" onclick="nav('supplier')">Supplier</button>
+      <button class="sb" id="sb-accounting" onclick="nav('accounting')">Accounting Export</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -820,6 +821,71 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- ACCOUNTING EXPORT (2026-09-17). Tier-A gap A5 from the competitive-gap
+           audit -- the only SAIRNroofing row still returning zero on every
+           marker when all twelve were re-derived on 2026-09-17.
+
+           THE BANNER IS NOT DECORATION, and it is the same call the supplier
+           panel above makes about EDI. A QuickBooks Online INTEGRATION means an
+           Intuit developer account, an OAuth authorisation-code flow, a
+           refresh-token lifecycle and a per-app review before it may touch a
+           real company file. None of that is engineering this app can do alone,
+           and a screen headed "QuickBooks" with a file download behind it would
+           be a claim with nothing behind it. What is built is the journal --
+           which is what an accountant importing a roofer's month actually
+           needs, and works the same whether it arrives by API or by file. -->
+      <div class="panel" id="panel-accounting">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Accounting Export</div>
+            <div class="psub">Double-entry journal for your invoices, coded to your own chart of accounts.</div>
+          </div>
+        </div>
+
+        <div style="background:#e0e7ff;border:1px solid #6366f1;border-radius:8px;padding:10px 12px;font-size:12px;color:#3730a3;margin-bottom:12px">
+          <strong>This is not a QuickBooks connection.</strong> Nothing here signs in to your accounting package or writes to it. It produces a journal file you import &mdash; which is what your accountant needs, and it works the same for QuickBooks Online, Xero or a bookkeeper's own template.
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:6px">Your chart of accounts</div>
+          <div style="font-size:12px;color:#64748b;margin-bottom:10px">
+            <strong>Nothing is filled in for you, deliberately.</strong> 4000 is revenue in one chart and a payroll expense in the next, so an account this app guessed would produce a journal that imports cleanly and is wrong. Every box is required &mdash; a missing one refuses the whole export rather than posting to a suspense account.
+          </div>
+          <div class="grid2">
+            <div class="fg"><label>Accounts receivable</label><input id="gl-ar" placeholder="e.g. 1200"></div>
+            <div class="fg"><label>Retainage receivable</label><input id="gl-ret" placeholder="e.g. 1210"></div>
+            <div class="fg"><label>Revenue</label><input id="gl-rev" placeholder="e.g. 4000"></div>
+            <div class="fg"><label>Sales tax payable</label><input id="gl-tax" placeholder="e.g. 2200"></div>
+            <div class="fg"><label>Cash / bank</label><input id="gl-cash" placeholder="e.g. 1000"></div>
+            <!-- STATED, NEVER DEFAULTED. The same invoices produce different
+                 journals under each basis and which one this roofer files on is
+                 their accountant's decision, not this app's. The endpoint
+                 refuses an absent basis rather than picking the commoner one. -->
+            <div class="fg"><label>Basis</label>
+              <select id="gl-basis">
+                <option value="">State it&hellip;</option>
+                <option value="accrual">Accrual &mdash; revenue when the invoice is issued</option>
+                <option value="cash">Cash &mdash; revenue when the payment arrives</option>
+              </select></div>
+          </div>
+          <div style="font-size:12px;color:#64748b;margin:8px 0">
+            <strong>Retainage gets its own receivable.</strong> Money held back on a progress-billed job is not collectible on normal terms, so posting it to ordinary AR shows you money you cannot chase. It is split out, and your revenue is not reduced &mdash; the work was performed and billed; only the collection is deferred.
+          </div>
+          <button class="btn bp" onclick="rfGlExport()">Build journal</button>
+          <div id="gl-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+          <div id="gl-note" style="font-size:12px;color:#64748b;margin-top:8px"></div>
+        </div>
+
+        <div class="card">
+          <div class="tw"><table>
+            <thead><tr><th>Account</th><th>Role</th><th>Debit</th><th>Credit</th><th>Memo</th><th>Reference</th></tr></thead>
+            <tbody id="gl-tbody"><tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">Fill in your accounts and press Build journal.</td></tr></tbody>
+          </table></div>
+          <div id="gl-totals" style="font-size:12px;color:#64748b;margin-top:8px"></div>
+          <button class="btn" id="gl-dl" style="display:none;margin-top:8px" onclick="rfGlDownload()">Download CSV</button>
+        </div>
+      </div>
+
       <div class="panel" id="panel-entities">
         <div class="ph">
           <div>
@@ -1400,6 +1466,11 @@ function nav(id){
   // Same rule again: every finding is computed server-side by
   // api/_lib/roofing-supplier-match.js, so the screen cannot drift from the tests.
   if(id==='supplier'){ rfLoadSupplierDocs(); }
+  // NO LOAD HOOK FOR 'accounting', and that is deliberate rather than an
+  // omission. Every other panel fetches on open; this one must not, because
+  // opening it before the chart of accounts is filled in would fire a refusal
+  // at somebody who has not been asked for anything yet. The export runs when
+  // the operator presses Build journal.
   if(id==='draws'){ rfLoadDraws(); }
   if(id==='safety'){ rfLoadSafety(); }
   if(id==='prequal'){ rfLoadPrequal(); }
@@ -1564,6 +1635,84 @@ var RF_FINDING_STYLE = {
 function rfSupEsc(s){
   return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
     .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── ACCOUNTING EXPORT (gap A5, 2026-09-17) ───────────────────────────────
+// The journal is computed SERVER-SIDE by api/_lib/roofing-gl-export.js, the
+// same rule every panel above follows: the screen never decides an accounting
+// verdict itself, so the screen and the tests cannot drift apart. This function
+// collects the account map and the basis, sends them, and renders whatever came
+// back -- including a refusal, verbatim.
+//
+// NOTHING IS PRE-FILLED AND NOTHING IS REMEMBERED BETWEEN SESSIONS. Caching a
+// chart of accounts locally would mean a second copy of it, and the moment the
+// bookkeeper changes one the file would post to an account that no longer means
+// what it did. Typing five boxes is the cheaper of the two failures.
+var rfGlCsv = null;
+function rfGlExport(){
+  var err=$('gl-err'), note=$('gl-note'), body=$('gl-tbody'),
+      totals=$('gl-totals'), dl=$('gl-dl');
+  if(!body) return;
+  err.textContent=''; note.textContent='';
+  rfGlCsv=null; if(dl) dl.style.display='none';
+  var accounts={
+    accounts_receivable:$('gl-ar').value.trim(),
+    retainage_receivable:$('gl-ret').value.trim(),
+    revenue:$('gl-rev').value.trim(),
+    sales_tax_payable:$('gl-tax').value.trim(),
+    cash:$('gl-cash').value.trim()
+  };
+  // The basis is sent EXACTLY as chosen, including empty. The refusal belongs
+  // to the server so there is one rule rather than two, and a client-side
+  // shortcut here would be the second place that could disagree.
+  return rfDataRaw('gl_export','rf_invoices',{accounts:accounts,basis:$('gl-basis').value})
+    .then(function(r){
+    if(!r.ok){
+      err.textContent = r.msg || 'Could not build the journal.';
+      return;
+    }
+    if(r.data && r.data.provisioned===false){
+      // NOT the same as "this roofer billed nothing". Said plainly, because a
+      // zero-line journal would import as exactly that claim.
+      note.textContent='Invoicing is not set up yet — run sql/sairnroofing_billing_schema.sql. No journal was produced, and that is NOT a statement that nothing was billed.';
+      body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">Nothing shown — see the message above.</td></tr>';
+      return;
+    }
+    var out=(r.data&&r.data.result)||null;
+    if(!out){ err.textContent='No result came back.'; return; }
+    if(!out.ok){
+      // The module's own words, not a generic message -- they name which
+      // account is missing or by how much the journal fails to balance, and
+      // those sentences exist precisely to be shown.
+      err.innerHTML=(out.problems||[]).map(function(x){return rfEsc(x);}).join('<br>');
+      body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">Nothing was produced. A partial journal is worse than none.</td></tr>';
+      totals.textContent='';
+      return;
+    }
+    var lines=out.lines||[];
+    body.innerHTML = lines.length ? lines.map(function(l){
+      return '<tr><td>'+rfEsc(l.account)+'</td><td>'+rfEsc(l.role)+'</td>'+
+             '<td>'+(l.debit?l.debit.toFixed(2):'')+'</td>'+
+             '<td>'+(l.credit?l.credit.toFixed(2):'')+'</td>'+
+             '<td>'+rfEsc(l.memo)+'</td><td>'+rfEsc(l.ref)+'</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">No lines — on this basis there is nothing to recognise yet.</td></tr>';
+    totals.textContent='Debits '+out.totals.debits.toFixed(2)+' / credits '+
+      out.totals.credits.toFixed(2)+' — balanced. Basis: '+out.basis+'.';
+    // EVERY NOTE IS SHOWN. They carry the skipped invoices and the cash-basis
+    // tax limitation; suppressing them is how a month short one invoice looks
+    // complete.
+    note.innerHTML=(out.notes||[]).map(function(x){return rfEsc(x);}).join('<br>');
+    rfGlCsv=(r.data&&r.data.csv)||null;
+    if(dl) dl.style.display=rfGlCsv?'inline-block':'none';
+  });
+}
+function rfGlDownload(){
+  if(!rfGlCsv) return;
+  var blob=new Blob([rfGlCsv],{type:'text/csv'});
+  var url=window.URL.createObjectURL(blob);
+  var a=document.createElement('a');
+  a.href=url;a.download='sairnroofing-journal-'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  window.URL.revokeObjectURL(url);
 }
 
 function rfLoadSupplierDocs(){

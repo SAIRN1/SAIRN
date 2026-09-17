@@ -7205,7 +7205,7 @@ module.exports = async (req, res) => {
     }
 
     // Invoices: management/broad-read only, read AND write. No narrow tier.
-    if (resource === 'rf_invoices' && (action === 'read' || action === 'write' || action === 'issue' || action === 'add_payment' || action === 'reconcile_claim')) {
+    if (resource === 'rf_invoices' && (action === 'read' || action === 'write' || action === 'issue' || action === 'add_payment' || action === 'reconcile_claim' || action === 'gl_export')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
@@ -7238,6 +7238,48 @@ module.exports = async (req, res) => {
           data: (rows || []).map((x) => { const inv = shape(x); return Object.assign(inv, { summary: roofingBilling.summarizeInvoice(inv) }); }),
           statuses: roofingBilling.INVOICE_STATUSES,
           payment_methods: roofingBilling.PAYMENT_METHODS
+        });
+        return;
+      }
+
+      // ── 'gl_export' (2026-09-17, gap A5) ────────────────────────────────
+      // The general-ledger journal for whatever invoices this session can
+      // already see. READS ONLY -- producing an accounting export must never
+      // change a book. It reuses the read branch's query and, critically, the
+      // SAME summarizeInvoice() the customer's own screen uses: the total on
+      // the accountant's journal and the total on the invoice have to be one
+      // number from one place. See api/_lib/roofing-gl-export.js.
+      //
+      // The account map and the basis arrive in the PAYLOAD and are not stored
+      // here. Nothing is defaulted and nothing is seeded -- an unmapped role or
+      // an absent basis comes back as a refusal with the reason, which is the
+      // module's contract and is not softened at the endpoint.
+      if (action === 'gl_export') {
+        const gl = require('./_lib/roofing-gl-export');
+        let q = 'rf_invoices?license_hash=eq.' + enc(licHash) + '&select=invoice_id,invoice_number,invoice_seq,job_id,location_id,claim_id,status,issue_date,due_date,data,payments,created_by&order=created_at.desc';
+        if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
+        const r = await fetch(rest(q), { headers });
+        // NOT-PROVISIONED IS NOT AN EMPTY JOURNAL. A zero-line export of a
+        // table that does not exist would import as "this roofer billed
+        // nothing this month", which is a claim about the business rather than
+        // about the schema.
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, result: null }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const invoices = (rows || []).map((x) => shape(x));
+        const summaries = {};
+        invoices.forEach((inv) => { summaries[inv.invoice_id || inv.id] = roofingBilling.summarizeInvoice(inv); });
+        // Each invoice keyed by the id the module looks for.
+        const forExport = invoices.map((inv) => Object.assign({}, inv, { id: inv.invoice_id || inv.id }));
+        const result = gl.buildExport(
+          { invoices: forExport, summaries: summaries,
+            retainage: (payload && payload.retainage) || {} },
+          (payload && payload.accounts) || null,
+          { basis: payload && payload.basis });
+        res.status(200).json({
+          ok: true, provisioned: true, result: result,
+          csv: result.ok ? gl.toCsv(result) : null,
+          account_roles: gl.ACCOUNT_ROLES, bases: gl.BASES
         });
         return;
       }

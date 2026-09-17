@@ -552,6 +552,27 @@
       "reviewer_session": "hank",
       "reviewed_at": "2026-09-17T03:31:38Z",
       "verdict": "REVIEWED BY DRIVING IT, not by reading the diff. The tie fix is CORRECT: the real api/_lib/mech-credentials.js latestByKey() keeps MC-2 on a genuine key+date collision and the export marks MC-2, and the order coupling the comment relies on is real -- api/sd-data.js:1472 returns data and board from the SAME array. FINDING, fixed in a41a31a9: the fixture BOARD was typed by hand and had drifted into a state classifyRecord() cannot emit -- status 'unknown' WITH no_expiry true, which come from one return statement -- so an arm asserted the lifetime credential was 'unknown', contradicting an arm in api/_lib/mech-credentials.test.js outright. BOARD is now computed by the server module, a genuinely-unknown record was added because none existed, and the tie arm asks latestByKey() instead of asserting the literal 'MC-2' -- flipping the server tie-break now fails the arm, where before it stayed green while file and board disagreed. 18 arms -> 22, four mutations killed. No defect in the shipped export itself."
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T14:59:29Z",
+      "resources": [
+        "invoices",
+        "rf_invoices"
+      ],
+      "files": [
+        "api/_lib/roofing-billing-endpoint.test.js",
+        "api/_lib/roofing-gl-export.js",
+        "api/_lib/roofing-gl-export.test.js",
+        "api/_resources/sairnroofing.js",
+        "api/sd-data.js",
+        "sairnroofing.html"
+      ],
+      "what": "PRODUCT CHANGE, Tier A. rf_invoices gains a 'gl_export' read action (api/sd-data.js) backed by the new api/_lib/roofing-gl-export.js, plus panel-accounting in sairnroofing.html. Closes competitive-gap A5. PRESS ON: (1) it reads rf_invoices under the EXISTING management/broad-read gate and writes nothing -- confirm no path through gl_export can reach a write, and that the entity/location filter the read branch applies is not bypassed by reusing its query string; (2) ONE MONEY PATH is the load-bearing claim -- the endpoint passes summarizeInvoice() output in rather than letting the module recompute; check no other caller recomputes; (3) the account map and basis arrive in the PAYLOAD and are never stored -- confirm nothing persists a chart of accounts, since a cached one would post to an account that has since changed meaning; (4) the balance guard is unreachable by construction today and is kept deliberately -- check the argument holds, and that retainage splitting the DEBIT rather than reducing revenue is the right accounting.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

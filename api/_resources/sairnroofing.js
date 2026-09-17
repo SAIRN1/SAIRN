@@ -235,7 +235,14 @@ module.exports = {
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the
     // linked claim and writes nothing to either.
-    rf_invoices: ['issue', 'add_payment', 'reconcile_claim'],
+    // 'gl_export' (2026-09-17, gap A5) builds the double-entry journal for the
+    // invoices this session can already see, coded to the contractor's OWN
+    // chart of accounts -- nothing is seeded, an unmapped role refuses the
+    // whole export, and the basis (accrual or cash) is required rather than
+    // defaulted. Reads only: producing an accounting export must never change
+    // a book. It is an EXPORT and not a QuickBooks connection, and the panel
+    // says so on screen.
+    rf_invoices: ['issue', 'add_payment', 'reconcile_claim', 'gl_export'],
     // 'match' (rf_supplier_documents, 2026-09-02, B6) runs the three-way
     // reconciliation for one purchase order: what was ORDERED against what was
     // RECEIVED against what was INVOICED. Reads every document under that PO

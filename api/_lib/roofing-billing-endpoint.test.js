@@ -295,6 +295,84 @@ const LINES = [
     assert.strictEqual(r.body.reconciliation.linked, false);
   });
 
+
+  // ── gl_export (gap A5, 2026-09-17) ──────────────────────────────────────
+  // THE ARM THAT MATTERS IS THE LAST ONE. api/_lib/roofing-gl-export.js has 21
+  // arms of its own and every one tests the MODULE. None of them can tell you
+  // the ENDPOINT calls it -- and "the handler had never been invoked by
+  // anything" is a defect this platform has already recorded against the
+  // SAIRNcash webhook, on the one endpoint whose only auth WAS the signature.
+  // So these drive the real handler.
+  console.log('');
+  console.log('gl_export -- the accounting journal, through the real handler:');
+  const GL_MAP = { accounts_receivable: '1200', retainage_receivable: '1210',
+                   revenue: '4000', sales_tax_payable: '2200', cash: '1000' };
+  await test('an absent basis is REFUSED at the endpoint, not defaulted', async () => {
+    const r = await call('gl_export', 'rf_invoices', { accounts: GL_MAP }, OWNER);
+    assert.strictEqual(r.code, 200);
+    assert.strictEqual(r.body.result.ok, false);
+    assert.ok(r.body.result.problems.some((p) => /basis is required/.test(p)),
+      JSON.stringify(r.body.result.problems));
+    assert.strictEqual(r.body.csv, null, 'a refused export still produced a file');
+  });
+  await test('an unmapped account refuses the whole export', async () => {
+    const bad = Object.assign({}, GL_MAP, { revenue: '' });
+    const r = await call('gl_export', 'rf_invoices', { accounts: bad, basis: 'accrual' }, OWNER);
+    assert.strictEqual(r.body.result.ok, false);
+    assert.strictEqual(r.body.result.lines.length, 0);
+  });
+  await test('a mapped, based export balances and yields a csv', async () => {
+    const r = await call('gl_export', 'rf_invoices', { accounts: GL_MAP, basis: 'accrual' }, OWNER);
+    assert.strictEqual(r.code, 200);
+    assert.strictEqual(r.body.result.ok, true, JSON.stringify(r.body.result.problems));
+    assert.strictEqual(r.body.result.totals.difference, 0);
+    assert.ok(typeof r.body.csv === 'string' && /^date,account,role,/.test(r.body.csv),
+      String(r.body.csv).slice(0, 120));
+  });
+  await test('the RECEIVABLE debits equal the invoice summaries -- ONE money path', async () => {
+    // The whole point of passing summaries in rather than recomputing: if the
+    // accountant's journal and the customer's invoice ever disagree, this is
+    // the arm where it shows up.
+    //
+    // COMPARED AGAINST THE RECEIVABLE LINES, NOT TOTAL DEBITS, and the first
+    // draft got that wrong -- it asserted total debits and failed 40640 vs
+    // 30640, exactly the 10000 of payments in this fixture. Total debits
+    // include the CASH receipts, which is correct double-entry and not a
+    // discrepancy. The second draft then netted the receivable against the
+    // payments that cleared it and failed 20640 vs 30640 -- also correct
+    // accounting, also the wrong question. What the invoice total equals is the
+    // receivable RAISED: the AR and retainage DEBITS, before any receipt
+    // credits them back down.
+    const inv = await call('read', 'rf_invoices', {}, OWNER);
+    const total = inv.body.data.reduce((s, x) => s + x.summary.total, 0);
+    const r = await call('gl_export', 'rf_invoices', { accounts: GL_MAP, basis: 'accrual' }, OWNER);
+    const receivable = r.body.result.lines
+      .filter((l) => l.role === 'accounts_receivable' || l.role === 'retainage_receivable')
+      .reduce((s, l) => s + l.debit, 0);   // RAISED, not net of receipts
+    assert.strictEqual(Math.round(receivable * 100) / 100, Math.round(total * 100) / 100,
+      'the receivable raised by the journal does not equal the sum of the '
+      + 'invoice totals the read branch reports -- there are two money paths');
+  });
+  await test('gl_export writes NOTHING -- an export must never change a book', async () => {
+    requests = [];
+    await call('gl_export', 'rf_invoices', { accounts: GL_MAP, basis: 'accrual' }, OWNER);
+    const writes = requests.filter((q) => q.method !== 'GET' && q.url.indexOf('license_keys') === -1);
+    assert.strictEqual(writes.length, 0, JSON.stringify(writes.map((w) => w.url + ' ' + w.method)));
+  });
+  await test('IT IS REACHABLE: registered in the resource table AND dispatched', async () => {
+    // Registered but not dispatched = 400 unknown action. Dispatched but not
+    // registered = refused before it ever arrives. Both are invisible to the
+    // module's own suite.
+    const reg = require('../_resources/sairnroofing.js');
+    const table = reg.extraActions || {};
+    const actions = table.rf_invoices || [];
+    assert.ok(actions.indexOf('gl_export') !== -1,
+      'gl_export is not in the rf_invoices action registry: ' + JSON.stringify(actions));
+    const r = await call('gl_export', 'rf_invoices', { accounts: GL_MAP, basis: 'accrual' }, OWNER);
+    assert.notStrictEqual(r.code, 400,
+      'the handler does not dispatch gl_export: ' + JSON.stringify(r.body));
+  });
+
   console.log('\n' + passed + ' passed, ' + failed + ' failed');
   if (failed) process.exit(1);
 })();
