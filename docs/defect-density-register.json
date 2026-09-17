@@ -494,7 +494,28 @@
       ],
       "severity": "high",
       "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
-      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
+      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage",
+      "contributing_factors": [
+        {
+          "factor": "THE CRASH LANDED IN A BLOCK THAT RUNS BEFORE TWO OTHERS, so it was not one failing arm -- EVERYTHING AFTER THAT POINT HAD NEVER RUN. The blocks covering stonedesk.html and sairnvet.html sit after SAIRNmechanical's, and a suite that dies part-way reports the arms it reached, not the arms it has.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The helpers are extracted from the real file rather than stubbed -- a stubbed mechCheckId() would let the cheque-collision fix it exists for rot while the arms stayed green."
+        },
+        {
+          "factor": "`typeof` DOES NOT GUARD AN UNDECLARED GLOBAL ONCE YOU TOUCH A PROPERTY. saveCheck reads window.mechPushRecord, and in a new Function realm with no `window` that is a ReferenceError rather than undefined -- the guard that looks present and is not.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Recorded at the site, because the same shape will appear in every future extraction into a fresh realm."
+        },
+        {
+          "factor": "THREE SESSIONS FOUND IT INDEPENDENTLY THE SAME NIGHT AND EACH CORRECTLY DEFERRED IT AS SOMEBODY ELSE'S LANE. So it sat broken WHILE BEING CITED AS COVERAGE -- the lane discipline that stops duplicate work also produced a platform-wide check that nobody owned.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Assigned directly rather than left to whoever noticed next. The general repair is the one still open: nothing routes a red platform-wide suite to an owner."
+        }
+      ],
+      "recurrence_open": "NOTHING SWEEPS FOR SUITES THAT ARE RED, and this record is the case that proves the cost: three competent readers saw it, each made the right individual call, and the suite stayed broken and stayed cited. A red suite needs an owner by mechanism, not by whoever happens to be looking."
     },
     {
       "app": "PLATFORM",
@@ -522,7 +543,28 @@
       ],
       "severity": "moderate",
       "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
-      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper"
+      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper",
+      "contributing_factors": [
+        {
+          "factor": "A CODE COMMENT SATISFIED THE ASSERTION. Two lines of sairnvet.html's st() body are PROSE explaining the latch, and `speaks` was a regex over RAW SOURCE -- so silencing every real console.error in that function left the file GREEN. PR 1.2, in the file whose subject is whether a wrapper speaks.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The check runs over comment-stripped source."
+        },
+        {
+          "factor": "THE ASSERTION IT DEFEATED IS THE ONE THE BLOCK EXISTS FOR: 'mute is empty, therefore NO app has a silent write wrapper'. An emptiness claim is satisfied by a detector that cannot see, and the two are indistinguishable from the output.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated as the class. An arm asserting a set is EMPTY needs separate evidence that the set could have been non-empty."
+        },
+        {
+          "factor": "IT WAS FOUND BY MUTATION AND NOT BY READING, and only after the crash above was fixed -- the defect was hiding behind a second defect in the same file, in a block that had never run to completion.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Kept as the method note: the mutation was silencing every real console.error, which is the smallest change that makes the claim false."
+        }
+      ],
+      "recurrence_open": "Comment-stripping is per tool and hand-written on this platform; nothing enumerates which scanners strip and which do not. This is at least the third instance of the same class in the register -- a signal-shaped probe matching two user-facing sentences, a key scan counting prose, and now a speaks regex -- and each was fixed in its own file."
     },
     {
       "app": "PLATFORM",
@@ -1400,7 +1442,34 @@
       ],
       "severity": "high",
       "subject": "fix(platform): every write transport is bounded -- twelve had no timeout anywhere",
-      "summary": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever"
+      "summary": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever",
+      "contributing_factors": [
+        {
+          "factor": "A HUNG FETCH NEITHER RESOLVES NOR REJECTS, so the transport's own catch never runs. About 260 call sites read `var syncResult = await xxData(...)` and toast exactly what failed to sync -- careful, correct code -- and the toast NEVER FIRES. The user clicks Save and the screen says nothing.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One AbortSignal per transport, feature-detected in both halves (typeof for an absent global, try for an absent method) with an explicit undefined fallback so fetch sees no signal rather than null."
+        },
+        {
+          "factor": "THE REFUSAL PATH BEING GOOD IS WHAT HID IT. All that reporting was attached to a promise that never settled, so the better the failure handling, the more convincing the silence -- an app that reports every failed write looks like an app that handles failure.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the class, because it is the reason a code-reading review does not find this: every visible line is correct."
+        },
+        {
+          "factor": "TWO APPS HAD A TIMEOUT SOMEWHERE AND NEITHER PROTECTED A WRITE -- sairnbiz raced a hydrate, stonedesk bounded /api/knowledge. A file-wide question answers yes for both, which is how the platform figure was reported as eleven when it was thirteen.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The sweep's column distinguishes read-path from write-path bounds, and `read-only` is deliberately not spelled `yes`."
+        },
+        {
+          "factor": "THE MEASUREMENT IS WHAT MADE A ONE-MECHANISM FIX POSSIBLE: every app has exactly ONE write transport making exactly ONE fetch. Fifteen apps, fifteen functions, fifteen fetches. Without that fact the answer would have been fourteen push helpers and 260 call sites to re-route, with every one a site that can be missed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Named xxFetchTimeoutSignal() helpers rather than inline ternaries, so a portfolio-wide check has ONE shape to look for."
+        }
+      ],
+      "recurrence_open": "The bound is a constant per transport and nothing re-derives it from anything -- a value chosen once, for a network nobody has measured. And the property that made the one-line fix safe (one transport, one fetch, per app) is TRUE TODAY and checked by nothing: a second fetch added to any transport is unbounded again, silently."
     },
     {
       "app": "sairnscape",
@@ -1448,7 +1517,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(platform): every write transport is bounded -- twelve had no timeout anywhere",
-      "summary": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported"
+      "summary": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+      "contributing_factors": [
+        {
+          "factor": "THE ERROR WAS DISCARDED AT THE ONE PLACE THAT KNEW WHAT IT WAS. `catch(e){return null;}` binds the error and throws it away -- so every network failure became an indistinguishable null, and the diagnosis that existed for one instant was gone.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The transport logs before returning null, so the shared failure vocabulary is kept AND the cause survives."
+        },
+        {
+          "factor": "`null` IS A GOOD FAILURE VOCABULARY AND A BAD DIAGNOSIS. Callers are correctly written against it, which is why the return value was right to keep -- the defect is that nothing else was kept.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Logging added at the transport rather than at 260 call sites, which is the same argument the timeout fix used."
+        }
+      ],
+      "recurrence_open": "Fourteen of fifteen transports carried a console call before this; the sweep that measured that is the same tool corrected in the same round for accepting a state flag as evidence. Nothing yet requires a new transport to report, and a sixteenth app would be found the same way."
     },
     {
       "app": "sairnmechanical",
@@ -1496,7 +1580,22 @@
       ],
       "severity": "moderate",
       "subject": "fix(platform): every write transport is bounded -- twelve had no timeout anywhere",
-      "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished"
+      "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished",
+      "contributing_factors": [
+        {
+          "factor": "THE CATCH TOOK NO ARGUMENT AT ALL, so the failure could not even be described -- a shape that reads as deliberate silence and is indistinguishable from one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The error is bound and logged; the return contract (`{status:0}`, which this app's callers are written for) is unchanged."
+        },
+        {
+          "factor": "SAIRNMECHANICAL'S FAILURE VOCABULARY IS `{status:0}` RATHER THAN `null`, so a reader checking the platform pattern against this file sees something different and moves on. Two correct-but-different conventions are harder to audit than one wrong one.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Not unified. Both vocabularies are understood at every call site in their own app, and changing either means touching every caller -- the exact risk the one-line-per-transport approach was chosen to avoid."
+        }
+      ],
+      "recurrence_open": "The two vocabularies remain, and nothing records which app uses which. A portfolio check looking for `return null` would silently skip SAIRNmechanical, which is how this one survived a sweep aimed at the same class."
     },
     {
       "app": "stonedesk",
