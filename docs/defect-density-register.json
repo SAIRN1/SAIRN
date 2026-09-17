@@ -7441,6 +7441,185 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
+    },
+    {
+      "commit": "8fdc063f63c7",
+      "date": "2026-09-17",
+      "subject": "fix(probes): twelve red suites, and eleven of them were the probe",
+      "files": [
+        "api/audit-checkpoint.js",
+        "tests/license_trial_gate_probe.py",
+        "tests/local_only_self_evidence_probe.py",
+        "tests/local_only_shape_probe.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/push_gate/check8_probe.py",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_all_tests_hook_gate_probe.py",
+        "tests/run_app_attribution_probe.py",
+        "tests/write_readback_shape_probe.py"
+      ],
+      "lines_added": 315,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "mutation-testing",
+      "summary": "license_trial_gate_probe mutation 9 anchored on the literal line 'if (!isPaid && lic.trial_ends_at', which stopped existing when isPaid was split into knownPaid/knownNotPaid/cannot-tell -- the arm reported ANCHOR-0 and the one mutation asking whether deleting the whole licensing gate gets noticed had never run",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/license_trial_gate_probe.py",
+      "injection": {
+        "commit": "3d603dd0f797",
+        "date": "2026-09-12",
+        "subject": "capture(db): the live schema snapshot, re-run 2026-09-11 -- 254 tables to 375",
+        "lag_days": 5
+      },
+      "contributing_factors": [
+        {
+          "factor": "the mutation anchored on a full source line rather than on the property it wanted to break",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "re-anchored on a compiled regex over the gate condition; main() still requires exactly one match"
+        },
+        {
+          "factor": "the variable the anchor depended on was renamed by an unrelated correctness fix, and nothing connects a rename to the probes that quote the renamed line",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "no mechanism can link a rename to every text anchor quoting it; the probe reporting ANCHOR-0 rather than skipping is what makes this survivable"
+        },
+        {
+          "factor": "the arm it disarmed was the only one covering the gate deletion, so nothing else went red",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the suite arm at license-trial-gate.test.js:233 was confirmed live by re-running the mutation -- it bites"
+        }
+      ],
+      "recurrence_open": "every other text anchor into a renamed identifier in this repo is still exactly as fragile; only this one was re-anchored"
+    },
+    {
+      "commit": "8fdc063f63c7",
+      "date": "2026-09-17",
+      "subject": "fix(probes): twelve red suites, and eleven of them were the probe",
+      "files": [
+        "api/audit-checkpoint.js",
+        "tests/license_trial_gate_probe.py",
+        "tests/local_only_self_evidence_probe.py",
+        "tests/local_only_shape_probe.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/push_gate/check8_probe.py",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_all_tests_hook_gate_probe.py",
+        "tests/run_app_attribution_probe.py",
+        "tests/write_readback_shape_probe.py"
+      ],
+      "lines_added": 315,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "run_all_tests_floor_probe and run_all_tests_hook_gate_probe stub _run() with a hand-written two-value return; _run() grew a third (retried) and every arm in both files died on ValueError: not enough values to unpack before reaching a single assertion",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "c2430a3a6f13",
+        "date": "2026-09-14",
+        "subject": "feat(exports): the four Class A export gaps are closed, and a flaky test is retried not skipped",
+        "lag_days": 3
+      },
+      "citation_note": "1.6 is about a fix verified on one of two copies; this is the same two-copies shape with a test double as the second copy, so the citation is by analogy rather than literal",
+      "contributing_factors": [
+        {
+          "factor": "the stub retyped the real function signature instead of deriving it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both stubs now return _GREEN = _run([], [], quiet=True) -- the real function asked with nothing to run, so a fourth value arrives here the day it arrives there"
+        },
+        {
+          "factor": "adding a return value to a widely-stubbed helper has no mechanism that finds its doubles",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "nothing can enumerate every test double of a function; deriving the value rather than pinning its arity removes the need to"
+        },
+        {
+          "factor": "the crash happened before arm 1, so the failure named unpacking and not the stub -- two probes red for a reason neither of their outputs stated",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "deriving from the real function means this class cannot recur here; there is no arity left to be wrong"
+        }
+      ],
+      "recurrence_open": "every other test double of a tools/ helper in this repo still retypes its shape; only these two were converted"
+    },
+    {
+      "commit": "8fdc063f63c7",
+      "date": "2026-09-17",
+      "subject": "fix(probes): twelve red suites, and eleven of them were the probe",
+      "files": [
+        "api/audit-checkpoint.js",
+        "tests/license_trial_gate_probe.py",
+        "tests/local_only_self_evidence_probe.py",
+        "tests/local_only_shape_probe.py",
+        "tests/push_gate/check4_probe.py",
+        "tests/push_gate/check7_probe.py",
+        "tests/push_gate/check8_probe.py",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_all_tests_hook_gate_probe.py",
+        "tests/run_app_attribution_probe.py",
+        "tests/write_readback_shape_probe.py"
+      ],
+      "lines_added": 315,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "push-gate check4/7/8 probes build their throwaway worktree at LOCAL HEAD, so in a five-clone repo the gate refuses with 'the outgoing range could not be read' before the check under test is reached -- three probes red while verifying nothing about checks 4, 7 or 8",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "78b272431eb1",
+        "date": "2026-09-11",
+        "subject": "fix(tests): the push-gate probes plant their fixtures in a worktree, not on main",
+        "lag_days": 6
+      },
+      "citation_note": "1.11 names could-not-run being folded into a pass; here it was folded into a FAILURE instead, which is the same defect in the other direction -- a verdict about check 4 written on evidence that carries none",
+      "contributing_factors": [
+        {
+          "factor": "the worktree base was HEAD, which is behind origin/main most of the time in a five-clone repo, so the outgoing range referenced an object this clone did not have",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the worktree is created from the FETCHED remote tip, making the outgoing range exactly the fixture commit"
+        },
+        {
+          "factor": "the remote tip moves DURING a run -- measured mid-run on 2026-09-16, between two of check7 arms",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "one retry after a fetch when the range is unreadable; the window is now seconds rather than the whole run"
+        },
+        {
+          "factor": "a refusal none of the probe reason-flags named left every flag False, which is indistinguishable from nothing blocking the push",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the refusal TEXT is in the reported dict, and could_not_run exits 3 rather than being read as a verdict"
+        }
+      ],
+      "recurrence_open": "the worktree-at-HEAD pattern is used by other probes in tests/ that do not push, where it is harmless today and would not be if one of them gained a network step"
     }
   ],
   "started": "2026-09-09"
