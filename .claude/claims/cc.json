@@ -1532,8 +1532,8 @@
       "task": "register_feed_gate subject content agreement, sairndental export controls continued",
       "claimed_at": "2026-09-16T23:38:21Z",
       "claimed_at_epoch": 1789601901.263379,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T00:06:09Z"
     }
   ]
 }
