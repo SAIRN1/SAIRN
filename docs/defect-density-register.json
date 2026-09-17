@@ -7329,63 +7329,6 @@
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     },
     {
-      "commit": "d8d000e0cffd",
-      "date": "2026-09-17",
-      "subject": "fix(cron-liveness): the out-of-band watchdog could NEVER have returned anything but COULD NOT TELL",
-      "files": [
-        "tests/run_cron_liveness_probe.py",
-        "tools/cron_liveness_check.py"
-      ],
-      "lines_added": 101,
-      "lines_removed": 6,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "live-verification",
-      "summary": "tools/cron_liveness_check.py assigned fetch_json's Response(status, body) namedtuple to `payload` and guarded it with isinstance(payload, dict), which is always true, so the out-of-band watchdog reader exited 2 COULD NOT TELL on every possible input including a healthy platform. Proven by driving main() over four real-shaped responses: the shipped code returns 2, 2, 2, 2 where it must return 0, 1, 2, 2. Confirmed live -- the runs at 06:40:53Z and 12:08:41Z both received HTTP 200 with all four jobs ok and both failed.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "3d40c7d548a1",
-        "date": "2026-09-14",
-        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
-        "lag_days": 3
-      },
-      "citation_note": "1.1 is a check that cannot fail; this is a check that cannot PASS, and the mechanism named in 1.1 is exactly what was missing -- the probe's fake could not express the broken state, so no arm could ever make it fail on purpose.",
-      "contributing_factors": [
-        {
-          "factor": "sairn_http.fetch_json returns Response(status, body) and the tool assigned that namedtuple to `payload`, then guarded with isinstance(payload, dict) -- always true -- so every input took the unreadable-answer branch and exited 2",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "status, payload = resp.status, resp.body, plus an explicit non-200 branch; driven over healthy / DEAD / 401 / garbage and now returns 0 / 1 / 2 / 2"
-        },
-        {
-          "factor": "the probe's fake returned the BODY rather than a Response, so every arm proved the tool worked against a function that does not exist -- the suite went green precisely because the tool was broken in a way the fake could not express; the teeth driver carried the identical defect",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "both fakes return a real sairn_http.Response; a teeth arm now requires clean, finding and could-not-tell to be three DIFFERENT exit codes"
-        },
-        {
-          "factor": "the post-fetch half had never once executed against a real answer -- locally the tool stopped at 'CRON_SECRET is not set' and in Actions at an empty SAIRN_WATCHDOG_URL -- so two outer defects kept the inner one unreachable for the tool's entire life",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the arms drive main() over canned real-shaped responses, so the post-fetch path is exercised with no secret and no network"
-        },
-        {
-          "factor": "fetch_json does not raise on an HTTP error, it returns the parsed error body with its code, so a 401 from a stale CRON_SECRET would have been read as an answer rather than as a refusal",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the status is read and a non-200 is COULD NOT TELL naming the stale-secret cause"
-        }
-      ],
-      "recurrence_open": "NOT CLOSED. No scheduled run has yet been observed green; the proof is the first run after this lands and is hours away on the measured cadence. And nothing sweeps for the general shape: any other caller of sairn_http.fetch_json that treats the return value as the body has the identical defect, and no check looks for it."
-    },
-    {
       "commit": "1f25f8bf6613",
       "date": "2026-09-17",
       "subject": "fix(claims): the duplicate this tool could not see was your own claim",
@@ -7440,6 +7383,57 @@
         }
       ],
       "recurrence_open": "Two claims for one piece of work that share no identifier, no phrase and no app still pass -- block_reason() names that residual in its own body and records why a rare-token rule was measured at 74 extra blocks and rejected."
+    },
+    {
+      "commit": "f82a48475ea2",
+      "date": "2026-09-17",
+      "subject": "fix(probes): the invisible-in-pattern anchor died to the refactor that was written to delete it",
+      "files": [
+        "tests/run_invisible_in_pattern_probe.py",
+        "tools/mutation_anchor_check.py"
+      ],
+      "lines_added": 110,
+      "lines_removed": 16,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "run_invisible_in_pattern_probe anchored arms C and D on the regex literal /^\\d{4}-\\d{2}-\\d{2}$/ in api/_lib/accounting-connector.js; item 94's de-duplication (7099d99f) removed that literal along with the other thirteen copies, so the probe could not plant and the checker's only control stopped running",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_invisible_in_pattern_probe.py",
+      "injection": {
+        "commit": "7099d99ff175",
+        "date": "2026-09-14",
+        "subject": "refactor(api): item 94 -- one module owns what a calendar date is, and all fourteen copies were wrong",
+        "lag_days": 3
+      },
+      "citation_note": "1.3 is about an anchor that still MATCHES but points at the wrong thing; this one stopped matching entirely, so the citation is to the same class rather than the exact case",
+      "contributing_factors": [
+        {
+          "factor": "the anchor was a DUPLICATED construct -- a regex literal that existed in fourteen files -- so its whole future was to be deduplicated",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "arms C and D need only a position, not a line; append() adds the block at end of file and asserts it landed, so there is no anchor left to rot"
+        },
+        {
+          "factor": "tools/mutation_anchor_check.py only walks probes that define a MUTATIONS list, and this probe calls plant() directly, so its anchors were never among the 245 verified",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the one remaining real anchor -- arm E, an assertion about the tool own fixture table -- is declared as MUTATIONS and read from there by the arm; 245 to 246 tracked"
+        },
+        {
+          "factor": "a refactor has no way to find the text anchors that quote the construct it is removing",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "nothing can link a de-duplication to every probe quoting one of the copies; the probe raising rather than no-opping is what makes it survivable"
+        }
+      ],
+      "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
     },
     {
       "commit": "8fdc063f63c7",
@@ -7621,6 +7615,53 @@
       "recurrence_open": "the worktree-at-HEAD pattern is used by other probes in tests/ that do not push, where it is harmless today and would not be if one of them gained a network step"
     },
     {
+      "commit": "31574fceecdf",
+      "date": "2026-09-17",
+      "subject": "fix(sairnlaw): one citation rule -- the critique step was told to produce a real reporter citation",
+      "files": [
+        "sairnlaw.html",
+        "tests/sairnlaw_citation_rule.js",
+        "tests/sairnlaw_citation_rule_probe.py"
+      ],
+      "lines_added": 326,
+      "lines_removed": 35,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "MT_CRITIQUE_CITATION_RULE told the model 'If you cite a case, give its real reporter citation' -- an instruction to GENERATE a citable-format string on a legal surface, licensed by a post-hoc badge rather than by the citation being retrieved; a string badged 'Not found -- do not rely on this' is a fabricated citation that reached a lawyer's screen",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "the permission was moved into a named constant on 2026-09-14 from an inline HARD RULES item, and git -S cannot distinguish the move from the origin; the wording predates the constant and the commit that first wrote it was not identified"
+      },
+      "citation_note": "no section of the process rules covers prompt content on a regulated surface; the standing rule this violates is the app's own LAW_CITATION_RULE and Michael's 2026-09-17 convergence, neither of which is a numbered section",
+      "contributing_factors": [
+        {
+          "factor": "post-hoc verification was treated as equivalent to retrieval -- the model composed the citation and the code only graded it afterwards",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the rule now forbids generating and permits only a verbatim repeat; the citator exception is scoped to a citation read out of the citator response"
+        },
+        {
+          "factor": "a deliberate exception was written as a named constant precisely so it would look deliberate, which also made it look settled",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the reversal is recorded in the comment beside both constants, naming the decision it supersedes and the date"
+        },
+        {
+          "factor": "ai_prompt_refusal_check.py can see WHETHER a site references a rule constant and cannot read WHAT the constant says, so it recorded this divergence in its own docstring and never failed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnlaw_citation_rule.js, 23 arms driven verbatim from the page, tells a constant that forbids generation from one that permits it; sabotaged 6 ways, all bite"
+        }
+      ],
+      "recurrence_open": "the suite reads WORDS IN A PROMPT and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded decision, so a green run is never evidence that no citation is fabricated"
+    },
+    {
       "commit": "b135eaa27620",
       "date": "2026-09-17",
       "subject": "fix(item6): the four \"re-read or drop\" entries could never be discharged, and the register's denominator was a sentence",
@@ -7677,6 +7718,63 @@
         }
       ],
       "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
+    },
+    {
+      "commit": "d8d000e0cffd",
+      "date": "2026-09-17",
+      "subject": "fix(cron-liveness): the out-of-band watchdog could NEVER have returned anything but COULD NOT TELL",
+      "files": [
+        "tests/run_cron_liveness_probe.py",
+        "tools/cron_liveness_check.py"
+      ],
+      "lines_added": 101,
+      "lines_removed": 6,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "tools/cron_liveness_check.py assigned fetch_json's Response(status, body) namedtuple to `payload` and guarded it with isinstance(payload, dict), which is always true, so the out-of-band watchdog reader exited 2 COULD NOT TELL on every possible input including a healthy platform. Proven by driving main() over four real-shaped responses: the shipped code returns 2, 2, 2, 2 where it must return 0, 1, 2, 2. Confirmed live -- the runs at 06:40:53Z and 12:08:41Z both received HTTP 200 with all four jobs ok and both failed.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 is a check that cannot fail; this is a check that cannot PASS, and the mechanism named in 1.1 is exactly what was missing -- the probe's fake could not express the broken state, so no arm could ever make it fail on purpose.",
+      "contributing_factors": [
+        {
+          "factor": "sairn_http.fetch_json returns Response(status, body) and the tool assigned that namedtuple to `payload`, then guarded with isinstance(payload, dict) -- always true -- so every input took the unreadable-answer branch and exited 2",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "status, payload = resp.status, resp.body, plus an explicit non-200 branch; driven over healthy / DEAD / 401 / garbage and now returns 0 / 1 / 2 / 2"
+        },
+        {
+          "factor": "the probe's fake returned the BODY rather than a Response, so every arm proved the tool worked against a function that does not exist -- the suite went green precisely because the tool was broken in a way the fake could not express; the teeth driver carried the identical defect",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both fakes return a real sairn_http.Response; a teeth arm now requires clean, finding and could-not-tell to be three DIFFERENT exit codes"
+        },
+        {
+          "factor": "the post-fetch half had never once executed against a real answer -- locally the tool stopped at 'CRON_SECRET is not set' and in Actions at an empty SAIRN_WATCHDOG_URL -- so two outer defects kept the inner one unreachable for the tool's entire life",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the arms drive main() over canned real-shaped responses, so the post-fetch path is exercised with no secret and no network"
+        },
+        {
+          "factor": "fetch_json does not raise on an HTTP error, it returns the parsed error body with its code, so a 401 from a stale CRON_SECRET would have been read as an answer rather than as a refusal",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the status is read and a non-200 is COULD NOT TELL naming the stale-secret cause"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. No scheduled run has yet been observed green; the proof is the first run after this lands and is hours away on the measured cadence. And nothing sweeps for the general shape: any other caller of sairn_http.fetch_json that treats the return value as the body has the identical defect, and no check looks for it."
     }
   ],
   "started": "2026-09-09"
