@@ -1704,6 +1704,16 @@
       "claimed_at_epoch": 1789658410.416385,
       "status": "released",
       "released_at": "2026-09-17T15:47:16Z"
+    },
+    {
+      "id": "cc-1789664630",
+      "session": "cc",
+      "subject": "claim-tool-false-clear",
+      "task": "sairn_claim false CLEAR against a readable active claim -- root cause",
+      "claimed_at": "2026-09-17T17:03:50Z",
+      "claimed_at_epoch": 1789664630.4483676,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
