@@ -916,6 +916,47 @@ REGISTRY = [
                     'shares; 7 mutation controls bite',
     },
     {
+        'tool': 'hover_process_pass_freshness.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-16, report-only. 0.2 seconds, read-only, and it '
+                    'answers a question nothing else on the build side asks.',
+        'catches': 'the hover auditor going quiet on PROCESS PASSES -- the '
+                   'check on the machinery across all four build agents, as '
+                   'distinct from any single claim -- past a 48-hour bound, '
+                   'with a warning at 36',
+        'why_it_matters': 'the auditor already has hover_self_health.py, which '
+                          'flags its own staleness at its own SessionStart. '
+                          'That check is SELF-POLICED: it runs inside the role '
+                          'it measures, on the cadence that role chooses, and '
+                          'it is silent in exactly the case that matters -- the '
+                          'auditor not running at all. This is the same '
+                          'structural argument as the hover-separation branch '
+                          'protection, which is enforced from the build side '
+                          'because an auditor enforcing its own separation '
+                          'proves nothing about the case where the auditor is '
+                          'the problem. THE BOUNDS ARE MEASURED, NOT PICKED: '
+                          'the four process passes the skill names fall at gaps '
+                          'of 33.9h, 0.6h and 20.6h, so 36 sits just above the '
+                          'largest real gap and 48 outside all of them -- and '
+                          'the measurement is printed on every run so the next '
+                          'reader re-derives it rather than inheriting it',
+        'evidence': 'REAL RUN 2026-09-16: 208 entries, chain verifies, last '
+                    'flagged process pass 0.9h ago -> OK. It COUNTS THE '
+                    'STRUCTURED FIELD AND NEVER THE PROSE, and says so: '
+                    'matching "PROCESS PASS" in a summary would make the '
+                    'its own wording load-bearing. The field postdates '
+                    'the first three real passes (log entries 40, 142, 147), so '
+                    'the answer is meaningful only from the first FLAGGED entry '
+                    'onward and the report names which one that is. '
+                    'tests/hover_process_pass_freshness_probe.py drives fresh, '
+                    'warn, stale, and THREE separate COULD NOT RUN states '
+                    '(missing log, broken hash chain, no flagged entry) against '
+                    'synthetic logs it chains itself -- plus the arm this exists '
+                    'for: a BUSY auditor whose newest entry is 0.2h old and '
+                    'whose newest FLAGGED entry is 60h old must read STALE',
+    },
+    {
         'tool': 'install_git_hooks.py',
         'mode': 'once',
         # --check, NOT bare. Bare INSTALLS: it rewrites .githooks/pre-push to

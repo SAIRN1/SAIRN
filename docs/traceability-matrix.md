@@ -81,6 +81,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line | `criticality_tier_check.py` | real run 2026-09-12: 382 registered, 382 rows, 17 re-tiered apps, 78 Tier A, PROBLEMS:0 |
 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running | `soup_register_check.py` | real run 2026-09-12: 3 npm direct dependencies, 3 CDN scripts in root apps, CLEAN both directions |
 | a clone configured to commit under one of the throwaway identities this repo's own probes use -- the list is READ out of the probe sources, so a new probe's identity is covered with no edit to the checker | `committer_identity_check.py` | real run 2026-09-13: CLEAN in all four clones after the leak was unset in SAIRN-fourth. It reports the 131 already-affected commits as a number and deliberately does NOT fail on them -- rewriting published history on a repo four clones share is the larger risk. Held in BOTH directions by tests/run_committer_identity_probe.py, 20 arms, which breaks a THROWAWAY CLONE rather than a worktree because user.* is REPOSITORY config a worktree shares; 7 mutation controls bite |
+| the hover auditor going quiet on PROCESS PASSES -- the check on the machinery across all four build agents, as distinct from any single claim -- past a 48-hour bound, with a warning at 36 | `hover_process_pass_freshness.py` | REAL RUN 2026-09-16: 208 entries, chain verifies, last flagged process pass 0.9h ago -> OK. It COUNTS THE STRUCTURED FIELD AND NEVER THE PROSE, and says so: matching "PROCESS PASS" in a summary would make the its own wording load-bearing. The field postdates the first three real passes (log entries 40, 142, 147), so the answer is meaningful only from the first FLAGGED entry onward and the report names which one that is. tests/hover_process_pass_freshness_probe.py drives fresh, warn, stale, and THREE separate COULD NOT RUN states (missing log, broken hash chain, no flagged entry) against synthetic logs it chains itself -- plus the arm this exists for: a BUSY auditor whose newest entry is 0.2h old and whose newest FLAGGED entry is 60h old must read STALE |
 | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, whose gate script or shell wrapper does not execute, or -- added 2026-09-16 -- that GIT ITSELF DOES NOT FIRE, which every other check here is blind to because they are all statements about the FILE. hooksPath can be right, the bytes LF and `sh <file>` clean while git runs nothing | `install_git_hooks.py` | real run 2026-09-13: OK in this clone. Held in BOTH directions by tests/run_githook_install_probe.py, which breaks a THROWAWAY CLONE three ways -- core.hooksPath unset, hook rewritten to CRLF with the config left CORRECT, and a wrapper that does not execute -- and asserts this clone is untouched; 5 mutation controls bite |
 | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated | `tooling_inventory.py` | real run 2026-09-12: OK, and its probe mutates the committed document and confirms --check exits non-zero |
 | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database | `schema_snapshot_freshness.py` | real run 2026-09-11: 444 tables created in sql/, 258 in the snapshot, 210 absent and 39 of those queried by api/. BOTH readings are real and both were measured live the same day -- mech_checks provisioned:true (snapshot behind) and grd_rounds provisioned:false (SQL never run), in the same list. The tool reports the question and refuses to pick, which arm 4 of its probe asserts |
@@ -535,11 +536,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 24 test files are traced to no stated requirement
+### 25 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 507 of 531 traced, 95.5%.
+For context and not as the headline: 507 of 532 traced, 95.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -560,7 +561,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 0 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 24 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 25 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 0 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -573,6 +574,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/employees_refusal_probe.py`
 - `tests/exec_role_gate_probe.py`
 - `tests/failsafe/witness_mint.js`
+- `tests/hover_process_pass_freshness_probe.py`
 - `tests/install_git_hooks_check_probe.py`
 - `tests/intake_link_no_credential_probe.py`
 - `tests/law_reconcile_role_vocab_check.py`
@@ -608,10 +610,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 531   tests/**, api/*.test.js
+  test files on disk                 532   tests/**, api/*.test.js
   open-work rows citing a test       267   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  7   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                57   report_only_checks.REGISTRY
+  report-only registry                58   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

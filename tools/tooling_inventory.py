@@ -73,6 +73,22 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'hover_process_pass_freshness.py': ('CHECKER',
+        'whether the hover auditor has recorded a PROCESS PASS -- its check on '
+        'the machinery across all four build agents, as distinct from any '
+        'single claim -- inside a 48-hour bound, warned at 36. ASKED FROM THE '
+        'BUILD SIDE ON PURPOSE. The auditor has hover_self_health.py for the '
+        'same question, and that one is SELF-POLICED: it runs inside the role '
+        'it measures and is silent in exactly the case that matters, the '
+        'auditor not running at all. Same structural argument as the '
+        'hover-separation branch protection. Read-only; it touches nothing in '
+        'that clone. It VERIFIES THE HASH CHAIN before believing a '
+        'timestamp, reusing the separation-audit verifier rather than a '
+        'second copy that could disagree with it, and it counts the STRUCTURED '
+        '`process_pass` field and never the prose -- matching "PROCESS PASS" in '
+        'a summary would make its own wording load-bearing. Bounds '
+        'are measured from the four passes the skill names (gaps 33.9h, 0.6h, '
+        '20.6h) and printed on every run'),
     'negated_status_assertion_scan.py': ('CHECKER',
         'a READ-LIST of assertions that express "the caller got through" as the '
         'NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 '
