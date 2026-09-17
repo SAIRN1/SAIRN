@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**194 files in `tools/`.** By what actually invokes them:
+**195 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 61 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 62 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 136 |
+| CHECKER | 137 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -117,7 +117,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (61)
+## REPORT-ONLY (62)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -129,6 +129,7 @@ quiet in practice.
 | `accepted_risk_expiry_audit.py` | 2026-09-16, report-only. 0.4 seconds, and its number moves only when somebody accepts or discharges a risk -- which is exactly the event a push notice should surface, because it is the one nobody goes looking for. | an accepted risk whose expiry condition cannot fire: no condition stated at all, or a tool named as the trigger that nothing invokes |
 | `advisory_lock_isolation_check.py` | 2026-09-15, report-only on its first day like every other checker here. It reports a SUPERSEDED stale migration today, which is a real finding and not one a push should be blocked on | a plpgsql function that takes a pg_advisory lock, then READS state and WRITES based on it, with nothing requiring READ COMMITTED. Classifies SELECT ... FOR UPDATE and UPDATE ... RETURNING as SAFE_SHAPE rather than flagging them -- both raise 40001 under REPEATABLE READ, which is loud, and a checker that flags the two correct patterns alongside the broken one is one people switch off. Also reports an OLDER file defining the same function without the guard, because `create or replace` means re-running it silently reverts one |
 | `ai_action_approval_audit.py` | 2026-09-16, report-only. 3 seconds, and its number moves the moment an AI call site is added or a confirm step is removed -- which is precisely the change nobody announces. | a handler that receives a model answer and WRITES it with no human approval step between |
+| `allan_deviation_check.py` | 2026-09-17 report-only, and it can never be anything else: its most common answer is COULD NOT ANSWER, which is a statement about the DATA and not about the code being pushed. Registered as --self-check because the live run currently refuses on both series and the part that can silently rot is the ESTIMATOR, which the fixtures hold | an estimator that has stopped separating white noise from drift -- driven over synthetic series whose answer is known, in both directions, plus the power and stationarity refusals |
 | `bypassed_constant_check.py` | 2026-09-14, the day it was built. Report-only: it reports a shape that is sometimes deliberate, and a checker whose finding might be a considered choice has no business refusing a push | a declared decimal rate constant that some call site in the same app HTML bypasses with the literal value -- so changing the rate moves the declaration and leaves those sites quietly wrong |
 | `check_precedence.py` | 2026-09-15 report-only, AND IT MUST NEVER BE ANYTHING ELSE. Its CONFLICT verdict is a question, not a finding: blocking a push because two of our own tools disagree punishes whoever happens to be pushing for a disagreement that predates them, and the reliable consequence is an override habit this repo has already recorded costing more than the gate saved. RUN AS --self-check, NOT the live pairing, and the reason is cost rather than value: the live run shells out to checker_confidence.py and checker_estimate_fusion.py, both of which THIS SWEEP ALREADY RUNS, so the bare form would run them three times inside a budget already at 330s of 600s. --self-check proves the rule table, which is the part that can silently rot; the live pairing is a deliberate manual run | the precedence table for two independent checks disagreeing about the same subject no longer resolving the way item 64 decided it should -- driven over every ordering of every pair, not a sample |
 | `checkblocks.py` | 2026-09-12, after being given an exit code it never had | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check |
@@ -384,11 +385,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      194   git ls-files tools/
+  tools on disk                      195   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                59   report_only_checks.REGISTRY
-  tools invoked by tests/            141   tests/**/*.py, *.js
+  report-only registry                60   report_only_checks.REGISTRY
+  tools invoked by tests/            142   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

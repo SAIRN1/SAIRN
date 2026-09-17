@@ -1575,6 +1575,35 @@ REGISTRY = [
                     'ever touched sql/',
     },
     {
+        'tool': 'allan_deviation_check.py',
+        'mode': 'once',
+        'args': ['--self-check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-17 report-only, and it can never be anything else: '
+                    'its most common answer is COULD NOT ANSWER, which is a '
+                    'statement about the DATA and not about the code being '
+                    'pushed. Registered as --self-check because the live run '
+                    'currently refuses on both series and the part that can '
+                    'silently rot is the ESTIMATOR, which the fixtures hold',
+        'catches': 'an estimator that has stopped separating white noise from '
+                   'drift -- driven over synthetic series whose answer is known, '
+                   'in both directions, plus the power and stationarity refusals',
+        'why_it_matters': 'A RATE AND A COUNT CANNOT TELL DRIFT FROM NOISE, and '
+                          'this platform has already been wrong in exactly that '
+                          'way: item 59 read a Gini of 0.971 as clustering when '
+                          'at that rate it was sparseness, and a '
+                          'negative-binomial k of 0.87 -- heavy superspreading '
+                          '-- came out of pure chance. The ordinary standard '
+                          'deviation DOES NOT CONVERGE for the noise types that '
+                          'contain drift, which is what makes a flat one '
+                          'reassuring and wrong. THE FIRST DRAFT OF THIS TOOL '
+                          'FAILED ITS OWN BLIND LOCK before it touched real '
+                          'data: fitting one line across every tau reported '
+                          '+0.27 for a textbook linear drift, because a real '
+                          'series carries more than one noise type and a single '
+                          'fit measures the CROSSOVER rather than either process',
+    },
+    {
         'tool': 'response_shape_check.py',
         'mode': 'once',
         'args': [],
