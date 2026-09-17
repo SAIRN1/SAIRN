@@ -1372,7 +1372,7 @@ def cmd_list(args):
 GUARDS = (
     ('befb65e3', 'identical-task retry', 1789500271),
     ('a50aaf60', 'retyped-task unpublished', 1789508811),
-    ('5f28fb4d', 'own-claim overlap (any wording, any subject)', 1789617600),
+    ('1f25f8bf', 'own-claim overlap (any wording, any subject)', 1789617600),
 )
 GUARDED_FROM = max(g[2] for g in GUARDS[:2])
 # The own-claim guard lands later than the first two and covers a strictly
