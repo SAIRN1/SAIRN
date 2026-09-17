@@ -113,6 +113,21 @@ def terms(text):
 CODE_EXT = {'.js', '.html', '.py', '.sql', '.json'}
 PROSE_EXT = {'.md'}
 
+# ── THE SEARCHER'S OWN FILES ARE NOT EVIDENCE ABOUT ANYTHING ──────────────
+# Found the day this shipped. A claim used as a fixture in the probe -- "the QR
+# library is pinned to an exact version and loaded with an integrity hash" --
+# appears verbatim in run_claim_search_probe.py and in this module's own
+# docstring, so BM25 ranked FIVE self-references above the script tag that
+# implements it. Same failure as --verify ranking the .md a claim was copied
+# out of, one layer down: a file QUOTING a claim always beats the code doing it.
+#
+# Excluded in --verify only, and only these two files, because that is the part
+# that is unambiguously self-reference. The GENERAL case is not solved and is
+# printed rather than hidden: any file that quotes a claim will outrank the
+# implementation, which is exactly why the epilogue tells a reader that a
+# perfect top hit is not a confirmation.
+SELF_FILES = {'tools/claim_search.py', 'tests/run_claim_search_probe.py'}
+
 
 def tracked(exts):
     r = subprocess.run(['git', '-C', REPO, 'ls-files'], capture_output=True,
@@ -125,10 +140,12 @@ def tracked(exts):
             yield rel
 
 
-def build_index(exts=None):
+def build_index(exts=None, drop_self=False):
     """[(rel, line, text, terms)] over overlapping line windows of every file."""
     units = []
     for rel in tracked(exts or (CODE_EXT | PROSE_EXT)):
+        if drop_self and rel in SELF_FILES:
+            continue
         p = os.path.join(REPO, rel)
         try:
             lines = io.open(p, encoding='utf-8', errors='replace').read().split('\n')
@@ -211,8 +228,8 @@ def show(scored, top, show_text):
             print('')
 
 
-def cmd_query(q, top, like, show_text, exts=None, why=''):
-    units = build_index(exts)
+def cmd_query(q, top, like, show_text, exts=None, why='', drop_self=False):
+    units = build_index(exts, drop_self)
     if len(units) < 100:
         print('COULD NOT BUILD AN INDEX: only %d units. Not ranking against a '
               'corpus this small.' % len(units))
@@ -257,7 +274,8 @@ def cmd_verify(claim, top):
     # this tool exists to break rather than to automate. Verifying a claim
     # means finding the CODE; --query still searches everything.
     rc = cmd_query(claim, top, None, True, CODE_EXT,
-                   '  (.md EXCLUDED: a claim restated is not a claim checked)')
+                   '  (.md and this searcher\'s own files EXCLUDED: a claim '
+                   'restated is not a claim checked)', True)
     print('')
     print('THIS IS EVIDENCE, NOT A VERDICT.')
     print('  * Nothing above says the claim is true. The rows are the places')
