@@ -1387,8 +1387,8 @@
       "task": "sairnlaw citation generation sweep, multi-tenant scope lookup refusal sweep, defect register confirmed-clean verdict, code embedding similarity search, neural code search for claim verification, tier A negative controls",
       "claimed_at": "2026-09-17T15:17:06Z",
       "claimed_at_epoch": 1789658226.162162,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T23:23:11Z"
     }
   ]
 }
