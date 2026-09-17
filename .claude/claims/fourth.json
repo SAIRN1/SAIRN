@@ -1603,8 +1603,8 @@
       "task": "csv export formula injection escaping shared root cause and platform sweep, sairndental charges export location_id column never written",
       "claimed_at": "2026-09-17T17:46:56Z",
       "claimed_at_epoch": 1789667216.9052467,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T22:21:23Z"
     }
   ]
 }
