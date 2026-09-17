@@ -604,6 +604,37 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-17T21:43:06Z",
+      "resources": [
+        "invoices",
+        "quotes"
+      ],
+      "files": [
+        "api/_lib/csv-cell.js",
+        "api/_lib/csv-cell.test.js",
+        "api/_lib/roofing-gl-export.js",
+        "api/_lib/roofing-gl-export.test.js",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnmechanical.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "stonedesk.html",
+        "tools/csv_formula_injection_check.py"
+      ],
+      "what": "CSV formula-injection sweep across 13 files and 53 sites: one shared guard (api/_lib/csv-cell.js), a named *CsvCell helper per app, roofing-gl-export.js moved off a CONDITIONAL quoter that emitted a memo cell completely bare, and tools/csv_formula_injection_check.py to make coverage mechanical. THE PART THAT NEEDS ANOTHER PAIR OF EYES IS THE NUMBER EXEMPTION: the apostrophe guard is applied only when a cell does NOT parse as a number, so that a credit of -50.00 stays a number for an accountant's SUM. That is a deliberate hole in the guard and I chose its boundary. Check specifically whether Number()-finite is the right test (it accepts '+1e5', ' -5 ', '0x10'), whether any payload can be made to parse as a number, and whether the five apps left quoting CONDITIONALLY are still safe with only the apostrophe and no quotes. Tier A touched: quotes (sairnbiz, sairnbuild, stonedesk) and invoices (roofing-gl-export).",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

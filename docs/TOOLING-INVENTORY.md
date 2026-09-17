@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**195 files in `tools/`.** By what actually invokes them:
+**196 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,13 +28,13 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 32 | nothing runs these at all |
+| **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 137 |
+| CHECKER | 138 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -45,17 +45,18 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 7 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 2 wired nowhere at all, and 5
+**The number to act on: 8 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 5
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 7, by name, so this is actionable rather than a statistic:
+The 8, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `bypass_log.py` | UNWIRED | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it |
+| `csv_formula_injection_check.py` | UNWIRED | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
@@ -316,7 +317,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (32)
+## UNWIRED (33)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -327,6 +328,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
 | `bypass_log.py` | CHECKER | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it | &mdash; |
 | `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
+| `csv_formula_injection_check.py` | CHECKER | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
@@ -385,7 +387,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      195   git ls-files tools/
+  tools on disk                      196   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                60   report_only_checks.REGISTRY

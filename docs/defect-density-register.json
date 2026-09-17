@@ -7329,6 +7329,74 @@
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     },
     {
+      "commit": "885fd0b96ce1",
+      "date": "2026-09-17",
+      "subject": "fix(csv): a customer name beginning with = executed as a formula in whoever opened the export -- 53 places, 13 files, one copy-pasted line",
+      "files": [
+        "api/_lib/csv-cell.js",
+        "api/_lib/csv-cell.test.js",
+        "api/_lib/roofing-gl-export.js",
+        "api/_lib/roofing-gl-export.test.js",
+        "sairnbiz.html",
+        "sairnbuild.html",
+        "sairncare.html",
+        "sairncode.html",
+        "sairndental.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnmechanical.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "stonedesk.html",
+        "tests/sairndental_ledger_export.js",
+        "tools/csv_formula_injection_check.py"
+      ],
+      "lines_added": 792,
+      "lines_removed": 63,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "Every CSV export on the platform wrote cells as quote + String(c).replace(/quote/g, double) + quote -- correct RFC 4180 quoting and no defence against formula injection. Excel, LibreOffice and Google Sheets execute a cell beginning =, +, - or @ as a formula on open, and the surrounding quotes do not prevent it because the importer strips them as syntax before evaluating. Any user-typed field (customer name, memo, complaint body) was executable content in the recipient spreadsheet, with =cmd reaching DDE and =IMPORTXML exfiltrating the adjacent row. 53 sites across 13 files, one line copied repeatedly; stonedesk.html held 39 of them in 36 script blocks. Four apps were worse than the rest: their quoter was CONDITIONAL and emitted the cell entirely unquoted when it contained no comma, quote or newline, including api/_lib/roofing-gl-export.js whose memo field ships to an accountant for import.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The line predates any commit that could be called its origin -- it appears in the earliest versions of several apps and was copied between them, so naming one sha would pick an arbitrary member of a family."
+      },
+      "citation_note": "No standing rule in SAIRN-PROCESS-RULES.md covers output encoding for a downstream interpreter; the rules there are about checks, indexes, pushes and claims. Inventing a citation would be worse than saying so.",
+      "phase_note": "The expression is correct RFC 4180 quoting written by somebody solving the comma problem, then copied 53 times. Nothing about the design was wrong; the line simply never considered the importer as an interpreter.",
+      "contributing_factors": [
+        {
+          "factor": "An always-quoting CSV cell expression was treated as an escaping solution when it only ever solved commas and newlines. The importer is a separate interpreter and nothing encoded for it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "api/_lib/csv-cell.js applies an apostrophe prefix to a leading =/+/-/@/TAB/CR when the cell does not parse as a number; all 53 sites now route through a named helper carrying that guard."
+        },
+        {
+          "factor": "The expression was INLINE and copy-pasted rather than named, so there was no single place to fix and no way to grep for coverage. stonedesk.html alone carried 39 copies across 36 script blocks.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Every app declares one named *CsvCell helper; the naming convention is what makes coverage a grep instead of a reading exercise."
+        },
+        {
+          "factor": "Nothing on the platform looked for output encoding at all -- the finding arrived from the hover auditor, not from any check.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/csv_formula_injection_check.py, report-only, blind-locked 15/15, with five driven mutations."
+        },
+        {
+          "factor": "Four apps used a CONDITIONAL quoter that emitted the cell completely BARE when it held no comma, quote or newline -- so the shape that looked most careful was the most exposed, and roofing-gl-export.js is an accounting file sent to an accountant.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All four now guard before deciding whether to quote; the quoting behaviour itself was left unchanged so no export format moved."
+        }
+      ],
+      "recurrence_open": "The checker finds the string-concatenation shape this platform uses. An export written with a CSV library, a template, or Array.join on unquoted values is INVISIBLE to it, and one with no quoting at all is invisible twice over because there is no .replace to match. Nothing forces a NEW export path to use the naming convention that makes coverage checkable. Also unclosed: no equivalent has been looked for in any other downstream interpreter this platform writes to."
+    },
+    {
       "commit": "103f17b46867",
       "date": "2026-09-17",
       "subject": "fix(tools)+sweep: the second instance of the Response-as-body defect, and a checker for the class",
