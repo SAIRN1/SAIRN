@@ -518,6 +518,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-17T01:53:03Z",
+      "resources": [
+        "sf_accounts",
+        "sf_ledger"
+      ],
+      "files": [
+        "tests/sairnfreedom_server_backup_probe.py"
+      ],
+      "what": "tests/sairnfreedom_server_backup_probe.py -- a new negative control proving tests/sairnfreedom_server_backup.js catches four ways the three-sided backup agreement can drift, on sf_ledger, sf_disbursements and sf_accounts (ORC 2915 reportable). Built on tests/sabotage_harness.py; plants into a throwaway worktree and touches nothing in the clone. REVIEW FOCUS: whether these four are the RIGHT four for a source-agreement suite -- each breaks exactly one of registry/client/schema, and a behavioural mutation would be testing a suite that does not exist. Also worth checking: the control cannot show the three sides are RIGHT, only that the suite notices when they stop agreeing, so a resource registered/pushed/tabled under a consistently WRONG name is invisible to both.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
