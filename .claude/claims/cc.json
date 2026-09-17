@@ -1604,6 +1604,16 @@
       "claimed_at_epoch": 1789611046.2180629,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1789612342",
+      "session": "cc",
+      "subject": "cc",
+      "task": "tier a review gate single write point, export_coverage_check sairnvet label and pin, alf_staff_credentials and mech_credentials export registries, svExportControlled csv test",
+      "claimed_at": "2026-09-17T02:32:22Z",
+      "claimed_at_epoch": 1789612342.7207701,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
