@@ -4244,7 +4244,7 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
-      "commit": "1dfd3e001ff1",
+      "commit": "9e2fdb18354a",
       "date": "2026-09-16",
       "subject": "fix(export-coverage): \"no export machinery\" was a claim, and SAIRNvet had some",
       "files": [
@@ -6246,7 +6246,7 @@
       "recurrence_open": "The pin will fire again on the twenty-first law_* resource, BY DESIGN, and the next session to add one will not know this suite exists. Nothing links a registry addition to the suites that pin its size, and the known-red registry cody is building will catch the RED but not shorten the 26 hours unless something runs the per-app suites on a cadence that reaches a person."
     },
     {
-      "commit": "9aa9a8bd0d2c",
+      "commit": "85464d4088f3",
       "date": "2026-09-16",
       "subject": "fix(tier-a-gate): one write point for every closure, and the arm that proves it",
       "files": [
