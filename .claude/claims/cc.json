@@ -1574,6 +1574,16 @@
       "claimed_at_epoch": 1789607710.6327603,
       "status": "released",
       "released_at": "2026-09-17T01:27:56Z"
+    },
+    {
+      "id": "cc-1789608864",
+      "session": "cc",
+      "subject": "sv-audit-log-retrievability",
+      "task": "verify the dosing audit trail panel and close whichever half is open",
+      "claimed_at": "2026-09-17T01:34:24Z",
+      "claimed_at_epoch": 1789608864.6194265,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
