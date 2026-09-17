@@ -4629,6 +4629,64 @@
       "recurrence_open": "The structural scan finds callers that DROP a write's promise. This caller did not drop anything -- it added a message -- so the scan that found its three siblings could not have found this one, and it was caught by reading the same file. Nothing looks for a second toast raised over a helper that already reported."
     },
     {
+      "commit": "550d69cd09d5",
+      "date": "2026-09-16",
+      "subject": "fix(cron): the watchdog stopped responding to itself and went on grading itself",
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "api/cron-watchdog.js",
+        "api/cron-watchdog.test.js"
+      ],
+      "lines_added": 133,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "api/cron-watchdog.js wrote its own heartbeat outcome from a report that included its own previous row: partial -> PARTIAL -> partial, so the watchdog's self status could never return to ok once it left it. Latched live; survived the SAIRN_OPS_EMAIL fix landing at 00:15:28Z 2026-09-17. ok in the response body could never be true again, so cron_liveness_check.py could never exit 0.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 2
+      },
+      "citation_note": "1.1 is written about a check that CANNOT FAIL; this is the mirror shape -- a check that can never PASS. Same disease: the verdict stopped being a function of the world. Cited rather than not-citable because the mechanism named in 1.1 is exactly what was missing -- nothing made this expression fail on purpose, because no arm could reach it at all.",
+      "contributing_factors": [
+        {
+          "factor": "the outcome written for this job each run was `bad.length ? 'partial' : 'ok'`, and `bad` is the report INCLUDING this job's own previous row -- so the verdict was a function of the previous verdict, with no input from the world",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "selfOutcome() removes the self term from the outcome only; the self row is still reported, logged and in not_ok"
+        },
+        {
+          "factor": "the self-exclusion added at 5d0f4459 was applied to the RESPONSE (planResponse takes selfJob) and not to the VERDICT, because it was written from four hours of logs of a LOUD symptom -- HTTP 508 and an hourly alert storm -- and the quiet half had no symptom to reason from",
+          "kind": "process",
+          "action_status": "done",
+          "action": "selfOutcome takes the same selfJob from the same SELF_JOB constant, so one spelling covers both halves"
+        },
+        {
+          "factor": "the expression lived inline in the request handler, which no arm drives; 71 arms covered assess() and planResponse() and none could reach it, so the latch was only ever visible in five consecutive production runs",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "extracted pure and exported; 10 arms incl. a five-run end-to-end drive through assess()+selfOutcome() and a teeth arm running the OLD expression on the same fixture"
+        },
+        {
+          "factor": "a monitor latched red produces no alert and no error -- PARTIAL under an HTTP 200 reads as a run that happened -- and the out-of-band reader that would have caught a watchdog that can never be ok (cron_liveness_check.py via .github/workflows/cron-liveness.yml) has never run: CRON_SECRET is not in the repository Actions secrets and docs/CRON-LIVENESS-STATUS.md still reads COULD NOT TELL as of 2026-09-14",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "add CRON_SECRET to the repository Actions secrets -- needs Michael; the workflow exists and does nothing until then"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED: any job that writes its own heartbeat outcome from a report containing its own row has the identical loop, and nothing checks for that shape. EXPECTED_JOBS has one self-watching job today; a second would reintroduce it silently. AND the fix is verified in the repository only -- the behavioural half lands at the next :15 firing after deploy and has not been observed; the row heals in one run, not instantly."
+    },
+    {
       "commit": "555b30bc3d14",
       "date": "2026-09-16",
       "subject": "fix(register-gate): a STALE record is told apart from a MISSING one",
