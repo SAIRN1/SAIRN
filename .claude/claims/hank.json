@@ -2143,8 +2143,8 @@
       "task": "independent review of cc item 97 SAIRNcode soft_delete Tier A",
       "claimed_at": "2026-09-17T22:42:45Z",
       "claimed_at_epoch": 1789684965.6081712,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T23:03:01Z"
     }
   ]
 }
