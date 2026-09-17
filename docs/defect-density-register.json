@@ -3295,63 +3295,6 @@
       "recurrence_open": "NOT CLOSED. The guards exist in files. Whether the migrations have been re-run against the deployed database is unverifiable from a clone, and until they have been, every guarded function is guarded only in the repository. tools/advisory_lock_isolation_check.py says so on every run rather than reporting the platform clean."
     },
     {
-      "commit": "4f757c3fc5c2",
-      "date": "2026-09-16",
-      "subject": "fix(test): the repair for the `!== 401` arm contained the same defect, 38 lines down",
-      "files": [
-        "tests/app_session_isolation.js",
-        "tests/app_session_isolation_probe.py"
-      ],
-      "lines_added": 228,
-      "lines_removed": 22,
-      "app": "sairnlaw",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "the repair for the `!== 401` arm in tests/app_session_isolation.js SHIPPED WITH A FRESH INSTANCE OF THE SAME CLASS: the expectedApp arm added with the fix asserted `right.code !== 403` for \"a correctly signed-in SAIRNlaw session REACHES law_trusttx\" -- a negation of one refusal code, satisfied by a 401, a 500 or a harness fault, written 38 lines below the fix's own comment saying never to do it. Two older arms in the same file carried the shape as well",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "798543873912",
-        "date": "2026-09-16",
-        "subject": "fix(test): an arm that PASSED while printing its own refutation",
-        "lag_days": 0
-      },
-      "citation_note": "The arm could fail, and could not fail for the states that matter. Cited as 1.1 because the end state is the same -- an assertion that cannot go red when the thing it describes stops being true -- but it is not a check that stopped checking: it never could.",
-      "contributing_factors": [
-        {
-          "factor": "THE CLASS DOES NOT ANNOUNCE ITSELF AT THE MOMENT OF WRITING. `!== 403` reads as \"not refused by the gate\", which IS the question being asked -- and it is satisfied by a 401, a 500, and by the harness throwing. Every one of those is a legitimate attorney turned away, which is exactly what the arm exists to detect.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Three assertions moved to positive form: the new expectedApp arm to `=== 200`, the own-session CONTROL to `=== 200`, and the licence-boundary arm to `=== 400` by name."
-        },
-        {
-          "factor": "I WROTE IT 38 LINES BELOW MY OWN COMMENT SAYING NOT TO. The comment reads \"Never `!== <one code>` for it got through\" and the new arm does precisely that. Knowing the rule, having just written it down, and having the counter-example open in the same file was not enough -- which is the strongest evidence available that this needs a mechanical check rather than a remembered one.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "No sweep exists for reachability asserted as the negation of a status code. Writing one means distinguishing \"got through\" arms from arms that legitimately rule out one code; scoped but not built."
-        },
-        {
-          "factor": "A PROBE THAT ONLY PROVES THE NEW SUITE CATCHES THINGS PROVES NOTHING ABOUT THE REPAIR. Six of the nine mutations would have been caught by the BROKEN suite as well, so counting them as evidence would have overstated the fix by a factor of three.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "old_form_is_blind() pulls the suite AS IT WAS from git -- the parent of the commit introducing PHASE_2_GATED, derived rather than pinned -- and requires every same-reason mutation to leave it GREEN. It rejected three candidates, including a 403->401 mutation that tests the repair with the one input the defect never had."
-        },
-        {
-          "factor": "THE FIRST VERSION OF THAT CONTROL WAS WRONG IN THE SAME FAMILY: it HAND-REVERTED three predicates rather than reading history, and hand-reverting a predicate cannot remove an ARM that did not exist yet. It reported two false SEENs -- a counterfactual assembled by hand is a guess about history.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The counterfactual is `git show <sha>^:<path>`. Stated in the file, because the reconstruct-by-hand instinct is the natural one."
-        }
-      ],
-      "recurrence_open": "NO MECHANICAL CHECK EXISTS FOR THE CLASS, and this record is the proof that remembering does not work: the author had written the rule down in that file, in that session, and reintroduced the defect 38 lines later. Three arms in ONE file are corrected; nothing has swept the other 156 suites. The deeper cause is also still open -- sd-data answers no-session with 401 on one path and 403 on another, which is what makes a negation ambiguous in the first place."
-    },
-    {
       "commit": "0c26bcd13eda",
       "date": "2026-09-16",
       "subject": "fix(test): the sairnlaw resource suite was 18/20 and BOTH red arms were its own fault",
@@ -3758,6 +3701,63 @@
       "recurrence_open": "NOT CLOSED AS A CLASS. This closes one detector. Nothing on the platform checks that a classifier vocabulary is DERIVED from the language or the registry rather than written down, and 63 other tools carry a hardcoded string vocabulary. The two earlier instances were in different tools and were found by hand both times."
     },
     {
+      "commit": "2812cdf3fdbf",
+      "date": "2026-09-16",
+      "subject": "fix(tools): FOURTH instance of the one-spelling blind spot -- three well-guarded probes were being reported UNGUARDED, and the signal was inverted again",
+      "files": [
+        "tests/run_literal_drift_determinism_probe.py",
+        "tests/run_master_plan_probe.py",
+        "tests/run_testability_gate_probe.py",
+        "tests/run_traceability_matrix_probe.py",
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 138,
+      "lines_removed": 7,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sabotage_control_check.py reported three correctly-guarded probes as UNGUARDED because its vocabulary knew assert-in but not if-not-in-raise, under-crediting the more carefully written controls",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "tools/sabotage_control_check.py",
+      "injection": {
+        "unknown_reason": "The vocabulary predates the three probes that use this spelling; it was correct for the shapes that existed when written and went wrong as authors wrote refusals with readable messages instead of bare asserts. No single commit introduced the mismatch."
+      },
+      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the guard could not be READ, so a probe that refuses on a missing anchor scored identically to one that never checked. Same family -- a mechanism whose failure is indistinguishable from the absence of the thing it measures.",
+      "contributing_factors": [
+        {
+          "factor": "GUARDS held `assert old in src` but not `if old not in src: raise`, so three probes that refuse on a missing anchor were reported as having no guard at all.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The absence-and-refuse shape is accepted, narrowed to both operands being plain identifiers so a config check cannot match it."
+        },
+        {
+          "factor": "The better a probe's error message, the less likely it was to use a bare assert -- so the vocabulary systematically under-credited the more carefully written controls, inverting the signal the tool exists to give.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded in the file beside the two earlier instances of the same inversion, so the next spelling is read as a class rather than as a one-off."
+        },
+        {
+          "factor": "This is the FOURTH spelling of one class to be found this session -- after argparse in the selftest census, the path and .js forms in CONTROLS_FOR, and the aliased subprocess import. Every one was found by reading what a detector called empty, never by the detector going red.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "No mechanism compares a detector vocabulary against the ways the thing it detects can actually be written. Each instance has been fixed individually."
+        },
+        {
+          "factor": "My first widening was too broad and matched a config check that guards nothing. The tool's own blind lock refused the criteria and reported that NOTHING WAS SCANNED rather than producing a number with a false credit in it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Narrowed to identifier-on-both-sides, with two must-guard and two must-NOT-guard fixtures added and CRITERIA_VERSION bumped."
+        }
+      ],
+      "recurrence_open": "NOT CLOSED AS A CLASS, and this is the fourth instance in one session. Nothing on this platform compares a detector's vocabulary against the ways the thing it detects can actually be written; each of the four was found by a human reading what the detector called empty."
+    },
+    {
       "commit": "3e94cbb24b20",
       "date": "2026-09-16",
       "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script",
@@ -3992,61 +3992,61 @@
       "recurrence_open": "The same unguarded-parse shape may exist in other arms of other suites; nothing sweeps for it. What changed is that this suite now has a control that reads its failure MESSAGE, so a future arm that fails in the wrong vocabulary here is caught -- and only here."
     },
     {
-      "commit": "2812cdf3fdbf",
+      "commit": "4f757c3fc5c2",
       "date": "2026-09-16",
-      "subject": "fix(tools): FOURTH instance of the one-spelling blind spot -- three well-guarded probes were being reported UNGUARDED, and the signal was inverted again",
+      "subject": "fix(test): the repair for the `!== 401` arm contained the same defect, 38 lines down",
       "files": [
-        "tests/run_literal_drift_determinism_probe.py",
-        "tests/run_master_plan_probe.py",
-        "tests/run_testability_gate_probe.py",
-        "tests/run_traceability_matrix_probe.py",
-        "tools/sabotage_control_check.py"
+        "tests/app_session_isolation.js",
+        "tests/app_session_isolation_probe.py"
       ],
-      "lines_added": 138,
-      "lines_removed": 7,
-      "app": "PLATFORM",
-      "layer": "tooling",
+      "lines_added": 228,
+      "lines_removed": 22,
+      "app": "sairnlaw",
+      "layer": "test",
       "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sabotage_control_check.py reported three correctly-guarded probes as UNGUARDED because its vocabulary knew assert-in but not if-not-in-raise, under-crediting the more carefully written controls",
+      "detection_method": "code-review",
+      "summary": "the repair for the `!== 401` arm in tests/app_session_isolation.js SHIPPED WITH A FRESH INSTANCE OF THE SAME CLASS: the expectedApp arm added with the fix asserted `right.code !== 403` for \"a correctly signed-in SAIRNlaw session REACHES law_trusttx\" -- a negation of one refusal code, satisfied by a 401, a 500 or a harness fault, written 38 lines below the fix's own comment saying never to do it. Two older arms in the same file carried the shape as well",
       "rules": [
-        "1.11"
+        "1.1"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "tools/sabotage_control_check.py",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
       "injection": {
-        "unknown_reason": "The vocabulary predates the three probes that use this spelling; it was correct for the shapes that existed when written and went wrong as authors wrote refusals with readable messages instead of bare asserts. No single commit introduced the mismatch."
+        "commit": "798543873912",
+        "date": "2026-09-16",
+        "subject": "fix(test): an arm that PASSED while printing its own refutation",
+        "lag_days": 0
       },
-      "citation_note": "Adjacent. PR 1.11 names a check that could not run being folded into a pass; here the guard could not be READ, so a probe that refuses on a missing anchor scored identically to one that never checked. Same family -- a mechanism whose failure is indistinguishable from the absence of the thing it measures.",
+      "citation_note": "The arm could fail, and could not fail for the states that matter. Cited as 1.1 because the end state is the same -- an assertion that cannot go red when the thing it describes stops being true -- but it is not a check that stopped checking: it never could.",
       "contributing_factors": [
         {
-          "factor": "GUARDS held `assert old in src` but not `if old not in src: raise`, so three probes that refuse on a missing anchor were reported as having no guard at all.",
+          "factor": "THE CLASS DOES NOT ANNOUNCE ITSELF AT THE MOMENT OF WRITING. `!== 403` reads as \"not refused by the gate\", which IS the question being asked -- and it is satisfied by a 401, a 500, and by the harness throwing. Every one of those is a legitimate attorney turned away, which is exactly what the arm exists to detect.",
           "kind": "technical",
           "action_status": "done",
-          "action": "The absence-and-refuse shape is accepted, narrowed to both operands being plain identifiers so a config check cannot match it."
+          "action": "Three assertions moved to positive form: the new expectedApp arm to `=== 200`, the own-session CONTROL to `=== 200`, and the licence-boundary arm to `=== 400` by name."
         },
         {
-          "factor": "The better a probe's error message, the less likely it was to use a bare assert -- so the vocabulary systematically under-credited the more carefully written controls, inverting the signal the tool exists to give.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Recorded in the file beside the two earlier instances of the same inversion, so the next spelling is read as a class rather than as a one-off."
-        },
-        {
-          "factor": "This is the FOURTH spelling of one class to be found this session -- after argparse in the selftest census, the path and .js forms in CONTROLS_FOR, and the aliased subprocess import. Every one was found by reading what a detector called empty, never by the detector going red.",
+          "factor": "I WROTE IT 38 LINES BELOW MY OWN COMMENT SAYING NOT TO. The comment reads \"Never `!== <one code>` for it got through\" and the new arm does precisely that. Knowing the rule, having just written it down, and having the counter-example open in the same file was not enough -- which is the strongest evidence available that this needs a mechanical check rather than a remembered one.",
           "kind": "process",
           "action_status": "planned",
-          "action": "No mechanism compares a detector vocabulary against the ways the thing it detects can actually be written. Each instance has been fixed individually."
+          "action": "No sweep exists for reachability asserted as the negation of a status code. Writing one means distinguishing \"got through\" arms from arms that legitimately rule out one code; scoped but not built."
         },
         {
-          "factor": "My first widening was too broad and matched a config check that guards nothing. The tool's own blind lock refused the criteria and reported that NOTHING WAS SCANNED rather than producing a number with a false credit in it.",
+          "factor": "A PROBE THAT ONLY PROVES THE NEW SUITE CATCHES THINGS PROVES NOTHING ABOUT THE REPAIR. Six of the nine mutations would have been caught by the BROKEN suite as well, so counting them as evidence would have overstated the fix by a factor of three.",
           "kind": "detection",
           "action_status": "done",
-          "action": "Narrowed to identifier-on-both-sides, with two must-guard and two must-NOT-guard fixtures added and CRITERIA_VERSION bumped."
+          "action": "old_form_is_blind() pulls the suite AS IT WAS from git -- the parent of the commit introducing PHASE_2_GATED, derived rather than pinned -- and requires every same-reason mutation to leave it GREEN. It rejected three candidates, including a 403->401 mutation that tests the repair with the one input the defect never had."
+        },
+        {
+          "factor": "THE FIRST VERSION OF THAT CONTROL WAS WRONG IN THE SAME FAMILY: it HAND-REVERTED three predicates rather than reading history, and hand-reverting a predicate cannot remove an ARM that did not exist yet. It reported two false SEENs -- a counterfactual assembled by hand is a guess about history.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The counterfactual is `git show <sha>^:<path>`. Stated in the file, because the reconstruct-by-hand instinct is the natural one."
         }
       ],
-      "recurrence_open": "NOT CLOSED AS A CLASS, and this is the fourth instance in one session. Nothing on this platform compares a detector's vocabulary against the ways the thing it detects can actually be written; each of the four was found by a human reading what the detector called empty."
+      "recurrence_open": "NO MECHANICAL CHECK EXISTS FOR THE CLASS, and this record is the proof that remembering does not work: the author had written the rule down in that file, in that session, and reintroduced the defect 38 lines later. Three arms in ONE file are corrected; nothing has swept the other 156 suites. The deeper cause is also still open -- sd-data answers no-session with 401 on one path and 403 on another, which is what makes a negation ambiguous in the first place."
     },
     {
       "commit": "53b0f9a475c5",
@@ -4972,6 +4972,60 @@
       "recurrence_open": "Nothing scans for reachability asserted as `!== <one status code>`, and that shape is not unique to this file. The expectedApp arms cover ONE gated resource -- the newest -- because it is the one whose app is not 'stonedesk'; a future resource gated against a third app would need its own arm and nothing asks for one. And the deeper cause is still open: sd-data answers no-session with 401 in one path and 403 in another, which is what made a negation ambiguous in the first place, and unifying them is a client-visible contract change nobody has decided."
     },
     {
+      "commit": "7b59f73ba28b",
+      "date": "2026-09-16",
+      "subject": "fix(register-gate): a commit wearing another commit's message no longer walks past it",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 202,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/register_feed_gate.py demanded a defect record only when the commit SUBJECT matched ^fix(, so a commit carrying the wrong message escaped every check in it. Proved on origin/main: a8528025 wears 'chore(register): arm 7 attributed somebody else's edits to the probe' -- a message written for a 50-line append to the defect register -- and contains a 232s-to-25s performance fix to tools/retry_backoff_check.py plus three REGISTRY entries. No record cites it. The file's own header anticipated the deliberate version of this and not the accidental one, which is what happened: author date 10:48:38 against commit date 10:57:53, the signature of a rebase. Closed by a CONTENT rule -- two commits sharing a byte-identical subject on file sets that do not intersect -- measured at 3 hits in 807 commits, all three real, against 1,293 overlapping pairs correctly ignored.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "Subject-only keying is how the gate was built rather than something a commit introduced, so naming the commit that created the tool would record a lag that never elapsed."
+      },
+      "citation_note": "1.1 is a check that stopped checking. This one never checked the case at all: it asked a question about the subject and was read as asking one about the change. Same end state by a different route, so arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "Every check in the gate keyed on the commit SUBJECT, which is a claim about the change written by hand and not derived from it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A content check was added: a commit whose subject is byte-identical to another commit's, on a file set that does not intersect it at all, is refused"
+        },
+        {
+          "factor": "The file's own header anticipated only the DELIBERATE version -- somebody wording a subject to avoid the gate -- so nothing was watching for a rebase attaching the wrong message to a changeset by accident",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The accidental route is now the one that is blocked, and the header says which of the two is closed and which is not"
+        },
+        {
+          "factor": "Nothing in the toolchain compares a commit's message to its content, so the mismatch was invisible to every reader downstream -- git log, the register, the review gate all take the subject at face value",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A message is prose and a diff is code; no mechanism can hold them to each other in general. The disjoint-file-set rule works because it compares two MESSAGES that are identical, not a message to a diff."
+        },
+        {
+          "factor": "The escape from a rebase conflict is an editor that keeps the previous message, and the tooling offers no prompt at that moment -- the wrong message is the default outcome of the recovery, not a slip",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Changing how five sessions recover from a rebase is a workflow decision, not a patch to this gate. Recorded so the next person sees the mechanism rather than blaming the individual."
+        }
+      ],
+      "recurrence_open": "A UNIQUE, honestly-typed, WRONG subject still passes -- nothing here can read a message against a diff, and the escape hatch plus a human reader are what that rests on. The window is 14 days, so a message reused against an older commit is invisible and the refusal says so. And the three hits that made the rule are three that have ALREADY happened: a8528025 is now recorded, the other two are not, and nobody has decided whether they need to be."
+    },
+    {
       "commit": "7bb6eb2a8e8f",
       "date": "2026-09-16",
       "subject": "fix(test): my own probe was emitting four FALSE anchor-zeros at the platform check",
@@ -5070,6 +5124,62 @@
         }
       ],
       "recurrence_open": "The vocabulary is still a hand-kept list of four plus one. A fifth control added anywhere on the platform is invisible to this sweep until somebody edits the pattern, and nothing measures how many such controls exist."
+    },
+    {
+      "commit": "debb3b674068",
+      "date": "2026-09-16",
+      "subject": "feat(tools): a sweep for the class -- and it found a second instance on its first run",
+      "files": [
+        "api/sairndental/public-book.test.js",
+        "docs/TOOLING-INVENTORY.md",
+        "tools/negated_status_assertion_scan.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 302,
+      "lines_removed": 12,
+      "app": "sairndental",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/sairndental/public-book.test.js asserted `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` for an arm titled \"passes validation and REACHES THE NETWORK STAGE\". Any one term satisfied it, and the request was 502ing before it reached anything -- because the block's resolveSlug stub throws unconditionally and public-book.js destructures it at module load, so NO arm in that block could ever get past validation. The arm was green the whole time",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "negated_status_assertion_scan.py",
+      "injection": {
+        "unknown_reason": "The arm and its harness stub appear to have arrived together, and no commit in the file's history shows the disjunction being ADDED to a previously-strict assertion. Recorded as unknown rather than attributed to the file's creation commit on a guess."
+      },
+      "citation_note": "The arm could fail, and could not fail for the state it described. Same end state as 1.1 -- an assertion that cannot go red when its claim stops being true -- reached through a disjunction rather than through decay.",
+      "contributing_factors": [
+        {
+          "factor": "THE ASSERTION WAS A THREE-WAY DISJUNCTION, SO ANY ONE TERM SATISFIED IT. `reached || res.statusCode !== 400 || res.body.error.code !== 'NOTES_TOO_LONG'` is green whenever the handler dies early, refuses with a 500, or refuses with a 400 carrying any other code. The arm already recorded its own claim exactly, in `reached`; the other two terms could only weaken it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Reduced to `assert.ok(reached, ...)`, with the observed status and error code interpolated into the failure message so the next reader gets the diagnosis rather than a bare false."
+        },
+        {
+          "factor": "THE HARNESS MADE THE ARM IMPOSSIBLE TO PASS HONESTLY, WHICH IS WHY THE WEAK PREDICATE WAS LOAD-BEARING. public-book.js DESTRUCTURES resolveSlug at module load, and the block's stub throws unconditionally, so no arm in it could get past validation -- including the one whose entire subject is getting past validation. The disjunction was what let it look like it had.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The stub is switchable and exactly one arm turns it on; every validation arm keeps the refusal it relies on."
+        },
+        {
+          "factor": "IT WAS FOUND BY A SWEEP BUILT FOR A DIFFERENT FILE, ON ITS FIRST RUN, over 330 suites. Nothing about this suite was suspected -- it was green, in an app with no open findings, and the title read correctly.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tools/negated_status_assertion_scan.py, registered report-only in PURPOSES. Deliberately a READ-LIST: `!== <code>` is correct when the claim is that some OTHER lock answered, and no mechanical rule separates that from 'it got through'."
+        },
+        {
+          "factor": "A GREEN ARM WITH A TRUE-SOUNDING TITLE IS THE HARDEST KIND TO DOUBT. 'passes validation and reaches the network stage' is exactly what a reader wants to be true, and the only thing contradicting it was a status code nobody printed.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The failure message prints the status and the error code, so the arm cannot fail without saying which stage it stopped at."
+        }
+      ],
+      "recurrence_open": "The sweep finds `!== <literal status>` inside an asserting line. It does NOT find `assert.notStrictEqual(code, 401)`, which is the same claim with no literal operator, and it cannot see a disjunction whose weak term is not a status comparison at all -- `reached || somethingElse` would be invisible. It found this one because one term happened to carry the shape it scans for."
     },
     {
       "commit": "a744ceb5e0eb",
@@ -5191,60 +5301,6 @@
         }
       ],
       "recurrence_open": "The dispatch is by file suffix, so it handles .py and .js and nothing else. A third kind -- a shell script, a compiled binary, a .mjs needing a flag -- lands in the same hole, and the registry format still does not record what a test is written in. What changed is that the population now has two kinds instead of one, not that the assumption was removed."
-    },
-    {
-      "commit": "7b59f73ba28b",
-      "date": "2026-09-16",
-      "subject": "fix(register-gate): a commit wearing another commit's message no longer walks past it",
-      "files": [
-        "tests/run_register_feed_gate_probe.py",
-        "tools/register_feed_gate.py"
-      ],
-      "lines_added": 202,
-      "lines_removed": 2,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tools/register_feed_gate.py demanded a defect record only when the commit SUBJECT matched ^fix(, so a commit carrying the wrong message escaped every check in it. Proved on origin/main: a8528025 wears 'chore(register): arm 7 attributed somebody else's edits to the probe' -- a message written for a 50-line append to the defect register -- and contains a 232s-to-25s performance fix to tools/retry_backoff_check.py plus three REGISTRY entries. No record cites it. The file's own header anticipated the deliberate version of this and not the accidental one, which is what happened: author date 10:48:38 against commit date 10:57:53, the signature of a rebase. Closed by a CONTENT rule -- two commits sharing a byte-identical subject on file sets that do not intersect -- measured at 3 hits in 807 commits, all three real, against 1,293 overlapping pairs correctly ignored.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "Subject-only keying is how the gate was built rather than something a commit introduced, so naming the commit that created the tool would record a lag that never elapsed."
-      },
-      "citation_note": "1.1 is a check that stopped checking. This one never checked the case at all: it asked a question about the subject and was read as asking one about the change. Same end state by a different route, so arguable rather than clean.",
-      "contributing_factors": [
-        {
-          "factor": "Every check in the gate keyed on the commit SUBJECT, which is a claim about the change written by hand and not derived from it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A content check was added: a commit whose subject is byte-identical to another commit's, on a file set that does not intersect it at all, is refused"
-        },
-        {
-          "factor": "The file's own header anticipated only the DELIBERATE version -- somebody wording a subject to avoid the gate -- so nothing was watching for a rebase attaching the wrong message to a changeset by accident",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The accidental route is now the one that is blocked, and the header says which of the two is closed and which is not"
-        },
-        {
-          "factor": "Nothing in the toolchain compares a commit's message to its content, so the mismatch was invisible to every reader downstream -- git log, the register, the review gate all take the subject at face value",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "A message is prose and a diff is code; no mechanism can hold them to each other in general. The disjoint-file-set rule works because it compares two MESSAGES that are identical, not a message to a diff."
-        },
-        {
-          "factor": "The escape from a rebase conflict is an editor that keeps the previous message, and the tooling offers no prompt at that moment -- the wrong message is the default outcome of the recovery, not a slip",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "Changing how five sessions recover from a rebase is a workflow decision, not a patch to this gate. Recorded so the next person sees the mechanism rather than blaming the individual."
-        }
-      ],
-      "recurrence_open": "A UNIQUE, honestly-typed, WRONG subject still passes -- nothing here can read a message against a diff, and the escape hatch plus a human reader are what that rests on. The window is 14 days, so a message reused against an older commit is invisible and the refusal says so. And the three hits that made the rule are three that have ALREADY happened: a8528025 is now recorded, the other two are not, and nobody has decided whether they need to be."
     },
     {
       "commit": "b42d0729ff7f",
