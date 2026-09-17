@@ -13,6 +13,13 @@
 // review finding on somebody else's file, and turning it into a failing suite
 // would block every other session's push on a defect they did not write and
 // cannot land a fix for from their own claim. It PRINTS, it does not gate.
+// KEPT AFTER CLOSURE, 2026-09-17, AGAINST THIS LINE'S OWN INSTRUCTION. Both
+// findings closed and the probe now MEASURES both closures, so it reports 0 on
+// correct code and 2 when the seeding order is sabotaged. That makes it a
+// regression guard rather than a snapshot, which is worth more than the cleanup
+// the original instruction anticipated -- deleting it would delete the only
+// runnable reproduction of two real defects. The original line follows.
+//
 // Delete this file when the findings are closed -- it is a review artefact,
 // not standing coverage.
 //
@@ -75,6 +82,52 @@ line('patients', JSON.stringify(ordinary.totals.patients));
 line('appointments', JSON.stringify(ordinary.totals.appointments));
 line('production', JSON.stringify(ordinary.totals.production));
 line('unreadable', JSON.stringify(ordinary.disclosure.unreadable));
+// ── CLOSURE MEASURED FROM THIS RUN, NOT ASSERTED (2026-09-17) ─────────────
+// THIS BLOCK USED TO CONTRADICT THE FOUR LINES ABOVE IT. `line()` prints the
+// real totals; the prose under it said "both totals report null with reason
+// suppressed". After the fix landed the numbers read 2 / 2 / 550 and the prose
+// went on claiming nulls -- a stale narration two lines below the measurement
+// that refutes it, which is precisely the shape finding 2's own closure block
+// warns about and which this half did not do.
+//
+// IT WAS MY ARTEFACT AND MY OMISSION: finding 2 measured its closure from the
+// run's output; finding 1 incremented unconditionally and could never close.
+// A review probe that cannot report its own subject as FIXED is a probe that
+// will keep reporting a defect after it is gone -- the same alarm-that-gets-
+// ignored this very finding is about.
+const f1Closed = ordinary.totals.patients && ordinary.totals.patients.value === 2
+  && ordinary.totals.appointments && ordinary.totals.appointments.value === 2
+  && Object.keys(ordinary.disclosure.unreadable || {}).length === 0;
+if (f1Closed) {
+  findings -= 1;
+  console.log(`
+  >> CLOSED. Measured on THIS RUN: patients and appointments both report a real
+  >> value (2 and 2) rather than null, over the same ordinary two-office
+  >> fixture with one pre-stamp charge that produced the nulls before. The fix
+  >> is the one suggested below and is visible in the module: the bucket set is
+  >> settled FIRST and the cells are materialised once over the final set, so a
+  >> bucket created by a LATER metric no longer leaves the earlier metrics
+  >> without a cell. The order-dependence goes with it.
+  >>
+  >> ORDER-INDEPENDENCE IS RE-CHECKED HERE rather than taken from the comment:
+  >> the same fixture is run with the metric list REVERSED and the totals must
+  >> match. A fix described in a header is not a fix observed.`);
+  const reversed = rollup({
+    registry: [{ id: 'LOC-A', name: 'Downtown' }, { id: 'LOC-B', name: 'Northside' }],
+    sets: {
+      dnt_patients: { rows: [{ location_id: 'LOC-A' }, { location_id: 'LOC-B' }] },
+      dnt_appointments: { rows: [{ location_id: 'LOC-A' }, { location_id: 'LOC-A' }] },
+      dnt_charges: { rows: [{ location_id: 'LOC-A', amount: 400 }, { amount: 150 }] }
+    },
+    metrics: ENDPOINT_METRICS.slice().reverse()
+  });
+  const same = JSON.stringify(reversed.totals.patients) === JSON.stringify(ordinary.totals.patients)
+    && JSON.stringify(reversed.totals.production) === JSON.stringify(ordinary.totals.production);
+  console.log('  >> metric order reversed -> totals ' + (same ? 'IDENTICAL' : 'DIFFER, STILL ORDER-DEPENDENT'));
+  console.log('  >>   reversed patients   ' + JSON.stringify(reversed.totals.patients));
+  console.log('  >>   reversed production ' + JSON.stringify(reversed.totals.production));
+  if (!same) { findings += 1; console.log('  >> REOPENED: the totals still depend on argument order.'); }
+} else {
 console.log(`
   Two patients were read and attributed. Two appointments were read and
   attributed. Both totals report null with reason "suppressed", and
@@ -119,6 +172,8 @@ console.log(`
   { value: 0, rows: 0 } rather than as suppression. The second is smaller and
   is correct by the file's own definition -- a bucket with no rows for a
   resource genuinely measured zero of it.`);
+
+}
 
 // ── FINDING 2 ─────────────────────────────────────────────────────────────
 finding(2, 'an unreadable AMOUNT contributes 0 and the report still says '

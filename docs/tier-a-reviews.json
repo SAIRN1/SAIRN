@@ -149,10 +149,10 @@
         "api/_lib/dnt-rollup.test.js"
       ],
       "what": "dnt_rollup review fixes for Hank's two findings (ce7764fa): cells materialised in a second pass over the final bucket set so a later metric cannot make an earlier one unmeasurable and the answer no longer depends on metric order; unreadable summed fields counted per cell and per total and forcing disclosure.complete false. PRESS ON: that a suppressed RESOURCE is still null and never 0 after the refactor, and that readable() does not mistake a literal 0 for an unreadable field.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "status": "reviewed",
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-09-17T23:13:53Z",
+      "verdict": "REVIEWED BY RE-RUNNING MY OWN REPRODUCTION AGAINST HEAD. BOTH FINDINGS ARE CLOSED and the closures are measured, not read. Finding 1: over the same ordinary two-office fixture with one pre-stamp charge that produced the nulls, patients and appointments now report 2 and 2 with disclosure.unreadable empty; the module settles the bucket set FIRST and materialises cells once over the final set, which was the suggested fix. Finding 2: the total carries unread>0 and disclosure.complete is false. dnt-rollup.test.js 27/27 and dnt-rollup-endpoint.test.js 12/12. I RE-CHECKED THE ORDER-INDEPENDENCE RATHER THAN TAKING IT FROM THE HEADER -- the same fixture with the metric list REVERSED now returns identical totals. A fix described in a comment is not a fix observed, and order-dependence was what made finding 1 a defect rather than a policy. AND I FOUND A DEFECT IN MY OWN REVIEW ARTEFACT, which is the part worth recording: tests/dnt_rollup_review_probe.js measured finding 2's closure from the run's output but incremented finding 1 unconditionally, so it could never report finding 1 as fixed -- it printed the real totals (2 / 2 / 550) and then, two lines below, prose asserting they were null. A stale narration sitting under the measurement that refutes it, in the artefact whose own finding-2 block warns about exactly that shape. Fixed: both closures are now measured and the probe reports 0 findings on correct code and 2 when the seeding order is sabotaged, so it can move in both directions. KEPT RATHER THAN DELETED, against its own header's instruction to delete when the findings close: it is now a regression guard that goes red if either finding returns, which is worth more than the cleanup the instruction anticipated. No change requested to fourth's code."
     },
     {
       "author_session": "fourth",
