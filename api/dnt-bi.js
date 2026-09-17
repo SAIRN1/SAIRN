@@ -201,6 +201,38 @@ async function feed(req, res, ctx) {
     }
   }
 
+  // ── THE SCOPE IS RESOLVED BEFORE THE PHI IS READ (2026-09-17) ───────────
+  // THIS BLOCK USED TO RUN AFTER THE DATASET READ, and the ordering was the
+  // defect. On the `patient_ids` path the dataset query carries NO filter --
+  // the ids are not known yet -- so the WHOLE PRACTICE'S rows were fetched and
+  // only then narrowed, and the SCOPE_LOOKUP_FAILED refusal below fired with
+  // every one of those rows already pulled over the wire and into this
+  // function. Refusing after the read is still a refusal and the caller still
+  // never sees the rows; it is also a full-table PHI read on every request by
+  // a role entitled to a fraction of it, and a refusal that happens after the
+  // thing it was protecting has already been fetched.
+  //
+  // FOUND BY SWEEPING FOR THE SHAPE, not by a failure here. api/sd-data.js
+  // resolves dntScopeIds before its read and refuses first; this endpoint
+  // derives the same ids from the same table and did it in the other order.
+  // Two paths to the same patient list with two different guarantees is the
+  // divergence worth naming: the sweep was for scope lookups whose failure
+  // could be silently substituted, and this is the one that fetched first.
+  let patientIds = null;
+  if (scope.kind === 'patient_ids') {
+    // The provider's own patients: everyone they have an appointment with.
+    // Same derivation as sd-data.js's dntPatientIdsForProvider.
+    const ar = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(trow.license_hash) +
+      '&provider_id=eq.' + enc(providerId) + '&select=data'), { headers });
+    const arows = await ar.json().catch(() => null);
+    if (!ar.ok || !Array.isArray(arows)) {
+      res.status(502).json({ error: { code: 'SCOPE_LOOKUP_FAILED', message: 'Could not determine your patient list. Try again.' } });
+      return;
+    }
+    patientIds = {};
+    arows.forEach((x) => { if (x && x.data && x.data.patient_id) patientIds[String(x.data.patient_id)] = true; });
+  }
+
   // Read. The provider_column scope filters in the DATABASE, matching
   // sd-data.js:8352 -- an appointment blob can carry photos up to ~1.26 MB, so
   // reading the practice to discard most of it would be both a privacy and a
@@ -225,19 +257,12 @@ async function feed(req, res, ctx) {
 
   let raw = (Array.isArray(drows) ? drows : []).map((x) => x.data).filter(Boolean);
 
+  // applyPatientScope fails CLOSED on an empty map -- `allowed[...] === true`
+  // over `allowedPatientIds || {}` -- so a provider with no appointments gets
+  // no rows rather than all of them. The refusal above is what keeps a FAILED
+  // lookup from ever reaching here looking like that legitimate empty.
   if (scope.kind === 'patient_ids') {
-    // The provider's own patients: everyone they have an appointment with.
-    // Same derivation as sd-data.js's dntPatientIdsForProvider.
-    const ar = await fetch(rest('dnt_appointments?license_hash=eq.' + enc(trow.license_hash) +
-      '&provider_id=eq.' + enc(providerId) + '&select=data'), { headers });
-    const arows = await ar.json().catch(() => null);
-    if (!ar.ok || !Array.isArray(arows)) {
-      res.status(502).json({ error: { code: 'SCOPE_LOOKUP_FAILED', message: 'Could not determine your patient list. Try again.' } });
-      return;
-    }
-    const ids = {};
-    arows.forEach((x) => { if (x && x.data && x.data.patient_id) ids[String(x.data.patient_id)] = true; });
-    raw = bi.applyPatientScope(datasetName, raw, ids);
+    raw = bi.applyPatientScope(datasetName, raw, patientIds);
   }
 
   const { limit, offset } = bi.pageParams(q);

@@ -339,6 +339,53 @@ test('a provider sees only their own patients on a patient-scoped dataset', asyn
   assert.strictEqual(r.body.total, 1, 'the total counted rows the caller may not see');
 });
 
+// ── THE ORDER, WHICH IS A SEPARATE CLAIM FROM THE RESULT (2026-09-17) ─────
+// Both arms below passed against the OLD code, which read the whole practice's
+// dataset and narrowed it afterwards. Nothing here could tell that apart from
+// resolving the scope first, because the rows the caller receives are
+// identical either way -- the difference is entirely in what was fetched.
+//
+// FOUND BY A PLATFORM SWEEP FOR THE SHAPE, not by a failure. api/sd-data.js
+// resolves its patient ids BEFORE its read and refuses first; this endpoint
+// derived the same ids from the same table in the other order, so its
+// SCOPE_LOOKUP_FAILED refusal fired with every row already over the wire.
+test('the patient scope is resolved BEFORE the protected dataset is read', async () => {
+  seed({ token: { employee_id: 'emp-doc' } });
+  const r = await GET({ dataset: 'recall_outreach', token: GOOD_TOKEN });
+  assert.strictEqual(r.statusCode, 200);
+  const order = REQUESTS.filter(function (q) { return q.method === 'GET'; })
+    .map(function (q) { return q.table; });
+  const scopeAt = order.indexOf('dnt_appointments');
+  const dataAt = order.indexOf('dnt_recall_outreach');
+  assert.ok(scopeAt !== -1 && dataAt !== -1, 'one of the two reads did not happen: ' + order.join(','));
+  assert.ok(scopeAt < dataAt,
+    'the protected dataset was read before the scope was known: ' + order.join(','));
+});
+
+test('a FAILED patient-scope lookup refuses 502 and the dataset is never read', async () => {
+  seed({ token: { employee_id: 'emp-doc' } });
+  TABLES.dnt_appointments.error = true;      // the scope lookup cannot answer
+  const r = await GET({ dataset: 'recall_outreach', token: GOOD_TOKEN });
+  delete TABLES.dnt_appointments.error;
+  assert.strictEqual(r.statusCode, 502);
+  assert.strictEqual(r.body.error.code, 'SCOPE_LOOKUP_FAILED');
+  assert.ok(!('rows' in r.body), 'a refusal must never carry rows');
+  // THE HALF THAT ONLY THE REORDER BUYS. Before it, this read had already
+  // happened by the time the refusal was decided.
+  assert.ok(!REQUESTS.some(function (q) { return q.table === 'dnt_recall_outreach'; }),
+    'the protected dataset was fetched despite the scope being unknown');
+});
+
+test('...and a provider with NO appointments is an empty result, not a failure', async () => {
+  // The pair. applyPatientScope fails closed on {}, so an empty map must mean
+  // no rows -- never every row, and never a 502 either.
+  seed({ token: { employee_id: 'emp-doc' } });
+  TABLES.dnt_appointments.rows = [];
+  const r = await GET({ dataset: 'recall_outreach', token: GOOD_TOKEN });
+  assert.strictEqual(r.statusCode, 200);
+  assert.deepStrictEqual(r.body.rows, []);
+});
+
 test('a provider sees only their own patients in the patients dataset', async () => {
   seed({ token: { employee_id: 'emp-doc' } });
   const r = await GET({ dataset: 'patients', token: GOOD_TOKEN });
