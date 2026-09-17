@@ -1694,6 +1694,16 @@
       "claimed_at_epoch": 1789657562.9074154,
       "status": "released",
       "released_at": "2026-09-17T15:16:01Z"
+    },
+    {
+      "id": "cc-1789658410",
+      "session": "cc",
+      "subject": "mech-eligibility-wiring",
+      "task": "wire the dispatch eligibility check the credentials panel already claims sairnmechanical",
+      "claimed_at": "2026-09-17T15:20:10Z",
+      "claimed_at_epoch": 1789658410.416385,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
