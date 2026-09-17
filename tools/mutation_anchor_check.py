@@ -79,6 +79,34 @@ def literal(node):
         return None
 
 
+def element(node):
+    """One MUTATIONS element, rendered so resolve() can tell the kinds apart.
+
+    Three shapes, and the third was being MIS-REPORTED until 2026-09-17:
+
+      a literal            -> the value
+      a bare Name          -> '@name' (a module constant, or a transform fn)
+      re.compile('...')    -> ('re', '<pattern>')
+
+    A COMPILED PATTERN IS A TEXT ANCHOR AND IT CAN ROT, which is why it is
+    counted rather than excused. license_trial_gate_probe.py arm 9 switched to
+    one after its literal died on a rename, and this checker -- which could not
+    see past the Call node -- reported it as COULD NOT READ. That is the right
+    answer for something genuinely unreadable and the WRONG one here: it moved a
+    live, checkable anchor into the bucket that means "nobody knows", which is
+    the same place a real stale anchor would sit. Counted now, with re.findall,
+    so the uniqueness rule applies to it exactly as to a literal.
+    """
+    if isinstance(node, ast.Name):
+        return '@' + node.id
+    if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
+            and node.func.attr == 'compile' and node.args):
+        pat = literal(node.args[0])
+        if isinstance(pat, str):
+            return ('re', pat)
+    return literal(node)
+
+
 def read_probe(path):
     """(module-level string assignments, MUTATIONS entries) by PARSING, never importing.
 
@@ -103,8 +131,7 @@ def read_probe(path):
         if tgt.id == 'MUTATIONS' and isinstance(node.value, (ast.List, ast.Tuple)):
             for el in node.value.elts:
                 if isinstance(el, (ast.Tuple, ast.List)):
-                    muts.append([literal(x) if not isinstance(x, ast.Name) else ('@' + x.id)
-                                 for x in el.elts])
+                    muts.append([element(x) for x in el.elts])
             continue
         v = literal(node.value)
         if isinstance(v, str):
@@ -142,7 +169,9 @@ def resolve(consts, entry):
     # a real stale anchor would hide in the same category.
     if isinstance(old, str) and old.startswith('@') and old[1:] not in consts:
         return target, None
-    if not isinstance(target, str) or not isinstance(old, str):
+    # A ('re', pattern) anchor is resolvable and countable -- see element().
+    if not isinstance(target, str) or not (isinstance(old, str)
+                                           or (isinstance(old, tuple) and old and old[0] == 're')):
         return None, old
     p = target if os.path.isabs(target) else os.path.join(REPO, target)
     return (p if os.path.exists(p) else None), old
@@ -207,7 +236,15 @@ def main(argv):
                 continue
             if target not in cache:
                 cache[target] = io.open(target, encoding='utf-8', errors='replace').read()
-            n = cache[target].count(old)
+            if isinstance(old, tuple):          # ('re', pattern) -- see element()
+                try:
+                    n = len(re.findall(old[1], cache[target]))
+                except re.error as e:
+                    unreadable.append((rel, 'arm %r: the pattern will not compile: %s'
+                                       % (str(entry[0])[:40], e)))
+                    continue
+            else:
+                n = cache[target].count(old)
             rows.append({'probe': rel,
                          'target': os.path.relpath(target, REPO).replace('\\', '/'),
                          'arm': str(entry[0])[:70], 'matches': n})

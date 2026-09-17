@@ -103,12 +103,71 @@ def plant(wt, rel, anchor, replacement):
     return p
 
 
-# The target is a REAL tracked file carrying a REAL regex literal. Chosen for
-# being stable and unrelated to this tool, so a rot here is a rot in the anchor
-# rather than a redesign of the subject.
+def append(wt, rel, block):
+    """Add a block to the END of a real file, and PROVE it landed, or raise.
+
+    ── THERE IS NO ANCHOR HERE ON PURPOSE (2026-09-17) ─────────────────────
+    Arms C and D do not need to break any particular line; they need a real
+    tracked file, scanned by the real tool, to contain one planted pattern.
+    An anchor was doing nothing for them except giving the probe a way to rot,
+    and it DID rot -- see the note beside TARGET. The assertion the docstring
+    promises is kept in full: the file is read back and the block must be in
+    it, and the file must actually have grown.
+    """
+    p = os.path.join(wt, rel)
+    before = io.open(p, encoding='utf-8').read()
+    io.open(p, 'w', encoding='utf-8', newline='').write(before + block)
+    back = io.open(p, encoding='utf-8').read()
+    if block not in back or len(back) <= len(before):
+        raise AssertionError('the SABOTAGE did not land: block not on disk in ' + rel)
+    return p
+
+
+# The target is a REAL tracked file, scanned by the real tool, and unrelated to
+# it -- so a failure here is about the checker rather than about the subject.
+#
+# ── IT USED TO CARRY A TEXT ANCHOR, AND THE ANCHOR DIED (2026-09-17) ────────
+# ANCHOR was the regex literal `/^\d{4}-\d{2}-\d{2}$/`, and 7099d99f -- "item
+# 94: one module owns what a calendar date is, and all fourteen copies were
+# wrong" -- removed it along with the other thirteen copies. ANCHORING ON A
+# DUPLICATED CONSTRUCT IS ANCHORING ON SOMETHING WHOSE WHOLE FUTURE IS TO BE
+# DEDUPLICATED, which is the part worth carrying forward: the refactor did not
+# break this probe by accident, it did exactly what it was written to do.
+#
+# The probe's own guard is what reported it -- `plant()` raises rather than
+# letting str.replace no-op, so arms C and D failed loudly instead of running
+# the checker against an unmodified file and reporting the clean result as a
+# pass. That is the shape tools/sabotage_control_check.py exists to catch and
+# it worked; what it could not do was tell anybody which anchor to use next.
+#
+# AND THE TOOL THAT TRACKS STALE ANCHORS CANNOT SEE THIS FILE. Cross-checked
+# 2026-09-17: tools/mutation_anchor_check.py walks probes that define a
+# MUTATIONS list, and this probe has none -- it calls plant() directly. So its
+# anchors were never in the 245 the checker verifies, and the one rot it had
+# was invisible to the one tool built to find rots. Arms C and D now have no
+# text anchor at all, which removes them from that gap rather than papering
+# over it; arm E's anchor is REAL -- it is an assertion about the tool's own
+# fixture table -- and is declared to mutation_anchor_check below.
 TARGET = 'api/_lib/accounting-connector.js'
-ANCHOR = r"/^\d{4}-\d{2}-\d{2}$/"
 TOOL = 'tools/invisible_in_pattern_check.py'
+
+# ── THE ONE REMAINING TEXT ANCHOR, DECLARED SO THE ANCHOR CHECKER SEES IT ───
+# Arm E flips one of the tool's own blind-lock fixtures from False to True, and
+# that anchor is REAL: it is an assertion about the fixture table, not a
+# position to write at, so it cannot be replaced by an append.
+#
+# It is declared as MUTATIONS purely so tools/mutation_anchor_check.py counts
+# it among the anchors it verifies match exactly once. That checker walks
+# probes DEFINING THIS NAME, and this probe defined none -- which is why its
+# only rot was invisible to the only tool built to find rots. Arm E reads the
+# entry rather than repeating it, so the declaration cannot drift from the use.
+MUTATIONS = [
+    ("E. the blind lock's own fixture is flipped to disagree", TOOL,
+     "    ('a clean regex literal', 'f.js',\n"
+     "     'assert.ok(/delete/i.test(src));', False),",
+     "    ('a clean regex literal', 'f.js',\n"
+     "     'assert.ok(/delete/i.test(src));', True),"),
+]
 
 print('invisible_in_pattern_check -- the control pair')
 
@@ -134,9 +193,9 @@ ok('B4 the census runs even on a clean pass, so a zero is a real zero',
 print('\n--- C. an invisible character inside a real regex ---')
 wt = worktree('flag')
 try:
-    plant(wt, TARGET, ANCHOR,
-          ANCHOR + "\n_PROBE_RE = 'x' if False else None\n_PROBE = (0,)\n"
-          + "_PROBE_PATTERN = [/de%slete/i] if False else None\n" % ZWSP)
+    append(wt, TARGET,
+           "\n_PROBE_RE = 'x' if False else None\n_PROBE = (0,)\n"
+           + "_PROBE_PATTERN = [/de%slete/i] if False else None\n" % ZWSP)
     rc, out = run_tool(wt)
     ok('C1 it exits 1', rc == 1, 'rc=%d\n%s' % (rc, out[-800:]))
     ok('C2 and names the file', TARGET in out.replace('\\', '/'), out[-800:])
@@ -150,8 +209,8 @@ finally:
 print('\n--- D. a C0 backspace is NOT this tool\'s finding ---')
 wt = worktree('c0')
 try:
-    plant(wt, TARGET, ANCHOR,
-          ANCHOR + "\n_PROBE_PATTERN = [/de%slete/i] if False else None\n" % BS)
+    append(wt, TARGET,
+           "\n_PROBE_PATTERN = [/de%slete/i] if False else None\n" % BS)
     rc, out = run_tool(wt)
     ok('D1 this tool stays silent on C0', rc == 0, 'rc=%d\n%s' % (rc, out[-800:]))
     # AND THE OTHER HALF: the C0 tool must actually catch what this one declined.
@@ -169,9 +228,7 @@ finally:
 print('\n--- E. the blind lock refuses rather than judging real files ---')
 wt = worktree('lock')
 try:
-    plant(wt, TOOL,
-          "    ('a clean regex literal', 'f.js',\n     'assert.ok(/delete/i.test(src));', False),",
-          "    ('a clean regex literal', 'f.js',\n     'assert.ok(/delete/i.test(src));', True),")
+    plant(wt, *MUTATIONS[0][1:])
     rc, out = run_tool(wt)
     ok('E1 it exits 2 -- could-not-run, not a finding and not a pass',
        rc == 2, 'rc=%d\n%s' % (rc, out[-800:]))
