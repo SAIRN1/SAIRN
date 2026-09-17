@@ -432,6 +432,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T00:18:13Z",
+      "resources": [
+        "invoices",
+        "law_trust_reconcile"
+      ],
+      "files": [
+        "tests/sairnlaw_billing_codes.js",
+        "tests/sairnlaw_billing_codes_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL for tests/sairnlaw_billing_codes.js, plus the count-pin fix that had to land first to make the suite green. No product code: sairnlaw.html is untouched and the control asserts byte-identity and asks git. It names law_timeentries and invoices because that is what a billable hour with no UTBMS code lands on. WHAT A REVIEWER SHOULD CHECK: (1) THE COUNT PIN. I raised 19 to 20 and named law_trust_reconcile and 4eaa3f05 as what moved it. Confirm that is actually the twentieth and that no OTHER law_ resource was added at the same time -- if two arrived, naming one is a half-true comment that will mislead the next person to hit this. (2) Mutation 3 fills the select from nothing while leaving the accessor correct; confirm the suite fails on the SELECT arm rather than incidentally. (3) Whether four is the right stopping point -- saveTime() validates matter and hours and NOT the code, and I did not mutate that validation because the suite's subject is the CODE LIST rather than the save path, which is a scoping judgement and not a fact.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
