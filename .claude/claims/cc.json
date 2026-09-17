@@ -1554,6 +1554,16 @@
       "claimed_at_epoch": 1789605838.5324078,
       "status": "released",
       "released_at": "2026-09-17T00:59:40Z"
+    },
+    {
+      "id": "cc-1789606795",
+      "session": "cc",
+      "subject": "sairnbuild-server-backup",
+      "task": "negative control for tests/sairnbuild_server_backup.js",
+      "claimed_at": "2026-09-17T00:59:55Z",
+      "claimed_at_epoch": 1789606795.7668567,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
