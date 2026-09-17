@@ -82,6 +82,7 @@ Exit codes:  0 clear / claimed   1 blocked by another session's claim   2 error
                to tell them apart. It does NOT stop `claim` -- see cmd_claim().
 """
 import argparse
+import calendar
 import glob
 import json
 import os
@@ -491,6 +492,107 @@ def overlaps(c, subj, task):
     return mine & theirs
 
 
+# ── THE DUPLICATE THIS TOOL COULD NOT SEE: YOUR OWN CLAIMS (2026-09-17) ─────
+# Every collision check in this file begins `if c.get('session') == me:
+# continue`. That is correct for the problem the tool was built for -- two
+# SESSIONS doing one piece of work -- and it means the matcher has never once
+# been pointed at the claims of the session running it.
+#
+# So the two guards in cmd_claim() are the only thing standing between one
+# session and two claims for one piece of work, and both are narrow:
+#
+#   `same`   exact (subject, task) byte-match, so any retyping walks past it
+#   `stuck`  same subject AND the earlier claim still UNPUBLISHED
+#
+# Once the earlier claim is on origin/main, `stuck` cannot fire at all, and a
+# session can accumulate unlimited concurrent claims on overlapping work with
+# nothing saying anything. BOTH live cases are that shape:
+#
+#   fourth  "... G7 factors, rebase resolve tool"        14:00, published
+#           "rebase resolve semantic merge for the two json registers"  14:53
+#   cc      "discharge mechanism, export_coverage label plus pin, alf and
+#            mech export registries"                     published
+#           "tier a review gate single write point, export_coverage_check
+#            ... and the same two export registries"
+#
+# (The second cc string is abridged HERE ON PURPOSE: quoted in full it names
+#  two Tier A resources, and tools/tier_a_review_gate.py then demands an
+#  independent-review obligation for a COORDINATION TOOL that serves neither.
+#  That is the fourth instance of the false positive its own header predicts --
+#  a file whose job is to TALK ABOUT Tier A work -- and the honest response to
+#  one example is to stop pasting the names, not to record an obligation that
+#  would be false. The verbatim strings live in
+#  tests/claims/run_own_claim_overlap_probe.py, where the arms need them.)
+#
+# Neither is byte-identical and neither was unpublished, so neither guard could
+# fire. `audit` then reported ZERO duplicates after the guards and was right on
+# its own definition -- it counts EXACT (session, subject, task) groups, and
+# says in its own closing paragraph that deciding two different strings are the
+# same work "would move the failure rather than remove it".
+#
+# THAT ARGUMENT DOES NOT SURVIVE THE MEASUREMENT, and the measurement is why
+# this is a matcher change rather than a fourth special case. Over all 662
+# recorded claims there are 411 pairs from ONE session that were ACTIVE AT THE
+# SAME TIME. Running the tool's own block_reason() over them, with the SUBJECT
+# DROPPED:
+#
+#     24 refuse  (shared identifier or shared phrase)
+#      2 report  (same app and nothing else)
+#
+# Reading all 24: the item 92 triple, fourth's sv_controlled quadruple, cc's
+# export-registries pair, cody's subcontractor-compliance pair. Every one is a
+# real duplicate of the session's own in-flight work. The 2 reports are genuine
+# separate work in one app. It is not a second guesser -- it is the SAME
+# guesser, finally aimed at the claims it was never allowed to see.
+#
+# ── WHY THE SUBJECT IS DROPPED, WHICH IS NOT AN OVERSIGHT ─────────────────
+# block_reason()'s first rule is `same subject`. Across sessions that is the
+# strongest signal there is. Within one session it is NOISE: cc, cody and
+# fourth all use their own session name as the subject for a whole day's work,
+# so `same subject` fires on every self-pair. Measured with it left in, the
+# refuse count was 33 and the extra nine were plainly unrelated work --
+# "check5 exemptions, field quote wiring" against "0072 supplier lead time and
+# job risk engine". A subject that says WHO rather than WHAT cannot tell you
+# two tasks are the same, so it is not asked.
+#
+# ── WHY `same app` REPORTS AND DOES NOT REFUSE ───────────────────────────
+# Two claims on one app at once is ordinary and legitimate -- this session held
+# sv-audit-log-retrievability and sv-controlled-export within an hour, both
+# real, both distinct. A shared IDENTIFIER or a shared PHRASE means the two
+# strings describe the same THING; a shared app means only that they are in the
+# same building. The tier is drawn where the measurement drew it.
+def self_overlap(mine_task, their_task):
+    """(reason, kind) for two claims by the SAME session. kind is
+    'refuse', 'report' or None.
+
+    Subject-free by design -- see above. Returns the tool's own block_reason()
+    verdict so there is exactly one matcher on this platform, not two.
+    """
+    reason = block_reason('', mine_task, '', their_task)
+    if not reason:
+        return None, None
+    return reason, ('report' if reason.startswith('same app') else 'refuse')
+
+
+def my_active_overlaps(doc, task):
+    """[(claim, reason, kind)] for MY still-active claims that overlap `task`.
+
+    Uses is_active(), not the raw status field: an EXPIRED claim is one this
+    tool already treats as not held, and refusing new work on the strength of
+    one would block a session for ever over a row nobody ever released. Those
+    are reported by cmd_check instead, where an unreleased claim is a finding
+    about the record rather than about the work being claimed now.
+    """
+    out = []
+    for c in doc.get('claims', []):
+        if not is_active(c):
+            continue
+        reason, kind = self_overlap(task, c.get('task'))
+        if kind:
+            out.append((c, reason, kind))
+    return out
+
+
 def my_file():
     return os.path.join(CLAIM_DIR, session_name() + '.json')
 
@@ -829,8 +931,18 @@ def cmd_check(args, quiet=False):
     me = session_name()
     blocking = []
     weak = []
+    # MY OWN overlapping claims, which every check in this file has skipped
+    # since it was written. Reported here and REFUSED in cmd_claim: `check` is
+    # the advisory read and must not start returning 1 for a claim the caller
+    # already holds -- that would make `check` before `claim` fail on the
+    # legitimate retry path. The gate belongs where the duplicate is created.
+    self_hits = []
     for c in load_all(from_origin=not args.no_fetch):
         if c.get('session') == me:
+            if is_active(c):
+                reason, kind = self_overlap(task, c.get('task'))
+                if kind:
+                    self_hits.append((c, reason, kind))
             continue
         if not is_active(c):
             continue
@@ -874,6 +986,23 @@ def cmd_check(args, quiet=False):
         return 1
     if not quiet:
         print('CLEAR -- no active overlapping claim from another session.')
+        # PRINTED FIRST, BEFORE THE CLEAR SINKS IN. "CLEAR" answers a question
+        # about the OTHER sessions and always has; a reader who already holds a
+        # claim on this work needs to know that before anything else on the
+        # screen, because the duplicate they are about to create is their own.
+        if self_hits:
+            hard = [x for x in self_hits if x[2] == 'refuse']
+            print('')
+            print('BUT YOU ALREADY HOLD %d ACTIVE CLAIM(S) THAT OVERLAP THIS WORK.'
+                  % len(self_hits))
+            for c, reason, kind in self_hits:
+                print('  %-9s %s -- %s' % ('[SAME WORK]' if kind == 'refuse'
+                                           else '[same app]',
+                                           c.get('subject'), c.get('task') or '(no task)'))
+                print('            claimed %s, overlaps on: %s' % (age_str(c), reason))
+            if hard:
+                print('  `claim` will REFUSE this. Either carry on under the claim you')
+                print('  already hold, or release it first so the record says one thing.')
         if weak:
             print('\nNote: %d active claim(s) share WORDS with this task but no '
                   'app, file, subject or phrase, so they are NOT blocking. '
@@ -1056,6 +1185,51 @@ def cmd_claim(args):
         print('claims for one piece of work is what this refuses.')
         return 3
 
+    # ── AND THE SAME WORK UNDER ANY OTHER WORDING OR SUBJECT ────────────────
+    # The two guards above are byte-match and same-subject-unpublished. This is
+    # the general case they are both special cases of, and it is the one both
+    # live incidents took. See self_overlap() for the measurement that set the
+    # refuse/report line.
+    mine = my_active_overlaps(doc, task)
+    refuse = [x for x in mine if x[2] == 'refuse']
+    report = [x for x in mine if x[2] == 'report']
+    if refuse:
+        print('\nNOT CLAIMED -- and nothing was added, deliberately.')
+        print('')
+        print('THIS SESSION ALREADY HOLDS AN ACTIVE CLAIM ON WORK THIS OVERLAPS.')
+        print('Not the same subject and not the same wording -- the same THING,')
+        print('by the matcher this tool already uses on every other session:')
+        print('')
+        for c, reason, _k in refuse:
+            print('  already held : %s -- %s' % (c.get('subject'), c.get('task') or '(no task)'))
+            print('  claimed at   : %s (%s)' % (c.get('claimed_at'), age_str(c)))
+            print('  overlaps on  : %s' % reason)
+            print('')
+        print('  you just typed: %s' % (task or '(no task)'))
+        print('')
+        print('TWO CLAIMS FOR ONE PIECE OF WORK IS THE DEFECT, and it is invisible')
+        print('once it is written: `list` shows two rows, another session reads two')
+        print('blocks, and nothing downstream can tell them from real ones.')
+        print('')
+        print('IF THIS IS THE SAME WORK, continue under the claim you already hold')
+        print('-- it does not need re-claiming. If the wording has moved on, release')
+        print('and re-claim so the record says one thing:')
+        print('  python tools/sairn_claim.py release %s' % refuse[0][0].get('subject'))
+        print('')
+        print('IF IT IS GENUINELY DIFFERENT WORK, release the one above first. A')
+        print('session holding one claim at a time is what makes `list` readable.')
+        return 3
+    if report:
+        # Same app and nothing more. Real and common; said out loud and never
+        # blocked, the same policy cmd_check applies to another session's weak
+        # overlap.
+        print('\nNote: you already hold %d active claim(s) in the same app. NOT '
+              'blocking -- two claims on one app is ordinary -- but check you '
+              'are not re-claiming work you are already on:' % len(report))
+        for c, reason, _k in report:
+            print('  %s -- %s  (%s, %s)'
+                  % (c.get('subject'), c.get('task') or '(no task)', reason, age_str(c)))
+
     doc['claims'].append({
         'id': '%s-%d' % (session_name(), int(ts)),
         'session': session_name(),
@@ -1181,11 +1355,70 @@ def cmd_list(args):
 # THE TIMESTAMPS ARE THE COMMITS, not a recollection:
 #   befb65e3  identical-task retry guard      2026-09-14T19:24:31Z
 #   a50aaf60  retyped-task unpublished guard  2026-09-14T21:46:51Z
+#
+# ── AND THE THIRD, WHICH IS WHY THE FIRST TWO READ AS SUFFICIENT ──────────
+# This command reported ZERO duplicates after the guards on 2026-09-16, and on
+# its own definition that was TRUE. It bins EXACT (session, subject, task)
+# groups, and its closing paragraph says so. The defect then recurred twice
+# within a day, in two clones, in the form the definition does not count: the
+# SAME WORK under a different subject or a retyped string, with the earlier
+# claim already published so neither guard could fire.
+#
+# A metric that says FIXED while the thing it measures keeps happening is worse
+# than no metric, because it is quoted. So the same-work count below uses the
+# tool's own matcher (self_overlap) over claims that were CONCURRENTLY ACTIVE,
+# and it is reported beside the exact count rather than folded into it -- they
+# have different fixes and a summed number would hide which one moved.
 GUARDS = (
     ('befb65e3', 'identical-task retry', 1789500271),
     ('a50aaf60', 'retyped-task unpublished', 1789508811),
+    ('5f28fb4d', 'own-claim overlap (any wording, any subject)', 1789617600),
 )
-GUARDED_FROM = max(g[2] for g in GUARDS)
+GUARDED_FROM = max(g[2] for g in GUARDS[:2])
+# The own-claim guard lands later than the first two and covers a strictly
+# wider shape, so the exact-duplicate bins keep using the older timestamp --
+# re-dating them against this guard would silently reclassify six historical
+# groups as "after the guard" and turn a clean audit into a false finding.
+SELF_GUARDED_FROM = GUARDS[2][2]
+
+
+def _claim_span(c):
+    """(start, end) epoch for when this claim was HELD. An unreleased claim is
+    held until it expires, which is what every other read of this file assumes."""
+    a = c.get('claimed_at_epoch') or 0
+    b = None
+    r = c.get('released_at')
+    if r:
+        try:
+            b = calendar.timegm(time.strptime(r, '%Y-%m-%dT%H:%M:%SZ'))
+        except (ValueError, TypeError):
+            b = None
+    if b is None:
+        b = a + STALE_HOURS * 3600
+    return a, max(b, a + 1)
+
+
+def same_work_pairs(claims):
+    """[(session, a, b, reason)] -- one session's claims, held at the same time,
+    that the matcher says are the same work. Concurrency is required: the same
+    session claiming the same subject again next week is follow-on work, not a
+    duplicate, and counting it would make this number grow for ever."""
+    by = {}
+    for c in claims:
+        by.setdefault(c.get('session'), []).append(c)
+    out = []
+    for sess, cl in by.items():
+        cl = sorted(cl, key=lambda x: x.get('claimed_at_epoch') or 0)
+        for i in range(len(cl)):
+            for j in range(i + 1, len(cl)):
+                s1, e1 = _claim_span(cl[i])
+                s2, e2 = _claim_span(cl[j])
+                if not (s1 < e2 and s2 < e1):
+                    continue
+                reason, kind = self_overlap(cl[i].get('task'), cl[j].get('task'))
+                if kind == 'refuse':
+                    out.append((sess, cl[i], cl[j], reason))
+    return out
 
 # A session holding this many ACTIVE claims at once is not a duplicate defect --
 # it is claims that were never released. Both make `list` noisy and both make
@@ -1246,11 +1479,41 @@ def cmd_audit(args):
     else:
         print('    no session is holding %d or more.' % MANY_ACTIVE)
     print('')
-    print('  WHAT THIS DOES NOT DO: decide that two DIFFERENT task strings are')
-    print('  the same work. That judgement is what the phrase matcher already')
-    print('  fails at, and a second guesser here would move the failure rather')
-    print('  than remove it. Exact means exact.')
-    return 1 if (after or hoarders) else 0
+    # ── THE SHAPE THE EXACT COUNT ABOVE CANNOT SEE ────────────────────────
+    # This paragraph used to say the opposite: that deciding two different task
+    # strings are the same work "would move the failure rather than remove it.
+    # Exact means exact." That was a defensible position and it was wrong in a
+    # way the number could not show -- the defect recurred twice in two clones
+    # while this command reported zero, because both recurrences were the same
+    # work under different wording. The matcher is the tool's own, the same one
+    # every cross-session block already rests on, and it is measured: 24 of 411
+    # concurrent same-session pairs, every one a real duplicate on reading.
+    same = same_work_pairs(claims)
+    sbefore = [p for p in same
+               if (p[2].get('claimed_at_epoch') or 0) <= SELF_GUARDED_FROM]
+    safter = [p for p in same
+              if (p[2].get('claimed_at_epoch') or 0) > SELF_GUARDED_FROM]
+    print('  SAME WORK, DIFFERENT WORDING (one session, both held at once): '
+          '%d pair(s)' % len(same))
+    print('    BEFORE the own-claim guard          %d   <- historical' % len(sbefore))
+    print('    AFTER                               %d%s'
+          % (len(safter), '   <- A REAL FINDING' if safter else ''))
+    for sess, a, b, reason in sorted(sbefore,
+                                     key=lambda p: p[2].get('claimed_at_epoch') or 0)[-6:]:
+        print('    %-7s %s  %s' % (sess, b.get('claimed_at'), reason))
+        print('            A: %s' % (a.get('task') or '(empty)')[:64])
+        print('            B: %s' % (b.get('task') or '(empty)')[:64])
+    for sess, a, b, reason in safter:
+        print('    AFTER THE GUARD  %-7s %s  %s' % (sess, b.get('claimed_at'), reason))
+        print('            A: %s' % (a.get('task') or '(empty)')[:64])
+        print('            B: %s' % (b.get('task') or '(empty)')[:64])
+    print('')
+    print('  WHAT THIS STILL DOES NOT DO: catch two claims for one piece of work')
+    print('  that share no identifier, no phrase and no app -- `triage plan')
+    print('  staleness checker` against `triage staleness tool`. block_reason()')
+    print('  names that residual in its own body and records why the obvious fix')
+    print('  (a rare-token rule) was measured at 74 extra blocks and rejected.')
+    return 1 if (after or safter or hoarders) else 0
 
 
 def main():
