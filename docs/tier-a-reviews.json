@@ -470,6 +470,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T01:04:00Z",
+      "resources": [
+        "bld_bids",
+        "bld_costs"
+      ],
+      "files": [
+        "tests/sairnbuild_server_backup_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL plus a BLD_HTML override on the suite it controls. No product code: sairnbuild.html is untouched, the control asserts byte-identity and asks git. It names bld_bids/bld_costs/bld_jobs/bld_tna because that is what the backup hook it exercises writes. WHAT A REVIEWER SHOULD CHECK: (1) MUTATION 4 IS THE ONE TO LOOK AT. It rewrites the guard if(okWrite && typeof bldSyncCollection === 'function') to drop the okWrite term, leaving the typeof check intact. No condition is removed -- only the ordering guarantee that a push follows a SUCCESSFUL local write. Confirm the suite fails because it noticed the push-after-failure and not because dropping okWrite changed something incidental. (2) That the four mutations really are the four failures the suite's own header lists, rather than four I found convenient. The claim is that a control built from a different list would be exercising a different suite, and that claim is checkable against the header. (3) Mutation 1 inserts an early return; BEFORE the existing guards rather than deleting them. Confirm that is equivalent to 'pushes nothing' and does not accidentally test unreachable-code detection instead. NOTE ON THIS RECORD ITSELF: the first version of this text was written through a shell and lost the code fragment in (1) to backtick command substitution -- it read 'It changes  to drop okWrite', which is a sentence with a hole that still reads as complete. Repaired through the register's own reader and writer, and said here rather than fixed silently.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

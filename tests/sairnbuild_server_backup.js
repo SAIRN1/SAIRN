@@ -35,7 +35,12 @@ const vm = require('vm');
 // \n. The file is CRLF on disk and an assumption about that is not worth a
 // brittle test -- this is the same reason tests/nesting_saw_ticket.js matches
 // its terminator by regex.
-const html = fs.readFileSync(path.join(__dirname, '..', 'sairnbuild.html'), 'utf8')
+// BLD_HTML lets a negative control point this suite at a MUTATED COPY in a temp
+// directory instead of patching the tracked file and restoring it afterwards.
+// Same convention SB_HTML, SV_HTML, DNT_HTML and LAW_HTML already carry. Unset
+// -- every ordinary run, including CI -- this is exactly what it was.
+const html = fs.readFileSync(process.env.BLD_HTML
+  || path.join(__dirname, '..', 'sairnbuild.html'), 'utf8')
   .replace(/\r\n/g, '\n');
 
 let pass = 0, fail = 0;
