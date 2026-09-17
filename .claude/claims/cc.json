@@ -1784,6 +1784,16 @@
       "claimed_at_epoch": 1789682417.6497068,
       "status": "released",
       "released_at": "2026-09-17T22:51:53Z"
+    },
+    {
+      "id": "cc-1789685898",
+      "session": "cc",
+      "subject": "criticality-tiers",
+      "task": "re-tier mech_site_assets from B to A in CRITICALITY-TIERS.md after the 40 CFR 84.106 columns landed",
+      "claimed_at": "2026-09-17T22:58:18Z",
+      "claimed_at_epoch": 1789685898.6560795,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
