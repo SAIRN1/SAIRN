@@ -1742,8 +1742,8 @@
       "task": "independent review of hank removal_path_check derived exemption for dnt_rollup and law_trust_reconcile",
       "claimed_at": "2026-09-17T18:40:00Z",
       "claimed_at_epoch": 1789670400.7084613,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T21:36:32Z"
     }
   ]
 }
