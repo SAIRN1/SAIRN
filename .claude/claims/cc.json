@@ -1624,6 +1624,16 @@
       "claimed_at_epoch": 1789615283.7273686,
       "status": "released",
       "released_at": "2026-09-17T04:06:26Z"
+    },
+    {
+      "id": "cc-1789618004",
+      "session": "cc",
+      "subject": "demo-licences-alf-sen",
+      "task": "generate ALF and SEN prefixed demo licence insert sql for michael to run",
+      "claimed_at": "2026-09-17T04:06:44Z",
+      "claimed_at_epoch": 1789618004.1912408,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
