@@ -8185,5 +8185,49 @@
       "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
     }
   ],
-  "started": "2026-09-09"
+  "started": "2026-09-09",
+  "confirmations": [
+    {
+      "commit": "363b8304a91e",
+      "date": "2026-09-02",
+      "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+      "app": "sairndental",
+      "layer": "product",
+      "method": "code-review",
+      "claim": "dental-bi.applyPatientScope fails CLOSED -- an empty or null allow-map yields zero rows, never every row, so a scope that could not be built cannot widen a read",
+      "driven": "api/_lib/dental-bi.test.js:136-137 drives applyPatientScope with {} and with null and asserts length 0 on both; re-run 2026-09-17, both green",
+      "verdict": "sound-with-limits",
+      "limits": "THIS IS THE LIBRARY, NOT THE ENDPOINT. It says the helper is safe when handed nothing; it says nothing about whether a caller reaches it -- api/dnt-bi.js always passes a real object today, so the default is unreachable from there and a control arm aimed at it correctly came back SILENT",
+      "confirmed": "2026-09-17",
+      "confirmed_by": "cody"
+    },
+    {
+      "commit": "3f8e3fab0396",
+      "date": "2026-09-14",
+      "subject": "feat(item101): the witnessing lock had soft capture and hard capture and nothing between them",
+      "app": "sairnvet",
+      "layer": "product",
+      "method": "code-review",
+      "claim": "api/sv-witness.js refuses 503 WITNESS_CHECK_FAILED when the witnessing policy row cannot be read, rather than assuming the weaker rule -- an unreadable require_two_person does not become false",
+      "driven": "read the policy IIFE at api/sv-witness.js:397-409 and its caller guard; checked as part of the 2026-09-17 sweep for could-not-tell folded into a permissive default on a protected path",
+      "verdict": "sound-with-limits",
+      "limits": "STATIC READ ONLY and scoped to the POLICY read -- the other reads in that file were not re-checked here, and nothing was driven against a failing upstream, so this says the refusal is written, not that it fires",
+      "confirmed": "2026-09-17",
+      "confirmed_by": "cody"
+    },
+    {
+      "commit": "cc6f0fcd0e14",
+      "date": "2026-09-04",
+      "subject": "fix(platform): the last nineteen fail-open reads triaged -- twelve were false statements, six are accepted with reasons",
+      "app": "sairncare",
+      "layer": "product",
+      "method": "code-review",
+      "claim": "api/alf-alerts.js refuses the whole MAR sweep when either read fails or a body will not parse, rather than folding a half-read into a result -- a facility with orders and no administrations would alert on every dose, the reverse on none",
+      "driven": "read both failure paths in readMar() at api/alf-alerts.js:117-128 and the caller at :213 (mar === null -> UPSTREAM refusal); traced during the 2026-09-17 platform sweep for scope-lookup failures substituted by a silent empty",
+      "verdict": "sound-with-limits",
+      "limits": "STATIC READ ONLY -- the refusal paths were not driven with a failing upstream in a test, so this confirms the code says it and not that it behaves so under a real 500; and it covers only the MAR sweep, not the other reads in that file",
+      "confirmed": "2026-09-17",
+      "confirmed_by": "cody"
+    }
+  ]
 }

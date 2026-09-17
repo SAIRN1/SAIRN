@@ -662,6 +662,160 @@ def cmd_add(argv):
     return 0
 
 
+# ── CONFIRMED CLEAN: THE VERDICT THIS REGISTER COULD NOT RECORD ────────────
+# Added 2026-09-17, on Michael's instruction, after the item 83 independent
+# review had to put its sound findings in PROSE -- docs/2026-09-16-item83-
+# independent-review.md's "What was checked and found SOUND" section -- because
+# there was nowhere here to put them.
+#
+# THE PLATFORM ALREADY HAD THE PRINCIPLE AND NOT THE FIELD. The cron sweep row
+# in the open-work index states it outright: "a clean result is a result, and an
+# unchecked endpoint must not be mistaken for a sound one." Until now the only
+# way to record a driven confirmation in this file was to invent a defect for
+# it -- a severity it does not have, an injection_phase for a thing that was
+# never injected, a fix commit for a fix that never happened. Every one of those
+# would be a fabricated value in the register this platform uses to reason about
+# its own defect rate, which is the worst possible place for one.
+#
+# A SEPARATE ARRAY, NOT A RECORD WITH A FLAG, AND THE REASON IS ARITHMETIC.
+# `records` is the numerator of every figure this tool prints -- by layer, by
+# severity, by detection method, the injection x removal matrix, the FMEA loop.
+# A confirmation dropped in there with `severity: none` would either distort
+# each of those or force a filter into all of them, and the filter that gets
+# forgotten in one place is how a denominator goes quietly wrong. Confirmations
+# are a DIFFERENT POPULATION answering a DIFFERENT QUESTION and they are stored,
+# counted and reported as one.
+#
+# `limits` IS REQUIRED AND IS THE WHOLE POINT. A confirmation with no stated
+# limit is "I looked and it was fine", which is the sentence this platform has
+# been wrong with most often. Every real confirmation has an edge: a path not
+# driven, a value not varied, an environment not reproduced. Refusing to record
+# a confirmation because its limits are not worked out would lose the
+# confirmation; refusing one that claims NO limits is refusing a claim nobody
+# can check.
+#
+# `driven` IS REQUIRED FOR THE SAME REASON --check DEMANDS A FOUND-BY TOOL:
+# "checked and found sound" with nothing naming what was RUN is a reading, and
+# a reading is what this register exists to distinguish from a measurement.
+CONFIRM_VERDICTS = ('sound', 'sound-with-limits')
+
+
+def today():
+    """The date to stamp a confirmation with, taken from git rather than the
+    clock -- the same source every other date in this file comes from, so a
+    machine whose clock is wrong cannot put a confirmation in the future."""
+    d = git('log', '-1', '--format=%cI')
+    return (d or '')[:10] or '0000-00-00'
+
+
+def cmd_confirm(argv):
+    def opt(name, required=True):
+        if name in argv:
+            return argv[argv.index(name) + 1]
+        if required:
+            print('missing %s' % name)
+            sys.exit(2)
+        return ''
+
+    sha = opt('--commit')
+    app, layer = opt('--app'), opt('--layer')
+    claim = opt('--claim')
+    driven = opt('--driven')
+    limits = opt('--limits')
+    method = opt('--method')
+    verdict = opt('--verdict', required=False) or 'sound-with-limits'
+    by = opt('--by', required=False) or 'unattributed'
+
+    if layer not in LAYERS:
+        print('--layer must be one of %s' % (LAYERS,)); return 2
+    if method not in METHODS:
+        print('--method must be one of %s' % (METHODS,)); return 2
+    if verdict not in CONFIRM_VERDICTS:
+        print('--verdict must be one of %s' % (CONFIRM_VERDICTS,)); return 2
+    # THE THREE REFUSALS THAT MAKE THIS A RECORD RATHER THAN A REASSURANCE.
+    if len(str(claim).strip()) < 25:
+        print('--claim must QUOTE OR STATE the specific claim that was checked, '
+              'in at least 25 characters. "the code is fine" is not a claim '
+              'anybody can re-check, and a confirmation nobody can re-check is '
+              'the thing this field exists to stop being written in prose.')
+        return 2
+    if len(str(driven).strip()) < 20:
+        print('--driven must say WHAT WAS RUN -- the suite, the probe, the '
+              'command, the arms. A confirmation with nothing driven is a '
+              'reading, and this register exists to tell a reading from a '
+              'measurement.')
+        return 2
+    if verdict != 'sound' and len(str(limits).strip()) < 25:
+        print('--limits is REQUIRED and must be a real sentence. Every real '
+              'confirmation has an edge -- a path not driven, a value not '
+              'varied, an environment not reproduced. A confirmation claiming '
+              'none is a claim nobody can check.\n'
+              '  Pass --verdict sound ONLY if the check is genuinely total, '
+              'and it still takes a --limits line saying why it is.')
+        return 2
+    if len(str(limits).strip()) < 25:
+        print('--limits is required even for --verdict sound: say why the '
+              'check is total rather than leaving a reader to assume it.')
+        return 2
+
+    d = derive(sha)
+    if not d:
+        print('no such commit: %s' % sha); return 2
+
+    reg = load()
+    reg.setdefault('confirmations', [])
+    # ONE CONFIRMATION PER (commit, claim). Re-confirming the same claim on the
+    # same commit is not a second piece of evidence; it is the same check run
+    # twice, and counting it twice would make a repeated run look like
+    # corroboration. A DIFFERENT claim on the same commit is a new row.
+    key = (d['commit'], str(claim).strip())
+    if any((c.get('commit'), c.get('claim')) == key for c in reg['confirmations']):
+        print('that claim is already confirmed on %s. Re-running the same check '
+              'is not a second confirmation -- if the claim changed, say so in '
+              'the claim text.' % d['commit'][:12])
+        return 2
+    rec = {
+        'commit': d['commit'], 'date': d['date'], 'subject': d['subject'],
+        'app': app, 'layer': layer, 'method': method,
+        'claim': str(claim).strip(),
+        'driven': str(driven).strip(),
+        'verdict': verdict,
+        'limits': str(limits).strip(),
+        'confirmed': today(),
+        'confirmed_by': by,
+    }
+    reg['confirmations'].append(rec)
+    reg['confirmations'].sort(key=lambda c: (c['confirmed'], c['commit']))
+    save(reg)
+    print('confirmed %s (%s, %s, %s) -- NOT a defect record and NOT in any '
+          'defect figure' % (d['commit'][:12], app, layer, verdict))
+    return 0
+
+
+def confirmation_problems(c, where):
+    """Everything wrong with one confirmation, as a list of sentences."""
+    out = []
+    for f in ('commit', 'app', 'layer', 'method', 'claim', 'driven',
+              'verdict', 'limits', 'confirmed'):
+        if not str(c.get(f, '')).strip():
+            out.append('%s: %s is empty' % (where, f))
+    if c.get('layer') and c['layer'] not in LAYERS:
+        out.append('%s: layer %r is outside the vocabulary' % (where, c['layer']))
+    if c.get('method') and c['method'] not in METHODS:
+        out.append('%s: method %r is outside the vocabulary' % (where, c['method']))
+    if c.get('verdict') and c['verdict'] not in CONFIRM_VERDICTS:
+        out.append('%s: verdict %r is outside %s' % (where, c['verdict'], (CONFIRM_VERDICTS,)))
+    # A confirmation carrying defect fields is one somebody tried to file as a
+    # defect, or a defect somebody tried to file as a confirmation. Either way
+    # the two populations have started to mix, which is the failure the
+    # separate array exists to prevent.
+    for f in ('severity', 'injection_phase', 'contributing_factors'):
+        if f in c:
+            out.append('%s: carries the defect field %r -- a confirmation is '
+                       'not a defect with the severity left out' % (where, f))
+    return out
+
+
 # ── THE FMEA LOOP, ASKED AT THE ONLY MOMENT THE ANSWER CHANGES ─────────────
 # Item 26, the FMEA-prediction branch, wired 2026-09-13.
 #
@@ -930,6 +1084,38 @@ def cmd_check(argv=()):
                        'with two names is two entities to every per-app figure '
                        'in this file' % (low, len(spellings), sorted(spellings)))
 
+    # ── CONFIRMATIONS ARE CHECKED TOO, AND KEPT OUT OF THE DEFECT NUMBERS ──
+    # Same standard as a defect record: it must resolve, it must carry the
+    # fields that make it re-checkable, and it must not have started to look
+    # like a defect. A confirmation nobody validates is the reassurance this
+    # field was added to replace.
+    conf_seen = set()
+    for c in reg.get('confirmations', []):
+        where = 'confirmation %s' % str(c.get('commit', '?'))[:12]
+        bad.extend(confirmation_problems(c, where))
+        sha, how = resolve(c, idx) if c.get('subject') else (
+            (c.get('commit'), 'sha') if git('rev-parse', '--verify',
+                                            str(c.get('commit', '')) + '^{commit}') else (None, None))
+        if how == 'subject':
+            reseat.append((c['commit'], sha, c.get('subject', '')))
+        elif not sha:
+            bad.append('%s -- neither the SHA nor the subject resolves' % where)
+        k = (c.get('commit'), c.get('claim'))
+        if k in conf_seen:
+            bad.append('%s -- the same claim is confirmed twice; running one '
+                       'check again is not corroboration' % where)
+        conf_seen.add(k)
+        # THE SPELLING RULE APPLIES ACROSS BOTH POPULATIONS. An app named one
+        # way in a defect and another in a confirmation is the same split.
+        seen_apps.setdefault(str(c.get('app', '')).lower(), set()).add(c.get('app'))
+    for low, spellings in sorted(seen_apps.items()):
+        if len(spellings) > 1 and not any(
+                ('the app %r appears' % low) in b for b in bad):
+            bad.append('the app %r appears under %d spellings %s across records '
+                       'and confirmations -- one entity with two names is two '
+                       'entities to every per-app figure in this file'
+                       % (low, len(spellings), sorted(spellings)))
+
     if bad:
         print('FAIL: %d register problem(s)' % len(bad))
         for b in bad:
@@ -961,6 +1147,9 @@ def cmd_check(argv=()):
           'that is optional when a record is written is a field that stays '
           'empty. %d record(s) carry a stated unknown-reason.' % len(unknown))
     cited = sum(1 for r in reg['records'] if r.get('rules'))
+    confs = reg.get('confirmations', [])
+    print('    confirmations: %d checked -- a SEPARATE population, in no defect '
+          'figure above or below' % len(confs))
     print('OK: %d record(s), every commit resolves and every field is in '
           'vocabulary.%s' % (len(reg['records']),
                              ' %d by subject.' % len(reseat) if reseat else ''))
@@ -1073,8 +1262,32 @@ def cmd_report():
     reg = load()
     recs = reg['records']
     lines = app_lines()
+    confs = reg.get('confirmations', [])
     print('DEFECT REGISTER -- %d confirmed record(s) since %s'
           % (len(recs), reg.get('started', '?')))
+    # ── PRINTED FIRST, SO THE DENOMINATOR IS NEVER READ AS THE WHOLE STORY ─
+    # Confirmations are what was CHECKED AND FOUND SOUND. They are not defects,
+    # they are in none of the figures below, and they are here because a
+    # register that only records failures makes an unchecked thing and a
+    # checked-sound thing look identical -- which is the platform's own
+    # standing sentence about the cron sweep, applied to this file.
+    print('CONFIRMED CLEAN -- %d, a SEPARATE population and in NO figure below'
+          % len(confs))
+    if confs:
+        for c in confs[-6:]:
+            print('  %s %-12s %-18s %s'
+                  % (c.get('confirmed', '?'), str(c.get('commit', ''))[:12],
+                     c.get('verdict', '?'), str(c.get('claim', ''))[:60]))
+        if len(confs) > 6:
+            print('  ... %d earlier' % (len(confs) - 6))
+        print('  EVERY ONE CARRIES ITS LIMITS. A confirmation is "this specific')
+        print('  claim was driven and held", never "this area is fine" -- read')
+        print('  the `limits` field before quoting one.')
+    else:
+        print('  none yet. An EMPTY confirmation list is not evidence that')
+        print('  nothing has been checked -- it is indistinguishable from a')
+        print('  field nobody writes to, which is the same shape the shared')
+        print('  status registry refuses to report as all-clear.')
     print('')
     print('BY LAYER')
     for L in LAYERS:
@@ -1264,6 +1477,10 @@ def cmd_report():
 def main(argv):
     if '--add' in argv:
         return cmd_add(argv)
+    # BEFORE --check, because `--confirm` is a write and `--check` is a read;
+    # an argv carrying both is a mistake and the write is the surprising half.
+    if '--confirm' in argv:
+        return cmd_confirm(argv)
     if '--check' in argv:
         return cmd_check(argv)
     if '--reseat' in argv:

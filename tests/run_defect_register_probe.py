@@ -466,6 +466,103 @@ try:
     check('P11 and the matrix carries its own do-not-quote warning',
           'DO NOT QUOTE A CELL ALONE' in out, True)
 
+    # ── CC. CONFIRMED CLEAN (2026-09-17) ────────────────────────────────────
+    # The verdict this register could not record. Until today a driven
+    # confirmation had nowhere to go without inventing a severity and an
+    # injection phase for a thing that was never injected -- so it went into
+    # PROSE, in docs/2026-09-16-item83-independent-review.md's "What was checked
+    # and found SOUND" section, where no tool can read it.
+    #
+    # EVERY ARM HERE ATTACKS THE FIELD RATHER THAN EXERCISING IT, because the
+    # failure mode of a confirmation is not a crash: it is a reassuring row
+    # nobody can re-check. R1-R6 are the three refusals that make it a record.
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'fine', '--driven', 'ran the suite and it passed ok',
+                  '--limits', 'this is a long enough limits sentence to pass the length gate')
+    check('CC1 a claim too short to re-check is REFUSED', rc, 2)
+    check('CC2 and it says a claim nobody can re-check is what the field exists '
+          'to stop being written in prose', 'not a claim anybody can re-check' in out, True)
+
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'looked',
+                  '--limits', 'this is a long enough limits sentence to pass the length gate')
+    check('CC3 a confirmation with nothing DRIVEN is REFUSED -- a reading is not '
+          'a measurement', rc, 2)
+    check('CC4 and it says so in those words',
+          'tell a reading from a measurement' in out, True)
+
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'ran tests/x.js, 12 arms, all green on 2026-09-17',
+                  '--limits', 'none')
+    check('CC5 a confirmation claiming NO limits is REFUSED -- every real check '
+          'has an edge', rc, 2)
+    check('CC6 and it names the edges a reader should expect',
+          'a path not driven' in out, True)
+
+    rc, out = run(wt, '--confirm', '--commit', 'deadbeefdead', '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'ran tests/x.js, 12 arms, all green on 2026-09-17',
+                  '--limits', 'static read only, the failing-upstream path was not driven')
+    check('CC7 a confirmation on a commit that does not exist is REFUSED', rc, 2)
+
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'vibes',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'ran tests/x.js, 12 arms, all green on 2026-09-17',
+                  '--limits', 'static read only, the failing-upstream path was not driven')
+    check('CC8 an invented method is REFUSED here too -- one vocabulary, both '
+          'populations', rc, 2)
+
+    # CONTROL: a well-formed confirmation IS accepted. Without this every
+    # refusal above would be satisfied by a command that refuses everything.
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'ran tests/x.js, 12 arms, all green on 2026-09-17',
+                  '--limits', 'static read only, the failing-upstream path was not driven',
+                  '--by', 'probe')
+    check('CC9 CONTROL: a well-formed confirmation is ACCEPTED', rc, 0)
+    check('CC10 and the acceptance line says it is NOT a defect record',
+          'NOT a defect record' in out, True)
+
+    rc, out = run(wt, '--confirm', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'product', '--method', 'code-review',
+                  '--claim', 'the guard refuses when the upstream read fails rather than defaulting',
+                  '--driven', 'ran tests/x.js again, same 12 arms',
+                  '--limits', 'static read only, the failing-upstream path was not driven')
+    check('CC11 the SAME claim on the same commit cannot be confirmed twice -- '
+          'one check run again is not corroboration', rc, 2)
+
+    doc = json.loads(io.open(os.path.join(wt, REG.replace('/', os.sep)),
+                             encoding='utf-8').read())
+    check('CC12 confirmations live in their OWN array, not in records',
+          'confirmations' in doc and len(doc['confirmations']) >= 1, True)
+    conf = doc['confirmations'][-1]
+    check('CC13 and no confirmation carries a severity -- it is not a defect '
+          'with the severity left out',
+          any(k in conf for k in ('severity', 'injection_phase')), False)
+    check('CC14 the register total did NOT move -- a confirmation is in no '
+          'defect figure', len([r for r in doc['records'] if r.get('app') == 'stonedesk'
+                                and r.get('summary') == 'CONFIRM']), 0)
+
+    rc, out = run(wt, '--report')
+    check('CC15 the report prints confirmations ABOVE the defect figures',
+          out.index('CONFIRMED CLEAN') < out.index('BY LAYER'), True)
+    check('CC16 and says they are in NO figure below', 'in NO figure below' in out, True)
+    check('CC17 and tells a reader to read the limits before quoting one',
+          'read' in out and 'limits' in out, True)
+
+    rc, out = run(wt, '--check')
+    check('CC18 --check still passes with confirmations present', rc, 0)
+    check('CC19 and it counts them as a SEPARATE population',
+          'SEPARATE population' in out, True)
+
     # -- Q. which checkpoint caught it (item 63) ---------------------------
     rc, out = run(wt, '--report')
     check('Q1 the report prints the checkpoint split',
