@@ -1592,8 +1592,8 @@
       "task": "wire the controlled substance register to SAIRNvet export machinery",
       "claimed_at": "2026-09-17T01:52:05Z",
       "claimed_at_epoch": 1789609925.0933838,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T02:06:22Z"
     }
   ]
 }
