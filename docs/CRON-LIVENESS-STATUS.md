@@ -6,14 +6,16 @@ this file assert a check that did not happen.
 
 | | |
 |---|---|
-| **State** | **COULD NOT TELL** |
-| Last run | 2026-09-14 13:19:47Z |
+| **State** | **OK** |
+| Last run | 2026-09-17 17:16:50Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
-**CRON_SECRET is not set in this environment, so the watchdog was not
-called and no job was checked.**
-
-This is not a finding about the jobs. It is this tool being unable to ask.
+| Job | Status | Last run | Age (s) | Headroom (s) |
+|---|---|---|---|---|
+| `/api/alf-alerts` | **ok** | 2026-09-17T16:37:42.099+00:00 | 2348 | 5152 |
+| `/api/audit-checkpoint` | **ok** | 2026-09-17T03:30:11.761+00:00 | 49598 | 123502 |
+| `/api/cron-watchdog` | **ok** | 2026-09-17T17:15:29.314+00:00 | 81 | 7419 |
+| `/api/sairndental/send-reminder` | **ok** | 2026-09-17T17:07:43.975+00:00 | 546 | 6954 |
 
 ---
 
@@ -24,7 +26,124 @@ left standing.
 
 **WHAT THIS CANNOT SEE.** `api/cron-watchdog.js` runs on the same Vercel
 cron scheduler as the jobs it watches, so a total scheduler outage
-silences both. THIS tool runs outside Vercel and is what survives that --
-but only when somebody runs it. A third-party uptime check pinging the
-endpoint on its own schedule is what would close the gap, and that is a
-spend-and-vendor decision rather than a code change.
+silences both. THIS tool runs outside Vercel and is what survives that.
+Since 2026-09-15 it is also ASKED for hourly from
+`.github/workflows/cron-liveness.yml` — a genuinely different scheduler,
+at no spend — so it no longer depends on somebody remembering to run it.
+
+**AND WHAT THAT STILL IS NOT, MEASURED RATHER THAN CAVEATED.** GitHub
+Actions is not an uptime vendor. Over the first 30.8 hours of scheduled
+runs the gaps were **152 to 347 minutes, median ~292**, against an
+asked-for 60 — **roughly three runs in four never happen** — and not one
+fired at the declared `:45`. The other two scheduled workflows in this
+repository are late and never dropped (`nightly-backup` asks 03:40 and
+lands 08:52, daily cadence exact), so **delay affects all of them and
+dropping affects only the hourly one.** Read this document as **a check
+every two to six hours**, not hourly. GitHub also disables scheduled
+workflows on a repository with no activity for 60 days. A second
+INDEPENDENT scheduler is a real improvement over one; it is not a
+guaranteed one, and the difference is measured here rather than implied
+by the word "automated".
+
+<details><summary>Raw response</summary>
+
+```json
+{
+  "ok": true,
+  "checked": 4,
+  "jobs": [
+    {
+      "job": "/api/alf-alerts",
+      "last_run_at": "2026-09-17T16:37:42.099+00:00",
+      "age_seconds": 2348,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 5152,
+      "detail": {
+        "emailed": 1,
+        "skipped": 0,
+        "send_failures": 0,
+        "facilities_checked": 1
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/audit-checkpoint",
+      "last_run_at": "2026-09-17T03:30:11.761+00:00",
+      "age_seconds": 49598,
+      "expected_interval_seconds": 86400,
+      "last_outcome": "ok",
+      "seconds_until_late": 123502,
+      "detail": {
+        "action": "checkpoint",
+        "written": 3,
+        "failures": 0
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/cron-watchdog",
+      "last_run_at": "2026-09-17T17:15:29.314+00:00",
+      "age_seconds": 81,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 7419,
+      "detail": {
+        "not_ok": [],
+        "checked": 4,
+        "undelivered": [],
+        "channel_proof": {
+          "id": "01a0b026-d25b-756b-8b78-70a156b08052",
+          "to": "mikied68@gmail.com",
+          "sent_at": "2026-09-17T16:15:29.310Z",
+          "accepted": true,
+          "checked_at": "2026-09-17T17:15:29.078Z",
+          "last_event": "delivered",
+          "send_error": null,
+          "check_error": null
+        },
+        "response_memo": {},
+        "notify_channel": {
+          "missing": [],
+          "configured": true,
+          "escalation_has_own_address": false
+        }
+      },
+      "status": "ok"
+    },
+    {
+      "job": "/api/sairndental/send-reminder",
+      "last_run_at": "2026-09-17T17:07:43.975+00:00",
+      "age_seconds": 546,
+      "expected_interval_seconds": 3600,
+      "last_outcome": "ok",
+      "seconds_until_late": 6954,
+      "detail": {
+        "sent": 0,
+        "failed": 0,
+        "skippedNotDue": 0,
+        "skippedNoEmail": 0
+      },
+      "status": "ok"
+    }
+  ],
+  "notify_channel": {
+    "configured": true,
+    "missing": [],
+    "escalation_has_own_address": false
+  },
+  "channel_proof": {
+    "id": "01a0b026-d25b-756b-8b78-70a156b08052",
+    "to": "mikied68@gmail.com",
+    "sent_at": "2026-09-17T16:15:29.310Z",
+    "accepted": true,
+    "checked_at": "2026-09-17T17:15:29.078Z",
+    "last_event": "delivered",
+    "send_error": null,
+    "check_error": null
+  },
+  "actions": []
+}
+```
+
+</details>
