@@ -355,6 +355,61 @@ test('the scope assertion is TRUE in every shipped app', () => {
   });
 });
 
+// ── AND IT STILL TESTS SOMETHING, WHICH THE VALUE CANNOT SAY ───────────────
+// Added 2026-09-16 after a negative control replaced a real scope assertion
+// with `true && ['sd_jobs'].every(function (k) { return true; })` and this suite
+// stayed GREEN -- because the arm above reads the VALUE, and a disarmed
+// tripwire is still `true`.
+//
+// The scope assertion is the guard's own load-time refusal: it exists so that a
+// future edit widening the prefix fires on load and the wipe refuses to run,
+// rather than quietly eating another app's records. A tripwire that cannot fire
+// is indistinguishable from one that never fired, and this whole file is about
+// code that DELETES CUSTOMER DATA.
+//
+// So the CONTENT is asserted: it must drive the app's own ownership test, over
+// at least one FOREIGN key expected false and at least one OWN key expected
+// true. Structural, not keyword-based -- the keys are classified by the app's
+// real prefix, not by what they are called.
+test('...and the scope assertion still TESTS something -- a tripwire that '
+  + 'cannot fire is not a tripwire', () => {
+    Object.keys(APPS).forEach((f) => {
+      const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+      const P = APPS[f].replace(/_$/, '').toUpperCase();
+      const at = src.indexOf('var ' + P + '_SCOPE_OK =');
+      assert.ok(at > 0, f + ': no ' + P + '_SCOPE_OK declaration');
+      // BY LINES, not to the first `;`. The assertion body contains inner
+      // semicolons -- `return dntIsOwnKey(k) === false; }` -- so slicing to the
+      // first one truncates the expression and drops the `=== true` half, which
+      // this arm then reports as "no longer checks BOTH directions". Caught by
+      // exactly that false finding against sairndental, whose assertion is
+      // correct. A fixed-size window would be the over-reach shape instead.
+      const lines = src.slice(at).split('\n');
+      let expr = '';
+      for (let i = 0; i < lines.length; i++) {
+        expr += lines[i] + '\n';
+        const next = (lines[i + 1] || '').trim();
+        if (/;\s*$/.test(lines[i]) && !/^(&&|\|\|)/.test(next)) break;
+      }
+      const ownFn = APPS[f].replace(/_$/, '') + 'IsOwnKey';
+      assert.ok(expr.indexOf(ownFn) !== -1,
+        f + ': the scope assertion does not call ' + ownFn + ', so it is not '
+        + 'testing the ownership rule at all');
+      assert.ok(/===\s*false/.test(expr) && /===\s*true/.test(expr),
+        f + ': the scope assertion no longer checks BOTH directions');
+      const keys = (expr.match(/'([A-Za-z0-9_]+)'/g) || [])
+        .map((k) => k.replace(/'/g, ''));
+      const foreign = keys.filter((k) => k.indexOf(APPS[f]) !== 0);
+      const own = keys.filter((k) => k.indexOf(APPS[f]) === 0);
+      assert.ok(foreign.length > 0,
+        f + ': the scope assertion names no FOREIGN key, so a widened prefix '
+        + 'would not fire it -- which is the one thing it exists for');
+      assert.ok(own.length > 0,
+        f + ': the scope assertion names no OWN key, so a prefix narrowed to '
+        + 'nothing would pass it');
+    });
+  });
+
 // ── THE CROSS-APP MATRIX ───────────────────────────────────────────────────
 section('no app claims any other app\'s keys');
 
