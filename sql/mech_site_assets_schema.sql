@@ -49,6 +49,34 @@
 -- refrigerant_type = 'none' is a REAL answer for a boiler or a pump and is
 -- stored, distinctly from null. The two must never render the same.
 --
+-- ── THE SECOND RULE'S THREE COLUMNS (added 2026-09-17) ──────────────────────
+-- 40 CFR 82.157 above is Section 608. The AIM Act's HFC rule is a DIFFERENT
+-- regulation -- 40 CFR 84.106, Part 84 subpart C -- in force since 2026-01-01
+-- at 15 lb for HFCs with GWP above 53, with a 30-day repair window. A 20 lb
+-- R-410A unit is correctly `below` under 82.157 and in scope under 84.106, so
+-- the two are computed and reported independently and are NEVER summed.
+--
+-- hfc_gwp_over_53 IS STATED BY THE CONTRACTOR AND IS NOT DERIVED, and that is
+-- the same refusal refrigerant_charge_lb makes. Deciding whether R-410A is "an
+-- HFC above GWP 53" needs a substance table, and seeding one here would be a
+-- number this schema asserts that a contractor then acts on, with no source
+-- behind it -- and GWP figures are revised, so a stale table reads as
+-- authoritative. NULL means nobody has stated it. It must NOT collapse into
+-- false, which means "stated, and it is out of scope": an asset at or above
+-- 15 lb whose substance nobody has stated is reported `unknown_substance`, not
+-- `below` and not in scope. Adding a DEFAULT false to this column would turn
+-- every un-stated unit into one reported as out of scope under a federal rule.
+--
+-- leak_detected_on starts the 30-day clock and NOTHING ELSE DOES. NULL means
+-- no clock is running, reported as such; the engine never substitutes the
+-- install date or today, because a deadline on screen that no recorded fact
+-- supports is worse than no deadline. leak_repair_verified_on records the
+-- initial verification test and stops that clock -- recorded, never inferred
+-- from the passage of time. The app still issues no compliance verdict and
+-- still does not decide whether a leak exceeded the applicable rate: the rates
+-- differ by appliance category, and that is the judgement the header above
+-- already refuses to make.
+--
 -- ── NO SEED DATA. NOT ONE ROW. ──────────────────────────────────────────────
 -- This app's Equipment panel carried three invented customers, addresses and
 -- units presented as a live board until 2026-08-27. It ships empty.
@@ -79,6 +107,11 @@ create table if not exists public.mech_site_assets (
   warranty_expires_on   date,
   refrigerant_type      text,                 -- 'none' is a real answer; NULL is not
   refrigerant_charge_lb numeric(10,2),        -- NULL = never weighed. NEVER default 0.
+  -- 40 CFR 84.106 (AIM Act), the SECOND rule -- see header. All three NULLABLE
+  -- and none of them defaulted.
+  hfc_gwp_over_53       boolean,              -- NULL = nobody stated it. NEVER default false.
+  leak_detected_on      date,                 -- NULL = no repair clock running.
+  leak_repair_verified_on date,               -- NULL = no initial verification recorded.
   status                text not null default 'active',   -- active | retired
   notes                 text,
   recorded_by           text,                 -- employee_id from the verified session
@@ -86,6 +119,17 @@ create table if not exists public.mech_site_assets (
   updated_at            timestamptz not null default now(),
   unique (license_hash, asset_id)
 );
+
+-- ── FOR AN INSTALL THAT ALREADY RAN THIS FILE BEFORE 2026-09-17 ─────────────
+-- `create table if not exists` does NOTHING to a table that already exists, so
+-- the three columns above would never arrive on a live registry and the AIM
+-- Act board would read `unknown_substance` for every asset forever -- a check
+-- that cannot fire, which is indistinguishable on screen from one that fires
+-- and finds nothing. Re-running the whole file is safe and idempotent.
+alter table public.mech_site_assets
+  add column if not exists hfc_gwp_over_53         boolean,
+  add column if not exists leak_detected_on        date,
+  add column if not exists leak_repair_verified_on date;
 
 create index if not exists idx_mech_asset_license
   on public.mech_site_assets (license_hash, created_at desc);
@@ -119,6 +163,19 @@ select is_nullable as charge_is_nullable, column_default as charge_default
  where table_schema = 'public' and table_name = 'mech_site_assets'
    and column_name = 'refrigerant_charge_lb';
 -- Expect: YES, and no default.
+
+-- And the AIM Act column with the same weight. hfc_gwp_over_53 MUST be
+-- nullable with NO default. If this says NO, or shows `false`, every unit
+-- nobody has stated a refrigerant for now reads as OUT OF SCOPE under 40 CFR
+-- 84.106 -- the same class of unearned clearance as a defaulted charge:
+select column_name, is_nullable, column_default
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'mech_site_assets'
+   and column_name in ('hfc_gwp_over_53', 'leak_detected_on', 'leak_repair_verified_on')
+ order by column_name;
+-- Expect three rows, all is_nullable = YES, all column_default = NULL.
+-- THREE ROWS. Fewer means the ALTER above did not run and the board's AIM Act
+-- counts are being computed from columns that are not there.
 
 -- And confirm the grant is select+insert+update, with NO delete:
 select privilege_type

@@ -947,6 +947,24 @@ async function callClaude(system, messages, maxTokens) {
            and the placeholder says so. -->
       <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Full charge (lb)</label>
         <input id="ma-charge" type="number" step="0.1" min="0" placeholder="blank if never weighed" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <!-- 40 CFR 84.106 (AIM Act), the SECOND rule. THREE OPTIONS, NOT TWO.
+           "Not stated" is the default and is stored as NULL: the app does not
+           carry a GWP table, because seeding one would be a number this app
+           asserts about a refrigerant that a contractor then acts on, with no
+           source behind it -- and GWP figures get revised. A unit at or above
+           15 lb with this left unstated is reported SUBSTANCE UNSTATED, which
+           is not "out of scope". -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">HFC with GWP over 53?</label>
+        <select id="ma-gwp" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Not stated</option><option value="true">Yes</option><option value="false">No</option>
+        </select></div>
+      <!-- NOTHING ELSE STARTS THE 30-DAY CLOCK. Left blank means no repair
+           clock is running and the board says so; the install date and today
+           are never substituted. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Leak found on</label>
+        <input id="ma-leak-detected" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Initial verification on</label>
+        <input id="ma-leak-verified" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
       <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Asset ID</label>
         <input id="ma-id" placeholder="blank = new" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
     </div>
@@ -957,7 +975,7 @@ async function callClaude(system, messages, maxTokens) {
 
   <div class="card">
     <div class="tw"><table>
-      <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Refrigerant</th></tr></thead>
+      <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Section 608<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 82.157 &middot; 50 lb</div></th><th>AIM Act<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 84.106 &middot; 15 lb</div></th></tr></thead>
       <tbody id="mech-asset-tbody"><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
         Loading&hellip;
       </td></tr></tbody>
@@ -2303,6 +2321,35 @@ function mechData(action, resource, payload) {
     at_or_above: 'at/above threshold', below: 'below threshold',
     not_applicable: 'no refrigerant', unknown_charge: 'NEVER WEIGHED'
   };
+  // ── THE SECOND RULE'S OWN VOCABULARY (2026-09-17) ────────────────────────
+  // Deliberately NOT reusing MECH_SCOPE_LABEL above. That map has four states;
+  // 40 CFR 84.106 has five, and the fifth -- unknown_substance -- is the one
+  // that must never render as "below threshold". Sharing the map would have
+  // dropped it through the `||` fallback and painted an unstated unit with
+  // whatever colour happened to be next.
+  var MECH_AIM_STYLE = {
+    at_or_above:       'background:#fef3c7;color:#92400e',
+    below:             'background:#dcfce7;color:#166534',
+    not_applicable:    'background:#e5e7eb;color:#374151',
+    unknown_charge:    'background:#fee2e2;color:#991b1b',
+    unknown_substance: 'background:#fee2e2;color:#991b1b'
+  };
+  var MECH_AIM_LABEL = {
+    at_or_above: 'at/above 15 lb', below: 'below 15 lb',
+    not_applicable: 'not an HFC over GWP 53', unknown_charge: 'NEVER WEIGHED',
+    // Not "below". Nobody has stated what is in the machine.
+    unknown_substance: 'SUBSTANCE UNSTATED'
+  };
+  var MECH_REPAIR_STYLE = {
+    open:             'background:#fef3c7;color:#92400e',
+    overdue:          'background:#fee2e2;color:#991b1b',
+    repair_verified:  'background:#dcfce7;color:#166534',
+    unknown:          'background:#fee2e2;color:#991b1b'
+  };
+  var MECH_REPAIR_LABEL = {
+    open: 'repair window open', overdue: 'REPAIR OVERDUE',
+    repair_verified: 'verification recorded', unknown: 'deadline not computable'
+  };
   var MECH_WARRANTY_STYLE = {
     in_warranty: 'background:#dcfce7;color:#166534',
     expiring:    'background:#fef3c7;color:#92400e',
@@ -2318,7 +2365,7 @@ function mechData(action, resource, payload) {
     var body = document.getElementById('mech-asset-tbody');
     if (!body) return;
     if (!board || !board.rows || !board.rows.length) {
-      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">' +
+      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--g400)">' +
         (emptyMsg || 'No site assets recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.') +
         '</td></tr>';
       return;
@@ -2326,6 +2373,21 @@ function mechData(action, resource, payload) {
     body.innerHTML = board.rows.map(function (r) {
       var ss = MECH_SCOPE_STYLE[r.refrigerant_scope] || MECH_SCOPE_STYLE.unknown_charge;
       var ws = MECH_WARRANTY_STYLE[r.warranty_status] || MECH_WARRANTY_STYLE.unknown;
+      var as = MECH_AIM_STYLE[r.aim_scope] || MECH_AIM_STYLE.unknown_substance;
+      // `no_leak_recorded` deliberately renders NOTHING rather than a green
+      // badge. Most units have no leak recorded, and a reassuring pill on
+      // every row would make the handful that are genuinely overdue read as
+      // one more badge in a column of badges.
+      var rep = (r.aim_repair_state && r.aim_repair_state !== 'no_leak_recorded')
+        ? '<div style="margin-top:3px"><span style="' +
+            (MECH_REPAIR_STYLE[r.aim_repair_state] || MECH_REPAIR_STYLE.unknown) +
+            ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
+            mechEsc(MECH_REPAIR_LABEL[r.aim_repair_state] || r.aim_repair_state) + '</span>' +
+            (r.aim_repair_due_on
+              ? '<div style="font-size:11px;color:var(--g400)">due ' + mechEsc(r.aim_repair_due_on) + '</div>'
+              : '') +
+          '</div>'
+        : '';
       var charge = (r.refrigerant_charge_lb === null || r.refrigerant_charge_lb === undefined)
         ? 'not recorded' : (r.refrigerant_charge_lb + ' lb');
       return '<tr>' +
@@ -2338,6 +2400,12 @@ function mechData(action, resource, payload) {
         '<td><span style="' + ss + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
           mechEsc(MECH_SCOPE_LABEL[r.refrigerant_scope] || r.refrigerant_scope) + '</span>' +
           '<div style="font-size:11px;color:var(--g400)">' + mechEsc((r.refrigerant_type || '—') + ' · ' + charge) + '</div></td>' +
+        // Its own column, never merged with the one above. The two cells can
+        // disagree on the same row -- a 20 lb R-410A unit is `below threshold`
+        // under 82.157 and `at/above 15 lb` under 84.106 -- and that
+        // disagreement is the fact the column exists to show.
+        '<td><span style="' + as + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
+          mechEsc(MECH_AIM_LABEL[r.aim_scope] || r.aim_scope || '—') + '</span>' + rep + '</td>' +
         '</tr>';
     }).join('');
   }
@@ -2370,7 +2438,31 @@ function mechData(action, resource, payload) {
           (b.unknown_charge_count
             ? ', and ' + b.unknown_charge_count + ' NEVER WEIGHED — those are not below threshold, they are unmeasured.'
             : '.') +
-          ' This app does not decide whether leak-repair rules apply; confirm against the current rule.';
+          // ── THE SECOND RULE, ON ITS OWN LINE (2026-09-17) ──────────────
+          // 40 CFR 82.157 above is Section 608. The AIM Act's HFC rule is a
+          // DIFFERENT regulation, in force since 2026-01-01 at 15 lb, and a
+          // unit can be out of scope under one and in scope under the other --
+          // a 20 lb R-410A appliance reads `below` on the line above and
+          // `at/above` on this one. Reported separately and never summed: a
+          // single "in scope" figure would be this app deciding which federal
+          // rule governs somebody's machine.
+          (b.aim
+            ? ' — AIM Act (' + b.aim.citation + ', ' + b.aim.threshold_lb + ' lb, HFC GWP over '
+              + b.aim.gwp_floor + '): ' + b.aim.scope.at_or_above + ' at/above, '
+              + b.aim.scope.below + ' below, ' + b.aim.scope.not_applicable + ' not applicable'
+              // NOT "below". Nobody has said whether the refrigerant is in
+              // scope, which is a different fact from it being out of scope --
+              // the same distinction NEVER WEIGHED already makes on charge.
+              + (b.aim.unknown_substance_count
+                ? ', and ' + b.aim.unknown_substance_count + ' where NOBODY HAS STATED whether the '
+                  + 'refrigerant is an HFC above that GWP — those are not out of scope, they are unstated.'
+                : '.')
+              + (b.aim.overdue_repair_count
+                ? ' ' + b.aim.overdue_repair_count + ' recorded leak(s) are PAST the 30-day repair window with no '
+                  + 'verification recorded.'
+                : '')
+            : '') +
+          ' This app does not decide whether leak-repair rules apply, or which of the two rules reaches a given unit; confirm against the current rule.';
       }
       mechAssetRender(b);
     });
@@ -2386,6 +2478,14 @@ function mechData(action, resource, payload) {
     var hw = g('ma-has-warranty');
     if (hw === 'true' && !g('ma-warranty-expires')) {
       if (err) err.textContent = 'A warranty expiry date is required when the unit is under warranty.';
+      return;
+    }
+    var gw = g('ma-gwp');
+    // Caught here as well as at the endpoint, and the endpoint is the one that
+    // counts -- this only spares a round trip. A verification with no
+    // detection date would stop a clock that was never started.
+    if (g('ma-leak-verified') && !g('ma-leak-detected')) {
+      if (err) err.textContent = 'Record the date the leak was found before recording a verification — a verification with no leak date would show a repair verified against a leak that is not recorded.';
       return;
     }
     var payload = {
@@ -2409,11 +2509,19 @@ function mechData(action, resource, payload) {
       // string and the endpoint stores NULL -- deliberately not coerced to 0
       // here, because Number('') is 0 and that would turn an un-surveyed unit
       // into one reported as below the threshold.
-      refrigerant_charge_lb: g('ma-charge') === '' ? null : g('ma-charge')
+      refrigerant_charge_lb: g('ma-charge') === '' ? null : g('ma-charge'),
+      // Same three states as has_warranty, for the same reason: "nobody has
+      // said what is in this machine" is not "it is not an HFC over GWP 53".
+      // The endpoint refuses a non-boolean rather than coercing, because
+      // Boolean('false') is true.
+      hfc_gwp_over_53: gw === 'true' ? true : (gw === 'false' ? false : null),
+      leak_detected_on: g('ma-leak-detected') || null,
+      leak_repair_verified_on: g('ma-leak-verified') || null
     };
     mechData('write', 'mech_site_assets', payload).then(function (res) {
       if (res.body && res.body.ok) {
-        ['ma-id', 'ma-serial', 'ma-make', 'ma-model', 'ma-location', 'ma-installed', 'ma-charge', 'ma-warranty-expires']
+        ['ma-id', 'ma-serial', 'ma-make', 'ma-model', 'ma-location', 'ma-installed', 'ma-charge',
+         'ma-warranty-expires', 'ma-leak-detected', 'ma-leak-verified']
           .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
         mechAssetRefresh();
         return;

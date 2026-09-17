@@ -200,6 +200,221 @@ test('the module ships NO seeded assets', () => {
   assert.ok(!/const SEED|SAMPLE_|DEMO_|Carrier 48TC/.test(src));
 });
 
+// ---------------------------------------------------------------------------
+section('THE SECOND RULE: 40 CFR 84.106, and it is NOT the first one');
+
+// The case the whole feature exists for. `docs/2026-09-17-trades-audit-rederived.md`
+// §2.1: "A 20 lb R-410A unit is correctly reported `below` the 82.157
+// threshold, and has been in scope under 84.106 since January." If these two
+// assertions ever agree, one of the rules has stopped being modelled.
+test('a 20 lb HFC unit is BELOW under 82.157 and AT/ABOVE under 84.106', () => {
+  const a = asset({ refrigerant_type: 'r410a', refrigerant_charge_lb: 20, hfc_gwp_over_53: true });
+  assert.strictEqual(m.refrigerantScope(a).scope, 'below');
+  assert.strictEqual(m.aimScope(a).scope, 'at_or_above');
+});
+
+test('the two carry DIFFERENT thresholds and DIFFERENT citations', () => {
+  const a = asset({ refrigerant_type: 'r410a', refrigerant_charge_lb: 20, hfc_gwp_over_53: true });
+  const s608 = m.refrigerantScope(a), aim = m.aimScope(a);
+  assert.strictEqual(s608.threshold_lb, 50);
+  assert.strictEqual(aim.threshold_lb, 15);
+  assert.strictEqual(s608.citation, '40 CFR 82.157');
+  assert.strictEqual(aim.citation, '40 CFR 84.106');
+  assert.notStrictEqual(s608.citation, aim.citation);
+});
+
+// THE ONE THAT MATTERS FOR THIS RULE, and it is the twin of unknown_charge.
+test('at/above 15 lb with NO substance stated is unknown_substance, NEVER below', () => {
+  const r = m.aimScope(asset({ refrigerant_type: 'r410a', refrigerant_charge_lb: 40 }));
+  assert.strictEqual(r.scope, 'unknown_substance');
+  assert.notStrictEqual(r.scope, 'below');
+  assert.notStrictEqual(r.scope, 'not_applicable');
+  assert.match(r.reason, /NOT a finding that the rule does not apply/);
+});
+
+test('a stated NO is an answer and is not unknown_substance', () => {
+  assert.strictEqual(
+    m.aimScope(asset({ refrigerant_type: 'r717', refrigerant_charge_lb: 900, hfc_gwp_over_53: false })).scope,
+    'not_applicable');
+});
+
+// Charge alone settles the negative, so the substance is not asked for.
+test('under 15 lb is below whatever the substance is -- stated or not', () => {
+  ['r410a', 'r744', 'other'].forEach(function (t) {
+    [undefined, true, false].forEach(function (g) {
+      assert.strictEqual(
+        m.aimScope(asset({ refrigerant_type: t, refrigerant_charge_lb: 14.9, hfc_gwp_over_53: g })).scope,
+        'below', t + ' / ' + String(g));
+    });
+  });
+});
+
+test('the boundary is INCLUSIVE at 15 lb, same as 50 lb is for 82.157', () => {
+  const g = { refrigerant_type: 'r410a', hfc_gwp_over_53: true };
+  assert.strictEqual(m.aimScope(asset(Object.assign({ refrigerant_charge_lb: 15 }, g))).scope, 'at_or_above');
+  assert.strictEqual(m.aimScope(asset(Object.assign({ refrigerant_charge_lb: 14.99 }, g))).scope, 'below');
+});
+
+test('an unweighed unit is unknown_charge here too, not unknown_substance', () => {
+  ['', '   ', 'about 40', null, undefined].forEach(function (v) {
+    assert.strictEqual(m.aimScope(asset({ refrigerant_type: 'r410a', refrigerant_charge_lb: v, hfc_gwp_over_53: true })).scope,
+      'unknown_charge', 'accepted ' + JSON.stringify(v));
+  });
+});
+
+test('a unit holding no refrigerant is not_applicable under both rules', () => {
+  const a = asset({ refrigerant_type: 'none' });
+  assert.strictEqual(m.refrigerantScope(a).scope, 'not_applicable');
+  assert.strictEqual(m.aimScope(a).scope, 'not_applicable');
+});
+
+// ---------------------------------------------------------------------------
+section('THE REPAIR CLOCK: it runs on a recorded date or it does not run');
+
+test('no leak date means NO clock, and no invented deadline', () => {
+  const c = m.aimRepairClock(asset({ refrigerant_charge_lb: 40, installed_on: '2020-01-01' }), TODAY);
+  assert.strictEqual(c.state, 'no_leak_recorded');
+  assert.strictEqual(c.repair_due_on, null);
+  assert.strictEqual(c.days_left, null);
+});
+
+test('a malformed leak date is no clock, not a clock from a repaired date', () => {
+  // isCalendarDate rejects 2026-02-31; `new Date` would SILENTLY REPAIR it to
+  // 2026-03-03 and put a deadline three days late on the screen.
+  ['2026-02-31', '09/02/2026', 'yesterday'].forEach(function (v) {
+    const c = m.aimRepairClock(asset({ leak_detected_on: v }), TODAY);
+    assert.strictEqual(c.state, 'no_leak_recorded', 'accepted ' + v);
+    assert.strictEqual(c.repair_due_on, null);
+  });
+});
+
+test('30 days from the recorded date, and the arithmetic crosses a month', () => {
+  const c = m.aimRepairClock(asset({ leak_detected_on: '2026-08-20' }), TODAY);
+  assert.strictEqual(c.repair_due_on, '2026-09-19');
+  assert.strictEqual(c.repair_days, 30);
+  assert.strictEqual(c.state, 'open');
+  assert.strictEqual(c.days_left, 17);
+});
+
+test('past the window with no verification is OVERDUE, not still open', () => {
+  const c = m.aimRepairClock(asset({ leak_detected_on: '2026-07-01' }), TODAY);
+  assert.strictEqual(c.state, 'overdue');
+  assert.ok(c.days_left < 0);
+  assert.match(c.reason, /retrofit or retirement/);
+});
+
+// Recorded, never inferred: the clock stops because somebody wrote a date
+// down, not because enough days went by.
+test('a recorded verification stops the clock and starts the 10-day follow-up', () => {
+  const c = m.aimRepairClock(asset({ leak_detected_on: '2026-08-20', leak_repair_verified_on: '2026-09-01' }), TODAY);
+  assert.strictEqual(c.state, 'repair_verified');
+  assert.strictEqual(c.followup_due_on, '2026-09-11');
+  assert.strictEqual(c.followup_days, 10);
+});
+
+test('an overdue unit does NOT become verified by the passage of time', () => {
+  assert.strictEqual(m.aimRepairClock(asset({ leak_detected_on: '2026-01-01' }), TODAY).state, 'overdue');
+});
+
+// ---------------------------------------------------------------------------
+section('THE BOARD REPORTS BOTH AND SUMS NEITHER');
+
+const TWO_RULE_FLEET = [
+  // below 50, at/above 15, HFC stated -> disagrees across the two rules
+  { asset_id: 'B1', customer_name: 'C', site_name: 'S', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 20, hfc_gwp_over_53: true },
+  // at/above both
+  { asset_id: 'B2', customer_name: 'C', site_name: 'S', asset_type: 'chiller', refrigerant_type: 'r134a', refrigerant_charge_lb: 900, hfc_gwp_over_53: true },
+  // at/above 15, substance never stated
+  { asset_id: 'B3', customer_name: 'C', site_name: 'S', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 30 },
+  // below both
+  { asset_id: 'B4', customer_name: 'C', site_name: 'S', asset_type: 'split_system', refrigerant_type: 'r410a', refrigerant_charge_lb: 8, hfc_gwp_over_53: true },
+  // leak recorded and past the window
+  { asset_id: 'B5', customer_name: 'C', site_name: 'S', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 40, hfc_gwp_over_53: true, leak_detected_on: '2026-07-01' }
+];
+
+test('the AIM block is its own block, with its own threshold and citation', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  assert.strictEqual(b.aim.threshold_lb, 15);
+  assert.strictEqual(b.aim.citation, '40 CFR 84.106');
+  assert.strictEqual(b.aim.gwp_floor, 53);
+  // NOT nested under refrigerant -- nesting would read as a refinement of one
+  // rule rather than a second rule.
+  assert.ok(!('aim' in b.refrigerant));
+});
+
+test('the two rules disagree on the same fleet, and both figures survive', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  assert.strictEqual(b.refrigerant.at_or_above, 1);   // only the 900 lb chiller
+  assert.strictEqual(b.aim.scope.at_or_above, 3);     // B1, B2, B5
+  assert.notStrictEqual(b.refrigerant.at_or_above, b.aim.scope.at_or_above);
+});
+
+test('unknown_substance is surfaced beside the totals, never inside below', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  assert.strictEqual(b.aim.unknown_substance_count, 1);
+  assert.strictEqual(b.aim.scope.below, 1);           // B4 only. B3 is NOT here.
+});
+
+test('the overdue repair count is surfaced, not buried in the scope tally', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  assert.strictEqual(b.aim.overdue_repair_count, 1);
+  assert.strictEqual(b.aim.repair.overdue, 1);
+  assert.strictEqual(b.aim.repair.no_leak_recorded, 4);
+});
+
+// THE STRUCTURAL REFUSAL. A single "in scope" number would be this app
+// deciding which federal rule governs somebody's machine.
+// A first draft of this test scanned the board for ANY number equal to the sum
+// and it FAILED on a coincidence -- `refrigerant.below` was 4 and so was
+// 1 + 3. Recorded rather than quietly rewritten, because the lesson is the
+// test's, not the code's: a value-equality scan over a board of small counts
+// collides by chance, and a check that fires on a coincidence teaches the next
+// person to ignore it. What is asserted instead is the STRUCTURE: every count
+// is reachable only through a block that names its own citation, so no reader
+// and no caller can pick up a number without the rule that produced it.
+test('the board publishes NO merged in-scope total across the two rules', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  ['in_scope', 'total_in_scope', 'leak_scope', 'leak_rule_scope', 'refrigerant_scope', 'compliance']
+    .forEach(function (k) { assert.ok(!(k in b), 'the board exposes a merged `' + k + '`'); });
+  // Each rule's counts sit under a block carrying that rule's own citation,
+  // and the citations differ.
+  assert.strictEqual(b.citation, '40 CFR 82.157');
+  assert.strictEqual(b.aim.citation, '40 CFR 84.106');
+  assert.ok(!('citation' in b.refrigerant) || b.refrigerant.citation === b.citation);
+  // And the two scope tallies are separate objects, not one shared reference
+  // that a later edit could make both rules write into.
+  assert.notStrictEqual(b.refrigerant, b.aim.scope);
+  assert.ok(!('unknown_substance' in b.refrigerant),
+    'the 82.157 tally has grown a state that belongs to 84.106 -- the two are merging');
+});
+
+test('every row carries both answers, separately named', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  const r = b.rows.find(function (x) { return x.asset_id === 'B1'; });
+  assert.strictEqual(r.refrigerant_scope, 'below');
+  assert.strictEqual(r.aim_scope, 'at_or_above');
+});
+
+// A caller must not be able to move both rules with one knob.
+test('the two thresholds are independently overridable', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY, { threshold_lb: 25, aim_threshold_lb: 5 });
+  assert.strictEqual(b.threshold_lb, 25);
+  assert.strictEqual(b.aim.threshold_lb, 5);
+});
+
+test('overriding only the 608 threshold leaves 84.106 at 15', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY, { threshold_lb: 25 });
+  assert.strictEqual(b.aim.threshold_lb, 15);
+});
+
+// The engine still asserts no GWP figure for any named refrigerant -- the
+// substance is stated by the contractor, for the reason the header gives.
+test('the module carries NO refrigerant-to-GWP table', () => {
+  const src = require('fs').readFileSync(require.resolve('./mech-assets.js'), 'utf8');
+  assert.ok(!/GWP_TABLE|GWP_BY_REFRIGERANT|r410a\s*:\s*[0-9]/i.test(src),
+    'a GWP figure is asserted in this file -- it must be stated by the contractor');
+});
+
 console.log('\n' + (fail === 0
   ? 'ALL ' + pass + ' MECH-ASSET ASSERTIONS PASS'
   : pass + ' passed, ' + fail + ' FAILED'));

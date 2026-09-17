@@ -272,6 +272,112 @@ async function main() {
     assert.match(r2.body.error.message, /mech_site_assets_schema\.sql/);
   });
 
+  // ── 40 CFR 84.106, THE SECOND RULE, AT THE BOUNDARY (2026-09-17) ────────
+  // The engine's arithmetic is asserted in api/_lib/mech-assets.test.js. What
+  // is asserted HERE is the thing that would have made the whole feature a
+  // check that can never fire: the three columns have to be FETCHED, SENT and
+  // STORED. A rule computed perfectly over a column the select list never
+  // named reports "nothing found" on screen, which is indistinguishable from
+  // a rule that ran and found nothing.
+
+  await test('the AIM Act columns are actually FETCHED -- a rule reading an unfetched column finds nothing', async () => {
+    const { handler, calls } = loadHandler({ rows: [] });
+    await handler(mockReq('read', { today: '2026-09-02' }), mockRes());
+    const url = calls.find(c => c.method === 'GET').url;
+    ['hfc_gwp_over_53', 'leak_detected_on', 'leak_repair_verified_on'].forEach(function (c) {
+      assert.ok(url.indexOf(c) !== -1, c + ' is not in the select list -- the 84.106 board would read unstated forever');
+    });
+  });
+
+  await test('the AIM Act fields are actually STORED, not dropped on the way through', async () => {
+    const { handler, calls } = loadHandler({});
+    await handler(mockReq('write', Object.assign({}, GOOD, {
+      hfc_gwp_over_53: true, leak_detected_on: '2026-08-20', leak_repair_verified_on: '2026-09-01'
+    })), mockRes());
+    const sent = JSON.parse(calls.find(c => c.method === 'POST').body);
+    assert.strictEqual(sent.hfc_gwp_over_53, true);
+    assert.strictEqual(sent.leak_detected_on, '2026-08-20');
+    assert.strictEqual(sent.leak_repair_verified_on, '2026-09-01');
+  });
+
+  // THE ONE THAT MATTERS HERE. Boolean('false') is true in JavaScript, so a
+  // string 'false' arriving from a form would flip an out-of-scope answer to
+  // in-scope -- the same coercion class as Number('') being 0 above.
+  await test('a non-boolean GWP flag is REFUSED, never coerced', async () => {
+    for (const v of ['false', 'true', 'yes', 0, 1]) {
+      const res = mockRes();
+      await loadHandler({}).handler(mockReq('write', Object.assign({}, GOOD, { hfc_gwp_over_53: v })), res);
+      assert.strictEqual(res.statusCode, 400, 'accepted ' + JSON.stringify(v));
+      assert.strictEqual(res.body.error.code, 'BAD_GWP_FLAG');
+    }
+  });
+
+  await test('an UNSTATED substance is stored as null, never as false', async () => {
+    for (const v of [undefined, null, '', '   ']) {
+      const p = Object.assign({}, GOOD);
+      if (v === undefined) delete p.hfc_gwp_over_53; else p.hfc_gwp_over_53 = v;
+      const { handler, calls } = loadHandler({});
+      await handler(mockReq('write', p), mockRes());
+      const sent = JSON.parse(calls.find(c => c.method === 'POST').body);
+      assert.strictEqual(sent.hfc_gwp_over_53, null,
+        'unstated was stored as ' + JSON.stringify(sent.hfc_gwp_over_53)
+        + ' -- false means "stated, and out of scope", which is a clearance');
+    }
+  });
+
+  // A dropped leak date is worse than a refused one: the technician who typed
+  // it sees a saved asset with no repair clock running.
+  await test('a malformed leak date is REFUSED, not silently stored as null', async () => {
+    for (const f of ['leak_detected_on', 'leak_repair_verified_on']) {
+      const res = mockRes();
+      const p = Object.assign({}, GOOD, { leak_detected_on: '2026-08-20' });
+      p[f] = '08/20/2026';
+      await loadHandler({}).handler(mockReq('write', p), res);
+      assert.strictEqual(res.statusCode, 400, f + ' accepted a malformed date');
+      assert.strictEqual(res.body.error.code, 'BAD_LEAK_DATE');
+    }
+  });
+
+  await test('a verification with no detection date is refused -- it would stop a clock never started', async () => {
+    const res = mockRes();
+    await loadHandler({}).handler(mockReq('write', Object.assign({}, GOOD, { leak_repair_verified_on: '2026-09-01' })), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'NO_LEAK_DATE');
+  });
+
+  await test('read returns BOTH rules, disagreeing on the same asset, summed into neither', async () => {
+    const { handler } = loadHandler({
+      rows: [
+        // below 50 lb, at/above 15 lb, HFC stated -- the case the feature exists for
+        { asset_id: 'A1', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 20, hfc_gwp_over_53: true },
+        // at/above 15 lb, substance never stated -- NOT below
+        { asset_id: 'A2', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 30 },
+        // a leak recorded in July, still unverified
+        { asset_id: 'A3', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 40, hfc_gwp_over_53: true, leak_detected_on: '2026-07-01' }
+      ]
+    });
+    const res = mockRes();
+    await handler(mockReq('read', { today: '2026-09-02' }), res);
+    assert.strictEqual(res.body.board.refrigerant.at_or_above, 0, '82.157 counts none of these');
+    assert.strictEqual(res.body.board.aim.scope.at_or_above, 2, '84.106 counts two');
+    assert.strictEqual(res.body.board.aim.unknown_substance_count, 1);
+    assert.strictEqual(res.body.board.aim.scope.below, 0, 'the unstated unit must NOT count as below');
+    assert.strictEqual(res.body.board.aim.overdue_repair_count, 1);
+    assert.strictEqual(res.body.board.aim.threshold_lb, 15);
+    assert.strictEqual(res.body.board.aim.citation, '40 CFR 84.106');
+    assert.strictEqual(res.body.board.citation, '40 CFR 82.157');
+  });
+
+  await test('the two thresholds are separately overridable through the endpoint', async () => {
+    const { handler } = loadHandler({
+      rows: [{ asset_id: 'A1', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 20, hfc_gwp_over_53: true }]
+    });
+    const res = mockRes();
+    await handler(mockReq('read', { today: '2026-09-02', threshold_lb: 25, aim_threshold_lb: 5 }), res);
+    assert.strictEqual(res.body.board.threshold_lb, 25);
+    assert.strictEqual(res.body.board.aim.threshold_lb, 5);
+  });
+
   console.log('\n' + (process.exitCode ? 'FAILURES ABOVE' : 'ALL ' + passed + ' MECH-ASSET-ENDPOINT ASSERTIONS PASS'));
 }
 

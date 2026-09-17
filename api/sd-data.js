@@ -1331,13 +1331,26 @@ module.exports = async (req, res) => {
         res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
         return;
       }
+      // The three AIM Act columns are in this list because a select list is
+      // the place this kind of feature dies quietly: the engine can compute
+      // 40 CFR 84.106 scope perfectly and still report `unknown_substance` for
+      // every asset forever, because the column it reads was never fetched.
+      // That failure shows on screen as a rule that found nothing.
       const cols = 'asset_id,customer_name,site_name,site_address,asset_type,make,model,serial_no,' +
         'location_on_site,installed_on,has_warranty,warranty_expires_on,refrigerant_type,' +
-        'refrigerant_charge_lb,status,notes,recorded_by,created_at,updated_at';
+        'refrigerant_charge_lb,hfc_gwp_over_53,leak_detected_on,leak_repair_verified_on,' +
+        'status,notes,recorded_by,created_at,updated_at';
 
       if (action === 'read') {
         const r = await fetch(rest('mech_site_assets?license_hash=eq.' + enc(licHash) +
           '&select=' + cols + '&order=created_at.desc'), { headers });
+        // A registry provisioned BEFORE the three AIM Act columns existed
+        // lands here too -- PostgREST 400s on a select naming a column the
+        // table does not have -- and the UI's answer is "run
+        // sql/mech_site_assets_schema.sql", which is exactly right: that file
+        // now carries an idempotent ALTER and is safe to re-run. It fails
+        // CLOSED, showing nothing, rather than dropping the AIM columns and
+        // showing a board whose second rule silently found nothing.
         if (r.status === 404 || r.status === 400) {
           res.status(200).json({ ok: true, data: [], provisioned: false });
           return;
@@ -1346,7 +1359,13 @@ module.exports = async (req, res) => {
         if (!r.ok) return upstream(res, rows);
         const board = mechAssets.evaluateRegistry(rows || [], (payload && payload.today) || nowISO().slice(0, 10), {
           warn_days: payload && payload.warn_days,
-          threshold_lb: payload && payload.threshold_lb
+          threshold_lb: payload && payload.threshold_lb,
+          // Overridable and separately named, same as threshold_lb -- the two
+          // rules' numbers must never be settable by one knob.
+          aim_threshold_lb: payload && payload.aim_threshold_lb,
+          aim_gwp_floor: payload && payload.aim_gwp_floor,
+          aim_repair_days: payload && payload.aim_repair_days,
+          aim_followup_days: payload && payload.aim_followup_days
         });
         res.status(200).json({ ok: true, provisioned: true, data: rows || [], board: board });
         return;
@@ -1385,7 +1404,42 @@ module.exports = async (req, res) => {
         }
         chargeLb = n;
       }
+      // ── THE SECOND RULE'S FIELDS (40 CFR 84.106) ────────────────────────
+      // hfc_gwp_over_53 is a TRI-STATE and the third state is the point:
+      // true and false are both answers, absent is not. It is stored as null
+      // when unstated, exactly as has_warranty is, because "nobody has said
+      // what is in this machine" and "stated, and it is not an HFC above the
+      // GWP floor" are different facts and the second one is a clearance.
+      // A non-boolean that is not empty is REFUSED rather than coerced --
+      // Boolean('false') is true in JavaScript, and that one would flip an
+      // out-of-scope answer to in-scope without anybody typing anything.
+      let gwpOver = null;
+      if (typeof p.hfc_gwp_over_53 === 'boolean') {
+        gwpOver = p.hfc_gwp_over_53;
+      } else if (p.hfc_gwp_over_53 !== null && p.hfc_gwp_over_53 !== undefined &&
+                 String(p.hfc_gwp_over_53).trim() !== '') {
+        res.status(400).json({ error: { code: 'BAD_GWP_FLAG', message: 'hfc_gwp_over_53 must be true, false, or left empty if nobody has stated whether the refrigerant is an HFC above GWP 53. Empty is stored as unstated, not as no.' } });
+        return;
+      }
       const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+      // A leak date that is present but malformed is REFUSED, not dropped to
+      // null. Silently storing null would tell the technician who just typed
+      // one that no repair clock is running on a unit they reported a leak on.
+      for (const f of ['leak_detected_on', 'leak_repair_verified_on']) {
+        const v = p[f];
+        if (v !== null && v !== undefined && String(v).trim() !== '' && !DATE_RE.test(String(v))) {
+          res.status(400).json({ error: { code: 'BAD_LEAK_DATE', message: f + ' must be YYYY-MM-DD, or left empty. It was not stored, because a leak date that is silently dropped reads on the board as no repair clock running.' } });
+          return;
+        }
+      }
+      // A verification with no detection date is REFUSED: it would stop a
+      // clock that was never started, and the board would show the unit as
+      // repair_verified with no recorded leak behind it.
+      if (DATE_RE.test(String(p.leak_repair_verified_on || '')) &&
+          !DATE_RE.test(String(p.leak_detected_on || ''))) {
+        res.status(400).json({ error: { code: 'NO_LEAK_DATE', message: 'leak_detected_on is required when leak_repair_verified_on is given -- a verification date with no detection date would report a repair verified against a leak that is not recorded.' } });
+        return;
+      }
       if (p.has_warranty === true && !DATE_RE.test(String(p.warranty_expires_on || ''))) {
         res.status(400).json({ error: { code: 'NO_WARRANTY_DATE', message: 'warranty_expires_on (YYYY-MM-DD) is required when has_warranty is true' } });
         return;
@@ -1413,6 +1467,11 @@ module.exports = async (req, res) => {
           warranty_expires_on: p.has_warranty === true ? p.warranty_expires_on : null,
           refrigerant_type: p.refrigerant_type ? String(p.refrigerant_type) : null,
           refrigerant_charge_lb: chargeLb,
+          // 40 CFR 84.106. null is a real state on all three -- unstated
+          // substance, no leak recorded, no verification recorded.
+          hfc_gwp_over_53: gwpOver,
+          leak_detected_on: DATE_RE.test(String(p.leak_detected_on || '')) ? p.leak_detected_on : null,
+          leak_repair_verified_on: DATE_RE.test(String(p.leak_repair_verified_on || '')) ? p.leak_repair_verified_on : null,
           status: status,
           notes: p.notes == null ? null : String(p.notes),
           // From the verified session, never the body.

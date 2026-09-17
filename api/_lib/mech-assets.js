@@ -65,6 +65,43 @@ const DEFAULT_WARN_DAYS = shared.DEFAULT_WARN_DAYS;
 const EPA_LEAK_THRESHOLD_LB = 50;
 const EPA_THRESHOLD_CITATION = '40 CFR 82.157';
 
+// ── AND A SECOND RULE, WHICH IS NOT THE SAME RULE (2026-09-17) ─────────────
+// 40 CFR 82.157 above is the SECTION 608 leak-repair rule, and 50 lb is correct
+// for it. The AIM Act's HFC rule is a DIFFERENT regulation -- 40 CFR 84.106,
+// Part 84 subpart C -- and it has applied since 2026-01-01 to appliances holding
+// 15 lb or more of an HFC with a GWP above 53. An appliance can be out of scope
+// under one and in scope under the other, and until today this engine modelled
+// only the first. The 2026-08-21 trades research flagged the change and dated it
+// correctly; nothing had acted on it.
+//
+// THE APP DOES NOT DECIDE WHICH RULE APPLIES, and that is the whole design.
+// Both scopes are computed independently, both carry their own threshold and
+// citation, and the board reports both side by side. Picking one would be this
+// app asserting which federal rule governs a customer's appliance -- the same
+// judgement the header above already refuses to make about leak RATES.
+//
+// ── WHY THERE IS NO GWP TABLE HERE, AND WHY THAT PRODUCES A FOURTH STATE ───
+// Deciding whether r410a is "an HFC above GWP 53" needs a substance table, and
+// seeding one would be the mistake roofing-warranties.js refuses about GAF
+// tiers: a number this file asserted, which a contractor then acted on, with no
+// source behind it. GWP figures are also revised, and a stale table reads as
+// authoritative.
+//
+// So the substance half is STATED BY THE CONTRACTOR -- `hfc_gwp_over_53`, a
+// tri-state -- and an appliance at or over 15 lb whose substance nobody has
+// stated is `unknown_substance`. NOT `below`, and not in scope either. Same
+// discipline `unknown_charge` already keeps on the weight axis: an answer that
+// looks like clearance is worse than no answer.
+//
+// The one thing CHARGE ALONE can settle is the negative -- under 15 lb is out of
+// scope whatever the refrigerant is -- so that is answered without asking.
+const AIM_LEAK_THRESHOLD_LB = 15;
+const AIM_THRESHOLD_CITATION = '40 CFR 84.106';
+const AIM_GWP_FLOOR = 53;
+// The repair window and its follow-up verification, both from the same rule.
+const AIM_REPAIR_DAYS = 30;
+const AIM_VERIFY_FOLLOWUP_DAYS = 10;
+
 // Trade taxonomy. The research is explicit that this is the ONLY part that
 // differs per trade -- the schema does not. Unknown types are refused on write
 // rather than stored, so a board can never group by a category nobody defined.
@@ -158,6 +195,134 @@ function refrigerantScope(asset, thresholdLb) {
   }, base);
 }
 
+// ── THE SECOND, INDEPENDENT SCOPE. Deliberately NOT a variant of the one
+// ── above: it is a different rule with a different threshold, a different
+// ── citation and an extra axis the other does not have.
+// Written as its own function rather than a parameter on refrigerantScope for
+// the reason this platform keeps relearning -- a flag threaded through one
+// function is a flag somebody passes the wrong way, and the two answers must be
+// producible side by side without either being "the" answer.
+function aimScope(asset, thresholdLb, gwpFloor) {
+  const t = Number.isFinite(thresholdLb) ? thresholdLb : AIM_LEAK_THRESHOLD_LB;
+  const g = Number.isFinite(gwpFloor) ? gwpFloor : AIM_GWP_FLOOR;
+  const base = { threshold_lb: t, citation: AIM_THRESHOLD_CITATION, gwp_floor: g };
+  if (!asset || typeof asset !== 'object') {
+    return Object.assign({ scope: 'unknown_charge', reason: 'no asset' }, base);
+  }
+  if (asset.refrigerant_type === 'none') {
+    return Object.assign({ scope: 'not_applicable', reason: 'this unit holds no refrigerant' }, base);
+  }
+  const lb = chargeLb(asset.refrigerant_charge_lb);
+  if (lb === null || lb < 0) {
+    return Object.assign({
+      scope: 'unknown_charge',
+      reason: 'no full charge recorded, so the threshold cannot be applied to this unit'
+    }, base);
+  }
+  // CHARGE ALONE SETTLES THE NEGATIVE. Under the threshold is out of scope
+  // whatever the substance is, so the substance is not asked for.
+  if (lb < t) {
+    return Object.assign({
+      scope: 'below', charge_lb: lb,
+      reason: 'recorded full charge is below the threshold, so this rule does not '
+        + 'reach it whatever the refrigerant is'
+    }, base);
+  }
+  // At or over the threshold, the substance decides -- and only the contractor
+  // can state it. `true` and `false` are both ANSWERS; absent is not.
+  if (asset.hfc_gwp_over_53 === true) {
+    return Object.assign({
+      scope: 'at_or_above', charge_lb: lb,
+      reason: 'recorded full charge is at or above the threshold and the refrigerant '
+        + 'is recorded as an HFC above the GWP floor — leak-repair provisions may be '
+        + 'in scope; confirm against the current rule'
+    }, base);
+  }
+  if (asset.hfc_gwp_over_53 === false) {
+    return Object.assign({
+      scope: 'not_applicable', charge_lb: lb,
+      reason: 'recorded as not an HFC above the GWP floor, so this rule does not reach it'
+    }, base);
+  }
+  // NEITHER 'below' NOR IN SCOPE. Nobody stated the substance.
+  return Object.assign({
+    scope: 'unknown_substance', charge_lb: lb,
+    reason: 'recorded full charge is at or above the threshold, but nobody has '
+      + 'stated whether this refrigerant is an HFC above the GWP floor — this is '
+      + 'NOT a finding that the rule does not apply'
+  }, base);
+}
+
+// ── THE REPAIR CLOCK, AND IT ONLY RUNS ON A DATE SOMEBODY RECORDED ─────────
+// 40 CFR 84.106 gives 30 days from a leak exceeding the applicable rate to
+// identify and repair it, with an initial verification test in that window and a
+// follow-up within 10 days of the initial.
+//
+// WHAT THIS DOES NOT DO: decide whether a leak exceeded the rate. The rates
+// differ by appliance category and the header above already refuses to encode
+// them. This runs the clock from a date the contractor recorded as the day the
+// leak was found, and says so.
+//
+// NO DATE MEANS NO CLOCK, reported as such. Inventing a start date -- from the
+// install date, from today, from anything -- would put a deadline on a screen
+// that no fact supports.
+function aimRepairClock(asset, today, repairDays, followupDays) {
+  const rd = Number.isFinite(repairDays) ? repairDays : AIM_REPAIR_DAYS;
+  const fd = Number.isFinite(followupDays) ? followupDays : AIM_VERIFY_FOLLOWUP_DAYS;
+  const base = { repair_days: rd, followup_days: fd, citation: AIM_THRESHOLD_CITATION };
+  const on = asset && asset.leak_detected_on;
+  if (!isDate(on)) {
+    return Object.assign({
+      state: 'no_leak_recorded', detected_on: null, repair_due_on: null, days_left: null,
+      reason: on ? 'a leak date is recorded but is not YYYY-MM-DD, so no clock is run'
+                 : 'no leak detection date recorded, so no repair clock is running'
+    }, base);
+  }
+  // isoPlusDays, unconditionally. An earlier draft read
+  // `shared.addDays ? shared.addDays(on, rd) : isoPlusDays(on, rd)` -- and
+  // `shared.addDays` does not exist, so the first arm was dead the day it was
+  // written and would have woken up silently the first time anybody added an
+  // `addDays` to credential-expiry.js with a different argument order or a
+  // Date return. A deadline computed by whichever function happened to exist
+  // is the quiet-wrong-number shape; there is one way to add days here.
+  const dueOn = isoPlusDays(on, rd);
+  const left = daysUntil(dueOn, today);
+  // A repair the contractor has recorded as verified stops the clock. Recorded,
+  // never inferred from the passage of time.
+  if (asset.leak_repair_verified_on && isDate(asset.leak_repair_verified_on)) {
+    return Object.assign({
+      state: 'repair_verified', detected_on: on, repair_due_on: dueOn,
+      days_left: left, verified_on: asset.leak_repair_verified_on,
+      followup_due_on: isoPlusDays(asset.leak_repair_verified_on, fd),
+      reason: 'an initial verification is recorded; the follow-up verification is '
+        + 'due within ' + fd + ' days of it'
+    }, base);
+  }
+  return Object.assign({
+    state: left === null ? 'unknown' : (left < 0 ? 'overdue' : 'open'),
+    detected_on: on, repair_due_on: dueOn, days_left: left,
+    reason: left === null
+      ? 'the repair deadline could not be computed from the recorded dates'
+      : (left < 0
+        ? 'the ' + rd + '-day repair window has passed with no verification recorded — '
+          + 'the rule requires a retrofit or retirement plan at that point; confirm '
+          + 'against the current rule'
+        : 'within the ' + rd + '-day repair window; an initial verification test is '
+          + 'required inside it')
+  }, base);
+}
+
+// Date arithmetic kept local and explicit. UTC only, because a repair deadline
+// that shifts with the reader's timezone is a different date for two people
+// looking at the same screen -- the defect fixed across nine SAIRNvet panels.
+function isoPlusDays(iso, n) {
+  if (!isDate(iso)) return null;
+  const d = new Date(iso + 'T00:00:00Z');
+  if (!Number.isFinite(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 function assetKey(a) {
   return String(a && a.asset_id != null ? a.asset_id : '').trim();
 }
@@ -174,6 +339,10 @@ function evaluateRegistry(assets, today, opts) {
     .map(function (a) {
       const w = classifyWarranty(a, today, o.warn_days);
       const r = refrigerantScope(a, o.threshold_lb);
+      // BOTH RULES, SIDE BY SIDE. Neither is "the" answer -- see the AIM Act
+      // block at the top of this file.
+      const aim = aimScope(a, o.aim_threshold_lb, o.aim_gwp_floor);
+      const clock = aimRepairClock(a, today, o.aim_repair_days, o.aim_followup_days);
       return {
         asset_id: a.asset_id,
         customer_name: a.customer_name || null,
@@ -189,15 +358,30 @@ function evaluateRegistry(assets, today, opts) {
         refrigerant_type: a.refrigerant_type || null,
         refrigerant_charge_lb: chargeLb(a.refrigerant_charge_lb),
         refrigerant_scope: r.scope,
-        refrigerant_reason: r.reason
+        refrigerant_reason: r.reason,
+        aim_scope: aim.scope,
+        aim_reason: aim.reason,
+        aim_repair_state: clock.state,
+        aim_repair_due_on: clock.repair_due_on,
+        aim_repair_days_left: clock.days_left,
+        aim_repair_reason: clock.reason
       };
     });
 
   const warranty = { in_warranty: 0, expiring: 0, expired: 0, none: 0, unknown: 0 };
   const refrigerant = { at_or_above: 0, below: 0, not_applicable: 0, unknown_charge: 0 };
+  // A SEPARATE TALLY, NOT A MERGED ONE. Summing the two rules into a single
+  // "in scope" number would be the app deciding which one governs, which is the
+  // thing this file refuses to do.
+  const aimCounts = { at_or_above: 0, below: 0, not_applicable: 0,
+                      unknown_charge: 0, unknown_substance: 0 };
+  const aimRepair = { open: 0, overdue: 0, repair_verified: 0,
+                      no_leak_recorded: 0, unknown: 0 };
   rows.forEach(function (r) {
     warranty[r.warranty_status] = (warranty[r.warranty_status] || 0) + 1;
     refrigerant[r.refrigerant_scope] = (refrigerant[r.refrigerant_scope] || 0) + 1;
+    aimCounts[r.aim_scope] = (aimCounts[r.aim_scope] || 0) + 1;
+    aimRepair[r.aim_repair_state] = (aimRepair[r.aim_repair_state] || 0) + 1;
   });
 
   // Sites, derived rather than stored: the research's shape is
@@ -216,6 +400,22 @@ function evaluateRegistry(assets, today, opts) {
     counts: { assets: rows.length, sites: Object.keys(sites).length },
     warranty: warranty,
     refrigerant: refrigerant,
+    // ── THE SECOND RULE, REPORTED AS ITS OWN BLOCK ─────────────────────────
+    // Its own threshold and its own citation, so a reader can never mistake
+    // which number produced which count. Deliberately NOT nested under
+    // `refrigerant` above: nesting would imply one is a refinement of the
+    // other, and they are two different regulations.
+    aim: {
+      threshold_lb: Number.isFinite(o.aim_threshold_lb) ? o.aim_threshold_lb : AIM_LEAK_THRESHOLD_LB,
+      citation: AIM_THRESHOLD_CITATION,
+      gwp_floor: Number.isFinite(o.aim_gwp_floor) ? o.aim_gwp_floor : AIM_GWP_FLOOR,
+      scope: aimCounts,
+      repair: aimRepair,
+      // Same discipline as unknown_charge_count: the count that could be read
+      // as clearance is surfaced beside the totals, not under them.
+      unknown_substance_count: aimCounts.unknown_substance,
+      overdue_repair_count: aimRepair.overdue
+    },
     // Surfaced beside the totals rather than under them, same as the credential
     // board: a registry that buries its unknowns reads as a clean bill.
     unknown_charge_count: refrigerant.unknown_charge,
@@ -228,9 +428,16 @@ module.exports = {
   DEFAULT_WARN_DAYS,
   EPA_LEAK_THRESHOLD_LB,
   EPA_THRESHOLD_CITATION,
+  AIM_LEAK_THRESHOLD_LB,
+  AIM_THRESHOLD_CITATION,
+  AIM_GWP_FLOOR,
+  AIM_REPAIR_DAYS,
+  AIM_VERIFY_FOLLOWUP_DAYS,
   ASSET_TYPES,
   REFRIGERANTS,
   classifyWarranty,
   refrigerantScope,
+  aimScope,
+  aimRepairClock,
   evaluateRegistry
 };
