@@ -163,26 +163,33 @@ def write_status(state, lines, payload=None):
         'and the previous clean verdict was deliberately overwritten rather than',
         'left standing.',
         '',
-        '**WHAT THIS CANNOT SEE.** `api/cron-watchdog.js` runs on the same Vercel',
+        # ── THE CADENCE COMES FIRST, AND THAT ORDER IS THE FIX ──────────
+        # This block used to open with "it is also ASKED for hourly" and put
+        # the measured two-to-six-hour reality four sentences below it. A
+        # reader who stops at the first sentence -- which is what readers do --
+        # left with a coverage figure four times better than the real one.
+        # That is the same failure the stale artifact caused: a document whose
+        # opening line is true and whose correction is out of sight.
+        '**WHAT THIS CANNOT SEE, AND HOW OFTEN IT LOOKS.** Read this document',
+        'as **a check every two to six hours**. It is ASKED for hourly from',
+        '`.github/workflows/cron-liveness.yml`, and over the first 30.8 hours of',
+        'scheduled runs the gaps were **152 to 347 minutes, median ~292** — so',
+        '**roughly three runs in four never happen**, and not one fired at the',
+        'declared `:45`. **The stated schedule is a request, not a cadence.**',
+        '',
+        '**WHY THAT IS A FINDING AND NOT A COMPLAINT:** the other two scheduled',
+        'workflows in this repository are late and NEVER dropped —',
+        '`nightly-backup` asks 03:40 and lands 08:52 with a daily cadence that',
+        'holds exactly. Delay affects all of them; dropping affects only the',
+        'hourly one. GitHub also disables scheduled workflows on a repository',
+        'with no activity for 60 days.',
+        '',
+        '**WHAT IT BUYS ANYWAY.** `api/cron-watchdog.js` runs on the SAME Vercel',
         'cron scheduler as the jobs it watches, so a total scheduler outage',
         'silences both. THIS tool runs outside Vercel and is what survives that.',
-        'Since 2026-09-15 it is also ASKED for hourly from',
-        '`.github/workflows/cron-liveness.yml` — a genuinely different scheduler,',
-        'at no spend — so it no longer depends on somebody remembering to run it.',
-        '',
-        '**AND WHAT THAT STILL IS NOT, MEASURED RATHER THAN CAVEATED.** GitHub',
-        'Actions is not an uptime vendor. Over the first 30.8 hours of scheduled',
-        'runs the gaps were **152 to 347 minutes, median ~292**, against an',
-        'asked-for 60 — **roughly three runs in four never happen** — and not one',
-        'fired at the declared `:45`. The other two scheduled workflows in this',
-        'repository are late and never dropped (`nightly-backup` asks 03:40 and',
-        'lands 08:52, daily cadence exact), so **delay affects all of them and',
-        'dropping affects only the hourly one.** Read this document as **a check',
-        'every two to six hours**, not hourly. GitHub also disables scheduled',
-        'workflows on a repository with no activity for 60 days. A second',
-        'INDEPENDENT scheduler is a real improvement over one; it is not a',
-        'guaranteed one, and the difference is measured here rather than implied',
-        'by the word "automated".',
+        'A second INDEPENDENT scheduler is a real improvement over one; it is',
+        'not a guaranteed one, and the difference is measured above rather than',
+        'implied by the word "automated".',
     ]
     if payload is not None:
         out += ['', '<details><summary>Raw response</summary>', '',

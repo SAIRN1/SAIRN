@@ -302,11 +302,15 @@ async function claudeProxyHandler(req, res) {
   // would put one customer's usage on another's budget, which is worse than
   // not sub-budgeting it at all.
   let claudeTenantKey = null;
+  let claudeLicenceApp = null;
   if (claudeLicenceKey) {
     try {
       const lic = await validateLicenseKey(claudeLicenceKey);
       authState = lic.valid ? (lic.active ? 'valid' : 'inactive') : 'invalid';
       if (lic.valid && lic.license_hash) claudeTenantKey = lic.license_hash;
+      // The app this licence ACTUALLY belongs to, kept beside the hash so
+      // the budget decision below can compare it with the claimed one.
+      if (lic.valid && lic.app_id) claudeLicenceApp = lic.app_id;
     } catch (err) {
       // FAILS OPEN, and says so. An unreachable licence store must not take
       // down every AI feature on the platform -- the same standard every other
@@ -386,7 +390,55 @@ async function claudeProxyHandler(req, res) {
   // only ever existed on the demo path, so a non-demo call was absent from the
   // usage table entirely rather than present with null tokens. Now every call
   // that gets a row gets its cost recorded.
-  const rl = await checkAiRateLimit(app_id, claudeTenantKey);
+  // ── THE BUDGET IS CHARGED TO A VERIFIED APP, NOT A CLAIMED ONE ─────────
+  // FOUND 2026-09-17 while mapping which tenants share a backend.
+  // `app_id` arrives IN THE REQUEST BODY and is checked only against
+  // KNOWN_APP_IDS -- a list that ships inside every app's frontend, so every
+  // value in it is public. The LICENCE dimension was already sound:
+  // `claudeTenantKey` is the verified `license_hash`, so the per-licence
+  // sub-budget added 2026-09-15 genuinely caps what one customer takes.
+  //
+  // WHAT IT DID NOT CAP IS SOMEBODY WITH NO LICENCE AT ALL spending against a
+  // licensed app's pool, because the APP dimension is the one the caller
+  // supplies. A sub-budget divides a pool between tenants; it does nothing
+  // about who is allowed near the pool.
+  //
+  // TWO RULES, AND NEITHER REFUSES ANYBODY -- a refusal here would be a new way
+  // to break a working caller, and the goal is to remove the incentive rather
+  // than to add a gate:
+  //
+  //   1. A VALID LICENCE NAMES ITS OWN APP. validateLicenseKey() already
+  //      returns `app_id`. When it disagrees with the claimed one, the spend is
+  //      charged to the app that ACTUALLY HOLDS THE LICENCE. The request is
+  //      still served with the prompt the caller asked for; only the budget
+  //      moves. Claiming somebody else's app therefore buys nothing.
+  //
+  //   2. NO VALID LICENCE MEANS A SEPARATE POOL. Anonymous and demo traffic is
+  //      counted under `anon:<app_id>`, so it CANNOT draw down a licensed app's
+  //      ceiling at all. The bounded cost is stated rather than discovered: an
+  //      attacker can still exhaust the ANONYMOUS pool for one app and deny
+  //      that app's demos. That is a real consequence and it is the right
+  //      trade -- a paying tenant's AI features are what must not be reachable
+  //      from an unauthenticated request.
+  //
+  // AND OUR OWN OUTAGE DOES NOT DEMOTE A CUSTOMER. `authState === 'error'`
+  // means the licence store could not be read, not that the caller lacks a
+  // licence. Moving them to the anonymous pool would punish a paying customer
+  // for our failure, so that path keeps the claimed app -- exactly today's
+  // behaviour, and no worse.
+  let budgetApp = app_id;
+  if (authState === 'valid' || authState === 'inactive') {
+    if (claudeLicenceApp && claudeLicenceApp !== app_id) {
+      console.error('api/claude: app_id MISMATCH -- body claimed "' + app_id
+        + '" and the verified licence belongs to "' + claudeLicenceApp
+        + '". Charging the budget to the licence, serving the request.');
+      budgetApp = claudeLicenceApp;
+    }
+  } else if (authState !== 'error') {
+    // absent or invalid licence -- an isolated pool, never the app's own
+    budgetApp = 'anon:' + app_id;
+  }
+  const rl = await checkAiRateLimit(budgetApp, claudeTenantKey);
   if (!rl.allowed) {
     // The demo contract is preserved exactly for demo callers. A non-demo
     // caller gets a real 429 instead, because telling a paying subscriber they

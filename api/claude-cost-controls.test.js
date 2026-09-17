@@ -173,20 +173,111 @@ t('THE CAP IS IN callAnthropic, NOT ONLY THE HTTP HANDLER -- api/law-auth.js and
 
 section('--- 2. the limiter runs for EVERY request, not only is_demo ones ---');
 
+// ── THE KEY CHANGED 2026-09-17 AND THE ARMS SAY SO ────────────────────────
+// These asserted `['stonedesk']`. An UNLICENSED caller -- which is what call()
+// is, it sends no Authorization header -- is now counted under
+// `anon:stonedesk`, an isolated pool that cannot draw down the licensed app's
+// ceiling. The arms are kept and tightened rather than relaxed: they still
+// prove the limiter is consulted on every path, and they now also prove WHICH
+// pool an unauthenticated request reaches.
+const ANON = 'anon:stonedesk';
+
 t('is_demo:false -- the bypass -- still consults the limiter', async () => {
   const r = await call({ app_id: 'stonedesk', is_demo: false, messages: MSG });
-  assert.deepStrictEqual(r.limiterCalls, ['stonedesk'],
+  assert.deepStrictEqual(r.limiterCalls, [ANON],
     'the limiter was skipped for a caller that simply said is_demo:false');
 });
 
+t('AN UNLICENSED CALLER CANNOT REACH THE LICENSED APP POOL', async () => {
+  // The whole point of the change. `app_id` ships in every app's frontend, so
+  // every value in KNOWN_APP_IDS is public; before this, anyone could spend
+  // against a paying app's daily ceiling by naming it.
+  const r = await call({ app_id: 'stonedesk', is_demo: false, messages: MSG });
+  assert.ok(!r.limiterCalls.includes('stonedesk'),
+    'an unauthenticated request was charged to the licensed app pool');
+  assert.ok(r.limiterCalls.every((k) => String(k).startsWith('anon:')),
+    r.limiterCalls);
+});
+
+t('...and the isolation is PER CLAIMED APP, so one anon pool is not global',
+  async () => {
+    // Stated because it bounds the residual: an attacker can still exhaust the
+    // ANONYMOUS pool for one app and deny that app's demos. That is the
+    // accepted cost, and it must not silently become "deny every app's demos".
+    const a = await call({ app_id: 'stonedesk', is_demo: true, messages: MSG });
+    const b = await call({ app_id: 'sairnvet', is_demo: true, messages: MSG });
+    assert.notDeepStrictEqual(a.limiterCalls, b.limiterCalls, a.limiterCalls);
+  });
+
 t('is_demo ABSENT ENTIRELY still consults the limiter', async () => {
   const r = await call({ app_id: 'stonedesk', messages: MSG });
-  assert.deepStrictEqual(r.limiterCalls, ['stonedesk']);
+  assert.deepStrictEqual(r.limiterCalls, [ANON]);
 });
+
+// ── RULE 1: A VALID LICENCE NAMES ITS OWN APP ─────────────────────────────
+// validateLicenseKey() already returns `app_id`. When the body claims a
+// different one, the spend is charged to the app that ACTUALLY holds the
+// licence -- the request is still served with the prompt the caller asked for,
+// only the budget moves. That removes the incentive without adding a refusal
+// that could break a working caller.
+t('a licence for ANOTHER app charges ITS OWN budget, not the claimed one',
+  async () => {
+    const prev = licenceAnswer;
+    licenceAnswer = { valid: true, active: true, license_hash: 'h',
+                      app_id: 'sairnvet' };
+    try {
+      const r = await callWithAuth({ app_id: 'stonedesk', messages: MSG }, 'K');
+      assert.deepStrictEqual(r.limiterCalls, ['sairnvet'],
+        'a verified SAIRNvet licence spent the StoneDesk budget by asking for it');
+    } finally { licenceAnswer = prev; }
+  });
+
+t('...and a MATCHING licence is charged normally -- the rule is about the '
+  + 'disagreement, not about licences', async () => {
+    const prev = licenceAnswer;
+    licenceAnswer = { valid: true, active: true, license_hash: 'h',
+                      app_id: 'stonedesk' };
+    try {
+      const r = await callWithAuth({ app_id: 'stonedesk', messages: MSG }, 'K');
+      assert.deepStrictEqual(r.limiterCalls, ['stonedesk'], r.limiterCalls);
+    } finally { licenceAnswer = prev; }
+  });
+
+t('a licence that names NO app is charged to the claimed one -- absent is not '
+  + 'a mismatch', async () => {
+    const prev = licenceAnswer;
+    licenceAnswer = { valid: true, active: true, license_hash: 'h', app_id: null };
+    try {
+      const r = await callWithAuth({ app_id: 'stonedesk', messages: MSG }, 'K');
+      assert.deepStrictEqual(r.limiterCalls, ['stonedesk'], r.limiterCalls);
+    } finally { licenceAnswer = prev; }
+  });
+
+t('OUR OUTAGE DOES NOT DEMOTE A CUSTOMER -- an unreadable licence store keeps '
+  + 'the claimed app rather than the anon pool', async () => {
+    // authState === 'error' means we could not look, not that the caller lacks
+    // a licence. Moving a paying customer to the anonymous pool would punish
+    // them for our failure.
+    licenceThrows = true;
+    try {
+      const r = await callWithAuth({ app_id: 'stonedesk', messages: MSG }, 'K');
+      assert.deepStrictEqual(r.limiterCalls, ['stonedesk'], r.limiterCalls);
+    } finally { licenceThrows = false; }
+  });
+
+t('TEETH -- an INVALID licence is anonymous, so the arm above is about the '
+  + 'error state and not about "any Authorization header wins"', async () => {
+    const prev = licenceAnswer;
+    licenceAnswer = { valid: false, active: false, license_hash: null };
+    try {
+      const r = await callWithAuth({ app_id: 'stonedesk', messages: MSG }, 'K');
+      assert.deepStrictEqual(r.limiterCalls, [ANON], r.limiterCalls);
+    } finally { licenceAnswer = prev; }
+  });
 
 t('is_demo:true still consults it too -- the move must not have lost the original path', async () => {
   const r = await call({ app_id: 'stonedesk', is_demo: true, messages: MSG });
-  assert.deepStrictEqual(r.limiterCalls, ['stonedesk']);
+  assert.deepStrictEqual(r.limiterCalls, [ANON]);
 });
 
 t('a REFUSED demo call keeps the exact {error:"demo_limit"} contract 17 apps parse', async () => {

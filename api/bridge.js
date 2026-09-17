@@ -13,11 +13,12 @@
 //   proxy_get -- healthy, in real use by StoneDesk + SAIRNbuild.
 //   push      -- one live caller (StoneDesk crSendToBridge). Two other
 //                callers were dead code and were deleted that day.
-//   pull      -- ZERO callers across all 13 app files. Speculative from the
-//                start: the build commit (df84b21) says it served "the two
-//                real, live call shapes" and pull was not one of them.
-//                Left in place because it is correct and harmless, and is
-//                the natural read side whenever one is genuinely built.
+//   pull      -- REMOVED 2026-09-17. Zero callers across all 13 app files,
+//                and "correct and harmless" was wrong on the second half: it
+//                served one tenant's stored jobs, invoices and employees to
+//                an unauthenticated GET keyed on a RAW LICENCE KEY. The
+//                natural read side is still worth building one day, and when
+//                it is it should key on license_hash and require a session.
 // So bridge_data is, today, written and never read.
 //
 // NO AUTHORIZATION ON push, deliberately (see the push section below):
@@ -70,12 +71,16 @@
 //   append-only log.
 //   Response: { ok:true, written:1, shopId }
 //
-// ACTION: pull  (symmetric read side -- no live caller yet, added for
-//   completeness since this was speced as a "push/pull" action)
-//   GET /api/bridge?action=pull&shopId=X
-//   Response: { ok:true, data: {jobs,invoices,employees,shop_id,updated_at} | null }
+// ACTION: pull -- REMOVED 2026-09-17. It had zero callers and it was an
+//   UNAUTHENTICATED read: `shopId` came from the query string, no
+//   Authorization header was required, and `bridge_data.shop_id` is the
+//   customer's RAW LICENCE KEY (stonedesk.html: `sdShopId()` returns
+//   `sdLicenseKey()`), where everywhere else on this platform a licence is
+//   hashed before it reaches a table. Anyone holding a licence key -- a string
+//   customers do not treat as a password -- could read that shop's jobs,
+//   invoices and employees. A GET now answers 405 NO_READ_SIDE.
 //
-// REQUIRES env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (push/pull only --
+// REQUIRES env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (push only --
 // proxy_get needs neither).
 // ---------------------------------------------------------------------------
 
@@ -85,7 +90,7 @@ const MAX_PUSH_BYTES = 64 * 1024; // matches api/sd-data.js's write cap
 // req.query is populated by Vercel's Node runtime, but this endpoint has no
 // prior usage in this codebase to confirm that against -- every existing
 // api/*.js handler takes params from the body, not the query string. Parse
-// req.url as a fallback so a real ?action=push/pull request never silently
+// req.url as a fallback so a real ?action=push request never silently
 // falls through to the wrong branch if req.query is ever unpopulated.
 function getQueryParam(req, name) {
   if (req.query && req.query[name] !== undefined) return req.query[name];
@@ -98,9 +103,31 @@ function getQueryParam(req, name) {
 module.exports = async (req, res) => {
   const action = getQueryParam(req, 'action');
 
+  // ── THE READ SIDE IS GONE (2026-09-17) ────────────────────────────────
+  // `?action=pull` had ZERO callers -- three separate comments across
+  // stonedesk.html and sairncash.html say so independently -- and it was not
+  // merely dead. It took a `shopId` from the QUERY STRING with NO
+  // Authorization header of any kind and returned that shop's stored jobs,
+  // invoices and employees.
+  //
+  // AND THE KEY IS THE CUSTOMER'S RAW LICENCE. `sdShopId()` in stonedesk.html
+  // is `return sdLicenseKey() || 'stonedesk-demo'`, so `bridge_data.shop_id`
+  // is the licence key in plaintext -- while everywhere else on this platform
+  // a licence is hashed before it reaches a table. A licence key is typed into
+  // the app, lives in localStorage, and is the kind of string that ends up in
+  // a support ticket or a screenshot. So this was an UNAUTHENTICATED CROSS-
+  // TENANT READ OF ONE SHOP'S FINANCIAL DATA, reachable by anyone holding a
+  // string the customer does not treat as a password.
+  //
+  // Removed rather than authenticated: nothing consumes it, so there is no
+  // behaviour to preserve, and the fastest correct fix for a read path with no
+  // reader is to not have it. Recoverable from git history if a real consumer
+  // is ever designed -- and it should be designed against license_hash.
   if (req.method === 'GET') {
-    if (action === 'pull') return handlePull(req, res);
-    res.status(405).json({ error: { message: 'GET only supports ?action=pull' } });
+    res.status(405).json({ error: { code: 'NO_READ_SIDE', message:
+      'This endpoint has no read action. ?action=pull was removed 2026-09-17: '
+      + 'it had no callers and served one tenant data to an unauthenticated '
+      + 'GET keyed on a raw licence key.' } });
     return;
   }
   if (req.method !== 'POST') {
@@ -226,49 +253,3 @@ async function handlePush(body, res) {
   }
 }
 
-async function handlePull(req, res) {
-  const shopId = getQueryParam(req, 'shopId');
-  if (!shopId) {
-    res.status(400).json({ error: { message: 'shopId query param is required' } });
-    return;
-  }
-
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
-    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
-    return;
-  }
-
-  try {
-    const url = SUPABASE_URL + '/rest/v1/bridge_data?shop_id=eq.' + encodeURIComponent(shopId) +
-      '&select=shop_id,data,updated_at&limit=1';
-    const r = await fetch(url, {
-      headers: { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY }
-    });
-    const rows = await r.json().catch(function () { return null; });
-    if (!r.ok) {
-      const code = rows && rows.code;
-      if (code === '42P01' || code === 'PGRST205') {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'bridge_data table not found in Supabase — check the schema' } });
-        return;
-      }
-      if (code === '42501') {
-        res.status(503).json({ error: { code: 'PERMISSION_DENIED', message: (rows && rows.hint) || 'service_role lacks privileges on bridge_data — run the GRANT Postgres suggests in the Supabase SQL editor' } });
-        return;
-      }
-      console.error('bridge pull upstream error:', rows);
-      res.status(502).json({ error: { message: 'Data store error — try again' } });
-      return;
-    }
-    const row = Array.isArray(rows) && rows[0];
-    res.status(200).json({
-      ok: true,
-      data: row ? Object.assign({}, row.data, { shop_id: row.shop_id, updated_at: row.updated_at }) : null
-    });
-  } catch (err) {
-    console.error('bridge pull error:', err);
-    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
-  }
-}
