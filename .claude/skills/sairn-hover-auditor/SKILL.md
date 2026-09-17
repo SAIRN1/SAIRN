@@ -3558,6 +3558,29 @@ before trusting it on a live target. An untested technique adopted because
 it sounds more rigorous is the identical mistake AuditBench's own data
 warns against, one level up.
 
+**CALIBRATION RUN, TWICE, AND THE HONEST NUMBER IS THE SECOND ONE (2026-09-17).**
+A first, small pilot (2 cases) came back 2/2 -- encouraging, and explicitly
+named at the time as too small to trust. Expanded to a real sample (5
+finding-type cases, 3 clean-type cases) before using this technique on
+anything live, exactly as required above. **The honest result is sharply
+weaker than the pilot suggested: 1 hit on 4 valid finding cases (one
+excluded as contaminated by this role's own prior knowledge), a 25% real
+hit rate via reasoning alone.** The 3 clean cases correctly stayed clean
+(no false positives), but a technique that never flags anything on clean
+input scores well on that half by default and proves little alone. THE
+REAL, NARROW SCOPE THIS EARNS, replacing the earlier optimistic framing
+rather than sitting beside it unreconciled: the why-audit catches ONE
+specific shape well -- a stated design claim that does not logically match
+what the code actually implements (confirmed on the IOLTA case, seq 217) --
+and it structurally cannot catch a defect requiring EXECUTION (a runtime
+crash, seq 96) or CROSS-REFERENCING a different document's already-
+established gap class (seq 7). Both misses are exactly the classes
+AuditBench's own caution named in the abstract; this is the same finding
+with a real number under it. STATUS: usable now, but only as a narrow
+supplement run ALONGSIDE a driven/execution-based check, never as a
+substitute for one -- which is what "required next step" above always
+asked for, now answered honestly rather than left an open question.
+
 **(f) Bloom and Automated Alignment Researchers -- noted, no action
 required, per direct instruction.** Real, published result: an automated
 researcher method beat experienced human alignment researchers (2.5 years'
@@ -3655,6 +3678,20 @@ self-audit flagged rather than being free to look at anything. Added as a
 standing question for the next EQA checkpoint to ask explicitly, not assumed
 answered by the reviewer simply being a different person.
 
+**A DIFFERENT, RUNNING COMPANION BUILT ALONGSIDE THIS, 2026-09-17 --
+`hover-audit-log/scope_narrowing_check.py`.** This does not answer the
+EQA-scope question above (that one is about the checkpoint reviewer's own
+window, still a question to ask by hand each cadence); it answers the
+adjacent, more mechanical one -- has THIS ROLE'S OWN attention quietly
+narrowed across the four build agents without any explicit decision. Reads
+the structured `target` field, never prose, and reports real entries
+since each agent was last reviewed, wired into the same SessionStart report
+as the undirected-sweep tracker. Disclosed limit stated in its own header:
+it measures ATTENTION, not correctness or risk, and cannot on its own tell
+"coverage narrowed" apart from "that agent had less real work to check in
+the window" -- a real number, not a verdict, for this role or Michael to
+read and decide which one it is.
+
 **(e) An undirected sweep found what a targeted, commissioned investigation
 did not -- a sharper version of the random-selection material already in
 Rotation.** Independent, uncommissioned researchers (the Nightingale
@@ -3671,6 +3708,23 @@ existing random-selection rule:** occasionally spend a pass with no target
 and no seed chosen in advance -- browse for anything that has never once
 appeared in a claim, an active-work note, or a defect-register entry, purely
 because nobody has ever had a reason to look at it yet.
+
+**BUILT AND RUN FOR REAL, 2026-09-17, not left as a design note.**
+`hover-audit-log/undirected_sweep_freshness.py` tracks a structured
+`undirected_sweep` field on hover_log.py entries (the identical discipline
+`process_pass`/`eqa_checkpoint` already use) and is wired into
+`hover_self_health.py`'s report -- confirmed to surface automatically
+through the SessionStart hook with no hook edit required, which is the
+direct payoff of the report-builder refactor from earlier the same night.
+First real run reported it overdue (162 real entries, zero sweeps ever);
+the FIRST genuinely undirected sweep followed immediately -- picked
+`sairnscape.html` for no reason beyond it never having appeared in this
+log before, no seed, no hypothesis -- and it surfaced a real, minor,
+forward-looking observation on its very first use: a client-trusted role
+check gating a sensitive-tool dispatch path that is currently dead code
+(zero tools registered as sensitive, checked rather than assumed) but
+would matter unchanged the day a real sensitive tool is added against it.
+Logged with `--undirected-sweep`, resetting the tracker for real.
 
 **(f) An honest, disclosed limit, carried directly rather than implied
 solved.** METR's own investigators state plainly they do not have good
