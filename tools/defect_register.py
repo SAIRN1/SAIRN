@@ -380,6 +380,54 @@ def lag_days(inj_date, fix_date):
     return (b - a).days
 
 
+# Files that are BOOKKEEPING or GENERATED -- a commit touching only these did
+# not fix anything, so it cannot be the commit a defect record cites. Listed
+# rather than pattern-guessed, because the point is to be sure about the ones
+# that actually recur here.
+BOOKKEEPING = (
+    '.claude/claims/',
+    'SAIRN-ACTIVE-WORK-',
+    'docs/defect-density-register.json',
+    'docs/traceability-matrix.md',
+    'docs/MASTER-PLAN.md',
+    'docs/TOOLING-INVENTORY.md',
+    'docs/SAIRN-OPEN-WORK-INDEX.md',
+)
+
+
+def is_bookkeeping_only(files):
+    """True when every changed path is bookkeeping or a generated document.
+
+    ── WHY THIS GUARD EXISTS, MEASURED AT THREE OCCURRENCES IN ONE EVENING ────
+    `--commit $(git rev-parse HEAD)` READS AS "this work" AND MEANS "whatever
+    landed last". The fix has to be committed before it has a sha to cite, and
+    the natural moment to record a finding is while it is fresh -- so the sha
+    taken is the tip at that moment, which in a five-clone repo is frequently
+    somebody else's commit.
+
+    2026-09-16, same session, same person:
+      * a finding filed against `chore(claims): cc releases cc`
+      * two filed against `chore(docs): regenerate for the witness mint suite`
+      * and a third near-miss, because amending the fix commit to correct the
+        citation CHANGES THE SHA BEING CITED -- a citation can only be written
+        after the thing it cites is final.
+
+    NEITHER EXISTING CHECK CAN SEE IT. `--check` passes: every field is in
+    vocabulary and the commit exists. `--reseat` correctly does nothing: it
+    repairs shas a rebase made DANGLING, and these resolved and were reachable
+    the whole time. They were not broken, they were WRONG, and that needed a
+    different question asked at write time.
+
+    THE PREDICATE IS "DID THIS COMMIT CHANGE ANYTHING THAT COULD CARRY A
+    DEFECT", not a subject-prefix match. A `chore(` subject is a hint and
+    nothing more -- real fixes have shipped under `chore(` on this platform,
+    which `register_feed_gate.py`'s own open-work row records. The file list is
+    the fact.
+    """
+    return bool(files) and all(
+        any(f.startswith(b) for b in BOOKKEEPING) for f in files)
+
+
 def derive(sha):
     """The mechanical half, from git. A field a human retypes goes wrong."""
     full = git('rev-parse', sha)
@@ -534,6 +582,28 @@ def cmd_add(argv):
     d = derive(sha)
     if not d:
         print('no such commit: %s' % sha); return 2
+    # ── THE $(git rev-parse HEAD) TRAP. See is_bookkeeping_only(). ──────────
+    # REFUSES rather than warns, because a warning printed above a `registered`
+    # line is a warning nobody reads -- and the whole failure mode here is a
+    # record that looks correct to every later check. The override exists and
+    # requires a real sentence, the same decision `--rule not-citable` and the
+    # `no-defect-record:` commit trailer already made on this platform: a
+    # vocabulary with no honest escape hatch does not produce honesty, it
+    # produces a forced value.
+    if is_bookkeeping_only(d['files']) and not str(
+            opt('--commit-is-bookkeeping', required=False)).strip():
+        print('REFUSED: %s touches only bookkeeping or generated files:\n  %s'
+              % (d['commit'], '\n  '.join(d['files'][:8])))
+        print('\nA commit that changed nothing but bookkeeping did not fix '
+              'anything, so it\nis almost certainly NOT the commit this record '
+              'is about. This is the\n`--commit $(git rev-parse HEAD)` trap: '
+              'that reads as "this work" and means\n"whatever landed last", '
+              'which in a five-clone repo is often somebody else\'s.')
+        print('\n  Its subject is: %s' % d['subject'][:90])
+        print('\nCommit the fix FIRST, then cite it. If the record really does '
+              'belong to a\nbookkeeping commit, say why:\n'
+              '  --commit-is-bookkeeping "<a real sentence>"')
+        return 2
     inj_rec = None
     if str(inj).strip():
         di = derive(inj)

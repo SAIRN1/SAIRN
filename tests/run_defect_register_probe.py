@@ -59,7 +59,21 @@ try:
             os.makedirs(os.path.dirname(dst), exist_ok=True)
             io.open(dst, 'wb').write(io.open(src, 'rb').read())
 
-    real = git(wt, 'rev-parse', 'HEAD').stdout.strip()[:12]
+    # A COMMIT THAT ACTUALLY CHANGED CODE, chosen deterministically.
+    #
+    # THIS LINE USED TO BE `git rev-parse HEAD`, AND THAT IS THE EXACT TRAP the
+    # G-arms below now guard against: it reads as "a real commit" and means
+    # "whatever landed last". On 2026-09-16 that was a register-only commit, so
+    # the new guard REFUSED it and this arm failed -- the probe had been written
+    # with the same reflex it exists to police, and passed only because HEAD had
+    # always happened to touch code.
+    #
+    # `-- api/ tools/` makes the answer a fact about the repository rather than
+    # about the minute the probe runs.
+    real = git(wt, 'log', '-1', '--format=%H', '--', 'api/', 'tools/'
+               ).stdout.strip()[:12]
+    check('A0b the probe found a commit that really changed code, so every arm '
+          'below is not passing on the trap it guards', len(real), 12)
 
     # ── A. it reports and it validates ─────────────────────────────────────
     rc, out = run(wt, '--report')
@@ -655,6 +669,95 @@ try:
 finally:
     git(REPO, 'worktree', 'remove', '--force', _wt2)
     git(REPO, 'worktree', 'prune')
+
+# ── THE $(git rev-parse HEAD) TRAP, THREE TIMES IN ONE EVENING ────────────
+# `--commit $(git rev-parse HEAD)` reads as "this work" and means "whatever
+# landed last". On 2026-09-16 that filed one finding against `chore(claims): cc
+# releases cc` and two against `chore(docs): regenerate for the witness mint
+# suite`. Neither existing check can see it -- `--check` passes because every
+# field is in vocabulary and the commit exists, and `--reseat` correctly does
+# nothing because the sha resolved and was reachable the whole time. It was not
+# broken, it was WRONG, and that needed a question asked at WRITE time.
+#
+# Driven through the real is_bookkeeping_only(), imported, rather than through
+# a copy of the file list.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import defect_register as DR           # noqa: E402
+
+check('TRAP1 a claims-only commit is bookkeeping',
+      DR.is_bookkeeping_only(['.claude/claims/cc.json']), True)
+check('TRAP2 a worklog-only commit is bookkeeping',
+      DR.is_bookkeeping_only(['SAIRN-ACTIVE-WORK-hank.md']), True)
+check('TRAP3 a generated-docs regeneration is bookkeeping',
+      DR.is_bookkeeping_only(['docs/traceability-matrix.md',
+                              'docs/MASTER-PLAN.md']), True)
+check('TRAP4 a register-only correction is bookkeeping',
+      DR.is_bookkeeping_only(['docs/defect-density-register.json']), True)
+# THE OTHER DIRECTION, and it carries the guard: a predicate that called
+# everything bookkeeping would refuse every legitimate record, and the refusal
+# message would then be the thing people learn to override by reflex.
+check('TRAP5 a real code fix is NOT bookkeeping',
+      DR.is_bookkeeping_only(['api/cron-watchdog.js']), False)
+check('TRAP6 a MIXED commit is NOT bookkeeping -- a fix that also updates its own '
+      'worklog is still a fix',
+      DR.is_bookkeeping_only(['api/cron-watchdog.js',
+                              'SAIRN-ACTIVE-WORK-hank.md']), False)
+check('TRAP7 an empty file list is NOT bookkeeping -- "could not tell" must not '
+      'become a refusal',
+      DR.is_bookkeeping_only([]), False)
+
+# AND THROUGH THE REAL ENTRY POINT, because the predicate being right is not
+# the same as it being WIRED. A pure-function arm passes on a tool that never
+# calls it.
+# ── THE ENTRY POINT, IN ITS OWN THROWAWAY WORKTREE ────────────────────────
+# G1-G7 above test the predicate. A predicate being right is not the same as it
+# being WIRED, so this drives the real --add. It needs its own worktree: the
+# one section A used is torn down hundreds of lines earlier, and calling run()
+# against a removed directory is how this arm failed on its first write.
+_wt3 = os.path.join(tempfile.gettempdir(), 'defreg-guard-%d' % os.getpid())
+_add3 = git(REPO, 'worktree', 'add', '-q', '--detach', _wt3, 'HEAD')
+check('TRAP8a the guard worktree was created', _add3.returncode, 0)
+try:
+    for rel in (TOOL, REG):
+        _src = os.path.join(REPO, rel.replace('/', os.sep))
+        _dst = os.path.join(_wt3, rel.replace('/', os.sep))
+        os.makedirs(os.path.dirname(_dst), exist_ok=True)
+        io.open(_dst, 'w', encoding='utf-8', newline=chr(10)).write(
+            io.open(_src, encoding='utf-8').read())
+    _book = git(REPO, 'log', '-1', '--format=%H', '--',
+                '.claude/claims/').stdout.strip()
+    if _book:
+        rc, out = run(_wt3, '--add', '--commit', _book, '--app', 'PLATFORM',
+                      '--layer', 'product', '--severity', 'low', '--method',
+                      'code-review', '--rule', '1.11', '--phase', 'coding',
+                      '--injection-unknown', 'probe', '--factors-unknown',
+                      'probe', '--summary', 'a probe record that must be '
+                      'refused because the commit it cites changed nothing but '
+                      'bookkeeping files')
+        check('TRAP8 --add REFUSES a bookkeeping-only commit', rc, 2)
+        check('TRAP9 ...and names the trap rather than just erroring',
+              'git rev-parse HEAD' in out and 'whatever landed last' in out, True)
+        check('TRAP10 ...and offers the override rather than leaving no way '
+              'through', '--commit-is-bookkeeping' in out, True)
+        # THE OVERRIDE MUST ACTUALLY WORK. A refusal with an escape hatch
+        # nobody can open is a refusal, and this platform's own rule is that a
+        # vocabulary with no honest way out produces a forced value rather than
+        # honesty.
+        rc2, out2 = run(_wt3, '--add', '--commit', _book, '--app', 'PLATFORM',
+                        '--layer', 'product', '--severity', 'low', '--method',
+                        'code-review', '--rule', '1.11', '--phase', 'coding',
+                        '--injection-unknown', 'probe', '--factors-unknown',
+                        'probe', '--commit-is-bookkeeping',
+                        'a probe exercising the documented override',
+                        '--summary', 'a probe record accepted through the '
+                        'override, to prove the escape hatch opens')
+        check('TRAP11 ...and the override REALLY opens it', rc2, 0)
+    else:
+        check('TRAP8 SKIPPED -- no claims-only commit to drive the refusal with, '
+              'declared rather than passed quietly', 'skipped', 'skipped')
+finally:
+    git(REPO, 'worktree', 'remove', '--force', _wt3)
+check('TRAP12 the guard worktree is gone', os.path.exists(_wt3), False)
 
 check('Z1 the worktree was cleaned up', os.path.exists(wt), False)
 check('Z2 and this clone is exactly as it was',
