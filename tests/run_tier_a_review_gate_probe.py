@@ -406,6 +406,131 @@ finally:
 check('the live register was never written by this section',
       g.REVIEWS == real_reviews2 and os.path.isfile(g.REVIEWS), g.REVIEWS)
 
+# ── 6b. ONE WRITE POINT, AND THE REASON THIS SECTION EXISTS (2026-09-16) ─────
+# `_discharge()` shipped carrying the docstring "Shared by both discharge paths
+# so the self-review refusal cannot be true on one and forgotten on the other",
+# and it was NOT shared -- `cmd_auto_discharge` set the same four fields inline,
+# so there were two write points and the refusal sat on one of them. The comment
+# asserted the control; nothing tested it; it read as present and was absent.
+#
+# THE ARM THAT MATTERS IS THE LAST ONE. Checking that `_discharge` refuses a
+# self-signed write proves the guard works where it is; it says nothing about
+# whether every closure goes through it. So the auto path is driven with
+# `_discharge` REPLACED, and the arm fails if a record closes without it being
+# called -- which is what the old code would have done.
+print('\n6b. every closure goes through ONE write point, guard included')
+tmp3 = tempfile.mkdtemp(prefix='tier-a-writepoint-probe-')
+real_reviews3, real_defects3 = g.REVIEWS, g.DEFECT_REGISTER
+
+
+def _rec(author='somebody-else', opened='2026-01-01T00:00:00Z'):
+    return {'author_session': author, 'opened_at': opened, 'status': 'open',
+            'resources': ['sc_claims'], 'files': ['api/sd-data.js'],
+            'what': 'a change', 'reviewer_session': None, 'reviewed_at': None,
+            'verdict': None}
+
+
+def _stage(name, records, evidence):
+    rp = os.path.join(tmp3, 'rev-%s.json' % name)
+    dp = os.path.join(tmp3, 'def-%s.json' % name)
+    io.open(rp, 'w', encoding='utf-8').write(json.dumps({'records': records}))
+    io.open(dp, 'w', encoding='utf-8').write(json.dumps({'records': evidence}))
+    g.REVIEWS, g.DEFECT_REGISTER = rp, dp
+    return rp
+
+
+# Evidence shaped exactly as cmd_auto_discharge requires: the method, a file
+# overlap, a date at or after the obligation, the resource named in its own
+# words, and the obligation's opened_at CITED -- which is the only thing that
+# closes rather than suggests.
+CITED = {'commit': 'abc123def456', 'date': '2026-01-02',
+         'files': ['api/sd-data.js'], 'app': 'SAIRNcode',
+         'detection_method': 'independent-review',
+         'summary': 'reviewed sc_claims against obligation 2026-01-01T00:00:00Z'}
+NEAR = dict(CITED, commit='999zzz', summary='found a sc_claims gate gap')
+try:
+    _stage('selfsign', [], [])
+    r0 = _rec(author=g.session_name())
+    try:
+        g._discharge(r0, g.session_name(), 'a verdict', 'reviewed')
+        ok = False
+    except g.SelfSigned:
+        ok = True
+    check('_discharge REFUSES a self-signed write at the write point itself',
+          ok and r0['status'] == 'open',
+          'the record was mutated before the guard, or there is no guard: %r' % r0)
+
+    r1 = _rec()
+    try:
+        g._discharge(r1, 'a-reviewer', '   ', 'reviewed')
+        ok = False
+    except g.SelfSigned:
+        ok = True
+    check('...and an empty verdict, so a tick cannot close anything',
+          ok and r1['status'] == 'open', r1)
+
+    r2 = _rec()
+    g._discharge(r2, 'a-reviewer', 'read it, two findings', 'reviewed-by-record')
+    check('...and writes the status it was GIVEN, not a hardcoded one',
+          r2['status'] == 'reviewed-by-record'
+          and r2['reviewer_session'] == 'a-reviewer'
+          and r2['reviewed_at'] and 'two findings' in r2['verdict'], r2)
+
+    p = _stage('dry', [_rec()], [CITED])
+    code = g.cmd_auto_discharge(write=False)
+    after = json.load(io.open(p, encoding='utf-8'))['records'][0]
+    check('--auto-discharge DRY RUN writes nothing',
+          code == 0 and after['status'] == 'open', after)
+
+    p = _stage('write', [_rec()], [CITED])
+    check('--auto-discharge --write closes a CITED obligation',
+          g.cmd_auto_discharge(write=True) == 0)
+    after = json.load(io.open(p, encoding='utf-8'))['records'][0]
+    check('...to `reviewed-by-record`, a status a reader can tell from `reviewed`',
+          after['status'] == 'reviewed-by-record', after)
+    check('...naming the MECHANISM as reviewer, never a session',
+          'defect register' in (after['reviewer_session'] or ''), after)
+    check('...and saying in the RECORD that this is the weaker close',
+          'WEAKER CLOSE' in (after['verdict'] or ''), after.get('verdict'))
+
+    p = _stage('near', [_rec()], [NEAR])
+    g.cmd_auto_discharge(write=True)
+    after = json.load(io.open(p, encoding='utf-8'))['records'][0]
+    check('EVIDENCE THAT IS ONLY NEAR does NOT close -- overlap is not a citation',
+          after['status'] == 'open', after)
+
+    _stage('cannot-read', [_rec()], [])
+    g.DEFECT_REGISTER = os.path.join(tmp3, 'does-not-exist.json')
+    check('a register that CANNOT BE READ is exit 2, not a quiet nothing-to-close',
+          g.cmd_auto_discharge(write=True) == 2,
+          '"no evidence" and "I could not look" closed the same obligations')
+
+    # THE SABOTAGE ARM. Replace the single write point; if any closure still
+    # happens, some path is writing the fields itself and is not guarded.
+    p = _stage('routing', [_rec()], [CITED])
+    calls = []
+    orig = g._discharge
+    try:
+        g._discharge = lambda *a, **k: calls.append(a)
+        g.cmd_auto_discharge(write=True)
+    finally:
+        g._discharge = orig
+    after = json.load(io.open(p, encoding='utf-8'))['records'][0]
+    check('AUTO-DISCHARGE ROUTES THROUGH _discharge -- it does not write inline',
+          len(calls) == 1 and after['status'] == 'open',
+          'closed with the write point stubbed out (%d call(s)): %r' % (len(calls), after))
+finally:
+    g.REVIEWS, g.DEFECT_REGISTER = real_reviews3, real_defects3
+    try:
+        for f in os.listdir(tmp3):
+            os.remove(os.path.join(tmp3, f))
+        os.rmdir(tmp3)
+    except OSError:
+        pass
+check('the live register and defect register were never written by 6b',
+      g.REVIEWS == real_reviews3 and g.DEFECT_REGISTER == real_defects3
+      and os.path.isfile(g.REVIEWS) and os.path.isfile(g.DEFECT_REGISTER))
+
 print('\n7. the gate is WIRED, not merely written')
 hook = io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
                encoding='utf-8').read()
@@ -416,10 +541,19 @@ check('...and DENIES on exit 1 rather than printing',
 check('...and reports exit 2 as NOT a pass',
       'COULD NOT TELL' in hook, 'exit 2 is folded into a pass')
 
-print('\n8. the real repo state is clean under its own gate')
+print('\n8. the real repo state is readable under its own gate')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
                     '--list'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
-check('--list runs and exits 0', r.returncode == 0, r.stderr[:300])
+# ── THIS ARM SAID `== 0` AND WENT RED THE DAY THE DEADLINE SHIPPED (2026-09-16)
+# It was right when written and stopped being right when `--list` gained a THIRD
+# meaning: 0 nothing overdue, 1 something is, 2 the register could not be read.
+# Pinning the number pinned the wrong thing -- the contract is that could-not-
+# tell stays separate from both, not that the queue is always empty.
+check('--list runs and answers, and 2 stays reserved for could-not-tell',
+      r.returncode in (0, 1), 'exit %r: %s' % (r.returncode, r.stderr[:300]))
+check('...and a non-zero --list is EXPLAINED, not just a number',
+      r.returncode == 0 or 'OVERDUE' in r.stdout,
+      'exit 1 with nothing in stdout saying why: %s' % r.stdout[:300])
 
 # ── 8. A CRASH IS NOT A FINDING (added 2026-09-15, after it was one) ─────────
 # OBSERVED. On a real push this gate hit `UnicodeDecodeError: 'charmap' codec

@@ -5,6 +5,7 @@
     python tools/tier_a_review_gate.py --open "why"    # record this session's obligation
     python tools/tier_a_review_gate.py --list          # what is open, and whose
     python tools/tier_a_review_gate.py --discharge <author> "<verdict>"
+    python tools/tier_a_review_gate.py --auto-discharge [--write]
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -72,6 +73,7 @@ prose would be wrong the third time.
   * this file, the register it reads, and the gate that calls it -- otherwise
     recording an obligation is itself a Tier A change requiring an obligation.
 """
+import calendar
 import io
 import json
 import os
@@ -83,6 +85,11 @@ import time
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
 REVIEWS = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
+# Module-level rather than inlined in _register_records(), for the same reason
+# REVIEWS is: a path buried in a function body cannot be pointed at a fixture,
+# so the auto-discharge path could only ever be exercised against the live
+# register -- which means the only way to test a close is to perform one.
+DEFECT_REGISTER = os.path.join(REPO, 'docs', 'defect-density-register.json')
 
 # Files that can never themselves create an obligation. Kept tiny and explicit;
 # a growing exclusion list is how a gate stops covering anything.
@@ -628,6 +635,47 @@ def open_records(data, session=None):
     return out
 
 
+# ── THE DEADLINE, AND WHY IT REPORTS RATHER THAN DENIES (2026-09-16) ────────
+# Michael's decision: an obligation nobody discharges within 24 hours is
+# escalated. Measured before choosing the escalation: 27 open, and SEVEN are
+# already past 24 hours -- 2 cc, 2 cody, 2 fourth, 1 hank. So the deny variant
+# (refuse a push by the AUTHOR of an overdue obligation, which is the targeted
+# version that does not stop anybody else working) would halt all four sessions
+# the moment it shipped.
+#
+# TURNING IT ON AT SEVEN-ALREADY-OVERDUE IS A DIFFERENT DECISION FROM TURNING
+# IT ON AT ZERO, and it is not one a tool should take on its own at the end of
+# a long night. So this REPORTS, loudly, on every push and from --list, which
+# exits non-zero so a human runner sees it -- and the deny is one constant away
+# and named here so the choice is visible rather than forgotten.
+OVERDUE_HOURS = 24
+DENY_ON_OWN_OVERDUE = False      # flip with Michael, once the seven are cleared
+
+
+def _age_hours(rec):
+    """Hours since the obligation was opened, or None if the stamp is unusable.
+
+    None is a THIRD ANSWER and is never counted as fresh: an obligation whose
+    age cannot be read is exactly the one nobody is tracking.
+    """
+    try:
+        t = time.strptime(rec.get('opened_at') or '', '%Y-%m-%dT%H:%M:%SZ')
+    except (ValueError, TypeError):
+        return None
+    return (time.time() - calendar.timegm(t)) / 3600.0
+
+
+def overdue_records(data, session=None):
+    """[(record, age_hours_or_None)] past the deadline, oldest first."""
+    out = []
+    for r in open_records(data, session):
+        age = _age_hours(r)
+        if age is None or age > OVERDUE_HOURS:
+            out.append((r, age))
+    out.sort(key=lambda p: (p[1] is not None, p[1]), reverse=True)
+    return out
+
+
 def self_signed(data):
     """A record whose reviewer is its own author. The one claim the rule exists
     to refuse, and the only part of a review a machine can check."""
@@ -783,24 +831,245 @@ def cmd_list():
     if not rows:
         print('No open Tier A review obligations.')
         return 0
+    late = dict((id(r), a) for r, a in overdue_records(data))
     print('%d open Tier A review obligation(s):' % len(rows))
     for r in rows:
-        print('  %-8s %s  %s' % (r.get('author_session'), r.get('opened_at'),
-                                 ', '.join(r.get('resources') or [])))
+        age = late.get(id(r))
+        mark = ''
+        if id(r) in late:
+            mark = ('   ** OVERDUE, age UNREADABLE **' if age is None
+                    else '   ** OVERDUE %.0fh **' % age)
+        print('  %-8s %s  %s%s' % (r.get('author_session'), r.get('opened_at'),
+                                   ', '.join(r.get('resources') or []), mark))
         print('           %s' % (r.get('what') or '')[:110])
+    if late:
+        print('')
+        print('%d of them are past the %dh deadline. An obligation nobody closes'
+              % (len(late), OVERDUE_HOURS))
+        print('is a queue people stop reading, which is the state this register was')
+        print('built to leave. Discharge them, or run --auto-discharge to close the')
+        print('ones a defect-register record already covers.')
+        return 1
     return 0
 
 
-def _discharge(records, author, verdict, session):
-    """Shared by both discharge paths so the self-review refusal cannot be true
-    on one and forgotten on the other."""
-    rec = records[0]
-    rec['status'] = 'reviewed'
-    rec['reviewer_session'] = session
+# ── AUTO-DISCHARGE: CAPTURE THE REVIEW THAT ALREADY HAPPENED ────────────────
+# Michael's decision, and the case for it is measured: 27 obligations open, and
+# at least one of them had SEVEN real defects found and fixed against it
+# informally -- by another session, in its own report -- and never logged here.
+# The review happened. The register could not see it. A queue that only grows
+# because the closing step is manual is a queue people stop reading.
+#
+# THE EVIDENCE IT ACCEPTS IS NARROW ON PURPOSE. A defect-register record whose
+# `detection_method` is literally `independent-review`, whose files OVERLAP the
+# obligation's, and which was recorded AFTER the obligation was opened. All
+# three, or no match.
+#
+# AND THE THING IT CANNOT DO, WHICH MATTERS MORE THAN WHAT IT CAN:
+# THE DEFECT REGISTER CARRIES NO SESSION ATTRIBUTION. There is no author field
+# on a record and all five roles share one git identity, so this CANNOT prove
+# the reviewer was not the author -- the one claim this whole gate exists to
+# refuse. What it can do is trust a recorded claim: `independent-review` means
+# that, in the register's own vocabulary, and somebody chose it.
+#
+# SO AN AUTO-CLOSE IS A WEAKER CLOSE, AND IT SAYS SO IN THE RECORD. The status
+# is `reviewed-by-record`, not `reviewed`, and the reviewer_session names the
+# mechanism rather than a person. A reader can tell the two apart at a glance,
+# and `--list` counts them separately. Folding them into one status would buy a
+# tidier number by losing the only distinction that matters.
+AUTO_METHOD = 'independent-review'
+
+
+def _register_records():
+    """[(commit, date, files, summary)] for independent-review records, or None.
+
+    None if the register cannot be read, which is a refusal rather than an empty
+    list: 'no evidence exists' and 'I could not look' would otherwise close the
+    same obligations.
+    """
+    try:
+        d = json.load(io.open(DEFECT_REGISTER, encoding='utf-8'))
+    except (OSError, ValueError):
+        return None
+    recs = d['records'] if isinstance(d, dict) and 'records' in d else d
+    if not isinstance(recs, list):
+        return None
+    out = []
+    for r in recs:
+        if (r.get('detection_method') or '') != AUTO_METHOD:
+            continue
+        # The record's own words, for the resource test below. A register record
+        # has no resource LIST -- only an app, a summary and a subject -- so the
+        # resource has to be looked for in the text, which is the same way this
+        # gate decides a diff "touches" one.
+        text = ' '.join([str(r.get('summary') or ''), str(r.get('subject') or ''),
+                         str(r.get('app') or '')])
+        out.append((str(r.get('commit') or ''), str(r.get('date') or ''),
+                    set(r.get('files') or []), str(r.get('summary') or ''), text))
+    return out
+
+
+def cmd_auto_discharge(write=False):
+    try:
+        data = load_reviews()
+    except CouldNotTell as e:
+        sys.stderr.write(str(e) + '\n')
+        return 2
+    evidence = _register_records()
+    if evidence is None:
+        print('COULD NOT TELL: the defect register could not be read, so whether')
+        print('an independent review already exists is UNKNOWN. Nothing was')
+        print('closed -- "no evidence" and "I could not look" are not the same')
+        print('answer and must not close the same obligations.')
+        return 2
+
+    matched, suggested = [], []
+    for rec in open_records(data):
+        files = set(rec.get('files') or [])
+        opened = (rec.get('opened_at') or '')[:10]
+        # ── A FILE OVERLAP IS NOT A REVIEW OF THE SAME QUESTION ──────────
+        # The first version matched on files and the date alone, and the
+        # DRY RUN is what caught it: an obligation on sb_po/sb_recv paired with
+        # evidence about law_trusttx, because both touched api/sd-data.js --
+        # the file that names every resource on the platform, and the very
+        # reason this gate reads HUNKS rather than file content. Six matches
+        # became three once the resource had to be named too.
+        #
+        # So the record must also NAME one of the obligation's resources in its
+        # own words. Narrower than file overlap and looser than proof, which is
+        # the honest place for an auto-close to sit.
+        res = [x for x in (rec.get('resources') or []) if x]
+        hits = [e for e in evidence
+                if (e[2] & files) and e[1] >= opened
+                and any(x in e[4] for x in res)]
+        if not hits:
+            continue
+        # ── AND EVEN RESOURCE + FILE + DATE IS NOT "REVIEWED THE SAME
+        # ── QUESTION". THE DRY RUN CAUGHT THIS TOO, ON THE ONE SURVIVOR.
+        # Fourth's obligation asks for review of IOLTA reconciliation
+        # ARITHMETIC -- can allocation_vs_ledger genuinely disagree, the
+        # on-or-before statement-date boundary, the undated-transaction case,
+        # the single Math.round at the cents boundary. The matching record is
+        # about a MISSING SESSION GATE on law_trusttx: a real independent
+        # finding, on the same resource, in the same file, about something else
+        # entirely. Closing the obligation on it would record a review of
+        # arithmetic nobody checked.
+        #
+        # A register record says WHAT WAS FOUND. It does not say WHAT WAS
+        # REVIEWED, and no amount of overlap recovers that. So inference
+        # SUGGESTS and only an explicit CITATION closes: a record naming the
+        # obligation's opened_at stamp is a reviewer saying "this is the
+        # obligation I looked at", which is a fact rather than a proximity.
+        #
+        # That is currently ZERO records, and saying so is the point -- the
+        # honest way to make future reviews auto-closable is for a reviewer to
+        # cite the obligation, which costs one timestamp.
+        stamp = rec.get('opened_at') or '(no stamp)'
+        cited = [e for e in hits if stamp in e[4]]
+        (matched if cited else suggested).append((rec, cited or hits))
+
+    if suggested:
+        print('CANDIDATES -- evidence that is CLOSE, and does not close anything.')
+        print('An independent-review record on the same resource and file is not')
+        print('a review of the same QUESTION. Read them and run --discharge if')
+        print('one really is:')
+        print('')
+        for rec, hits in suggested:
+            print('  %-8s %s  %s' % (rec.get('author_session'), rec.get('opened_at'),
+                                     ', '.join(rec.get('resources') or [])))
+            for c, dt, _f, summary, _t in hits:
+                print('      near  : %s %s  %s' % (c[:12], dt, summary[:70]))
+        print('')
+
+    if not matched:
+        print('NOTHING TO CLOSE. No open obligation is CITED by a defect-register')
+        print("record -- a record naming the obligation's opened_at stamp, which is")
+        print('a reviewer saying which obligation they looked at.')
+        print('%d obligation(s) remain open and need a human --discharge.'
+              % len(open_records(data)))
+        print('')
+        print("TO MAKE A FUTURE REVIEW CLOSE ITSELF: put the obligation's")
+        print("opened_at stamp in the register record's summary. One timestamp.")
+        return 0
+    print('CITED -- these name the obligation they reviewed:')
+
+    for rec, hits in matched:
+        print('%s  %s' % (rec.get('author_session'), rec.get('opened_at')))
+        print('   resources : %s' % ', '.join(rec.get('resources') or []))
+        for c, dt, _f, summary, _t in hits:
+            print('   evidence  : %s %s  %s' % (c[:12], dt, summary[:78]))
+        if write:
+            # Through the SHARED write point, not inline. This used to set the
+            # same four fields itself, which meant the self-review refusal
+            # guarded one closure path and not the other -- see _discharge().
+            try:
+                _discharge(
+                    rec, '(defect register: %s)' % AUTO_METHOD,
+                    'AUTO-DISCHARGED against %d defect-register record(s) whose '
+                    'detection_method is %s and whose files overlap this '
+                    'obligation: %s. THIS IS A WEAKER CLOSE THAN A HUMAN '
+                    'DISCHARGE and the status says so: the register carries no '
+                    'session attribution, so this cannot prove the reviewer was '
+                    'not the author -- it trusts the recorded method.'
+                    % (len(hits), AUTO_METHOD, ', '.join(h[0][:12] for h in hits)),
+                    'reviewed-by-record')
+            except SelfSigned as e:
+                sys.stderr.write('REFUSED: %s\n' % e)
+                return 1
+    print('')
+    if not write:
+        print('%d obligation(s) WOULD be closed as `reviewed-by-record`. Nothing'
+              % len(matched))
+        print('was written -- re-run with --write.')
+        print('')
+        print('READ THE EVIDENCE LINES FIRST. A file overlap is not a review of')
+        print('the same question, and this closes on an overlap.')
+        return 0
+    save_reviews(data)
+    print('%d obligation(s) closed as `reviewed-by-record`.' % len(matched))
+    return 0
+
+
+class SelfSigned(Exception):
+    """A closure whose reviewer is its own author, refused at write time."""
+
+
+def _discharge(rec, reviewer, verdict, status):
+    """THE ONLY PLACE AN OBLIGATION IS EVER CLOSED. Both paths come through
+    here so the self-review refusal cannot be true on one and forgotten on the
+    other.
+
+    ── IT WAS NOT SHARED WHEN THIS DOCSTRING FIRST CLAIMED IT WAS (2026-09-16) ─
+    The helper existed and said this, and only `--discharge` called it;
+    `cmd_auto_discharge` wrote the same four fields inline. So there were two
+    write points, one of them with no refusal on it, under a comment asserting
+    there was one. That is the defect this file's own header is about -- a check
+    that reads as present and tests nothing -- committed by the gate that
+    enforces it.
+
+    ── WHY THE REFUSAL LIVES HERE AND *ALSO* IN cmd_discharge ─────────────────
+    Deliberate, not a leftover. cmd_discharge refuses EARLY so a session that
+    types its own name gets the rule quoted at it before anything is read; this
+    one refuses at the WRITE, against the record's own stored `author_session`
+    rather than against a string somebody typed on the command line. The second
+    is the one a future third path cannot skip.
+
+    The auto path can never trip it -- its reviewer names a MECHANISM, not a
+    session -- and that is the point: the guard is unconditional, so it does not
+    need each caller to be trusted to have thought about it.
+    """
+    if reviewer and reviewer == rec.get('author_session'):
+        raise SelfSigned(
+            '%s cannot be recorded as the reviewer of its own obligation '
+            '(opened %s). That is the one claim this rule exists to refuse.'
+            % (reviewer, rec.get('opened_at')))
+    if not (verdict or '').strip():
+        raise SelfSigned('a closure with no verdict sentence is a tick, not a '
+                         'review.')
+    rec['status'] = status
+    rec['reviewer_session'] = reviewer
     rec['reviewed_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     rec['verdict'] = verdict.strip()
-    print('DISCHARGED -- %s reviewed the obligation %s opened %s, on %s'
-          % (session, author, rec.get('opened_at'), ', '.join(rec['resources'])))
 
 
 def cmd_discharge(author, verdict, opened_at=None):
@@ -852,8 +1121,15 @@ def cmd_discharge(author, verdict, opened_at=None):
                              % (r.get('opened_at'), ', '.join(r.get('resources') or [])))
         sys.stderr.write('Pass the opened_at as the second argument to pick one.\n')
         return 1
-    _discharge(hit, author, verdict, session)
+    try:
+        _discharge(hit[0], session, verdict, 'reviewed')
+    except SelfSigned as e:
+        sys.stderr.write('REFUSED: %s\n' % e)
+        return 1
     save_reviews(data)
+    print('DISCHARGED -- %s reviewed the obligation %s opened %s, on %s'
+          % (session, author, hit[0].get('opened_at'),
+             ', '.join(hit[0].get('resources') or [])))
     return 0
 
 
@@ -889,6 +1165,8 @@ def main(argv):
         return 1
     if '--list' in argv:
         return cmd_list()
+    if '--auto-discharge' in argv:
+        return cmd_auto_discharge('--write' in argv)
     # READING THE DIFF CAN FAIL, AND THAT IS A THIRD ANSWER. It used to be a
     # silent empty string, which this gate reads as "no Tier A resource touched"
     # -- a pass. Exit 2 keeps could-not-tell separate from both a finding and a
