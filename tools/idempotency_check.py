@@ -508,11 +508,47 @@ def main(argv):
         print('    the register itself, against the files that revealed them.')
     # A judgment about a file the checker no longer flags is stale, and a stale
     # exemption is how a real finding goes quiet. Named rather than ignored.
-    stale = [f for f in judged if f not in unguarded_files]
+    #
+    # BUT "NO LONGER FLAGGED" IS TWO DIFFERENT THINGS AND THIS SAID ONE
+    # (2026-09-17). A FIXED entry that the checker now reads as guarded is the
+    # fix LANDING -- the expected, correct end state -- and the register's own
+    # vocabulary says a FIXED entry must not be deleted, so "re-read or drop"
+    # was demanding an action that was already done and could never be
+    # discharged. It printed the same four lines every run, which is how a list
+    # stops being read. An entry may now record `reconciled_to`: the verdict the
+    # checker gave the file at the moment somebody re-read it.
+    #
+    # IT IS COMPARED AGAINST THE LIVE CLASSIFICATION, NOT AGAINST A DATE. A
+    # `rechecked_at` timestamp says when somebody looked and cannot go red when
+    # the thing looked at moves; this goes red the moment the file's
+    # classification changes again, because the recorded verdict stops matching
+    # the computed one. Re-reference against the SOURCE, on the source's own
+    # cadence -- the eighth cross-domain discipline.
+    now_verdict = dict((r['file'], r['verdict']) for r in rows)
+    stale, reconciled = [], []
+    for f in judged:
+        if f in unguarded_files:
+            continue
+        rec = judged[f].get('reconciled_to')
+        (reconciled if rec and rec == now_verdict.get(f) else stale).append(f)
     if stale:
         print('    JUDGED BUT NO LONGER UNGUARDED -- re-read or drop the entry:')
         for f in sorted(stale):
-            print('      %-46s (%s)' % (f, judged[f]['verdict']))
+            print('      %-46s (%s) now %s' % (f, judged[f]['verdict'],
+                                               now_verdict.get(f, 'NOT SEEN')))
+        print('      To discharge one: re-read it and record `reconciled_to`')
+        print('      as the verdict shown above. Do NOT set it without reading')
+        print('      the file -- it is an assertion that somebody did.')
+    if reconciled:
+        print('    RECONCILED -- re-read, and the verdict recorded in the')
+        print('    register still matches what this checker computes today:')
+        for f in sorted(reconciled):
+            print('      %-46s (%s) -> %s' % (f, judged[f]['verdict'],
+                                              judged[f]['reconciled_to']))
+        print('      THIS IS NOT A PROVISIONING CHECK. The verdict above is')
+        print('      read from the SOURCE; several of these guards need a')
+        print('      migration and this cannot see whether it ran. The entries')
+        print('      say so individually.')
     print('')
     print('  THE NEGATIVE FIXTURE IS SYNTHETIC AND THAT IS A REAL LIMIT: no')
     print('  in-memory-keyed write path exists on this platform to point at, so')
