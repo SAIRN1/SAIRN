@@ -53,6 +53,47 @@ EXIT_CLEAN, EXIT_FINDING, EXIT_COULD_NOT_RUN = 0, 1, 2
 DOC = os.path.join(REPO, 'docs', 'CRON-LIVENESS-STATUS.md')
 DEFAULT_URL = 'https://sairn.vercel.app/api/cron-watchdog'
 
+
+def watchdog_url():
+    """The endpoint to ask, with EMPTY treated as ABSENT.
+
+    ── THE SIX SILENT FAILURES THIS CAUSED (found 2026-09-17) ──────────────
+    This was `os.environ.get('SAIRN_WATCHDOG_URL', DEFAULT_URL)`, which is the
+    ordinary Python idiom and is WRONG in the one environment this tool exists
+    to run in. GitHub Actions materialises
+
+        env:
+          SAIRN_WATCHDOG_URL: ${{ secrets.SAIRN_WATCHDOG_URL }}
+
+    as an EMPTY STRING when the secret does not exist -- it does not leave the
+    name unset. `get(name, default)` returns the default only when the key is
+    ABSENT, so `url` became `''`, the request went nowhere, and the tool exited
+    2 COULD NOT TELL on every run.
+
+    MEASURED, NOT INFERRED. The workflow had run six times, every one a
+    failure, and the failures looked like the platform being unhealthy. They
+    were not: the `Refuse to run blind` step PASSED on every run, which means
+    CRON_SECRET was set the whole time; `Soft recovery` was SKIPPED, which
+    happens only for exit code 2 and never for a finding; and Vercel's own
+    runtime log shows 24 requests to /api/cron-watchdog in 24 hours, all 200,
+    all of them Vercel's own scheduler. NOT ONE REQUEST FROM THE RUNNER EVER
+    ARRIVED. The second scheduler -- the whole point of which is to survive a
+    Vercel outage -- had never once asked the question.
+
+    THE WORKFLOW'S OWN SHELL STEP GETS THIS RIGHT, which is what makes it worth
+    writing down rather than just fixing: the soft-recovery step uses
+    `${SAIRN_WATCHDOG_URL:-...}`, and bash's `:-` treats empty as absent. Two
+    languages, one variable, opposite defaults -- and the header of that file
+    calls the variable "optional; defaults to the production URL in the tool".
+    It did not.
+    """
+    # STRIPPED, which makes this marginally STRICTER than the shell's `:-`
+    # (bash treats a space as a value). A whitespace URL is never a real
+    # endpoint and is a plausible paste into a secret box, so falling back
+    # to the production URL is the only outcome that asks anything at all.
+    return (os.environ.get('SAIRN_WATCHDOG_URL') or '').strip() or DEFAULT_URL
+
+
 # What each non-ok status MEANS and what it points at. Written here rather than
 # in the endpoint because this is the document a human reads, and a status code
 # with no sentence beside it makes the reader go and find the source.
@@ -88,7 +129,7 @@ def write_status(state, lines, payload=None):
         '|---|---|',
         '| **State** | **%s** |' % state,
         '| Last run | %s |' % stamp,
-        '| Endpoint | `%s` |' % os.environ.get('SAIRN_WATCHDOG_URL', DEFAULT_URL),
+        '| Endpoint | `%s` |' % watchdog_url(),
         '',
     ] + lines + [
         '',
@@ -128,7 +169,7 @@ def cannot_tell(lines, payload=None, msg=''):
 
 
 def main(argv):
-    url = os.environ.get('SAIRN_WATCHDOG_URL', DEFAULT_URL)
+    url = watchdog_url()
     secret = os.environ.get('CRON_SECRET')
     if not secret:
         return cannot_tell([

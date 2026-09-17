@@ -256,6 +256,54 @@ elif wf:
        rc == 0)
 
 
+# ── AN ABSENT SECRET ARRIVES AS AN EMPTY STRING, NOT AS AN ABSENT NAME ─────
+# Added 2026-09-17 after the workflow had failed SIX consecutive scheduled runs
+# and not one request had reached the endpoint. `env: X: ${{ secrets.X }}` sets
+# X to '' when the secret does not exist, and `os.environ.get(X, DEFAULT)`
+# returns '' for that -- so the tool asked nothing, exited 2, and the failure
+# read as the platform being unhealthy.
+#
+# BOTH DIRECTIONS AND THE OVERRIDE, because a helper that always returned the
+# default would satisfy the first arm while silently ignoring a staging URL --
+# which is the only reason the variable exists.
+print(chr(10) + '5. an ABSENT secret arrives as EMPTY, and empty is not a URL')
+import cron_liveness_check as CLC                                 # noqa: E402
+
+_saved = os.environ.get('SAIRN_WATCHDOG_URL')
+try:
+    os.environ['SAIRN_WATCHDOG_URL'] = ''
+    ok('an EMPTY SAIRN_WATCHDOG_URL falls back to the production endpoint',
+       CLC.watchdog_url() == CLC.DEFAULT_URL, CLC.watchdog_url())
+
+    os.environ['SAIRN_WATCHDOG_URL'] = '   '
+    ok('whitespace is not a URL either',
+       CLC.watchdog_url() == CLC.DEFAULT_URL, CLC.watchdog_url())
+
+    os.environ['SAIRN_WATCHDOG_URL'] = 'https://staging.example/api/cron-watchdog'
+    ok('CONTROL: a REAL override is still honoured -- the fallback is not '
+       'swallowing the variable',
+       CLC.watchdog_url() == 'https://staging.example/api/cron-watchdog',
+       CLC.watchdog_url())
+
+    del os.environ['SAIRN_WATCHDOG_URL']
+    ok('an ABSENT name still falls back, which is what always worked',
+       CLC.watchdog_url() == CLC.DEFAULT_URL, CLC.watchdog_url())
+finally:
+    if _saved is None:
+        os.environ.pop('SAIRN_WATCHDOG_URL', None)
+    else:
+        os.environ['SAIRN_WATCHDOG_URL'] = _saved
+
+# THE WORKFLOW AND THE TOOL MUST AGREE ABOUT THE SAME VARIABLE. The shell step
+# already used `${VAR:-default}`, which treats empty as absent; the Python did
+# not. Two languages, one variable, opposite defaults is what made this survive
+# review -- so the agreement is asserted rather than left to a reader.
+_wf = io.open(WORKFLOW, encoding='utf-8').read()
+ok('the workflow shell still uses :- so it agrees with the tool on empty',
+   '${SAIRN_WATCHDOG_URL:-' in _wf,
+   'the shell default changed shape; re-check it against watchdog_url()')
+
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:
