@@ -1622,8 +1622,8 @@
       "task": "sairn_claim.py duplicate active claims by one session -- own-claim overlap root cause",
       "claimed_at": "2026-09-17T03:21:23Z",
       "claimed_at_epoch": 1789615283.7273686,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T04:06:26Z"
     }
   ]
 }
