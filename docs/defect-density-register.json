@@ -1238,7 +1238,34 @@
       ],
       "severity": "high",
       "subject": "fix(nav_panel_check): it reported PASS on two apps whose panel system it could not see",
-      "summary": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at"
+      "summary": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at",
+      "contributing_factors": [
+        {
+          "factor": "THE TOOL COULD NOT SEE THE PANEL SYSTEM AND REPORTED PASS. Two apps use 17 and 15 `id=\"page-x\"` containers with showPage(); the checker recognised neither, counted PANEL_COUNT:0, and called that a pass. Thirty-two real containers invisible, and the answer was the same word a clean app gets.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "`page-` containers are recognised, and a zero panel count is no longer spelled the same as a clean one."
+        },
+        {
+          "factor": "THE FILTER GUARANTEED THE TOOL COULD NEVER REPORT ITS OWN FINDING. Adopting only the `page-` ids something CALLS BY NAME is self-defeating: an unreachable container is BY DEFINITION one nothing calls, so the filter removed exactly the panels the tool exists to find. It made one app pass with 16 of 17 by dropping the unreachable one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A two-container test decides whether the FILE navigates by `page-` at all; if it does, every `page-` container is in scope regardless of whether anything calls it."
+        },
+        {
+          "factor": "IT HAD BEEN PROMOTED TO THE REPORT-ONLY REGISTRY THAT MORNING, so it was counted as a PASSING CHECKER over two apps it had never looked at. A registry entry converts silence into evidence, and the silence here was a blind spot.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Found by a human read of an unrelated finding in the same app; the promotion is kept, with the coverage correction."
+        },
+        {
+          "factor": "THIS IS THE FIFTH CORRECTION TO THE SAME FILE AND THE FIRST IN THE SILENT DIRECTION. The previous four -- hardcoded class, hardcoded id, hardcoded nav-function name, hardcoded element -- were all made after it reported a WORKING app as BROKEN, which somebody investigates. A false PASS is investigated by nobody.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Stated as the class in the commit: the four loud failures trained everyone to expect this tool's errors to arrive as false findings, which is the direction that self-corrects."
+        }
+      ],
+      "recurrence_open": "The tool now recognises two panel conventions. It has no way to say 'this file has a panel system I do not recognise' as distinct from 'this file has no panels' -- and the first is what happened twice here. A third convention would produce the same PASS."
     },
     {
       "app": "sairndental",
@@ -2667,7 +2694,28 @@
       "rules": [],
       "severity": "high",
       "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
-      "summary": "sql/backup_reader_role.sql creates sairn_backup_reader with the literal password 'REPLACE_ME_BEFORE_RUNNING' inside a `do $$ if not exists` guard, so running the file once un-edited produces a LOGIN role with BYPASSRLS and SELECT on every table in public, and re-running the corrected file changes nothing because the role already exists. The repo is public (confirmed via the GitHub API: visibility public), so the placeholder is a published string, and no verification step in the file checks that the password is not still the placeholder"
+      "summary": "sql/backup_reader_role.sql creates sairn_backup_reader with the literal password 'REPLACE_ME_BEFORE_RUNNING' inside a `do $$ if not exists` guard, so running the file once un-edited produces a LOGIN role with BYPASSRLS and SELECT on every table in public, and re-running the corrected file changes nothing because the role already exists. The repo is public (confirmed via the GitHub API: visibility public), so the placeholder is a published string, and no verification step in the file checks that the password is not still the placeholder",
+      "contributing_factors": [
+        {
+          "factor": "THE PLACEHOLDER IS INSIDE AN `if not exists` GUARD, WHICH MAKES THE MISTAKE PERMANENT. Running the file once un-edited creates a LOGIN role with BYPASSRLS and SELECT on every table in public -- and re-running the CORRECTED file changes nothing, because the role already exists. The guard is there to make the script idempotent and it makes the error idempotent too.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The password is no longer a literal in the file, and the role creation states what has to be supplied."
+        },
+        {
+          "factor": "THE REPO IS PUBLIC -- confirmed via the GitHub API, visibility public -- so the placeholder is not a local convention, it is a PUBLISHED STRING attached to a role that can read every table on an instance holding a DEA-relevant controlled-substance register, attorney client trust money and dental charge history.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded with the check that established it, because 'is this repo public' is the kind of fact everybody assumes and nobody verifies."
+        },
+        {
+          "factor": "NO VERIFICATION STEP IN THE FILE CHECKS THAT THE PASSWORD IS NOT STILL THE PLACEHOLDER. The file is careful in every other respect -- it explains BYPASSRLS at length and is right about why it is needed -- so a reader has every reason to trust the rest of it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The same pass added the check; a placeholder that survives into a run is now a refusal rather than a role."
+        }
+      ],
+      "recurrence_open": "Nothing scans SQL for placeholder credentials, and the `if not exists` shape that makes this permanent is used throughout the schema files for good reasons. Any other provisioning script with a REPLACE_ME literal has the same property and would be found the same way this was -- by somebody reading it."
     },
     {
       "app": "PLATFORM",
