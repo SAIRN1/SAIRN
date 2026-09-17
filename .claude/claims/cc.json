@@ -1754,6 +1754,16 @@
       "claimed_at_epoch": 1789681014.5027592,
       "status": "released",
       "released_at": "2026-09-17T21:41:53Z"
+    },
+    {
+      "id": "cc-1789681335",
+      "session": "cc",
+      "subject": "hank-dose-audit-reader-review",
+      "task": "independent review of hank sv_audit_log dosing trail reader completeness banner",
+      "claimed_at": "2026-09-17T21:42:15Z",
+      "claimed_at_epoch": 1789681335.9391732,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
