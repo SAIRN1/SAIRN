@@ -4539,3 +4539,62 @@ region), the hover probe's arm 7 (named the probe, measured the tree), the
 void-role arm (label said staff may, assertion said 403), and now this one.
 **Every one of them reads correctly and tests something narrower**, and in three
 of the four the assertion was satisfied by the very defect the label names.
+
+## 2026-09-16 (continued) -- the register gate reads content now, and two more SAIRNdental controls
+
+### The gate that read subjects and was read as reading changes
+
+`register_feed_gate.py` demanded a record only when the subject matched
+`^fix\(`, so `a8528025` -- a real 232s-to-25s performance fix wearing a
+`chore(register)` message -- walked past every check in it.
+
+**Two content rules were measured against 807 real commits and BOTH REJECTED
+before the third was kept.** That measurement is the part worth carrying:
+
+| rule | hits | verdict |
+|---|---|---|
+| `chore`/`docs` touching code files | 27 | six were my own `docs(tracing)` comment additions |
+| ...restricted to EXECUTABLE lines | 20 | `MIN_TEST_FILES` bumps, inventory rows, REGISTRY entries -- honest chore work |
+| **duplicate subject + DISJOINT file sets** | **3** | **all three real message reuse** |
+
+**A gate that fires twenty times to catch one gets switched off**, which that
+file already says about itself. The rule kept is the SIGNATURE OF THE ACCIDENT:
+1,293 duplicate-subject pairs OVERLAP in files and are correctly ignored --
+`chore(claims): cc releases cc` repeats by design and always touches its one
+file -- and exactly three are disjoint.
+
+**Driven end-to-end on the real case, not only on fixtures.** Pointed at
+`a8528025~1..a8528025` it flags the commit and NAMES `6f2fa681`. The index is
+ONE `git log` (0.22s, 2,002 subjects) because the per-commit version wanted ~800
+subprocesses in front of a 150-second push timeout.
+
+**What it does NOT close, said rather than left:** a unique, honestly-typed,
+wrong subject still passes. Nothing can hold a message to a diff in general --
+this rule works because it compares two MESSAGES that are identical, not a
+message to a change.
+
+### The probe's arm went red, and was right to
+
+`run_register_feed_gate_probe.py` asserts the self-check drives **every** case
+in the table. A second table arrived and the arrow count went 14 against an
+expected 7. **That is exactly what an "every case is driven" assertion is for**,
+so it now names both tables rather than being loosened to a floor -- a third
+table added without touching that line fails the same way.
+
+### And I recorded a defect against a sha the rebase then rewrote
+
+The register entry cited `b1ab3b52`; the rebase moved it to `7b59f73b` and the
+push gate refused, correctly. **Then my repair almost did more damage than the
+problem:** I rewrote the register with `json.dumps(indent=1)` and produced a
+**5,717-line reformat** of a file whose own merge policy is union-by-identity
+across four clones. Reverted and redone through the module's own `save()`, which
+uses `indent=2` -- a **two-line** diff. *Use the owner's writer, not your own.*
+
+### Two more Tier A controls
+
+**The ledger export** and **the coverage-rule edit**, 28 -> 30 controlled. The
+coverage one is built against the guarded suite's own warning -- *"asserting
+that an edit path EXISTS is satisfied by one that appends a duplicate, which is
+the bug"* -- so none of its mutations removes the edit path. They leave it there
+and make it append, re-stamp, or drop its refusal, which is the shape that
+passed for working before anybody looked.
