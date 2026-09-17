@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**191 files in `tools/`.** By what actually invokes them:
+**192 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 59 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 16 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 32 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 133 |
+| CHECKER | 134 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -45,19 +45,20 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 6 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 2 wired nowhere at all, and 4
+**The number to act on: 7 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 2 wired nowhere at all, and 5
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 6, by name, so this is actionable rather than a statistic:
+The 7, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `bypass_log.py` | UNWIRED | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
+| `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
 | `negated_status_assertion_scan.py` | UNWIRED | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything |
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
@@ -285,7 +286,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (16)
+## SUITE-ONLY (17)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -297,6 +298,7 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
+| `known_red_check.py` | CHECKER | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform | `run_known_red_probe.py` |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | `run_selftest_independence_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_selftest_independence_probe.py` |
@@ -380,11 +382,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      191   git ls-files tools/
+  tools on disk                      192   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                57   report_only_checks.REGISTRY
-  tools invoked by tests/            138   tests/**/*.py, *.js
+  tools invoked by tests/            139   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
