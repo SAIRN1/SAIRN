@@ -2115,6 +2115,16 @@
       "claimed_at_epoch": 1789659138.246037,
       "status": "released",
       "released_at": "2026-09-17T17:13:00Z"
+    },
+    {
+      "id": "hank-1789665962",
+      "session": "hank",
+      "subject": "claude-app-id-and-bridge",
+      "task": "app_id licence verification, bridge push deletion, cron-liveness doc ordering, SD_AUTH_SECRET options",
+      "claimed_at": "2026-09-17T17:26:02Z",
+      "claimed_at_epoch": 1789665962.7397738,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
