@@ -7946,6 +7946,63 @@
         }
       ],
       "recurrence_open": "Gating scheduling on the eligibility answer is still open and is a product decision; nothing refuses a dispatch today. The same server-half-without-a-caller shape is not checked for anywhere else on the platform."
+    },
+    {
+      "commit": "930ba9794e2d",
+      "date": "2026-09-17",
+      "subject": "fix(dental): the CDT catalogue was versioned and the charges were not -- a posted charge re-read whatever the catalogue said today",
+      "files": [
+        "api/_lib/dental-bi.js",
+        "api/_lib/dental-bi.test.js",
+        "sairndental.html",
+        "tests/sairndental_outbound_queue.js"
+      ],
+      "lines_added": 144,
+      "lines_removed": 1,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairndental.html's addChargeEntry() recorded only procedure_type_id, and a procedure type is a mutable row carrying cdt_code, cdt_version and the effective window. The ADA publishes a new CDT edition annually, so the day a practice updates its catalogue every historical charge silently re-reads the new code and edition -- a charge correctly billed as D1110 under CDT 2025 renders, exports through dnt_charges and reports as whatever the row says today, with no error and no warning. The catalogue had full versioning (cdtStatusFor, cdtMaintenance, effective windows); the transactions had none, so the ledger stopped describing what was actually claimed. cdt_code and cdt_version are now stamped at posting and exported from the charge rather than joined.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The charge record shape predates the CDT versioning work entirely; there is no single commit where storing the code became wrong, because it became wrong when the catalogue gained an edition field that charges could then drift from. Naming a sha would be picking one arbitrarily."
+      },
+      "citation_note": "2.3 in its data form: the charge carried a POINTER to a fact rather than the fact, so every read of a historical charge re-derived its CDT code from a mutable row -- a value with a tense, read without a read of when it was true.",
+      "phase_note": "addChargeEntry() has recorded procedure_type_id and not the code since the ledger was built. The versioning work that came later added cdt_version and effective windows to the CATALOGUE and never revisited the transaction, so the defect is the join, not a slip.",
+      "contributing_factors": [
+        {
+          "factor": "The charge stored a foreign key to a MUTABLE catalogue row instead of the billed values, so history was re-derived on every read rather than recorded.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "cdt_code and cdt_version are stamped onto the charge at posting, alongside estimated_insurance_portion which was already stored for the same reason."
+        },
+        {
+          "factor": "The CDT versioning pass added editions and effective windows to the CATALOGUE and never asked what the TRANSACTIONS needed, so a feature that was about time left the time-sensitive record untouched.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The charge now records what it was billed under; the historical compliance verdict is named as deliberately out of scope rather than half-built."
+        },
+        {
+          "factor": "Nothing could observe the drift: the client harness had no catalogue at all, so no arm could move a procedure type underneath a posted charge.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "procedureTypes() is overridable per-harness and five arms exercise the stamp, including the catalogue moving after the post."
+        },
+        {
+          "factor": "The failure is SILENT and DELAYED by a year -- it fires when the ADA publishes the next edition and the practice updates the catalogue, which is a routine maintenance action nobody would connect to the ledger changing.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Existing charges written before this commit still have no stamp and cannot be back-filled -- the catalogue may already have moved, so inferring what they were billed under would invent it. Recorded rather than papered over."
+        }
+      ],
+      "recurrence_open": "Charges posted BEFORE this commit carry no stamp and must not be back-filled: if the catalogue has already moved there is no way to recover what they were billed under, and guessing would be worse than a blank. Also unclosed: treatment-plan items and the denial/AR tiers resolve the same way through procedure_type_id and were not changed here -- only the charge, which is what goes on a claim."
     }
   ],
   "started": "2026-09-09"
