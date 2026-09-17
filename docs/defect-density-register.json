@@ -7329,6 +7329,64 @@
       "recurrence_open": "Nothing prevents the NEXT AI endpoint being written without a limiter. The sweep reports it only if the model call sits inside a loop it recognises; a single-shot AI endpoint with no budget would not appear at all, and there is still no registry that says which endpoints must meter."
     },
     {
+      "commit": "103f17b46867",
+      "date": "2026-09-17",
+      "subject": "fix(tools)+sweep: the second instance of the Response-as-body defect, and a checker for the class",
+      "files": [
+        "tests/run_response_shape_probe.py",
+        "tools/audit_checkpoint_status.py",
+        "tools/response_shape_check.py"
+      ],
+      "lines_added": 451,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/audit_checkpoint_status.py carried the identical Response-as-body defect as cron_liveness_check.py: isinstance(payload, dict) on a namedtuple is always False, so the audit-checkpoint status document could only ever report COULD NOT TELL. The module's own __contains__ guard was short-circuited by the `or` in front of it. Nine call sites audited across the repo; two were broken.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "response_shape_check.py",
+      "injection": {
+        "commit": "3d40c7d548a1",
+        "date": "2026-09-14",
+        "subject": "feat(cron): item 54 -- something now notices when a scheduled job goes silent",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 is a check that cannot fail; this is the same disease one layer over -- a check that cannot PASS, in a tool whose only output is a verdict. Arguable because 1.1's examples are about the checker's anchor, not about the type its transport hands back.",
+      "contributing_factors": [
+        {
+          "factor": "tools/audit_checkpoint_status.py bound fetch_json's Response(status, body) to `payload` and guarded with isinstance(payload, dict), which is always False for a namedtuple, so the audit-checkpoint status document could only ever say COULD NOT TELL",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "status, payload = resp.status, resp.body, plus the non-200 branch that had never existed"
+        },
+        {
+          "factor": "Response.__contains__ already raises on the other silent spelling of this mistake, and here it was SHORT-CIRCUITED: the line reads `not isinstance(payload, dict) or 'ok' not in payload`, and `or` stops before the guard runs -- the defence was present, correct and unreachable because of the thing it defended against",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the sweep exists beside the type guard rather than relying on it; a guard inside a type cannot defend against a check placed in front of it"
+        },
+        {
+          "factor": "the first instance was fixed without asking how many others had the same shape -- the same omission this platform recorded on 2026-09-15 when nine advisory-lock functions existed and only two had been guarded",
+          "kind": "process",
+          "action_status": "done",
+          "action": "all nine call sites of fetch/fetch_json audited: two broken, seven correct; tools/response_shape_check.py now sweeps the class"
+        },
+        {
+          "factor": "a sweep written after both defects were fixed reports CLEAN on its first run, and a clean first run is indistinguishable from a sweep that looks at nothing",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the probe reads the real pre-fix source out of git, resolving the sha by SUBJECT so a rebase cannot turn the arm into a silent skip, and demands 7 and 9 findings respectively"
+        }
+      ],
+      "recurrence_open": "NOT CLOSED. The sweep only sees a plain local name bound in the same function: a Response passed into another function, stored on an attribute or put in a dict is invisible to it, and that is stated in the tool rather than discovered later. Nothing checks OTHER transports with the same shape -- a namedtuple return that a caller treats as its payload is a general Python shape and only sairn_http is swept."
+    },
+    {
       "commit": "1f25f8bf6613",
       "date": "2026-09-17",
       "subject": "fix(claims): the duplicate this tool could not see was your own claim",
@@ -7385,55 +7443,109 @@
       "recurrence_open": "Two claims for one piece of work that share no identifier, no phrase and no app still pass -- block_reason() names that residual in its own body and records why a rare-token rule was measured at 74 extra blocks and rejected."
     },
     {
-      "commit": "f82a48475ea2",
+      "commit": "31574fceecdf",
       "date": "2026-09-17",
-      "subject": "fix(probes): the invisible-in-pattern anchor died to the refactor that was written to delete it",
+      "subject": "fix(sairnlaw): one citation rule -- the critique step was told to produce a real reporter citation",
       "files": [
-        "tests/run_invisible_in_pattern_probe.py",
-        "tools/mutation_anchor_check.py"
+        "sairnlaw.html",
+        "tests/sairnlaw_citation_rule.js",
+        "tests/sairnlaw_citation_rule_probe.py"
       ],
-      "lines_added": 110,
-      "lines_removed": 16,
-      "app": "PLATFORM",
-      "layer": "tooling",
+      "lines_added": 326,
+      "lines_removed": 35,
+      "app": "sairnlaw",
+      "layer": "product",
       "severity": "high",
-      "detection_method": "probe-control",
-      "summary": "run_invisible_in_pattern_probe anchored arms C and D on the regex literal /^\\d{4}-\\d{2}-\\d{2}$/ in api/_lib/accounting-connector.js; item 94's de-duplication (7099d99f) removed that literal along with the other thirteen copies, so the probe could not plant and the checker's only control stopped running",
+      "detection_method": "independent-review",
+      "summary": "MT_CRITIQUE_CITATION_RULE told the model 'If you cite a case, give its real reporter citation' -- an instruction to GENERATE a citable-format string on a legal surface, licensed by a post-hoc badge rather than by the citation being retrieved; a string badged 'Not found -- do not rely on this' is a fabricated citation that reached a lawyer's screen",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "the permission was moved into a named constant on 2026-09-14 from an inline HARD RULES item, and git -S cannot distinguish the move from the origin; the wording predates the constant and the commit that first wrote it was not identified"
+      },
+      "citation_note": "no section of the process rules covers prompt content on a regulated surface; the standing rule this violates is the app's own LAW_CITATION_RULE and Michael's 2026-09-17 convergence, neither of which is a numbered section",
+      "contributing_factors": [
+        {
+          "factor": "post-hoc verification was treated as equivalent to retrieval -- the model composed the citation and the code only graded it afterwards",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the rule now forbids generating and permits only a verbatim repeat; the citator exception is scoped to a citation read out of the citator response"
+        },
+        {
+          "factor": "a deliberate exception was written as a named constant precisely so it would look deliberate, which also made it look settled",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the reversal is recorded in the comment beside both constants, naming the decision it supersedes and the date"
+        },
+        {
+          "factor": "ai_prompt_refusal_check.py can see WHETHER a site references a rule constant and cannot read WHAT the constant says, so it recorded this divergence in its own docstring and never failed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnlaw_citation_rule.js, 23 arms driven verbatim from the page, tells a constant that forbids generation from one that permits it; sabotaged 6 ways, all bite"
+        }
+      ],
+      "recurrence_open": "the suite reads WORDS IN A PROMPT and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded decision, so a green run is never evidence that no citation is fabricated"
+    },
+    {
+      "commit": "3785be046dc4",
+      "date": "2026-09-17",
+      "subject": "fix(rate-limit-health): the check that answers \"is the fix in force\" could not see the second world, and would have called the upgrade a regression",
+      "files": [
+        "api/provisioner-health-rate-limit.test.js",
+        "api/provisioner-health.js"
+      ],
+      "lines_added": 265,
+      "lines_removed": 15,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/provisioner-health.js's rate_limit_health answered \"The limit is real under concurrency\" on the strength of a single 3-argument probe. That probe cannot distinguish the 3-arg function from the 6-arg tenant-aware one -- the migration DROPS and REPLACES rather than overloading, so a 3-arg call succeeds against both -- and the two refuse an empty app_id differently: the old one RETURNS an error object as HTTP 200, the new one RAISES. The existence test demanded the 200 shape only, so running sql/sairn_ai_tenant_subbudget_2026-09-15.sql would have flipped the endpoint from ATOMIC to UNKNOWN, a correct upgrade reading as a broken limiter on the one check that reports whether the atomicity fix is in force. Meanwhile the tenant sub-budget was never probed at all, so a fairness failure -- one licence exhausting the entire app ceiling with the ceiling itself perfectly atomic -- was invisible and the message implicitly denied it.",
       "rules": [
-        "1.3"
+        "1.1"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": "tests/run_invisible_in_pattern_probe.py",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
       "injection": {
-        "commit": "7099d99ff175",
-        "date": "2026-09-14",
-        "subject": "refactor(api): item 94 -- one module owns what a calendar date is, and all fourteen copies were wrong",
-        "lag_days": 3
+        "commit": "7986882376de",
+        "date": "2026-09-15",
+        "subject": "feat(platform): a per-tenant sub-budget inside the per-app AI ceiling, and the tenancy decision written down at the switch",
+        "lag_days": 2
       },
-      "citation_note": "1.3 is about an anchor that still MATCHES but points at the wrong thing; this one stopped matching entirely, so the citation is to the same class rather than the exact case",
+      "citation_note": "1.1 exactly: the check did not stop checking by drifting, it was INVALIDATED by a migration that introduced a second world it cannot see and a refusal shape it rejects -- and it was armed to fire on the repair, so the day it started lying is the day somebody fixes the thing it watches.",
+      "phase_note": "The endpoint was correct when written on 2026-09-02. The design choice that made it wrong later is a single-shape existence test plus a single probe, against a function whose signature and refusal style were both changed by 79868823.",
       "contributing_factors": [
         {
-          "factor": "the anchor was a DUPLICATED construct -- a regex literal that existed in fourteen files -- so its whole future was to be deduplicated",
+          "factor": "The existence test pinned ONE refusal shape (HTTP 200 with a returned error object) when the same function name can refuse by RAISING instead, so a correct upgrade reads as UNKNOWN.",
           "kind": "technical",
           "action_status": "done",
-          "action": "arms C and D need only a position, not a line; append() adds the block at end of file and asserts it landed, so there is no anchor left to rot"
+          "action": "present now accepts both shapes; an arm drives the raising world and would have caught the old form."
         },
         {
-          "factor": "tools/mutation_anchor_check.py only walks probes that define a MUTATIONS list, and this probe calls plant() directly, so its anchors were never among the 245 verified",
+          "factor": "One probe was used to answer two questions -- app ceiling atomicity and tenant sub-budgeting -- and the message spoke for both while testing one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A second probe carrying the tenant arguments reports tenant_state separately, and the message names the consequence and the migration."
+        },
+        {
+          "factor": "The endpoint had no test of any kind, so neither half could be observed until somebody read it.",
           "kind": "detection",
           "action_status": "done",
-          "action": "the one remaining real anchor -- arm E, an assertion about the tool own fixture table -- is declared as MUTATIONS and read from there by the arm; 245 to 246 tracked"
+          "action": "api/provisioner-health-rate-limit.test.js, 7 arms over three worlds plus a control that the three do not collapse to one answer."
         },
         {
-          "factor": "a refactor has no way to find the text anchors that quote the construct it is removing",
+          "factor": "The migration that invalidated the check changed a function SIGNATURE and a REFUSAL STYLE, and nothing links a migration to the health check that reads the function it replaces.",
           "kind": "latent-condition",
           "action_status": "not-actionable",
-          "note": "nothing can link a de-duplication to every probe quoting one of the copies; the probe raising rather than no-opping is what makes it survivable"
+          "note": "A general migration-to-monitor link is a platform-wide mechanism and is out of scope for this fix; named so the next instance is recognised rather than re-derived."
         }
       ],
-      "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
+      "recurrence_open": "Nothing prevents the NEXT monitor from pinning one response shape. This fixed one endpoint; no checker looks for a health probe whose pass condition is a literal body match against a function that could be replaced. Also unclosed: tenant_state is derived from HTTP status alone, so a future PostgREST that answers a missing signature with something other than 404 would read as SUB_BUDGETED."
     },
     {
       "commit": "8fdc063f63c7",
@@ -7615,53 +7727,6 @@
       "recurrence_open": "the worktree-at-HEAD pattern is used by other probes in tests/ that do not push, where it is harmless today and would not be if one of them gained a network step"
     },
     {
-      "commit": "31574fceecdf",
-      "date": "2026-09-17",
-      "subject": "fix(sairnlaw): one citation rule -- the critique step was told to produce a real reporter citation",
-      "files": [
-        "sairnlaw.html",
-        "tests/sairnlaw_citation_rule.js",
-        "tests/sairnlaw_citation_rule_probe.py"
-      ],
-      "lines_added": 326,
-      "lines_removed": 35,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "MT_CRITIQUE_CITATION_RULE told the model 'If you cite a case, give its real reporter citation' -- an instruction to GENERATE a citable-format string on a legal surface, licensed by a post-hoc badge rather than by the citation being retrieved; a string badged 'Not found -- do not rely on this' is a fabricated citation that reached a lawyer's screen",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "the permission was moved into a named constant on 2026-09-14 from an inline HARD RULES item, and git -S cannot distinguish the move from the origin; the wording predates the constant and the commit that first wrote it was not identified"
-      },
-      "citation_note": "no section of the process rules covers prompt content on a regulated surface; the standing rule this violates is the app's own LAW_CITATION_RULE and Michael's 2026-09-17 convergence, neither of which is a numbered section",
-      "contributing_factors": [
-        {
-          "factor": "post-hoc verification was treated as equivalent to retrieval -- the model composed the citation and the code only graded it afterwards",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the rule now forbids generating and permits only a verbatim repeat; the citator exception is scoped to a citation read out of the citator response"
-        },
-        {
-          "factor": "a deliberate exception was written as a named constant precisely so it would look deliberate, which also made it look settled",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the reversal is recorded in the comment beside both constants, naming the decision it supersedes and the date"
-        },
-        {
-          "factor": "ai_prompt_refusal_check.py can see WHETHER a site references a rule constant and cannot read WHAT the constant says, so it recorded this divergence in its own docstring and never failed",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/sairnlaw_citation_rule.js, 23 arms driven verbatim from the page, tells a constant that forbids generation from one that permits it; sabotaged 6 ways, all bite"
-        }
-      ],
-      "recurrence_open": "the suite reads WORDS IN A PROMPT and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded decision, so a green run is never evidence that no citation is fabricated"
-    },
-    {
       "commit": "b135eaa27620",
       "date": "2026-09-17",
       "subject": "fix(item6): the four \"re-read or drop\" entries could never be discharged, and the register's denominator was a sentence",
@@ -7777,62 +7842,55 @@
       "recurrence_open": "NOT CLOSED. No scheduled run has yet been observed green; the proof is the first run after this lands and is hours away on the measured cadence. And nothing sweeps for the general shape: any other caller of sairn_http.fetch_json that treats the return value as the body has the identical defect, and no check looks for it."
     },
     {
-      "commit": "3785be046dc4",
+      "commit": "f82a48475ea2",
       "date": "2026-09-17",
-      "subject": "fix(rate-limit-health): the check that answers \"is the fix in force\" could not see the second world, and would have called the upgrade a regression",
+      "subject": "fix(probes): the invisible-in-pattern anchor died to the refactor that was written to delete it",
       "files": [
-        "api/provisioner-health-rate-limit.test.js",
-        "api/provisioner-health.js"
+        "tests/run_invisible_in_pattern_probe.py",
+        "tools/mutation_anchor_check.py"
       ],
-      "lines_added": 265,
-      "lines_removed": 15,
-      "app": "tooling",
+      "lines_added": 110,
+      "lines_removed": 16,
+      "app": "PLATFORM",
       "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/provisioner-health.js's rate_limit_health answered \"The limit is real under concurrency\" on the strength of a single 3-argument probe. That probe cannot distinguish the 3-arg function from the 6-arg tenant-aware one -- the migration DROPS and REPLACES rather than overloading, so a 3-arg call succeeds against both -- and the two refuse an empty app_id differently: the old one RETURNS an error object as HTTP 200, the new one RAISES. The existence test demanded the 200 shape only, so running sql/sairn_ai_tenant_subbudget_2026-09-15.sql would have flipped the endpoint from ATOMIC to UNKNOWN, a correct upgrade reading as a broken limiter on the one check that reports whether the atomicity fix is in force. Meanwhile the tenant sub-budget was never probed at all, so a fairness failure -- one licence exhausting the entire app ceiling with the ceiling itself perfectly atomic -- was invisible and the message implicitly denied it.",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "run_invisible_in_pattern_probe anchored arms C and D on the regex literal /^\\d{4}-\\d{2}-\\d{2}$/ in api/_lib/accounting-connector.js; item 94's de-duplication (7099d99f) removed that literal along with the other thirteen copies, so the probe could not plant and the checker's only control stopped running",
       "rules": [
-        "1.1"
+        "1.3"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_invisible_in_pattern_probe.py",
       "injection": {
-        "commit": "7986882376de",
-        "date": "2026-09-15",
-        "subject": "feat(platform): a per-tenant sub-budget inside the per-app AI ceiling, and the tenancy decision written down at the switch",
-        "lag_days": 2
+        "commit": "7099d99ff175",
+        "date": "2026-09-14",
+        "subject": "refactor(api): item 94 -- one module owns what a calendar date is, and all fourteen copies were wrong",
+        "lag_days": 3
       },
-      "citation_note": "1.1 exactly: the check did not stop checking by drifting, it was INVALIDATED by a migration that introduced a second world it cannot see and a refusal shape it rejects -- and it was armed to fire on the repair, so the day it started lying is the day somebody fixes the thing it watches.",
-      "phase_note": "The endpoint was correct when written on 2026-09-02. The design choice that made it wrong later is a single-shape existence test plus a single probe, against a function whose signature and refusal style were both changed by 79868823.",
+      "citation_note": "1.3 is about an anchor that still MATCHES but points at the wrong thing; this one stopped matching entirely, so the citation is to the same class rather than the exact case",
       "contributing_factors": [
         {
-          "factor": "The existence test pinned ONE refusal shape (HTTP 200 with a returned error object) when the same function name can refuse by RAISING instead, so a correct upgrade reads as UNKNOWN.",
+          "factor": "the anchor was a DUPLICATED construct -- a regex literal that existed in fourteen files -- so its whole future was to be deduplicated",
           "kind": "technical",
           "action_status": "done",
-          "action": "present now accepts both shapes; an arm drives the raising world and would have caught the old form."
+          "action": "arms C and D need only a position, not a line; append() adds the block at end of file and asserts it landed, so there is no anchor left to rot"
         },
         {
-          "factor": "One probe was used to answer two questions -- app ceiling atomicity and tenant sub-budgeting -- and the message spoke for both while testing one.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "A second probe carrying the tenant arguments reports tenant_state separately, and the message names the consequence and the migration."
-        },
-        {
-          "factor": "The endpoint had no test of any kind, so neither half could be observed until somebody read it.",
+          "factor": "tools/mutation_anchor_check.py only walks probes that define a MUTATIONS list, and this probe calls plant() directly, so its anchors were never among the 245 verified",
           "kind": "detection",
           "action_status": "done",
-          "action": "api/provisioner-health-rate-limit.test.js, 7 arms over three worlds plus a control that the three do not collapse to one answer."
+          "action": "the one remaining real anchor -- arm E, an assertion about the tool own fixture table -- is declared as MUTATIONS and read from there by the arm; 245 to 246 tracked"
         },
         {
-          "factor": "The migration that invalidated the check changed a function SIGNATURE and a REFUSAL STYLE, and nothing links a migration to the health check that reads the function it replaces.",
+          "factor": "a refactor has no way to find the text anchors that quote the construct it is removing",
           "kind": "latent-condition",
           "action_status": "not-actionable",
-          "note": "A general migration-to-monitor link is a platform-wide mechanism and is out of scope for this fix; named so the next instance is recognised rather than re-derived."
+          "note": "nothing can link a de-duplication to every probe quoting one of the copies; the probe raising rather than no-opping is what makes it survivable"
         }
       ],
-      "recurrence_open": "Nothing prevents the NEXT monitor from pinning one response shape. This fixed one endpoint; no checker looks for a health probe whose pass condition is a literal body match against a function that could be replaced. Also unclosed: tenant_state is derived from HTTP status alone, so a future PostgREST that answers a missing signature with something other than 404 would read as SUB_BUDGETED."
+      "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
     }
   ],
   "started": "2026-09-09"
