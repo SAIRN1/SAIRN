@@ -67,15 +67,40 @@ check(err is None, 'the generator produces a document (%s)' % (err or 'ok')[:60]
 # ORIGINAL defect looked: a plan quoting a matrix figure from three days ago.
 matrix, merr = TM.build()
 check(merr is None, 'the matrix generates too')
-m = re.search(r'\*\*(\d+) of (\d+) test files are traced', matrix or '')
-check(m is not None, 'the matrix states its own traced ratio')
-if m and doc:
-    n, d = m.group(1), m.group(2)
+
+# ── RE-ANCHORED 2026-09-17 ONTO THE SOURCE, AFTER GOING RED UNREAD ──────────
+# This used to `re.search(r'\*\*(\d+) of (\d+) test files are traced')` against
+# the MATRIX's prose. That sentence no longer exists -- the matrix was
+# restructured to lead with the absolute count rather than the ratio -- so the
+# arm had been failing on `main` ever since, and **the two arms underneath it
+# were nested in `if m:` and therefore silently NOT RUNNING.** A visible red is
+# bad; a visible red that switches off the two checks it guards is the shape
+# PR 1.3 is written about, and this repo re-read the same lesson three commits
+# ago in ccf38216.
+#
+# THE REPAIR IS NOT A NEW REGEX. Scraping one generated document to check
+# another is a string anchor by construction, and it will drift again the next
+# time somebody rewords a headline. The figures are taken from the SAME
+# FUNCTIONS the plan itself calls, so a wording change cannot break it and a
+# figure change cannot hide behind one.
+_all_tests = TM.all_tests()
+_cited = TM.traced()
+_n, _d = len([t for t in _all_tests if t in _cited]), len(_all_tests)
+check(_d > 0, 'there are test files to count at all -- a zero denominator '
+              'would make both arms below vacuous')
+if doc:
     # The SAME figure, not a similar one and not one counted a second way.
-    check(('**%s** of them are traced' % n) in doc,
-          "the plan quotes the matrix's own numerator (%s) verbatim" % n)
-    check(('**%s** test files on disk' % d) in doc,
-          "...and the matrix's own denominator (%s)" % d)
+    check(('**%d** of them are traced' % _n) in doc,
+          "the plan prints traceability_matrix.traced()'s own numerator (%d)"
+          % _n)
+    check(('**%d** test files on disk' % _d) in doc,
+          "...and all_tests()'s own denominator (%d)" % _d)
+    # TEETH: if the numbers were interchangeable the two arms above would pass
+    # against a plan that had swapped them, which is precisely the confusion
+    # -- a rate over the subset you looked at -- this paragraph exists to name.
+    check(_n != _d,
+          'numerator and denominator differ, so the two arms above are not '
+          'the same assertion written twice')
 
 # The mechanical version of the same claim: one function, two callers.
 check(MP.TM.traced is TM.traced,
@@ -84,7 +109,7 @@ check(MP.TM.traced is TM.traced,
 # ── 2. A FAULT PROBE IS A DECLARATION, NOT A MENTION ─────────────────────────
 print('')
 print('2. the fault column counts DECLARATIONS, and nothing else')
-by_app, declarers, too_broad = MP.fault_probes()
+by_app, declarers, too_broad, unattributed, named_unresolved = MP.fault_probes()
 
 # THE FABRICATION THAT SHIPPED FOR A MINUTE. tests/key_collision_probe.py
 # mentions stonedesk.html and contains the word "plant". It plants nothing.
@@ -138,6 +163,39 @@ check('tests/faults/faultkit.js' not in declarers,
       'a tests/faults helper that names no app file is not a probe')
 check('tests/sairncode_gates.js' not in declarers,
       'the SUITE is not a probe -- only the control that mutates is')
+
+# ── ATTRIBUTION IS `<app>.html`, AND NOT EVERY APP HAS ONE ──────────────────
+# Added 2026-09-17. Two DIFFERENT invisibilities, and they are not the same
+# defect: a probe can be counted in the TOTAL and credited to no app, or it can
+# resolve to nothing and be absent from both. The second is the one the
+# open-work row got wrong -- it said the total "does move, so nothing is lost"
+# -- and tests/sairncash_fault_probe.py is the counterexample.
+check(all(p in declarers for p, _t in unattributed),
+      'an unattributed probe IS in the declared total -- that list is about '
+      'the per-app column only')
+check(all(not any((a + '.html') in t for a in MP.TM.apps())
+          for _p, t in unattributed),
+      'nothing is called unattributed that resolves to an app .html')
+check(len(unattributed) > 0,
+      'the unattributed list is non-empty -- if it ever goes to zero this arm '
+      'and the disclosure it holds are asserting a property of nothing')
+
+check('tests/sairncash_fault_probe.py' in named_unresolved,
+      'a file the AUTHOR named *_fault_probe.py, resolving to nothing, is '
+      'remembered by name rather than dropped in silence')
+check('tests/sairncash_fault_probe.py' not in declarers,
+      '...and it is genuinely NOT counted -- the total does not move for it, '
+      'which is the half the open-work row had backwards')
+check(all(p not in declarers for p in named_unresolved),
+      'nothing is in both the declared total and the resolved-to-nothing list')
+# THE DOUBLE-REPORT THAT WAS THERE FOR A MINUTE. transport_timeout_sweep.js
+# resolves fifteen targets and is dropped by the CAP, so it reaches the same
+# `not targets` branch -- and saying "no target could be resolved" about it
+# would be a second, WRONG explanation for a fact the cap bullet already
+# explains correctly.
+check('tests/faults/transport_timeout_sweep.js' not in named_unresolved,
+      'a file excluded by the CAP is not ALSO reported as resolving to '
+      'nothing -- one fact, one explanation')
 
 # Two apps from one probe, because the attribution reads string constants
 # rather than splitting the filename.
@@ -233,8 +291,12 @@ try:
         'import sys\n'
         'sys.path.insert(0, %r)\n' % os.path.join(REPO, 'tools') +
         'import master_plan as G\n'
-        # Three-tuple since 2026-09-15: (by_app, declarers, too_broad).
-        'G.fault_probes = lambda: ({}, [], [])\n'
+        # FIVE-tuple since 2026-09-17: (by_app, declarers, too_broad,
+        # unattributed, named_unresolved). The shape is restated literally
+        # rather than star-unpacked, because a fake that silently absorbs a new
+        # return value is how this arm would go on passing against a generator
+        # whose signature had moved out from under it.
+        'G.fault_probes = lambda: ({}, [], [], [], [])\n'
         'G.DOC = %r\n' % out +
         'sys.exit(G.main([]))\n')
     p = subprocess.run([sys.executable, shim], cwd=REPO, capture_output=True,

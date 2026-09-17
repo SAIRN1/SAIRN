@@ -218,7 +218,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
 | **The list-drift sweep: 12 candidates, ONE real defect &mdash; and it was inside the probe built to catch this exact shape** | **SWEPT 2026-09-15 (CC)** &mdash; `tools/pinned_list_drift_check.py` (report-only, NOT_PROMOTED), `tests/run_pinned_list_drift_probe.py` all arms pass, triage written up in `docs/2026-09-15-pinned-lis | `tests/phi_cache_scoped_to_user.js`, `tests/run_pinned_list_drift_probe.py` |
 | **The independent-review rule on Tier A code was real and enforced by nothing but remembering &mdash; it is push-gate check 13 now** | **BUILT 2026-09-15 (CC)**, BLOCKING &mdash; `tools/tier_a_review_gate.py`, `docs/tier-a-reviews.json`, check 13 in `tools/sairn_push_gate_hook.py`; `tests/run_tier_a_review_gate_probe.py` all arms pas | `tests/run_tier_a_review_gate_probe.py` |
-| **The `fault` column can read 0 for an app whose risk lives in `api/` rather than in its `.html`** | **MEASURED 2026-09-15 (Hank)**, nothing changed. `tools/master_plan.py` is being accurate; the READING of it is what misleads | `tests/sairncash_fault_probe.py` |
+| **The `fault` column can read 0 for an app whose risk lives in `api/` rather than in its `.html` &mdash; and for the probe that FOUND it, the total does not move either** | **DISCLOSED 2026-09-17 (Hank)** &mdash; two generated bullets in `tools/master_plan.py`, 8 new arms in `tests/run_master_plan_probe.py`, 3 sabotages killed. The attribution rule is unchanged | `tests/failsafe/countersign_coverage_probe.py`, `tests/faults/transport_timeout_sweep.js`, `tests/run_master_plan_probe.py`, `tests/sairncash_fault_probe.py` |
 | **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
@@ -547,8 +547,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 266 |
-| `declared` | 231 |
-| `declared+index` | 6 |
+| `declared` | 230 |
+| `declared+index` | 7 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 

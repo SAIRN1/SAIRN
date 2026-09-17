@@ -183,6 +183,33 @@ def tiered_apps():
     return p.returncode == 0, problems, out
 
 
+def _targets_phrase(targets):
+    """Render a probe's resolved target basenames for the document.
+
+    THE LITERAL STRING `None` IS NOT A FILENAME. A `MUTATIONS` entry can
+    resolve to a tuple whose first element is None; `os.path.basename(str(...))`
+    turns that into the four characters `None`, and the first run of the
+    disclosure below published **targets `None`** for
+    `tests/failsafe/countersign_coverage_probe.py`. A generated document
+    asserting a file that does not exist is the fabrication shape this whole
+    column exists to refuse, so it is said plainly instead.
+
+    THE COUNT IS NOT CHANGED HERE, deliberately. That probe is in `declarers`
+    only because this non-target made its `targets` set non-empty, so dropping
+    it would move the declared total -- a different decision from rendering
+    honestly, and one that belongs in the open-work row rather than inside a
+    formatting helper.
+    """
+    real = [t for t in targets if t != 'None']
+    if not real:
+        return 'no resolvable target name'
+    phrase = 'targets ' + ', '.join('`%s`' % t for t in real)
+    if len(real) != len(targets):
+        phrase += ', plus %d entry that resolved to no filename' % (
+            len(targets) - len(real))
+    return phrase
+
+
 def fault_probes():
     """{app: [probes that DECLARE they plant a defect in that app's source]}.
 
@@ -193,6 +220,7 @@ def fault_probes():
     import mutation_anchor_check as MA
     names = TM.apps()
     out, declarers, too_broad = {}, set(), []
+    unattributed, named_unresolved = [], []
     root = os.path.join(REPO, 'tests')
     for dirpath, dirs, files in os.walk(root):
         dirs[:] = [d for d in dirs if d != '__pycache__']
@@ -248,13 +276,68 @@ def fault_probes():
                     targets |= js_targets
 
             if not targets:
+                # ── THE AUTHOR SAID SO AND THE TOOL DROPPED IT SILENTLY ─────
+                # MEASURED 2026-09-17 and it corrects the open-work row that
+                # sent me here, which said the total "does move, so nothing is
+                # lost, only mis-summarised". For the probe that MOTIVATED
+                # that row -- tests/sairncash_fault_probe.py -- nothing moves
+                # at all: it has no parseable MUTATIONS block, and route (b)
+                # finds no `<app>.html` in a probe whose subject is five files
+                # under api/sairncash/, so `targets` is empty and it never
+                # reaches `declarers`. It is absent from the per-app column
+                # AND from the total.
+                #
+                # A FILENAME ENDING `_fault_probe.py` IS THE AUTHOR DECLARING
+                # IT, which is route (b)'s entire premise. Dropping that
+                # declaration without a word is the one thing this generator
+                # already refuses to do elsewhere -- the three-app cap prints
+                # what it excludes for exactly this reason. So the name is
+                # kept and printed. The COUNT is deliberately not changed:
+                # crediting a probe with no resolvable target would be the
+                # inference that produced nineteen StoneDesk probes.
+                # A file the CAP excluded is already disclosed by its own
+                # bullet, with the right reason. Reporting it here too would
+                # say "no target could be resolved" about a file where fifteen
+                # were -- a second, wrong explanation for a fact already
+                # correctly explained, which is worse than not mentioning it.
+                if (FAULT_PROBE_NAME.search(f) or _is_js_probe) and not any(
+                        r == rel for r, _n in too_broad):
+                    named_unresolved.append(rel)
                 continue
             declarers.add(rel)
+            credited = False
             for a in names:
                 if (a + '.html') in targets:
                     out.setdefault(a, []).append(rel)
+                    credited = True
+            # ── ATTRIBUTION IS `<app>.html` AND SOME APPS HAVE NO `.html` ───
+            # Found 2026-09-15 while writing tests/sairncash_fault_probe.py and
+            # left as a reading hazard; closed 2026-09-17 by printing it.
+            #
+            # All three declaration routes above resolve a target to a
+            # BASENAME and credit an app only on `<app>.html`. That rule is
+            # correct and is the fix for an early draft that INFERRED targets
+            # and reported nineteen fault probes for StoneDesk. Its blind spot
+            # is not the rule, it is the assumption underneath: that an app's
+            # source is one `.html` file. For SAIRNcash the entire product is
+            # five endpoints under `api/sairncash/`, so a probe planting
+            # defects in the webhook signature, the ordering guard and the
+            # trial-retry key resolves to `*.js` basenames, is counted in
+            # `declarers` -- the TOTAL is right -- and is credited to no app,
+            # so the per-app column reads 0.
+            #
+            # "NO FAULT PROBE" AND "NO FAULT PROBE ON THE APP FILE" ARE
+            # DIFFERENT STATEMENTS and the table only makes the second. The
+            # attribution rule is deliberately NOT changed: inferring an app
+            # from an `api/<app>/` path would reintroduce inference on the one
+            # column that exists to say whether a guard has been seen to DENY.
+            # What changes is that the gap is now NAMED rather than left for a
+            # reader to discover, the same decision already made for the
+            # three-app cap -- excluded is not the same as absent.
+            if not credited:
+                unattributed.append((rel, sorted(targets)))
     return ({k: sorted(set(v)) for k, v in out.items()}, sorted(declarers),
-            sorted(too_broad))
+            sorted(too_broad), sorted(unattributed), sorted(named_unresolved))
 
 
 def suites_by_app(tests, names):
@@ -382,7 +465,8 @@ def build():
                       'The resource counts are the spine of this document and '
                       'guessing them is the failure it exists to end.' % e)
     tier_clean, tier_problems, _tier_out = tiered_apps()
-    faults, fault_declarers, fault_too_broad = fault_probes()
+    (faults, fault_declarers, fault_too_broad, fault_unattributed,
+     fault_named_unresolved) = fault_probes()
     suites = suites_by_app(tests, names)
 
     tv = closing_error.Traverse(DOC)
@@ -538,6 +622,41 @@ def build():
           'absent, which is why they are printed.'
           % (len(fault_too_broad),
              ', '.join('`%s` (%d apps)' % (r, n) for r, n in fault_too_broad)))
+    if fault_unattributed:
+        W('- **%d declared probe(s) are credited to NO app, because '
+          'attribution is `<app>.html` and not every app has one.** Named '
+          'here rather than left to be discovered: %s. They ARE in the %d '
+          'declared total above, so nothing is lost — only mis-summarised. '
+          'The case that found this is SAIRNcash, whose entire product is '
+          'five endpoints under `api/sairncash/`: a probe planting defects in '
+          'the webhook signature, the ordering guard and the trial-retry key '
+          'resolves to `*.js` basenames and credits no app, so that row reads '
+          '**0**. **“No fault probe” and “no fault probe ON THE APP FILE” are '
+          'different statements and this table only makes the second.** The '
+          'attribution rule is deliberately unchanged — inferring an app from '
+          'an `api/<app>/` path would put inference back into the one column '
+          'that exists to say whether a guard has been seen to DENY.'
+          % (len(fault_unattributed),
+             ', '.join('`%s` (%s)' % (r, _targets_phrase(tg))
+                       for r, tg in fault_unattributed),
+             len(fault_declarers)))
+    if fault_named_unresolved:
+        W('- **%d file(s) NAME themselves a probe and resolve to no target at '
+          'all, so they are in neither the column nor the total:** %s. This '
+          'is a harder case than the one above and it corrects a note that '
+          'said the total *“does move, so nothing is lost”* — for '
+          '`tests/sairncash_fault_probe.py` nothing moves. It declares no '
+          'parseable `MUTATIONS` block, and the filename route reads '
+          '`<app>.html` string constants out of a probe whose subject is five '
+          'files under `api/sairncash/`, so it resolves to nothing and is '
+          'dropped before it is ever counted. **A filename ending '
+          '`_fault_probe.py` is the author declaring it**, which is that '
+          'route’s whole premise, so the declaration is printed rather than '
+          'discarded in silence. The count is deliberately NOT raised: '
+          'crediting a probe with no resolvable target is the inference that '
+          'produced nineteen StoneDesk probes.'
+          % (len(fault_named_unresolved),
+             ', '.join('`%s`' % r for r in fault_named_unresolved)))
     W('- **`tiered` means `criticality_tier_check.py` raised nothing**, which '
       'is a completeness check, not a judgement about whether a tier is right.')
     W('')
