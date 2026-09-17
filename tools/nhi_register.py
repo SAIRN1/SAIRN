@@ -429,11 +429,11 @@ IDENTITIES = [
         'id': 'clone-push-access',
         'kind': 'VCS credential (per working copy)',
         'owner': 'Michael',
-        'scope': 'FOUR working copies -- SAIRN-hank, SAIRN-cc, SAIRN-cody, '
-                 'SAIRN-fourth -- each able to push to origin/main, credentialed '
-                 'by the Windows credential manager rather than by anything in '
-                 'this repo. An agent session acts as this identity whenever it '
-                 'pushes, so every commit on main was made by it',
+        # DERIVED at render time by clone_scope(). The literal below is never
+        # published -- it is here so the key exists and so a reader who greps
+        # for the row finds the reason rather than a blank.
+        'scope_derived': 'clones',
+        'scope': '(derived from disk -- see clone_scope())',
         'credentials': [],
         'source': 'attested',
         'rotation': 'per-clone, in the credential manager. A Windows credential-'
@@ -446,6 +446,85 @@ IDENTITIES = [
 
 class CouldNotTell(Exception):
     pass
+
+
+# ── THE CLONE ROW IS DERIVED NOW, AND THE REASON IS THAT IT WAS WRONG ──────
+# (2026-09-17.) `clone-push-access` said "FOUR working copies -- SAIRN-hank,
+# SAIRN-cc, SAIRN-cody, SAIRN-fourth". There are FIVE. `Documents\SAIRN-hover`
+# is a clone of the same remote with the same push credential, and it was
+# missing from the identity that exists to say who can push.
+#
+# THAT IS THE SECOND TIME THIS EXACT UNDERCOUNT HAS HAPPENED HERE. CLAUDE.md
+# records the first: the clone registry said "Four clones" and named four for
+# WEEKS after a fifth existed and was pushing commits, corrected 2026-09-16 when
+# a tool discovered five. A hand-written list claiming to match a population
+# nothing compares it to is the defect shape this whole register was built
+# against -- and it was sitting inside the register.
+#
+# So the population is READ FROM DISK rather than typed. Sibling directories of
+# this repo named SAIRN-*, kept when they are git clones of the SAME origin.
+#
+# IT FAILS CLOSED. If the enumeration cannot run -- no readable parent, no git,
+# no origin on this repo -- it raises rather than falling back to a list, because
+# a register that quietly reverts to the hardcoded four would report exactly the
+# defect it was changed to fix, and nothing downstream could tell.
+#
+# READ-ONLY, AND THE BOUNDARY IS DELIBERATE. One of the five is the hover
+# auditor's clone, which a build agent must not reach into. This reads ONE
+# value, `remote.origin.url`, and writes nothing anywhere; NOT counting that
+# clone is the defect, so leaving it out is not the safe option.
+def sibling_clones():
+    import subprocess
+    try:
+        mine = subprocess.run(
+            ['git', '-C', REPO, 'config', '--get', 'remote.origin.url'],
+            capture_output=True, text=True, timeout=20).stdout.strip()
+    except Exception as e:
+        raise CouldNotTell('could not read this clone\'s own origin (%s), so '
+                           'no sibling can be compared to it' % e)
+    if not mine:
+        raise CouldNotTell('this working copy has no remote.origin.url, so '
+                           '"a clone of the same remote" has nothing to mean')
+    parent = os.path.dirname(REPO)
+    try:
+        entries = sorted(os.listdir(parent))
+    except OSError as e:
+        raise CouldNotTell('could not list %s (%s)' % (parent, e))
+    found = []
+    for name in entries:
+        if not name.startswith('SAIRN-'):
+            continue
+        path = os.path.join(parent, name)
+        if not os.path.isdir(os.path.join(path, '.git')):
+            continue
+        try:
+            url = subprocess.run(
+                ['git', '-C', path, 'config', '--get', 'remote.origin.url'],
+                capture_output=True, text=True, timeout=20).stdout.strip()
+        except Exception:
+            continue
+        if url == mine:
+            found.append(name)
+    if not found:
+        raise CouldNotTell(
+            'no sibling clone of %s was found beside %s -- this clone should '
+            'have found ITSELF at minimum, so the enumeration is broken rather '
+            'than the answer being zero' % (mine, parent))
+    return found
+
+
+def clone_scope():
+    names = sibling_clones()
+    return ('%d working copies -- %s -- each a clone of the same remote and '
+            'each able to push to origin/main, credentialed by the Windows '
+            'credential manager rather than by anything in this repo. An agent '
+            'session acts as this identity whenever it pushes, so every commit '
+            'on main was made by it. **COUNTED FROM DISK, not listed here** -- '
+            'this row said FOUR and named four while a fifth was pushing, which '
+            'is the second time that undercount has happened on this platform. '
+            'Note that the clones are NOT interchangeable: one of them is the '
+            'hover auditor, which does not build'
+            % (len(names), ', '.join(names)))
 
 
 def declared_credentials():
@@ -524,10 +603,17 @@ def render():
              'unlock*. It cannot answer *who owns every live credential*, '
              'because it finds credentials by scanning for `process.env.X` and '
              'three of the four identity classes here are not environment '
-             'variables at all -- a VCS token, a Postgres LOGIN role, and four '
+             'variables at all -- a VCS token, a Postgres LOGIN role, and the '
              'working copies credentialed by the Windows credential manager. '
              'This register is keyed on the IDENTITY; an env var appears as a '
              'credential *belonging to* one.')
+    L.append('')
+    L.append('**The `clone-push-access` row is COUNTED FROM DISK, not typed.** '
+             'It read *"FOUR working copies"* and named four until 2026-09-17, '
+             'while a fifth clone of the same remote held the same push '
+             'credential -- the second time that undercount has happened here. '
+             'The enumeration FAILS CLOSED: if it cannot run, this document '
+             'refuses to generate rather than reverting to a list.')
     L.append('')
     L.append('**A blank `last rotated` means NOBODY KNOWS, not never.** No clone '
              'holds any of these, so rotation dates are attested and none has '
@@ -537,8 +623,9 @@ def render():
     L.append('|---|---|---|---|---|---|')
     for i in IDENTITIES:
         creds = ', '.join('`%s`' % c for c in (i.get('credentials') or [])) or '&mdash;'
+        scope = clone_scope() if i.get('scope_derived') == 'clones' else i['scope']
         L.append('| **%s** | %s | **%s** | %s | %s | %s |'
-                 % (i['id'], i['kind'], i['owner'], i['scope'], creds, i['source']))
+                 % (i['id'], i['kind'], i['owner'], scope, creds, i['source']))
     L.append('')
     warned = [i for i in IDENTITIES if i.get('warning')]
     if warned:
@@ -660,6 +747,49 @@ def _selftest():
               'sairn_backup_reader' in created_roles(), created_roles())
     except CouldNotTell as e:
         check('the derived halves read', False, e)
+
+    # ── 3b. THE CLONE COUNT IS MEASURED, AND THE MEASUREMENT IS DRIVEN ──────
+    # Added 2026-09-17 with the derivation itself. An arm that only asserted
+    # "clone_scope() returns a string" would pass on a function that had
+    # silently reverted to a hardcoded list, which is the exact failure this
+    # replaced -- so the arms below check that it FINDS THIS CLONE, that it
+    # finds MORE THAN THE FOUR the old row named, and that it REFUSES rather
+    # than guessing when it cannot read.
+    print('\n3b. the clone population is counted from disk and fails closed')
+    try:
+        names = sibling_clones()
+        me = os.path.basename(REPO)
+        check('the enumeration finds THIS clone -- if it cannot find the one it '
+              'is running in, nothing it says about the others is worth reading',
+              me in names, (me, names))
+        check('it finds the FIFTH clone the typed list was missing',
+              len(names) >= 5, names)
+        body_scope = clone_scope()
+        check('...and the published scope names the count it actually measured',
+              str(len(names)) + ' working copies' in body_scope, body_scope[:80])
+        check('the old hardcoded four is not in the output',
+              'FOUR working copies' not in body_scope)
+    except CouldNotTell as e:
+        check('the clone enumeration ran', False, e)
+
+    # THE FAIL-CLOSED HALF, DRIVEN. A check that depends on another tool must
+    # fail CLOSED when that tool is absent (PR 1.11), and the only way to know
+    # this one does is to take the tool away.
+    try:
+        real = globals()['REPO']
+        globals()['REPO'] = os.path.join(real, '__no_such_clone__')
+        raised = False
+        try:
+            sibling_clones()
+        except CouldNotTell:
+            raised = True
+        except Exception:
+            raised = False
+        check('with an unreadable repo root it RAISES rather than returning a '
+              'list -- a quiet revert to the typed four is the defect itself',
+              raised)
+    finally:
+        globals()['REPO'] = real
 
     print('\n4. a blank rotation date is NOT rendered as "never"')
     try:

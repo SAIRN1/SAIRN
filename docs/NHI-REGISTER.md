@@ -4,7 +4,9 @@
 
 ## Why an identity register and not a list of secrets
 
-`docs/SECRETS-INVENTORY.md` answers *what does this variable unlock*. It cannot answer *who owns every live credential*, because it finds credentials by scanning for `process.env.X` and three of the four identity classes here are not environment variables at all -- a VCS token, a Postgres LOGIN role, and four working copies credentialed by the Windows credential manager. This register is keyed on the IDENTITY; an env var appears as a credential *belonging to* one.
+`docs/SECRETS-INVENTORY.md` answers *what does this variable unlock*. It cannot answer *who owns every live credential*, because it finds credentials by scanning for `process.env.X` and three of the four identity classes here are not environment variables at all -- a VCS token, a Postgres LOGIN role, and the working copies credentialed by the Windows credential manager. This register is keyed on the IDENTITY; an env var appears as a credential *belonging to* one.
+
+**The `clone-push-access` row is COUNTED FROM DISK, not typed.** It read *"FOUR working copies"* and named four until 2026-09-17, while a fifth clone of the same remote held the same push credential -- the second time that undercount has happened here. The enumeration FAILS CLOSED: if it cannot run, this document refuses to generate rather than reverting to a list.
 
 **A blank `last rotated` means NOBODY KNOWS, not never.** No clone holds any of these, so rotation dates are attested and none has been attested yet.
 
@@ -31,7 +33,7 @@
 | **dental-bi-export** | shared-secret identity | **Michael** | the SAIRNdental BI export key -- authorises a bulk data pull out of a PHI-bearing app | `DENTAL_BI_KEY` | repo |
 | **rate-limit-salts** | hashing salt (two variables, one purpose) | **Michael** | salts the hashed identifiers the dental and StoneDesk PUBLIC rate limiters key on. Leaking one makes the stored hashes reversible, so these protect the anonymity of the identifiers rather than access to anything. Two variables under one identity because they are the same decision twice | `DENTAL_RATE_LIMIT_SALT`, `STONEDESK_RATE_LIMIT_SALT` | repo |
 | **github-pat** | VCS token | **Michael** | push to SAIRN1/SAIRN, and read of a PUBLIC repository. ATTESTED ONLY -- it appears nowhere in tracked files by design, so this row cannot be derived and cannot be verified from here | &mdash; | attested |
-| **clone-push-access** | VCS credential (per working copy) | **Michael** | FOUR working copies -- SAIRN-hank, SAIRN-cc, SAIRN-cody, SAIRN-fourth -- each able to push to origin/main, credentialed by the Windows credential manager rather than by anything in this repo. An agent session acts as this identity whenever it pushes, so every commit on main was made by it | &mdash; | attested |
+| **clone-push-access** | VCS credential (per working copy) | **Michael** | 5 working copies -- SAIRN-cc, SAIRN-cody, SAIRN-fourth, SAIRN-hank, SAIRN-hover -- each a clone of the same remote and each able to push to origin/main, credentialed by the Windows credential manager rather than by anything in this repo. An agent session acts as this identity whenever it pushes, so every commit on main was made by it. **COUNTED FROM DISK, not listed here** -- this row said FOUR and named four while a fifth was pushing, which is the second time that undercount has happened on this platform. Note that the clones are NOT interchangeable: one of them is the hover auditor, which does not build | &mdash; | attested |
 
 ## Open warnings carried on an identity
 
