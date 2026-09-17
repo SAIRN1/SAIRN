@@ -2133,8 +2133,8 @@
       "task": "SD_AUTH_SECRET stage B encryption split, C kid rotation, D per-app secrets",
       "claimed_at": "2026-09-17T17:55:29Z",
       "claimed_at_epoch": 1789667729.4993618,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T22:36:38Z"
     }
   ]
 }
