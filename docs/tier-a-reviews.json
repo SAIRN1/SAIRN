@@ -486,6 +486,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T01:22:16Z",
+      "resources": [
+        "rf_claim_photos",
+        "rf_claims"
+      ],
+      "files": [
+        "tests/roofing_claim_photo_export_mutation_control.js"
+      ],
+      "what": "NEW NEGATIVE CONTROL plus an RF_HTML override on the suite it controls. No product code: sairnroofing.html is untouched, the control asserts byte-identity and asks git. It names rf_claims and rf_claim_photos because that is what the export it exercises reads. WHAT A REVIEWER SHOULD CHECK: (1) THE PREMISE. I claim the four Class A export gaps were already closed by c2430a3a on 2026-09-14 and that what was missing is a repeatable control, not the exports. Check that against the shipped DNT_EXPORTS and RF_REPORTS rather than against my summary -- if any of the four is still exporting a derived summary or the wrong resource, this commit is answering the wrong question. (2) Mutations 1 and 2 are the document's own sabotages made repeatable; confirm they are the SAME demonstrations rather than adjacent ones I found easier. (3) Mutation 3 replaces a refusal with an empty-but-provisioned result. Confirm the suite fails because it noticed the refusal was swallowed and not because provisioned:true is itself unexpected in that arm.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
