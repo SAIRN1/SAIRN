@@ -1565,6 +1565,16 @@
       "claimed_at_epoch": 1789613678.126873,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789619644",
+      "session": "fourth",
+      "subject": "sairnlaw",
+      "task": "jurisdiction seeding next gate",
+      "claimed_at": "2026-09-17T04:34:04Z",
+      "claimed_at_epoch": 1789619644.005821,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
