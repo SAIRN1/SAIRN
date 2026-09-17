@@ -77,9 +77,56 @@ delete from public.sairncash_trial
 -- request is checked against -- api/sairncash/trial-renew.js reads these
 -- rows to grant a fresh window.
 --
--- Verify after running (expect 0):
+-- ── VERIFY AFTER RUNNING, AND A RE-SELECT IS THE WEAK VERSION ────────────
+-- The in-editor count is here because it is cheap, but it is the same session
+-- that just ran the delete asking itself whether the delete happened. This
+-- platform's standing rule is that an insert or a push succeeding is not proof
+-- the live app sees it, and the same holds for a removal.
+--
 --   select count(*) from public.sairncash_trial
---    where email like '%@sairncash-verification.example';
+--    where email like '%@sairncash-verification.example';   -- expect 0
+--   select count(*) from public.sairncash_trial
+--    where email = 'probe@example.test';                    -- expect 0
+--
+-- ── THE STRONG VERSION: PROVE IT THROUGH THE PRODUCT, NO CREDENTIALS ─────
+-- `probe@example.test` has a token, so its removal is checkable from outside
+-- the database entirely -- by the same public endpoint a real user hits. Run
+-- these three IN ONE SITTING, because the third is what makes the second mean
+-- anything. Verbatim, 2026-09-17; the token is the one that row actually holds.
+--
+--   1. THE ROW IS GONE
+--      curl -s -X POST https://sairn.vercel.app/api/sairncash/trial-verify \
+--        -H 'Content-Type: application/json' \
+--        -d '{"trialToken":"761ff945dce0c31c88743b080e1f283fae81150f431fb1d77eb9befc9e8ca7ba"}'
+--
+--      BEFORE the delete, measured 2026-09-17 09:5x UTC:
+--        {"valid":true,"expiresAt":"2026-10-17T13:28:28.774+00:00","daysLeft":30,
+--         "customerId":"4026f5a7-3a6a-485a-9acb-da479281d4e3","firebaseToken":"..."}
+--      AFTER the delete, required:
+--        {"valid":false}
+--
+--   2. THE ENDPOINT IS ALIVE AND DISCRIMINATING -- not answering false because
+--      it is broken, which is the way step 1 could pass without the delete
+--      having landed at all.
+--      curl ... -d '{"trialToken":""}'        -> 400 "Missing trialToken"
+--
+--   3. `valid:false` REALLY IS THIS ENDPOINT'S NOT-FOUND ANSWER, established
+--      against a token that has never existed, in the same run:
+--      curl ... -d '{"trialToken":"0000000000000000000000000000000000000000000000000000000000000000"}'
+--                                             -> {"valid":false}
+--
+-- ALL THREE, OR THE CHECK HAS NOT BEEN DONE. Step 1 alone cannot tell a
+-- successful delete from an endpoint that has started saying false to
+-- everything -- and 2 and 3 were both measured passing on 2026-09-17 WHILE the
+-- row was still live, so they are known to discriminate rather than assumed to.
+--
+-- ⚠ NOT RUN BY THE SESSION THAT WROTE THIS, and the reason is capability, not
+-- approval. Michael approved the cleanup on 2026-09-17. This clone has no
+-- Supabase credentials, no tool in tools/ executes SQL, and no SAIRNcash
+-- endpoint has a delete verb -- api/sairncash/trial-renew.js is admin-secret
+-- gated and only moves `expires_at` FORWARD from now, so it cannot expire a
+-- row either. Re-confirmed live at 2026-09-17: the token above still returns
+-- valid:true, so as of that read the delete had not been run by anybody.
 --
 -- TABLE NAME VERIFIED, not assumed: api/sairncash/trial-start.js line 40
 -- posts to /rest/v1/sairncash_trial (singular), and its own 503 names
