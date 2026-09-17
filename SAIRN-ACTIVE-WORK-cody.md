@@ -5441,3 +5441,166 @@ change: 0 of 5 identical on 2026-09-14, four differing because the APP was fixed
 and the must-copy-exactly DOCUMENT was not. **Wiring an automatic sweep onto a
 checker whose current output is four stale rows would fire on every confirmed
 defect and say nothing.** The document and the app agreeing is the precondition.
+
+## 2026-09-16/17 — twelve red suites cleared, and the one that was never actually red
+
+### The headline is not "twelve fixed", it is that ELEVEN OF TWELVE WERE THE PROBE
+
+Every one of these was a suite reported RED. Eleven of them had nothing wrong
+with the thing they test — the CONTROL had rotted, been miswired, or was pinned
+to a number the app had legitimately moved past. **A red control is not evidence
+about the subject, and a green one after a rebaseline is not either unless
+somebody looked at what moved.** Each rebaseline below names the commit that
+moved it.
+
+### Mutation 9 — the licensing gate was NOT undetected, and that correction matters
+
+The diagnosis handed to me said *deleting the licensing gate from sd-render.js
+currently ships completely undetected*. **It does not.** `api/license-trial-gate.test.js:233`
+asserts the gate's condition is present in all three handlers and goes red when
+it is removed — proven now, not argued.
+
+**What was actually broken is the probe's anchor.** It was the literal line
+`if (!isPaid && lic.trial_ends_at && ...`, and `isPaid` was split into
+knownPaid / knownNotPaid / cannot-tell (the three-state fix at
+`api/sd-render.js:164-177`). The line stopped existing byte-for-byte and the arm
+reported **ANCHOR-0** from then on — so the one mutation asking *"does deleting
+the whole licensing gate get noticed"* had never been run. **The gap was in the
+evidence, not in the gate**, and those are different repairs.
+
+**It reported rather than skipped, which is the only reason it was found.** A
+probe that treated a dead anchor as a pass would have been printing nine-of-nine
+green over a live security gate nothing was testing.
+
+Fixed as a **compiled regex, not a line**, for the same reason arms 1 and 2
+became JSON transforms: say what to change, not what the bytes around it look
+like. `main()` still requires exactly one match. 10/10 bite.
+
+### The truthy-sum occurrence — assessed, then burned down rather than baselined
+
+`api/audit-checkpoint.js:396` sums `r.written`. **Not a defect**: `written` is
+produced 130 lines above as either the literal `0` or `written.length`, and
+`verifyTable()` returns no `written` at all. Nothing outside the module can put
+a string there.
+
+**Wrapped in `Number(...)` rather than added to the baseline**, deliberately. A
+baseline entry is a standing claim somebody has to keep true; the coercion is
+one word and cannot go stale. The baseline file's own instruction is *"to burn
+one down: wrap the term in Number(...)"*.
+
+### Cluster A — three pinned counts, one app that grew, and the third column CLOSED
+
+`sairnbiz` moved 13/11/2 → 14/14/0, and **the 2 going to 0 is the interesting
+half**: `local_only_shape_probe` recorded sb_po and sb_recv as an OPEN FINDING —
+business records with no route to a server. **20afb167 gave them a server call
+each.** The finding was RESOLVED, not relaxed, and the checker now lists both as
+`named resource`. The fourteenth collection is `sb_ts` from the timesheet work
+(b8f40738, a3c44c24), also covered. All three baselines restated together with
+what moved, because fixing one would leave the other two reading as separate
+defects.
+
+### Cluster B — a test double is a SECOND COPY of a signature
+
+Both probes stub `run_all_tests._run`. `_run()` grew a third return value
+(`retried`, the one re-run CONCURRENCY_SENSITIVE files get) and both stubs still
+returned two — so every arm died on `ValueError: not enough values to unpack`
+**before reaching a single assertion**. The runner was fine.
+
+**Fixed by asking the real function rather than pinning an arity**:
+`_GREEN = _run([], [], quiet=True)` — with nothing to run it spawns no
+subprocess and returns its own empty result. A fourth value would arrive here
+the day it arrives there. Same two-copies-of-one-idea shape the floor probe's
+own header describes for `_main_body`/`_hook_body`.
+
+### Cluster C — cleared by B's sibling, as predicted, and the arm was testing the wrong property
+
+`run_app_attribution_probe`'s control asserted the UNALIASED `app_of()`
+attributes **zero** files to SAIRNroofing. That held only while no test file was
+literally named `sairnroofing*`. One was added (`tests/sairnroofing_fault_probe.py`,
+c03646fb) and the name matcher reached it correctly. **The arm went red over a
+correctly-added file.**
+
+What the control actually needs is the DELTA — that the ALIAS LAYER, not the
+name matcher, moves the bulk. Restated that way (30 aliased vs 1 unaliased, plus
+an arm requiring every unaliased hit to carry the app name outright) it does not
+rot the next time somebody names a file after an app.
+`run_app_attribution_mutation_control` went green with it: **43/43, no second
+defect.**
+
+### Cluster D — the diagnosis was wrong, and the real cause is structural
+
+The note said these three *"read the verdict the whole gate stack returns"*.
+They do not — `check4_probe` already discriminates on `blocked_by_seam` and
+`names_field`. **The real cause: all three build a worktree at LOCAL HEAD, and
+in a five-clone repo local HEAD is behind origin/main most of the time.** The
+gate then refuses with *"the outgoing range <remote>..<local> could not be read"*
+— correctly, because the remote tip is not an object this clone has — **before
+the check under test is ever reached.** Measured: both check4 arms exit 1 with
+every reason flag False.
+
+Three repairs, and the first is the one that matters:
+
+- **the worktree is built on the FETCHED remote tip**, so the outgoing range is
+  exactly the fixture commit;
+- **one retry after a fetch** when the range is unreadable — the remote tip moved
+  *mid-run* on 2026-09-16 while check7 was between arms, which is how a five-clone
+  branch behaves and is not a flake to paper over;
+- **`could_not_run` is a third state and exits 3**, never folded into a verdict.
+  `blocked_by_seam: False` means *not asked*, not *not blocked*.
+
+**The refusal TEXT is now in the reported dict**, and it paid for itself
+immediately: the flags were all False and the text named the real reason on the
+first run after it was added.
+
+All three green, for the right reason.
+
+### Tier A sabotage coverage — 41 → 44, and one control found a real gap in its suite
+
+- **`api/sd-data-numeric-guards.test.js`** (law_trusttx — attorney client trust
+  money), 6 mutations. **Arm 5 was SILENT and that is the finding**: the arm
+  pinning the NaN-blind guard tested the negated-form regex against the WHOLE
+  file, and that expression appears **twice** — sen_payer_contracts and
+  sen_pay_rates, four hundred lines apart. Rewriting either back to `<= 0` left
+  the other satisfying the regex. **The suite now carries one arm per site**,
+  anchored on the push target that belongs to each branch, and arms 5 and 6
+  break one site each so neither can be satisfied by the other. 10/10 after.
+- **`api/sd-data-sb-void-role.test.js`** (sb_po/sb_recv voids — a money
+  decision that replaced a CLIENT CONSTANT), 6 mutations including the
+  un-void direction, could-not-tell folded into a pass, and **the other
+  direction**: a gate that fires on every write rather than on the transition,
+  which locks staff out of raising a purchase order. 10/10.
+- **`api/sd-data-mech-credentials.test.js`** (EPA 608 — a federal certification),
+  8 mutations. **A suite made mostly of refusals is one a gate that refused
+  EVERYTHING would satisfy**, so mutation 8 goes the other way: eligibility
+  answering rather than refusing an empty requirement list — *"anyone may go"*.
+  12/12.
+
+### The measurement, and where it is weaker than the last one
+
+`python tools/run_all_tests.py` **in this clone**, not in a detached worktree at
+origin/main — stated rather than glossed, because the twelve fixes live in the
+working tree and a worktree at origin/main could not have shown them recovered.
+**411 files, 1 SKIPPED** (check9_probe, a precondition, NOT a pass), **17
+failing, down from 32.** Every removed row was also run ALONE and read arm by
+arm.
+
+**Three of the removed rows were the load-only-red ones I was told NOT to
+force-classify** — `sairnlaw_billing_codes`, `stonedesk_server_backup`,
+`sairncare/test-alf-alerts-endpoint`. They passed in the full run this time.
+**That is not proof they are sound**; it is one more observation of a
+load-sensitive shape, and they stay out of CONCURRENCY_SENSITIVE.
+
+**And one row is NEW and is NOT MINE.** `tests/defect_register_capa_control.py`
+— three arms that drive `--factors` and expect exit 0 now get exit 2. **378db57e**
+*(refuse a defect record whose commit changed nothing but bookkeeping)* added a
+refusal that fires on the control's synthetic record. **The CONTROL went red,
+not the tool** — the refusal looks correct and the fixture is what has to move.
+Left for that commit's author: a control rewritten by somebody who did not add
+the rule is a control fitted to the behaviour it found.
+
+### Not done
+
+`run_invisible_in_pattern_probe` still refuses on a stale anchor — **its guard
+working as designed**, and it needs a new anchor cross-referenced against
+`mutation_anchor_probe`'s own tracked bad anchors, which is a separate piece of
+work rather than a line change.
