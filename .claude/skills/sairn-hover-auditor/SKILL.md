@@ -3118,6 +3118,19 @@ state; it is not license to retroactively soften how the original finding
 gets read. A future reader of the self-log should be able to see both: how
 bad it actually was when found, and what happened after.
 
+## Before building a new tool, run `hover_tool_index.py` -- checked, not assumed
+
+**A real gap, found on direct instruction, 2026-09-16: this role's own tools
+were listed across scattered prose sections here (this one, and "Two more
+tools" below) with no single, current index -- the exact shape that makes a
+future session rebuild something that already exists rather than find it.**
+`hover-audit-log/hover_tool_index.py` closes it: GENERATED from the real
+files on disk and each one's own opening docstring line, the same
+generated-not-hand-written discipline `docs/TOOLING-INVENTORY.md` already
+uses for the platform's tools, for the identical reason -- a hand-maintained
+list goes stale the moment a tool is added and nobody remembers the list.
+Run it before writing a new tool, not this section's prose from memory.
+
 ## Four tool proposals, evaluated honestly -- three built, one named as not realistic
 
 Evaluated 2026-09-14 against "build whichever are genuinely buildable from
