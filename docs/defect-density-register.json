@@ -7948,7 +7948,7 @@
       "recurrence_open": "Gating scheduling on the eligibility answer is still open and is a product decision; nothing refuses a dispatch today. The same server-half-without-a-caller shape is not checked for anywhere else on the platform."
     },
     {
-      "commit": "930ba9794e2d",
+      "commit": "a8fe1485d2c0",
       "date": "2026-09-17",
       "subject": "fix(dental): the CDT catalogue was versioned and the charges were not -- a posted charge re-read whatever the catalogue said today",
       "files": [
