@@ -1654,6 +1654,16 @@
       "claimed_at_epoch": 1789621274.1545558,
       "status": "released",
       "released_at": "2026-09-17T13:40:15Z"
+    },
+    {
+      "id": "cc-1789652432",
+      "session": "cc",
+      "subject": "sairnroofing-competitive",
+      "task": "worldwide competitive gap research pass for sairnroofing",
+      "claimed_at": "2026-09-17T13:40:32Z",
+      "claimed_at_epoch": 1789652432.9136865,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
