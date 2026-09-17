@@ -1644,6 +1644,16 @@
       "claimed_at_epoch": 1789618614.299041,
       "status": "released",
       "released_at": "2026-09-17T05:01:01Z"
+    },
+    {
+      "id": "cc-1789621274",
+      "session": "cc",
+      "subject": "sairncash-billing",
+      "task": "close the remaining sairncash billing flow gap after verifying stripe test mode is live",
+      "claimed_at": "2026-09-17T05:01:14Z",
+      "claimed_at_epoch": 1789621274.1545558,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
