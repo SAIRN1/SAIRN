@@ -1367,8 +1367,8 @@
       "task": "license_trial_gate_probe mutation 9, truthy_sum new occurrence, 5 shared-cause clusters, tier A sabotage coverage",
       "claimed_at": "2026-09-17T01:58:52Z",
       "claimed_at_epoch": 1789610332.5912628,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T13:37:22Z"
     }
   ]
 }
