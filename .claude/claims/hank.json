@@ -2113,8 +2113,8 @@
       "task": "one-time delivery proof through the watchdog heartbeat",
       "claimed_at": "2026-09-17T15:32:18Z",
       "claimed_at_epoch": 1789659138.246037,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T17:13:00Z"
     }
   ]
 }
