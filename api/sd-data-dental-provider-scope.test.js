@@ -132,6 +132,54 @@ async function main() {
     assert.ok(/owner/i.test(m), 'message must say who can fix it: ' + m);
   });
 
+  // ── THE COULD-NOT-TELL PATH, ADDED 2026-09-17 ─────────────────────────
+  // FOUND BY THE NEGATIVE CONTROL, NOT BY REVIEW. Replacing the 502 refusal
+  // with `dntScopeIds = null` left this suite GREEN: with no scope ids the
+  // filter below is skipped entirely and the scoped provider reads the WHOLE
+  // practice's patients. Every arm here drove a lookup that SUCCEEDED, so the
+  // one branch where the patient list is UNKNOWN was never entered -- the same
+  // shape as an arm that asserts a refusal and never asserts what happens when
+  // the refusal cannot be decided.
+  //
+  // A FAILED LOOKUP IS NOT AN EMPTY LOOKUP. dntPatientIdsForProvider returns
+  // null on a bad response and `{}` on a real provider with no appointments;
+  // folding the first into the second would read as "no patients" and quietly
+  // hand back everyone instead.
+  await test('a FAILED patient-scope lookup refuses 502 -- it never falls through to an unfiltered read', async () => {
+    const seen = [];
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', 500],          // the scope lookup cannot answer
+      ['dnt_patients?', PATIENT_ROWS]
+    ], seen));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, tokenFor('provider', 'emp-provider')), res);
+    assert.strictEqual(res.statusCode, 502, 'a scope that could not be determined must refuse');
+    assert.strictEqual(res.body.error.code, 'SCOPE_LOOKUP_FAILED');
+    assert.ok(!('data' in res.body), 'a refusal must never carry a data array');
+    // AND IT STOPPED BEFORE READING PHI. Refusing after the patient table has
+    // already been fetched would still be a refusal and would still have put
+    // every patient row in memory on a request that was not entitled to them.
+    assert.ok(!seen.some((u) => u.indexOf('dnt_patients?') !== -1),
+      'the patient table was read despite the scope being unknown: ' + seen.join(' | '));
+  });
+
+  await test('...and a provider with NO appointments is an EMPTY list, not a failure', async () => {
+    // The other half of the pair. `{}` and null are different answers and the
+    // code distinguishes them; without this arm, "refuse when the lookup
+    // fails" could be satisfied by refusing whenever it returns nothing --
+    // which would lock out every newly-linked provider on their first day.
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', []],
+      ['dnt_patients?', PATIENT_ROWS]
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, tokenFor('provider', 'emp-provider')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.deepStrictEqual(res.body.data, [], 'no appointments means no patients, not every patient');
+  });
+
   await test('owner reading dnt_patients -> practice-wide, no provider lookup at all', async () => {
     const seen = [];
     const handler = loadHandler(routedFetch([['dnt_patients?', PATIENT_ROWS]], seen));
