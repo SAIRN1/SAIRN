@@ -778,6 +778,82 @@ t('TEETH -- the OLD expression latches on the same five runs, or this proves not
     'the fixture no longer reproduces the latch -- the arm above tests nothing');
 });
 
+// ── 4c. THE ALERT CHANNEL'S RESTORE TEST ───────────────────────────────────
+// `notify_channel.configured` says three variables are SET. Resend accepting a
+// send says the provider took it. NEITHER is delivery, and this platform has
+// twice mistaken one of those for another -- the 2026-09-15 state where every
+// planned alert ended "nobody was told" under an HTTP 200, and the note that
+// said an accepted resend_id proved the mail path worked.
+//
+// THE TWO PHASES ARE THE POINT. Delivery is asynchronous, so polling in the
+// same request records `sent` -- a non-answer -- as the answer.
+section('4c. the alert channel proves itself, and accepted is not delivered');
+
+t('NO PROOF AT ALL IS DUE -- never tested must not read as recently fine', () => {
+  assert.strictEqual(W.proofIsDue(null, NOW), true);
+  assert.strictEqual(W.proofIsDue({}, NOW), true);
+});
+t('a FRESH proof is not due again', () => {
+  const p = { sent_at: new Date(NOW - 3600 * 1000).toISOString() };
+  assert.strictEqual(W.proofIsDue(p, NOW), false);
+});
+t('...and an OLD one is, at the declared interval and not a retyped number', () => {
+  const old = new Date(NOW - (W.CHANNEL_PROOF_INTERVAL_SECONDS + 60) * 1000);
+  assert.strictEqual(W.proofIsDue({ sent_at: old.toISOString() }, NOW), true);
+});
+t('an UNPARSEABLE sent_at is DUE, not silently fresh', () => {
+  assert.strictEqual(W.proofIsDue({ sent_at: 'not a date' }, NOW), true);
+});
+
+t('ACCEPTED IS NOT TERMINAL -- `sent` and `queued` need a follow-up', () => {
+  assert.strictEqual(W.proofNeedsFollowUp({ id: 'x', last_event: 'sent' }), true);
+  assert.strictEqual(W.proofNeedsFollowUp({ id: 'x', last_event: 'queued' }), true);
+  assert.strictEqual(W.proofNeedsFollowUp({ id: 'x', last_event: null }), true);
+});
+t('...and `delivered` is, so it stops asking', () => {
+  assert.strictEqual(W.proofNeedsFollowUp({ id: 'x', last_event: 'delivered' }), false);
+});
+t('A BOUNCE IS TERMINAL TOO -- a failed delivery is an answer, not a pending one', () => {
+  for (const e of ['bounced', 'complained', 'failed', 'canceled']) {
+    assert.strictEqual(W.proofNeedsFollowUp({ id: 'x', last_event: e }), false, e);
+  }
+});
+t('a proof with NO id cannot be followed up -- nothing to ask about', () => {
+  assert.strictEqual(W.proofNeedsFollowUp({ last_event: null }), false);
+  assert.strictEqual(W.proofNeedsFollowUp(null), false);
+});
+t('TEETH -- `sent` is NOT in the terminal list, which is the whole distinction', () => {
+  assert.strictEqual(W.PROOF_TERMINAL.indexOf('sent'), -1,
+    'accepted was folded into delivered, which is the confusion this exists to end');
+  assert.strictEqual(W.PROOF_TERMINAL.indexOf('queued'), -1);
+  assert.ok(W.PROOF_TERMINAL.indexOf('delivered') !== -1);
+});
+t('FOLLOW-UP WINS when both would fire -- and this arm found that it can', () => {
+  // WRITTEN AS "mutually exclusive" FIRST AND THAT WAS WRONG. A record with an
+  // id and no `sent_at` -- a send that was accepted while the write of its
+  // timestamp was lost -- makes BOTH predicates true. The handler is safe
+  // because it is `if (followUp) ... else if (due)`, so the follow-up wins; but
+  // the ordering was an unstated property of the code rather than a rule, and
+  // the wrong version of this arm is what surfaced it.
+  //
+  // THE ORDER MATTERS AND IS NOT ARBITRARY: sending again while the previous
+  // message is unresolved is how a weekly cadence turns into a storm, and it
+  // would also overwrite the id nobody had finished asking about.
+  const both = { id: 'x', last_event: null };
+  assert.strictEqual(W.proofNeedsFollowUp(both), true);
+  assert.strictEqual(W.proofIsDue(both, NOW), true,
+    'the fixture no longer makes both true, so this arm tests nothing');
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, 'cron-watchdog.js'), 'utf8');
+  const i = src.indexOf('proofNeedsFollowUp(priorProof)');
+  const j = src.indexOf('proofIsDue(priorProof, nowMs)');
+  assert.ok(i !== -1 && j !== -1 && i < j,
+    'the follow-up branch no longer comes first, so a pending proof can be '
+    + 'overwritten by a fresh send');
+  assert.ok(/\}\s*else if \(proofIsDue/.test(src),
+    'the two branches are no longer else-if, so both can fire in one run');
+});
+
 (async () => {
   for (const [name, fn] of queue) {
     if (!fn) { console.log('--- ' + name + ' ---'); continue; }

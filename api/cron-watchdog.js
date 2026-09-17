@@ -211,6 +211,64 @@ function alertTo(escalated) {
     : (process.env.SAIRN_OPS_EMAIL || null);
 }
 
+// ── THE ALERT CHANNEL'S RESTORE TEST (2026-09-17) ───────────────────────────
+// `notify_channel.configured` says three environment variables are SET. It does
+// not say a message reaches a human, and those are different claims. Resend
+// ACCEPTING a send is a third, also different: this file already records a
+// provider id so a send is positively observable, and an accepted id is not a
+// delivered mail.
+//
+// THIS IS THE SAME ARGUMENT AS A BACKUP NOBODY RESTORES, applied to the alert
+// path: the moment you need it is the moment you find out. So the channel is
+// exercised END TO END on a slow cadence, with the provider's own verdict
+// pulled back rather than inferred from the absence of an error.
+//
+// TWO PHASES, AND THE SPLIT IS NOT AN IMPLEMENTATION DETAIL. Delivery is
+// asynchronous: immediately after a send Resend reports `sent` or `queued`, not
+// `delivered`, so polling in the same request would record a non-answer as the
+// answer -- the exact shape this file's header is about. Phase 1 sends and
+// records the id. Phase 2, on a LATER run, asks Resend what became of it. A
+// proof that has not reached a terminal event yet says so.
+const CHANNEL_PROOF_INTERVAL_SECONDS = 7 * 24 * 3600;
+// Resend's terminal outcomes. `sent` and `queued` are deliberately NOT here:
+// they mean the provider accepted it, which is the claim this whole mechanism
+// exists to stop being mistaken for delivery.
+const PROOF_TERMINAL = ['delivered', 'bounced', 'complained', 'failed', 'canceled'];
+
+function proofIsDue(prior, nowMs) {
+  // NO PROOF AT ALL IS DUE. That is the state every deployment starts in, and
+  // treating "never tested" as "recently fine" is how a channel stays untested
+  // for ever.
+  if (!prior || !prior.sent_at) return true;
+  const age = (nowMs - Date.parse(prior.sent_at)) / 1000;
+  if (!isFinite(age)) return true;
+  return age > CHANNEL_PROOF_INTERVAL_SECONDS;
+}
+
+function proofNeedsFollowUp(prior) {
+  return !!(prior && prior.id && PROOF_TERMINAL.indexOf(prior.last_event) === -1);
+}
+
+async function resendEvent(id) {
+  // READ-ONLY. Asks the provider what became of one message. A failure here is
+  // reported as `unknown` with the reason, never as a delivery.
+  if (!process.env.RESEND_API_KEY) return { ok: false, why: 'no RESEND_API_KEY' };
+  try {
+    const r = await fetch('https://api.resend.com/emails/' + encodeURIComponent(id), {
+      headers: { Authorization: 'Bearer ' + process.env.RESEND_API_KEY }
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(function () { return ''; });
+      return { ok: false, why: 'Resend returned ' + r.status + ' ' + t.slice(0, 160) };
+    }
+    const b = await r.json().catch(function () { return {}; });
+    return { ok: true, last_event: (b && b.last_event) || null,
+             to: (b && b.to) || null, created_at: (b && b.created_at) || null };
+  } catch (e) {
+    return { ok: false, why: String((e && e.message) || e).slice(0, 160) };
+  }
+}
+
 async function sendAlert(to, subject, text) {
   if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
     return { sent: false, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL not configured' };
@@ -464,6 +522,46 @@ module.exports = async (req, res) => {
     // Only the "nothing is configured at all" case is downgraded, and only
     // because that case is now reported on its own axis where an outside reader
     // can see it standing.
+    // ── RUN THE CHANNEL'S RESTORE TEST, AT MOST ONCE A WEEK ───────────────
+    // Carried in this job's own heartbeat detail, same as response_memo and for
+    // the same reason: it is current-state, it is small, and that row is
+    // written every run anyway. A second table would be a second migration to
+    // run and a second thing to be missing.
+    //
+    // ONLY WHEN THE CHANNEL CLAIMS TO BE CONFIGURED. Sending into an
+    // unconfigured channel proves nothing that `notify_channel` has not already
+    // said, and it would put a failed send in the record every hour.
+    const priorProof = (self && self.detail && self.detail.channel_proof) || null;
+    let channelProof = priorProof;
+    if (channel.configured) {
+      const to = alertTo(false);
+      if (proofNeedsFollowUp(priorProof)) {
+        // PHASE 2 -- ask the provider what became of the message it accepted.
+        const ev = await resendEvent(priorProof.id);
+        channelProof = Object.assign({}, priorProof, {
+          last_event: ev.ok ? (ev.last_event || null) : priorProof.last_event,
+          checked_at: new Date(nowMs).toISOString(),
+          check_error: ev.ok ? null : ev.why
+        });
+        console.log('cron-watchdog: channel proof ' + priorProof.id + ' -> ' +
+          (ev.ok ? ('last_event=' + ev.last_event) : ('COULD NOT ASK -- ' + ev.why)));
+      } else if (proofIsDue(priorProof, nowMs) && to) {
+        // PHASE 1 -- one real message down the real path.
+        const sent = await sendAlert(to, 'SAIRN alert-channel proof',
+          'This is the alert channel proving it works, on a ' +
+          Math.round(CHANNEL_PROOF_INTERVAL_SECONDS / 86400) + '-day cadence. ' +
+          'No job is in trouble. If this stops arriving, the channel every ' +
+          'real alert depends on has gone quiet and nothing else would say so.');
+        channelProof = {
+          id: sent.id || null, sent_at: new Date(nowMs).toISOString(),
+          to: to, accepted: !!sent.sent, last_event: null,
+          send_error: sent.sent ? null : (sent.error || null)
+        };
+        console.log('cron-watchdog: channel proof SENT -- accepted=' + !!sent.sent +
+          ' id=' + (sent.id || 'none') +
+          (sent.sent ? '' : ' error=' + (sent.error || '')));
+      }
+    }
     const realUndelivered = channel.configured ? undelivered : [];
     await beat({
       job: SELF_JOB,
@@ -477,6 +575,10 @@ module.exports = async (req, res) => {
         not_ok: bad.map(function (x) { return x.job + '=' + x.status; }),
         response_memo: planned.memo,
         notify_channel: channel,
+        // ACCEPTED IS NOT DELIVERED, and the record keeps both so a reader
+        // cannot collapse them: `accepted` is what the provider said at send
+        // time, `last_event` is what became of it.
+        channel_proof: channelProof,
         undelivered: undelivered.map(function (a) { return a.action + ':' + a.job; })
       }
     });
@@ -495,6 +597,10 @@ module.exports = async (req, res) => {
       // say WHICH of the two halves is broken. A boolean that collapses "a job
       // is down" and "nobody can be told" sends the reader to the wrong place.
       notify_channel: channel,
+      // ON ITS OWN AXIS TOO. `notify_channel.configured` says the variables are
+      // SET; this says a real message went down the real path and what the
+      // provider says became of it. Three different claims, three fields.
+      channel_proof: channelProof,
       // NAMED SEPARATELY from `jobs`: what was FOUND and what was DONE about it
       // are different questions, and a reader who cannot tell them apart cannot
       // tell a suppressed alert from an alert that was never planned.
@@ -509,6 +615,10 @@ module.exports = async (req, res) => {
 module.exports.EXPECTED_JOBS = EXPECTED_JOBS;
 module.exports.assess = assess;
 module.exports.selfOutcome = selfOutcome;
+module.exports.proofIsDue = proofIsDue;
+module.exports.proofNeedsFollowUp = proofNeedsFollowUp;
+module.exports.PROOF_TERMINAL = PROOF_TERMINAL;
+module.exports.CHANNEL_PROOF_INTERVAL_SECONDS = CHANNEL_PROOF_INTERVAL_SECONDS;
 module.exports.SELF_JOB = SELF_JOB;
 module.exports.lateAfter = lateAfter;
 module.exports.deadAfter = deadAfter;
