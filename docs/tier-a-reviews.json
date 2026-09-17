@@ -548,10 +548,10 @@
         "tests/run_export_coverage_probe.py"
       ],
       "what": "PRODUCT CHANGE, two apps. sairncare.html and sairnmechanical.html gained their first export machinery -- ALF_EXPORTS / alfExportDataset and MECH_EXPORTS / mechExportDataset, both in SAIRNdental's DNT_EXPORTS shape, each declaring resource/action the way RF_REPORTS does. alf_staff_credentials and mech_credentials were the last two Class A records with no way to produce a file. PRESS ON: (1) the SCOPE preamble in ALF_EXPORTS -- _crScopedToSelf is the server's own answer and the file states BOTH directions; is stating the unscoped case a claim this client can actually make? (2) MECH_EXPORTS exports res.body.data, NOT board.rows, and joins the board's status onto the row whose issued_on matches -- check that join: two records for one key with the SAME issued_on would both be marked current. (3) the EPA 608 section is given its own column away from jurisdiction because it is the regulated field under 40 CFR 82.161; check nothing else in either app reads them as one. (4) both registries refuse to export an unloaded cache rather than writing zero rows -- check the mechCredRefresh clear-before-read covers every failure path.",
-      "status": "open",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "status": "reviewed",
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-09-17T03:31:38Z",
+      "verdict": "REVIEWED BY DRIVING IT, not by reading the diff. The tie fix is CORRECT: the real api/_lib/mech-credentials.js latestByKey() keeps MC-2 on a genuine key+date collision and the export marks MC-2, and the order coupling the comment relies on is real -- api/sd-data.js:1472 returns data and board from the SAME array. FINDING, fixed in a41a31a9: the fixture BOARD was typed by hand and had drifted into a state classifyRecord() cannot emit -- status 'unknown' WITH no_expiry true, which come from one return statement -- so an arm asserted the lifetime credential was 'unknown', contradicting an arm in api/_lib/mech-credentials.test.js outright. BOARD is now computed by the server module, a genuinely-unknown record was added because none existed, and the tie arm asks latestByKey() instead of asserting the literal 'MC-2' -- flipping the server tie-break now fails the arm, where before it stayed green while file and board disagreed. 18 arms -> 22, four mutations killed. No defect in the shipped export itself."
     }
   ]
 }
