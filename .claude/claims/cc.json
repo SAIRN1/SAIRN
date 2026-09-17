@@ -1774,6 +1774,16 @@
       "claimed_at_epoch": 1789681664.6891387,
       "status": "released",
       "released_at": "2026-09-17T21:53:13Z"
+    },
+    {
+      "id": "cc-1789682417",
+      "session": "cc",
+      "subject": "aim-act-and-disclosures",
+      "task": "AIM Act 84.106 second threshold check, F-Gas date correction, Manual J procurement disclosure",
+      "claimed_at": "2026-09-17T22:00:17Z",
+      "claimed_at_epoch": 1789682417.6497068,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
