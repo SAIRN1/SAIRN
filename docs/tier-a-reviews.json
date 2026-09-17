@@ -573,6 +573,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-17T15:30:16Z",
+      "resources": [
+        "mech_credentials"
+      ],
+      "files": [
+        "sairnmechanical.html"
+      ],
+      "what": "PRODUCT CHANGE, Tier A. sairnmechanical.html now SENDS the 'eligibility' action on mech_credentials that the endpoint has answered since 2026-09-02 and that nothing in the app had ever called -- closing an OVERCLAIM, since the credentials panel subtitle already said 'the record dispatch eligibility is computed from'. New card with its own inputs (me-type/me-section/me-jurisdiction), plus 7 wiring arms in tests/sairnmechanical_credential_export.js. PRESS ON: (1) the panel sends ONE requirement at a time and never an empty list -- confirm no path can send requirements:[] and get an answer rather than the engine's NO_REQUIREMENTS refusal; (2) an empty EPA section is deliberately OMITTED rather than sent as '' -- check that reads as 'any section' in evaluateEligibility and not as an unknown-section refusal; (3) the verdict is rendered from res.body.eligibility and nothing is recomputed client-side -- check no expiry or date maths leaked into the panel; (4) BOTH refusal branches (401/403 and provisioned:false) must say a refusal is not 'nobody is eligible' -- one arm here already missed its own mutation because the phrase appears twice and it only checked once.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

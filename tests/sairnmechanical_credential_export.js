@@ -480,5 +480,98 @@ test('the Export CSV button exists and calls the registry', () => {
     + 'feature nobody has, which is this app\'s own svNav() lesson');
 });
 
+
+section('6. DISPATCH ELIGIBILITY IS ACTUALLY CALLED (2026-09-17)');
+
+// ── WHY THIS SECTION IS IN A TEST AND NOT A COMMENT ────────────────────────
+// The credentials panel subtitle has read "the record dispatch eligibility is
+// computed from" since the board was built, and for that whole time NOTHING IN
+// THIS FILE COMPUTED IT. The engine (evaluateEligibility), the endpoint action,
+// the registry entry and ten test arms all existed; the app sent only `read`
+// and `write`. The string `eligibility` appeared exactly ONCE in the app -- in
+// that sentence.
+//
+// api/_lib/mech-credentials.test.js could never have caught it: it drives the
+// ENGINE. A module suite cannot tell you the product calls it, which is the
+// same blind spot recorded against the SAIRNcash webhook and SAIRNvet's
+// logDoseAudit. So the arm that matters is the first one below, and it is
+// deliberately a search of the APP file rather than of the module.
+
+test('the app SENDS the eligibility action -- not just read and write', () => {
+  const sends = (html.match(/mechData\('([a-z_]+)'/g) || [])
+    .map(s => s.replace(/mechData\('/, '').replace(/'/, ''));
+  assert.ok(sends.indexOf('eligibility') !== -1,
+    'sairnmechanical.html never sends the eligibility action, so the subtitle '
+    + 'claiming dispatch eligibility is computed is an overclaim. Actions sent: '
+    + JSON.stringify(Array.from(new Set(sends)).sort()));
+});
+
+test('...from a control a dispatcher can actually press', () => {
+  assert.ok(/onclick="mechEligibility\(\)"/.test(html),
+    'nothing invokes mechEligibility -- a function with no caller is the defect '
+    + 'this section exists to prevent, one layer down');
+  assert.ok(html.indexOf('id="me-type"') !== -1, 'the requirement input is missing');
+});
+
+test('it uses its OWN inputs, not the add-credential form\'s', () => {
+  // Reusing mc-type/mc-section would conflate "record that this technician
+  // holds it" with "ask who holds it" -- opposite operations on one screen,
+  // and a shared input means asking a question silently edits the form.
+  const fn = grab('window.mechEligibility = function () {', '\n  };');
+  assert.ok(fn.indexOf("g('me-type')") !== -1, fn.slice(0, 200));
+  assert.ok(fn.indexOf("'mc-type'") === -1 && fn.indexOf("'mc-section'") === -1,
+    'the eligibility check reads the add-credential form\'s inputs');
+});
+
+test('the verdict is the SERVER\'s -- nothing is re-derived in the browser', () => {
+  const fn = grab('window.mechEligibility = function () {', '\n  };');
+  // Two places computing an expiry is two places to disagree about it, and the
+  // one deciding who may open a chiller is the worst place to have two.
+  assert.ok(!/classifyRecord|daysUntil|new Date\(\)/.test(fn),
+    'the panel is computing an expiry or a date itself instead of reading the '
+    + 'server verdict');
+  assert.ok(/res\.body\.eligibility/.test(fn), 'it does not read the server verdict at all');
+});
+
+test('a refusal and an unprovisioned table are NOT "nobody is eligible"', () => {
+  const fn = grab('window.mechEligibility = function () {', '\n  };');
+  // ── THIS ARM MISSED ITS OWN MUTATION ON THE FIRST RUN ──────────────────
+  // It asserted the sentence appeared SOMEWHERE in the function. Rewriting the
+  // 401/403 branch to render "0 eligible" left the UNPROVISIONED branch's copy
+  // of the same sentence in place, so the arm passed against a build where a
+  // refusal really did render as nobody being eligible -- exactly the defect it
+  // is named after. A phrase that appears twice cannot be checked once.
+  //
+  // Both branches are now required, each located by the condition that reaches
+  // it rather than by the wording they share.
+  const auth = fn.slice(fn.indexOf('401'), fn.indexOf('res.body && res.body.error'));
+  assert.ok(/NOT a statement that nobody is eligible/.test(auth),
+    'a 401/403 renders indistinguishably from a real empty answer -- the same '
+    + 'distinction MECH_NOT_SHOWN already makes on the board:\n' + auth.slice(0, 260));
+  const unprov = fn.slice(fn.indexOf('provisioned === false'));
+  assert.ok(/NOT a statement that nobody is eligible/.test(unprov),
+    'the unprovisioned branch is missing or no longer says so');
+  assert.ok((fn.match(/NOT a statement that nobody is eligible/g) || []).length >= 2,
+    'the two refusal branches no longer both carry the disclaimer');
+});
+
+test('the DENOMINATOR is shown beside the count', () => {
+  const fn = grab('window.mechEligibility = function () {', '\n  };');
+  // The engine's own comment: a technician with no records never appears, so
+  // they are UNRECORDED rather than ineligible. A bare "2 eligible" reads as
+  // "2 of everybody".
+  assert.ok(/e\.evaluated/.test(fn) && /unrecorded, not ineligible/.test(fn),
+    'the count is printed without the denominator or without the caveat');
+});
+
+test('the engine still REFUSES an empty requirement list -- the premise holds', () => {
+  const M = require('../api/_lib/mech-credentials.js');
+  const r = M.evaluateEligibility([], [], '2026-09-17');
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error.code, 'NO_REQUIREMENTS',
+    'the engine stopped refusing an unstated requirement, which is what makes '
+    + 'the panel asking for one meaningful: ' + JSON.stringify(r));
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

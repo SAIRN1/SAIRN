@@ -7891,6 +7891,61 @@
         }
       ],
       "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
+    },
+    {
+      "commit": "39e938893774",
+      "date": "2026-09-17",
+      "subject": "fix(sairnmechanical): the panel now computes the dispatch eligibility its own subtitle claimed",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "sairnmechanical.html",
+        "tests/sairnmechanical_credential_export.js"
+      ],
+      "lines_added": 230,
+      "lines_removed": 0,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairnmechanical.html claimed a capability it never invoked. The Technician Credentials panel subtitle read 'Licences, certifications and expiry -- the record dispatch eligibility is computed from', while every mechData() call in the file was read or write. api/_lib/mech-credentials.js evaluateEligibility, the eligibility action in api/sd-data.js, the registry entry in api/_resources/sairnmechanical.js and ten engine test arms all existed and nothing in the product reached them; the word eligibility appeared exactly once in the app, in that sentence. Not a security hole -- nothing was bypassed because nothing was called -- but a claim the product did not support. Fixed by wiring a dispatch-eligibility card that sends the action, renders the server verdict without recomputing any expiry, and distinguishes a refusal from an empty answer.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The eligibility engine, endpoint and registry entry landed 2026-09-02 and the panel subtitle predates them; no single commit both made the claim and omitted the call, so there is no injection commit that introduced the mismatch -- it opened when the server half shipped without a client half."
+      },
+      "citation_note": "A check that stopped checking, in its UI form: the credentials panel asserted that dispatch eligibility is computed from the credential board, and no code in the app ever requested that computation. The sentence read as a description of behaviour and was the only occurrence of the word in the file.",
+      "contributing_factors": [
+        {
+          "factor": "the server half of the capability shipped without a client caller, and nothing required the two to land together",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the credentials panel now sends the eligibility action from its own inputs and renders the server verdict"
+        },
+        {
+          "factor": "the module suite drives the ENGINE, so it could never observe whether the product calls it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "7 wiring arms in tests/sairnmechanical_credential_export.js search the APP file for the action being sent and for a control that invokes it"
+        },
+        {
+          "factor": "a UI subtitle asserted behaviour, and prose in a panel is not checked by anything the way a function is",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "no general mechanism proposed: checking every descriptive sentence in an app against the code behind it is the fabricated-KPI problem generalised, and this platform has not found a tractable form of it. Named so the next instance is recognised rather than re-derived."
+        },
+        {
+          "factor": "the 2026-08-27 research already named this exact shape as a market-wide failing (G3, enforcement claimed not documented) and the app was not checked against its own audit row",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the 2026-09-17 row-by-row re-derivation is what found it, and its method now includes a wiring check -- panel, nav target and caller -- rather than marker counts alone"
+        }
+      ],
+      "recurrence_open": "Gating scheduling on the eligibility answer is still open and is a product decision; nothing refuses a dispatch today. The same server-half-without-a-caller shape is not checked for anywhere else on the platform."
     }
   ],
   "started": "2026-09-09"

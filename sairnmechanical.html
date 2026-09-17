@@ -823,6 +823,54 @@ async function callClaude(system, messages, maxTokens) {
     <div id="mech-cred-note" style="font-size:12px;color:var(--g400);margin-top:8px"></div>
   </div>
 
+  <!-- DISPATCH ELIGIBILITY (2026-09-17). THIS CLOSES AN OVERCLAIM, not a gap.
+       The panel subtitle above has read "the record dispatch eligibility is
+       computed from" since the board was built, and NOTHING COMPUTED IT --
+       api/_lib/mech-credentials.js evaluateEligibility(), the `eligibility`
+       action in api/sd-data.js, the registry entry and ten test arms all
+       existed, and sairnmechanical.html never sent the action. The string
+       `eligibility` appeared exactly once in this file and it was that
+       sentence. Found by the 2026-09-17 competitive-gap re-derivation, which
+       also records that the 08-27 research names this same shape -- G3,
+       "credential-expiry to dispatch-eligibility enforcement CLAIMED, NOT
+       DOCUMENTED" -- as a market-wide failing. We had reproduced it.
+
+       ITS OWN INPUTS, NOT THE ADD-CREDENTIAL FORM'S. Reusing mc-type and
+       mc-section would conflate "record that this technician holds it" with
+       "ask who holds it", which are opposite operations on one screen.
+
+       WHAT THIS IS NOT: a gate. Nothing here refuses a dispatch, because this
+       app has no job record to state what a job requires -- so the requirement
+       is asked for, one at a time, rather than inferred. Gating scheduling on
+       the answer is a product decision and is deliberately not taken here. -->
+  <div class="card">
+    <div style="font-weight:700;font-size:13px;margin-bottom:6px">Who can I dispatch?</div>
+    <div style="font-size:12px;color:var(--g400);margin-bottom:10px">
+      Ask what the job needs and this answers who currently holds it. <strong>Sections are equipment, not ranks</strong> &mdash; a Type I technician is not &ldquo;less certified&rdquo; than a Type II one, and &ldquo;has an EPA card&rdquo; is not an answer to whether somebody may open a given machine. Universal covers every section; otherwise the section must match exactly.
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:10px">
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">This job requires</label>
+        <select id="me-type" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Choose&hellip;</option>
+          <option value="epa_608">EPA 608</option><option value="nate">NATE</option>
+          <option value="state_license">State licence</option><option value="manufacturer">Manufacturer</option>
+          <option value="safety_training">Safety training</option><option value="medical_gas">Medical gas</option>
+          <option value="backflow">Backflow</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">EPA section</label>
+        <select id="me-section" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Any section</option><option value="type_i">Type I (small appliances)</option>
+          <option value="type_ii">Type II (high pressure)</option><option value="type_iii">Type III (low pressure)</option>
+          <option value="universal">Universal</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Jurisdiction</label>
+        <input id="me-jurisdiction" placeholder="any" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+    </div>
+    <button class="btn bp" onclick="mechEligibility()">Check eligibility</button>
+    <div id="me-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+    <div id="me-out" style="font-size:12px;margin-top:10px"></div>
+  </div>
+
   <div class="card">
     <div class="tw"><table>
       <thead><tr><th>Technician</th><th>Type</th><th>Section / jurisdiction</th><th>Issued</th><th>Expires</th><th>Status</th></tr></thead>
@@ -2093,6 +2141,80 @@ function mechData(action, resource, payload) {
               ' exported — the full register, including records the board supersedes', 5000);
   }
   window.mechExportDataset = mechExportDataset;
+
+
+  // ── DISPATCH ELIGIBILITY (2026-09-17) ─────────────────────────────────
+  // Sends the `eligibility` action the endpoint has answered since 2026-09-02
+  // and that nothing in this file has ever called. See the panel comment for
+  // how that was found.
+  //
+  // THE VERDICT IS THE SERVER'S, NEVER RE-DERIVED HERE -- the same rule
+  // mechCredRenderRows already follows about the status word: two places
+  // computing an expiry is two places to disagree about it, and the one that
+  // decides who may open a chiller is the worst place to have two.
+  //
+  // ONE REQUIREMENT AT A TIME. The engine takes a list and refuses an empty
+  // one; this screen asks for a single requirement because that is the
+  // question a dispatcher actually has standing at a board, and inventing a
+  // multi-requirement editor for a job record this app does not hold would be
+  // building the form before the thing it describes.
+  window.mechEligibility = function () {
+    var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var err = document.getElementById('me-err'), out = document.getElementById('me-out');
+    if (!out) return;
+    err.textContent = ''; out.innerHTML = '';
+    var type = g('me-type');
+    if (!type) { err.textContent = 'Choose what the job requires. An unstated requirement is not "anyone may go" — the engine refuses it rather than answering.'; return; }
+    var req = { record_type: type };
+    // Section and jurisdiction are sent ONLY when they apply. An empty EPA
+    // section means "any section", which the engine treats as satisfied by any
+    // held section -- sending '' would be an unknown-section refusal.
+    if (type === 'epa_608' && g('me-section')) req.epa_section = g('me-section');
+    if (type !== 'epa_608' && g('me-jurisdiction')) req.jurisdiction = g('me-jurisdiction');
+    return mechData('eligibility', 'mech_credentials', { requirements: [req] }).then(function (res) {
+      if (res.status === 401 || res.status === 403) {
+        err.textContent = 'Sign in to check eligibility — the server declined without an employee session. This is NOT a statement that nobody is eligible.';
+        return;
+      }
+      if (res.body && res.body.error) {
+        // THE ENGINE'S OWN WORDS. NO_REQUIREMENTS, UNKNOWN_REQUIREMENT and
+        // UNKNOWN_EPA_SECTION each name what is wrong, and those sentences
+        // exist to be shown rather than replaced with a generic failure.
+        err.textContent = res.body.error.message || ('Could not check eligibility (HTTP ' + res.status + ').');
+        return;
+      }
+      if (!res.body || !res.body.ok) { err.textContent = 'Could not check eligibility.'; return; }
+      if (res.body.provisioned === false) {
+        err.textContent = 'Credential storage is not set up yet — run sql/mech_credentials_schema.sql. Nothing was evaluated, and that is NOT a statement that nobody is eligible.';
+        return;
+      }
+      var e = res.body.eligibility;
+      if (!e || !e.ok) { err.textContent = (e && e.error && e.error.message) || 'Could not check eligibility.'; return; }
+      var rows = e.technicians || [];
+      // EVALUATED IS PRINTED BESIDE THE ANSWER. A technician with no records at
+      // all never appears in this list, and the engine says so in its own
+      // comment: they are UNRECORDED, not ineligible. A bare "2 eligible" with
+      // no denominator reads as "2 of everybody".
+      var head = '<div style="margin-bottom:8px"><strong>' + e.eligible.length + ' of ' + e.evaluated +
+        '</strong> technician(s) with credentials on file are eligible, as of ' + mechEsc(e.today) +
+        '. <span style="color:var(--g400)">Anyone with no records at all is not counted here — they are unrecorded, not ineligible.</span></div>';
+      if (!rows.length) { out.innerHTML = head; return; }
+      out.innerHTML = head + '<div class="tw"><table><thead><tr><th>Technician</th><th>Eligible</th><th>Why not / warning</th></tr></thead><tbody>' +
+        rows.map(function (t) {
+          var why = (t.blocking || []).map(function (b) {
+            return mechEsc((MECH_TYPE_LABELS[b.record_type] || b.record_type) +
+              (b.epa_section ? ' ' + (MECH_SECTION_LABELS[b.epa_section] || b.epa_section) : '') +
+              ' — ' + b.reason);
+          }).join('; ');
+          var warn = (t.warnings || []).map(function (w) {
+            return mechEsc('expires in ' + w.days + 'd (' + (w.expires_on || 'no date') + ')');
+          }).join('; ');
+          return '<tr><td>' + mechEsc(t.technician_id) + '</td><td>' +
+            (t.eligible ? 'yes' : '<strong>no</strong>') + '</td><td>' +
+            (why || warn || '') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+    });
+  };
 
   window.mechCredAdd = function () {
     var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
