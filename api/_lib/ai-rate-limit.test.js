@@ -198,5 +198,72 @@ function load() {
 
   global.fetch = realFetch;
   process.env = realEnv;
-  console.log('api/_lib/ai-rate-limit.test.js: all assertions passed');
+  
+// ── THE RESILIENCE GUARD, AND THE ONE PROPERTY THAT MUST NOT MOVE ──────────
+// Added 2026-09-17 with the first real adoption of api/_lib/resilience.js.
+// This module is FAIL-OPEN by design -- its own header says a counting outage
+// must never take down every AI feature -- so a guard that REFUSED here would
+// invert the module's whole contract. Every refusal the guard can produce must
+// land in the same branch the RPC's own failures already take.
+(async function guardIsFailOpen() {
+  const RESIL = require('./resilience.js');
+  const M = require('./ai-rate-limit.js');
+
+  // DRIVEN, NOT ASSERTED ABOUT. consumeAtomic() is the function the guard
+  // wraps; each refusal is raised from the real fetch and the result must be
+  // `null` -- the module's own "could not count atomically, fall back, allow"
+  // value -- and never a thrown error reaching an AI request.
+  const cases = [
+    ['CircuitOpenError', new RESIL.CircuitOpenError('x', 1000)],
+    ['BulkheadFullError', new RESIL.BulkheadFullError('x', 1)],
+    ['TimeoutError', new RESIL.TimeoutError('x', 1)]
+  ];
+  const client = { headers: {}, rest: (p) => 'https://example.invalid/rest/v1/' + p };
+  for (const [name, err] of cases) {
+    const realFetch = global.fetch;
+    global.fetch = async () => { throw err; };
+    let out, threw = null;
+    try {
+      out = await M.consumeAtomic(client, 'anyapp', 10, 'tenant-1');
+    } catch (e) {
+      threw = e;
+    } finally {
+      global.fetch = realFetch;
+    }
+    assert.strictEqual(threw, null,
+      name + ' propagated out of consumeAtomic -- an AI request would 500 '
+      + 'because the COUNTER was guarded off, which inverts this module');
+    assert.strictEqual(out, null,
+      name + ' did not produce the fall-back value');
+  }
+
+  // THE ARM THAT MATTERS: the three error types the guard raises and the three
+  // the module treats as "could not count" are the SAME SET. If resilience.js
+  // gains a fourth refusal, this goes red rather than that refusal silently
+  // becoming a thrown 500 on an AI request.
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, 'ai-rate-limit.js'), 'utf8');
+  const handled = ['CircuitOpenError', 'BulkheadFullError', 'TimeoutError']
+    .filter((n) => src.indexOf('RESIL.' + n) !== -1);
+  assert.strictEqual(handled.length, 3,
+    'the fail-open branch no longer names all three guard refusals: ' + handled);
+  const exported = Object.keys(RESIL).filter((k) => /Error$/.test(k)).sort();
+  assert.deepStrictEqual(exported,
+    ['BulkheadFullError', 'CircuitOpenError', 'TimeoutError'],
+    'resilience.js exports a refusal this module does not handle, so it would '
+    + 'propagate as a 500 on an AI request instead of failing open: ' + exported);
+
+  // AND THE BREAKER IS OBSERVE-ONLY HERE, BY CONSTRUCTION. The shared store
+  // lives in Supabase and this dependency IS Supabase -- enforcing on a
+  // per-instance store is the shape that measurably did nothing in 2026-09-05.
+  assert.ok(/mode: 'observe'/.test(src),
+    'the AI rate-limit breaker is no longer observe-only; a per-instance '
+    + 'threshold on this runtime is defeated in proportion to load');
+  assert.ok(/instanceStore\(\)/.test(src),
+    'the breaker store changed; if it is now the shared Supabase store, it is '
+    + 'asking the failing database whether the database is failing');
+  console.log('  ok   the resilience guard is wired FAIL-OPEN and observe-only');
+})();
+
+console.log('api/_lib/ai-rate-limit.test.js: all assertions passed');
 })().catch((e) => { console.error(e); process.exit(1); });

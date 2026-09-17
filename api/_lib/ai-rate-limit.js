@@ -176,6 +176,84 @@ function exactCountFrom(res) {
 // what makes the flag self-healing after the migration runs.
 let tenantArgsUnsupported = false;
 
+// ── THE FIRST REAL ADOPTION OF api/_lib/resilience.js (2026-09-17) ─────────
+// That module was complete, tested and had ZERO production callers -- a full
+// three-state breaker plus bulkhead sitting dormant while the dependency its
+// own header names as the contention case ran unguarded. Building a second one
+// would have been the duplication this platform polices; wiring the first is
+// the actual gap.
+//
+// RE-QUALIFIED FOR THIS CALL SITE RATHER THAN COPIED, which is convention 7.
+// Three things differ here from the shape the library is usually drawn in:
+//
+//   1. THE DEPENDENCY IS SUPABASE, AND THE SHARED BREAKER STORE LIVES IN
+//      SUPABASE. resilience.js states that circularity itself: asking a
+//      database whether the database is reachable returns the answer you
+//      already have. So the breaker is instance-backed and OBSERVE-ONLY, by
+//      construction. What actually protects this caller from a slow Supabase
+//      is the TIMEOUT and the BULKHEAD, and both are fully effective
+//      per-instance -- the sockets and event loop they protect ARE
+//      per-instance.
+//
+//   2. THIS MODULE IS FAIL-OPEN AND MUST STAY FAIL-OPEN. Its own header: "a
+//      logging/counting outage must never take down every AI feature on the
+//      platform... a blocked-by-accident real user is a worse outcome than an
+//      uncounted call." A guard that threw here would invert that, so every
+//      refusal the guard can produce lands in the SAME branch the RPC's own
+//      failures already take -- return null, fall back, allow.
+//
+//   3. THE THRESHOLDS ARE DELIBERATELY LOOSE. Nothing has been measured about
+//      this dependency's real concurrency or latency, and a tight number
+//      chosen from nothing would trip on normal traffic and teach its readers
+//      that the guard is noise. They are env-overridable so they can be
+//      tightened from evidence rather than from a redeploy.
+const RESIL = require('./resilience.js');
+
+function envInt(name, dflt) {
+  const raw = Number(process.env[name]);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : dflt;
+}
+
+let _guard = null;
+function rpcGuard() {
+  if (_guard) return _guard;
+  _guard = {
+    // Per-instance and observe-only -- see (1) above. It reports and it never
+    // refuses, which is all a per-instance counter has ever been able to do
+    // honestly on this runtime.
+    breaker: RESIL.createBreaker('supabase:ai-rate-limit-rpc', {
+      store: RESIL.instanceStore(),
+      mode: 'observe',
+      threshold: envInt('SAIRN_AI_RPC_BREAKER_THRESHOLD', 10),
+      openMs: envInt('SAIRN_AI_RPC_BREAKER_OPEN_MS', 30000)
+    }),
+    // THE BULKHEAD IS THE PART THAT ACTUALLY ISOLATES. It caps how many of this
+    // instance's in-flight sockets the rate-limit RPC may hold, so a slow
+    // counting call cannot starve the AI request it is counting for.
+    bulkhead: RESIL.createBulkhead('supabase:ai-rate-limit-rpc',
+                                   envInt('SAIRN_AI_RPC_BULKHEAD', 24)),
+    timeoutMs: envInt('SAIRN_AI_RPC_TIMEOUT_MS', 5000),
+    key: 'supabase:ai-rate-limit-rpc'
+  };
+  return _guard;
+}
+
+// Every guard refusal takes the SAME path the RPC's own failures take. Named
+// rather than caught inline so the fail-open property is one readable place.
+function guardRefusal(err) {
+  return err instanceof RESIL.CircuitOpenError
+      || err instanceof RESIL.BulkheadFullError
+      || err instanceof RESIL.TimeoutError;
+}
+
+async function guardedRpc(client, body) {
+  const g = rpcGuard();
+  const out = await RESIL.guardedFetch(g, client.rest('rpc/' + RPC), {
+    method: 'POST', headers: client.headers, body: JSON.stringify(body)
+  });
+  return out.res;
+}
+
 async function consumeAtomic(client, appId, limit, tenantKey) {
   const args = { p_app_id: appId, p_limit: limit, p_window_seconds: WINDOW_SECONDS };
   const wantTenant = !!tenantKey && !tenantArgsUnsupported;
@@ -184,11 +262,20 @@ async function consumeAtomic(client, appId, limit, tenantKey) {
     args.p_tenant_limit = tenantShare(limit);
     args.p_contention_floor = contentionFloor(limit);
   }
-  let r = await fetch(client.rest('rpc/' + RPC), {
-    method: 'POST',
-    headers: client.headers,
-    body: JSON.stringify(args)
-  });
+  let r;
+  try {
+    r = await guardedRpc(client, args);
+  } catch (e) {
+    // FAIL OPEN, LOUDLY. Same branch the RPC's own failures take: null means
+    // "could not count atomically", the caller falls back, and nobody is
+    // refused an AI feature because the counter was slow.
+    if (guardRefusal(e)) {
+      console.error('ai rate limit: the counting RPC was guarded off ('
+        + e.name + ') -- not counting atomically, and NOT refusing the caller');
+      return null;
+    }
+    throw e;
+  }
   // A 404 on the SIX-argument shape means the sub-budget migration has not run;
   // the three-argument function may still be there and is still correct, just
   // not tenant-aware. Fall back to it ONCE rather than dropping all the way to
@@ -199,11 +286,17 @@ async function consumeAtomic(client, appId, limit, tenantKey) {
     console.error('ai rate limit: the tenant sub-budget RPC is absent -- run '
       + 'sql/sairn_ai_tenant_subbudget_2026-09-15.sql. Counting per APP only; '
       + 'one tenant can still exhaust the whole app ceiling.');
-    r = await fetch(client.rest('rpc/' + RPC), {
-      method: 'POST',
-      headers: client.headers,
-      body: JSON.stringify({ p_app_id: appId, p_limit: limit, p_window_seconds: WINDOW_SECONDS })
-    });
+    try {
+      r = await guardedRpc(client, { p_app_id: appId, p_limit: limit,
+                                     p_window_seconds: WINDOW_SECONDS });
+    } catch (e) {
+      if (guardRefusal(e)) {
+        console.error('ai rate limit: the counting RPC was guarded off ('
+          + e.name + ') on the 3-argument fallback -- not counting, not refusing');
+        return null;
+      }
+      throw e;
+    }
   }
   if (!r.ok) {
     // 404 = migration not run yet, which is expected and quiet-ish; anything
