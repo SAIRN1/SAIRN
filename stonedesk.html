@@ -4140,6 +4140,21 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         <button class="sb-btn"        id="sb-aiquote"  onclick="sbNav('aiquote')"> <span class="sb-icon">&#9889;</span><span class="sb-text">AI Instant Quote</span></button>
         <button class="sb-btn"        id="sb-quote"    onclick="sbNav('quote')">   <span class="sb-icon">&#128176;</span><span class="sb-text">Quote Builder</span></button>
         <button class="sb-btn"        id="sb-draw"     onclick="sbNav('draw')">    <span class="sb-icon">&#9998;</span><span class="sb-text">Drawing Tool</span></button>
+        <!-- FIELD QUOTE WAS NOT IN THE SIDEBAR AT ALL, and that is the gap
+             the panel buttons alone do not close. Its two sibling `.page`
+             modules DO have sidebar entries -- `sb-doc-scan` and
+             `sb-check-register` -- so the omission reads as an oversight when
+             page-field-quote replaced the modal on 2026-09-02 rather than as
+             a decision. Until now the only way in was a q-btn on the Schedule
+             panel or inside a customer's detail card: a user who had not
+             already opened one of those two had no way to discover the
+             feature, and no way to return to it by name.
+
+             sbNav -> showPanel -> showPage, which is the SAME path openFQ()
+             takes; showPanel maps 'field-quote' through its own pageIds table
+             and returns early, exactly as it already does for doc-scan and
+             check-register. No new routing, and nothing to keep in sync. -->
+        <button class="sb-btn"        id="sb-field-quote" onclick="sbNav('field-quote')"><span class="sb-icon">&#128241;</span><span class="sb-text">Field Quote</span></button>
         <button class="sb-btn"        id="sb-intake"   onclick="sbNav('intake')">  <span class="sb-icon">&#128203;</span><span class="sb-text">Job Intake</span></button>
         <button class="sb-btn"        id="sb-crm"      onclick="sbNav('crm')">     <span class="sb-icon">&#127942;</span><span class="sb-text">Lead Pipeline</span></button>
         <button class="sb-btn"        id="sb-customers" onclick="sbNav('customers')"><span class="sb-icon">&#128101;</span><span class="sb-text">Customers</span></button>
@@ -4297,6 +4312,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 StoneDesk AI Assistant</h2>
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Your AI-powered stone fabrication business advisor</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <!-- THE "DASHBOARD" ENTRY POINT. This panel IS the dashboard in this
+         app, which is worth stating because nothing is named that: `sb-ai`
+         is the only sidebar button that boots `active`, `panel-ai` is the
+         only panel that boots with class="panel active", and FIRST_PAGE is
+         the string 'dashboard' -- which matches no `.page` id and therefore
+         means "no page, show the panels". So this header is the first thing
+         a user sees after login, and it had no route to Field Quote at all. -->
+    <button class="q-btn primary" onclick="openFQ()">&#128241; Field Quote</button>
     <button class="q-btn" onclick="sdAIClear()">🗑️ Clear</button>
     <button class="q-btn" onclick="sdAIPrint()">🖨️ Print Chat</button>
   </div>
@@ -5600,6 +5623,15 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">📜 Quote History</h2>
   <div style="font-size:13px;color:var(--muted);margin-top:2px">All quotes, proposals & win/loss tracking — <span class="sd-shop-name">Your Stone Shop</span></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <!-- THE "JOBS" ENTRY POINT, AND THE AMBIGUITY IS NAMED RATHER THAN
+         SILENTLY RESOLVED. StoneDesk has no panel called Jobs. The sidebar
+         labels THIS one "Job History" while its own heading reads "Quote
+         History" (a mismatch that predates this change and is left alone),
+         and it is the job list a shop actually browses. `schedule` -- the
+         install tracker -- already carried a Field Quote button, and
+         `jobcost` is a costing report rather than a job list. If Jobs meant
+         one of those, this is the button to move, not a second one to add. -->
+    <button class="q-btn" onclick="openFQ()">&#128241; Field Quote</button>
     <button class="q-btn" onclick="sdHistoryAI()">🤖 AI Analysis</button>
     <button class="q-btn" onclick="sdHistoryExportCSV()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdHistoryPrint()">🖨️ Print</button>
@@ -6052,6 +6084,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Company profile, users, PIN management, system config &amp; health</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdAdminSave()">💾 Save Settings</button>
+    <!-- SETTINGS. Placed next to Pricing Setup deliberately: the pricing
+         modal's own save button reads "Save Pricing -- All Field Quotes Use
+         These Rates", so the two belong side by side. A shop that has just
+         set its rates is one click from proving them on a real sketch
+         instead of having to find the feature those rates feed. -->
+    <button class="q-btn" onclick="openFQ()">&#128241; Field Quote</button>
     <button class="q-btn" onclick="sairnOpenPricing()">&#128176; Pricing Setup</button>
     <button class="q-btn" onclick="sdAdminAI()">🤖 AI Recommendations</button>
     <button class="q-btn" onclick="sdAdminPrint()">🖨️ Print Report</button>
@@ -7079,6 +7117,13 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div style="font-size:13px;color:var(--muted);margin-top:2px">All customers — contact info, job history, lifetime value</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdCustAdd()">+ Add Customer</button>
+    <!-- FIELD QUOTE ENTRY POINT. openFQ() is the single existing entry
+         function (it calls showPage('field-quote')); this is a new caller of
+         it, not a second route. The customer DETAIL card has carried one
+         since the modal was dropped on 2026-09-02 -- this puts it on the
+         directory header too, so it is reachable before a customer is
+         picked, which is the case a walk-in estimate actually starts from. -->
+    <button class="q-btn" onclick="openFQ()">&#128241; Field Quote</button>
     <button class="q-btn" onclick="sdCustAI()">🤖 AI Insights</button>
     <button class="q-btn" onclick="sdCustExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdCustPrint()">🖨️ Print</button>
@@ -12780,6 +12825,27 @@ function showPanel(id) {
     }
   }
 
+  // ── REMEMBER WHERE WE WERE, BEFORE THIS LINE ERASES IT (2026-09-17) ──────
+  // The `.page` modules (Field Quote, Doc Scanner, Check Register) render on
+  // top of a cleared panel area, and Field Quote is the only one with a Back
+  // button. It called showPage('dashboard') -- an id that matches NO element,
+  // because the dashboard stub was removed and nothing replaced it (see the
+  // comment a few lines below). That was survivable only while the ONLY ways
+  // in were q-btns calling openFQ(), which does not touch `.panel` classes, so
+  // the source panel stayed `.active` underneath and reappeared when the page
+  // was hidden. Arriving through the sidebar goes through showPanel instead,
+  // which clears every panel on the next line -- so Back would have hidden the
+  // page and revealed NOTHING. A blank screen with a working sidebar is the
+  // kind of defect that gets reported as "the app crashed".
+  //
+  // Captured here rather than inside openFQ() because this is the one place
+  // BOTH routes pass through, and it is the last moment the answer still
+  // exists. Stored on window: showPanel and closeFQ are in different script
+  // blocks and a file-local var would not cross.
+  try {
+    var _cur = document.querySelector('.panel.active');
+    if (_cur && _cur.id) window.sdLastPanel = _cur.id.replace(/^panel-/, '');
+  } catch (e) {}
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   // 'dashboard' has no panel-dashboard/page-dashboard element -- the old stub
@@ -29778,7 +29844,7 @@ document.addEventListener('DOMContentLoaded', function() {
   <div class="ph">
     <div><div class="ptitle">📷 Field Quote</div>
     <div class="psub">Photograph any sketch — Claude prices it with your rates in 60 seconds</div></div>
-    <div class="pacts"><button class="btn bo bsm" onclick="showPage('dashboard')">← Back</button></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="closeFQ()">← Back</button></div>
   </div>
   <!-- Step indicator -->
   <div class="step-row" id="fq-steps">
@@ -36827,7 +36893,34 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     if (main) main.scrollTop = 0;
   }
   window.showPage = showPage;
-  window.openFQ   = function() { showPage('field-quote'); };
+  // openFQ bypasses showPanel entirely, so it records the return panel itself
+  // -- otherwise closeFQ() would send a user who pressed a q-btn back to
+  // whichever panel they were on BEFORE the one they are standing in.
+  window.openFQ   = function() {
+    try {
+      var cur = document.querySelector('.panel.active');
+      if (cur && cur.id) window.sdLastPanel = cur.id.replace(/^panel-/, '');
+    } catch (e) {}
+    showPage('field-quote');
+  };
+  // ── BACK, AND WHY IT IS A FUNCTION RATHER THAN showPage('dashboard') ─────
+  // 'dashboard' matches no `.page` and no `.panel` in this file; showPage()
+  // would hide Field Quote and show nothing. That worked by accident on the
+  // q-btn routes and would have been a blank screen from the sidebar. See the
+  // capture in showPanel().
+  //
+  // The fallback is 'ai' because that is this app's home by every measure it
+  // actually has: `sb-ai` is the only sidebar button that ships `active`,
+  // `panel-ai` the only panel that ships `class="panel active"`, and
+  // FIRST_PAGE is the string 'dashboard' -- which resolves to "no page, show
+  // the panels". Nothing is NAMED dashboard, so the fallback names the thing
+  // that behaves like one.
+  window.closeFQ  = function() {
+    var back = window.sdLastPanel || 'ai';
+    if (typeof window.sbNav === 'function') window.sbNav(back);
+    else if (typeof window.showPanel === 'function') window.showPanel(back);
+    else showPage('__none__');
+  };
   window.nav      = showPage; // sairnbiz alias
 
   // -- LOGIN -------------------------------------------------
