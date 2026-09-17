@@ -2174,12 +2174,21 @@ var LAW_DEFINITION_RULE='CRITICAL RULE: you have no legal dictionary in your own
 var LAW_GROUNDED_DEFINITIONS_RULE='CRITICAL RULE ON LEGAL DEFINITIONS: you have no tools available in this request. You may state what a legal term, doctrine or phrase MEANS only if that meaning appears in the GROUNDED LEGAL DEFINITIONS section below, which was retrieved from Cornell LII before this request was sent. Quote or closely paraphrase that retrieved text and name the source URL given with it. If a term you would otherwise want to define is NOT in that section -- including terms you are completely confident about -- do not define it: say plainly that no grounded definition was retrieved for it and that the user can look it up in this app\'s Legal Reference panel, then carry on with the rest of the work. Do not offer a "general sense", a "roughly speaking" version, or your own paraphrase as a substitute. Drafting or reviewing document TEXT is unaffected by this rule -- you may write a contract clause that defines a term for the parties, and you may say a document uses a term inconsistently or ambiguously, because neither of those is you asserting what the term means as a matter of law.';
 
 // ── THE SIMULATOR'S OWN CITATION RULE, DELIBERATELY SCOPED (2026-09-14) ──
-// Michael's decision, and the reason it is a SEPARATE constant rather than a
-// reuse of LAW_CITATION_RULE above: do not converge the two. The mock-trial /
-// adversary simulator is the one surface here that legitimately needs to
-// discuss authority, and LAW_CITATION_RULE -- which forbids emitting a
-// citable-format string under any circumstances -- would break it. Everywhere
-// that produces real WORK PRODUCT keeps LAW_CITATION_RULE airtight.
+// ── AND CONVERGED ON THE ONE PLATFORM RULE (2026-09-17, Michael) ─────────
+// THE ORIGINAL WORDING OF THIS NOTE SAID "do not converge the two", and it is
+// superseded rather than deleted, because the reasoning below is still the
+// reason these are separate CONSTANTS. What changed is what they may permit.
+// Michael's 2026-09-17 instruction is one rule for the platform: never output
+// a citation in citable-reference format GENERATED FROM MODEL REASONING; the
+// only exception is a site reading a citation straight out of SAIRNlaw's own
+// verified citator. THIS constant already complied -- it forbids generation
+// and permits only a verbatim repeat -- so it is UNCHANGED. The critique
+// step's constant did not, and was rewritten; see the block beside it.
+//
+// The mock-trial / adversary simulator is the one surface here that
+// legitimately needs to DISCUSS authority, which it still does: narratively,
+// which is what both constants now require. Everywhere that produces real WORK
+// PRODUCT keeps LAW_CITATION_RULE airtight.
 //
 // WHAT THIS IS NOT: it is not the accidental omission it replaced. Before
 // this, the decomposition step (mtDecompose) carried NO citation rule at all,
@@ -2188,42 +2197,62 @@ var LAW_GROUNDED_DEFINITIONS_RULE='CRITICAL RULE ON LEGAL DEFINITIONS: you have 
 // authority. A deliberate narrow permission and an accidental absence read
 // the same way to the model and completely differently to a reviewer.
 //
-// WHY IT IS STRICTER THAN THE CRITIQUE STEP'S RULE, which is the part worth
-// reading before changing either. The CRITIQUE path (mtCritique) may name a
-// real reporter citation because its output is MECHANICALLY VERIFIED after the
-// call: mtExtractCitations pulls every citation out and mtVerifyCitations
-// batches them to the real citator against CourtListener, and each one is
-// badged Verified / Not found -- do not rely on this / Ambiguous / unavailable,
-// with a footnote that only claims "every citation resolved" when they all
-// did. Model asserts, code checks -- the same discipline the citator itself
-// carries.
+// IT USED TO BE STRICTER THAN THE CRITIQUE STEP'S RULE. It is no longer: the
+// critique step was converged onto the same prohibition on 2026-09-17, so both
+// paths now forbid GENERATING a citable-format string and both permit a
+// verbatim repeat. What is still worth reading is WHY they differ downstream,
+// because that difference has not gone away and bounds what each badge means.
+//
+// THE CRITIQUE PATH IS CHECKED AFTERWARDS: mtExtractCitations pulls every
+// citation out and mtVerifyCitations batches them to the real citator against
+// CourtListener, each badged Verified / Not found -- do not rely on this /
+// Ambiguous / unavailable, with a footnote that only claims "every citation
+// resolved" when they all did. That check REMAINS, and with generation now
+// forbidden it is a backstop on the rule rather than the licence for breaking
+// it -- which is what it was being used as.
 //
 // THE DECOMPOSITION PATH HAS NO SUCH CHECK. mtExtractCitations is called at
 // exactly one site, and it is not this one; mtRenderPoints displays the
 // model's own `claim` text with an Anchored / Not-in-your-text badge that
-// covers `source_span` and NOT `claim`. So an unverified citation-shaped
-// string could reach the screen here with no badge at all. Two paths, two
-// different guarantees, therefore two different rules -- and the weaker
-// guarantee gets the stricter prompt, not the other way round.
+// covers `source_span` and NOT `claim`. So a citation-shaped string reaching
+// the screen here would carry no badge at all. Same rule on both paths now,
+// and the weaker guarantee is the reason the rule is the strict one.
 var MT_CITATION_RULE='CITATION RULE FOR THIS STEP: do not generate a case citation, statute citation or docket number in citable-reference format (the volume/reporter/page/year pattern, or a statute section number). You MAY repeat such a string back if -- and only if -- it appears verbatim in the position the user wrote, because this step decomposes their argument rather than adding authority to it. Otherwise refer to authority narratively: the holding, the parties, the principle, the era. Nothing you emit here is citation-checked before it is shown, so a citation you compose is one nobody verifies.';
 
-// The CRITIQUE step's rule, and the ONLY place on this platform where emitting
-// a citable-format string is permitted. NAMED rather than written inline, which
-// is the whole point: the permission was previously item 3 of a hand-written
-// HARD RULES block, indistinguishable from an author forgetting
-// LAW_CITATION_RULE existed. A deliberate exception has to LOOK deliberate, or
-// the next reviewer either removes it and breaks the feature or copies it
-// somewhere it does not belong.
+// The CRITIQUE step's rule. IT USED TO BE THE ONE PLACE PERMITTED TO EMIT A
+// CITABLE-FORMAT STRING, and that permission is WITHDRAWN as of 2026-09-17.
 //
-// WHAT EARNS THE PERMISSION IS A MECHANICAL CHECK, NOT A PROMPT. Everything
-// this step emits passes through mtExtractCitations -> mtVerifyCitations ->
-// citatorFetch('verify') against CourtListener, and each citation is badged
-// Verified / Not found -- do not rely on this / Ambiguous / unavailable, with a
-// footnote that only claims "every citation resolved" when they all did. If
-// that verification is ever removed or bypassed, THIS CONSTANT MUST GO BACK TO
-// THE STRICT RULE -- the permission is downstream of the check, not
-// independent of it.
-var MT_CRITIQUE_CITATION_RULE='If you cite a case, give its real reporter citation and do not invent one. If you are not confident a citation is real, describe the principle without a citation instead. Every citation you produce here is checked automatically against a real case reporter after you answer and is shown to the user marked verified or unverified, so a fabricated one will be visible as such -- it will not pass unnoticed. This is a practice/training surface; it is the one place in this application permitted to emit a citation in citable-reference format, and the user is told to confirm anything not marked verified before relying on it.';
+// ── THIS REVERSES A RECORDED DECISION, ON MICHAEL'S INSTRUCTION ──────────
+// The block above MT_CITATION_RULE still says "do not converge the two", and
+// that was Michael's 2026-09-14 call. Michael has since given the platform ONE
+// rule: never output a case citation in citable-reference format GENERATED
+// FROM MODEL REASONING, with a single scoped exception for a call site that
+// pulls the citation DIRECTLY FROM SAIRNlaw'S OWN VERIFIED CITATOR -- real
+// retrieved data, not generated text. Recorded as a reversal rather than
+// quietly rewritten, because a standing note that contradicts the code beside
+// it is how the next reader concludes one of the two is a mistake.
+//
+// WHY POST-HOC VERIFICATION DOES NOT EARN THE EXCEPTION, which is the whole
+// substance of the change. The old permission rested on
+// mtExtractCitations -> mtVerifyCitations -> citatorFetch('verify'): the model
+// composed a citation and the code graded it afterwards. That is a real
+// control and it is NOT the exception Michael scoped. The citation still
+// ORIGINATES IN MODEL REASONING; the check only decides what badge it wears.
+// A string badged "Not found -- do not rely on this" is a fabricated citation
+// that reached a lawyer's screen, and Mata v. Avianca is in LAW_CITATION_RULE
+// precisely because a fabricated citation with a caveat beside it is what gets
+// filed. The citator exception is for a citation READ OUT OF the citator's
+// response -- which is what the Legal Research Citator panel does, and it is
+// not an AI call site at all.
+//
+// THE VERIFICATION STAYS AND IS NOW A BACKSTOP RATHER THAN A LICENCE.
+// mtExtractCitations / mtVerifyCitations are unchanged and still run on this
+// step's output: with generation forbidden, anything they find is either a
+// string the user supplied or a rule violation, and both are worth badging.
+// Removing the check because the prompt now forbids the thing it catches would
+// be trusting the prompt, which is the mistake this file already names -- a
+// clean prompt scan is not evidence the model obeyed it.
+var MT_CRITIQUE_CITATION_RULE='CITATION RULE FOR THIS STEP: do not generate a case citation, statute citation or docket number in citable-reference format (the volume/reporter/page/year pattern, e.g. "384 U.S. 436 (1966)", or a statute section number like "42 U.S.C. Section 1983"). This holds even for a case you are completely confident about and even paired with a disclaimer. You MAY repeat such a string back if -- and only if -- it appears verbatim in the position or documents the user gave you. Otherwise attack the authority narratively: name the doctrine, the holding, the parties, the era, the principle it stands for, and say plainly that the citation must be confirmed in Westlaw, Lexis or the court\'s own site. Citation recall from a language model is not a verified legal database -- Mata v. Avianca (2023) was real sanctions from fabricated citations -- and a fabricated citation shown with a warning beside it is still a fabricated citation on a lawyer\'s screen.';
 
 // Deterministic candidate extraction. NOT a model judgment and not a
 // hardcoded glossary -- either of those would reintroduce the thing being
