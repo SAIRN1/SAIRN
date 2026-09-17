@@ -2073,8 +2073,8 @@
       "task": "watchdog self outcome latch SAIRN_OPS_EMAIL verification",
       "claimed_at": "2026-09-17T01:10:00Z",
       "claimed_at_epoch": 1789607400.741717,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T03:19:06Z"
     },
     {
       "id": "hank-1789610874",
