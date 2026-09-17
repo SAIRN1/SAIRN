@@ -1593,8 +1593,8 @@
       "task": "ai rate limit tenant subbudget concurrency coverage, NHI credential inventory owners and scope check, incident response plan NIST 800-61 current revision, sairndental CDT code catalogue versioning",
       "claimed_at": "2026-09-17T14:56:44Z",
       "claimed_at_epoch": 1789657004.38646,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T17:23:36Z"
     }
   ]
 }
