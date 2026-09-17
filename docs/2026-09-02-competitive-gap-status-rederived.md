@@ -4,6 +4,21 @@
 supersede their reasoning, their evidence, or their market analysis, which
 remain the reference and are still accurate.**
 
+> **AND THIS FILE'S OWN STATUS COLUMN IS NOW DATED TOO — the thing it was
+> written to warn about.** Its opening argument is that *"seven days and one
+> very heavy build night later, the verdicts are dated too."* Fifteen more days
+> have passed. Four later passes re-derived parts of it and each is the current
+> answer for what it covers; **read the one that covers your app before trusting
+> a cell here**, and re-derive the cell if none does:
+>
+> | Later pass | Covers |
+> |---|---|
+> | `docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md` | SAIRNmechanical + five apps; declares this file "comprehensively stale" |
+> | `docs/2026-09-17-sairnroofing-competitive-gap-rederived.md` | SAIRNroofing |
+> | `docs/2026-09-17-senior-mechanical-competitive-gap-rederived.md` | SAIRNsenior, SAIRNmechanical |
+> | `docs/2026-09-17-caller-level-gap-check-senior-stonedesk.md` | SAIRNsenior, StoneDesk — caller-level |
+> | `docs/2026-09-17-sairndental-competitive-gap-rederived.md` | **SAIRNdental** — and it corrects B2 below |
+
 - `docs/superpowers/specs/2026-08-26-competitive-gap-audit-roofing-dental-senior.md`
 - `docs/superpowers/specs/2026-09-02-stonedesk-worldwide-competitive-gap-audit.md`
 
@@ -99,7 +114,7 @@ in flight; B3 is complete except for the half refused on purpose.
 | A8 | Recall / reactivation | Zero occurrences | **BUILT** | `dnt_recall_outreach`, `panel-recall`, `sairndental_recall_schema.sql` (Fourth) |
 | A9 | Treatment planning | Zero occurrences | **BUILT** | `dnt_txplans`, `panel-txplan`, `sairndental_treatment_plans_schema.sql` |
 | B1 | Enterprise credentialing & payer-enrolment lifecycle — *"the clearest whitespace in the entire dental audit"* | Per-employee credentialing only, not payer enrolment | **BUILT** | `payer_enrollment` record type with its own effective/enrolment logic on `panel-credentials` (Hank) |
-| B2 | Cross-location roll-up reporting | Write-side done, reporting deferred | **PARTIAL — DELIBERATELY DEFERRED** | `api/_lib/dnt-location.js` is real and server-side; reporting is in `SAIRN-BACKLOG.md` by decision, not by oversight |
+| B2 | Cross-location roll-up reporting | Write-side done, reporting deferred | **SERVER BUILT, NO CALLER — CORRECTED 2026-09-17 (CC)** | This cell was wrong in both directions at once by 2026-09-15. The reporting is no longer deferred — `api/_lib/dnt-rollup.js`, the `dnt_rollup` endpoint at `api/sd-data.js:11274`, 39 passing test arms, tiered **A**, reviewed twice — and it is not reachable either: `dnt_rollup` appears **0 times** in `sairndental.html` and in every `.html` file in the repo. It is the only one of the app's 25 registered resources the client never names. **“Deferred” was also not quite right when written**: `rollup`/`roll-up` are 0 in `SAIRN-BACKLOG.md`, so the deferral this cell cited is not recorded there. See `docs/2026-09-17-sairndental-competitive-gap-rederived.md` §0 |
 | B3 | Consolidated RCM / denials & appeals | `dnt_denial` + `dnt_ar` exist, no appeals lifecycle | **BUILT** | `panel-denials` with the appeals workflow and receivable ageing (Fourth, `f856b38`) |
 | B4 | Central call centre / missed-call leakage | *"recorded as a category, not a recommendation"* | **OPEN — NOT RECOMMENDED** | 0 hits. The audit itself declined to recommend it; it is not a backlog item |
 | B5 | Open BI / data-warehouse connectors | Absent, CSV export only | **BUILT** | `api/dnt-bi.js`, `api/_lib/dental-bi.js`, `panel-bi`, `sql/sairndental_bi_tokens_schema.sql` (Fourth, `363b830`). A generic pollable read-only JSON feed rather than a Power BI-specific `.mez` connector — all three named tools read a URL, so one feed serves all three. Eleven datasets of **stored facts**; derived measures (appeal deadlines, GFE due dates, recall standing, insurance estimates) are deliberately NOT duplicated out of the browser engines that own them. Inherits the minting employee's role, re-read live per poll; patient identifiers off by default behind a stable pseudonym. ⚠ SQL pending a run |
