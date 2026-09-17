@@ -1682,8 +1682,8 @@
       "task": "build A5 accounting integration general ledger export for sairnroofing",
       "claimed_at": "2026-09-17T14:18:54Z",
       "claimed_at_epoch": 1789654734.2838018,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T15:04:36Z"
     }
   ]
 }
