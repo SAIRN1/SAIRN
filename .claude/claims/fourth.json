@@ -1555,6 +1555,16 @@
       "claimed_at_epoch": 1789570390.5941412,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789613678",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "hover process pass staleness, backup_reader ACL, item 78 concurrency, item 6 writes, item 101 settling, IOLTA reconciliation, supabase_admin ownership, reverify TTL",
+      "claimed_at": "2026-09-17T02:54:38Z",
+      "claimed_at_epoch": 1789613678.126873,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
