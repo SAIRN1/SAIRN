@@ -126,8 +126,21 @@ def main(argv):
         return EXIT_COULD_NOT_RUN
 
     try:
-        payload = fetch_json(url, method='POST', payload={'action': action},
-                             headers={'Authorization': 'Bearer ' + secret})
+        # ── fetch_json RETURNS Response(status, body), NOT THE BODY ─────────
+        # SECOND INSTANCE of the defect found in tools/cron_liveness_check.py
+        # on 2026-09-17, and it failed the same way: `payload` was the
+        # namedtuple, so `isinstance(payload, dict)` below was ALWAYS false and
+        # this tool could only ever write COULD NOT TELL.
+        #
+        # THE MODULE'S OWN GUARD WAS SHORT-CIRCUITED BY THE BUG. The next line
+        # reads `if not isinstance(payload, dict) or 'ok' not in payload:` --
+        # and `'ok' not in payload` on a Response raises the TypeError that
+        # exists precisely to catch this. It never ran: `not isinstance(...)`
+        # was True first, and `or` stops there. The defence was present,
+        # correct, and unreachable because of the thing it was defending
+        # against.
+        resp = fetch_json(url, method='POST', payload={'action': action},
+                          headers={'Authorization': 'Bearer ' + secret})
     except Exception as e:
         write_status('COULD NOT TELL', [
             '**The endpoint could not be reached or did not answer usefully.**',
@@ -139,6 +152,21 @@ def main(argv):
         print('COULD NOT RUN: %s: %s' % (type(e).__name__, e))
         return EXIT_COULD_NOT_RUN
 
+    # THE HTTP STATUS IS READ RATHER THAN ASSUMED. fetch_json does NOT raise on
+    # an HTTP error -- it returns the parsed error body with its code -- so a
+    # 401 from a stale secret would otherwise be parsed as an answer.
+    status, payload = resp.status, resp.body
+    if status != 200:
+        write_status('COULD NOT TELL', [
+            '**The endpoint rejected or could not serve this request: HTTP %s.**'
+            % status,
+            '',
+            '`401` means the secret this tool sent does not match the one the',
+            'deployment holds -- SET and WRONG, which is indistinguishable from',
+            'healthy from the outside. Nothing was verified.',
+        ], payload if isinstance(payload, (dict, list)) else None)
+        print('COULD NOT RUN: HTTP %s from the endpoint' % status)
+        return EXIT_COULD_NOT_RUN
     if not isinstance(payload, dict) or 'ok' not in payload:
         write_status('COULD NOT TELL', [
             '**The endpoint answered something this tool cannot read.** Treated as',
