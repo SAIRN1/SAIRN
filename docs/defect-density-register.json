@@ -6300,6 +6300,59 @@
       "recurrence_open": "The other two NONE verdicts (alf_staff_credentials, mech_credentials) are still tool answers, not hand-verified ones -- they were re-grepped on 2026-09-16 and hold, but nothing re-checks them if either app gains an export."
     },
     {
+      "commit": "a100c0785f51",
+      "date": "2026-09-16",
+      "subject": "fix(sairncash): the offline fallback was unbounded -- a blocked request meant yes forever",
+      "files": [
+        "sairncash.html",
+        "tests/sairncash_entitlement_gate.js",
+        "tests/sairncash_entitlement_gate_probe.py"
+      ],
+      "lines_added": 165,
+      "lines_removed": 12,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "reverifySubscription() and reverifyTrial() fell back to the client-only check whenever the verify request THREW, with no time bound -- so blocking the request (offline, a hosts entry, DevTools) made a stored, forgeable localStorage record grant access INDEFINITELY, with nothing ever re-asked. The fallback itself is deliberate and correct; what was missing is how long an unconfirmed answer may be reused",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The fallback and its comment arrived together and no commit shows a bound being removed -- there was never one to remove. Recorded as unknown rather than attributed to whichever commit wrote the fallback."
+      },
+      "citation_note": "No section covers a correct fallback with no bound on it. It is the inverse of the fail-closed rule -- this one fails OPEN deliberately, which is right for a cost/availability trade and wrong without a ceiling -- and inventing a citation would blur the rule that does exist.",
+      "contributing_factors": [
+        {
+          "factor": "THE FALLBACK IS CORRECT AND HAD NO BOUND, which are two different facts that read as one. A paying customer with no network must not lose the app, so falling back to the last known answer is right; nothing said for how long, so the answer was reused forever.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A 72-hour grace measured from the last real server answer, stamped in saveSub/saveTrial rather than at the four call sites so a new call site cannot forget it."
+        },
+        {
+          "factor": "THE FAILURE IS REACHED BY DOING NOTHING. Every other forgery here needs a plausible record; this one needs the request to fail, which a user can cause with airplane mode, a hosts entry or DevTools -- and a failed request is indistinguishable from a real outage at the point the decision is made.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Recorded as the shape. The bound is the only client-side answer: the decision cannot be made better, only reused for less long."
+        },
+        {
+          "factor": "A FUTURE TIMESTAMP WOULD HAVE REINTRODUCED THE UNBOUNDED WINDOW THROUGH THE FIELD THAT BOUNDS IT. `age <= GRACE` is satisfied by any negative age, so clock skew or a stamp written ahead restores exactly what was removed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "`age >= 0` guards it, and a mutation removing that guard is driven by the probe."
+        },
+        {
+          "factor": "AN EXISTING ARM STOPPED REACHING ITS SUBJECT WHEN THE BOUND WAS ADDED. 'a network failure does NOT resurrect an expired one' used a fixture with no stamp, so the new grace check refused FIRST and the arm passed without ever reaching the expiry comparison -- measured: with no stamp, replacing the fallback with a bare `return true` is silent.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Its fixture carries a fresh stamp, so it tests the expiry guard rather than re-testing the bound. A guard added upstream can make a downstream arm vacuous without either being wrong."
+        }
+      ],
+      "recurrence_open": "THE BOUND IS NOT AUTHENTICATION AND THE RESIDUAL IS OPEN: localStorage is attacker-controlled, so a forger who knows the field writes lastVerifiedAt and buys another 72 hours. Closing that needs a server-signed artefact the client cannot mint, which does not exist for subscriptions today. What is closed is the INDEFINITE case, which needed no knowledge of the field at all -- only a blocked request."
+    },
+    {
       "commit": "a744ceb5e0eb",
       "date": "2026-09-16",
       "subject": "fix(session-lock): confirmed-live sessions are now REFUSED, not warned",
