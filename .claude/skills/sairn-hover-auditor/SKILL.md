@@ -1719,6 +1719,35 @@ except," the identical lesson item 117 already names for regex-over-text
 generally, now confirmed against this platform's own except-block idiom
 specifically.
 
+**A fourth rotation axis, added 2026-09-16, and the one that closes the last
+gap between this role's design and the top rung of mature audit-maturity
+models: EMPIRICAL, TREND-DRIVEN re-prioritization, not just a declared
+Tier.** Tier is a static judgment set once by a build agent. Evidence-margin
+weighting (below) is about how contested one finding was. Neither LEARNS
+from this role's own accumulated history of where real findings have
+actually landed. Financial audit risk-based sampling updates on prior-year
+misstatement patterns; aviation SMS programs re-target inspection from
+incident history -- both real, current, top-tier practices this file already
+cites elsewhere for other reasons, now applied directly to this role's own
+rotation. `hover-audit-log/defect_density_weighting.py` reads the real
+self-log, attributes each real `finding` (never a clean `check` -- Safe
+Harbor means a thoroughly-verified-clean file must not rank as if
+unexamined) to the files a resolvable commit sha or an explicit path in its
+`ref` actually touched, and reports a real, measured ranking -- disclosing,
+not hiding, that with 29 total findings most files sit at n=1, and that
+sha-based attribution credits every file in a commit (a regenerated
+`MASTER-PLAN.md` alongside a real fix), not only the one a finding was
+specifically about. **Sabotage-verified before trusting it**, same
+discipline as every other checker here: 4 fixtures locked in both
+directions, including this repo's own real root commit as the one real-sha
+control (a root commit has no parent, so `git diff-tree` silently returns
+nothing without `--root` -- a false ZERO indistinguishable from "touched no
+files," found only by testing the fixture rather than trusting the call);
+a planted defect (forcing the sha-check to always fail) was confirmed
+caught before being reverted. Consult it before a rotation pick as a real,
+additional input alongside Tier and freshness -- it does not replace either,
+and with this little history it should not yet dominate either.
+
 Four further anti-predictability rules, against the rotation itself becoming
 a pattern a build agent could learn and route around:
 
