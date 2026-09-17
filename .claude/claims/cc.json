@@ -1722,8 +1722,8 @@
       "task": "caller level reconciliation of server capabilities for sairnsenior and stonedesk competitive audits",
       "claimed_at": "2026-09-17T17:35:25Z",
       "claimed_at_epoch": 1789666525.7836194,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T17:46:17Z"
     }
   ]
 }
