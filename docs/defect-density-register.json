@@ -7383,6 +7383,64 @@
         }
       ],
       "recurrence_open": "Two claims for one piece of work that share no identifier, no phrase and no app still pass -- block_reason() names that residual in its own body and records why a rare-token rule was measured at 74 extra blocks and rejected."
+    },
+    {
+      "commit": "b135eaa27620",
+      "date": "2026-09-17",
+      "subject": "fix(item6): the four \"re-read or drop\" entries could never be discharged, and the register's denominator was a sentence",
+      "files": [
+        "tools/idempotency_check.py",
+        "tools/idempotency_triage.json"
+      ],
+      "lines_added": 61,
+      "lines_removed": 8,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/idempotency_triage.json asserted 'EVERY file the checker flags is now judged' as a standing sentence. It was true when written on 2026-09-14 and false by 2026-09-17, when api/_lib/resilience.js had been unjudged for two days -- a denominator in prose is a measurement with no re-measurement. In the same tool, the stale-entry test asked only whether a judged file is still flagged, so the four entries whose fix had LANDED were reported as 'JUDGED BUT NO LONGER UNGUARDED -- re-read or drop' on every run, demanding an action already done and one the register's own vocabulary forbids (a FIXED entry must not be deleted). The block printed the same four lines indefinitely, which is how a list stops being read and a genuinely stale exemption goes quiet inside it.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "6f6082cd6b9f",
+        "date": "2026-09-14",
+        "subject": "fix(item6): the triage closes at 26 of 26, and the last two files name a guard class the checker cannot see",
+        "lag_days": 3
+      },
+      "citation_note": "2.3 is the closest: the register asserted a completeness -- 'EVERY file the checker flags is now judged' -- as a standing sentence rather than a read, and it was a COUNT with a second source (the checker's own live run) that nothing compared it to. 1.1 covers the other half, the stale list that could not be discharged.",
+      "phase_note": "Both halves were written at the same commits that built the feature (6f6082cd, bbf4b52b) and both were correct that hour. The design choice -- a prose denominator, and a one-way staleness test -- is what made them go wrong later, not a coding slip.",
+      "contributing_factors": [
+        {
+          "factor": "A denominator was written as PROSE in the register instead of computed from the checker run, so it could not go false out loud when a 28th unguarded file appeared.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The sentence is deleted; _not_a_blanket_sweep now points the reader at the live ITEM 6 TRIAGE line, which counts judged and untriaged every run."
+        },
+        {
+          "factor": "The stale-entry test asked ONE question -- is this file still flagged -- when no-longer-flagged means two opposite things, so a FIXED entry that the checker now agrees is guarded was reported as needing action forever.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Entries may record reconciled_to, compared against the live classification; a discharged entry moves to a RECONCILED list and goes red again if the classification moves."
+        },
+        {
+          "factor": "Nothing re-ran the checker between 2026-09-14 and 2026-09-17, so neither half was observed while both were false.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "The checker is report-only and not in any gate. Putting it in one is a separate decision with its own cost and is not being taken here as a side effect."
+        },
+        {
+          "factor": "The four entries printed every run asking for an action that was already done, which trains a reader to skip the block that also carries genuinely stale entries.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Discharged entries now print under RECONCILED, separate from the stale list, so the stale list is empty when nothing is stale."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
     }
   ],
   "started": "2026-09-09"
