@@ -37,6 +37,14 @@ const fs = require('fs');
 const path = require('path');
 const assert = require('assert');
 const vm = require('vm');
+// ── THE BOARD IS DERIVED FROM THE SERVER, NOT TYPED OUT (2026-09-17, hank) ──
+// This suite's BOARD used to be a hand-written constant, on the reasoning that
+// "the whole point of the export is that it does not re-derive the server's
+// classification". That is the right rule FOR THE EXPORT and the wrong one for
+// the FIXTURE: it made the agreement claim untestable, and the hand-written
+// board had drifted into a state the server cannot produce.
+const mechCred = require(path.join(__dirname, '..', 'api', '_lib',
+                                   'mech-credentials.js'));
 
 // MECH_HTML lets a negative control point this suite at a MUTATED COPY in a
 // temp directory instead of patching the tracked file. Same convention
@@ -65,8 +73,10 @@ function grab(sig, terminator) {
 // so the server's latestByKey() keeps only MC-2 on the board. MC-1 is the
 // superseded original and is the row an export built from the board would lose.
 // MC-3 is a jurisdictional licence with no EPA section, and MC-4 is a lifetime
-// EPA 608 with no expiry at all, which is the `unknown` status the board is
-// careful not to colour green.
+// EPA 608 -- has_expiry STATED false -- which the server classifies `current`
+// with `no_expiry: true`. MC-6 is the genuinely UNKNOWN shape: it claims an
+// expiry and has no date on file. Those two are opposite facts and this fixture
+// used to conflate them; see the note on MC-6.
 const DATA = [
   { credential_id: 'MC-1', technician_id: 'T-4', record_type: 'epa_608',
     epa_section: 'type_ii', jurisdiction: null, credential_no: 'E-111',
@@ -80,27 +90,41 @@ const DATA = [
     expires_on: '2026-10-01' },
   { credential_id: 'MC-4', technician_id: 'T-9', record_type: 'epa_608',
     epa_section: 'universal', jurisdiction: null, credential_no: 'E-333',
-    issuer: 'ESCO', issued_on: '2019-01-01', has_expiry: false, expires_on: null }
+    issuer: 'ESCO', issued_on: '2019-01-01', has_expiry: false, expires_on: null },
+  // ── MC-6, ADDED 2026-09-17: THE GENUINELY UNKNOWN RECORD ────────────────
+  // This fixture used to call MC-4 -- a LIFETIME credential -- `unknown`, and
+  // the two are opposite facts. `has_expiry === false` is a POSITIVE answer
+  // about a lifetime card and classifyRecord() returns `current` for it, by a
+  // decision that has its own arm in api/_lib/mech-credentials.test.js:
+  // "has_expiry:false is CURRENT -- a lifetime credential is not missing data".
+  // UNKNOWN is the OTHER shape: a record that CLAIMS an expiry and has no date
+  // on file, which is the missing evidence the preamble refuses to let read as
+  // a pass. Without a record of this shape, every arm below about `unknown`
+  // was exercising a board state the server cannot emit.
+  { credential_id: 'MC-6', technician_id: 'T-7', record_type: 'state_license',
+    epa_section: null, jurisdiction: 'ohio', credential_no: 'OH-77',
+    issuer: 'state board, Ohio', issued_on: '2024-04-01', has_expiry: true,
+    expires_on: null }
 ];
-// The board as the server returns it: latestByKey() over DATA, classified.
-// Written out rather than recomputed here, because the whole point of the
-// export is that it does not re-derive the server's classification.
-const BOARD = {
-  today: '2026-09-16', warn_days: 60,
-  counts: { current: 2, expiring: 1, expired: 0, unknown: 1 },
-  unknown_count: 1,
-  rows: [
-    { technician_id: 'T-4', record_type: 'epa_608', epa_section: 'type_ii',
-      jurisdiction: null, issued_on: '2026-02-01', expires_on: '2031-02-01',
-      status: 'current', days: 1600, no_expiry: false },
-    { technician_id: 'T-9', record_type: 'state_license', epa_section: null,
-      jurisdiction: 'universal', issued_on: '2025-06-01', expires_on: '2026-10-01',
-      status: 'expiring', days: 15, no_expiry: false },
-    { technician_id: 'T-9', record_type: 'epa_608', epa_section: 'universal',
-      jurisdiction: null, issued_on: '2019-01-01', expires_on: null,
-      status: 'unknown', days: null, no_expiry: true }
-  ]
-};
+// ── THE BOARD IS COMPUTED BY THE REAL SERVER MODULE (2026-09-17, hank) ─────
+// It used to be typed out by hand, with the reason: "Written out rather than
+// recomputed here, because the whole point of the export is that it does not
+// re-derive the server's classification." THE RULE IS RIGHT AND IT WAS APPLIED
+// TO THE WRONG OBJECT. The EXPORT must not re-derive status -- it copies
+// whatever the board says, and the arms below still prove that. The FIXTURE is
+// not the export; a hand-typed board makes "the file and the screen agree" an
+// assertion about a constant somebody typed, which is the one thing it cannot
+// be allowed to be.
+//
+// IT HAD ALREADY DRIFTED, AND INTO A STATE THE CODE CANNOT PRODUCE. The typed
+// row for MC-4 read `status: 'unknown'` WITH `no_expiry: true`. Those two come
+// out of a SINGLE return statement in classifyRecord() --
+// `if (rec.has_expiry === false) return { status: 'current', ..., no_expiry:
+// true }` -- so no input produces that pair. The fixture also said
+// `unknown_count: 1` where the server says 0, and `days: 1600` where it says
+// 1599. Every arm asserting any of those was green against a fiction, and one
+// of them contradicted an arm in api/_lib/mech-credentials.test.js outright.
+const BOARD = mechCred.evaluateBoard(DATA, '2026-09-16', 60);
 
 function harness(opts) {
   opts = opts || {};
@@ -180,7 +204,7 @@ console.log('SAIRNmechanical -- the technician credential register as a FILE');
 
 section('1. the export exists, runs, and its columns are wired to real fields');
 
-test('one row per RECORD -- four, not the board\'s three', () => {
+test('one row per RECORD, not one per BOARD row -- every record is in the file', () => {
   const { lines } = csv();
   const h = headerIndex(lines);
   assert.strictEqual(lines.length - h - 1, DATA.length,
@@ -212,7 +236,67 @@ test('a lifetime credential says so from the STATED field, not from a blank date
   assert.strictEqual(at('Expires on'), '');
   assert.strictEqual(at('Days until expiry'), '',
     'a day count was invented for a credential with no expiry');
+  // CORRECTED 2026-09-17: this asserted `unknown`. A lifetime credential is
+  // CURRENT -- api/_lib/mech-credentials.js:105 returns that status and
+  // `no_expiry: true` from ONE statement, and api/_lib/mech-credentials.test.js
+  // has an arm saying so in as many words. The old expectation was a state the
+  // server cannot emit, and it survived only because the fixture board was
+  // typed rather than computed.
+  assert.strictEqual(at('Status (server, board rows only)'), 'current',
+    'a STATED lifetime credential was reported as missing data');
+});
+
+test('...and UNKNOWN is the other shape: claims an expiry, no date on file', () => {
+  // The distinction the preamble's "UNKNOWN IS NOT A PASS" line is about. If no
+  // fixture record produces it, that arm cannot tell a working count from a
+  // broken one -- which was the state of this suite until MC-6 existed.
+  const { at } = rowById(csv().lines, 'MC-6');
+  assert.strictEqual(at('Expires?'), 'yes');
+  assert.strictEqual(at('Expires on'), '');
   assert.strictEqual(at('Status (server, board rows only)'), 'unknown');
+  assert.strictEqual(at('Days until expiry'), '',
+    'a day count was invented for a record with no expiry date on file');
+  assert.ok(/^yes ./.test(at('On the board?')),
+    'the unknown record is not superseded by anything -- it is on the board');
+});
+
+// ── 1b. THE FIXTURE IS LOCKED AGAINST THE SOURCE (2026-09-17, hank) ────────
+// Added during an independent review of the export change, after driving the
+// real module and finding the typed board disagreed with it. These arms exist
+// so the fixture cannot drift back: every status the arms below rely on must
+// be one the SERVER actually produced from DATA, not one somebody typed.
+section('1b. the fixture board is the SERVER board');
+
+test('every status this suite asserts on is one the server really emits', () => {
+  const got = BOARD.rows.map((r) => r.status).sort();
+  // Named individually rather than counted: a count arm passes just as happily
+  // when three rows collapse onto one status, which is how the `unknown` class
+  // went unexercised before.
+  ['current', 'expiring', 'unknown'].forEach((want) => {
+    assert.ok(got.indexOf(want) !== -1,
+      'no fixture record produces status ' + want + ', so every arm about it '
+      + 'is asserting a property of nothing. statuses present: ' + got.join(', '));
+  });
+});
+
+test('the pair classifyRecord() cannot emit is not in the fixture', () => {
+  // THE EXACT DRIFT THIS REPLACED. The typed board carried
+  // `status: 'unknown'` WITH `no_expiry: true`. Both come out of a SINGLE
+  // return in api/_lib/mech-credentials.js -- `if (rec.has_expiry === false)
+  // return { status: 'current', ..., no_expiry: true }` -- so no input produces
+  // that pair, and an arm asserting it can never be satisfied by real data.
+  BOARD.rows.forEach((r) => {
+    assert.ok(!(r.no_expiry === true && r.status !== 'current'),
+      'no_expiry with a status other than current is unreachable in '
+      + 'classifyRecord(): ' + JSON.stringify(r));
+  });
+});
+
+test('the counts are the server arithmetic, not a second tally', () => {
+  const tally = { current: 0, expiring: 0, expired: 0, unknown: 0 };
+  BOARD.rows.forEach((r) => { tally[r.status] = (tally[r.status] || 0) + 1; });
+  assert.deepStrictEqual(BOARD.counts, tally);
+  assert.strictEqual(BOARD.unknown_count, tally.unknown);
 });
 
 section('2. IT EXPORTS THE RECORDS, NOT THE BOARD');
@@ -268,15 +352,35 @@ test('TWO records sharing a key AND a date -- only ONE is marked current', () =>
     'both same-day records were marked current, so the file shows ' + key.length +
     ' current rows for a key the board shows once: ' +
     JSON.stringify(key.map(c => c[head.indexOf('Credential ID')])));
-  assert.strictEqual(key[0][head.indexOf('Credential ID')], 'MC-2',
-    'the tie went to the wrong record -- the server keeps the first seen');
+  // ASKED, NOT TYPED (2026-09-17). This used to assert the literal 'MC-2'.
+  // The claim being tested is that the FILE and the SERVER agree on a tie, and
+  // a typed answer cannot fail when the server's tie-break changes -- it can
+  // only make the export look wrong. latestByKey() is the real function the
+  // board is built with, driven over the same array in the same order.
+  const serverWinner = mechCred.latestByKey(dup)
+    .filter((r) => r.technician_id === 'T-4' && r.epa_section === 'type_ii');
+  assert.strictEqual(serverWinner.length, 1,
+    'the server itself kept more than one row for the colliding key');
+  assert.strictEqual(key[0][head.indexOf('Credential ID')],
+    serverWinner[0].credential_id,
+    'the file marks a different record current than the board does: file says '
+    + key[0][head.indexOf('Credential ID')] + ', server keeps '
+    + serverWinner[0].credential_id);
 });
 
 test('the preamble COUNTS the superseded rows rather than leaving them implicit', () => {
   const { lines } = csv();
   const pre = lines.slice(0, headerIndex(lines)).join('\n');
-  assert.ok(/ROWS IN THIS FILE: 4 \(3 currently shown on the board, 1 superseded/.test(pre),
-    'the preamble does not say how much of this file the board is not showing:\n' + pre);
+  // DERIVED 2026-09-17, not typed: the two numbers are DATA.length and the
+  // board's own row count. A literal has to be re-typed every time the fixture
+  // grows, and the literal that got re-typed wrong is what this repair is about.
+  const shownCount = BOARD.rows.length;
+  const expected = 'ROWS IN THIS FILE: ' + DATA.length + ' (' + shownCount +
+    ' currently shown on the board, ' + (DATA.length - shownCount) + ' superseded';
+  assert.ok(pre.indexOf(expected) !== -1,
+    'the preamble does not say how much of this file the board is not showing.'
+    + String.fromCharCode(10) + 'expected: ' + expected
+    + String.fromCharCode(10) + 'got:' + String.fromCharCode(10) + pre);
   assert.ok(/renewal\s+history/i.test(pre), pre);
 });
 
