@@ -4774,3 +4774,58 @@ a DEA-relevant dosing trail that can be neither viewed nor produced as a file.
 **Not started, per the brief.**
 
 37 of 157 suites controlled.
+
+## 2026-09-16 (continued) -- sv_audit_log was closed on both halves, and the document was the stale thing
+
+### Verified live before assuming either claim
+
+The Dosing Audit Trail panel is **real and live**. `panel-doseaudit`, a nav
+entry under Pharmacy & Compliance, `svRenderDoseAudit()` behind it, and an
+**Export CSV** calling `svExportDoseAudit()`. Not read from a commit:
+`https://sairn.vercel.app/sairnvet` answers **200 at 818,332 bytes** and the
+DEPLOYED source carries all three markers.
+
+**So sv_audit_log is closed on BOTH halves and neither was still open.**
+
+### The document was the stale thing
+
+`docs/2026-09-14-class-a-retrievability.md` still had it as **no / no**, still
+called it *"the only one"* that could not be seen, and still counted it among
+the four apps with no export path. **Four passages updated in ONE pass** -- the
+table row, the headline, the summary count, and the remaining-four list --
+because **a row corrected while the summary that counts it stays wrong is the
+defect that document is itself about**. Nine-of-eleven and seven-of-eleven
+become **eleven and eight**.
+
+**The original headline sentence is kept above the correction rather than
+rewritten.** A document that quietly becomes right reads as though it was never
+wrong.
+
+**And the remaining three changed SHAPE, not just count:** SAIRNvet now HAS
+export machinery, so `sv_controlled` is a **missing REPORT rather than a missing
+feature** -- smaller than it was this morning, and the document says so.
+
+### The control, and two mutations that had to be re-aimed
+
+`tests/sairnvet_dose_audit_reader.js` was Tier A and uncontrolled -- the wrong
+state for a reader that has **just become the thing an inspector is handed**.
+Four mutations, each a way the panel can lie **about ITSELF** rather than about
+the doses: a failed read rendering as an empty trail that claims to be the
+server copy, an unprovisioned table read as a practice that has dosed nothing,
+the capped local copy shown as the full record, and a no-transport panel going
+silent.
+
+**TWO OF THE FOUR FAILED FOR THE WRONG REASON FIRST, and the file records both.**
+Disabling the null-env branch let a null reach `env.provisioned` -- TypeError.
+Re-anchoring on a fragment left the `done()` call unbalanced -- SyntaxError.
+**Both FAIL. Neither tests the arm.** A mutation caught by a crash proves nothing
+about the branch it was meant to exercise, and a control whose arms pass that way
+is measuring node's parser. The branches are now kept **LIVE and made to LIE**,
+which is what the arms actually assert.
+
+**That is the third distinct way I have seen a mutation fail wrongly tonight** --
+crash, syntax error, and (on the SAIRNbiz three-way match) no surgical disable
+existing at all. Worth carrying: *the exit code is not the evidence; the arm
+that fired is.*
+
+39 of 157 suites controlled.
