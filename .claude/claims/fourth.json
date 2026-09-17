@@ -1615,6 +1615,16 @@
       "claimed_at_epoch": 1789684115.5661452,
       "status": "released",
       "released_at": "2026-09-17T23:17:11Z"
+    },
+    {
+      "id": "fourth-1789687539",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tier A review discharge oldest first, sc BAD_ACTION message per-resource verb, bridge_data raw licence key rekey migration, sairnlaw next jurisdiction gate",
+      "claimed_at": "2026-09-17T23:25:39Z",
+      "claimed_at_epoch": 1789687539.2284596,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
