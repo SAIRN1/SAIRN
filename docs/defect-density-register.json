@@ -4105,6 +4105,68 @@
       "recurrence_open": "The guard is still table-level only and still cannot see column loss, which its own docstring says. And nothing connects it to the list of tables a human has declared must-not-disappear -- the 2026-08-26 handoff names these two and no mechanism reads that sentence, so a third such table would be protected only if somebody remembers. What changed is that the predicate no longer excludes a table for how it is spelled."
     },
     {
+      "commit": "2090f74a8585",
+      "date": "2026-09-16",
+      "subject": "fix(controls): ten git arms named the probe and measured the whole tree",
+      "files": [
+        "tests/roofing_claim_photo_export_mutation_control.js",
+        "tests/sairnbiz_po_recv_mutation_control.js",
+        "tests/sairnbiz_three_way_match_mutation_control.js",
+        "tests/sairnbuild_server_backup_mutation_control.js",
+        "tests/sairndental_coverage_edit_mutation_control.js",
+        "tests/sairndental_ledger_export_mutation_control.js",
+        "tests/sairnlaw_billing_codes_mutation_control.js",
+        "tests/sairnvet_dose_audit_mutation_control.js",
+        "tests/sairnvet_dose_audit_reader_mutation_control.js",
+        "tests/sairnvet_seed_mutation_control.js"
+      ],
+      "lines_added": 400,
+      "lines_removed": 100,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "Ten mutation controls ended with an arm headed 'the shipped file was never touched' that asserted `git status --porcelain <app>` was EMPTY -- the absolute state of the tree, not what the control did. Any session with an uncommitted edit to the app file made them go red about a file they had not touched. Found by running two SAIRNvet controls while sairnvet.html was dirty from my own export work, minutes after fixing the identical defect in tests/hover_separation_ci_probe.py's arm 7. Fixed by capturing a baseline before anything runs and asserting the DIFFERENCE. The replacement's own limit -- porcelain cannot distinguish one modification from two -- is stated in all ten files, naming the byte-identity arm above it as the one that carries the guarantee.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The arm was written wrong in the first control and copied into nine more across one evening, so there is no single injecting commit -- it is the shape every one of them was born with."
+      },
+      "citation_note": "1.5 is the confident line printed after an error. This is the same family again: a correct refusal whose LABEL names the wrong cause, sending the reader to look for residue the probe never left. Arguable rather than clean because nothing was reported as a pass.",
+      "contributing_factors": [
+        {
+          "factor": "The arm asserted the ABSOLUTE working-tree state for the app file under a heading that says 'the shipped file was never touched' -- a claim about everybody's edits wearing a label about the probe's",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A baseline is captured before anything runs and the arm reports the DIFFERENCE, in all ten controls that carry it"
+        },
+        {
+          "factor": "I wrote the arm once and then copied it into nine more controls over one evening, so a single wrong sentence became ten places to fix -- and the copies were made AFTER I had already found and fixed the identical defect in hover_separation_ci_probe.py",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All ten patched in one pass by a script that refuses per-file unless every anchor matches exactly once; two older controls that do not carry the arm in this shape were SKIPPED and named rather than guessed at"
+        },
+        {
+          "factor": "A control is most likely to be run mid-change, which is precisely when the tree is dirty -- so the arm was wrong in exactly the condition it would be exercised in, and right only when nobody needed it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Nothing can make a control run only on a clean tree, and it should not: the value of these is that they can be run at any point. What had to change is the arm, not when it runs."
+        },
+        {
+          "factor": "The replacement is weaker than it reads: git status --porcelain prints the same line whether a file was modified once or twice, so the before/after comparison cannot see a control-introduced change on an already-dirty tree",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Hashing the file would detect it, and would duplicate the byte-identity arm directly above that already holds in both cases. The limit is stated in all ten files instead, naming which arm carries the guarantee -- the same note sairncode_gates_mutation_control.js already makes about its own mtime arm."
+        }
+      ],
+      "recurrence_open": "Two older controls -- sairnbiz_void and sairncode_gates -- do not carry the arm in this shape and were deliberately not rewritten, so the population was 12 and the fix covered 10. And the arm still cannot see a control-introduced change on an already-dirty tree; the byte-identity arm is what holds there, which is now written in each file rather than assumed."
+    },
+    {
       "commit": "25f2194d16ab",
       "date": "2026-09-16",
       "subject": "fix(tools): third confirmed instance of the one-spelling blind spot -- the decode checker could not see an aliased subprocess import",
