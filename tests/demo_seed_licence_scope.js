@@ -76,7 +76,15 @@ function build(opts) {
   const ctx = {
     console,
     localStorage: { getItem: k => (k in store ? store[k] : null) },
-    sdLicenseKey: opts.noResolver ? undefined : () => opts.licence === undefined ? '' : opts.licence,
+    // `throws` models the state the try/catch actually exists for: a resolver
+    // that reads localStorage in a browser where localStorage throws (private
+    // mode, blocked storage). `noResolver` does NOT reach the catch -- the
+    // typeof guard handles it -- so before 2026-09-16 the catch branch had no
+    // arm at all, and a negative control flipping `return false` to
+    // `return true` there was SILENT.
+    sdLicenseKey: opts.noResolver ? undefined
+      : opts.throws ? () => { throw new Error('localStorage is blocked'); }
+      : () => opts.licence === undefined ? '' : opts.licence,
     window: {}
   };
   vm.createContext(ctx);
@@ -138,6 +146,18 @@ test('a missing sdLicenseKey resolver fails toward EMPTY, not toward seeded', ()
   const a = build({ noResolver: true });
   assert.strictEqual(a.isDemo(), false);
   assert.strictEqual(a.cleared(), true);
+});
+
+test('a resolver that THROWS fails toward EMPTY -- the catch is a refusal, not '
+   + 'a default', () => {
+  // THE BRANCH THE try/catch EXISTS FOR, and it had no arm. A browser with
+  // storage blocked makes sdLicenseKey() throw; answering "demo" there would
+  // show a paying customer six invented 2024 bills, $471,000 of equipment and
+  // $293,000 of bids as its own business -- and only in private mode, which is
+  // the hardest state to reproduce from a support ticket.
+  const a = build({ throws: true });
+  assert.strictEqual(a.isDemo(), false, 'a throwing resolver was read as the demo licence');
+  assert.strictEqual(a.cleared(), true, 'the seeds would render');
 });
 
 section('the original meaning survives for the one caller that needs it');
