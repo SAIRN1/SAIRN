@@ -1337,8 +1337,8 @@
       "task": "known-red suite registry build, floor-threshold coverage-visibility sweep -- NOT the sairndental suite controls, which cc has been working",
       "claimed_at": "2026-09-17T00:09:41Z",
       "claimed_at_epoch": 1789603781.4863193,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-17T01:23:51Z"
     }
   ]
 }
