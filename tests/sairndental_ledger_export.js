@@ -73,6 +73,12 @@ const ORDERS = [
 function harness() {
   const files = [];
   const src = [
+    // dntCsvField delegates to the formula-injection guard since 2026-09-17, so
+    // the guard has to come with it. PULLED FROM THE REAL FILE rather than
+    // stubbed: a stub would let the guard rot while these arms stayed green,
+    // and the guard is the only thing standing between a patient-typed field
+    // and a formula executing in whoever opens the export.
+    grab('function dntCsvCell(v)', '\n'),
     grab('function dntCsvField(v){', '\n}'),
     grab('function dntYesNo(v){', '\n'),
     grab('var DNT_CRED_COMMON={', '\n'),

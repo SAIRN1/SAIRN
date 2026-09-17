@@ -5732,6 +5732,16 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
 <div id="hist-ai-out" style="display:none;padding:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:10px;font-size:13px;line-height:1.7;margin-bottom:12px"></div>
 </div>
 <script>
+// CSV FORMULA INJECTION GUARD. Full reasoning in api/_lib/csv-cell.js.
+// A cell whose first character is = + - @ TAB or CR is EXECUTED as a formula
+// by Excel, LibreOffice and Google Sheets when the file is opened, and the
+// surrounding quotes do NOT prevent it -- the importer strips them and then
+// evaluates. `=cmd|'/c calc'!A0` is a DDE launch; =IMPORTXML exfiltrates the
+// row beside it. Guarded ONLY when the cell is not a number, so -50.00 stays
+// a number for the spreadsheet's SUM and -1+1 does not stay a formula.
+// BYTE-IDENTICAL IN EVERY APP ON PURPOSE -- csv_formula_injection_check.py
+// asserts that, so a copy that drifts is a finding and not a variant.
+function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 (function(){
   var SEED=[
     {id:1,customer:'Marcus Webb',project:'Kitchen Countertop — Calacatta Gold',amount:4850,status:'Approved',date:'2026-05-12'},
@@ -6054,7 +6064,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var d=load();
     var rows=[['Customer','Project','Amount','Status','Date']];
     d.forEach(function(x){rows.push([x.customer||'',x.project||x.type||'',(x.amount||0),x.status||'Pending',x.date||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='quote-history-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -7050,7 +7060,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var d=load();
     var rows=[['Name','Phone','Email','Type','Material','SqFt','Budget','Timeline','Source','Date','Converted']];
     d.forEach(function(x){rows.push([x.name,x.phone,x.email||'',x.type,x.material,x.sqft||0,x.budget,x.timeline,x.source,x.date,(x.converted?'Yes':'No')]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='intakes-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -7256,7 +7266,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var list=(typeof sdCustomers!=='undefined')?sdCustomers:[];
     var rows=[['ID','Name','Stage','Phone','Email','Address','Jobs','LTV','Last Job','Rating']];
     list.forEach(function(c){var s=custComputeStats(c.name);rows.push([c.id,c.name,c.status||'',c.phone||'',c.email||'',c.address||'',s.jobs,(s.ltv||0),s.lastJob||'',(c.rating||0)]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='customers-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -7634,7 +7644,7 @@ window.sdPhotosPrint=function(){
 window.sdPhotosExport=function(){
   var rows=[['ID','Job','Category','Name','Date']];
   sdPhotos.forEach(function(p){rows.push([p.id,p.job,p.cat,p.name,(p.date||'').slice(0,10)]);});
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='photo-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
 };
@@ -7763,7 +7773,7 @@ window.sdPhotosExport=function(){
     var d=load();
     var rows=[['ID','Job','Customer','Stone','Install Date','Expires','Years','Status','Claims','Claim Cost','Coverage']];
     d.forEach(function(w){rows.push([w.id,w.job,w.customer,w.stone,w.install,w.expires,w.years,w.status,w.claims,('$'+(w.claimCost||0)),w.coverage]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='warranties-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -8094,7 +8104,7 @@ window.sdPhotosExport=function(){
     var d=load();
     var rows=[['ID','Job','Customer','Address','Type','Date','Crew','Status','Notes']];
     d.forEach(function(s){rows.push([s.id,s.job,s.customer,s.address,s.type,s.date,s.crew.join('; '),s.status,s.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='schedule-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -8373,7 +8383,7 @@ function sdInvExport(){
     var st=i.qty===0?'Out of Stock':i.qty<=i.min?'Low Stock':'In Stock';
     rows.push([i.id,i.name,i.cat,i.sku,i.qty,i.min,i.unit,('$'+i.cost),('$'+(i.qty*i.cost).toLocaleString()),i.vendor,st]);
   });
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='inventory-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
 }
@@ -9250,7 +9260,7 @@ function sdInvExport(){
     var d=eng();
     var rows=[['ID','Stone','Vendor','Size','Thickness','Finish','Status','Remnant','Location','Cost','Job','Notes']];
     d.forEach(function(s){var c=slabCost(s);rows.push([s.id,s.colorName||'',s.supplier||s.vendor||'',dispSize(s),s.thickness||'',s.finish||'',dispStatus(s),(isRem(s)?'yes':'no'),s.yardLocation||'',(c===null?'':('$'+Math.round(c))),(s.reservedFor||''),s.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='slabs-'+sdLocalToday()+'.csv';a.click();
   };
@@ -9650,7 +9660,7 @@ function sdInvExport(){
     var d=load();
     var rows=[['ID','Name','Type','Contact','Phone','Email','YTD Spend','Rating','Preferred','Terms','Notes']];
     d.forEach(function(v){rows.push([v.id,v.name,v.type,v.contact,v.phone,v.email||'',('$'+v.ytdSpend.toLocaleString()),v.rating,(v.preferred?'Yes':'No'),v.terms,v.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='vendors-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -9864,7 +9874,7 @@ window.sdRMExport=function(){
   var d=sdRemakes;
   var rows=[['Customer','Material','Reason','Status','Notes','Created']];
   d.forEach(function(x){rows.push([x.customer,x.material,x.reason,x.status,x.notes||'',(x.createdAt||'').slice(0,10)]);});
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='remakes-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
 };
@@ -10336,7 +10346,7 @@ window.sdRMExport=function(){
     var d=load();
     var rows=[['Type','To','Subject','Date','Message']];
     d.forEach(function(x){rows.push([x.type,x.to,x.subj,x.date,x.body]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='comms-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -10855,7 +10865,7 @@ window.sdSafetyPrint=function(){
     if(!nestTicketGuard()) return;
     var t=nestTicketTotals();
     var mat=(document.getElementById('nest-slab-mat')||{}).value||'Unknown';
-    var q=function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';};
+    var q=function(c){return sdCsvCell(c);};
     var rows=[];
     rows.push(['StoneDesk Saw Ticket']);
     rows.push(['Generated', new Date().toISOString()]);
@@ -11683,7 +11693,7 @@ function tmExport(){
       (r.flags||[]).join(' / '),(r.files||[]).map(function(f){return f&&f.name?f.name:'';}).filter(Boolean).join(' / '),
       r.notes||'',r.createdAt?new Date(r.createdAt).toLocaleDateString():'']);
   });
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='stonedesk-templates-'+sdLocalToday()+'.csv';a.click();
   notify('Templates exported','');
@@ -28669,7 +28679,7 @@ document.addEventListener('DOMContentLoaded',function(){
 function dlCSV(rows, filename) {
   var csv = rows.map(function(r) {
     return r.map(function(v) {
-      return '"' + String(v || '').replace(/"/g, '""') + '"';
+      return sdCsvCell(v);
     }).join(',');
   }).join('\n');
   var a = document.createElement('a');
@@ -30349,7 +30359,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['Customer','Project','Value','Stage','Source','Date','Notes']];
     d.forEach(function(x){rows.push([x.name,x.proj||'',('$'+(x.val||0)),x.stage,x.source,x.date,x.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='crm-pipeline-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -30505,7 +30515,7 @@ document.addEventListener('DOMContentLoaded', function() {
       var margin=x.rev?Math.round(profit/x.rev*100):0;
       rows.push([x.job,('$'+(x.rev||0)),('$'+(x.mat||0)),('$'+(x.lab||0)),('$'+(x.oth||0)),('$'+profit),(margin+'%'),x.status||'']);
     });
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='job-costs-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -31027,7 +31037,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=data.filter(function(r){return r.status==='Available';});
     var rows=[['ID','Stone','Size','Sq Ft','Location','Price','Age (days)','Notes']];
     d.forEach(function(r){rows.push([r.id,r.stone,r.size,r.sqft,r.location,('$'+r.price),(r.age||0),r.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='remnant-yard-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -31253,7 +31263,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['PO #','Vendor','Material','Amount','Expected','Status','Date']];
     d.forEach(function(x){rows.push([x.num,x.vendor,x.mat,'$'+x.amt,x.exp,x.status,x.date]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='purchase-orders-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -31400,7 +31410,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['Material','Qty','Value','Vendor','Condition','Notes','Date']];
     d.forEach(function(x){rows.push([x.mat,x.qty,'$'+x.val,x.vendor,x.cond,x.notes||'',x.date]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='receiving-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -31529,7 +31539,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load().filter(function(x){return x.date===today;}).sort(function(a,b){return a.time.localeCompare(b.time);});
     var rows=[['#','Time','Customer','Address','Type','Crew','Status']];
     d.forEach(function(x,i){rows.push([(i+1),x.time,x.cust,x.addr,x.type,x.crew,x.status]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='manifest-'+today+'.csv';a.click();
   };
@@ -31735,7 +31745,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['To','Phone','Message','Date','Status']];
     d.forEach(function(x){rows.push([x.to,x.phone,x.msg,x.date,x.status]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='sms-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -31964,7 +31974,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(!d.length)return showToast("No quotes to export.");
     var rows=[["Customer","Type","Tier","Amount","Accepted","Date"]];
     d.forEach(function(x){rows.push([x.customer||"",x.type||"",x.tier||"",(x.amount||0),(x.accepted?"Yes":"No"),x.date||""]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(",");}).join("\n");
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(",");}).join("\n");
     var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
     a.download="ai-quotes-"+sdShopSlug()+"-"+sdLocalToday()+".csv";a.click();
   };
@@ -32104,7 +32114,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['Product','Brand','Thickness','Finish','Price/sqft','Available']];
     d.forEach(function(x){rows.push([x.name,x.brand,x.thickness,x.finish,('$'+x.price),(x.available?'In Stock':'Order Only')]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='sintered-catalog-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -32440,7 +32450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['Project','Stone','Style','Date']];
     d.forEach(function(x){rows.push([x.proj||'',x.stone||'',x.style||'',x.date||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='vein-match-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -32941,7 +32951,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var d=load();
     var rows=[['Job','Material','Location','Date','Remake Risk']];
     d.forEach(function(x){rows.push([x.job||'',x.mat||'',x.loc||'',x.date||'',(x.remake?'Yes':'No')]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='seam-analysis-log-'+sdLocalToday()+'.csv';a.click();
   };
@@ -33076,7 +33086,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdReviewsExport=function(){
     var rows=[['Customer','Rating','Review','Date','Source','Status']];
     var d=load();d.forEach(function(x){rows.push([x.customer||'',x.rating||0,x.review||'',x.date||'',x.source||'',x.status||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='reviews-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -33355,7 +33365,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdReferralExport=function(){
     var rows=[['Referrer','Referred','Project','Value','Status','Date','Reward']];
     var d=load();d.forEach(function(x){rows.push([x.referrer||'',x.referred||'',x.project||'',('$'+(x.value||0)),x.status||'',x.date||'',x.reward||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='referrals-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -33626,7 +33636,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdEquipmentExport=function(){
     var rows=[['ID','Name','Type','Serial','Last Service','Next Service','Status','Notes']];
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.name||'',x.type||'',x.serial||'',x.lastService||'',x.nextService||'',x.status||'',x.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='equipment-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -33951,7 +33961,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdEmployeesExport=function(){
     var rows=[['ID','Name','Role','Phone','Email','Hire Date','Status','Rate']];
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.name||'',x.role||'',x.phone||'',x.email||'',x.hired||'',x.status||'',('$'+(x.rate||0)+'/hr')]);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='employees-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -34321,7 +34331,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdStoneyardExport=function(){
     var rows=[['ID','Stone','Size','Location','Status','Price','Job']];
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.stone||'',x.size||'',x.location||'',x.status||'',('$'+(x.price||0)),x.job||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='stoneyard-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35113,7 +35123,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdDamageExport=function(){
     var rows=[['ID','Job','Customer','Type','Description','Amount','Status','Date']];
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.job||'',x.customer||'',x.type||'',x.description||'',('$'+(x.amount||0)),x.status||'',x.date||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='damage-claims-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35251,7 +35261,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdTrainingExport=function(){
     var rows=[['Employee','Course','Category','Completed','Expires','Score','Status']];
     var d=load();d.forEach(function(x){rows.push([x.employee||'',x.course||'',x.category||'',x.completed||'',x.expires||'',(x.score||''),x.status||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='training-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35387,7 +35397,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdBulletinExport=function(){
     var rows=[['Title','Category','Author','Date','Priority','Content']];
     var d=load();d.forEach(function(x){rows.push([x.title||'',x.category||'',x.author||'',x.date||'',x.priority||'',x.content||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='bulletin-board-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35515,7 +35525,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdWasteExport=function(){
     var rows=[['Date','Material','Job','Sq Ft','Cause','Cost','Notes']];
     var d=load();d.forEach(function(x){rows.push([x.date||'',x.material||'',x.job||'',(x.sqft||0),x.cause||'',('$'+(x.cost||0)),x.notes||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='waste-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35653,7 +35663,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdNpsExport=function(){
     var rows=[['Customer','Score','Category','Comment','Date','Job']];
     var d=load();d.forEach(function(x){rows.push([x.customer||'',x.score||0,x.category||'',x.comment||'',x.date||'',x.job||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='nps-scores-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -35817,7 +35827,7 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdApExport=function(){
     var rows=[['ID','Vendor','Invoice','Amount','Due Date','Status','Category']];
     var d=load();d.forEach(function(x){rows.push([x.id||'',x.vendor||'',x.invoice||'',('$'+(x.amount||0)),x.due||'',x.status||'',x.category||'']);});
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='accounts-payable-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
   };
@@ -36358,7 +36368,7 @@ function agExport() {
   var rows = [['Agreement #','Shop','Contact','Email','Phone','Plan','Price/mo','Date','Status','Signed Date']].concat(
     agAgreements.map(function(a) { return [a.num, a.shop, a.contact, a.email, a.phone, a.planLabel, '$' + a.price + '/mo', a.date, a.status, a.signedAt ? new Date(a.signedAt).toLocaleDateString() : '']; })
   );
-  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + (String(c || '').replace(/"/g, '""')) + '"'; }).join(','); }).join('\n');
+  var csv = rows.map(function(r) { return r.map(function(c) { return sdCsvCell(c); }).join(','); }).join('\n');
   var a = document.createElement('a'); a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.download = 'StoneDesk_Agreements_' + sdLocalToday() + '.csv'; a.click();
 }
 
@@ -40410,7 +40420,7 @@ async function piRunAnalysis(){
 }
 function piExport(){
   var rows=[['Material','Your Rate','Market Low','Market Avg','Market High','vs Market']].concat(PI_RATES.filter(function(r){return piMyRates[r.mat];}).map(function(r){var y=piMyRates[r.mat]||0;var pct=Math.round((y-r.avg)/r.avg*100);return [r.mat,y,r.low,r.avg,r.high,(pct>=0?'+':'')+pct+'%'];}));
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_PriceIntel_'+sdLocalToday()+'.csv';a.click();
 }
 
@@ -40765,7 +40775,7 @@ function taxExport(){
   var invs=sd_invoices||[];
   var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
   var rows=[['Type','Date','Description','Amount']].concat(invs.map(function(i){return['Revenue',i.date,i.customer+' — '+i.desc,i.amount];})).concat(bills.map(function(b){return['Expense',b.due,b.vendor+' — '+(b.category||''),-(b.amt||0)];}));
-  var csv=rows.map(function(r){return r.map(function(c){return'"'+(String(c||'').replace(/"/g,'""'))+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){returnsdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+sdLocalToday()+'.csv';a.click();
 }
 

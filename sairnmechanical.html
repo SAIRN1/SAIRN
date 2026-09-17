@@ -1618,6 +1618,23 @@ async function runBlueprintAI(input){
 
 
 <script>
+// CSV FORMULA INJECTION GUARD. Full reasoning in api/_lib/csv-cell.js.
+// A cell whose first character is = + - @ TAB or CR is EXECUTED as a formula
+// by Excel, LibreOffice and Google Sheets when the file is opened, and the
+// surrounding quotes do NOT prevent it -- the importer strips them and then
+// evaluates. `=cmd|'/c calc'!A0` is a DDE launch; =IMPORTXML exfiltrates the
+// row beside it. Guarded ONLY when the cell is not a number, so -50.00 stays
+// a number for the spreadsheet's SUM and -1+1 does not stay a formula.
+// BYTE-IDENTICAL IN EVERY APP ON PURPOSE -- csv_formula_injection_check.py
+// asserts that, so a copy that drifts is a finding and not a variant.
+// CONDITIONAL QUOTING KEPT. This app quoted only cells containing a comma,
+// quote or newline before 2026-09-17, and the defect being fixed is the
+// MISSING GUARD, not the quoting. Making it unconditional would change the
+// bytes of every export this app has ever produced -- an unrequested format
+// change riding along inside a security fix, and it turned three arms red in
+// sairndental before it was caught. The apostrophe is what makes the cell
+// safe; the quotes never had anything to do with it.
+function mechCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
 // ============================================================
 // SAIRN UNIFIED CONTROLLER — sairnmechanical
 // Single script. No layers. No overrides. Just works.
@@ -2014,9 +2031,7 @@ function mechData(action, resource, payload) {
   // legible to somebody who does not know the codes.
   var _mechCredLast = null;
   function mechCsvField(v) {
-    var t = String(v == null ? '' : v);
-    if (/[",\n\r]/.test(t)) return '"' + t.replace(/"/g, '""') + '"';
-    return t;
+    return mechCsvCell(v);
   }
   function mechCredKey(r) {
     return [String(r.technician_id || ''), String(r.record_type || ''),

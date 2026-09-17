@@ -1301,6 +1301,16 @@ textarea{resize:vertical;min-height:80px;}
 })();
 </script>
 <script>
+// CSV FORMULA INJECTION GUARD. Full reasoning in api/_lib/csv-cell.js.
+// A cell whose first character is = + - @ TAB or CR is EXECUTED as a formula
+// by Excel, LibreOffice and Google Sheets when the file is opened, and the
+// surrounding quotes do NOT prevent it -- the importer strips them and then
+// evaluates. `=cmd|'/c calc'!A0` is a DDE launch; =IMPORTXML exfiltrates the
+// row beside it. Guarded ONLY when the cell is not a number, so -50.00 stays
+// a number for the spreadsheet's SUM and -1+1 does not stay a formula.
+// BYTE-IDENTICAL IN EVERY APP ON PURPOSE -- csv_formula_injection_check.py
+// asserts that, so a copy that drifts is a finding and not a variant.
+function grdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 var APP_ID='sairngrounds';
 var PROXY='https://sairn.vercel.app/api/claude';
 // Replaces bare grdLocalToday() call sites that meant
@@ -4483,7 +4493,7 @@ function msbExportInventoryLogCsv(){
   if(!log.length){toast('No inventory log entries to export');return;}
   var rows=[['Date','Product','Change Type','Qty Delta','Employee','Note']];
   log.forEach(function(r){rows.push([r.timestamp,r.product_name,r.change_type,r.qty_delta,r.employee,r.note]);});
-  var csvText=rows.map(function(r){return r.map(function(x){return '"'+String(x==null?'':x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var csvText=rows.map(function(r){return r.map(function(x){return grdCsvCell(x);}).join(',');}).join('\n');
   var a=document.createElement('a');
   a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csvText);
   a.download='msb-inventory-log-'+grdLocalToday()+'.csv';

@@ -1118,6 +1118,16 @@ textarea{resize:vertical;min-height:80px;}
 })();
 </script>
 <script>
+// CSV FORMULA INJECTION GUARD. Full reasoning in api/_lib/csv-cell.js.
+// A cell whose first character is = + - @ TAB or CR is EXECUTED as a formula
+// by Excel, LibreOffice and Google Sheets when the file is opened, and the
+// surrounding quotes do NOT prevent it -- the importer strips them and then
+// evaluates. `=cmd|'/c calc'!A0` is a DDE launch; =IMPORTXML exfiltrates the
+// row beside it. Guarded ONLY when the cell is not a number, so -50.00 stays
+// a number for the spreadsheet's SUM and -1+1 does not stay a formula.
+// BYTE-IDENTICAL IN EVERY APP ON PURPOSE -- csv_formula_injection_check.py
+// asserts that, so a copy that drifts is a finding and not a variant.
+function sbCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 var APP_ID='sairnbiz';
 var SB_URL='https://ejrlrrkvhtllxbbypdjb.supabase.co';
 var SB_KEY='sb_publishable_zQhcnpkmw2IJoIoKbnfFwA_tV_1PtoX';
@@ -4703,7 +4713,7 @@ function csv(type){
     toast('No CSV export is built for "'+type+'" yet — nothing was downloaded.',5000);
     return;
   }
-  var c=rows.map(function(r){return r.map(function(x){return'"'+String(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var c=rows.map(function(r){return r.map(function(x){returnsbCsvCell(x);}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
   // Export is never blocked (final-review Finding 2, 2026-08-10) -- a
   // downloadable CSV with unflagged payroll issues is worse than the

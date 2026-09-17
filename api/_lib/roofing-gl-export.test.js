@@ -283,6 +283,36 @@ test('a refused export produces NO csv at all', () => {
     + 'an accountant');
 });
 
+// ── FORMULA INJECTION (2026-09-17) ────────────────────────────────────────
+// The quoter this replaced was CONDITIONAL -- it quoted only when the value
+// held a comma, quote or newline -- so a memo beginning `=` left this module
+// COMPLETELY BARE, in a file whose entire purpose is to be imported by an
+// accountant. Both arms are needed: the first proves the payload is
+// neutralised, the second proves the fix did not turn the money into text.
+test('a MEMO that starts with = is neutralised, not emitted bare', () => {
+  const list = [inv('INV-1', ITEMS, 7)];
+  const r = G.buildExport({ invoices: list, summaries: summarise(list) }, MAP,
+                          { basis: 'accrual' });
+  r.lines[0].memo = "=cmd|'/c calc'!A0";
+  const csv = G.toCsv(r);
+  assert.ok(csv.includes('"\'=cmd|'),
+    'the memo reached the file without the text guard: ' + csv.split('\r\n')[1]);
+  assert.ok(!/,=cmd/.test(csv),
+    'the payload is present unquoted and unguarded -- the conditional quoter is back');
+});
+
+test('...and the DEBIT and CREDIT columns are still NUMBERS', () => {
+  // A credit written as '-50.00 arrives as text and drops out of every SUM in
+  // the accountant's spreadsheet. A security fix that does that has introduced
+  // a financial reporting error.
+  const list = [inv('INV-1', ITEMS, 7)];
+  const r = G.buildExport({ invoices: list, summaries: summarise(list) }, MAP,
+                          { basis: 'accrual' });
+  const csv = G.toCsv(r);
+  assert.ok(!/"'-/.test(csv) && !/"'\d/.test(csv),
+    'a numeric cell was prefixed with an apostrophe: ' + csv);
+});
+
 test('nothing here claims to be IIF or a QuickBooks connection', () => {
   const src = require('fs').readFileSync(__dirname + '/roofing-gl-export.js', 'utf8');
   const code = src.split('\n').filter(l => !l.trim().startsWith('//')).join('\n');

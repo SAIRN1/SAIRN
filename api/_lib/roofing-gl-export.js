@@ -306,10 +306,19 @@ function buildExport(input, map, opts) {
 function toCsv(result) {
   if (!result || !result.ok) return null;
   const head = ['date', 'account', 'role', 'debit', 'credit', 'memo', 'reference'];
-  const q = function (v) {
-    const t = String(v == null ? '' : v);
-    return /[",\n\r]/.test(t) ? '"' + t.replace(/"/g, '""') + '"' : t;
-  };
+  // ── FORMULA INJECTION, AND THIS ONE WAS THE WORST CASE ON THE PLATFORM ──
+  // (2026-09-17.) The local quoter this replaces was CONDITIONAL -- it quoted
+  // only when the value contained a comma, quote or newline -- so a memo of
+  // `=cmd|'/c calc'!A0` was written out COMPLETELY BARE. `memo` is free text
+  // from a roofing job, and the file's own purpose is to be handed to an
+  // accountant and imported. Every other site on the platform at least wrapped
+  // the cell in quotes, which does not help either but is less naked.
+  //
+  // api/_lib/csv-cell.js is deliberately not number-blind: the debit and credit
+  // columns below are money, and a credit emitted as `'-50.00` would arrive as
+  // TEXT and drop out of every SUM in the accountant's spreadsheet. That is why
+  // the guard is conditional on the cell not parsing as a number.
+  const q = require('./csv-cell.js').csvCell;
   const rows = [head.join(',')];
   result.lines.forEach(function (l) {
     rows.push([q(l.date || ''), q(l.account), q(l.role),

@@ -1868,6 +1868,16 @@
 })();
 </script>
 <script>
+// CSV FORMULA INJECTION GUARD. Full reasoning in api/_lib/csv-cell.js.
+// A cell whose first character is = + - @ TAB or CR is EXECUTED as a formula
+// by Excel, LibreOffice and Google Sheets when the file is opened, and the
+// surrounding quotes do NOT prevent it -- the importer strips them and then
+// evaluates. `=cmd|'/c calc'!A0` is a DDE launch; =IMPORTXML exfiltrates the
+// row beside it. Guarded ONLY when the cell is not a number, so -50.00 stays
+// a number for the spreadsheet's SUM and -1+1 does not stay a formula.
+// BYTE-IDENTICAL IN EVERY APP ON PURPOSE -- csv_formula_injection_check.py
+// asserts that, so a copy that drifts is a finding and not a variant.
+function svCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!==''&&isFinite(Number(s))))s="'"+s;return '"'+s.replace(/"/g,'""')+'"';}
 var APP_ID = 'sairnvet';
 var PROXY = 'https://sairn.vercel.app/api/claude';
 // Replaces localToday() everywhere in this file that
@@ -9085,7 +9095,7 @@ function svExportDoseAudit(){
     return el ? String(el.textContent || '').replace(/\s+/g,' ').trim() : '';
   };
   var val = function(id){ var el = document.getElementById(id); return (el && el.value) || ''; };
-  var q = function(s){ return '"' + String(s).replace(/"/g,'""') + '"'; };
+  var q = svCsvCell;
   var lines = [
     [q('SAIRNvet dosing audit trail — exported ' + new Date().toISOString())],
     [q('WHICH COPY: ' + (text('doseaudit-source') || 'not stated on screen'))],
@@ -9152,7 +9162,7 @@ function svExportDoseAudit(){
 function svExportControlled(){
   var table = document.getElementById('panel-controlled-table');
   if(!table){ showToast('Nothing to export','error'); return; }
-  var q = function(v){ return '"' + String(v).replace(/"/g,'""') + '"'; };
+  var q = svCsvCell;
   var rowCount = 0;
   try { rowCount = Math.max(0, table.querySelectorAll('tbody tr').length); } catch(e){}
   var lines = [
@@ -9197,7 +9207,7 @@ function exportTableCSV(tableId,filename){
   rows.forEach(function(row){
     var cells=row.querySelectorAll('th,td');
     var rowData=[];
-    cells.forEach(function(cell){rowData.push('"'+cell.textContent.replace(/"/g,'""')+'"');});
+    cells.forEach(function(cell){rowData.push(svCsvCell(cell.textContent));});
     csv+=rowData.join(',')+'\n';
   });
   var blob=new Blob([csv],{type:'text/csv'});
