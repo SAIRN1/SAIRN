@@ -92,6 +92,24 @@ const CASES = [
    'the entity job filter must not silently drop unattributed rows'],
 ];
 
+// ── HOW MANY CALL SITES EACH REPEATED MARKER GUARDS ───────────────────────
+// MEASURED against the tree on 2026-09-17, not chosen: the four WIP sites are
+// two call sites each guarding `!jr.ok` and `!Array.isArray`, and the same
+// doubling explains the others. Anything not listed here is expected exactly
+// once and is asserted as present rather than counted, which is the same thing.
+//
+// A NUMBER IN A TEST IS A THING THAT GOES STALE, so it fails in BOTH
+// directions and says which: a guard removed and a call site added are
+// different events and both deserve a person reading the diff.
+const COUNTS = {
+  '/so no WIP figures were computed/': 4,
+  '/so no consolidation was computed/': 2,
+  '/so no tier availability was evaluated/': 2,
+  '/return \\{ unavailable: true \\};/': 3,
+  '/does not mean there are no visits/': 2,
+  '/SWEEP_READ_FAILED/': 4,
+};
+
 function main() {
   console.log('fail-open triage 2026-09-04: twelve refusals, held against removal');
 
@@ -100,7 +118,26 @@ function main() {
     test(why + '  [' + path.basename(rel) + ']', () => {
       const s = code(rel);
       patterns.forEach((rx) => {
-        assert.ok(rx.test(s), 'missing in ' + rel + ': ' + rx);
+        // ── EXISTENCE IS NOT ENOUGH WHERE THE MARKER REPEATS (2026-09-17) ──
+        // FOUND BY THE NEGATIVE CONTROL, not by review. Several of these
+        // messages appear at more than one call site -- "so no WIP figures
+        // were computed" four times in sd-data.js, the visit message twice in
+        // sen-portal.js -- and `rx.test(s)` is satisfied by ONE survivor. So
+        // a mutation deleting a single guard left this suite GREEN: it was
+        // holding "somebody still refuses somewhere", not "each of these call
+        // sites refuses". The count is pinned where it is above one, and a
+        // count that GROWS fails too: a new call site carrying this message
+        // is a new place somebody has to check, not a free pass.
+        const want = COUNTS[String(rx)];
+        const got = (s.match(new RegExp(rx.source, 'g')) || []).length;
+        if (want !== undefined) {
+          assert.strictEqual(got, want,
+            rel + ': expected ' + want + ' guarded site(s) matching ' + rx +
+            ', found ' + got + '. A removed guard and an added call site both '
+            + 'land here, and both need a person.');
+        } else {
+          assert.ok(got > 0, 'missing in ' + rel + ': ' + rx);
+        }
       });
     });
   });
@@ -139,7 +176,18 @@ function main() {
     const raw = fs.readFileSync(path.join(__dirname, '..', 'tools', 'fail_open_accepted.json'), 'utf8');
     const entries = JSON.parse(raw);
     const real = entries.filter((e) => e && e.file && e.var);
-    assert.ok(real.length >= 6, 'expected the triaged acceptances, found ' + real.length);
+    // ── A FLOOR WITH FIVE ENTRIES OF SLACK IS NOT A CHECK (2026-09-17) ────
+    // This was `>= 6` against eleven real entries, so up to five acceptances
+    // could lose their `file` or `var` -- and with them their appearance in
+    // this arm entirely -- while it stayed green. Same shape the item-83
+    // independent review recorded against witness_countersign.js:477: an arm
+    // that makes an uncovered case "visible" by means of a floor it is nowhere
+    // near. Pinned exactly, and it fails upward too: a NEW acceptance is a new
+    // fail-open somebody decided to keep, which is precisely the event this
+    // file exists to put in front of a person.
+    assert.strictEqual(real.length, 11,
+      'the acceptance count moved: expected 11, found ' + real.length +
+      '. An acceptance added or removed is a decision, not a detail.');
     real.forEach((e) => {
       assert.ok(e.reason && e.reason.length > 40,
         e.file + ' ' + e.var + ' has no substantive reason -- an acceptance nobody justified is not one');

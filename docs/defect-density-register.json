@@ -7727,6 +7727,58 @@
       "recurrence_open": "Nothing prevents the NEXT monitor from pinning one response shape. This fixed one endpoint; no checker looks for a health probe whose pass condition is a literal body match against a function that could be replaced. Also unclosed: tenant_state is derived from HTTP status alone, so a future PostgREST that answers a missing signature with something other than 404 would read as SUB_BUDGETED."
     },
     {
+      "commit": "f9fc2aa87bdf",
+      "date": "2026-09-17",
+      "subject": "fix(dnt-bi): the PHI was fetched before the scope that decides who may see it",
+      "files": [
+        "api/dnt-bi.js",
+        "api/dnt-bi.test.js",
+        "tests/dnt_bi_scope_probe.py"
+      ],
+      "lines_added": 168,
+      "lines_removed": 12,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/dnt-bi.js read the whole practice dataset BEFORE resolving the patient scope on the patient_ids path, so the SCOPE_LOOKUP_FAILED refusal fired with every PHI row already fetched",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "363b8304a91e",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+        "lag_days": 15
+      },
+      "citation_note": "1.11 names could-not-run folded into a pass; here the refusal happened but AFTER the thing it protects was fetched -- the same premise applied to ordering rather than to the verdict",
+      "contributing_factors": [
+        {
+          "factor": "the patient_ids path cannot filter in the database so the dataset query carried no filter and the ids were applied afterwards in JS",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the scope lookup and its 502 now run before the dataset query"
+        },
+        {
+          "factor": "two endpoints derive the same patient list from the same table and only one resolved it first",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "audit every endpoint that scopes in JS after a read, using tools/shape_search.py which was built the same session to make that class findable"
+        },
+        {
+          "factor": "the rows a caller receives are identical either way so no assertion about the response could distinguish the orders",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three arms added asserting the ORDER of the reads and that the dataset is never requested when the scope is unknown"
+        }
+      ],
+      "recurrence_open": "other endpoints that scope in JS after a read were not audited one by one -- the shape search makes them findable and finding them is not the same as having looked"
+    },
+    {
       "commit": "8fdc063f63c7",
       "date": "2026-09-17",
       "subject": "fix(probes): twelve red suites, and eleven of them were the probe",
@@ -8077,6 +8129,56 @@
       "recurrence_open": "Nothing prevents the NEXT prose denominator. This fixed one sentence in one register; the general shape -- a standing document asserting a count nothing recomputes -- is PR 2.3 and has no mechanical detector. Also unclosed: reconciled_to is set BY HAND and the tool cannot tell a re-read from a rubber-stamp; it can only tell that the recorded verdict matches the computed one."
     },
     {
+      "commit": "ee9e27362d01",
+      "date": "2026-09-17",
+      "subject": "test(controls): the fail-open triage suite was holding \"somebody still refuses somewhere\"",
+      "files": [
+        "api/fail-open-triage-2026-09-04.test.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/fail_open_triage_probe.py"
+      ],
+      "lines_added": 174,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "api/fail-open-triage-2026-09-04.test.js asserted EXISTENCE of each guard message over the whole file, so deleting one of four identical WIP guards or one of two visit guards left it green -- it held 'somebody still refuses somewhere' rather than 'each of these call sites refuses'; its acceptance arm was a >= 6 floor against eleven entries",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/fail_open_triage_probe.py",
+      "injection": {
+        "unknown_reason": "the suite was written with existence assertions from the start, so there is no commit at which it stopped working; the repeated call sites it cannot distinguish were added at different times"
+      },
+      "citation_note": "1.1 is a check that stopped checking; this one never checked what it appeared to -- the same end state reached by construction rather than by drift",
+      "contributing_factors": [
+        {
+          "factor": "rx.test(source) over a marker that appears at several call sites is satisfied by one survivor",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a COUNTS table pins the number of guarded sites per repeated marker, measured against the tree, failing in both directions"
+        },
+        {
+          "factor": "the acceptance arm used a floor of 6 against 11 real entries, so five could drop out unseen",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "pinned exactly, and it fails upward too because a new acceptance is a new fail-open somebody decided to keep"
+        },
+        {
+          "factor": "a suite of existence assertions passes identically whether it holds one site or all of them, and nothing in a green run distinguishes the two",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the negative control plants a single-guard deletion, which is the mutation that was silent"
+        }
+      ],
+      "recurrence_open": "other source-level suites on this platform assert existence over markers that may repeat; only this one was counted"
+    },
+    {
       "commit": "d8d000e0cffd",
       "date": "2026-09-17",
       "subject": "fix(cron-liveness): the out-of-band watchdog could NEVER have returned anything but COULD NOT TELL",
@@ -8183,6 +8285,53 @@
         }
       ],
       "recurrence_open": "other probes in tests/ still plant on text anchors without declaring MUTATIONS, so their anchors remain outside the 247 this checker verifies; only this one was declared"
+    },
+    {
+      "commit": "e93b91abf000",
+      "date": "2026-09-17",
+      "subject": "fix(sairnlaw): the citation sweep -- three work-product surfaces had the rule and no check",
+      "files": [
+        "sairnlaw.html",
+        "tests/sairnlaw_citation_rule.js",
+        "tests/sairnlaw_citation_rule_probe.py"
+      ],
+      "lines_added": 291,
+      "lines_removed": 9,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "three SAIRNlaw work-product surfaces -- the assistant, the AI draft and the document review -- rendered model prose with no citation check, while the two mock-trial practice surfaces extracted and verified every citation; the AI draft is SAVED as a matter document, so a fabricated citation is persisted into the client file",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "the three surfaces predate the citator; git -S cannot date the ABSENCE of a check, and the commit that added each render path is not the commit that decided not to verify it"
+      },
+      "citation_note": "no numbered process-rule section covers a missing mechanical control behind a prompt on a regulated surface; the rule violated is the app's own LAW_CITATION_RULE plus this platform's standing refusal to accept a prompt as a guard",
+      "contributing_factors": [
+        {
+          "factor": "the citation rule reached all three prompts, so the surfaces looked covered -- a prompt is an instruction and this platform does not accept one as a control",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "lawCiteGuard() wired into all four render sites as ONE implementation, flagging and verifying; it degrades silent rather than to a false all-clear"
+        },
+        {
+          "factor": "the checking was built where the feature was newest rather than where the harm was greatest, so a practice surface got the check and the filed work product did not",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the sweep enumerated every AI call site and mapped each to its rule and its check, rather than fixing the one that was reported"
+        },
+        {
+          "factor": "ai_prompt_refusal_check.py can see WHETHER a site references a rule constant and not whether anything checks the OUTPUT, so it recorded the asymmetry in its own docstring and never failed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnlaw_citation_rule.js sections 8 and 9 assert every call site is under a rule and every work-product render runs the guard; 11-mutation control"
+        }
+      ],
+      "recurrence_open": "the suite reads WORDS IN A PROMPT and the guard reads TEXT THE MODEL RETURNED -- neither shows the model obeys, and that half needs a model call deferred by Michael's recorded decision"
     }
   ],
   "started": "2026-09-09",

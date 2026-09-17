@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**196 files in `tools/`.** By what actually invokes them:
+**198 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,13 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 62 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 17 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
+| ADVISORY | 2 |
 | CHECKER | 138 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
@@ -290,7 +291,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (17)
+## SUITE-ONLY (19)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -298,6 +299,7 @@ fixtures. Nothing points them at the real codebase.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
+| `claim_search.py` | ADVISORY | the gap between a WRITTEN CLAIM about what is built and the code that implements it -- this platform's most recurring incident class, and the half nobody does is RETRIEVAL. Checking is easy once the implementation is in front of you; finding it from an English sentence is not, because "pinned to an exact version" appears nowhere in a <script src=...> tag. BM25 over identifier-split tokens and comment prose, with an optional structural rerank. IT NEVER RETURNS A VERDICT in any mode -- the conformance judgement stays with a reader and with independent review where the claim matters, and a retrieval tool that also graded would be an assertion nobody re-checked with a search index underneath it. --verify excludes .md, because the first real run ranked the document a claim was copied out of above the code it describes. The embedding stage of "hybrid lexical + embedding + rerank" is ABSENT, not stubbed, and says so every run. | `run_claim_search_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
@@ -314,6 +316,7 @@ fixtures. Nothing points them at the real codebase.
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files -- plus `audit`, which catches a duplicate claim recorded AFTER the guard that covers it and, just as importantly, reports one recorded BEFORE as HISTORY. Released claims are kept on purpose, so every duplicate ever recorded stays in the file and a reader concludes the bug is live -- WHICH HAS NOW HAPPENED TWICE. Measured 2026-09-16: 631 claims, 6 duplicate groups, EVERY ONE predating its guard (the fourth triple by 43 minutes, the cc pair by 22) and zero in the ~150 claims since. It also counts, APART, the shape that IS live: claims never released, which is not a duplicate and needs the opposite fix. It refuses to decide that two DIFFERENT task strings are the same work -- exact means exact | `run_all_tests_hook_gate_probe.py`, `run_claim_audit_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
 | `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | `run_sc_tier_a_live_probe_probe.py` |
+| `shape_search.py` | ADVISORY | the same bug SHAPE written with different identifiers, a different iteration form or in the other language -- the recurrence a grep for the fixed defect cannot find because it shares no words with it. The case it was built from: api/sd-data.js resolves a patient scope before its read and api/dnt-bi.js did it after, deriving the same ids from the same table, and both contain the string SCOPE_LOOKUP_FAILED so no text search could rank them as the same thing. ADVISORY, NOT A CHECKER, and the measurement is why: the unrelated-pair hit rate on this repository is 1.155% +- 0.148pp, and the hits were READ -- they are genuinely identical shapes (a helper copied into two fault files, a cluster of tools/ main() functions), so it is a BASE RATE rather than confusion and raising the threshold barely moves it. A hit is a candidate for a person, never a finding. IT IS NOT A NEURAL EMBEDDING: there is no model on this interpreter, two functions computing the same answer by different control flow score low, and that gap is printed on every run rather than left to be discovered. | `run_shape_search_probe.py` |
 
 ---
 
@@ -387,11 +390,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      196   git ls-files tools/
+  tools on disk                      198   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                60   report_only_checks.REGISTRY
-  tools invoked by tests/            142   tests/**/*.py, *.js
+  tools invoked by tests/            144   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

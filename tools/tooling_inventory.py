@@ -73,6 +73,38 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'shape_search.py': ('ADVISORY',
+        'the same bug SHAPE written with different identifiers, a different '
+        'iteration form or in the other language -- the recurrence a grep for '
+        'the fixed defect cannot find because it shares no words with it. The '
+        'case it was built from: api/sd-data.js resolves a patient scope before '
+        'its read and api/dnt-bi.js did it after, deriving the same ids from the '
+        'same table, and both contain the string SCOPE_LOOKUP_FAILED so no text '
+        'search could rank them as the same thing. ADVISORY, NOT A CHECKER, and '
+        'the measurement is why: the unrelated-pair hit rate on this repository '
+        'is 1.155% +- 0.148pp, and the hits were READ -- they are genuinely '
+        'identical shapes (a helper copied into two fault files, a cluster of '
+        'tools/ main() functions), so it is a BASE RATE rather than confusion '
+        'and raising the threshold barely moves it. A hit is a candidate for a '
+        'person, never a finding. IT IS NOT A NEURAL EMBEDDING: there is no '
+        'model on this interpreter, two functions computing the same answer by '
+        'different control flow score low, and that gap is printed on every '
+        'run rather than left to be discovered.'),
+    'claim_search.py': ('ADVISORY',
+        'the gap between a WRITTEN CLAIM about what is built and the code that '
+        'implements it -- this platform\'s most recurring incident class, and '
+        'the half nobody does is RETRIEVAL. Checking is easy once the '
+        'implementation is in front of you; finding it from an English sentence '
+        'is not, because "pinned to an exact version" appears nowhere in a '
+        '<script src=...> tag. BM25 over identifier-split tokens and comment '
+        'prose, with an optional structural rerank. IT NEVER RETURNS A VERDICT '
+        'in any mode -- the conformance judgement stays with a reader and with '
+        'independent review where the claim matters, and a retrieval tool that '
+        'also graded would be an assertion nobody re-checked with a search '
+        'index underneath it. --verify excludes .md, because the first real run '
+        'ranked the document a claim was copied out of above the code it '
+        'describes. The embedding stage of "hybrid lexical + embedding + rerank" '
+        'is ABSENT, not stubbed, and says so every run.'),
     'negated_status_assertion_scan.py': ('CHECKER',
         'a READ-LIST of assertions that express "the caller got through" as the '
         'NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 '
