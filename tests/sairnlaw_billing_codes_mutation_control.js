@@ -102,7 +102,7 @@ const MUTATIONS = [
     find: "function billingCodes(){return ld('law_billingcodes',LAW_BILLING_CODES);}",
     replace: "function billingCodes(){return ld('law_billingcodes',[]);}/*MUTANT-EMPTY-DEFAULT*/",
     marker: 'MUTANT-EMPTY-DEFAULT',
-    expect: /falls back to the constant|never ""|real code/i,
+    expect: /falls back to the constant/i,   // NARROWED 2026-09-18: shared `never ""|real code` with m3, which no anchoring can separate -- Cody named this one specifically
     expectLabel: 'the arms about the constant fallback and a select that is never empty',
     suites: ['sairnlaw_billing_codes.js']
   },
@@ -127,7 +127,7 @@ const MUTATIONS = [
     find: "el.innerHTML=billingCodes().map(function(c){return '<option value=\"'+c.code+'\">'+H(c.code)+' -- '+H(c.label)+'</option>';}).join('');",
     replace: "el.innerHTML='';/*MUTANT-EMPTY-SELECT*/",
     marker: 'MUTANT-EMPTY-SELECT',
-    expect: /select is filled|never ""|real code/i,
+    expect: /select is filled/i,             // NARROWED 2026-09-18: see m1
     expectLabel: 'the arm requiring the filled select to yield a real code',
     suites: ['sairnlaw_billing_codes.js']
   },
@@ -178,6 +178,35 @@ function runSuite(htmlPath) {
 
 console.log('SAIRNlaw billing codes: the suite can be made to FAIL on what it claims\n');
 
+// -- THE expect ARM IS ANCHORED ON THE FAILURE LINE, NOT ON THE WHOLE RUN ---
+// Two holes, and this file had the second one.
+//
+// ONE: a PASSING run prints every arm's own label, so a bare regex over stdout
+// matches the green output of a mutation the suite never noticed and credits
+// it. cc guarded that on the SAIRNdental control after measuring it.
+//
+// TWO, WHICH THAT GUARD DOES NOT CLOSE: on a run that fails for an UNRELATED
+// reason, every arm that still PASSED printed its label, so the intended arm's
+// words are in the output anyway. Cody measured it across three controls on
+// 2026-09-18 -- 4 of 4 expect regexes still matched after breaking something
+// none of them was about -- and published this fix, open-work row 63.
+//
+// MEASURED ACROSS EVERY CONTROL ON THE PLATFORM BEFORE CHANGING ANY OF THEM,
+// by planting each mutation and testing EVERY expect against every other
+// mutation's output: 104 cross matches unanchored, 15 anchored. The 89 that
+// disappear were matches against lines an arm printed while PASSING.
+//
+// THE NON-CAPTURING GROUP AROUND THE PATTERN IS LOAD-BEARING, per Cody's note
+// that they got it wrong first: without it the pattern degenerates into a
+// top-level alternation whose later branches match anywhere, which is the same
+// hole wearing a fix.
+//
+// The leading alternation covers all three shapes a suite here fails in: a
+// printed FAIL, a TAP-style "not ok", and a thrown AssertionError.
+function anchoredExpect(expect) {
+  return new RegExp('(FAIL|not ok|AssertionError)[^\\n]*(?:' + expect.source + ')', 'i');
+}
+
 let idx = 0;
 for (const m of MUTATIONS) {
   idx += 1;
@@ -185,8 +214,8 @@ for (const m of MUTATIONS) {
   const r = runSuite(plant(m));
   const failed = r.code !== 0;
   ok(failed, 'the suite FAILS   exit ' + r.code);
-  ok(failed && m.expect.test(r.out),
-     'and it fails on ' + m.expectLabel
+  ok(failed && anchoredExpect(m.expect).test(r.out),
+     'and it fails ON THAT ARM -- ' + m.expectLabel
      + (failed ? '' : '   [not evaluated -- the suite did not fail]'));
 }
 

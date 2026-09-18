@@ -175,6 +175,35 @@ function runSuite(htmlPath) {
 
 console.log('SAIRNdental coverage edit: the suite can be made to FAIL on what it claims\n');
 
+// -- THE expect ARM IS ANCHORED ON THE FAILURE LINE, NOT ON THE WHOLE RUN ---
+// Two holes, and this file had the second one.
+//
+// ONE: a PASSING run prints every arm's own label, so a bare regex over stdout
+// matches the green output of a mutation the suite never noticed and credits
+// it. cc guarded that on the SAIRNdental control after measuring it.
+//
+// TWO, WHICH THAT GUARD DOES NOT CLOSE: on a run that fails for an UNRELATED
+// reason, every arm that still PASSED printed its label, so the intended arm's
+// words are in the output anyway. Cody measured it across three controls on
+// 2026-09-18 -- 4 of 4 expect regexes still matched after breaking something
+// none of them was about -- and published this fix, open-work row 63.
+//
+// MEASURED ACROSS EVERY CONTROL ON THE PLATFORM BEFORE CHANGING ANY OF THEM,
+// by planting each mutation and testing EVERY expect against every other
+// mutation's output: 104 cross matches unanchored, 15 anchored. The 89 that
+// disappear were matches against lines an arm printed while PASSING.
+//
+// THE NON-CAPTURING GROUP AROUND THE PATTERN IS LOAD-BEARING, per Cody's note
+// that they got it wrong first: without it the pattern degenerates into a
+// top-level alternation whose later branches match anywhere, which is the same
+// hole wearing a fix.
+//
+// The leading alternation covers all three shapes a suite here fails in: a
+// printed FAIL, a TAP-style "not ok", and a thrown AssertionError.
+function anchoredExpect(expect) {
+  return new RegExp('(FAIL|not ok|AssertionError)[^\\n]*(?:' + expect.source + ')', 'i');
+}
+
 let idx = 0;
 for (const m of MUTATIONS) {
   idx += 1;
@@ -184,8 +213,8 @@ for (const m of MUTATIONS) {
   ok(failed, 'the suite FAILS   exit ' + r.code);
   // Only meaningful on a failing run: a green suite prints every arm's own
   // label, so `expect` would match its own success output and credit a miss.
-  ok(failed && m.expect.test(r.out),
-     'and it fails on ' + m.expectLabel
+  ok(failed && anchoredExpect(m.expect).test(r.out),
+     'and it fails ON THAT ARM -- ' + m.expectLabel
      + (failed ? '' : '   [not evaluated -- the suite did not fail]'));
 }
 
