@@ -8903,6 +8903,68 @@
         }
       ],
       "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
+    },
+    {
+      "commit": "b5a25812f9d4",
+      "date": "2026-09-18",
+      "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
+      "files": [
+        "api/sd-data-unconfirmed-write.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 221,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Both soft-delete paths in api/sd-data.js read the PATCH representation through .json().catch(() => null) and then checked only w.ok before answering {ok:true}. Under Prefer: return=representation a PATCH that MATCHED returns one row and a PATCH that matched ZERO returns [] with status 200, so neither w.ok nor a null from the catch could separate 'it landed' from 'it matched nothing' from 'the answer could not be read' -- all three reached the same success response and the caller was told a record was removed while it was still there. Driven on both paths with the stub row untouched: the generic path and the sd_quote_requests path each returned 200 {ok:true} over a delete that did not happen. The generic SD_LOCAL_RESOURCES path serves seven Tier A resources (sd_invoices, sd_fin_jobs, sd_pricing_rules, sd_negotiated_prices, sd_order_history, stonedesk_quote_history, sd_aiquotes)",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "2e1bd777d4e4",
+        "date": "2026-09-08",
+        "subject": "feat(sd-data): soft delete -- marked and hidden, never destroyed, and no new privilege",
+        "lag_days": 10
+      },
+      "citation_note": "could-not-tell folded into passed -- the third state absent, so an unreadable answer and a zero-row match were each reported as a confirmed deletion. Same shape as 8e3a18a2 in api/sc-credentials.js, found by the sweep that fix opened",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the paths had no suite of their own before this commit, so no stub could produce a 2xx over an unreadable body and the branch was never exercised. The sd_quote_requests path at dc04f2ea (2026-09-12) copied the same shape four days later, which is a second injection this record does not separately count"
+    },
+    {
+      "commit": "37407d982f28",
+      "date": "2026-09-18",
+      "subject": "fix(sairndental): an unreadable BI read was served as an EMPTY dataset",
+      "files": [
+        "api/dnt-bi.js",
+        "api/dnt-bi.test.js"
+      ],
+      "lines_added": 67,
+      "lines_removed": 1,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/dnt-bi.js read its dataset through .json().catch(() => null) and consumed it as `(Array.isArray(drows) ? drows : []).map(...)`, so a 200 whose body would not parse arrived as null, failed Array.isArray, and was served as ZERO ROWS with ok:true. A Power BI, Tableau or Looker dashboard polling this feed then charts a period with no production, no charges and no appointments -- a claim about the practice rather than about the read. First site in this sweep on a READ rather than a write: the consequence is a fabricated-looking empty rather than a false confirmation",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "363b8304a91e",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+        "lag_days": 16
+      },
+      "citation_note": "the file argues this rule four lines below the defect, about a neighbouring path -- 'the refusal above is what keeps a FAILED lookup from ever reaching here looking like that legitimate empty'. It did not keep this one, because an unparseable body is not a !ok response and walked past that refusal. A correct principle, written down, one branch away from where it was needed",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's fetch stub could only answer the way PostgREST does when everything works, so a successful status over an unreadable body was unreachable from the suite and the branch was never exercised. The same gap that held 8e3a18a2 in place"
     }
   ],
   "started": "2026-09-09",
