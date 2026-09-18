@@ -81,6 +81,12 @@ const handler = require('./sc-credentials.js');
 let ROW = null;            // { data, updated_at } or null
 let REQUESTS = [];
 let ON_BEFORE_WRITE = null; // hook that simulates another admin winning the race
+// PER-WRITE RESPONSE PLAN (2026-09-18). The stub could only ever answer the
+// way PostgREST does when everything works, so the shape that mattered --
+// a 2xx whose BODY cannot be read -- was unreachable from this suite and the
+// defect below lived behind it. Keys are 'patch1','patch2','post1'.
+let RESPONSE_PLAN = null;
+let PATCHES = 0, POSTS = 0;
 const realFetch = global.fetch;
 
 function paramsOf(url) {
@@ -104,6 +110,11 @@ global.fetch = async (url, opts) => {
   if (ON_BEFORE_WRITE) { const h = ON_BEFORE_WRITE; ON_BEFORE_WRITE = null; h(); }
 
   if (method === 'PATCH') {
+    PATCHES += 1;
+    const planned = RESPONSE_PLAN && RESPONSE_PLAN['patch' + PATCHES];
+    if (planned === 'unparseable') return { ok: true, status: 200, json: async () => { throw new Error('unparseable'); } };
+    if (planned === 'notarray') return json({ data: {} }, 200);
+    if (planned === 'tworows') return json([{ data: {} }, { data: {} }], 200);
     const want = params.get('updated_at');
     const expected = want && want.indexOf('eq.') === 0 ? want.slice(3) : null;
     // The precondition. A mismatch returns ZERO rows -- PostgREST's answer to
@@ -115,6 +126,9 @@ global.fetch = async (url, opts) => {
   }
 
   if (method === 'POST') {
+    POSTS += 1;
+    const plannedP = RESPONSE_PLAN && RESPONSE_PLAN['post' + POSTS];
+    if (plannedP === 'unparseable') return { ok: true, status: 200, json: async () => { throw new Error('unparseable'); } };
     // Plain INSERT. A row already present is a unique violation, which is the
     // loud loss the old upsert used to hide.
     if (ROW) return json({ code: '23505', message: 'duplicate key' }, 409);
@@ -144,6 +158,7 @@ async function call(body) {
 }
 function reset() {
   ROW = null; REQUESTS = []; ON_BEFORE_WRITE = null;
+  RESPONSE_PLAN = null; PATCHES = 0; POSTS = 0;
   LICENSE = { valid: true, active: true, license_hash: 'H1', app_id: 'sairncode' };
   SESSION = { role: 'admin', employee_id: 'E-ADMIN' };
 }
@@ -267,6 +282,107 @@ test('no session is refused before the table is touched at all', async () => {
   const out = await call({ action: 'status' });
   assert.strictEqual(out.code, 401);
   assert.strictEqual(REQUESTS.length, 0);
+});
+
+// ── A 2xx WHOSE BODY CANNOT BE READ IS NOT A SUCCESSFUL WRITE (2026-09-18) ──
+// Found by an independent review of the 2026-09-16 negative control, and it is
+// THIS FILE'S OWN arm-2 defect arriving through a different door.
+//
+// Under `Prefer: return=representation` a PATCH that MATCHED returns one row
+// and a PATCH that matched ZERO returns `[]` with status 200. The handler read
+// that with `.json().catch(() => null)` and asked only whether the result was
+// an array of length zero -- so an UNPARSEABLE body became `null`, which is not
+// an array, which is not length zero, and fell through to `{ ok: true }`.
+// Measured before the fix, with the stored blob untouched: the main path
+// returned 200 {ok:true} and the retry path 200 {ok:true, retried:true}, each
+// over a write that did not happen.
+//
+// THE DISTINCTION THESE ARMS PIN IS THREE-WAY, and the third is the point.
+// `[]` means the server SPOKE and matched nothing -- a conflict, retryable.
+// An unreadable or wrong-shaped body means the answer could not be read, and
+// collapsing that into either neighbour is a lie in one direction or the other:
+// called success it is a false confirmation, called conflict it claims nothing
+// was saved when the write may well have landed.
+
+test('an UNPARSEABLE representation on the first write is UNKNOWN, never ok', async () => {
+  reset();
+  ROW = { data: { other: { enc: 'e2' } }, updated_at: 'T0' };
+  RESPONSE_PLAN = { patch1: 'unparseable' };
+  const out = await call({ action: 'set', service: 'stedi', value: 'v' });
+  assert.notStrictEqual(out.body && out.body.ok, true,
+    'a write whose answer could not be read was reported as saved');
+  assert.strictEqual(out.code, 502);
+  assert.strictEqual(out.body.error.code, 'WRITE_UNCONFIRMED');
+  assert.match(out.body.error.message, /UNKNOWN/);
+  assert.ok(!ROW.data.stedi, 'nothing should have been stored');
+});
+
+test('...and on the RETRY write too', async () => {
+  reset();
+  ROW = { data: { stedi: { enc: 'e1' }, other: { enc: 'e2' } }, updated_at: 'T0' };
+  // first PATCH misses -> retry; the retry's body is the unreadable one
+  ON_BEFORE_WRITE = () => { ROW = { data: ROW.data, updated_at: 'T1' }; };
+  RESPONSE_PLAN = { patch2: 'unparseable' };
+  const out = await call({ action: 'clear', service: 'stedi' });
+  assert.notStrictEqual(out.body && out.body.ok, true);
+  assert.strictEqual(out.body.error.code, 'WRITE_UNCONFIRMED');
+  assert.ok(ROW.data.stedi, 'the clear must not have been applied');
+});
+
+test('a body of the WRONG SHAPE is UNKNOWN as well -- not an array, or two rows', async () => {
+  for (const shape of ['notarray', 'tworows']) {
+    reset();
+    ROW = { data: { other: { enc: 'e2' } }, updated_at: 'T0' };
+    RESPONSE_PLAN = { patch1: shape };
+    const out = await call({ action: 'set', service: 'stedi', value: 'v' });
+    assert.strictEqual(out.body.error && out.body.error.code, 'WRITE_UNCONFIRMED',
+      shape + ' was not treated as unknown: ' + JSON.stringify(out.body));
+  }
+});
+
+test('an unparseable INSERT is UNKNOWN too -- the first-write path asks for a representation as well', async () => {
+  reset();
+  ROW = null;
+  RESPONSE_PLAN = { post1: 'unparseable' };
+  const out = await call({ action: 'set', service: 'stedi', value: 'v' });
+  assert.strictEqual(out.body.error && out.body.error.code, 'WRITE_UNCONFIRMED');
+  assert.strictEqual(ROW, null, 'nothing should have been inserted');
+});
+
+test('an EMPTY representation is still a CONFLICT, not an unknown', async () => {
+  // The direction that must not soften. `[]` is the server answering, so it
+  // stays retryable and keeps its own message. An arm of mine first asserted
+  // WRITE_UNCONFIRMED here and the CODE was right, not the test.
+  reset();
+  ROW = { data: { stedi: { enc: 'e1' } }, updated_at: 'T0' };
+  ON_BEFORE_WRITE = () => { ROW = { data: ROW.data, updated_at: 'T1' }; };
+  RESPONSE_PLAN = { patch2: 'empty-not-planned' };   // second PATCH misses naturally
+  const out = await call({ action: 'clear', service: 'stedi' });
+  assert.ok(out.body.ok === true || (out.body.error && out.body.error.code === 'WRITE_CONFLICT'),
+    'an empty representation must resolve as conflict-or-retry, never as unknown: '
+    + JSON.stringify(out.body));
+  assert.notStrictEqual(out.body.error && out.body.error.code, 'WRITE_UNCONFIRMED');
+});
+
+// ── THE INSERT RACE: A 409 IS A DEFINITE MISS, NOT AN UNKNOWN (2026-09-18) ──
+// Added because a sabotage survived. Turning `writeR.status === 409 ? MISSED`
+// into `? UNKNOWN` left the suite GREEN -- nothing drove a 409 out of the FIRST
+// write. It happens on the insert path: no row existed at read time, another
+// admin inserted first, and the unique constraint speaks. That is the server
+// ANSWERING, so it must stay retryable; classifying it unknown would turn a
+// recoverable race into a refusal the caller cannot act on.
+test('a 409 from the INSERT race retries and resolves, never WRITE_UNCONFIRMED', async () => {
+  reset();
+  ROW = null;                                   // nothing there when we read
+  // Another admin inserts between our read and our write.
+  ON_BEFORE_WRITE = () => { ROW = { data: { other: { enc: 'theirs' } }, updated_at: 'T9' }; };
+  const out = await call({ action: 'set', service: 'stedi', value: 'mine' });
+  assert.notStrictEqual(out.body.error && out.body.error.code, 'WRITE_UNCONFIRMED',
+    'a 409 is the server answering -- it is a miss, not an unreadable answer');
+  assert.strictEqual(out.code, 200, JSON.stringify(out.body));
+  assert.strictEqual(out.body.retried, true, 'the 409 must route to the retry');
+  assert.ok(ROW.data.stedi, 'our change did not survive the retry');
+  assert.ok(ROW.data.other, "the other admin's insert was overwritten");
 });
 
 test.after(() => { global.fetch = realFetch; });

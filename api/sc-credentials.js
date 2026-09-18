@@ -268,13 +268,59 @@ module.exports = async (req, res) => {
       return out;
     }
 
+    // ── A WRITE LANDED ONLY IF THE SERVER HANDED BACK THE ROW (2026-09-18) ──
+    // Found by an independent review of the 2026-09-16 negative control, and it
+    // is this file's own defect arriving through a different door.
+    //
+    // `Prefer: return=representation` means a PATCH that MATCHED returns one
+    // row and a PATCH that matched ZERO returns `[]` with status 200. The code
+    // read that with `.json().catch(() => null)` and then asked only whether
+    // the result was an ARRAY OF LENGTH ZERO -- so an UNPARSEABLE body became
+    // `null`, which is not an array, which is not length zero, which fell
+    // through to `res.json({ ok: true })`.
+    //
+    // DRIVEN BEFORE FIXING, on both write paths, with the stored blob left
+    // untouched: the main path returned 200 {ok:true} and the retry path
+    // returned 200 {ok:true, retried:true}, each over a write that did not
+    // happen. That is precisely what arm 2 of api/sc-credentials.test.js exists
+    // to refuse -- "the caller is told the credential was saved and it was not,
+    // the same data loss, now with a confirmation message on top" -- restored
+    // by a garbled body instead of a failed precondition.
+    //
+    // THREE ANSWERS, NOT TWO, and the third is the whole point. `MISSED` means
+    // the server looked and the precondition did not hold, which is a conflict
+    // and is retryable. `UNKNOWN` means the answer could not be read, and the
+    // one thing that must not happen is collapsing it into either neighbour:
+    // called WROTE it is a false confirmation, called MISSED it claims nothing
+    // was saved when the write may well have landed. It gets its own refusal
+    // that says exactly that.
+    const WROTE = 'WROTE', MISSED = 'MISSED', UNKNOWN = 'UNKNOWN';
+    function representationSays(rows) {
+      if (rows === null || rows === undefined) return UNKNOWN;  // body unreadable
+      if (!Array.isArray(rows)) return UNKNOWN;                 // not the shape asked for
+      if (rows.length === 0) return MISSED;                     // precondition did not hold
+      if (rows.length === 1) return WROTE;
+      // This endpoint is unique on (license_hash, credential_id), so more than
+      // one row back means the request did not address what it thought it did.
+      return UNKNOWN;
+    }
+    function refuseUnconfirmed(res2) {
+      res2.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',
+        message: 'The credential store accepted the request but its answer could not be read, '
+          + 'so whether the change was saved is UNKNOWN -- it was not confirmed and it was not '
+          + 'refused. Reopen the panel and check the current value before trying again.' } });
+    }
+
     let writeR = await writeBlob(next, currentRow && currentRow.updated_at);
     let writeRows = null;
 
     if (writeR.ok || writeR.status === 409) {
       const firstRows = writeR.status === 409 ? null : await writeR.json().catch(function () { return null; });
-      const noRowsMatched = writeR.status === 409 ||
-        (Array.isArray(firstRows) && firstRows.length === 0);
+      // A 409 IS a definite miss -- the server answered, the unique constraint
+      // spoke -- so it is MISSED rather than UNKNOWN and stays retryable.
+      const firstSays = writeR.status === 409 ? MISSED : representationSays(firstRows);
+      if (firstSays === UNKNOWN) { refuseUnconfirmed(res); return; }
+      const noRowsMatched = firstSays === MISSED;
       if (noRowsMatched) {
         console.warn('sc-credentials: concurrent write detected on ' + service + ' -- re-reading and retrying once');
         const reR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&credential_id=eq.' + enc(CREDENTIAL_ID) + '&select=data,updated_at'), { headers });
@@ -286,7 +332,16 @@ module.exports = async (req, res) => {
         }
         writeR = await writeBlob(applyChange(reRow.data), reRow.updated_at);
         const secondRows = writeR.ok ? await writeR.json().catch(function () { return null; }) : null;
-        if (!writeR.ok || (Array.isArray(secondRows) && secondRows.length === 0)) {
+        // !writeR.ok is a real refusal from the server and keeps the conflict
+        // message; an unreadable 2xx does NOT, because "nothing was saved" is a
+        // claim this branch cannot make.
+        if (!writeR.ok) {
+          res.status(409).json({ error: { code: 'WRITE_CONFLICT', message: 'Another administrator is changing service credentials right now. Nothing was saved -- reopen the panel and try again.' } });
+          return;
+        }
+        const secondSays = representationSays(secondRows);
+        if (secondSays === UNKNOWN) { refuseUnconfirmed(res); return; }
+        if (secondSays === MISSED) {
           res.status(409).json({ error: { code: 'WRITE_CONFLICT', message: 'Another administrator is changing service credentials right now. Nothing was saved -- reopen the panel and try again.' } });
           return;
         }
@@ -305,6 +360,11 @@ module.exports = async (req, res) => {
     }
     if (writeRows === null) writeRows = await writeR.json().catch(function () { return null; });
     if (!writeR.ok) return upstream(res, writeRows);
+    // THE LAST GATE, and it covers the INSERT path too -- a first write with no
+    // existing row also asks for a representation, and an unreadable answer
+    // there is the same unknown. Reached only when the write was not already
+    // classified above.
+    if (representationSays(writeRows) !== WROTE) { refuseUnconfirmed(res); return; }
 
     // Deliberately re-derives from `next` rather than echoing the stored row
     // -- publicStatus is the only shape that ever leaves this endpoint.
