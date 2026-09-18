@@ -3579,10 +3579,15 @@ function openCompleteVisitModal(appointmentId){
   $('cv-procedure-label').value=pc?(pc.cdt_code+' -- '+pc.description):'(unknown procedure)';
   $('cv-amount').value=pc?pc.default_fee:0;
   var pt=patients().find(function(x){return x.id===a.patient_id;});
-  var est=pc?computeEstimatedInsurance(pc.default_fee, pt?pt.insurance_payer:'', pc.id):{found:false,amount:0};
-  $('cv-coverage-note').textContent=est.found
-    ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
-    : 'No coverage rule on file for this payer/procedure -- showing full amount due.';
+  var est=pc?computeEstimatedInsurance(pc.default_fee, pt?pt.insurance_payer:'', pc.id):{found:false,amount:0,unreadable_fee:false};
+  // THE UNREADABLE CASE IS CHECKED FIRST. Under `found` it would have rendered
+  // "Estimated insurance: $0.00", which is a claim about the payer made from a
+  // fee nobody could read.
+  $('cv-coverage-note').textContent=est.unreadable_fee
+    ? DNT_UNREADABLE_FEE_NOTE
+    : (est.found
+      ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
+      : 'No coverage rule on file for this payer/procedure -- showing full amount due.');
   // THE DATE-OF-SERVICE CHECK, at the one place in this app where a real date
   // of service exists. The appointment's own start time is used, NOT today: a
   // visit completed late, or back-dated, must be checked against the day the
@@ -4082,20 +4087,37 @@ function tpProc(id){return procedureTypes().find(function(p){return p.id===id;})
 // Per-item money. Returns { fee, insurance, patient, covered } where covered is
 // FALSE when no coverage rule exists -- the caller must not render the zero as
 // a computed estimate.
+// `Number(item.fee)||0` HERE TOO, AND IT IS THE ONE THAT REACHES A TOTAL.
+// A treatment plan is what a patient is asked to accept. A line whose fee could
+// not be read used to contribute a silent $0 to the plan's fee, insurance and
+// patient-portion totals -- so the plan presented to the patient was short by
+// that line with nothing on screen saying so. `unreadable` is now its own state
+// and tpPlanTotals counts it rather than adding it.
 function tpItemMoney(item,patient){
-  var fee=Number(item.fee)||0;
+  var fee=dntMoneyIn(item.fee);
+  if(fee===null){
+    return {fee:null, insurance:null, patient:null, covered:false, unreadable:true};
+  }
   var est=computeEstimatedInsurance(fee, patient?patient.insurance_payer:'', item.procedure_type_id);
-  return {fee:fee, insurance:est.found?est.amount:0, patient:est.found?(fee-est.amount):fee, covered:est.found};
+  return {fee:fee, insurance:est.found?est.amount:0, patient:est.found?(fee-est.amount):fee,
+          covered:est.found, unreadable:false};
 }
 function tpPlanTotals(plan){
   var pt=tpPatient(plan.patient_id);
   var fee=0, ins=0, pat=0, uncovered=0;
+  var unreadable=0;
   (plan.items||[]).forEach(function(it){
     var m=tpItemMoney(it,pt);
+    // COUNTED, NOT ADDED. Adding null coerces to 0 in JavaScript and the total
+    // comes out authoritative and short -- the exact shape api/_lib/dnt-rollup.js
+    // refuses one layer up, and this is the patient-facing number.
+    if(m.unreadable){unreadable++;uncovered++;return;}
     fee+=m.fee; ins+=m.insurance; pat+=m.patient;
     if(!m.covered)uncovered++;
   });
-  return {fee:fee, insurance:ins, patient:pat, uncovered:uncovered, anyCovered:(plan.items||[]).length>uncovered};
+  return {fee:fee, insurance:ins, patient:pat, uncovered:uncovered,
+          unreadable:unreadable, complete:unreadable===0,
+          anyCovered:(plan.items||[]).length>uncovered};
 }
 function tpPhases(plan){
   var seen={};
@@ -4171,6 +4193,7 @@ function tpRenderItems(){
   var tot=tpPlanTotals({patient_id:pt?pt.id:'',items:tpItems});
   box.innerHTML='<div class="tw"><table><thead><tr><th>Phase</th><th>Code</th><th>Description</th><th>Fee</th><th>Est. insurance</th><th>Patient</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
     '<div style="margin-top:8px;font-weight:800">Total '+fmt(tot.fee)+' &nbsp; Est. insurance '+fmt(tot.insurance)+' &nbsp; Patient portion '+fmt(tot.patient)+'</div>'+
+    tpUnreadableNote(tot)+
     (tot.uncovered?'<div class="psub" style="margin-top:6px">'+tot.uncovered+' item'+(tot.uncovered===1?' has':'s have')+' no coverage rule on file for this payer, so no insurance estimate is offered for '+(tot.uncovered===1?'it':'them')+' and the full fee sits in the patient portion. That is an absence of data, not a finding that the payer covers nothing.</div>':'');
 }
 function addTxItem(){
@@ -4245,7 +4268,10 @@ function openTxPlanDetail(id){
     var rows=items.map(function(it){
       var proc=tpProc(it.procedure_type_id);
       var m=tpItemMoney(it,pt);
-      pf+=m.fee;pi+=m.insurance;pp+=m.patient;
+      // Same rule at the PHASE subtotal: counted, never added. `pf+=null` is
+      // `pf+0` in JavaScript, and a phase that looks complete and is short is
+      // the thing this whole change is about.
+      if(!m.unreadable){pf+=m.fee;pi+=m.insurance;pp+=m.patient;}
       var cdt=cdtStatusFor(proc, it.planned_on||dntLocalToday());
       var meta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
       return '<tr><td>'+H(proc?proc.cdt_code:'(removed)')+' <span class="badge '+meta.cls+'" title="'+H(cdt.message)+'">'+H(meta.label)+'</span></td>'+
@@ -4308,7 +4334,7 @@ function rTxPlans(){
       return '<tr><td><strong>'+H(pt?pt.name:'(unknown patient)')+'</strong></td>'+
         '<td>'+H(pl.title||'--')+'</td><td>'+H(pl.created_at||'--')+'</td>'+
         '<td>'+tpPhases(pl).length+'</td><td>'+((pl.items||[]).length)+'</td>'+
-        '<td>'+fmt(tot.fee)+'</td>'+
+        '<td>'+fmt(tot.fee)+(tot.unreadable?'<div style="font-size:11px;color:var(--danger)">'+tot.unreadable+' fee(s) UNREADABLE &mdash; total is short</div>':'')+'</td>'+
         '<td>'+(tot.anyCovered?fmt(tot.insurance):'<span style="color:var(--muted)">no rules</span>')+'</td>'+
         '<td>'+fmt(tot.patient)+'</td>'+
         '<td><span class="badge '+(TP_STATUS_BADGE[pl.status]||'bx')+'">'+H(TP_STATUS_LABELS[pl.status]||pl.status)+'</span>'+
@@ -5068,9 +5094,11 @@ function onChargeProcedureChange(){
   var note=$('ch-add-coverage-note');
   if(!pc||!pt){note.textContent='';return;}
   var est=computeEstimatedInsurance(pc.default_fee, pt.insurance_payer, pc.id);
-  note.textContent=est.found
-    ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
-    : 'No coverage rule on file for this payer/procedure -- showing full amount due.';
+  note.textContent=est.unreadable_fee
+    ? DNT_UNREADABLE_FEE_NOTE
+    : (est.found
+      ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
+      : 'No coverage rule on file for this payer/procedure -- showing full amount due.');
 }
 async function submitCharge(){
   var patientId=$('bill-patient').value;
@@ -5539,27 +5567,52 @@ function lookupCoverage(payer, procedureTypeId){
 // Locked-in at call time (design spec §0) -- the caller stores this
 // result on the charge record permanently. Never recomputed for an
 // existing charge, even if the underlying coverage rule changes later.
-// ── STILL CARRIES `Number(amount)||0`, AND THAT IS FLAGGED RATHER THAN FIXED
-// ── HERE (2026-09-18). The same unparseable-becomes-a-measured-zero shape
-// dntMoneyIn() removed from addChargeEntry and addPaymentEntry.
+// ── AN UNREADABLE FEE IS `null`, NEVER $0 (2026-09-18) ────────────────────
+// This carried `Number(amount)||0`, the same unparseable-becomes-a-measured-zero
+// shape dntMoneyIn() removed from addChargeEntry and addPaymentEntry. It was
+// flagged and left in the previous pass; this closes it, on the rule
+// api/_lib/dnt-rollup.js states for the whole platform: NEVER 0. Zero is a
+// measurement. "We could not read the fee" and "insurance covers nothing" are
+// different sentences and only one of them is about the patient's money.
 //
-// THE PERSISTING PATH IS SAFE: addChargeEntry now passes `amt`, already
-// validated, so the figure this function STORES on a charge record can no
-// longer be derived from an amount the app could not read.
+// THE PERSISTING PATH WAS ALREADY SAFE and still is: addChargeEntry passes an
+// amount dntMoneyIn() has already validated, so `estimated_insurance_portion`
+// on a stored charge can never be derived from a fee the app could not read.
+// The change here is about the three DISPLAY callers, which pass a procedure's
+// `default_fee` or a treatment-plan line `fee` -- practice-entered numbers that
+// can be blank, a stray letter, or a pasted '1,200'.
 //
-// The four other callers pass a procedure's `default_fee` or a line `fee` --
-// practice-entered numbers, used for a DISPLAYED estimate. An unreadable fee
-// there still produces a silent $0 estimate, which is a real instance of the
-// same class. It is NOT fixed in this pass because the fix is not the parse: it
-// is deciding what `estimated_insurance_portion` MEANS when the fee is
-// unreadable, and that field is persisted on the charge record and read
-// elsewhere. Changing a stored field's contract by reflex, to close a defect
-// whose persisting path is already closed, is the scope growth this platform
-// asks not to fold in silently. Named so the next person inherits the fact
-// rather than rediscovering it.
+// `found` KEEPS ITS OLD MEANING and is deliberately not overloaded: it answers
+// "is there a coverage rule on file", which is a fact about the payer, not
+// about the fee. A caller must be able to say "no rule on file" and "the fee is
+// unreadable" separately, because the first is normal and the second is a
+// data-entry error somebody has to fix. `unreadable_fee` is the second.
 function computeEstimatedInsurance(amount, payer, procedureTypeId){
   var cov=lookupCoverage(payer, procedureTypeId);
-  return { amount: Math.round((Number(amount)||0) * (cov.coveragePercent/100) * 100)/100, found: cov.found };
+  var fee=dntMoneyIn(amount);
+  if(fee===null){
+    return { amount: null, found: cov.found, unreadable_fee: true };
+  }
+  return { amount: Math.round(fee * (cov.coveragePercent/100) * 100)/100,
+           found: cov.found, unreadable_fee: false };
+}
+
+// The one sentence all three display callers use for an unreadable fee, so they
+// cannot drift into three different ways of saying it -- or into one of them
+// quietly saying nothing.
+var DNT_UNREADABLE_FEE_NOTE='The fee on this procedure could not be read as a number, '
+  +'so NO estimate is shown -- this is not a $0 estimate. Correct the procedure fee.';
+
+// The plan-level disclosure. One function, so a total can never appear in a
+// third place without it -- which is how the first two get the warning and the
+// third quietly does not.
+function tpUnreadableNote(tot){
+  if(!tot||!tot.unreadable)return '';
+  return '<div class="psub" style="margin-top:6px;color:var(--danger)"><b>'+tot.unreadable+' item'
+    +(tot.unreadable===1?'&#39;s fee could':'s&#39; fees could')+' not be read as a number, so '
+    +(tot.unreadable===1?'it is':'they are')+' NOT included in the totals above.</b> '
+    +'The totals are short by an unknown amount -- they are not a smaller plan, they are an '
+    +'incomplete one. Correct the fee on '+(tot.unreadable===1?'that item':'those items')+'.</div>';
 }
 
 function patientBalance(patientId){
