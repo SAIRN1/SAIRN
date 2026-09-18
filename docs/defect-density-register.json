@@ -8625,6 +8625,37 @@
       "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
     },
     {
+      "commit": "8e3a18a24564",
+      "date": "2026-09-18",
+      "subject": "fix(sairncode): a credential write that could not be confirmed was reported as saved -- this file's own defect through a different door",
+      "files": [
+        "api/sc-credentials.js",
+        "api/sc-credentials.test.js"
+      ],
+      "lines_added": 179,
+      "lines_removed": 3,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sc-credentials.js treated a 2xx whose representation body could not be parsed as a SUCCESSFUL write. Under Prefer: return=representation a PATCH that matched zero rows returns 200 with [], and the handler asked only whether the result was an array of length zero -- so .json().catch(() => null) turned an unreadable body into null, which is not an array, which is not length zero, and fell through to res.json({ok:true}). Driven on both write paths with the stored blob untouched: the main path returned 200 {ok:true} and the retry path 200 {ok:true, retried:true}, each over a write that did not happen, on a Tier A service-credential store whose own suite exists to refuse exactly that sentence",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "6ecf5a25201e",
+        "date": "2026-09-04",
+        "subject": "docs(worklog): a credential blob that lost concurrent writes, a limiter that failed open in silence, and a live report I had to narrow",
+        "lag_days": 14
+      },
+      "citation_note": "could-not-tell folded into passed -- the third state absent, so an unreadable answer was reported as a confirmed one",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's stub could only answer the way PostgREST does when everything works, so a 2xx with an unreadable body was unreachable from the suite and the branch was never exercised"
+    },
+    {
       "commit": "975a88ff0bf7",
       "date": "2026-09-18",
       "subject": "fix(self-state): the tool built to derive TRUE state was deriving its own identity from a folder name, and reporting one clone's git as another's",
