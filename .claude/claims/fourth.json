@@ -1643,8 +1643,8 @@
       "task": "csv formula injection checker third check unreachable helper call site detector",
       "claimed_at": "2026-09-18T12:12:19Z",
       "claimed_at_epoch": 1789733539.3224044,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T12:21:26Z"
     }
   ]
 }
