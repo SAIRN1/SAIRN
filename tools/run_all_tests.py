@@ -664,7 +664,33 @@ def _main_body(quiet):
     # THE FLOOR REACHES THE EXIT CODE. A shrunken suite that still exits 0 is a
     # sentence nobody acts on, which is the exact failure mode the sweep that
     # added this is about.
-    return 1 if (failures or shrunk) else 0
+    rc = 1 if (failures or shrunk) else 0
+
+    # ── THE EXIT CODE IS PRINTED, BECAUSE A PIPE THROWS IT AWAY (2026-09-18) ──
+    # This run reported 29 failing test files and the SHELL reported success,
+    # and the two were read together as "the runner contradicts its own exit
+    # logic". It does not. The command was
+    #
+    #     python tools/run_all_tests.py 2>&1 | tail -35
+    #
+    # and a pipeline exits with the status of its LAST command -- `tail`, which
+    # always succeeds. Python returned 1. Nothing was wrong here, and half an
+    # hour went into a defect that did not exist while 29 real failures sat
+    # unread underneath it.
+    #
+    # THE RUNNER CANNOT STOP ANYONE PIPING IT, so it stops the pipe from being
+    # able to hide the verdict: the exit code goes in the OUTPUT, as the last
+    # line, where `| tail` carries it and `| head` does not. That is the same
+    # move the rest of this file already makes for every other third state --
+    # SKIPPED, RETRIED, NOT RUN, SHRUNK are all printed rather than left to a
+    # number somebody has to go and look up.
+    #
+    # It is one line and it is deliberately not cleverer than that. Detecting
+    # a pipe (`sys.stdout.isatty()`) and warning would be a guess about intent
+    # -- redirecting to a file is not a mistake -- and this repo has enough
+    # machinery that fires on the wrong thing.
+    print('EXIT %d -- %s' % (rc, 'FAILURES ABOVE' if rc else 'clean'))
+    return rc
 
 
 if __name__ == '__main__':

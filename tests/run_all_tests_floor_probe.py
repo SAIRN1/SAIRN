@@ -47,6 +47,7 @@ import json
 import os
 import sys
 import contextlib
+import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
@@ -207,6 +208,88 @@ check(src.count('MIN_TEST_FILES = ') == 1,
 check(src.count('< MIN_TEST_FILES') == 2,
       'both bodies compare against it (found %d comparison(s))'
       % src.count('< MIN_TEST_FILES'))
+
+print('')
+print('8. THE EXIT CODE FOLLOWS *FAILURES* -- the half arms 2-6 never touch')
+# ARMS 2-6 ONLY EVER DRIVE `shrunk`. They patch _run() to the green result and
+# move the file COUNT, so every one of them would still pass if the `failures`
+# half of `1 if (failures or shrunk) else 0` were deleted. A suite runner whose
+# exit code ignores failing tests is the worst possible version of this file,
+# and nothing here could see it.
+#
+# THE RED RESULT IS DERIVED THE SAME WAY _GREEN IS, and for the same reason the
+# header gives: a hand-written `([('node', 'x', 'y')], [], [])` is a second copy
+# of _run()'s signature, and the last one of those died on ValueError the day a
+# third value appeared. This runs the REAL _run() on a REAL file that REALLY
+# exits non-zero, in a temp dir so nothing lands in the tree.
+_tmp = tempfile.mkdtemp(prefix='floorprobe-')
+_fail_js = os.path.join(_tmp, 'planted_fail.js')
+with open(_fail_js, 'w', encoding='utf-8') as _f:
+    _f.write("console.log('planted: 0 passed, 1 failed');\nprocess.exit(1);\n")
+_RED = R._run([_fail_js], [], quiet=True)
+# If the plant did not actually fail, every arm below is asserting nothing.
+check(len(_RED[0]) == 1,
+      'the planted file really did fail (%d failure(s) collected)' % len(_RED[0]))
+
+
+@contextlib.contextmanager
+def patched_result(count, result):
+    """Same as patched(), but the caller chooses green or red."""
+    real_discover, real_run = R.discover, R._run
+    R.discover = lambda: (['tests/fake_%d.js' % i for i in range(count)], [], [])
+    R._run = lambda js, py, quiet=True: result
+    try:
+        yield
+    finally:
+        R.discover, R._run = real_discover, real_run
+
+
+with patched_result(R.MIN_TEST_FILES, _RED):
+    rc_red, out_red = capture(lambda: R._main_body(quiet=True))
+check(rc_red == 1, 'a failing test with the suite NOT shrunk: exit 1')
+check('1 FAILING TEST FILE(S)' in out_red, 'a failing test: the count is printed')
+check('ALL %d TEST FILES PASS' % R.MIN_TEST_FILES not in out_red,
+      'a failing test: it does NOT also print the pass line')
+check('THE SUITE HAS SHRUNK' not in out_red,
+      'a failing test: `shrunk` is NOT what drove this -- only `failures` did')
+
+print('')
+print('9. MUTATION PROOF for arm 8 -- the same count, nothing failing')
+with patched_result(R.MIN_TEST_FILES, _GREEN):
+    rc_green, out_green = capture(lambda: R._main_body(quiet=True))
+check(rc_green == 0, 'same count, no failures: exit 0 -- arm 8 is not a constant')
+
+print('')
+print('10. THE VERDICT SURVIVES A PIPE -- the exit code is in the OUTPUT')
+# WHY THIS ARM EXISTS (2026-09-18). A real run printed 29 FAILING TEST FILE(S)
+# and the shell reported success, because the command ended in `| tail -35` and
+# a pipeline exits with the status of its LAST command. The two were read
+# together as the runner contradicting its own exit logic. It was not: Python
+# returned 1 and `tail` returned 0.
+#
+# The runner cannot stop anyone piping it, so the verdict goes in the output as
+# the LAST line, where `| tail` carries it. These arms pin that it is last and
+# that it AGREES with the returned code -- an EXIT line that disagreed would be
+# worse than none, since it is the line a reader would trust.
+def _last_line(text):
+    lines = [l for l in text.splitlines() if l.strip()]
+    return lines[-1] if lines else ''
+
+
+check(_last_line(out_red) == 'EXIT 1 -- FAILURES ABOVE',
+      'red run: the LAST line is the exit code (got %r)' % _last_line(out_red)[:60])
+check(_last_line(out_green) == 'EXIT 0 -- clean',
+      'green run: the LAST line is the exit code (got %r)' % _last_line(out_green)[:60])
+check(_last_line(out_red).startswith('EXIT %d' % rc_red)
+      and _last_line(out_green).startswith('EXIT %d' % rc_green),
+      'the printed code AGREES with the returned code in both directions')
+# The hook copy emits JSON to be parsed by the harness; a stray EXIT line there
+# would break it. Named rather than assumed, because "add it everywhere" is the
+# obvious wrong next edit.
+with patched_result(R.MIN_TEST_FILES, _GREEN):
+    _, hook_out = capture(R._hook_body)
+check('EXIT ' not in hook_out,
+      'the HOOK copy does not print it -- its output is JSON for a parser')
 
 print('')
 if fails:
