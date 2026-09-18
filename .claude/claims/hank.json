@@ -2235,6 +2235,16 @@
       "claimed_at_epoch": 1789743472.62149,
       "status": "released",
       "released_at": "2026-09-18T15:01:32Z"
+    },
+    {
+      "id": "hank-1789745871",
+      "session": "hank",
+      "subject": "self-state-tool",
+      "task": "clone identity marker and per clone git derivation for the weekly reconciliation",
+      "claimed_at": "2026-09-18T15:37:51Z",
+      "claimed_at_epoch": 1789745871.7055128,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
