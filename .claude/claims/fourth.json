@@ -1733,8 +1733,8 @@
       "task": "server side validation for law_timeentries billing_code, currently unvalidated at both ends",
       "claimed_at": "2026-09-18T23:37:30Z",
       "claimed_at_epoch": 1789774650.2616978,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T23:48:02Z"
     }
   ]
 }
