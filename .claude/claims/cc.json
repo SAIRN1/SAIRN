@@ -1832,8 +1832,8 @@
       "task": "dnt_rollup panel wiring, resource reachability checker platform wide, addChargeEntry amount hardening",
       "claimed_at": "2026-09-18T11:00:45Z",
       "claimed_at_epoch": 1789729245.8871539,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T12:34:05Z"
     }
   ]
 }
