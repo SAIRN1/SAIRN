@@ -100,10 +100,26 @@ const PAYLOAD = { shopId: 'SD-SOMEBODY-ELSES-LICENCE', invoices: [{ id: 'i1', am
     assert.strictEqual(r.upserts.length, 1);
     const sent = JSON.parse(r.upserts[0].body);
     const row = Array.isArray(sent) ? sent[0] : sent;
-    assert.strictEqual(row.shop_id, 'hash-of-shop-a',
-      'the write was keyed on a value the caller supplied: ' + row.shop_id);
+    // COLUMN RENAMED shop_id -> license_hash by
+    // sql/bridge_data_rekey_2026-09-18.sql. Both spellings are asserted: the
+    // new one must carry the hash, and the OLD one must be GONE. Without the
+    // second half this arm would pass on a handler writing both, which is the
+    // half-applied rename that leaves a column holding a secret behind.
+    assert.strictEqual(row.license_hash, 'hash-of-shop-a',
+      'the write was keyed on a value the caller supplied: ' + row.license_hash);
+    assert.strictEqual(row.shop_id, undefined,
+      'the old shop_id column is still being written -- the rename is half applied');
     assert.ok(!JSON.stringify(sent).includes('SD-SOMEBODY-ELSES-LICENCE'),
       'the body shopId reached the row');
+    // THE UPSERT TARGET MUST BE RENAMED WITH THE COLUMN, and nothing asserted
+    // it until 2026-09-18 -- a mutation that left `on_conflict=shop_id` behind
+    // came back SILENT. It is not cosmetic: on_conflict naming a column the
+    // table no longer has makes PostgREST refuse every push, and naming the
+    // wrong existing one would INSERT a second row per shop instead of merging.
+    assert.match(r.upserts[0].url, /on_conflict=license_hash(&|$)/,
+      'the upsert conflict target was not renamed with the column: ' + r.upserts[0].url);
+    assert.ok(!/on_conflict=shop_id/.test(r.upserts[0].url),
+      'the old conflict target survives');
   });
 
   await t('...and the RAW LICENCE KEY never reaches the row either', async () => {

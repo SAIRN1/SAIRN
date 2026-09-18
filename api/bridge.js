@@ -356,7 +356,17 @@ async function handlePush(body, res, req) {
     res.status(403).json({ error: { code: 'BAD_LICENCE', message: 'That licence is not valid' } });
     return;
   }
-  const shopId = lic.license_hash;
+  // ── THE COLUMN IS `license_hash` SINCE 2026-09-18 ────────────────────
+  // sql/bridge_data_rekey_2026-09-18.sql renamed it and rehashed the legacy
+  // rows in place. The name mattered: after the auth fix this column held a
+  // hash under a name that said shop id, so the next reader had to read this
+  // handler to find out what was in the table. Every other tenant-scoped
+  // table on this platform calls it license_hash.
+  //
+  // THE RESPONSE FIELD STAYS `shopId`. It is the wire contract the two live
+  // callers read, renaming it would break them for no benefit, and it is a
+  // HASH either way -- the caller never sees a raw key back.
+  const licenseHash = lic.license_hash;
   const data = {
     jobs: body.jobs || null,
     invoices: body.invoices || null,
@@ -377,11 +387,11 @@ async function handlePush(body, res, req) {
   }
 
   try {
-    // Upsert on shop_id (its primary key) -- same merge-duplicates pattern
+    // Upsert on license_hash (its primary key) -- same merge-duplicates pattern
     // api/sd-data.js already uses for business_profiles. Each live caller
     // sends a full current-state snapshot every time, so "latest wins" here
     // is correct, not a data-loss shortcut.
-    const r = await fetch(SUPABASE_URL + '/rest/v1/bridge_data?on_conflict=shop_id', {
+    const r = await fetch(SUPABASE_URL + '/rest/v1/bridge_data?on_conflict=license_hash', {
       method: 'POST',
       headers: {
         apikey: SERVICE_KEY,
@@ -389,7 +399,7 @@ async function handlePush(body, res, req) {
         'Content-Type': 'application/json',
         Prefer: 'resolution=merge-duplicates,return=representation'
       },
-      body: JSON.stringify({ shop_id: String(shopId), data: data, updated_at: new Date().toISOString() })
+      body: JSON.stringify({ license_hash: String(licenseHash), data: data, updated_at: new Date().toISOString() })
     });
     const out = await r.json().catch(function () { return null; });
     if (!r.ok) {
@@ -417,7 +427,7 @@ async function handlePush(body, res, req) {
       return;
     }
     const written = Array.isArray(out) ? out[0] : out;
-    res.status(200).json({ ok: true, written: 1, shopId: written && written.shop_id });
+    res.status(200).json({ ok: true, written: 1, shopId: written && written.license_hash });
   } catch (err) {
     console.error('bridge push error:', err);
     res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
