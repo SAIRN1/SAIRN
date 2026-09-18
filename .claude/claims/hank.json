@@ -2163,8 +2163,8 @@
       "task": "review cody item 46 record-parity XOR sv_controlled",
       "claimed_at": "2026-09-18T10:52:34Z",
       "claimed_at_epoch": 1789728754.6909075,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T11:05:14Z"
     }
   ]
 }
