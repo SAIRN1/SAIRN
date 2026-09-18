@@ -2263,8 +2263,8 @@
       "task": "mech_credentials sairnmechanical eligibility then roofing-gl-export rf_invoices then sairnvet_dose_audit_reader working backwards while fourth comes up from the oldest",
       "claimed_at": "2026-09-18T21:33:58Z",
       "claimed_at_epoch": 1789767238.530587,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T21:56:49Z"
     }
   ]
 }
