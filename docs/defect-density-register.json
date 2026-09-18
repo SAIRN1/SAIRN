@@ -8385,7 +8385,7 @@
       "recurrence_open": "other endpoints that scope in JS after a read were not audited one by one -- the shape search makes them findable and finding them is not the same as having looked"
     },
     {
-      "commit": "caa5d2475407",
+      "commit": "e09d3afdd4c2",
       "date": "2026-09-18",
       "subject": "fix(hover-gate): the scope gate had no entry for the auditor's OWN claim file -- it blocked three real commits before anyone read the allowlist",
       "files": [
