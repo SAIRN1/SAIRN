@@ -672,6 +672,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-18T13:20:49Z",
+      "resources": [
+        "scp_quotes"
+      ],
+      "files": [
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js"
+      ],
+      "what": "SAIRNscape scp_quotes: the send button was disabled and relabelled 'Sent to Quoting' UNCONDITIONALLY, three lines before the branch that decided whether anything had been sent, so both failure toasts said 'try again with a connection' while the only control that would retry was disabled and wearing the claim the toast was retracting. The button now follows the outcome and a real outbound queue backs it. PRESS ON: (1) the queue's safety rests ENTIRELY on api/sd-data.js's scp_quotes and scp_designs writes being UPSERTs on (license_hash, <id>) with merge-duplicates -- I assert both in the suite, but check I read the right branches and that no other scp_ write the queue might later cover is a plain insert; (2) scpData now records scpLastErr per resource and the CATCH deliberately sets no status -- confirm no path can leave a stale 4xx code behind so a later network failure reads as a fresh server refusal, which is the exact defect sairndental records having shipped; (3) a REFUSED row is kept, never retried, and the LOCAL copy is deliberately not deleted -- check that the banner makes the disagreement legible rather than looking like a pending upload; (4) the retry button is rebound with sendBtn.onclick inside the failure branch, so check that a later scpUpdateApprovalUI or re-render cannot leave a button labelled 'Retry upload' wired to the original send; (5) TWELVE other scpData('write') call sites are NOT queued and the banner says so -- check the wording cannot be read as covering them.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
