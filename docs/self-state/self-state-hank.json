@@ -1,0 +1,2069 @@
+{
+ "session": "hank",
+ "window_days": 7,
+ "git": {
+  "repo": "C:\\Users\\marsh\\Documents\\SAIRN-hank",
+  "branch": "main",
+  "head": "e2d1ff4f",
+  "dirty": [],
+  "untracked": [
+   "docs/self-state/"
+  ],
+  "behind": 0,
+  "ahead": 0,
+  "unpushed": []
+ },
+ "git_derivation": "SELF",
+ "git_not_derived_because": "",
+ "attributable_commits": [
+  {
+   "sha": "6be554f67371",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims self-state-tool -- clone identity marker and per clone git derivation for the weekly reconciliation"
+  },
+  {
+   "sha": "179fde488fe0",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases stale-row-sweep"
+  },
+  {
+   "sha": "237252a01c8c",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases suite-control-and-backoff-probes"
+  },
+  {
+   "sha": "29ee991f7906",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases service-role-gate-probe-verdict-set"
+  },
+  {
+   "sha": "f6b81f003da4",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims service-role-gate-probe-verdict-set -- the fifth verdict COULD_NOT_TELL was added without updating the pinned verdict set"
+  },
+  {
+   "sha": "2900873a8a94",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases sd-data-memory-app-scope-test"
+  },
+  {
+   "sha": "24ccc75a7036",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims sd-data-memory-app-scope-test -- stale string anchors in the memory app scope suite"
+  },
+  {
+   "sha": "f3dd882fb9f4",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims stale-row-sweep -- open work index rows whose named artifacts moved after the row was written"
+  },
+  {
+   "sha": "4b9fbdbadaf2",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims suite-control-and-backoff-probes -- independent check of cody four records suite_control_triage retry_backoff_check sairnbiz_timesheet_probe sairnfreedom_server_backup"
+  },
+  {
+   "sha": "67d2beb8c16f",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases sairnvet"
+  },
+  {
+   "sha": "e90a5c2a2bf3",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims sairnvet -- peerconsult 64KB check rejection svSyncSuppressed no finally hydration additive disclosure"
+  },
+  {
+   "sha": "76bc56f13692",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases record-parity-interface"
+  },
+  {
+   "sha": "723359ee3ba7",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims record-parity-interface -- settle buildGroup throws vs recover refuses"
+  },
+  {
+   "sha": "1ed2564b4bca",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases service-role-gate-v4"
+  },
+  {
+   "sha": "9bdd10322a14",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims service-role-gate-v4 -- tier A gate blind to variable-dispatched resources SV_RESOURCES"
+  },
+  {
+   "sha": "1213faaeef31",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases tier-a-review-record-parity"
+  },
+  {
+   "sha": "ffac1ec1ae35",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank claims tier-a-review-record-parity -- review cody item 46 record-parity XOR sv_controlled"
+  },
+  {
+   "sha": "0d564b9a770b",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases log-error-clustering"
+  },
+  {
+   "sha": "9da143664bf0",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims log-error-clustering -- semantic clustering of log and error messages with embedding false-positive validation"
+  },
+  {
+   "sha": "82e51b52e28a",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank releases item97-soft-delete-review"
+  },
+  {
+   "sha": "0164232d9ae8",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims item97-soft-delete-review -- independent review of cc item 97 SAIRNcode soft_delete Tier A"
+  },
+  {
+   "sha": "fbc39369d60a",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank releases auth-secret-split"
+  },
+  {
+   "sha": "e7eac988ba1f",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims auth-secret-split -- SD_AUTH_SECRET stage B encryption split, C kid rotation, D per-app secrets"
+  },
+  {
+   "sha": "d62aea6402b1",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank releases claude-app-id-and-bridge"
+  },
+  {
+   "sha": "997f55c9b2e1",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims claude-app-id-and-bridge -- app_id licence verification, bridge push deletion, cron-liveness doc ordering, SD_AUTH_SECRET options"
+  },
+  {
+   "sha": "b09f3d26aa1d",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank releases resend-channel-proof"
+  },
+  {
+   "sha": "9b0400f556d8",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank releases fetch-json-response-shape"
+  },
+  {
+   "sha": "96031789cdd0",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims resend-channel-proof -- one-time delivery proof through the watchdog heartbeat"
+  },
+  {
+   "sha": "83a67c64c96a",
+   "date": "2026-09-17",
+   "subject": "chore(claims): hank claims fetch-json-response-shape -- sweep for callers treating Response as the body"
+  },
+  {
+   "sha": "a55338f16a1e",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases mech-credentials-export"
+  },
+  {
+   "sha": "763ba137ad12",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims mech-credentials-export -- independent review of CC mech export board fixture derived from server"
+  },
+  {
+   "sha": "e185b5fa4f42",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases cron-watchdog"
+  },
+  {
+   "sha": "b9a582853ddd",
+   "date": "2026-09-16",
+   "subject": "docs(worklog): the watchdog self row is ok in production, on the predicted run"
+  },
+  {
+   "sha": "64903454ff86",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases master-plan"
+  },
+  {
+   "sha": "1e87536d0b42",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims master-plan -- fault column disclosure for api-only apps"
+  },
+  {
+   "sha": "550d69cd09d5",
+   "date": "2026-09-16",
+   "subject": "fix(cron): the watchdog stopped responding to itself and went on grading itself"
+  },
+  {
+   "sha": "af4554072326",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims cron-watchdog -- watchdog self outcome latch SAIRN_OPS_EMAIL verification"
+  },
+  {
+   "sha": "ea1419e5813b",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases item83-review"
+  },
+  {
+   "sha": "3e94cbb24b20",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script"
+  },
+  {
+   "sha": "df797f85822c",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases hank-queue2"
+  },
+  {
+   "sha": "b56dea6e3798",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims hank-queue2 -- sb_ts frozen week access path, dose audit local time display, clone registry fifth, items.md item 45, dispatch_state item 47 FAI, license.js gate column"
+  },
+  {
+   "sha": "07e9592443a0",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases transport-sweep"
+  },
+  {
+   "sha": "487dd00024f0",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases removal-path"
+  },
+  {
+   "sha": "615aedebc4bd",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims removal-path -- derived exemption fixture arm and sb_ts assessment"
+  },
+  {
+   "sha": "8e07c742e439",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims transport-sweep -- transport timeout sweep red on clean tree diagnosis"
+  },
+  {
+   "sha": "374533369b4a",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases removal-path"
+  },
+  {
+   "sha": "5ff576ff55c2",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims removal-path -- tier a resources with no removal path burn down"
+  },
+  {
+   "sha": "005f424ed44b",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases sairnvet-audit"
+  },
+  {
+   "sha": "6e161a230552",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims sairnvet-audit -- dosing audit trail reader export sv_audit_log"
+  },
+  {
+   "sha": "06049fbd22f0",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases dispatch-state"
+  },
+  {
+   "sha": "a6b86d6b0e99",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims dispatch-state -- current state verification claims cross referenced against open work registry"
+  },
+  {
+   "sha": "023de20f7c45",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank releases sairnfreedom"
+  },
+  {
+   "sha": "7fc9792e6415",
+   "date": "2026-09-16",
+   "subject": "chore(claims): hank claims sairnfreedom -- phases 2 4 5 canteen events disbursement donations member experience"
+  },
+  {
+   "sha": "9f09f4da8f04",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases stonedesk-gaps"
+  },
+  {
+   "sha": "09a76b054f2f",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims stonedesk-gaps -- stonedesk competitive gap rederivation against head"
+  },
+  {
+   "sha": "0ffd5d1cdf47",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases multi-location"
+  },
+  {
+   "sha": "19182949ba19",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims multi-location -- shared multi location multi brand architecture measurement and design"
+  },
+  {
+   "sha": "6e1b111c2c07",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases register-backlog"
+  },
+  {
+   "sha": "c687ce6e0ad5",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims register-backlog -- tier a first sequencing of the defect register backlog"
+  },
+  {
+   "sha": "8b171b6cdf1b",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases register-feed-gate"
+  },
+  {
+   "sha": "0c45639b61e5",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims register-feed-gate -- defect register entry required at push for fix commits, prevent by construction"
+  },
+  {
+   "sha": "41a77b3301fe",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases item40-gate"
+  },
+  {
+   "sha": "331c6a5c3fcc",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims item40-gate -- service role key sites gate before tier a write, checker kit reuse"
+  },
+  {
+   "sha": "073793923aea",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases item64"
+  },
+  {
+   "sha": "22c5378cb03f",
+   "date": "2026-09-15",
+   "subject": "chore(worklog): hank -- item 64, and the live pairing vindicated the no-tiebreak decision"
+  },
+  {
+   "sha": "4994eca8aa97",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims item64 -- precedence rule when two independent checks disagree conflict verdict"
+  },
+  {
+   "sha": "6184d3c7673e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases ai-rate-limit-landmine"
+  },
+  {
+   "sha": "07db1938ad74",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims ai-rate-limit-landmine -- stale migration recreates dropped 3-arg consume function ambiguity"
+  },
+  {
+   "sha": "9f9b1f82573d",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases item78-cl"
+  },
+  {
+   "sha": "28ba5aecf0e0",
+   "date": "2026-09-15",
+   "subject": "chore(worklog): hank -- six of seven already built; the seventh found the lock doing nothing on trust money"
+  },
+  {
+   "sha": "d6f4f959b980",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims item78-cl -- courtlistener rate limit isolation guard read committed, migration record accuracy checker"
+  },
+  {
+   "sha": "06f70e46382e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases item54-liveness"
+  },
+  {
+   "sha": "b6c8c0b8d536",
+   "date": "2026-09-15",
+   "subject": "chore(worklog): hank -- item 54 was built; the watchdog retrying itself was not"
+  },
+  {
+   "sha": "204531810fb3",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims item54-liveness -- cron watchdog self retry 508 loop and self failing latch, independent second watchdog"
+  },
+  {
+   "sha": "b57ee79e9d98",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases hover-auditor"
+  },
+  {
+   "sha": "3cf845f42d56",
+   "date": "2026-09-15",
+   "subject": "chore(worklog): hank -- three of four already built, and the fourth's premise half wrong"
+  },
+  {
+   "sha": "8a31c64df788",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims hover-auditor -- hover auditor separation scope gate and git history audit trail"
+  },
+  {
+   "sha": "0ff224f6d458",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases 504-cron"
+  },
+  {
+   "sha": "c7fedef70e4c",
+   "date": "2026-09-15",
+   "subject": "docs(worklog): three stale premises, and the 504 criterion nobody returned to"
+  },
+  {
+   "sha": "27db32fa8ffe",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims 504-cron -- supabase 504 cron failure rate re-measure alf-alerts send-reminder verification"
+  },
+  {
+   "sha": "26dc75a19e13",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases claim-matcher"
+  },
+  {
+   "sha": "65ca022b151e",
+   "date": "2026-09-15",
+   "subject": "docs(claims): the record for the matcher fix, and that the whole queue was already Cody's"
+  },
+  {
+   "sha": "2a600c2ac5d3",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims claim-matcher -- false clear phrase straddles subject task boundary"
+  },
+  {
+   "sha": "15749eb6c107",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairncash"
+  },
+  {
+   "sha": "50d04ac27be9",
+   "date": "2026-09-15",
+   "subject": "docs(platform): the record for the resilience skill and the paywall gate-4 pass, and why item 78 was handed back"
+  },
+  {
+   "sha": "031a88c9ffe5",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairncash -- fault probe gate 4 the entitlement gate must DENY"
+  },
+  {
+   "sha": "98023d21591d",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairn-resilience-patterns"
+  },
+  {
+   "sha": "4a8e52ea7526",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairn-resilience-patterns -- skill authoring architectural hardening"
+  },
+  {
+   "sha": "d91f16428acb",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases stonedesk"
+  },
+  {
+   "sha": "26b59390315e",
+   "date": "2026-09-15",
+   "subject": "docs(platform): the record for the AI sub-budget, the Tier A gate repair, and Carolyn's drawing-tool four"
+  },
+  {
+   "sha": "ed56ba9ec78f",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims stonedesk -- drawing tool inside corner radius chamfer sink vendor plumbing"
+  },
+  {
+   "sha": "2fa451ee50d8",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases tier-a-review-gate"
+  },
+  {
+   "sha": "9d242d0a576d",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims tier-a-review-gate -- false positive report only artefact"
+  },
+  {
+   "sha": "9c001a95f2b1",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases ai-rate-limit"
+  },
+  {
+   "sha": "59ce77923ff6",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims ai-rate-limit -- per tenant sub budget licence key"
+  },
+  {
+   "sha": "7b3fc39a974e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases item93"
+  },
+  {
+   "sha": "f2bec443be8f",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases dnt-rollup-review"
+  },
+  {
+   "sha": "beb4c7515ce3",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairncash"
+  },
+  {
+   "sha": "9d5cd116801f",
+   "date": "2026-09-15",
+   "subject": "docs(platform): item 93 widened to TENANTS, plus the record for the paywall bypass and the dnt_rollup review"
+  },
+  {
+   "sha": "5788c202a42d",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims item93 -- shared resource tenancy audit which tenants share a backend"
+  },
+  {
+   "sha": "e559812dec9e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims dnt-rollup-review -- independent review of the cross location rollup null not zero rule"
+  },
+  {
+   "sha": "db9ccd4ab94b",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairncash -- reverifysubscription forged localstorage entitlement suite"
+  },
+  {
+   "sha": "20ce5071b634",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairncash"
+  },
+  {
+   "sha": "4fd5a73fd470",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairnmechanical"
+  },
+  {
+   "sha": "7b94ee0e81ca",
+   "date": "2026-09-15",
+   "subject": "docs(seam): the record for SAIRNmechanical and SAIRNcash gate 4, and the metric finding underneath both"
+  },
+  {
+   "sha": "4676b69f8e83",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairncash -- fault probe gate 4 the trial and webhook suites must DENY"
+  },
+  {
+   "sha": "5c65285ab47e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairnmechanical -- fault probe gate 4 the suites must DENY"
+  },
+  {
+   "sha": "7ab0ff405124",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases platform-fixes"
+  },
+  {
+   "sha": "496dc942f2fe",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairnscape"
+  },
+  {
+   "sha": "884a51b6f020",
+   "date": "2026-09-15",
+   "subject": "docs(platform): the record for the Stripe pin, the CI node bump, the semgrep encoding fix and SAIRNscape gate 4"
+  },
+  {
+   "sha": "41dcc58f63f8",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairnscape -- fault probe gate 4 the suites must DENY"
+  },
+  {
+   "sha": "821245880dd8",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims platform-fixes -- stripe apiversion nightly backup node version semgrep unicode"
+  },
+  {
+   "sha": "b310c9588734",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairnbuild"
+  },
+  {
+   "sha": "4eb08255fc95",
+   "date": "2026-09-15",
+   "subject": "docs(sairnbuild): the gate-4 record, and the coverage gap the probe found"
+  },
+  {
+   "sha": "230f4a26df56",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims sairnbuild -- fault probe gate 4 the draws and bids suites must DENY"
+  },
+  {
+   "sha": "427152bf618c",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases tooling"
+  },
+  {
+   "sha": "fa86e330e4ce",
+   "date": "2026-09-15",
+   "subject": "docs(platform): the upgrade audit that was flagged weeks ago and had never actually run"
+  },
+  {
+   "sha": "ca2a56cc337e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank claims tooling -- upgrade audit installed packages and skill mirror versions"
+  },
+  {
+   "sha": "c3585560dc0e",
+   "date": "2026-09-15",
+   "subject": "chore(claims): hank releases sairnbuild"
+  },
+  {
+   "sha": "eb80f6a21542",
+   "date": "2026-09-15",
+   "subject": "docs(sairnbuild): the B2 record, and a status cell that says which half is verified"
+  },
+  {
+   "sha": "1e790f5e38fb",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnbuild -- retainage release repoint the draws panel at wip-accounting"
+  },
+  {
+   "sha": "2203652fd67f",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairnroofing"
+  },
+  {
+   "sha": "f7bda72c006c",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnroofing -- fault probe gate 4 the claims and billing suites must DENY"
+  },
+  {
+   "sha": "142b23c7aefe",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item83-review"
+  },
+  {
+   "sha": "8f3d53ffd840",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item83-review -- independent review of failsafe witness atomicity and recovery passes two and three"
+  },
+  {
+   "sha": "81790dd544e9",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairnsenior"
+  },
+  {
+   "sha": "513a5b726e98",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnsenior -- fault probe gate 4 the EVV suites must DENY"
+  },
+  {
+   "sha": "2dc1d9f874bd",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairnbiz"
+  },
+  {
+   "sha": "daa8e584a443",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnbiz -- fault probe gate 4 the money suites must DENY"
+  },
+  {
+   "sha": "02a031490210",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairnvet"
+  },
+  {
+   "sha": "1f3d62ebb137",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnvet -- fault probe the 58-arm audit and controlled suite must DENY"
+  },
+  {
+   "sha": "32da524fa87d",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairndental"
+  },
+  {
+   "sha": "159043a3581f",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairndental -- export gaps dnt_charges dnt_payments dnt_vendor_orders rf_claim_photos and flaky quarantine"
+  },
+  {
+   "sha": "72a1ffc3d5ea",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases sairnvet"
+  },
+  {
+   "sha": "4f02d1c909c1",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item34"
+  },
+  {
+   "sha": "837ec6c9bec5",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims sairnvet -- item39c retrievability of the other nine class A resources by the backing-variable method"
+  },
+  {
+   "sha": "1d031030c020",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item34 -- temporary state leak detection -- declared scope first"
+  },
+  {
+   "sha": "80f69afdfe1f",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases failsafe-witness-83"
+  },
+  {
+   "sha": "deaf0c4538f5",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims failsafe-witness-83 -- item 83 failsafe witness atomicity and recovery -- second reader on cad72dca"
+  },
+  {
+   "sha": "516eb662801d",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases citator-freshness"
+  },
+  {
+   "sha": "7d91f93fad2c",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims citator-freshness -- item 23 freshness stamp on court_hierarchy_weight"
+  },
+  {
+   "sha": "798398459c36",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases spof-baseline"
+  },
+  {
+   "sha": "733188296df7",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims spof-baseline -- item 91 frozen baseline so shrinkage is visible"
+  },
+  {
+   "sha": "bdbb16921d27",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item20"
+  },
+  {
+   "sha": "0e43efacf854",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item20 -- defect budget triggered priority -- what the data can actually support"
+  },
+  {
+   "sha": "a370989e1174",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item26"
+  },
+  {
+   "sha": "235c56ac9f21",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item26 -- near-miss branch: is there a real source of near misses"
+  },
+  {
+   "sha": "5d72e8a87c09",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases injection-commit"
+  },
+  {
+   "sha": "e734f63c301d",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims injection-commit -- optional injection_commit with a required reason when omitted"
+  },
+  {
+   "sha": "6021b1f49c58",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item66"
+  },
+  {
+   "sha": "0ee435464fd7",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item66 -- IBNR undiscovered defect reserve scoping"
+  },
+  {
+   "sha": "144c962b9eae",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item50b"
+  },
+  {
+   "sha": "d31c7d950496",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item50b -- regime statement on remaining_aggregate"
+  },
+  {
+   "sha": "54f03fa4d7b7",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases watchdog-test"
+  },
+  {
+   "sha": "c81b8c413a51",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims watchdog-test -- stale wall clock fixture in cron-watchdog.test.js"
+  },
+  {
+   "sha": "625abc9356fe",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases item50"
+  },
+  {
+   "sha": "e0440a37fbb2",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims item50 -- 50b regime statement and 50c quantisation removal from the cost to cost branch"
+  },
+  {
+   "sha": "468391516eed",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases register-tool-field"
+  },
+  {
+   "sha": "7a8299847857",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims register-tool-field -- found_by_tool field and item 4 citation unlock"
+  },
+  {
+   "sha": "6b4f6f51c21b",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases scrubber"
+  },
+  {
+   "sha": "4f059b1545d9",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims scrubber -- refresh sairn-code-scrubber with the bug classes found since aug 7"
+  },
+  {
+   "sha": "d8f36946b006",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases defect-checkpoint"
+  },
+  {
+   "sha": "e4ffdab8229a",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims defect-checkpoint -- item 63 which checkpoint should have caught each defect"
+  },
+  {
+   "sha": "95aa440657e3",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases fai"
+  },
+  {
+   "sha": "2d9b67dafa55",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims fai -- item 47 first article inspection on the checkpoint verifier and the cron watchdog"
+  },
+  {
+   "sha": "f308e09015c0",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases accepted-risks"
+  },
+  {
+   "sha": "9cc64a41c5eb",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims accepted-risks -- risk acceptances recorded only in file headers and nowhere central"
+  },
+  {
+   "sha": "9a58096d5ee4",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases stripe-config-module"
+  },
+  {
+   "sha": "8ed838971cce",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims stripe-config-module -- item 94 one deep module for stripe configuration state"
+  },
+  {
+   "sha": "f6860b7f81ca",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases tier-a-bypass"
+  },
+  {
+   "sha": "e692a670cc0e",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims tier-a-bypass -- item 40 can external input reach a tier A resource without its verification path"
+  },
+  {
+   "sha": "df17fcf61f95",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases copy-exactly-audit"
+  },
+  {
+   "sha": "3a9414c069b7",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims copy-exactly-audit -- item 43 does propagation actually re-qualify or only diff bytes"
+  },
+  {
+   "sha": "ed2f69e2cf62",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases review-cc-ap"
+  },
+  {
+   "sha": "3b0d817a8aa9",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims review-cc-ap -- item 44 independent review of cc three way match tier A financial code"
+  },
+  {
+   "sha": "072d25345ab3",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases defect-register"
+  },
+  {
+   "sha": "61474498159e",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases supabase-504"
+  },
+  {
+   "sha": "62ac8a4c264e",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims defect-register -- item 77 injection phase field on every confirmed defect"
+  },
+  {
+   "sha": "b0a1aa688712",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims supabase-504 -- correlate supabase 504s across crons and the ai rate limit rpc"
+  },
+  {
+   "sha": "7f0de86d36fc",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases fmea-drafts"
+  },
+  {
+   "sha": "5db16477f436",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims fmea-drafts -- draft the remaining undrafted code files"
+  },
+  {
+   "sha": "a4174a9973c3",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank releases fmea-drafts"
+  },
+  {
+   "sha": "3e67a5febf7f",
+   "date": "2026-09-14",
+   "subject": "chore(claims): hank claims fmea-drafts -- fmea draft coverage for code files carrying defects"
+  },
+  {
+   "sha": "fddd4c02eed8",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases fmea"
+  },
+  {
+   "sha": "5746601e62b0",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): items 8, 25, 41 and 26 -- one entry, and what was deliberately not fixed"
+  },
+  {
+   "sha": "00ae13fd488a",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims fmea -- item 26 fmea prediction loop wiring on register add"
+  },
+  {
+   "sha": "d171e707958d",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases ledger"
+  },
+  {
+   "sha": "5971caa3c593",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims ledger -- entryFromTransfers and the status flip balance trigger"
+  },
+  {
+   "sha": "afacfb4f47e9",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases ai-proxy-probes"
+  },
+  {
+   "sha": "d86c6dc8dbb9",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims ai-proxy-probes -- sairn owned ai proxy probe set and soup toolchain boundary"
+  },
+  {
+   "sha": "89782702bc45",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases covert-reviewer-calibration-scoping"
+  },
+  {
+   "sha": "a592e5e847f2",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims covert-reviewer-calibration-scoping -- boundary case seeding design"
+  },
+  {
+   "sha": "fb3c82278efa",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases closed-traverse-closing-error"
+  },
+  {
+   "sha": "3a3fa7fcc088",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims closed-traverse-closing-error -- derived docs must loop back to source"
+  },
+  {
+   "sha": "51fe25e819c5",
+   "date": "2026-09-13",
+   "subject": "feat(tools): 21 of 37 negative controls never verify their own sabotage applied"
+  },
+  {
+   "sha": "681b29278cd0",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims sabotage-control-noop -- a negative control must prove it changed the target"
+  },
+  {
+   "sha": "6291ac7cbfba",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases ledger-integer-cents"
+  },
+  {
+   "sha": "236959755d43",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims ledger-integer-cents -- exact money comparison in validateEntry"
+  },
+  {
+   "sha": "43e4dcc0a2c5",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases claim-provenance-chain-design"
+  },
+  {
+   "sha": "83f1e7a00ea6",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims claim-provenance-chain-design -- freshness attestation and scope"
+  },
+  {
+   "sha": "bc43358e349d",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases margin-to-violation-three-engines"
+  },
+  {
+   "sha": "65530bdcbd53",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims margin-to-violation-three-engines -- extend cpk alarm to ledger rollup and care-charges"
+  },
+  {
+   "sha": "3d80b4f69229",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases detection-method-backfill"
+  },
+  {
+   "sha": "176be3084b74",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims detection-method-backfill -- independent review method on the defect register"
+  },
+  {
+   "sha": "e94ba33192bc",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases disciplines-item-7-and-piece-2"
+  },
+  {
+   "sha": "4a44c97ec624",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims disciplines-item-7-and-piece-2 -- propagation requalification and tiered independence"
+  },
+  {
+   "sha": "7831de5396a8",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases flaky-fleet-measurement"
+  },
+  {
+   "sha": "a58d4c835909",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims flaky-fleet-measurement -- first real flip rates on a quiet tree"
+  },
+  {
+   "sha": "125c00d8fe9a",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims flaky-fleet-measurement -- first real flip rates on a quiet tree"
+  },
+  {
+   "sha": "a8295d425468",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases flaky-checker-quarantine"
+  },
+  {
+   "sha": "62c71d4feb54",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims flaky-checker-quarantine -- flip rate threshold owner deadline reintroduction"
+  },
+  {
+   "sha": "a0a0f2ffe90e",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases mutation-derived-condition-coverage"
+  },
+  {
+   "sha": "fde299063327",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims mutation-derived-condition-coverage -- operand level kills on tier a engines"
+  },
+  {
+   "sha": "34190a4ba7bd",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases unguarded-retryable-writes"
+  },
+  {
+   "sha": "22fd5a27defb",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims unguarded-retryable-writes -- triage which of the 41 can actually retry"
+  },
+  {
+   "sha": "c7d9fe539833",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): financial invariants both halves, and six disciplines wired into CLAUDE.md"
+  },
+  {
+   "sha": "c1f1f502559e",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases financial-write-invariants"
+  },
+  {
+   "sha": "3e534e4f9a3b",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims financial-write-invariants -- three invariant property runner and idempotency checker"
+  },
+  {
+   "sha": "95e6ba6b7afd",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases financial-write-invariants"
+  },
+  {
+   "sha": "1deb94a46265",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims financial-write-invariants -- scope sum to zero balance and idempotency key"
+  },
+  {
+   "sha": "fdf06016cbd4",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): the testability gate's lock bit twice, once on me"
+  },
+  {
+   "sha": "44c7636509dd",
+   "date": "2026-09-13",
+   "subject": "feat(process,tools): a testability gate whose criteria are locked before it may judge anything"
+  },
+  {
+   "sha": "64eccb400208",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims testability-gate -- requirement must carry a falsifiable claim before entering the matrix"
+  },
+  {
+   "sha": "131c1015be9d",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): the FMEA scorer scored 38% and every hit was false"
+  },
+  {
+   "sha": "927c7948b4f4",
+   "date": "2026-09-13",
+   "subject": "feat(process,tools): history-seeded FMEA, and a scorer that refuses to invent a number"
+  },
+  {
+   "sha": "250f8aea1f40",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims fmea-risk-drafter -- first-draft risk analysis from prior defects and the lesson corpus"
+  },
+  {
+   "sha": "c9214b39c52a",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases record-modification-stamp"
+  },
+  {
+   "sha": "873a1790a707",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): the _m stamp, and why it lives in one place rather than 486"
+  },
+  {
+   "sha": "bae2f1e3213f",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims record-modification-stamp -- per save site across dental grounds scape"
+  },
+  {
+   "sha": "bd057c152366",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases merge-by-id-overwrite"
+  },
+  {
+   "sha": "bb562dcea127",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): the silent half of the overwrite bug, and a suite red for ten days"
+  },
+  {
+   "sha": "3865201abca3",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims merge-by-id-overwrite -- timestamp comparison in three identical client merge functions"
+  },
+  {
+   "sha": "19a5d8d72c27",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases task19-overwrite"
+  },
+  {
+   "sha": "f11665b94747",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases coordination-health-check"
+  },
+  {
+   "sha": "eebefd74e0d9",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims coordination-health-check -- tonight relay misroute and truncation cases plus a snapshot loader"
+  },
+  {
+   "sha": "4b2bb675b52a",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims task19-overwrite -- verify tombstones updated_at conflict resolution and write audit"
+  },
+  {
+   "sha": "9ca659b9679d",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases roofing-asset-registry"
+  },
+  {
+   "sha": "b113f3f5f1ea",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): a second rollup discarding its rows' disclosures, and a live check that was negative first"
+  },
+  {
+   "sha": "c4dd11900f77",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims roofing-asset-registry -- portfolio forecast discards every section flag"
+  },
+  {
+   "sha": "ce9aaf493612",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank releases gate-column-check"
+  },
+  {
+   "sha": "8a8cf8efcd0e",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): one fix, two readers, and only one of them got it"
+  },
+  {
+   "sha": "5e82feb09578",
+   "date": "2026-09-13",
+   "subject": "chore(claims): hank claims gate-column-check -- snapshot age from commit date and metadata keys counted as tables"
+  },
+  {
+   "sha": "8c9a4b74ecdb",
+   "date": "2026-09-13",
+   "subject": "docs(worklog): the retraction -- a never-run verdict with no stated expiry"
+  },
+  {
+   "sha": "976a7b50e32e",
+   "date": "2026-09-13",
+   "subject": "fix(tools): I stated a verdict with no expiry, and it was wrong within hours"
+  },
+  {
+   "sha": "4610567928cb",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims never-run-verdict-expiry -- a verdict stated without its own expiry"
+  },
+  {
+   "sha": "b880ebf3d159",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases never-run-migrations"
+  },
+  {
+   "sha": "8365d3682d62",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims never-run-migrations -- package the schema files for the 31 live-queried tables"
+  },
+  {
+   "sha": "290e3849053d",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases schema-drift"
+  },
+  {
+   "sha": "2c4c85b4c3f1",
+   "date": "2026-09-12",
+   "subject": "docs(worklog): the staleness row closed, and the 89 never-run tables under it"
+  },
+  {
+   "sha": "66fad8c20ee0",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims schema-drift -- tables queried by api absent from the fresh live snapshot"
+  },
+  {
+   "sha": "76cbfccde969",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases wip-rollup-null-summed-as-zero"
+  },
+  {
+   "sha": "f2fbaa55b12a",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases open-work-index"
+  },
+  {
+   "sha": "07cf7f6d3d00",
+   "date": "2026-09-12",
+   "subject": "docs(worklog): the rulebook split, and the checker that protected a file by reading a third of it"
+  },
+  {
+   "sha": "dc86cea5043e",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims open-work-index -- committed conflict markers and the table checker blind to them"
+  },
+  {
+   "sha": "82ecffdfa731",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases standing-lessons-rulebook"
+  },
+  {
+   "sha": "235ecaca6732",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims standing-lessons-rulebook -- split CLAUDE.md by audience and merge the comment-quoting entries"
+  },
+  {
+   "sha": "1a6deaeeae56",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims wip-rollup-null-summed-as-zero -- retainage missing is not zero"
+  },
+  {
+   "sha": "91eece9dd403",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases truthy-coercion-sum-checker"
+  },
+  {
+   "sha": "284878cb4435",
+   "date": "2026-09-12",
+   "subject": "feat(tools): the (x || 0) concatenation hazard, made mechanical -- 135 occurrences, 10 files"
+  },
+  {
+   "sha": "8ed43312dba0",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims truthy-coercion-sum-checker -- string concatenation in numeric folds"
+  },
+  {
+   "sha": "740bbba81820",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases sairndental-operatories-and-vendor-orders"
+  },
+  {
+   "sha": "648ba0f148eb",
+   "date": "2026-09-12",
+   "subject": "docs(worklog): the live check that closes the DNT sweep"
+  },
+  {
+   "sha": "b5cc9fbc20bd",
+   "date": "2026-09-12",
+   "subject": "fix(sd-data,dental): the DNT sweep is complete -- dnt_operatories and dnt_vendor_orders"
+  },
+  {
+   "sha": "c38dbb59b16e",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims sairndental-operatories-and-vendor-orders -- the last two"
+  },
+  {
+   "sha": "74e940e6ce32",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases sairndental-supplies-validation"
+  },
+  {
+   "sha": "bbb3a9e47c3e",
+   "date": "2026-09-12",
+   "subject": "fix(sd-data,dental): dnt_supplies -- one bad row spoils the number above the table"
+  },
+  {
+   "sha": "26465433781b",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims sairndental-supplies-validation -- stock value KPI NaN and low-stock"
+  },
+  {
+   "sha": "07f7cac5d411",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases sairndental-recall-outreach-validation"
+  },
+  {
+   "sha": "1d0c61b95417",
+   "date": "2026-09-12",
+   "subject": "docs(worklog): the dnt_recall_outreach live check"
+  },
+  {
+   "sha": "fa2605206ba8",
+   "date": "2026-09-12",
+   "subject": "fix(sd-data,dental): dnt_recall_outreach -- both bad shapes make a patient look contacted"
+  },
+  {
+   "sha": "e7fcc4125565",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank claims sairndental-recall-outreach-validation -- contact log date suppression"
+  },
+  {
+   "sha": "007924f11d41",
+   "date": "2026-09-12",
+   "subject": "chore(claims): hank releases sairndental-unlinked-referral-queue"
+  },
+  {
+   "sha": "a2f7698596f2",
+   "date": "2026-09-12",
+   "subject": "docs(worklog): the queue live check -- the client half CAN be verified live"
+  }
+ ],
+ "claims": [
+  {
+   "sha": "6be554f67371",
+   "date": "2026-09-18",
+   "what": "self-state-tool -- clone identity marker and per clone git derivation for the weekly reconciliation"
+  },
+  {
+   "sha": "f6b81f003da4",
+   "date": "2026-09-18",
+   "what": "service-role-gate-probe-verdict-set -- the fifth verdict COULD_NOT_TELL was added without updating the pinned verdict set"
+  },
+  {
+   "sha": "24ccc75a7036",
+   "date": "2026-09-18",
+   "what": "sd-data-memory-app-scope-test -- stale string anchors in the memory app scope suite"
+  },
+  {
+   "sha": "f3dd882fb9f4",
+   "date": "2026-09-18",
+   "what": "stale-row-sweep -- open work index rows whose named artifacts moved after the row was written"
+  },
+  {
+   "sha": "4b9fbdbadaf2",
+   "date": "2026-09-18",
+   "what": "suite-control-and-backoff-probes -- independent check of cody four records suite_control_triage retry_backoff_check sairnbiz_timesheet_probe sairnfreedom_server_backup"
+  },
+  {
+   "sha": "e90a5c2a2bf3",
+   "date": "2026-09-18",
+   "what": "sairnvet -- peerconsult 64KB check rejection svSyncSuppressed no finally hydration additive disclosure"
+  },
+  {
+   "sha": "723359ee3ba7",
+   "date": "2026-09-18",
+   "what": "record-parity-interface -- settle buildGroup throws vs recover refuses"
+  },
+  {
+   "sha": "9bdd10322a14",
+   "date": "2026-09-18",
+   "what": "service-role-gate-v4 -- tier A gate blind to variable-dispatched resources SV_RESOURCES"
+  },
+  {
+   "sha": "ffac1ec1ae35",
+   "date": "2026-09-18",
+   "what": "tier-a-review-record-parity -- review cody item 46 record-parity XOR sv_controlled"
+  },
+  {
+   "sha": "9da143664bf0",
+   "date": "2026-09-17",
+   "what": "log-error-clustering -- semantic clustering of log and error messages with embedding false-positive validation"
+  },
+  {
+   "sha": "0164232d9ae8",
+   "date": "2026-09-17",
+   "what": "item97-soft-delete-review -- independent review of cc item 97 SAIRNcode soft_delete Tier A"
+  },
+  {
+   "sha": "e7eac988ba1f",
+   "date": "2026-09-17",
+   "what": "auth-secret-split -- SD_AUTH_SECRET stage B encryption split, C kid rotation, D per-app secrets"
+  },
+  {
+   "sha": "997f55c9b2e1",
+   "date": "2026-09-17",
+   "what": "claude-app-id-and-bridge -- app_id licence verification, bridge push deletion, cron-liveness doc ordering, SD_AUTH_SECRET options"
+  },
+  {
+   "sha": "96031789cdd0",
+   "date": "2026-09-17",
+   "what": "resend-channel-proof -- one-time delivery proof through the watchdog heartbeat"
+  },
+  {
+   "sha": "83a67c64c96a",
+   "date": "2026-09-17",
+   "what": "fetch-json-response-shape -- sweep for callers treating Response as the body"
+  },
+  {
+   "sha": "763ba137ad12",
+   "date": "2026-09-16",
+   "what": "mech-credentials-export -- independent review of CC mech export board fixture derived from server"
+  },
+  {
+   "sha": "1e87536d0b42",
+   "date": "2026-09-16",
+   "what": "master-plan -- fault column disclosure for api-only apps"
+  },
+  {
+   "sha": "af4554072326",
+   "date": "2026-09-16",
+   "what": "cron-watchdog -- watchdog self outcome latch SAIRN_OPS_EMAIL verification"
+  },
+  {
+   "sha": "3e94cbb24b20",
+   "date": "2026-09-16",
+   "what": "item83-review -- independent review of cody witness atomicity recovery countersign, plus the separation audit trail script"
+  },
+  {
+   "sha": "b56dea6e3798",
+   "date": "2026-09-16",
+   "what": "hank-queue2 -- sb_ts frozen week access path, dose audit local time display, clone registry fifth, items.md item 45, dispatch_state item 47 FAI, license.js gate column"
+  },
+  {
+   "sha": "615aedebc4bd",
+   "date": "2026-09-16",
+   "what": "removal-path -- derived exemption fixture arm and sb_ts assessment"
+  },
+  {
+   "sha": "8e07c742e439",
+   "date": "2026-09-16",
+   "what": "transport-sweep -- transport timeout sweep red on clean tree diagnosis"
+  },
+  {
+   "sha": "5ff576ff55c2",
+   "date": "2026-09-16",
+   "what": "removal-path -- tier a resources with no removal path burn down"
+  },
+  {
+   "sha": "6e161a230552",
+   "date": "2026-09-16",
+   "what": "sairnvet-audit -- dosing audit trail reader export sv_audit_log"
+  },
+  {
+   "sha": "a6b86d6b0e99",
+   "date": "2026-09-16",
+   "what": "dispatch-state -- current state verification claims cross referenced against open work registry"
+  },
+  {
+   "sha": "7fc9792e6415",
+   "date": "2026-09-16",
+   "what": "sairnfreedom -- phases 2 4 5 canteen events disbursement donations member experience"
+  },
+  {
+   "sha": "09a76b054f2f",
+   "date": "2026-09-15",
+   "what": "stonedesk-gaps -- stonedesk competitive gap rederivation against head"
+  },
+  {
+   "sha": "19182949ba19",
+   "date": "2026-09-15",
+   "what": "multi-location -- shared multi location multi brand architecture measurement and design"
+  },
+  {
+   "sha": "c687ce6e0ad5",
+   "date": "2026-09-15",
+   "what": "register-backlog -- tier a first sequencing of the defect register backlog"
+  },
+  {
+   "sha": "0c45639b61e5",
+   "date": "2026-09-15",
+   "what": "register-feed-gate -- defect register entry required at push for fix commits, prevent by construction"
+  },
+  {
+   "sha": "331c6a5c3fcc",
+   "date": "2026-09-15",
+   "what": "item40-gate -- service role key sites gate before tier a write, checker kit reuse"
+  },
+  {
+   "sha": "4994eca8aa97",
+   "date": "2026-09-15",
+   "what": "item64 -- precedence rule when two independent checks disagree conflict verdict"
+  },
+  {
+   "sha": "07db1938ad74",
+   "date": "2026-09-15",
+   "what": "ai-rate-limit-landmine -- stale migration recreates dropped 3-arg consume function ambiguity"
+  },
+  {
+   "sha": "d6f4f959b980",
+   "date": "2026-09-15",
+   "what": "item78-cl -- courtlistener rate limit isolation guard read committed, migration record accuracy checker"
+  },
+  {
+   "sha": "204531810fb3",
+   "date": "2026-09-15",
+   "what": "item54-liveness -- cron watchdog self retry 508 loop and self failing latch, independent second watchdog"
+  },
+  {
+   "sha": "8a31c64df788",
+   "date": "2026-09-15",
+   "what": "hover-auditor -- hover auditor separation scope gate and git history audit trail"
+  },
+  {
+   "sha": "27db32fa8ffe",
+   "date": "2026-09-15",
+   "what": "504-cron -- supabase 504 cron failure rate re-measure alf-alerts send-reminder verification"
+  },
+  {
+   "sha": "2a600c2ac5d3",
+   "date": "2026-09-15",
+   "what": "claim-matcher -- false clear phrase straddles subject task boundary"
+  },
+  {
+   "sha": "031a88c9ffe5",
+   "date": "2026-09-15",
+   "what": "sairncash -- fault probe gate 4 the entitlement gate must DENY"
+  },
+  {
+   "sha": "4a8e52ea7526",
+   "date": "2026-09-15",
+   "what": "sairn-resilience-patterns -- skill authoring architectural hardening"
+  },
+  {
+   "sha": "ed56ba9ec78f",
+   "date": "2026-09-15",
+   "what": "stonedesk -- drawing tool inside corner radius chamfer sink vendor plumbing"
+  },
+  {
+   "sha": "9d242d0a576d",
+   "date": "2026-09-15",
+   "what": "tier-a-review-gate -- false positive report only artefact"
+  },
+  {
+   "sha": "59ce77923ff6",
+   "date": "2026-09-15",
+   "what": "ai-rate-limit -- per tenant sub budget licence key"
+  },
+  {
+   "sha": "5788c202a42d",
+   "date": "2026-09-15",
+   "what": "item93 -- shared resource tenancy audit which tenants share a backend"
+  },
+  {
+   "sha": "e559812dec9e",
+   "date": "2026-09-15",
+   "what": "dnt-rollup-review -- independent review of the cross location rollup null not zero rule"
+  },
+  {
+   "sha": "db9ccd4ab94b",
+   "date": "2026-09-15",
+   "what": "sairncash -- reverifysubscription forged localstorage entitlement suite"
+  },
+  {
+   "sha": "4676b69f8e83",
+   "date": "2026-09-15",
+   "what": "sairncash -- fault probe gate 4 the trial and webhook suites must DENY"
+  },
+  {
+   "sha": "5c65285ab47e",
+   "date": "2026-09-15",
+   "what": "sairnmechanical -- fault probe gate 4 the suites must DENY"
+  },
+  {
+   "sha": "41dcc58f63f8",
+   "date": "2026-09-15",
+   "what": "sairnscape -- fault probe gate 4 the suites must DENY"
+  },
+  {
+   "sha": "821245880dd8",
+   "date": "2026-09-15",
+   "what": "platform-fixes -- stripe apiversion nightly backup node version semgrep unicode"
+  },
+  {
+   "sha": "230f4a26df56",
+   "date": "2026-09-15",
+   "what": "sairnbuild -- fault probe gate 4 the draws and bids suites must DENY"
+  },
+  {
+   "sha": "ca2a56cc337e",
+   "date": "2026-09-15",
+   "what": "tooling -- upgrade audit installed packages and skill mirror versions"
+  },
+  {
+   "sha": "1e790f5e38fb",
+   "date": "2026-09-14",
+   "what": "sairnbuild -- retainage release repoint the draws panel at wip-accounting"
+  },
+  {
+   "sha": "f7bda72c006c",
+   "date": "2026-09-14",
+   "what": "sairnroofing -- fault probe gate 4 the claims and billing suites must DENY"
+  },
+  {
+   "sha": "8f3d53ffd840",
+   "date": "2026-09-14",
+   "what": "item83-review -- independent review of failsafe witness atomicity and recovery passes two and three"
+  },
+  {
+   "sha": "513a5b726e98",
+   "date": "2026-09-14",
+   "what": "sairnsenior -- fault probe gate 4 the EVV suites must DENY"
+  },
+  {
+   "sha": "daa8e584a443",
+   "date": "2026-09-14",
+   "what": "sairnbiz -- fault probe gate 4 the money suites must DENY"
+  },
+  {
+   "sha": "1f3d62ebb137",
+   "date": "2026-09-14",
+   "what": "sairnvet -- fault probe the 58-arm audit and controlled suite must DENY"
+  },
+  {
+   "sha": "159043a3581f",
+   "date": "2026-09-14",
+   "what": "sairndental -- export gaps dnt_charges dnt_payments dnt_vendor_orders rf_claim_photos and flaky quarantine"
+  },
+  {
+   "sha": "837ec6c9bec5",
+   "date": "2026-09-14",
+   "what": "sairnvet -- item39c retrievability of the other nine class A resources by the backing-variable method"
+  },
+  {
+   "sha": "1d031030c020",
+   "date": "2026-09-14",
+   "what": "item34 -- temporary state leak detection -- declared scope first"
+  },
+  {
+   "sha": "deaf0c4538f5",
+   "date": "2026-09-14",
+   "what": "failsafe-witness-83 -- item 83 failsafe witness atomicity and recovery -- second reader on cad72dca"
+  },
+  {
+   "sha": "7d91f93fad2c",
+   "date": "2026-09-14",
+   "what": "citator-freshness -- item 23 freshness stamp on court_hierarchy_weight"
+  },
+  {
+   "sha": "733188296df7",
+   "date": "2026-09-14",
+   "what": "spof-baseline -- item 91 frozen baseline so shrinkage is visible"
+  },
+  {
+   "sha": "0e43efacf854",
+   "date": "2026-09-14",
+   "what": "item20 -- defect budget triggered priority -- what the data can actually support"
+  },
+  {
+   "sha": "235c56ac9f21",
+   "date": "2026-09-14",
+   "what": "item26 -- near-miss branch: is there a real source of near misses"
+  },
+  {
+   "sha": "e734f63c301d",
+   "date": "2026-09-14",
+   "what": "injection-commit -- optional injection_commit with a required reason when omitted"
+  },
+  {
+   "sha": "0ee435464fd7",
+   "date": "2026-09-14",
+   "what": "item66 -- IBNR undiscovered defect reserve scoping"
+  },
+  {
+   "sha": "d31c7d950496",
+   "date": "2026-09-14",
+   "what": "item50b -- regime statement on remaining_aggregate"
+  },
+  {
+   "sha": "c81b8c413a51",
+   "date": "2026-09-14",
+   "what": "watchdog-test -- stale wall clock fixture in cron-watchdog.test.js"
+  },
+  {
+   "sha": "e0440a37fbb2",
+   "date": "2026-09-14",
+   "what": "item50 -- 50b regime statement and 50c quantisation removal from the cost to cost branch"
+  },
+  {
+   "sha": "7a8299847857",
+   "date": "2026-09-14",
+   "what": "register-tool-field -- found_by_tool field and item 4 citation unlock"
+  },
+  {
+   "sha": "4f059b1545d9",
+   "date": "2026-09-14",
+   "what": "scrubber -- refresh sairn-code-scrubber with the bug classes found since aug 7"
+  },
+  {
+   "sha": "e4ffdab8229a",
+   "date": "2026-09-14",
+   "what": "defect-checkpoint -- item 63 which checkpoint should have caught each defect"
+  },
+  {
+   "sha": "2d9b67dafa55",
+   "date": "2026-09-14",
+   "what": "fai -- item 47 first article inspection on the checkpoint verifier and the cron watchdog"
+  },
+  {
+   "sha": "9cc64a41c5eb",
+   "date": "2026-09-14",
+   "what": "accepted-risks -- risk acceptances recorded only in file headers and nowhere central"
+  },
+  {
+   "sha": "8ed838971cce",
+   "date": "2026-09-14",
+   "what": "stripe-config-module -- item 94 one deep module for stripe configuration state"
+  },
+  {
+   "sha": "e692a670cc0e",
+   "date": "2026-09-14",
+   "what": "tier-a-bypass -- item 40 can external input reach a tier A resource without its verification path"
+  },
+  {
+   "sha": "3a9414c069b7",
+   "date": "2026-09-14",
+   "what": "copy-exactly-audit -- item 43 does propagation actually re-qualify or only diff bytes"
+  },
+  {
+   "sha": "3b0d817a8aa9",
+   "date": "2026-09-14",
+   "what": "review-cc-ap -- item 44 independent review of cc three way match tier A financial code"
+  },
+  {
+   "sha": "62ac8a4c264e",
+   "date": "2026-09-14",
+   "what": "defect-register -- item 77 injection phase field on every confirmed defect"
+  },
+  {
+   "sha": "b0a1aa688712",
+   "date": "2026-09-14",
+   "what": "supabase-504 -- correlate supabase 504s across crons and the ai rate limit rpc"
+  },
+  {
+   "sha": "5db16477f436",
+   "date": "2026-09-14",
+   "what": "fmea-drafts -- draft the remaining undrafted code files"
+  },
+  {
+   "sha": "3e67a5febf7f",
+   "date": "2026-09-14",
+   "what": "fmea-drafts -- fmea draft coverage for code files carrying defects"
+  },
+  {
+   "sha": "00ae13fd488a",
+   "date": "2026-09-13",
+   "what": "fmea -- item 26 fmea prediction loop wiring on register add"
+  },
+  {
+   "sha": "5971caa3c593",
+   "date": "2026-09-13",
+   "what": "ledger -- entryFromTransfers and the status flip balance trigger"
+  },
+  {
+   "sha": "d86c6dc8dbb9",
+   "date": "2026-09-13",
+   "what": "ai-proxy-probes -- sairn owned ai proxy probe set and soup toolchain boundary"
+  },
+  {
+   "sha": "a592e5e847f2",
+   "date": "2026-09-13",
+   "what": "covert-reviewer-calibration-scoping -- boundary case seeding design"
+  },
+  {
+   "sha": "3a3fa7fcc088",
+   "date": "2026-09-13",
+   "what": "closed-traverse-closing-error -- derived docs must loop back to source"
+  },
+  {
+   "sha": "681b29278cd0",
+   "date": "2026-09-13",
+   "what": "sabotage-control-noop -- a negative control must prove it changed the target"
+  },
+  {
+   "sha": "236959755d43",
+   "date": "2026-09-13",
+   "what": "ledger-integer-cents -- exact money comparison in validateEntry"
+  },
+  {
+   "sha": "83f1e7a00ea6",
+   "date": "2026-09-13",
+   "what": "claim-provenance-chain-design -- freshness attestation and scope"
+  },
+  {
+   "sha": "65530bdcbd53",
+   "date": "2026-09-13",
+   "what": "margin-to-violation-three-engines -- extend cpk alarm to ledger rollup and care-charges"
+  },
+  {
+   "sha": "176be3084b74",
+   "date": "2026-09-13",
+   "what": "detection-method-backfill -- independent review method on the defect register"
+  },
+  {
+   "sha": "4a44c97ec624",
+   "date": "2026-09-13",
+   "what": "disciplines-item-7-and-piece-2 -- propagation requalification and tiered independence"
+  },
+  {
+   "sha": "a58d4c835909",
+   "date": "2026-09-13",
+   "what": "flaky-fleet-measurement -- first real flip rates on a quiet tree"
+  },
+  {
+   "sha": "125c00d8fe9a",
+   "date": "2026-09-13",
+   "what": "flaky-fleet-measurement -- first real flip rates on a quiet tree"
+  },
+  {
+   "sha": "62c71d4feb54",
+   "date": "2026-09-13",
+   "what": "flaky-checker-quarantine -- flip rate threshold owner deadline reintroduction"
+  },
+  {
+   "sha": "fde299063327",
+   "date": "2026-09-13",
+   "what": "mutation-derived-condition-coverage -- operand level kills on tier a engines"
+  },
+  {
+   "sha": "22fd5a27defb",
+   "date": "2026-09-13",
+   "what": "unguarded-retryable-writes -- triage which of the 41 can actually retry"
+  },
+  {
+   "sha": "3e534e4f9a3b",
+   "date": "2026-09-13",
+   "what": "financial-write-invariants -- three invariant property runner and idempotency checker"
+  },
+  {
+   "sha": "1deb94a46265",
+   "date": "2026-09-13",
+   "what": "financial-write-invariants -- scope sum to zero balance and idempotency key"
+  },
+  {
+   "sha": "64eccb400208",
+   "date": "2026-09-13",
+   "what": "testability-gate -- requirement must carry a falsifiable claim before entering the matrix"
+  },
+  {
+   "sha": "250f8aea1f40",
+   "date": "2026-09-13",
+   "what": "fmea-risk-drafter -- first-draft risk analysis from prior defects and the lesson corpus"
+  },
+  {
+   "sha": "bae2f1e3213f",
+   "date": "2026-09-13",
+   "what": "record-modification-stamp -- per save site across dental grounds scape"
+  },
+  {
+   "sha": "3865201abca3",
+   "date": "2026-09-13",
+   "what": "merge-by-id-overwrite -- timestamp comparison in three identical client merge functions"
+  },
+  {
+   "sha": "eebefd74e0d9",
+   "date": "2026-09-13",
+   "what": "coordination-health-check -- tonight relay misroute and truncation cases plus a snapshot loader"
+  },
+  {
+   "sha": "4b2bb675b52a",
+   "date": "2026-09-13",
+   "what": "task19-overwrite -- verify tombstones updated_at conflict resolution and write audit"
+  },
+  {
+   "sha": "c4dd11900f77",
+   "date": "2026-09-13",
+   "what": "roofing-asset-registry -- portfolio forecast discards every section flag"
+  },
+  {
+   "sha": "5e82feb09578",
+   "date": "2026-09-13",
+   "what": "gate-column-check -- snapshot age from commit date and metadata keys counted as tables"
+  },
+  {
+   "sha": "4610567928cb",
+   "date": "2026-09-12",
+   "what": "never-run-verdict-expiry -- a verdict stated without its own expiry"
+  },
+  {
+   "sha": "8365d3682d62",
+   "date": "2026-09-12",
+   "what": "never-run-migrations -- package the schema files for the 31 live-queried tables"
+  },
+  {
+   "sha": "66fad8c20ee0",
+   "date": "2026-09-12",
+   "what": "schema-drift -- tables queried by api absent from the fresh live snapshot"
+  },
+  {
+   "sha": "dc86cea5043e",
+   "date": "2026-09-12",
+   "what": "open-work-index -- committed conflict markers and the table checker blind to them"
+  },
+  {
+   "sha": "235ecaca6732",
+   "date": "2026-09-12",
+   "what": "standing-lessons-rulebook -- split CLAUDE.md by audience and merge the comment-quoting entries"
+  },
+  {
+   "sha": "1a6deaeeae56",
+   "date": "2026-09-12",
+   "what": "wip-rollup-null-summed-as-zero -- retainage missing is not zero"
+  },
+  {
+   "sha": "8ed43312dba0",
+   "date": "2026-09-12",
+   "what": "truthy-coercion-sum-checker -- string concatenation in numeric folds"
+  },
+  {
+   "sha": "c38dbb59b16e",
+   "date": "2026-09-12",
+   "what": "sairndental-operatories-and-vendor-orders -- the last two"
+  },
+  {
+   "sha": "26465433781b",
+   "date": "2026-09-12",
+   "what": "sairndental-supplies-validation -- stock value KPI NaN and low-stock"
+  },
+  {
+   "sha": "e7fcc4125565",
+   "date": "2026-09-12",
+   "what": "sairndental-recall-outreach-validation -- contact log date suppression"
+  }
+ ],
+ "worklog_entries": 33,
+ "obligations_owed": 1,
+ "obligations_dischargeable": 17,
+ "findings": [
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (615aedebc4bd) and no worklog entry in this window mentions any of: assessment, derived, exemption, fixture, path, removal"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (5ff576ff55c2) and no worklog entry in this window mentions any of: burn, down, path, removal, resources, tier"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (7fc9792e6415) and no worklog entry in this window mentions any of: canteen, disbursement, donations, events, experience, member"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (09a76b054f2f) and no worklog entry in this window mentions any of: against, competitive, gaps, head, rederivation, stonedesk"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (c687ce6e0ad5) and no worklog entry in this window mentions any of: backlog, defect, first, register, sequencing, tier"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (07db1938ad74) and no worklog entry in this window mentions any of: ambiguity, consume, dropped, function, landmine, limit"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (837ec6c9bec5) and no worklog entry in this window mentions any of: backing, class, item39c, method, nine, resources"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (1d031030c020) and no worklog entry in this window mentions any of: declared, detection, first, item34, leak, scope"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (733188296df7) and no worklog entry in this window mentions any of: baseline, frozen, shrinkage, spof, visible"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (e734f63c301d) and no worklog entry in this window mentions any of: commit, injection, injection_commit, omitted, optional, reason"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (0ee435464fd7) and no worklog entry in this window mentions any of: defect, ibnr, item66, reserve, scoping, undiscovered"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (d31c7d950496) and no worklog entry in this window mentions any of: item50b, regime, remaining_aggregate, statement"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (e0440a37fbb2) and no worklog entry in this window mentions any of: branch, cost, item50, quantisation, regime, removal"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (e4ffdab8229a) and no worklog entry in this window mentions any of: caught, checkpoint, defect, each, should"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (b0a1aa688712) and no worklog entry in this window mentions any of: 504s, across, correlate, crons, limit, rate"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-13 (681b29278cd0) and no worklog entry in this window mentions any of: changed, control, must, negative, noop, prove"
+  }
+ ],
+ "status_row": {
+  "blocked_on": "cc, cody and fourth each running: python tools/sairn_self_state.py --json > docs/self-state/self-state-<session>.json  (their own clone; mine are OUTSIDE reads and cannot be authoritative)",
+  "claude_pid": 34616,
+  "claude_start": 134342058287408144,
+  "clone": "C:\\Users\\marsh\\Documents\\SAIRN-hank",
+  "item": "1",
+  "note": null,
+  "pid": 24332,
+  "session": "hank",
+  "state": "blocked",
+  "task": "four-clone state bundle: SELF rows needed from cc, cody and fourth",
+  "updated": "2026-09-18T11:52:46"
+ }
+}
