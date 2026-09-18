@@ -1,0 +1,1022 @@
+{
+ "session": "cody",
+ "window_days": 7,
+ "git": {
+  "repo": "C:\\Users\\marsh\\Documents\\SAIRN-cody",
+  "branch": "main",
+  "head": "98a83b40",
+  "dirty": [],
+  "untracked": [
+   "docs/self-state/self-state-cody.json"
+  ],
+  "behind": 0,
+  "ahead": 0,
+  "unpushed": []
+ },
+ "git_derivation": "SELF",
+ "git_not_derived_because": "",
+ "attributable_commits": [
+  {
+   "sha": "952a5cc400ae",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases rotation-law-trust-clearance"
+  },
+  {
+   "sha": "ddb02a7581f9",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims rotation-law-trust-clearance -- negative control for sairnlaw trust clearance suite law_trusttx"
+  },
+  {
+   "sha": "ef7e883d43fd",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases tier-a-review-three-way-match"
+  },
+  {
+   "sha": "f48755c35acb",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims tier-a-review-three-way-match -- review cc three way match mutation control sb_po sb_recv"
+  },
+  {
+   "sha": "1244dbc32104",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases fail-open-stale-acceptance"
+  },
+  {
+   "sha": "5607eb8f6ed2",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims fail-open-stale-acceptance -- sairnscape res acceptance entry in fail_open_check matches nothing, remove or retriage"
+  },
+  {
+   "sha": "5bd0cb2c9618",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases all-tests-denominator"
+  },
+  {
+   "sha": "b7d9620e4a4a",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims all-tests-denominator -- traceability_matrix all_tests enumeration misses api subdirectories, and master-plan totals disagree with themselves"
+  },
+  {
+   "sha": "65aca4ff59c7",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases sairnbiz-csv-export"
+  },
+  {
+   "sha": "858cf01fef2a",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims sairnbiz-csv-export -- fix returnsbCsvCell runtime break and two unguarded stonedesk CSV exports the sweep missed"
+  },
+  {
+   "sha": "5eafc9297706",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims tier-a-reviews -- discharge overdue Tier A review obligations authored by cc and fourth, oldest first"
+  },
+  {
+   "sha": "1533df52ed11",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody releases hover-scope-gate"
+  },
+  {
+   "sha": "730778de6526",
+   "date": "2026-09-18",
+   "subject": "chore(claims): cody claims hover-scope-gate -- add hover.json claim file to scope gate ALLOWED list"
+  },
+  {
+   "sha": "59cb1a987536",
+   "date": "2026-09-17",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "4e74add44bc1",
+   "date": "2026-09-17",
+   "subject": "chore(claims): cody claims cody -- sairnlaw citation generation sweep, multi-tenant scope lookup refusal sweep, defect register confirmed-clean verdict, code embedding similarity search, neural code search for claim verification, tier A negative controls"
+  },
+  {
+   "sha": "540dad1aff1d",
+   "date": "2026-09-17",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "2352d132a7c4",
+   "date": "2026-09-17",
+   "subject": "chore(claims): cody claims cody -- invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation"
+  },
+  {
+   "sha": "4aee49480771",
+   "date": "2026-09-17",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "e02e0d48cfc3",
+   "date": "2026-09-17",
+   "subject": "chore(review,docs): the known-red registry re-measured, and where the measurement is weaker"
+  },
+  {
+   "sha": "6cc46b8b895a",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- license_trial_gate_probe mutation 9, truthy_sum new occurrence, 5 shared-cause clusters, tier A sabotage coverage"
+  },
+  {
+   "sha": "0456cc3d583f",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "c1e06f332925",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- negative control for tests/sairnfreedom_server_backup.js -- sf_ledger sf_disbursements tier A"
+  },
+  {
+   "sha": "39ce17db5d80",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "1ecab4115bfc",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- diagnose the known-red registry undiagnosed entries -- my own registry, docs/known-red-suites.json"
+  },
+  {
+   "sha": "10b184e6f080",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "2b979342a70f",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- known-red suite registry build, floor-threshold coverage-visibility sweep -- NOT the sairndental suite controls, which cc has been working"
+  },
+  {
+   "sha": "5d53263955ea",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "f0a07765d07c",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- item 83 witness token minting gaps, sv-witness active filter, uncovered mutation floor arm"
+  },
+  {
+   "sha": "67998725d4f1",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "8fb3d0508819",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- tool promotion triage remaining thirteen, and the seven UNGUARDED probes that do not verify their own sabotage applied -- NOT suite negative controls, which cc and fourth are on"
+  },
+  {
+   "sha": "cd6ecab95bf3",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "648d43aff021",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody claims cody -- bypass log false entry probe write path, tier a review gate string literal stripping, hardcoded vocabulary blind spot sweep"
+  },
+  {
+   "sha": "e7f4a96ff7a7",
+   "date": "2026-09-16",
+   "subject": "chore(claims): cody releases cody"
+  },
+  {
+   "sha": "887dd3c7692c",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- tool selftest probe suite discovery item 47 ast parser"
+  },
+  {
+   "sha": "a3fc6b3c2215",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- item 60 bullwhip derived source audit, item 47 FAI on tonight tools, item 79 defeater friction, skill ground truth audit"
+  },
+  {
+   "sha": "a5999f057781",
+   "date": "2026-09-15",
+   "subject": "feat(gate): item 86 -- every override recorded, and a repeatedly bypassed check reported as a defect in the CHECK"
+  },
+  {
+   "sha": "d4933d7a14bb",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- item 86 battleshort bypass log, item 72 practitioner validation, item 74 schedule pressure crosscheck, item 26 phase 2 tiering recheck copy exactly sweep"
+  },
+  {
+   "sha": "b6c61bbdf1ae",
+   "date": "2026-09-15",
+   "subject": "feat(_lib): RAID-style parity that CORRECTS where item 35's hash chain only detects -- and item 89 answered from the arithmetic"
+  },
+  {
+   "sha": "6f8f777cf1bb",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- item 46 parity reconstruction sv_controlled, item 86 battleshort bypass log, item 89 look-elsewhere quarantine threshold"
+  },
+  {
+   "sha": "b6ed0afdf69e",
+   "date": "2026-09-15",
+   "subject": "feat(_lib,tooling): a Money type that cannot be built from a non-number, and the OODA phase measurement that says the aggregate is empty"
+  },
+  {
+   "sha": "44b962250b1b",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- money amount parsed type, item 38 completeness detector, item 67 OODA phase timing"
+  },
+  {
+   "sha": "2953c18e58ff",
+   "date": "2026-09-15",
+   "subject": "fix(nhi): the backup-reader warning was stale -- and a report on overwriting another session's tool"
+  },
+  {
+   "sha": "014184f1fabe",
+   "date": "2026-09-15",
+   "subject": "feat(platform): an identity-keyed credential register -- and it found ELEVEN credentials with no recorded owner on its first run"
+  },
+  {
+   "sha": "38b1248164d8",
+   "date": "2026-09-15",
+   "subject": "docs(sairnlaw): privacy scope read from the schema, not the practice area -- and two queue items that were already built"
+  },
+  {
+   "sha": "d90439053f57",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- item 18 metamorphic relations generator, item 32 reachability purpose, NHI credential inventory owners, sairnlaw privacy scoping"
+  },
+  {
+   "sha": "f477897f858a",
+   "date": "2026-09-15",
+   "subject": "feat(tooling): the negative-control recombination -- and the tool measuring the class was under-crediting its best members"
+  },
+  {
+   "sha": "87fc9d0ce08b",
+   "date": "2026-09-15",
+   "subject": "feat(tooling): the CRLF recombination -- comparing has THREE answers and everybody wrote two; plus the IR plan's hierarchy corrected against the real source"
+  },
+  {
+   "sha": "e5d19030e75f",
+   "date": "2026-09-15",
+   "subject": "feat(tooling): can an AI-proposed action reach storage with nobody approving it -- 74 sites, 14 that write, ZERO with a gate"
+  },
+  {
+   "sha": "ecd75bd0d139",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- AI proposes human approves enforcement audit, SOC2 readiness, incident response plan, sairnlaw privacy scoping"
+  },
+  {
+   "sha": "bf4486049baf",
+   "date": "2026-09-15",
+   "subject": "feat(sairndental): the QR half of the complaint feature, and a SOC2 status answer that is \"does not exist\""
+  },
+  {
+   "sha": "e296b12e4283",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- sairndental complaint QR renderer, date recombination, negative control recombination, CRLF recombination, item 78 FPV, AI approval gate audit, triage staleness tool, SOC2 status"
+  },
+  {
+   "sha": "f447d4d56ee0",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- sairndental complaint QR renderer, canonical safe-number split, recombination passes, item 78 FPV"
+  },
+  {
+   "sha": "645a3d5e02fd",
+   "date": "2026-09-15",
+   "subject": "review(dnt_rollup): discharge the obligation -- the review was Hank's, confirmed here by a different route, plus one finding he did not raise"
+  },
+  {
+   "sha": "f4e0c8f9135c",
+   "date": "2026-09-15",
+   "subject": "feat(platform): resilience primitives that state what they cannot do, a rebase guard, and an audit of whether accepted risks can expire"
+  },
+  {
+   "sha": "84f01ef56af0",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- circuit breaker bulkhead external dependency isolation, temporary workaround expiry audit, mutation control rebase guard"
+  },
+  {
+   "sha": "c35af12d22e1",
+   "date": "2026-09-15",
+   "subject": "test(sairnvet,sairncode): the countersign half of the witnessing lock, and a mutation control whose header said it never touched the clone"
+  },
+  {
+   "sha": "c7118ca0321f",
+   "date": "2026-09-15",
+   "subject": "chore(claims): cody claims cody -- item 83 countersign suite sv-witness sairnvet"
+  },
+  {
+   "sha": "8b742c52d179",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases register-regrade"
+  },
+  {
+   "sha": "5122eea31816",
+   "date": "2026-09-14",
+   "subject": "chore(register): apply the D1 decision -- 10 regraded, 7 not, and a per-commit key moved the wrong one"
+  },
+  {
+   "sha": "c0c1ce676c5a",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims register-regrade -- d1 regrade tool falsely reporting clean, registration triage closeout, restore coherence mock target, competitive gap audit next finding"
+  },
+  {
+   "sha": "1b58a5532b28",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases rubric-ratification"
+  },
+  {
+   "sha": "a33f64b716b8",
+   "date": "2026-09-14",
+   "subject": "review(rubric): item 25 Phase 0 NOT RATIFIED -- 62% is mostly the register disagreeing with itself"
+  },
+  {
+   "sha": "867a77b1335a",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims rubric-ratification -- phase 0 severity rubric ratification blind grading pass, flaky ledger js runner restore_coherence_check"
+  },
+  {
+   "sha": "3be7b4ed097f",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases reliability-and-witness-expiry"
+  },
+  {
+   "sha": "db7f5f59d1f8",
+   "date": "2026-09-14",
+   "subject": "fix(failsafe,tools): item 83 pass three -- move the clock, not another offset"
+  },
+  {
+   "sha": "ae13a9621613",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims reliability-and-witness-expiry -- reliability growth probe 5c anchor, item 83 real wall clock expiry, three_way_match fixtures, sairnlaw trust citation check, decomposition badge, checker post-call controls, sairnfreedom exemption"
+  },
+  {
+   "sha": "1909980c18b2",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases sairnlaw-citation-rule"
+  },
+  {
+   "sha": "c5e724eabd74",
+   "date": "2026-09-14",
+   "subject": "feat(tests): item 8's attack half, and 14 registration decisions that were 23"
+  },
+  {
+   "sha": "474c8443210e",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims sairnlaw-citation-rule -- item 8 metamorphic attack generation, law citation rule conflict defect register, 22 tool registration backlog, item 83 status"
+  },
+  {
+   "sha": "d0de97dd3323",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases ai-redteam-refusals"
+  },
+  {
+   "sha": "d28caacb16c5",
+   "date": "2026-09-14",
+   "subject": "feat(tools): item 8's deterministic half, and item 89 found the WATCH tier disabled"
+  },
+  {
+   "sha": "38bfbb10a69d",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims ai-redteam-refusals -- item 8 indirect injection and stated refusals deterministic half no model calls"
+  },
+  {
+   "sha": "65477fbe8087",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases platform"
+  },
+  {
+   "sha": "f5855e31fbb5",
+   "date": "2026-09-14",
+   "subject": "fix(claims): `check` printed CLEAR after its `git fetch` had FAILED"
+  },
+  {
+   "sha": "cad72dca29d0",
+   "date": "2026-09-14",
+   "subject": "feat(tests): item 83 -- is the fail-safe transition ATOMIC, and does the RECOVERY work"
+  },
+  {
+   "sha": "fb999534f879",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims platform -- fail safe verification atomicity and recovery round trip for the witnessing lock"
+  },
+  {
+   "sha": "a28f8d09bec6",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases tests"
+  },
+  {
+   "sha": "a084fbf02014",
+   "date": "2026-09-14",
+   "subject": "fix(tests): three harness bugs behind four suite failures, and one finding left red"
+  },
+  {
+   "sha": "7fc6a642a06c",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims tests -- four pre-existing suite failures sv backup faults local only shape fmea loop tooling inventory"
+  },
+  {
+   "sha": "31d1fed507b4",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases tests"
+  },
+  {
+   "sha": "268fb809848c",
+   "date": "2026-09-14",
+   "subject": "fix(tests): the trial-gate tripwire died in a snapshot re-capture for the third time"
+  },
+  {
+   "sha": "44b5f9a62eec",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims tests -- two probe anchors into the schema snapshot do not match exactly once"
+  },
+  {
+   "sha": "b5e0803286f0",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases tooling"
+  },
+  {
+   "sha": "e059df4cc2d4",
+   "date": "2026-09-14",
+   "subject": "fix(tools): the report-only sweep had stopped completing, and only its probe's timeout said so"
+  },
+  {
+   "sha": "1773f1ae78ac",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody claims tooling -- sabotage detector replace must feed a file write and report-only sweep timeout"
+  },
+  {
+   "sha": "264f917dd197",
+   "date": "2026-09-14",
+   "subject": "chore(claims): cody releases tests"
+  },
+  {
+   "sha": "8ce4c406132d",
+   "date": "2026-09-14",
+   "subject": "fix(tests): five negative controls now prove their own sabotage applied"
+  },
+  {
+   "sha": "8b057338b7c0",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims tests -- sabotage controls that never verify their own sabotage applied"
+  },
+  {
+   "sha": "8f23ae42318c",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases tooling"
+  },
+  {
+   "sha": "11496400286e",
+   "date": "2026-09-13",
+   "subject": "feat(push-gate): check 11 -- a raw control byte in what this push ships is refused"
+  },
+  {
+   "sha": "009c988980a4",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims tooling -- promote control char check to blocking"
+  },
+  {
+   "sha": "aef6ec3cad6f",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases platform"
+  },
+  {
+   "sha": "a7ff2325890f",
+   "date": "2026-09-13",
+   "subject": "fix(tests): the identity probe poisoned the list it was testing"
+  },
+  {
+   "sha": "bc32bed288b5",
+   "date": "2026-09-13",
+   "subject": "feat(tools): nothing on this platform read the committing identity, so 131 commits were a test fixture's"
+  },
+  {
+   "sha": "626a0cf64c49",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims platform -- committer identity leak probe identity in a clone config"
+  },
+  {
+   "sha": "b81a37c0bda7",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases stonedesk"
+  },
+  {
+   "sha": "47bfe9987cd2",
+   "date": "2026-09-13",
+   "subject": "fix(tests): a test pinned to the SHAPE of a cap went red on the commit that FIXED the cap"
+  },
+  {
+   "sha": "e16061f856aa",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims stonedesk -- drawing snapshot budget retention cap assertions stale"
+  },
+  {
+   "sha": "432f786cff0f",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases tooling"
+  },
+  {
+   "sha": "832b1a3f0b9a",
+   "date": "2026-09-13",
+   "subject": "fix(tools): a string literal on the left is concatenation, not a numeric fold"
+  },
+  {
+   "sha": "625877d4ba71",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims tooling -- truthy sum check string literal concatenation is not a numeric fold"
+  },
+  {
+   "sha": "9e5acdae9583",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases platform"
+  },
+  {
+   "sha": "d6b3f6e929ec",
+   "date": "2026-09-13",
+   "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save"
+  },
+  {
+   "sha": "b3a5e11152a1",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims platform -- two tests red on main storage wrapper honesty scape and truthy sum probe"
+  },
+  {
+   "sha": "b00ce7409b03",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases platform"
+  },
+  {
+   "sha": "f43979822284",
+   "date": "2026-09-13",
+   "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run"
+  },
+  {
+   "sha": "8aa016a0f4ad",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims platform -- pre-push hook installation is never verified per clone"
+  },
+  {
+   "sha": "ab26e50700a2",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases push-gate"
+  },
+  {
+   "sha": "639e9bedf433",
+   "date": "2026-09-13",
+   "subject": "fix(push-gate): five more is-the-tool-present fail-opens, one of which switched off nine checks"
+  },
+  {
+   "sha": "d24d06f9b491",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims push-gate -- sibling fail-opens missing checker guards in the push gate"
+  },
+  {
+   "sha": "7b293f7633a1",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases push-gate"
+  },
+  {
+   "sha": "77dd73161646",
+   "date": "2026-09-13",
+   "subject": "fix(push-gate): a missing checker is not a clean push -- check 3 fails closed on the tool's absence"
+  },
+  {
+   "sha": "49278b3fa82d",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims push-gate -- check 3 fail-open missing preflight tool must deny"
+  },
+  {
+   "sha": "fb19e9f4ca37",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases push-gate"
+  },
+  {
+   "sha": "8dfde7be2b1b",
+   "date": "2026-09-13",
+   "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test"
+  },
+  {
+   "sha": "b2f2af6e550d",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody claims push-gate -- check 3 sql preflight fail-closed deny arms never proven"
+  },
+  {
+   "sha": "aa435835484f",
+   "date": "2026-09-13",
+   "subject": "chore(claims): cody releases blocking-checkers-can-actually-fail"
+  },
+  {
+   "sha": "373fc356e699",
+   "date": "2026-09-12",
+   "subject": "test(push-gate): checks 2 and 5 had never been proven to refuse anything"
+  },
+  {
+   "sha": "9529d1873c03",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody claims blocking-checkers-can-actually-fail -- plant a finding per gate tool confirm non-zero exit"
+  },
+  {
+   "sha": "6305ca5b10e6",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody releases point-the-unwired-checkers"
+  },
+  {
+   "sha": "6a765c030c26",
+   "date": "2026-09-12",
+   "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail"
+  },
+  {
+   "sha": "6f1cec7f869b",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody claims point-the-unwired-checkers -- run each against the real codebase"
+  },
+  {
+   "sha": "471166b25647",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody releases tooling-inventory-refresh"
+  },
+  {
+   "sha": "ce062d76414e",
+   "date": "2026-09-12",
+   "subject": "fix(worklog): the prose about a literal backspace carried a literal backspace"
+  },
+  {
+   "sha": "f044b545f814",
+   "date": "2026-09-12",
+   "subject": "fix(tools,tests): three defects in the inventory, all caught by the repo's own tooling"
+  },
+  {
+   "sha": "9a5b81aa68b0",
+   "date": "2026-09-12",
+   "subject": "feat(tools,docs): the tooling inventory, GENERATED, because the last one was stale in three days"
+  },
+  {
+   "sha": "eb38c588e072",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody claims tooling-inventory-refresh -- current gate status per tool"
+  },
+  {
+   "sha": "489bcd6a2580",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody releases read-path-failure-indistinguishable-from-empty"
+  },
+  {
+   "sha": "dd0fc32f14ae",
+   "date": "2026-09-12",
+   "subject": "fix(sairncare): a failed rule read rendered as an empty rule set, and advised the seed"
+  },
+  {
+   "sha": "caf0632cba50",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody claims read-path-failure-indistinguishable-from-empty -- eight apps null means both"
+  },
+  {
+   "sha": "98d820749cbe",
+   "date": "2026-09-12",
+   "subject": "chore(claims): cody releases stonedesk-write-path-blind-sites"
+  },
+  {
+   "sha": "a3d8c8551fe5",
+   "date": "2026-09-11",
+   "subject": "fix(stonedesk): the only transport on the platform that said nothing"
+  }
+ ],
+ "claims": [
+  {
+   "sha": "ddb02a7581f9",
+   "date": "2026-09-18",
+   "what": "rotation-law-trust-clearance -- negative control for sairnlaw trust clearance suite law_trusttx"
+  },
+  {
+   "sha": "f48755c35acb",
+   "date": "2026-09-18",
+   "what": "tier-a-review-three-way-match -- review cc three way match mutation control sb_po sb_recv"
+  },
+  {
+   "sha": "5607eb8f6ed2",
+   "date": "2026-09-18",
+   "what": "fail-open-stale-acceptance -- sairnscape res acceptance entry in fail_open_check matches nothing, remove or retriage"
+  },
+  {
+   "sha": "b7d9620e4a4a",
+   "date": "2026-09-18",
+   "what": "all-tests-denominator -- traceability_matrix all_tests enumeration misses api subdirectories, and master-plan totals disagree with themselves"
+  },
+  {
+   "sha": "858cf01fef2a",
+   "date": "2026-09-18",
+   "what": "sairnbiz-csv-export -- fix returnsbCsvCell runtime break and two unguarded stonedesk CSV exports the sweep missed"
+  },
+  {
+   "sha": "5eafc9297706",
+   "date": "2026-09-18",
+   "what": "tier-a-reviews -- discharge overdue Tier A review obligations authored by cc and fourth, oldest first"
+  },
+  {
+   "sha": "730778de6526",
+   "date": "2026-09-18",
+   "what": "hover-scope-gate -- add hover.json claim file to scope gate ALLOWED list"
+  },
+  {
+   "sha": "4e74add44bc1",
+   "date": "2026-09-17",
+   "what": "cody -- sairnlaw citation generation sweep, multi-tenant scope lookup refusal sweep, defect register confirmed-clean verdict, code embedding similarity search, neural code search for claim verification, tier A negative controls"
+  },
+  {
+   "sha": "2352d132a7c4",
+   "date": "2026-09-17",
+   "what": "cody -- invisible_in_pattern probe stale anchor, sairnlaw citation format rule convergence, tier A negative control rotation"
+  },
+  {
+   "sha": "6cc46b8b895a",
+   "date": "2026-09-16",
+   "what": "cody -- license_trial_gate_probe mutation 9, truthy_sum new occurrence, 5 shared-cause clusters, tier A sabotage coverage"
+  },
+  {
+   "sha": "c1e06f332925",
+   "date": "2026-09-16",
+   "what": "cody -- negative control for tests/sairnfreedom_server_backup.js -- sf_ledger sf_disbursements tier A"
+  },
+  {
+   "sha": "1ecab4115bfc",
+   "date": "2026-09-16",
+   "what": "cody -- diagnose the known-red registry undiagnosed entries -- my own registry, docs/known-red-suites.json"
+  },
+  {
+   "sha": "2b979342a70f",
+   "date": "2026-09-16",
+   "what": "cody -- known-red suite registry build, floor-threshold coverage-visibility sweep -- NOT the sairndental suite controls, which cc has been working"
+  },
+  {
+   "sha": "f0a07765d07c",
+   "date": "2026-09-16",
+   "what": "cody -- item 83 witness token minting gaps, sv-witness active filter, uncovered mutation floor arm"
+  },
+  {
+   "sha": "8fb3d0508819",
+   "date": "2026-09-16",
+   "what": "cody -- tool promotion triage remaining thirteen, and the seven UNGUARDED probes that do not verify their own sabotage applied -- NOT suite negative controls, which cc and fourth are on"
+  },
+  {
+   "sha": "648d43aff021",
+   "date": "2026-09-16",
+   "what": "cody -- bypass log false entry probe write path, tier a review gate string literal stripping, hardcoded vocabulary blind spot sweep"
+  },
+  {
+   "sha": "887dd3c7692c",
+   "date": "2026-09-15",
+   "what": "cody -- tool selftest probe suite discovery item 47 ast parser"
+  },
+  {
+   "sha": "a3fc6b3c2215",
+   "date": "2026-09-15",
+   "what": "cody -- item 60 bullwhip derived source audit, item 47 FAI on tonight tools, item 79 defeater friction, skill ground truth audit"
+  },
+  {
+   "sha": "d4933d7a14bb",
+   "date": "2026-09-15",
+   "what": "cody -- item 86 battleshort bypass log, item 72 practitioner validation, item 74 schedule pressure crosscheck, item 26 phase 2 tiering recheck copy exactly sweep"
+  },
+  {
+   "sha": "6f8f777cf1bb",
+   "date": "2026-09-15",
+   "what": "cody -- item 46 parity reconstruction sv_controlled, item 86 battleshort bypass log, item 89 look-elsewhere quarantine threshold"
+  },
+  {
+   "sha": "44b962250b1b",
+   "date": "2026-09-15",
+   "what": "cody -- money amount parsed type, item 38 completeness detector, item 67 OODA phase timing"
+  },
+  {
+   "sha": "d90439053f57",
+   "date": "2026-09-15",
+   "what": "cody -- item 18 metamorphic relations generator, item 32 reachability purpose, NHI credential inventory owners, sairnlaw privacy scoping"
+  },
+  {
+   "sha": "ecd75bd0d139",
+   "date": "2026-09-15",
+   "what": "cody -- AI proposes human approves enforcement audit, SOC2 readiness, incident response plan, sairnlaw privacy scoping"
+  },
+  {
+   "sha": "e296b12e4283",
+   "date": "2026-09-15",
+   "what": "cody -- sairndental complaint QR renderer, date recombination, negative control recombination, CRLF recombination, item 78 FPV, AI approval gate audit, triage staleness tool, SOC2 status"
+  },
+  {
+   "sha": "f447d4d56ee0",
+   "date": "2026-09-15",
+   "what": "cody -- sairndental complaint QR renderer, canonical safe-number split, recombination passes, item 78 FPV"
+  },
+  {
+   "sha": "84f01ef56af0",
+   "date": "2026-09-15",
+   "what": "cody -- circuit breaker bulkhead external dependency isolation, temporary workaround expiry audit, mutation control rebase guard"
+  },
+  {
+   "sha": "c7118ca0321f",
+   "date": "2026-09-15",
+   "what": "cody -- item 83 countersign suite sv-witness sairnvet"
+  },
+  {
+   "sha": "c0c1ce676c5a",
+   "date": "2026-09-14",
+   "what": "register-regrade -- d1 regrade tool falsely reporting clean, registration triage closeout, restore coherence mock target, competitive gap audit next finding"
+  },
+  {
+   "sha": "867a77b1335a",
+   "date": "2026-09-14",
+   "what": "rubric-ratification -- phase 0 severity rubric ratification blind grading pass, flaky ledger js runner restore_coherence_check"
+  },
+  {
+   "sha": "ae13a9621613",
+   "date": "2026-09-14",
+   "what": "reliability-and-witness-expiry -- reliability growth probe 5c anchor, item 83 real wall clock expiry, three_way_match fixtures, sairnlaw trust citation check, decomposition badge, checker post-call controls, sairnfreedom exemption"
+  },
+  {
+   "sha": "474c8443210e",
+   "date": "2026-09-14",
+   "what": "sairnlaw-citation-rule -- item 8 metamorphic attack generation, law citation rule conflict defect register, 22 tool registration backlog, item 83 status"
+  },
+  {
+   "sha": "38bfbb10a69d",
+   "date": "2026-09-14",
+   "what": "ai-redteam-refusals -- item 8 indirect injection and stated refusals deterministic half no model calls"
+  },
+  {
+   "sha": "fb999534f879",
+   "date": "2026-09-14",
+   "what": "platform -- fail safe verification atomicity and recovery round trip for the witnessing lock"
+  },
+  {
+   "sha": "7fc6a642a06c",
+   "date": "2026-09-14",
+   "what": "tests -- four pre-existing suite failures sv backup faults local only shape fmea loop tooling inventory"
+  },
+  {
+   "sha": "44b5f9a62eec",
+   "date": "2026-09-14",
+   "what": "tests -- two probe anchors into the schema snapshot do not match exactly once"
+  },
+  {
+   "sha": "1773f1ae78ac",
+   "date": "2026-09-14",
+   "what": "tooling -- sabotage detector replace must feed a file write and report-only sweep timeout"
+  },
+  {
+   "sha": "8b057338b7c0",
+   "date": "2026-09-13",
+   "what": "tests -- sabotage controls that never verify their own sabotage applied"
+  },
+  {
+   "sha": "009c988980a4",
+   "date": "2026-09-13",
+   "what": "tooling -- promote control char check to blocking"
+  },
+  {
+   "sha": "626a0cf64c49",
+   "date": "2026-09-13",
+   "what": "platform -- committer identity leak probe identity in a clone config"
+  },
+  {
+   "sha": "e16061f856aa",
+   "date": "2026-09-13",
+   "what": "stonedesk -- drawing snapshot budget retention cap assertions stale"
+  },
+  {
+   "sha": "625877d4ba71",
+   "date": "2026-09-13",
+   "what": "tooling -- truthy sum check string literal concatenation is not a numeric fold"
+  },
+  {
+   "sha": "b3a5e11152a1",
+   "date": "2026-09-13",
+   "what": "platform -- two tests red on main storage wrapper honesty scape and truthy sum probe"
+  },
+  {
+   "sha": "8aa016a0f4ad",
+   "date": "2026-09-13",
+   "what": "platform -- pre-push hook installation is never verified per clone"
+  },
+  {
+   "sha": "d24d06f9b491",
+   "date": "2026-09-13",
+   "what": "push-gate -- sibling fail-opens missing checker guards in the push gate"
+  },
+  {
+   "sha": "49278b3fa82d",
+   "date": "2026-09-13",
+   "what": "push-gate -- check 3 fail-open missing preflight tool must deny"
+  },
+  {
+   "sha": "b2f2af6e550d",
+   "date": "2026-09-13",
+   "what": "push-gate -- check 3 sql preflight fail-closed deny arms never proven"
+  },
+  {
+   "sha": "9529d1873c03",
+   "date": "2026-09-12",
+   "what": "blocking-checkers-can-actually-fail -- plant a finding per gate tool confirm non-zero exit"
+  },
+  {
+   "sha": "6f1cec7f869b",
+   "date": "2026-09-12",
+   "what": "point-the-unwired-checkers -- run each against the real codebase"
+  },
+  {
+   "sha": "eb38c588e072",
+   "date": "2026-09-12",
+   "what": "tooling-inventory-refresh -- current gate status per tool"
+  },
+  {
+   "sha": "caf0632cba50",
+   "date": "2026-09-12",
+   "what": "read-path-failure-indistinguishable-from-empty -- eight apps null means both"
+  }
+ ],
+ "worklog_entries": 29,
+ "obligations_owed": 1,
+ "obligations_dischargeable": 17,
+ "findings": [
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-18 (5607eb8f6ed2) and no worklog entry in this window mentions any of: acceptance, entry, fail, fail_open_check, matches, nothing"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-18 (b7d9620e4a4a) and no worklog entry in this window mentions any of: all_tests, denominator, disagree, enumeration, master, misses"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-18 (858cf01fef2a) and no worklog entry in this window mentions any of: break, export, exports, missed, returnsbcsvcell, runtime"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (6cc46b8b895a) and no worklog entry in this window mentions any of: cause, clusters, coverage, license_trial_gate_probe, mutation, occurrence"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (1ecab4115bfc) and no worklog entry in this window mentions any of: diagnose, entries, json, known, registry, suites"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (2b979342a70f) and no worklog entry in this window mentions any of: build, controls, coverage, floor, known, registry"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (f0a07765d07c) and no worklog entry in this window mentions any of: active, filter, floor, gaps, minting, mutation"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-16 (8fb3d0508819) and no worklog entry in this window mentions any of: applied, controls, negative, probes, promotion, remaining"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (887dd3c7692c) and no worklog entry in this window mentions any of: discovery, parser, probe, selftest, suite, tool"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (a3fc6b3c2215) and no worklog entry in this window mentions any of: audit, bullwhip, defeater, derived, friction, ground"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (d90439053f57) and no worklog entry in this window mentions any of: credential, generator, inventory, metamorphic, owners, privacy"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (f447d4d56ee0) and no worklog entry in this window mentions any of: canonical, complaint, number, passes, recombination, renderer"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-15 (c7118ca0321f) and no worklog entry in this window mentions any of: countersign, sairnvet, suite, witness"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (867a77b1335a) and no worklog entry in this window mentions any of: blind, flaky, grading, ledger, phase, ratification"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (474c8443210e) and no worklog entry in this window mentions any of: attack, backlog, citation, conflict, defect, generation"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (fb999534f879) and no worklog entry in this window mentions any of: atomicity, fail, lock, platform, recovery, round"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-14 (1773f1ae78ac) and no worklog entry in this window mentions any of: detector, feed, file, must, only, replace"
+  },
+  {
+   "kind": "NO-LOG",
+   "detail": "claimed 2026-09-13 (b3a5e11152a1) and no worklog entry in this window mentions any of: honesty, main, platform, probe, scape, storage"
+  }
+ ],
+ "status_row": {
+  "blocked_on": null,
+  "claude_pid": 41024,
+  "claude_start": 134342018048464653,
+  "clone": "C:\\Users\\marsh\\Documents\\SAIRN-cody",
+  "item": null,
+  "note": null,
+  "pid": 27888,
+  "session": "cody",
+  "state": "idle",
+  "task": "9 CSV exports LIVE-verified; all_tests 558->574 + 512/518 collapsed; fail-open stale acceptance resolved; 1 review discharged; rotation TIER A 38->37",
+  "updated": "2026-09-18T11:03:45"
+ }
+}
