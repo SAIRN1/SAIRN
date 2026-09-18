@@ -19853,10 +19853,54 @@ function loadSampleStressData() {
   parseAndStress(csv);
 }
 
+// ── A ROW IS ZIPPED TO THE HEADER BY POSITION, SO A TORN ROW IS REFUSED
+//    RATHER THAN MIS-ZIPPED (2026-09-18) ──────────────────────────────────
+// This reads a CSV THE USER UPLOADS -- the file input and the drop zone above
+// both land here -- and it splits every line on a bare comma. A cell that
+// contains a comma is quoted by every CSV writer on earth, and a bare split
+// tears that cell in two: `vals` gains an element, and `headers.forEach((h,i)
+// => obj[h]=vals[i])` then assigns EVERY LATER COLUMN ONE PLACE LEFT.
+//
+// WHAT THAT LOOKED LIKE BEFORE, and why it was worse than a crash: the shifted
+// row's `material` and `project_type` stop matching MATERIALS/PROJECTS, the
+// row returns null, and `.filter(Boolean)` DROPS IT SILENTLY. The panel then
+// prints "Jobs Tested: N" over a number that looks like the whole file and is
+// not -- and an "Avg Formula vs Actual" computed from the rows that happened
+// to survive. A backtest is a claim about pricing accuracy; one silently
+// computed over an unknown subset is worse than no backtest.
+//
+// THE GUARD IS A COUNT, NOT A PARSER, and that is deliberate. Writing a real
+// quoted-CSV reader here would let this panel keep answering on files whose
+// shape nobody has decided is supported; a refusal names the line and makes
+// somebody look. Same call, and for the same reason, as the guard in
+// tests/sairndental_ledger_export.js.
+//
+// TRULY EMPTY LINES ARE SKIPPED, NOT REFUSED -- a blank line is not a torn row
+// and refusing a file for one would be a guard people route around.
 function parseAndStress(csvText) {
   const lines=csvText.trim().split('\n');
   const headers=lines[0].split(',').map(h=>h.trim());
-  const rows=lines.slice(1).map(l=>{const vals=l.split(',').map(v=>v.trim());const obj={};headers.forEach((h,i)=>obj[h]=vals[i]);return obj;});
+  const torn=[];
+  const rows=lines.slice(1).map((l,n)=>{
+    if(!l.trim()) return null;
+    const vals=l.split(',').map(v=>v.trim());
+    if(vals.length!==headers.length){torn.push({line:n+2,got:vals.length});return null;}
+    const obj={};headers.forEach((h,i)=>obj[h]=vals[i]);return obj;
+  }).filter(Boolean);
+  if(torn.length){
+    document.getElementById('stress-results').style.display='block';
+    document.getElementById('stress-table').innerHTML='';
+    document.getElementById('stress-metrics').innerHTML=
+      '<div style="padding:12px;font-size:13px;color:var(--text);line-height:1.5">'
+      +'<strong>This file was not read, and no backtest was run.</strong><br>'
+      +escHtml(String(torn.length))+' row(s) do not have '+escHtml(String(headers.length))
+      +' comma-separated values, which means a cell contains a comma and the '
+      +'columns after it would be read one place out. '
+      +'First at line '+escHtml(String(torn[0].line))+' ('+escHtml(String(torn[0].got))
+      +' values). Remove the commas from those cells, or export the file without them, '
+      +'and upload it again.</div>';
+    return;
+  }
   const results=rows.map(r=>{
     const mat=MATERIALS[r.material], proj=PROJECTS[r.project_type];
     if(!mat||!proj) return null;
