@@ -2203,8 +2203,8 @@
       "task": "independent check of cody four records suite_control_triage retry_backoff_check sairnbiz_timesheet_probe sairnfreedom_server_backup",
       "claimed_at": "2026-09-18T13:27:01Z",
       "claimed_at_epoch": 1789738021.7926118,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T15:29:37Z"
     },
     {
       "id": "hank-1789740242",
