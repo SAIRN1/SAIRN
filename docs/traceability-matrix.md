@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; THREE negative controls assert "and it fails on the right arm" against the WHOLE RUN, where every passing arm prints its own label &mdash; the assertion is satisfied by a failure that has nothing to do with it** | **MEASURED 2026-09-18 (Cody), NOT FIXED** &mdash; found while reviewing cc's controls; recorded here because it spans three files and sits in only one verdict | `tests/sairnbiz_three_way_match_mutation_control.js`, `tests/sairndental_coverage_edit_mutation_control.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
 | **&#9888; TEN OF ELEVEN third-party fetches have NO timeout at all &mdash; and the most exposed one had no size limit either, on an endpoint anyone can call** | **AUDITED AND HIGHEST-RISK HARDENED 2026-09-17 (Hank)** &mdash; `api/bridge.js` `proxy_get` now bounded in time, size and concurrency; 18 arms in `api/bridge-push-auth.test.js`, 4 mutations killed. ** | `api/bridge-push-auth.test.js` |
 | **&#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two stacked defects, and the outer one had hidden the inner one for the tool&rsquo;s entire life** | **VERIFIED END TO END 2026-09-17 (Hank)** at 14:47:29Z, GitHub Actions run **#9 success**. `watchdog_url()` + the `Response` unpack in `tools/cron_liveness_check.py`; `tests/run_cron_liveness_probe.py | `tests/run_cron_liveness_probe.py` |
 | **Twelve red suites cleared &mdash; and ELEVEN OF TWELVE were the PROBE, not the thing it tests** | **FIXED 2026-09-17 (Cody)** &mdash; 32 &rarr; 17 red over 411 files; `docs/known-red-suites.json` re-measured; 3 new Tier A negative controls (41 &rarr; 44 of 157) | `api/license-trial-gate.test.js` |
@@ -556,8 +557,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 267 |
-| `declared` | 236 |
-| `declared+index` | 9 |
+| `declared` | 233 |
+| `declared+index` | 12 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -651,7 +652,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 578   tests/**, api/** (both walked)
-  open-work rows citing a test       270   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       271   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
