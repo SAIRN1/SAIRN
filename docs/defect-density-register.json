@@ -8965,6 +8965,37 @@
       },
       "citation_note": "the file argues this rule four lines below the defect, about a neighbouring path -- 'the refusal above is what keeps a FAILED lookup from ever reaching here looking like that legitimate empty'. It did not keep this one, because an unparseable body is not a !ok response and walked past that refusal. A correct principle, written down, one branch away from where it was needed",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's fetch stub could only answer the way PostgREST does when everything works, so a successful status over an unreadable body was unreachable from the suite and the branch was never exercised. The same gap that held 8e3a18a2 in place"
+    },
+    {
+      "commit": "602854a07a4c",
+      "date": "2026-09-18",
+      "subject": "fix(sairndental): the BI management door carried two more copies of the same line",
+      "files": [
+        "api/dnt-bi.js",
+        "api/dnt-bi.test.js"
+      ],
+      "lines_added": 80,
+      "lines_removed": 2,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "Two further sites of the swept shape in api/dnt-bi.js, in the file whose feed read had already been fixed. list: 'tokens: Array.isArray(rows) ? rows : []' turned an unparseable 200 into an EMPTY TOKEN LIST served with ok:true, so the admin screen says no feed tokens exist and the decision taken off it is 'there is nothing live to revoke', about a list nobody read. revoke: 'const n = Array.isArray(rows) ? rows.length : 0' folded an unparseable 200 into that zero and reported 'No live feed token with that id' -- this one already failed TOWARD a refusal rather than a false success, the safer direction, and is still wrong because the revoke may have landed while the admin is told the token never existed. Both now refuse (READ_UNREADABLE, REVOKE_UNCONFIRMED); a real empty list and a genuine miss keep their existing answers",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "a one-off mechanical triage of every .json().catch(...) site in api/, run after the first dnt-bi fix; not a committed checker",
+      "injection": {
+        "commit": "363b8304a91e",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+        "lag_days": 16
+      },
+      "citation_note": "the propagation failure named in docs/2026-09-13-cross-domain-disciplines.md: a correct fix applied to one site while identical code sat one function over. The first dnt-bi fix earlier the same day did not sweep its own file, and only a mechanical pass over every site in api/ found these",
+      "factors_unknown_reason": "not analysed beyond the immediate cause. What IS known and is not comfortable: the triage that found these reports 13 coalesced sites and 60 could-not-tell sites still outstanding across api/, so this sweep is incomplete and is recorded as incomplete rather than closed"
     }
   ],
   "started": "2026-09-09",
