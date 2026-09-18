@@ -44,7 +44,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnlegacy` | 36 | ✅ | 3 | 3 | 1 | — |
 | `sairnmechanical` | 6 | ✅ | 5 | 5 | 1 | — |
 | `sairnroofing` | 27 | ✅ | 31 | 30 | 2 | — |
-| `sairnscape` | 12 | ✅ | 2 | 2 | 1 | — |
+| `sairnscape` | 12 | ✅ | 3 | 3 | 1 | — |
 | `sairnsenior` | 15 | ✅ | 11 | 11 | 2 | — |
 | `sairnvet` | 41 | ✅ | 14 | 14 | 6 | — |
 | `stonedesk` | 36 | ✅ | 18 | 17 | 6 | — |
@@ -52,9 +52,9 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 387 resources owned by an app, 197 test files attributed to one, 186 of those traced, 48 fault probes.**
+**Platform totals: 387 resources owned by an app, 198 test files attributed to one, 187 of those traced, 48 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **555** test files on disk in total and **512** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **556** test files on disk in total and **513** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -124,8 +124,8 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               555   tests/**, api/*.test.js
-  tests traced to a requirement    518   traceability_matrix.traced()
+  test files on disk               556   tests/**, api/*.test.js
+  tests traced to a requirement    519   traceability_matrix.traced()
   declared fault probes             70   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```

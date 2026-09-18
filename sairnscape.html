@@ -1384,6 +1384,10 @@ if (document.readyState === 'loading') {
 </div>
 
 <div id="scp-app">
+  <!-- Outbound queue banner. Empty and hidden until something is actually
+       waiting or refused -- a banner that is always present is one nobody
+       reads, and this one has to be believed the day it matters. -->
+  <div id="scp-pending-banner" style="display:none;padding:0 16px"></div>
   <header>
     <button class="scp-navtog" onclick="scpToggleNav()" aria-label="Toggle navigation" aria-expanded="false" aria-controls="scp-aside">&#9776;</button>
     <div class="hlogo">SAIRNscape</div>
@@ -2086,9 +2090,31 @@ async function scpData(action, resource, payload, appId) {
       method: 'POST', headers: headers,
       body: JSON.stringify(reqBody)
     });
-    if (!res.ok) return null;
+    // ── WHY / WAS IT REFUSED, RECORDED PER RESOURCE (2026-09-18) ────────
+    // `if (!res.ok) return null;` threw the status away, so every caller saw
+    // one undifferentiated null and COULD NOT TELL a 4xx refusal -- the server
+    // looked at the row and said no -- from an unreachable server. That
+    // distinction is the precondition for a retry queue that drains: without
+    // it, a refused row is retried forever and a lost row is dropped, and both
+    // look the same from here. Same shape dntLastErr already carries next door.
+    if (!res.ok) {
+      var body = null;
+      try { body = await res.json(); } catch (e2) { body = null; }
+      scpLastErr[resource] = { status: res.status,
+        code: (body && body.error && body.error.code) || ('HTTP_' + res.status),
+        message: (body && body.error && body.error.message) || '' };
+      return null;
+    }
     var j = await res.json();
-    return (j && j.ok) ? j : null;
+    if (!j || !j.ok) {
+      // A 200 carrying ok:false is still the server having LOOKED and said no.
+      scpLastErr[resource] = { status: 200,
+        code: (j && j.error && j.error.code) || 'NOT_OK',
+        message: (j && j.error && j.error.message) || '' };
+      return null;
+    }
+    delete scpLastErr[resource];
+    return j;
   } catch (e) {
     // THIS CATCH SAID NOTHING AT ALL until 2026-09-11 -- `catch(e){return null;}`
     // discarded the error entirely. Every network failure on this app's only
@@ -2103,9 +2129,24 @@ async function scpData(action, resource, payload, appId) {
             ? 'no answer in ' + (SCP_FETCH_TIMEOUT_MS / 1000) + 's'
             : (e && e.message) || e) + ').');
     } catch (_e) {}
+    // NO `status`, DELIBERATELY: nothing answered, so this is not a refusal and
+    // must not inherit one. A stale code left here from an earlier, unrelated
+    // failure of the SAME resource would read as a fresh server judgement --
+    // the exact defect sairndental.html's sdnData records having shipped.
+    scpLastErr[resource] = { code: 'NETWORK', message: '' };
     return null;
   }
 }
+
+// ── REFUSED IS A JUDGEMENT THE SERVER MADE; EVERYTHING ELSE IS NOT ────────
+// A 4xx, or a 200 carrying ok:false, means the server READ the row and
+// rejected it. Anything without a status -- no licence, a timeout, a dead
+// connection -- means nobody looked. Keeping a refused row locally and
+// promising to retry it is a promise that can never be kept.
+var scpLastErr = {};
+function scpLastErrCode(resource){var e=scpLastErr[resource];return (e&&e.code)||'';}
+function scpLastErrText(resource){var e=scpLastErr[resource];return (e&&e.status)?(e.message||e.code||''):'';}
+function scpWriteRefused(resource){var e=scpLastErr[resource];return !!(e&&e.status);}
 
 // -- CLOUD MEMORY, ON THE REAL DATA PATH (2026-09-03) ----------------------
 // Step 2 of the memory work. Step 1 made the LOCAL half real -- memory was
@@ -2575,6 +2616,13 @@ function scpInit(){
   scpUpdateAsideA11y();
   scpSyncFromServer();
   loadScpSharedKnowledge();
+  // NO NEW TIMER. Two of the three moments a connection can have returned --
+  // boot here, and the browser's own `online` event below. The third is the
+  // button in the banner. A polling interval racing scpSyncFromServer() for
+  // the same rows would be a second scheduler for one job.
+  scpRenderPendingBanner();
+  try{ scpFlushAndReport(true); }catch(e){}
+  try{ window.addEventListener('online',function(){ scpFlushAndReport(true); }); }catch(e){}
 }
 
 // Read-through sync -- same honest-degrade behavior as SAIRNgrounds'
@@ -2926,6 +2974,147 @@ async function scpApproveDesign(){
   scp$('scp-dw-send-quote-btn').disabled=false;
   scpToast(syncResult?('Design approved by '+name):('Design approved by '+name+' on this device only -- server sync failed, try again with a connection'),syncResult?3000:7000);
 }
+// ── THE OUTBOUND QUEUE (2026-09-18) ───────────────────────────────────────
+// SAIRNscape had no retry path at all. A write that did not reach the server
+// left the row on one device and the toast said "try again with a connection"
+// -- while the only control that would retry was DISABLED and relabelled with
+// the claim the toast was retracting. Raised reviewing fourth's scp_quotes fix
+// on 2026-09-17: the sentence was corrected and the affordance was not.
+//
+// IT IS IDEMPOTENT BECAUSE THE SERVER ALREADY IS, AND THAT WAS CHECKED RATHER
+// THAN ASSUMED -- the same verification SAIRNdental's queue records for itself.
+// api/sd-data.js:3491 posts scp_quotes to
+// `?on_conflict=license_hash,quote_id` with
+// `Prefer: resolution=merge-duplicates`, an UPSERT keyed on (licence, quote id),
+// and scp_designs, scp_jobs and scp_customers carry the same shape on their own
+// id columns. `qrec.id` is 'Q-'+Date.now(), generated once on this device before
+// the first attempt and never regenerated. So retrying a row the server ALREADY
+// TOOK, whose response was lost coming back, updates that row instead of adding
+// a second. No server change was needed and none was made.
+//
+// THE DUPLICATION THIS PREVENTS IS THE HUMAN ONE, exactly as next door: the
+// server could never double a retry, but a designer re-sending a quote that
+// "did not save" would, because the re-sent quote gets a new Q-timestamp id.
+// Removing the reason to re-send is the fix.
+//
+// ONE STORE, NOT TWO. The queue holds a copy of the record with a status; the
+// rows themselves stay in scp_quotes / scp_designs where every existing reader
+// already looks. A parallel copy of a synced concept is the failure this
+// platform keeps recording.
+//
+// NO NEW TIMER. It flushes at the three moments a connection can have returned:
+// boot, the retry button, and the browser's own `online` event.
+//
+// SCOPE, SAID OUT LOUD: the send-to-quoting path is wired to this queue. The
+// app has thirteen other scpData('write',...) call sites and they are NOT
+// retrofitted here -- doing that is a sweep, not this fix, and a queue that
+// silently covered some writes and not others would be worse than one whose
+// coverage is stated. scpPendingCoverage() below names what is covered so the
+// banner can never imply more than is true.
+var SCP_PENDING_KEY='scp_pending_writes';
+var SCP_QUEUED_RESOURCES=['scp_quotes','scp_designs'];
+
+function scpPendingCoverage(){return SCP_QUEUED_RESOURCES.slice();}
+function scpPendingAll(){var q=scpLd(SCP_PENDING_KEY,[]);return Array.isArray(q)?q:[];}
+function scpPendingCount(){return scpPendingAll().filter(function(p){return p&&p.status==='pending';}).length;}
+function scpRefusedAll(){return scpPendingAll().filter(function(p){return p&&p.status==='refused';});}
+
+// KEYED ON (resource, id), SO A RE-QUEUE REPLACES. Without this a row that
+// failed, was edited and failed again would sit in the queue twice and upload
+// twice -- the queue reintroducing the duplication it exists to stop.
+function scpPendingAdd(resource,rec){
+  if(!rec||!rec.id) return false;
+  var q=scpPendingAll();
+  var i=-1;
+  for(var n=0;n<q.length;n++){if(q[n]&&q[n].resource===resource&&q[n].rec&&q[n].rec.id===rec.id){i=n;break;}}
+  var entry={resource:resource,rec:rec,status:'pending',
+    queued_at:(i>=0&&q[i].queued_at)||new Date().toISOString(),
+    attempts:(i>=0&&q[i].attempts)||0,
+    last_error:scpLastErrCode(resource)||'NETWORK',refused_message:''};
+  if(i>=0)q[i]=entry;else q.push(entry);
+  // scpSt()'s RETURN IS READ. "It will upload when you reconnect" is a promise,
+  // and a full or unavailable localStorage makes it false. The caller is told
+  // which promise it can actually make.
+  return scpSt(SCP_PENDING_KEY,q);
+}
+
+var _scpFlushing=false;
+async function scpFlushPending(){
+  var q=scpPendingAll();
+  var pending=q.filter(function(p){return p&&p.status==='pending';});
+  if(_scpFlushing||!pending.length)return {sent:0,refused:0,left:pending.length,ran:false};
+  _scpFlushing=true;
+  var sent=0,refusedNow=0;
+  var keep=q.filter(function(p){return p&&p.status!=='pending';});
+  try{
+    for(var i=0;i<pending.length;i++){
+      var p=pending[i];
+      var ok=await scpData('write',p.resource,p.rec);
+      if(ok){sent++;continue;}
+      if(scpWriteRefused(p.resource)){
+        // THE SERVER LOOKED AT IT AND SAID NO. Retrying forever would be a
+        // queue that never drains. It stops being pending and becomes a
+        // REFUSED entry the banner keeps showing -- a pending row quietly
+        // dropped is the silent failure this feature exists to remove, and a
+        // quote is what a customer is priced from.
+        //
+        // THE LOCAL ROW IS DELIBERATELY NOT DELETED. The server will not take
+        // it, so the two now disagree, and that is worth saying out loud
+        // rather than resolving by erasing work somebody did and can see.
+        p.status='refused';
+        p.refused_message=scpLastErrText(p.resource)||'the server did not accept it';
+        keep.push(p);refusedNow++;continue;
+      }
+      // Still unreachable. Stop rather than throwing the rest of the queue at
+      // a connection that is plainly down.
+      p.attempts=(p.attempts||0)+1;
+      p.last_error=scpLastErrCode(p.resource)||'NETWORK';
+      keep=keep.concat(pending.slice(i));
+      break;
+    }
+    scpSt(SCP_PENDING_KEY,keep);
+  }finally{_scpFlushing=false;}
+  return {sent:sent,refused:refusedNow,
+    left:keep.filter(function(p){return p&&p.status==='pending';}).length,ran:true};
+}
+
+// Reports what happened and NEVER silently succeeds. `quiet` suppresses only
+// the nothing-to-do case, never a failure.
+async function scpFlushAndReport(quiet){
+  var r=await scpFlushPending();
+  scpRenderPendingBanner();
+  if(!r.ran){if(!quiet)scpToast('Nothing is waiting to upload');return r;}
+  if(r.sent)scpRQuotes();
+  var bits=[];
+  if(r.sent)bits.push(r.sent+' uploaded');
+  if(r.refused)bits.push(r.refused+' REFUSED by the server');
+  if(r.left)bits.push(r.left+' still waiting -- no connection');
+  scpToast(bits.length?bits.join(', '):'Nothing changed',(r.refused||r.left)?7000:3500);
+  return r;
+}
+
+// The banner. It names the COVERAGE as well as the count, because a banner
+// reading "0 waiting" over an app whose other writes are not queued at all
+// would be the clearance this whole feature exists to avoid.
+function scpRenderPendingBanner(){
+  var el=scp$('scp-pending-banner');
+  if(!el)return;
+  var pend=scpPendingCount(),ref=scpRefusedAll();
+  if(!pend&&!ref.length){el.style.display='none';el.innerHTML='';return;}
+  var parts=[];
+  if(pend)parts.push('<b>'+pend+' record(s) are on this device only</b> and have not reached the server. '
+    +'They will upload when a connection returns.');
+  if(ref.length)parts.push('<b>'+ref.length+' record(s) were REFUSED by the server</b> and will not be retried: '
+    +ref.map(function(p){return scpH(p.resource+' '+((p.rec&&p.rec.id)||'?')+' -- '+(p.refused_message||'no reason given'));}).join('; ')
+    +'. The local copy is kept, so the two disagree until somebody decides.');
+  parts.push('<span style="opacity:.8">Queued writes cover '+scpH(scpPendingCoverage().join(', '))
+    +' only &mdash; other writes in this app still have no retry.</span>');
+  el.innerHTML='<div style="background:#fff8e1;border:1px solid #f0c36d;border-radius:8px;padding:10px 12px;'
+    +'font-size:12px;line-height:1.6;color:#6b4e00;margin:10px 0">'+parts.join('<br>')
+    +'<div style="margin-top:8px"><button class="scp-btn scp-bo scp-bs" onclick="scpFlushAndReport()">Try uploading now</button></div></div>';
+  el.style.display='';
+}
+
 async function scpSendDesignToQuote(){
   var rec=scpDwid?scpDesigns().find(function(x){return x.id===scpDwid;}):null;
   if(!rec||!rec.approved){scpToast('Design must be approved first');return;}
@@ -2946,18 +3135,52 @@ async function scpSendDesignToQuote(){
   // TWO WRITES, TWO FACTS, AND THE MESSAGE NOW NAMES WHICHEVER FAILED. A quote
   // is what a customer is priced from; "sent" has to mean sent.
   var quoteSynced=await scpData('write','scp_quotes',qrec);
+  // QUEUED THE MOMENT IT DID NOT LAND, and only when nobody looked at it. A
+  // row the server REFUSED must not be retried -- it would be a queue that
+  // never drains -- and scpWriteRefused() is the distinction scpData now
+  // records. Not queued is not the same as not kept: the local copy stays
+  // either way, and the banner says which state it is in.
+  var quoteQueued=(!quoteSynced&&!scpWriteRefused('scp_quotes'))?scpPendingAdd('scp_quotes',qrec):false;
+  var quoteRefused=!quoteSynced&&scpWriteRefused('scp_quotes');
   rec.quote_id=qrec.id;
   var syncResult=await scpSaveDesignRecord(rec);
-  scpRQuotes();scpUpdateApprovalUI(rec);
-  var sendBtn=scp$('scp-dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
+  var designQueued=(!syncResult&&!scpWriteRefused('scp_designs'))?scpPendingAdd('scp_designs',rec):false;
+  scpRQuotes();scpUpdateApprovalUI(rec);scpRenderPendingBanner();
+
+  // ── THE BUTTON NOW FOLLOWS THE OUTCOME (2026-09-18) ───────────────────
+  // It used to be disabled and relabelled "Sent to Quoting (Q-...)"
+  // UNCONDITIONALLY, three lines before the branch that decides whether
+  // anything was sent. So both failure messages said "try again with a
+  // connection" while the only control that would retry was disabled and
+  // wearing the exact claim the message was retracting. The sentence was
+  // corrected on 2026-09-15 and the affordance was not; this is the other
+  // half. A control that contradicts the text beside it is worse than either
+  // one alone, because the user believes the control.
+  var sendBtn=scp$('scp-dw-send-quote-btn');
+  var landed=quoteSynced&&syncResult;
+  if(landed){
+    sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
+  }else{
+    // STILL PRESSABLE, and labelled for what pressing it now does. The guard
+    // at the top of this function returns early on rec.quote_id, so a second
+    // press cannot mint a second quote -- it routes to the queue instead.
+    sendBtn.disabled=false;sendBtn.textContent='Retry upload ('+qrec.id+')';
+    sendBtn.onclick=function(){scpFlushAndReport();};
+  }
+
   // NAMED PER WRITE rather than one sentence for both. "Both reached the
   // server", "the quote did not", and "the design did not" are three different
-  // things to do next, and the previous message could only say the third.
+  // things to do next, and the original message could only say the third.
   var scpSentMsg;
-  if(quoteSynced&&syncResult){scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in';}
-  else if(!quoteSynced){scpSentMsg='Draft '+qrec.id+' is on THIS DEVICE ONLY -- the quote did not reach the server, so nobody else can price it. Try again with a connection.';}
-  else{scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- the quote reached the server but the DESIGN record did not, so the two disagree until you retry with a connection.';}
-  scpToast(scpSentMsg,(quoteSynced&&syncResult)?4000:7000);
+  if(landed){scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in';}
+  else if(quoteRefused){scpSentMsg='Draft '+qrec.id+' was REFUSED by the server -- '
+    +(scpLastErrText('scp_quotes')||'no reason given')
+    +'. It is on this device only and will NOT be retried automatically.';}
+  else if(!quoteSynced){scpSentMsg='Draft '+qrec.id+' is on THIS DEVICE ONLY -- the quote did not reach the server, so nobody else can price it. '
+    +(quoteQueued?'It is queued and will upload when a connection returns.':'It could NOT be queued either, so this device is the only copy -- do not close this browser without noting it down.');}
+  else{scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- the quote reached the server but the DESIGN record did not, so the two disagree. '
+    +(designQueued?'The design is queued and will upload when a connection returns.':'The design could NOT be queued either.');}
+  scpToast(scpSentMsg,landed?4000:7000);
 }
 
 function scpRSched(){
