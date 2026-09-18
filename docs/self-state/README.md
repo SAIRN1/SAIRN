@@ -20,7 +20,21 @@ git push
 
 `<session>` is the name in that clone's own `.git/sairn-session` marker — not
 its folder name, and not a guess. `python tools/sairn_session_identity.py`
-prints it.
+prints it, which is why the one-liner below works unchanged in every clone:
+
+```
+S=$(python tools/sairn_session_identity.py) \
+  && python tools/sairn_self_state.py --json > "docs/self-state/self-state-$S.json" \
+  ; git add docs/self-state && git commit -q -m "state($S): derived self row" && git push
+```
+
+**Two things that look like errors and are not.** The tool exits **1** when
+something needs attention and **2** when a source could not be read — only 2 is
+a failure to produce a row, so the `;` above is deliberate and a `&&` there
+would silently skip the commit on every clone that has anything to report.
+And the row records the tree as **dirty by one file — itself**: writing
+`self-state-<session>.json` modifies the working copy before `git status` is
+read. That entry is the row's own file and nothing else.
 
 ## Assembling the bundle
 

@@ -4,11 +4,11 @@
  "git": {
   "repo": "C:\\Users\\marsh\\Documents\\SAIRN-hank",
   "branch": "main",
-  "head": "e2d1ff4f",
-  "dirty": [],
-  "untracked": [
-   "docs/self-state/"
+  "head": "93d8aef2",
+  "dirty": [
+   " M docs/self-state/self-state-hank.json"
   ],
+  "untracked": [],
   "behind": 0,
   "ahead": 0,
   "unpushed": []
@@ -16,6 +16,11 @@
  "git_derivation": "SELF",
  "git_not_derived_because": "",
  "attributable_commits": [
+  {
+   "sha": "93d8aef2b67b",
+   "date": "2026-09-18",
+   "subject": "chore(claims): hank releases self-state-tool"
+  },
   {
    "sha": "6be554f67371",
    "date": "2026-09-18",
