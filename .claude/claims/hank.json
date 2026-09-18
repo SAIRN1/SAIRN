@@ -2175,6 +2175,16 @@
       "claimed_at_epoch": 1789729763.9266112,
       "status": "released",
       "released_at": "2026-09-18T11:24:43Z"
+    },
+    {
+      "id": "hank-1789730725",
+      "session": "hank",
+      "subject": "record-parity-interface",
+      "task": "settle buildGroup throws vs recover refuses",
+      "claimed_at": "2026-09-18T11:25:25Z",
+      "claimed_at_epoch": 1789730725.2008722,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
