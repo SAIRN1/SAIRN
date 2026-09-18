@@ -1447,8 +1447,8 @@
       "task": "review cc three way match mutation control sb_po sb_recv",
       "claimed_at": "2026-09-18T14:43:54Z",
       "claimed_at_epoch": 1789742634.5994468,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:51:40Z"
     }
   ]
 }
