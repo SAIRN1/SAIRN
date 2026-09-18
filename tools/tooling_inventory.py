@@ -577,6 +577,16 @@ PURPOSES = {
     'sc_tier_a_write_gate_live_probe.py': ('LIVE', 'a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass'),
     'rf_roundtrip_probe.py': ('LIVE', 'a SAIRNroofing write read back through the real API'),
     'probe_public_book_guardian.py': ('LIVE', "the public booking endpoint's guards, live"),
+    'source_manifest.py': ('GENERATOR',
+        'the sha256 of every source file vercel.json copies into the deploy '
+        'output, at one commit, as a signed-able manifest.json. IT IS NOT SLSA '
+        'BUILD PROVENANCE FOR THE PRODUCT and its own first line says so -- '
+        'Vercel deploys from the push and no workflow touches the deployed '
+        'bytes, so this attests what a commit was SUPPOSED to deploy, never '
+        'that Vercel deployed it. Run by .github/workflows/source-manifest.yml '
+        'on push; refuses with exit 2 if vercel.json\'s buildCommand is not the '
+        'exact string it models, because a manifest of a file set that no '
+        'longer deploys would still look clean'),
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),

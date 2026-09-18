@@ -1,0 +1,140 @@
+# .github/workflows/source-manifest.yml
+#
+# A SIGNED MANIFEST OF WHAT A COMMIT WAS SUPPOSED TO DEPLOY.
+# Michael's decision, 2026-09-18: option C of
+# docs/2026-09-18-slsa-build-provenance-scoping.md.
+#
+# ── THE WORD IS THE WHOLE RISK, SO IT IS SETTLED IN THE FIRST PARAGRAPH ─────
+# THIS IS NOT SLSA BUILD PROVENANCE FOR THE DEPLOYED PRODUCT, and nothing that
+# reads this file or its output should ever say it is.
+#
+# What is technically true: `actions/attest-build-provenance` below produces
+# build provenance for `manifest.json` -- a file this workflow genuinely does
+# build, from this commit. That is honest and it is narrow. What it does NOT
+# cover is the thing somebody will want it to cover:
+#
+#   * Vercel builds and deploys from the git push. NO GitHub Actions workflow
+#     touches the deployed bytes, including this one. The attestation cannot
+#     say Vercel served these files -- only that at this commit, these were the
+#     files vercel.json says get copied.
+#   * A signature is not a quality judgement. Same sentence as the attest step
+#     in nightly-backup.yml, for the same reason.
+#
+# Real SLSA on the product needs option A of the scoping doc -- move the build
+# into Actions and deploy the output -- which trades a working zero-config
+# deploy, and a token with production deploy authority, for a build that copies
+# files. That is a decision, it was not taken, and this workflow does not
+# quietly become it.
+#
+# ── WHAT IT IS ACTUALLY FOR ────────────────────────────────────────────────
+# `tools/deploy_verify_notify.py` already hashes the live site against
+# origin/main after a push. That is a DETECTION, on ONE file, at ONE moment,
+# with no signed record of what the answer was supposed to be. This manifest is
+# the other half: a signed, retrievable statement of the intended digests for
+# all 24 deployed paths, which a future widened check can compare against
+# instead of re-deriving from a repo that has moved on.
+#
+# ── WHY ON push AND NOT ON A SCHEDULE ──────────────────────────────────────
+# A manifest is a statement about a COMMIT. A nightly one would describe
+# whatever HEAD happened to be at 03:40 and would say nothing about the twelve
+# commits that deployed during the day -- which is precisely the window where
+# somebody asks what was live. Vercel deploys per push, so the manifest is per
+# push.
+#
+# ── THE GENERATOR REFUSES RATHER THAN GOING STALE ──────────────────────────
+# tools/source_manifest.py compares vercel.json's buildCommand VERBATIM and
+# exits 2 on any difference, so a build-command change fails this workflow
+# loudly instead of producing a signed manifest of a file set that is no longer
+# deployed. Exit 2 is a COULD-NOT-RUN and it is a failure here, never a skip --
+# the step below does not swallow it.
+#
+# NOT VERIFIED: this workflow has never run. Read the first real run before
+# treating the attestation as exercised -- the same caveat nightly-backup.yml
+# carries on its own attest step, and for the same reason.
+
+name: source-manifest
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Scoped to this workflow and nothing else in the repo gains them.
+# `id-token: write` signs the attestation; `attestations: write` records it.
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+concurrency:
+  # Two pushes in quick succession produce two manifests for two different
+  # commits, and BOTH are wanted -- a manifest is per-commit, so cancelling the
+  # older one would leave a deployed commit with no record. Grouped per-sha
+  # rather than per-workflow so a re-run of the same sha does not race itself.
+  group: source-manifest-${{ github.sha }}
+  cancel-in-progress: false
+
+jobs:
+  manifest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      # fetch-depth 1 is enough: the generator reads `ls-tree` and `cat-file`
+      # at HEAD only. It does NOT walk history, so a full clone of a repo
+      # carrying a 2.6 MB stonedesk.html and 901 archived commits would be
+      # bought for nothing.
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # ── GENERATE ───────────────────────────────────────────────────────────
+      # No `|| true`, no `continue-on-error`. Exit 2 from the generator means
+      # the deployed file set could not be determined, and a workflow that
+      # treated that as a skip would go green having attested nothing -- the
+      # fail-CLOSED rule in CLAUDE.md, in the place it is easiest to get wrong.
+      - name: Build the source manifest
+        run: |
+          set -euo pipefail
+          python tools/source_manifest.py --out manifest.json
+          echo "--- manifest head ---"
+          head -c 800 manifest.json
+
+      # A generator that emitted a manifest describing nothing would satisfy
+      # every step above. The count is checked here rather than trusted,
+      # against the same `git ls-tree` the generator used -- two routes to the
+      # same number, and the tool's own file_count is not one of them.
+      - name: Refuse a manifest that covers nothing
+        run: |
+          set -euo pipefail
+          HTML=$(git ls-tree --name-only HEAD | grep -c '\.html$')
+          LISTED=$(python -c "import json,sys; print(len(json.load(open('manifest.json'))['files']))")
+          echo "top-level .html in tree: $HTML ; paths in manifest: $LISTED"
+          # +2 for the two named copies: dist/index.html and dist/sw.js.
+          if [ "$LISTED" -ne "$((HTML + 2))" ]; then
+            echo "::error::The manifest lists $LISTED paths; the tree has $HTML top-level"
+            echo "::error::.html files plus 2 named copies, so it should list $((HTML + 2))."
+            echo "::error::Something was dropped. A manifest that is missing files is worse"
+            echo "::error::than none, because it looks complete."
+            exit 1
+          fi
+
+      # ── ATTEST ─────────────────────────────────────────────────────────────
+      # The subject is manifest.json. See the header: this signs the MANIFEST,
+      # which this workflow did build, and says nothing about the Vercel deploy.
+      - name: Attest the manifest
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: manifest.json
+
+      # Kept so the manifest can actually be fetched later. An attestation
+      # nobody can pair with the file it describes is a signature in a drawer --
+      # the same gap §3 of the scoping doc records on the backup side.
+      - name: Keep the manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-manifest-${{ github.sha }}
+          path: manifest.json
+          retention-days: 90

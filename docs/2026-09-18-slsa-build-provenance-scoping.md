@@ -93,6 +93,40 @@ and it does not trade a working deploy for a stronger word. **A is the only one
 that yields real SLSA on the product, and it is a real cost for a build that
 copies files.** Not built here — it is a decision, not a task.
 
+### DECIDED AND BUILT — C, on Michael's direction, 2026-09-18 (Fourth)
+
+`tools/source_manifest.py` + `.github/workflows/source-manifest.yml`, on push to
+`main`. 24 paths — the 22 top-level `*.html`, plus `dist/index.html` and
+`dist/sw.js`, the two named copies in the build command. Verified locally:
+`python tests/source_manifest_probe.py`, 11/11.
+
+**Three things in it are the whole design, and each is load-bearing:**
+
+* **It hashes GIT BLOBS, not the working tree.** A clone can hold CRLF while
+  the blob is LF (`.gitattributes` is not retroactive — three false alarms on
+  2026-09-03 came from exactly that), and the working tree holds untracked
+  files a Vercel checkout never sees. A manifest generated on a Windows clone
+  and one generated on a Linux runner have to be the same bytes or the whole
+  artifact is noise.
+* **It compares `buildCommand` VERBATIM and refuses on any difference,
+  exit 2.** The manifest's only meaning is "the files vercel.json copies". Edit
+  that command and the generator is describing fiction — *and would keep
+  emitting a clean manifest*. Deliberately brittle: a refusal costs five
+  minutes, a silent stale manifest costs a wrong answer at the one moment
+  anybody reads one.
+* **The workflow re-counts the file set with `git ls-tree` rather than trusting
+  the tool's own `file_count`.** A manifest missing files is worse than none,
+  because it looks complete.
+
+**A IS STILL NOT TAKEN AND THIS DOES NOT DRIFT INTO IT.** `attest-build-
+provenance` here signs `manifest.json` — a file this workflow genuinely does
+build. It says nothing about the Vercel deploy, and both the workflow header
+and the manifest's own `what_this_is` field say so in the artifact rather than
+only in a comment nobody ships.
+
+⚠ **UNEXERCISED.** The workflow has never run. Same caveat as the backup
+attestation below it, and for the same reason: written is not proven.
+
 ---
 
 ## 3. What is NOT claimed

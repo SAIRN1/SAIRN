@@ -537,6 +537,61 @@ var COMPUTATION_STANDARDS = {
   // Subdivision lettering is real and citable: (a) days, (b) the last-day
   // omission, (d) months. Backward left blank -- Rule 107 does not address
   // backward-counted periods.
+  //
+  // ── PENNSYLVANIA ROLLS FORWARD ON A STATED ASSUMPTION, NOT ON A CITATION.
+  //    READ THIS BEFORE TRUSTING A PA DATE THAT LANDED ON A WEEKEND OR
+  //    HOLIDAY. (2026-09-18, Michael's direction) ──────────────────────────
+  // `impl: 'frcp_6a'` on the line below ROLLS the last day forward to the next
+  // day that is not a Saturday, Sunday or holiday. RULE 107(b) DOES NOT SAY
+  // THAT. Verbatim, and this is its entire text on the point:
+  //
+  //     "Whenever the last day of any such period shall fall on Saturday or
+  //      Sunday, or on any day made a legal holiday by the laws of this
+  //      Commonwealth or of the United States, such day shall be omitted from
+  //      the computation."
+  //
+  // There is no "the period runs until the end of the next day" anywhere in
+  // Rule 107, and 1 Pa.C.S. Sec. 1908 uses the same words. Ohio Civ.R. 6(A),
+  // MCR 1.108(1) and Ind. T.R. 6(A) each say it explicitly. Pennsylvania omits,
+  // and OMISSION AND ROLLOVER ARE TWO DIFFERENT OPERATIONS:
+  //
+  //   omit-and-continue  the day does not count, so the period carries to the
+  //                      next day that is not omitted -- EQUIVALENT TO ROLLOVER
+  //   omit-and-stop      the day is struck from the period, which then ends on
+  //                      the day BEFORE it -- EARLIER than rollover
+  //
+  // IF OMIT-AND-STOP IS THE RIGHT READING, THIS ENGINE COMPUTES LATE on every
+  // Pennsylvania period whose last day lands on a weekend or holiday: it
+  // returns Monday when the last day to act was Friday. That is the direction
+  // that loses a filing. Every other disclosed gap in this file fails EARLY;
+  // this one does not, which is why it is written at the standard rather than
+  // left as a property of the implementation nobody would think to question.
+  //
+  // WHAT IS ACTUALLY CLAIMED, stated as narrowly as it is true: Michael
+  // directed on 2026-09-18 that the period rolls. That is omit-and-continue and
+  // it matches settled Pennsylvania practice. IT IS A STATED ASSUMPTION AND NOT
+  // A CITATION -- no authority saying "runs until the next day" for
+  // Pennsylvania has been read, and practice is not what this engine's audit
+  // trail cites. It stands until counsel confirms it, which is one sentence and
+  // is already on the bundled lawyer's question beside Illinois and Kentucky.
+  // docs/sairnlaw-pennsylvania-deadline-seed-gate.md Sec. 2 is the full
+  // statement of the ambiguity.
+  //
+  // IT IS DISCLOSED TO THE CALLER, NOT ONLY HERE. JURISDICTION_COVERAGE.pa
+  // carries direction 'late' and a late_exposure block, so the assumption rides
+  // on every Pennsylvania result rather than living in a comment the person
+  // relying on the date will never open. It is the SECOND late-direction entry
+  // on this platform and the first that is an ASSUMPTION rather than an
+  // unmodellable trigger -- see the note above that table.
+  //
+  // IF COUNSEL SAYS OTHERWISE THIS IS NOT A COMMENT EDIT. `impl` would need an
+  // omit-and-stop operation the engine does not have, and every live
+  // Pennsylvania rule would return a date one or more days earlier. There are
+  // ELEVEN of them, counted on 2026-09-18 across the seed files rather than
+  // taken from the open-work index -- which said Pennsylvania was "NOT SEEDED"
+  // while all eleven were live: sairnlaw_deadline_seed_pennsylvania (2),
+  // _state_appellate (5), _state_discovery (2), _state_production (1),
+  // _subpoena_deposition (1).
   pa_rja_107: { label: 'Pa.R.J.A. 107', impl: 'frcp_6a', base_period_suffix: '(a)', months_years_suffix: '(d)', rollover_suffix_forward: '(b)', rollover_suffix_backward: '' },
   // Illinois 5 ILCS 70/1.11 (Statute on Statutes). Read verbatim from the
   // Illinois General Assembly's own site on 2026-08-23; the whole operative
@@ -2178,6 +2233,27 @@ var COMPUTATION_STANDARDS = {
 // `direction` IS WORST-CASE, NOT TYPICAL. Alabama's other two gaps are EARLY
 // and safe; the field still reads 'late', because a caller switching on it is
 // asking "can this be late?" and for Alabama the answer is yes.
+//
+// ── THERE ARE NOW TWO, AND THE SECOND IS THE DECISION THAT PARAGRAPH ASKED
+//    FOR (2026-09-18, Michael's direction) ─────────────────────────────────
+// The paragraph above used to end "THERE IS EXACTLY ONE, AND THAT IS THE
+// POINT", and the point held: the second did not arrive quietly. It was
+// directed, and the contract test asserting `['al']` failed on the way in --
+// that failure is what forced this note to be written rather than the count
+// silently becoming two.
+//
+// PENNSYLVANIA IS A DIFFERENT SPECIES OF LATE AND THE SHARED LABEL MUST NOT
+// COLLAPSE THEM. Alabama's exposure is an UNMODELLABLE TRIGGER: Sec. 1-3-8(f)(1)
+// is real law the engine cannot see fire, and nobody can fix that. Pennsylvania's
+// is AN ASSUMPTION THIS ENGINE IS MAKING: Pa.R.J.A. 107(b) never says the period
+// rolls, the engine rolls it, and the justification is practice rather than a
+// citation. An assumption can be SETTLED -- one sentence from counsel either
+// confirms it or turns eleven live rules into a correction. See
+// COMPUTATION_STANDARDS.pa_rja_107 for the full statement.
+//
+// A THIRD IS STILL A DECISION AND NOT A DEFAULT. The invariant below is
+// unchanged and remains the only thing standing between this table and a quiet
+// accumulation of late-direction entries.
 var JURISDICTION_COVERAGE = {
   ks: {
     complete: false,
@@ -2238,6 +2314,21 @@ var JURISDICTION_COVERAGE = {
     },
     summary: 'Alabama county-scoped holidays and weather closures are NOT modelled (both EARLY, safe). ONE EXCEPTION RUNS LATE and is disclosed rather than modelled: Ala. Code 1-3-8(f)(1) lets an office stay OPEN on a state holiday on 60 days notice, and this engine would roll off that day anyway.',
     detail: "The calendar is the union Ala. R. Civ. P. 6(a)(4) requires -- the eleven days the rule names, plus \"any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8\" -- derived for 2026 and checked by day-of-week. TWO GAPS RUN EARLY AND ARE SAFE. (1) MARDI GRAS: Sec. 1-3-8(e)(1) makes it a holiday and closes all state offices in BALDWIN AND MOBILE COUNTIES only, and a jurisdiction+year calendar cannot express a two-county day; omitting it is correct in the other 65 counties and EARLY in those two. (2) Rule 6(a)(3) also rolls the last day when \"weather or other conditions make the clerk's office inaccessible\", which is unknowable in advance; omitting it is EARLY. ONE GAP RUNS LATE, AND IT IS FLAGGED RATHER THAN BURIED: Sec. 1-3-8(f)(1) lets a state office STAY OPEN on a state holiday on sixty days' written notice. If a court did that and this engine rolled the deadline off that day anyway, the date shown would be LATER than the true deadline -- the direction that loses a filing. It is discretionary, per-office and not published anywhere this engine can read, so it cannot be modelled; it is disclosed instead. The same question in a sharper form is WISCONSIN, and the two were resolved differently -- corrected 2026-09-01, this sentence previously said Wisconsin was not seeded and it has been since August. Wis. Stat. 801.15(1)(b) rolls on \"a day the clerk of courts office is closed\" rather than on any list, and that state's own 2026 closure schedule shows counties genuinely open on listed holidays; Wisconsin resolved it by carrying ONLY the three days every county is closed, which is under-inclusive and therefore EARLY. Alabama cannot do the same, because its exposure is a discretionary notice provision rather than a published schedule to intersect. Before relying on an Alabama date that falls on or near a listed holiday, confirm that the court was in fact closed."
+  },
+  // THE SECOND LATE-DIRECTION ENTRY, AND IT IS AN ASSUMPTION RATHER THAN AN
+  // UNMODELLABLE TRIGGER -- see the note above this table, and
+  // COMPUTATION_STANDARDS.pa_rja_107 for the rule text it turns on.
+  pa: {
+    complete: false,
+    direction: 'late',
+    late_exposure: {
+      authority: 'Pa.R.J.A. 107(b) (201 Pa. Code Sec. 107); 1 Pa.C.S. Sec. 1908',
+      summary: 'Rule 107(b) says a weekend or holiday last day "shall be omitted from the computation" and never says the period runs to the next day. This engine ROLLS it forward. If "omitted" instead means the period ends on the day BEFORE, every Pennsylvania date this engine moved off a Saturday, Sunday or holiday is LATER than the true deadline.',
+      why_not_refused: 'Michael directed on 2026-09-18 that the period rolls -- omit-and-continue, which matches settled Pennsylvania practice. THAT IS A STATED ASSUMPTION AND NOT A CITATION: no authority saying "runs until the next day" for Pennsylvania has been read, and practice is not what this audit trail cites. Refusing instead would withdraw eleven live Pennsylvania rules over a reading that is almost certainly right, so the assumption is made openly and carried on every result rather than hidden or withdrawn.',
+      caller_action: 'Before relying on a Pennsylvania date that was moved off a Saturday, Sunday or holiday, confirm the rolling reading of Pa.R.J.A. 107(b) with counsel. One sentence settles it; the question sits on the bundled lawyer\'s list beside Illinois and Kentucky.'
+    },
+    summary: 'Pennsylvania\'s weekend/holiday rollover is an ASSUMPTION, not a citation. Pa.R.J.A. 107(b) says such a day is "omitted from the computation" and never says the period runs to the next day; this engine rolls it forward on Michael\'s direction of 2026-09-18, pending confirmation from counsel. If that reading is wrong, this date is LATER than the true deadline. The holiday calendar itself is the statutory union of Pennsylvania and federal holidays and deliberately omits days the courts merely close on, which is EARLIER and safe.',
+    detail: "THE LATE EXPOSURE IS THE ROLLOVER ITSELF, which is unlike every other entry on this table. Pa.R.J.A. 107(b), verbatim: \"Whenever the last day of any such period shall fall on Saturday or Sunday, or on any day made a legal holiday by the laws of this Commonwealth or of the United States, such day shall be omitted from the computation.\" 1 Pa.C.S. Sec. 1908 uses the same words. Ohio Civ.R. 6(A), Mich. Ct. R. 1.108(1) and Ind. T.R. 6(A) all say \"the period runs until the end of the next day\" explicitly; Pennsylvania does not say it anywhere. TWO READINGS: omit-and-continue, where the day does not count and the period carries to the next day that is not omitted (equivalent to rollover, and how Pennsylvania practice treats it), and omit-and-stop, where the day is struck and the period ends on the day before (EARLIER). This engine implements the first, on Michael's direction of 2026-09-18 and on practice rather than on a citation. If the second reading is right, every Pennsylvania date this engine moved off a weekend or holiday is LATE -- Monday returned where Friday was the last day to act. ELEVEN LIVE RULES DEPEND ON IT, counted across the seed files on 2026-09-18: sairnlaw_deadline_seed_pennsylvania (2), _state_appellate (5), _state_discovery (2), _state_production (1), _subpoena_deposition (1). THE REST OF PENNSYLVANIA'S COVERAGE RUNS EARLY AND IS SAFE. The calendar is the union of two sovereigns' lists that 107(b) names -- 44 P.S. Sec. 11 plus the federal list, so Pennsylvania supplies Good Friday, Flag Day and general Election Day while the United States supplies Juneteenth, which 44 P.S. Sec. 11 omits. It DELIBERATELY EXCLUDES days Pennsylvania courts commonly close on but no statute makes holidays -- the day after Thanksgiving, Christmas Eve, primary election day and county-specific closures in the AOPC matrix -- because 107(b) asks a STATUTORY question, and adding a non-holiday would roll a deadline that should not roll, which is the same late direction as the rollover question above. A Pennsylvania matter triggered before 2024-01-01 is REFUSED rather than computed: Pa.R.C.P. 106 was rescinded that day and its pre-2024 text was never read verbatim here."
   },
   ar: {
     complete: false,

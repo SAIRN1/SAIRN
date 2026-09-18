@@ -210,7 +210,7 @@ check('and it records that Rule 6 was amended twice without a redline',
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained hi and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'mt', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
+  ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'mt', 'ne', 'nh', 'nm', 'nv', 'pa', 'ut', 'va', 'wi']);
 check('Hawaiʻi adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // Hawaiʻi is the ONLY two-day extension. Every other enumerated standard that

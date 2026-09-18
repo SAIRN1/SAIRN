@@ -3,6 +3,51 @@
 **Run 2026-09-18 (Fourth).** Verdict at §6: **BLOCKED on one legal question**,
 and the question is narrow, nameable and not mine.
 
+---
+
+## 0. RESOLVED THE SAME DAY, AND THE GATE'S OWN PREMISE WAS WRONG (2026-09-18)
+
+Read this before §2, because two things below are now out of date and one of
+them was never true.
+
+**PENNSYLVANIA WAS ALREADY SEEDED WHEN THIS GATE WAS RUN.** The gate says "DO
+NOT SEED ON THE ASSUMPTION" and the open-work row said **NOT SEEDED**. Both
+describe a state that had not existed since 2026-08-22. Counted across the seed
+files on 2026-09-18: **eleven live `pa` rules** —
+`sairnlaw_deadline_seed_pennsylvania` (2), `_state_appellate` (5),
+`_state_discovery` (2), `_state_production` (1), `_subpoena_deposition` (1) —
+and `COMPUTATION_STANDARDS.pa_rja_107` has mapped to `impl: 'frcp_6a'`, which
+**rolls**, since Phase 3. So the gate was not standing in front of a decision.
+**It was describing, as a thing to avoid, a thing already shipped.** That is
+worth more than the legal question: a gate that re-derives a state from scratch
+and never checks whether the engine already answers for it will keep producing
+confident findings about the wrong repository.
+
+**MICHAEL'S DIRECTION, 2026-09-18: the period ROLLS to the next day past a
+weekend or holiday** — omit-and-continue. The engine's behaviour is unchanged;
+what changed is that it is now **stated** rather than implied by an
+implementation choice.
+
+**IT IS RECORDED AS AN ASSUMPTION, NOT AS A CITATION, IN THREE PLACES:**
+
+* `COMPUTATION_STANDARDS.pa_rja_107` — the full statement, at the standard.
+* `JURISDICTION_COVERAGE.pa` — `direction: 'late'` with a `late_exposure`
+  block, so it **rides on every Pennsylvania result** rather than living in a
+  comment the person relying on the date will never open. This is the platform's
+  **second** late-direction entry and the first that is an *assumption* rather
+  than an unmodellable trigger; the note above that table says why a second one
+  had to be a decision.
+* `api/_lib/deadline-coverage-contract.test.js` — the arms that pinned
+  `['al']` **failed on the way in**, which is what they were written for, and
+  the expectation was changed with its reasoning attached.
+
+**§2 BELOW STANDS AS THE STATEMENT OF THE AMBIGUITY.** Nothing in it is
+retracted: no authority saying *"runs until the end of the next day"* for
+Pennsylvania has been read, the reading comes from practice, and **if
+omit-and-stop is right, all eleven rules return dates that are LATE.** The
+lawyer's question is still open and still one sentence long. What changed is
+that the exposure is now disclosed to the caller instead of being invisible.
+
 **Why Pennsylvania.** Ohio, Michigan and Indiana were the three states with a
 computation standard already in the engine, and all three are now gated. That
 criterion is exhausted. The next one is population against source access, and
@@ -140,3 +185,11 @@ unblocks a 13-million-person state.**
 on questions exactly this size, and the reason each was recorded rather than
 worked around is that a deadline engine which is confidently wrong is worse than
 one that refuses.
+
+**⚠ THAT LAST SENTENCE WAS OVERTAKEN THE SAME DAY — see §0.** Pennsylvania was
+already seeded when this was written, so "do not seed" was advice about a
+decision that had been taken three weeks earlier. Michael directed the rolling
+reading on 2026-09-18 and the assumption is now disclosed on every Pennsylvania
+result rather than hidden. **The verdict this section renders is still the right
+one about the SOURCES; it was wrong about the STATE OF THE REPO**, and the
+correction runs in that direction.
