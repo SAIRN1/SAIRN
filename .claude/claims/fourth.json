@@ -1645,6 +1645,16 @@
       "claimed_at_epoch": 1789733539.3224044,
       "status": "released",
       "released_at": "2026-09-18T12:21:26Z"
+    },
+    {
+      "id": "fourth-1789734947",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "session identity spoofable clone directory name shared marker, csv-cell null blank scope, SLSA build provenance workflows, supabase failure history circuit breaker threshold, sairnlaw next jurisdiction gate",
+      "claimed_at": "2026-09-18T12:35:47Z",
+      "claimed_at_epoch": 1789734947.981061,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
