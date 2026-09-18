@@ -72,8 +72,20 @@ concurrency:
   group: nightly-backup
   cancel-in-progress: false
 
+# ── BUILD PROVENANCE (2026-09-18) ──────────────────────────────────────────
+# The dump is the ONE artifact this platform produces that leaves it: an
+# encrypted database backup, pushed to a third-party bucket, that somebody will
+# one day restore from under time pressure. Provenance answers the question
+# nobody can answer at that moment -- IS THIS THE FILE OUR WORKFLOW MADE, from
+# this commit, or something that arrived in the bucket another way.
+#
+# `id-token: write` is what lets the attestation be signed; `attestations:
+# write` is what lets it be recorded. Both are scoped to this job and nothing
+# else in the file gains them.
 permissions:
   contents: read
+  id-token: write
+  attestations: write
 
 jobs:
   dump-and-prove-it-restores:
@@ -161,6 +173,26 @@ jobs:
             echo "::error::pass this floor. The restore + coherence check is what catches that."
             exit 1
           fi
+
+      # ── ATTEST BEFORE UPLOAD, AND THE ORDER IS THE POINT ─────────────────
+      # The subject is the local file, attested BEFORE it is pushed to R2, so
+      # the provenance covers the bytes THIS job produced rather than whatever
+      # is in the bucket afterwards. Attesting the uploaded copy would prove
+      # only that something with that digest exists, which is what the bucket
+      # already tells you.
+      #
+      # It runs AFTER the size floor above on purpose: attesting a dump that the
+      # floor is about to reject would produce signed provenance for a file the
+      # job itself does not accept -- a signature is not a quality judgement and
+      # should not be issued for something already known to be wrong.
+      #
+      # ⚠ THIS HAS NEVER RUN. Every execution of this workflow so far has failed
+      # at the dump step, before reaching here, so the attestation below is
+      # UNEXERCISED. It is written, it is not proven.
+      - name: Attest the dump
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: /tmp/sairn-${{ env.STAMP }}.sql.age
 
       - name: Upload to R2
         env:
