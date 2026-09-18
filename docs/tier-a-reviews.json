@@ -688,6 +688,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-18T13:48:51Z",
+      "resources": [
+        "alf_claim_routes",
+        "dnt_rollup",
+        "rf_contingency_rules"
+      ],
+      "files": [
+        "sairncare.html",
+        "tools/resource_reachability_check.py"
+      ],
+      "what": "SAIRNcare alf_claim_routes wired: the routing determination is now RECORDED. The table is Tier A ('a claim sent to the wrong payer'), had read+write branches nothing ever called, and the resident selector in the HCBS modal was populated and never read -- so the write, whose contract requires resident_id, could not have been called. PRESS ON: (1) recording is on an EXPLICIT button, not on every route, to keep an append-only table free of exploration -- check that a biller cannot be left believing a determination was recorded when the write failed, and that alfRecordRoute's button states are exhaustive; (2) a REFUSAL is recorded with outcome:'refused' and a transport failure is NOT -- check alfRouteRecordable's code list (NETWORK, BAD_RESPONSE, HTTP_*) cannot miss a transport shape alfRoute can actually produce; (3) the whole result object is stored in data -- check nothing in it is PHI beyond what the table already holds, since alf_claim_routes rows carry resident_id and are management-read; (4) the id is 'ROUTE-'+Date.now()+random and the server 409s on reuse -- check two determinations recorded in the same millisecond cannot collide into a 409 the user reads as a failure; (5) prRenderRecorded runs on every panel render and is INDEPENDENT of the rules read beside it -- check a refused trail read cannot render as an empty trail.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
