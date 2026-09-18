@@ -97,6 +97,42 @@ CALIBRATION_FLOOR = 0.5
 EXEMPT = {
     # `shared` owns no client of its own -- its resources are named by the
     # SIXTEEN app files, which is checked separately below rather than skipped.
+    #
+    # ── THE TWO BELOW WERE INVESTIGATED ONE BY ONE ON 2026-09-18 ───────────
+    # Each was traced from its registry entry through every sd-data branch,
+    # every server reader, its SQL and its client. Both turned out to have a
+    # REAL answer that already existed and that this tool structurally cannot
+    # see -- which is the outcome its own docstring predicts and asks somebody
+    # to write down. Neither is dead and neither should be wired to a panel.
+    #
+    # THE FIRST DRAFT OF THAT INVESTIGATION WAS WRONG IN BOTH CASES and the
+    # correction is worth keeping: I first reported them as "read by
+    # api/_lib/payer-routing.js" and "read by api/reference-fingerprint.js" on
+    # the strength of a filename grep. Both hits are PROSE -- a comment
+    # comparing contract shapes, and a comment about which columns carry
+    # compute-relevant content. Neither file reads either table. That is the
+    # same hit-is-not-proof trap this tool's own header warns about, made by
+    # the person who wrote the header.
+    'rf_contingency_rules':
+        'SEEDED PER-STATE REFERENCE DATA, read server-side, and its content DOES '
+        'reach the user. sql/sairnroofing_agreements_schema.sql: "VERSIONED '
+        'per-state rescission requirements as data, each carrying a required '
+        'authority citation. Same shape and same reasoning as rf_cert_rules." '
+        'The rules are the input to the `agreement_status` verb, and '
+        'sairnroofing.html:2802 sends it -- so a client naming the rules table '
+        'directly would be reaching past the engine that is supposed to apply '
+        'them. Wiring it to a panel would be the wrong fix.',
+    'alf_signals':
+        'DECLARED PRE-BUILT, WITH THE REASON ALREADY WRITTEN AT THE ENDPOINT. '
+        'api/sd-data.js on the alf_signals branch: "WRITE is management-only for '
+        'now -- no real monitoring device or integration exists anywhere in this '
+        'app yet, so there is no real caller to grant broader access to; this is '
+        'a narrower default than alf_mar\'s, a judgment call logged here rather '
+        'than left silent, and should be revisited the day a real '
+        'device/integration is actually wired up." A passive-monitoring signal '
+        'log with no monitoring device is correctly unreachable. The exemption '
+        'ends the day a device is wired, and the endpoint comment is where that '
+        'is recorded.',
 }
 
 

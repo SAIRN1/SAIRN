@@ -632,6 +632,13 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <button class="btn bo bs" id="pr-hospice-btn" onclick="openHospiceRouteModal()">Route a Hospice / MA Claim</button>
       </div>
       <div id="pr-result" style="margin-top:12px"></div>
+      <!-- The trail. A determination is recorded only when somebody presses the
+           button on a result -- running the router does not record one -- so
+           this is deliberately empty until that happens, and says so. -->
+      <div style="margin-top:16px"><b style="font-size:13px">Recorded determinations</b>
+        <div style="color:var(--muted);font-size:12px;margin:4px 0 8px">Append-only. A later determination for the same resident and month is a new row, never an edit.</div>
+        <div id="pr-recorded"></div>
+      </div>
     </div></div>
   </div>
 </div>
@@ -2886,6 +2893,10 @@ function prRefresh(){
 function rPayerRouting(){
   var box=$('pr-rules'),cov=$('pr-coverage');
   if(!box||!cov)return;
+  // The trail is read whenever the panel renders, INDEPENDENTLY of the rules
+  // read above: an unreadable rule set must not hide the determinations that
+  // were already recorded, and vice versa. Two reads, two failure sentences.
+  prRenderRecorded();
   if(_prRules===null){
     if(_prReadFailed){
       cov.textContent='Coverage: COULD NOT BE READ';
@@ -2940,6 +2951,124 @@ function prPopulateResidents(selId){
   var sel=$(selId);if(!sel)return;
   sel.innerHTML=residents().map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join('');
 }
+// ── RECORDING A ROUTING DETERMINATION (2026-09-18) ────────────────────────
+// `alf_claim_routes` is Tier A -- "a claim sent to the wrong payer" -- and it
+// had read and write branches in api/sd-data.js, management-gated and
+// append-only, that NOTHING in this app ever called. The `route` verb itself is
+// reachable and used, so the determination was computed and shown and then
+// existed nowhere: the audit trail of a billing decision was permanently empty.
+// Found by tools/resource_reachability_check.py; same shape as SAIRNdental's
+// dnt_rollup, with money attached.
+//
+// ── RECORDED ON AN EXPLICIT ACTION, NOT ON EVERY RUN, AND THAT IS THE DESIGN
+// The obvious wiring -- write the decision every time the modal runs -- would
+// have been wrong. A biller routes the same claim two or three times while
+// adjusting days present or a diagnosis, and the table is APPEND-ONLY with no
+// delete and a 409 on a reused id. Automatic recording would fill a Tier A
+// evidence table with exploration and leave nobody able to tell which row was
+// the determination actually acted on. The endpoint's own comment says what the
+// table is for: "a routing decision records how a real claim was billed."
+//
+// So the result carries a button, and pressing it is the act of saying THIS is
+// the one. The id is minted at that moment, so exploring costs nothing.
+//
+// ── A REFUSAL IS RECORDED TOO, AND LABELLED AS ONE ────────────────────────
+// NOT_ROUTABLE, NO_RULE_FOR_STATE and DX_MATCH_WOULD_DENY are determinations a
+// biller acts on -- they are the reason a claim was held back -- and "what were
+// we told, for this resident, in this service month" is the question the trail
+// exists to answer. Dropping them would make the table a record of successes
+// only, which is the shape that reads as complete and is not. `outcome` names
+// which kind it is so nothing downstream has to infer it from the absence of a
+// field.
+var alfLastRoute=null;
+
+function alfRouteRecordable(res,residentId,serviceMonth){
+  if(!res||!residentId||!serviceMonth)return false;
+  // A transport failure is NOT a determination. NETWORK, BAD_RESPONSE and an
+  // HTTP_* code mean nobody answered or the answer was unreadable -- recording
+  // one as a billing decision would put a claim about the engine's judgement in
+  // an evidence table when the engine never judged.
+  var code=(res.error&&res.error.code)||'';
+  if(code==='NETWORK'||code==='BAD_RESPONSE'||code.indexOf('HTTP_')===0)return false;
+  return true;
+}
+
+function alfRouteOutcome(res){
+  return (res&&(res.ok===false||res.error))?'refused':'routed';
+}
+
+async function alfRecordRoute(){
+  var r=alfLastRoute;
+  if(!r){toast('There is no determination on screen to record');return;}
+  if(!alfIsManagement()){toast('Only management can record a routing determination');return;}
+  var btn=$('pr-record-btn');
+  if(btn){btn.disabled=true;btn.textContent='Recording…';}
+  var payload=Object.assign({
+    id:'ROUTE-'+Date.now()+'-'+Math.floor(Math.random()*1000),
+    resident_id:r.resident_id,
+    service_month:r.service_month,
+    outcome:alfRouteOutcome(r.res),
+    program:r.program
+  },{result:r.res,inputs:r.inputs});
+  var saved=await alfData('write','alf_claim_routes',payload,true);
+  // THE BUTTON FOLLOWS THE OUTCOME. A determination that did not reach the
+  // server is not recorded, and saying otherwise would be the same defect this
+  // session fixed in sairnscape: a control asserting what the message denies.
+  if(saved){
+    if(btn){btn.textContent='Recorded';}
+    toast('Determination recorded for '+(r.service_month||''));
+    prRenderRecorded();
+  }else{
+    if(btn){btn.disabled=false;btn.textContent='Record this determination';}
+    toast('NOT recorded — the determination did not reach the server. Nothing was saved; try again with a connection.',7000);
+  }
+}
+
+// The read-back. Its own refusal vocabulary, because an empty table and a
+// refused read are different facts and a billing trail that shows "none" for
+// the second is worse than showing nothing.
+async function prRenderRecorded(){
+  var box=$('pr-recorded');if(!box)return;
+  if(!alfIsManagement()){box.innerHTML='';return;}
+  var rows=await alfData('read','alf_claim_routes',{},true);
+  if(!rows){
+    box.innerHTML='<div class="note">The recorded determinations could not be read. This is NOT an empty list &mdash; nothing is being shown rather than a partial trail.</div>';
+    return;
+  }
+  if(!rows.length){
+    box.innerHTML='<div class="note">No routing determination has been recorded yet. Running the router does not record one &mdash; press <b>Record this determination</b> on a result to enter it in the trail.</div>';
+    return;
+  }
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Service month</th><th>Resident</th><th>Outcome</th><th>Recorded by</th><th>On</th></tr></thead><tbody>'+
+    rows.map(function(x){
+      var name=(residents().find(function(p){return p.id===x.resident_id;})||{}).name||x.resident_id;
+      return '<tr><td>'+H(x.service_month||'')+'</td><td>'+H(name||'')+'</td>'+
+        '<td>'+(x.outcome==='refused'
+          ? '<span class="badge br">not routed</span>'
+          : '<span class="badge bg">routed</span>')+'</td>'+
+        '<td>'+H(x.decided_by||'')+'</td><td>'+H(String(x.created_at||'').slice(0,10))+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+// THE RECORD BUTTON IS APPENDED BY ONE FUNCTION, NOT PASTED INTO FIVE BRANCHES.
+// prRenderResult has five return paths -- refusal, provider_choice, payer,
+// the default line, and the no-response guard -- and adding the button to each
+// by hand is how four of them keep it and the fifth quietly does not.
+function prRecordButtonHtml(){
+  if(!alfRouteRecordable(alfLastRoute&&alfLastRoute.res,
+                         alfLastRoute&&alfLastRoute.resident_id,
+                         alfLastRoute&&alfLastRoute.service_month)){
+    // SAID, NOT HIDDEN. A missing button with no explanation reads as a feature
+    // that is not there; this names the one thing the biller has to supply.
+    var why=(alfLastRoute&&!alfLastRoute.resident_id)?'Choose a resident in the routing form to be able to record this determination.'
+      :(alfLastRoute&&!alfLastRoute.service_month)?'Set a service month to be able to record this determination.'
+      :'This is a transport failure, not a determination — there is nothing to record.';
+    return '<div style="margin-top:10px;color:var(--muted);font-size:12px">'+H(why)+'</div>';
+  }
+  return '<div style="margin-top:10px"><button class="btn bo bs" id="pr-record-btn" onclick="alfRecordRoute()">Record this determination</button>'
+    +'<span style="margin-left:8px;color:var(--muted);font-size:12px">Nothing is recorded until you press this.</span></div>';
+}
+
 function prRenderResult(res){
   var box=$('pr-result');if(!box)return;
   if(!res){box.innerHTML='<div style="color:var(--muted)">No response from the server — nothing was routed.</div>';return;}
@@ -2967,7 +3096,7 @@ function prRenderResult(res){
       (res.authority&&res.authority.url?(
         '<div style="margin-top:8px;font-size:12px">Source: <a href="'+H(res.authority.url)+'" target="_blank" rel="noopener noreferrer">'+H(res.authority.citation||'source')+'</a></div>'
       ):'')+
-      '</div></div>';
+      '</div></div>'+prRecordButtonHtml();
     return;
   }
   if(res.decision==='provider_choice'){
@@ -2977,7 +3106,7 @@ function prRenderResult(res){
       (res.options||[]).filter(Boolean).map(function(o){
         return '<tr><td>'+H(o.method)+'</td><td><code>'+H(o.billing_string)+'</code></td><td>'+H(String(o.units))+'</td>'+
           '<td>'+H((o.earliest_submission&&o.earliest_submission.note)||'--')+'</td></tr>';
-      }).join('')+'</tbody></table></div></div></div>';
+      }).join('')+'</tbody></table></div></div></div>'+prRecordButtonHtml();
     return;
   }
   if(res.payer){
@@ -2985,7 +3114,7 @@ function prRenderResult(res){
       '<div style="margin-top:6px">'+H(res.why||'')+'</div>'+
       (res.modifier?('<div style="margin-top:6px">Modifier / code: <code>'+H(res.modifier)+'</code></div>'):'')+
       (res.modifier_note?('<div style="margin-top:4px;color:var(--muted);font-size:12px">'+H(res.modifier_note)+'</div>'):'')+
-      '</div></div>';
+      '</div></div>'+prRecordButtonHtml();
     return;
   }
   var line=res.line||{};
@@ -2996,7 +3125,7 @@ function prRenderResult(res){
       H((line.earliest_submission&&line.earliest_submission.note)||'')+'</div>'+
     ((res.constraints&&res.constraints.length)?('<div style="margin-top:8px"><b style="font-size:12px">Constraints</b><ul style="margin:4px 0 0 18px;font-size:12px;color:var(--muted)">'+
       res.constraints.map(function(c){return '<li>'+H(c)+'</li>';}).join('')+'</ul></div>'):'')+
-    '</div></div>';
+    '</div></div>'+prRecordButtonHtml();
 }
 function openHcbsRouteModal(){
   if(!alfIsManagement()){toast('Only management can route a claim');return;}
@@ -3013,12 +3142,18 @@ function closeHcbsRouteModal(){$('hcbsroutemodal').classList.remove('on');}
 async function runHcbsRoute(){
   var days=$('hr-days').value;
   if(days===''){toast('Days present is required');return;}
-  var res=await alfRoute({
-    program:'medicaid_hcbs',state:$('hr-state').value,service_month:$('hr-month').value,
+  // THE RESIDENT SELECTOR WAS POPULATED AND NEVER READ. prPopulateResidents
+  // filled 'hr-resident' and nothing consumed it, so a determination could not
+  // be attributed to anybody -- which is also why alf_claim_routes, whose write
+  // REQUIRES resident_id, could never have been called from here.
+  var resident=$('hr-resident')?$('hr-resident').value:'';
+  var month=$('hr-month').value;
+  var inputs={program:'medicaid_hcbs',state:$('hr-state').value,service_month:month,
     days_present:Number(days),tier:$('hr-tier').value||undefined,
-    preferred_method:$('hr-method').value||undefined
-  });
+    preferred_method:$('hr-method').value||undefined};
+  var res=await alfRoute(inputs);
   closeHcbsRouteModal();
+  alfLastRoute={res:res,inputs:inputs,resident_id:resident,service_month:month,program:'medicaid_hcbs'};
   prRenderResult(res);
 }
 function openHospiceRouteModal(){
@@ -3031,14 +3166,16 @@ function openHospiceRouteModal(){
 }
 function closeHospiceRouteModal(){$('hospiceroutemodal').classList.remove('on');}
 async function runHospiceRoute(){
-  var res=await alfRoute({
-    program:'hospice_ma',state:'US',service_month:$('hp-month').value,
+  var resident=$('hp-resident')?$('hp-resident').value:'';
+  var month=$('hp-month').value;
+  var inputs={program:'hospice_ma',state:'US',service_month:month,
     hospice_election:true,claim_type:$('hp-claimtype').value,
     hospice_principal_diagnosis:$('hp-hospicedx').value.trim(),
     claim_principal_diagnosis:$('hp-claimdx').value.trim(),
-    relatedness:$('hp-relatedness').value||undefined
-  });
+    relatedness:$('hp-relatedness').value||undefined};
+  var res=await alfRoute(inputs);
   closeHospiceRouteModal();
+  alfLastRoute={res:res,inputs:inputs,resident_id:resident,service_month:month,program:'hospice_ma'};
   prRenderResult(res);
 }
 function rBilling(){
