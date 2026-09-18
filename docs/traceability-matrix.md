@@ -450,6 +450,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; A billable hour could reach the server with NO UTBMS code &mdash; refused by nothing at either end, on the record Tier A invoices are built from** | **FIXED 2026-09-18 (Fourth)** &mdash; `api/_lib/law-timeentry.js` (NEW) wired into the `law_timeentries` write branch of `api/sd-data.js`; `api/_lib/law-timeentry.test.js` 15 arms, 6 sabotages all cau | `api/_lib/law-timeentry.test.js` |
 | 🚨 **The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ATTORNEY TRUST MONEY, and in two other places** | **SWEPT AND GUARDED 2026-09-15 (Hank)** &mdash; `law_check_and_insert_disbursement`, `law_check_and_void_deposit`, `cl_rate_limit_consume`. New `tools/advisory_lock_isolation_check.py` (report-only, r | `tests/run_advisory_lock_isolation_probe.py` |
 | **`law_trusttx` had NO SESSION GATE AT ALL &mdash; attorney IOLTA trust money on a licence key alone** | **FIXED 2026-09-16 (Fourth)** &mdash; `api/sd-data.js` SD_SESSION_GATED + SD_GATE_APP, `api/sd-data-law-trusttx-session.test.js` 10 arms, `tests/law_trusttx_session_probe.py` 7 mutations / 11 arms all | `api/sd-data-law-trusttx-session.test.js`, `tests/law_trusttx_session_probe.py` |
 | ~~**Three of tesseract's four run-time fetches cannot be hashed, and `sairnlaw.html` has no Content-Security-Policy to bound where they come from**~~ &mdash; **CLOSED: a CSP now bounds them, verified in a real browser on the live page** | **CLOSED 2026-09-10 (CC)** &mdash; `1b6c3746`. Found 2026-09-10 (Hank) while closing the SRI row | `tests/sairnlaw_csp.js` |
@@ -551,17 +552,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 524 of 581 traced, 90.2%.
+For context and not as the headline: 525 of 582 traced, 90.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 524 citations come from
+### Where the 525 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 269 |
 | `declared` | 232 |
-| `declared+index` | 15 |
+| `declared+index` | 16 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -653,8 +654,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 581   tests/**, api/** (both walked)
-  open-work rows citing a test       274   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 582   tests/**, api/** (both walked)
+  open-work rows citing a test       275   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

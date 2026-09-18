@@ -38,6 +38,7 @@ const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const dntRollup = require('./_lib/dnt-rollup');
 const lawTrustReconcile = require('./_lib/law-trust-reconcile');
+const lawTimeEntry = require('./_lib/law-timeentry');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
 const {
   paymentProblem: dntPaymentProblem,
@@ -10232,6 +10233,24 @@ module.exports = async (req, res) => {
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
+      }
+      // ── A BILLABLE HOUR WITH NO UTBMS CODE IS REFUSED HERE (2026-09-18) ──
+      // Until today this whole branch validated ONE thing -- that a payload has
+      // an id -- for twenty-odd law_ resources, and `billing_code` appeared in
+      // no validator anywhere in api/. sairnlaw.html's own comment above
+      // LAW_BILLING_CODES describes the defect and the 2026-09-09 fix for it,
+      // which made the code list a constant so the <select> cannot render
+      // empty. That closed the CAUSE. The gate was never built, so any other
+      // caller -- an import, a new write path, a direct API call -- still wrote
+      // a codeless billable hour into the record invoices and the LEDES export
+      // are built from.
+      //
+      // It is PRESENCE AND SHAPE, not membership, and api/_lib/law-timeentry.js
+      // says at length why a server-side copy of the code list would point the
+      // error in the dangerous direction.
+      if (resource === 'law_timeentries') {
+        const tep = lawTimeEntry.timeEntryProblem(payload);
+        if (tep) { res.status(400).json({ error: { code: 'INVALID_TIME_ENTRY', message: tep } }); return; }
       }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + lawIdCol), {
         method: 'POST',
