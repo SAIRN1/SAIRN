@@ -8568,7 +8568,7 @@
       "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
     },
     {
-      "commit": "91af7b7348cd",
+      "commit": "9cfc8eec7bf3",
       "date": "2026-09-18",
       "subject": "fix(sairnscape): the banner I built to stop an overstated coverage claim was making one",
       "files": [
