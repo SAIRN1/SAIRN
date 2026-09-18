@@ -1822,8 +1822,8 @@
       "task": "review fourth law_trust_reconcile IOLTA allocation_vs_ledger boundary and scp_quotes write fix",
       "claimed_at": "2026-09-18T10:51:15Z",
       "claimed_at_epoch": 1789728675.8114557,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T10:58:26Z"
     }
   ]
 }
