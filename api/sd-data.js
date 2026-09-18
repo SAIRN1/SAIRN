@@ -395,11 +395,36 @@ function checkEnvelope(action, resource, appId) {
   const extraAllowed = EXTRA_ACTIONS[resource] || [];
   const isExtraAction = extraAllowed.indexOf(action) !== -1;
   if (action !== 'read' && action !== 'write' && !isExtraAction) {
-    // Message text unchanged from the flag-based version on purpose.
+    // ── THE MESSAGE NAMED THE ONE VERB ITEM 97 EXISTS TO FORBID (2026-09-17)
+    // It read `"action must be 'read' or 'write'" + (isSc(resource) ? " or
+    // 'delete'" : '')`, and `isSc` covers ALL 28 sc_* resources. So a caller
+    // sending a bad action on `sc_claims` -- a Tier A medical-billing record
+    // that may be HIDDEN and never destroyed -- was told the allowed verb is
+    // 'delete', which is exactly the verb the registry no longer grants there
+    // and which now answers 403 SOFT_DELETE_ONLY.
+    //
+    // Item 97's own reasoning is that "a caller copying a working delete call
+    // from sc_dme to sc_claims now gets a refusal naming the right verb". This
+    // message did the opposite, unprompted, on the seven records that must
+    // never be destroyed. The comment here said the text was "unchanged from
+    // the flag-based version on purpose" -- true before the seven/21 split
+    // existed, and not revisited when it did.
+    //
+    // DERIVED FROM extraAllowed, which is already in scope one line up, so the
+    // message and the gate can no longer disagree: whatever this resource is
+    // actually granted is what the refusal names. Found reviewing cc's item 97
+    // obligation.
+    //
+    // NO NEW DISCLOSURE. The check above already established this caller can
+    // see this resource -- that is why the original comment says the message
+    // cannot disclose anything -- and naming the real verb tells them strictly
+    // less than naming one the resource does not have.
+    const verbs = ['read', 'write'].concat(extraAllowed);
     return {
       status: 400,
       code: 'BAD_ACTION',
-      body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } }
+      body: { error: { message: 'action must be '
+        + verbs.map(function (v) { return "'" + v + "'"; }).join(' or ') } }
     };
   }
   return null;

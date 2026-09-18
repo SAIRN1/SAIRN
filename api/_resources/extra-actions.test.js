@@ -171,8 +171,14 @@ async function callHandler(action, resource, key) {
     assert.deepStrictEqual(grants('set_status'), ['rf_schedule']);
     assert.deepStrictEqual(grants('agreement_status'), ['rf_claim_agreements']);
     // Phase 4b.
-    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_invoices, ['issue', 'add_payment', 'reconcile_claim']);
-    ['issue', 'add_payment', 'reconcile_claim'].forEach((v) => {
+    // gl_export ADDED 2026-09-17 by another session and this pin was not
+    // updated with it, so this arm has been RED on origin/main since.
+    // Fixed here rather than left: a red arm nobody acts on is how the next
+    // genuinely red arm beside it gets read as noise, and this file is the
+    // gate on every verb on every resource.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_invoices,
+      ['issue', 'add_payment', 'reconcile_claim', 'gl_export']);
+    ['issue', 'add_payment', 'reconcile_claim', 'gl_export'].forEach((v) => {
       assert.deepStrictEqual(grants(v), ['rf_invoices'], v + ' must be owned by rf_invoices alone');
     });
   });
@@ -352,14 +358,54 @@ async function callHandler(action, resource, key) {
     assert.strictEqual((await gate('bogus_verb', 'sc_denial')).code, REJECTED);
     assert.strictEqual((await gate('bogus_verb', 'alf_payer_rules')).code, REJECTED);
   });
-  await atest('the sc_ error message still names delete, and only there', async () => {
+  // ── THIS ARM WAS PINNING THE DEFECT (2026-09-17) ───────────────────────
+  // It asserted that `sc_denial` -- one of the SEVEN Tier A records that item
+  // 97 made soft-delete-only -- was told the allowed verb is 'delete'. That is
+  // the verb the registry no longer grants there and which now answers 403
+  // SOFT_DELETE_ONLY, so the arm was holding the message to the one answer
+  // item 97 exists to prevent. The old message was built from isSc(), which
+  // covers all 28; it is derived from EXTRA_ACTIONS[resource] now.
+  //
+  // THE SPLIT IS THE POINT, so both halves are driven: a Tier A sc_ resource
+  // must name soft_delete and a hard-deletable one must still name delete.
+  // Asserting only the first would pass on a message that had simply stopped
+  // mentioning delete anywhere.
+  await atest('a Tier A sc_ resource names SOFT_DELETE, not delete', async () => {
     assert.strictEqual(
       (await gate('bogus_verb', 'sc_denial')).body.error.message,
+      "action must be 'read' or 'write' or 'soft_delete'"
+    );
+  });
+  await atest('...and a hard-deletable sc_ resource still names delete', async () => {
+    assert.strictEqual(
+      (await gate('bogus_verb', 'sc_dme')).body.error.message,
       "action must be 'read' or 'write' or 'delete'"
     );
+  });
+  await atest('CONTROL: the two sc_ messages actually DIFFER -- without this '
+              + 'both arms would pass on a message that named neither verb',
+    async () => {
+      const a = (await gate('bogus_verb', 'sc_denial')).body.error.message;
+      const b = (await gate('bogus_verb', 'sc_dme')).body.error.message;
+      assert.notStrictEqual(a, b);
+      assert.ok(!/'delete'/.test(a), 'a Tier A record is still being offered delete: ' + a);
+    });
+  await atest('a resource with no extra verbs names only read and write', async () => {
+    // `profile`, not alf_payer_rules. THE OLD ARM USED alf_payer_rules AND
+    // PASSED FOR THE WRONG REASON: that resource really does grant `route`, and
+    // the isSc()-based message simply never named a non-sc_ extra verb. The
+    // derived message names it, correctly, so the old expectation was pinning
+    // the message's blind spot rather than a resource with no extra verbs.
+    assert.strictEqual(
+      (await gate('bogus_verb', 'profile')).body.error.message,
+      "action must be 'read' or 'write'"
+    );
+  });
+  await atest('...and a NON-sc_ resource with an extra verb now names it too, '
+              + 'which the old message never did', async () => {
     assert.strictEqual(
       (await gate('bogus_verb', 'alf_payer_rules')).body.error.message,
-      "action must be 'read' or 'write'"
+      "action must be 'read' or 'write' or 'route'"
     );
   });
   await atest('an unregistered resource is refused with the generated list', async () => {
@@ -400,9 +446,12 @@ async function callHandler(action, resource, key) {
   await atest('...but an OWNER still gets the accurate verb message', async () => {
     // Closing the oracle must not make the endpoint useless to the app that
     // owns the resource.
+    // soft_delete since 2026-09-17: sc_denial is Tier A and may be hidden,
+    // never destroyed. The owner gets the ACCURATE verb, which is the whole
+    // point of this arm -- it was previously accurate about the wrong one.
     assert.strictEqual(
       handler.checkEnvelope('bogus_verb', 'sc_denial', 'sairncode').body.error.message,
-      "action must be 'read' or 'write' or 'delete'");
+      "action must be 'read' or 'write' or 'soft_delete'");
     assert.strictEqual(
       handler.checkEnvelope('bogus_verb', 'profile', 'stonedesk').body.error.message,
       "action must be 'read' or 'write'");
