@@ -51,6 +51,24 @@ await t('a clearance that did NOT sync is REVERTED, not left looking saved',asyn
   const r=c.__store.law_trusttx[0];
   assert.strictEqual(r.cleared_on,undefined,
     'this device would adjust its reconciliation for an item no other device knows about');
+  // ── THE FLAG HALF OF THE ROLLBACK, ADDED 2026-09-18 ──────────────────────
+  // FOUND BY tests/sairnlaw_trust_clearance_probe.py, which planted a
+  // HALF-ROLLBACK -- cleared_on restored, `cleared` left true -- and this
+  // suite stayed GREEN. The arm above checks one of the two fields
+  // lawSetClearance() sets and one of the two it restores.
+  //
+  // WHAT THE HALF-ROLLBACK ACTUALLY LEAVES BEHIND, because "both fields" is
+  // not a reason: the record ends up `cleared:true` with no `cleared_on`.
+  // sairnlaw.html:3533 branches on cleared_on FIRST and on `cleared===false`
+  // second, so the badge shows neither "cleared" nor "outstanding" -- it shows
+  // "not tracked", and the Outstanding button reappears. Worse, the stale
+  // `true` is still in the row: the next write of that transaction for ANY
+  // other reason pushes a clearance to the server that nobody ever
+  // successfully applied.
+  assert.strictEqual(r.cleared,undefined,
+    'the FLAG was not rolled back with the date -- the row is left cleared:true '
+    + 'with no cleared_on, which renders as "not tracked" and pushes a '
+    + 'clearance nobody applied on the next unrelated write');
   assert.match(c.__calls.toasts.join(' '),/did NOT reach the server/);
 });
 await t('a VOIDED transaction cannot clear the bank',async()=>{

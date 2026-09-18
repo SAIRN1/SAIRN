@@ -722,6 +722,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-18T15:00:52Z",
+      "resources": [
+        "law_trusttx"
+      ],
+      "files": [
+        "tests/sairnlaw_trust_clearance_probe.py"
+      ],
+      "what": "NEW NEGATIVE CONTROL on the IOLTA clearing path (tests/sairnlaw_trust_clearance_probe.py), plus ONE added assertion to the suite it controls. No product code: sairnlaw.html is untouched and the control asserts byte-identity. Closes one of the 38 uncontrolled Tier A suites -- measured at 169/59/110 before, 60/109 and TIER A 37 after.\n\nWHAT A REVIEWER SHOULD PRESS ON, and it is not the diff.\n\n(1) THE ARM I ADDED IS THE INTERESTING ONE AND IT WAS ADDED BY ME AFTER MY OWN MUTATION CAUGHT IT SILENT. Mutation 2 plants a HALF-ROLLBACK -- cleared_on restored, the `cleared` flag left true -- and the suite passed. I then added `assert.strictEqual(r.cleared, undefined)` and it bites. That is the author writing the assertion that makes his own mutation pass, which is one step away from tuning the test to the mutant. Check that the assertion is right for a REASON and not just for the arm: I claim the end state is `cleared:true` with no `cleared_on`, that sairnlaw.html:3533 branches on cleared_on first and `cleared===false` second so the badge reads \"not tracked\", and that the stale true is pushed on the next unrelated write of that row. Verify that reading against the real render path and the real write path, because if the consequence is different the assertion may be right by accident.\n\n(2) MY FOUR MUTATIONS ALL TARGET lawSetClearance() AND THE SUITE ALSO EXERCISES lawMarkCleared() AND lawMarkOutstanding(), WHICH I DID NOT MUTATE AT ALL. lawMarkCleared holds the date validation -- the suite's \"a bad date changes NOTHING and says so\" arm -- and nothing in this control disables that regex. Try it: if the validation can be made to accept 'last Tuesday' and the suite stays green, that is an uncontrolled branch on the field the reconciliation's own dayOf() drops, which is the undated-row hole arrived at from the other side.\n\n(3) IS FOUR THE RIGHT STOPPING POINT. I did not drive the `if(!t)` not-in-this-device-ledger refusal, and I did not drive the ORDER of operations -- st() before the await, revert after -- which is what makes the optimistic write safe. A mutation that moves the st() to after a successful sync would change the failure semantics and I do not know whether the suite would notice.\n\n(4) THE ANCHORS. Mutations 1 and 2 share the same two-line rollback block and differ only in which line survives, so each anchor carries both lines. Confirm each occurs exactly once and that mutation 2 really leaves the FLAG line and not the date line -- an anchor that matched the wrong way round would still produce a red suite and would be testing the other mutation twice.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
