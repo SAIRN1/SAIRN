@@ -2155,6 +2155,16 @@
       "claimed_at_epoch": 1789686558.2785804,
       "status": "released",
       "released_at": "2026-09-18T10:46:32Z"
+    },
+    {
+      "id": "hank-1789728754",
+      "session": "hank",
+      "subject": "tier-a-review-record-parity",
+      "task": "review cody item 46 record-parity XOR sv_controlled",
+      "claimed_at": "2026-09-18T10:52:34Z",
+      "claimed_at_epoch": 1789728754.6909075,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
