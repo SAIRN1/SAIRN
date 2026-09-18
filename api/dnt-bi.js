@@ -255,7 +255,31 @@ async function feed(req, res, ctx) {
     return;
   }
 
-  let raw = (Array.isArray(drows) ? drows : []).map((x) => x.data).filter(Boolean);
+  // ── AN UNREADABLE 2xx IS NOT AN EMPTY DATASET (2026-09-18) ───────────────
+  // Swept after the same shape was fixed in api/sc-credentials.js. `drows` is
+  // `.json().catch(() => null)`, so a 200 whose body would not parse arrived
+  // here as null, `Array.isArray(null)` is false, and the feed served ZERO ROWS
+  // as a successful dataset. A Power BI or Tableau dashboard polling this then
+  // shows a period with no production, no charges and no appointments -- which
+  // is a claim about the practice rather than about the read.
+  //
+  // THE FILE ALREADY ARGUES THIS, four lines down, about a different path:
+  // "A FAILED LOOKUP IS NOT 'NO SUCH COMMAND'" is the same sentence next door,
+  // and the comment below says the refusal above "is what keeps a FAILED lookup
+  // from ever reaching here looking like that legitimate empty". It did not
+  // keep this one: an unparseable body is not a !ok response, so it walked past
+  // that refusal.
+  //
+  // A REAL empty array stays a real empty dataset. Only null-or-not-an-array
+  // refuses, and it refuses LOUDLY rather than returning rows.
+  if (!Array.isArray(drows)) {
+    res.status(502).json({ error: { code: 'READ_UNREADABLE',
+      message: 'The data store answered but its reply could not be read, so this dataset '
+        + 'is NOT being served. It is not empty -- nothing is being reported rather than '
+        + 'zero rows, which a dashboard would chart as a period with no activity.' } });
+    return;
+  }
+  let raw = drows.map((x) => x.data).filter(Boolean);
 
   // applyPatientScope fails CLOSED on an empty map -- `allowed[...] === true`
   // over `allowedPatientIds || {}` -- so a provider with no appointments gets

@@ -98,6 +98,13 @@ global.fetch = async function (url, opts) {
     return { ok: false, status: 404, json: async () => ({ code: 'PGRST205', message: 'Could not find the table' }) };
   }
   if (spec.error) return { ok: false, status: spec.status || 500, json: async () => ({ message: 'boom' }) };
+  // ── A 2xx WHOSE BODY WILL NOT PARSE (2026-09-18) ──────────────────────
+  // The stub could only ever answer the way PostgREST does when everything
+  // works, so the shape that mattered -- a successful status over an
+  // unreadable body -- was unreachable from this suite and the defect below
+  // lived behind it. Set `unreadable: true` on a table spec.
+  if (spec.unreadable) return { ok: true, status: 200,
+    json: async () => { throw new Error('unparseable'); } };
 
   if (method === 'POST') {
     const row = Object.assign({ id: 'row-' + (spec.rows.length + 1) }, JSON.parse(opts.body));
@@ -620,6 +627,41 @@ test('an unknown action is refused rather than treated as a read', async () => {
   SESSION = OWNER_SESSION;
   const r = await POST({ action: 'drop_everything' }, MGMT_HEADERS);
   assert.strictEqual(r.statusCode, 400);
+});
+
+// ── AN UNREADABLE 2xx IS NOT AN EMPTY DATASET (2026-09-18) ──────────────────
+// Found by a platform sweep for the shape fixed in api/sc-credentials.js. The
+// dataset read is `.json().catch(() => null)`, and the line that consumed it
+// was `(Array.isArray(drows) ? drows : [])` -- so a 200 whose body would not
+// parse became an EMPTY DATASET served with ok:true. A Power BI or Tableau
+// dashboard polling this then charts a period with no production, no charges
+// and no appointments, which is a claim about the practice rather than about
+// the read.
+//
+// The file already argued this for a neighbouring path -- "the refusal above is
+// what keeps a FAILED lookup from ever reaching here looking like that
+// legitimate empty" -- and it did not keep this one, because an unparseable
+// body is not a !ok response and walked straight past that refusal.
+test('an unreadable dataset read REFUSES rather than serving zero rows', async () => {
+  seed();
+  TABLES.dnt_charges = { rows: [], unreadable: true };
+  const r = await GET({ dataset: 'charges', token: GOOD_TOKEN });
+  assert.notStrictEqual(r.body && r.body.ok, true,
+    'an unreadable read was served as a successful dataset: ' + JSON.stringify(r.body));
+  assert.strictEqual(r.statusCode, 502, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'READ_UNREADABLE');
+  assert.match(r.body.error.message, /not empty/);
+});
+
+test('...and a genuinely EMPTY table is still served as an empty dataset', async () => {
+  // The direction that must not soften. Zero rows is a real answer and must
+  // keep being one, or the guard above has simply broken the feed.
+  seed();
+  TABLES.dnt_charges = { rows: [] };
+  const r = await GET({ dataset: 'charges', token: GOOD_TOKEN });
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.ok(Array.isArray(r.body.rows), 'an empty table must still return rows: []');
+  assert.strictEqual(r.body.rows.length, 0);
 });
 
 test.after(function () { global.fetch = realFetch; });
