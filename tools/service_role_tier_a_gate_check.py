@@ -128,7 +128,82 @@ def classify(rel, src):
     # correctly out; a module that genuinely POSTs to a Tier A table cannot be.
     PATH = re.compile(r"(?:/rest/v1/|rest\(\s*['\"])(\w+)")
     addressed = set(PATH.findall(code))
+
+    # ── v4: A RESOURCE DISPATCHED THROUGH A VARIABLE IS STILL ADDRESSED ────
+    # v3's path regex requires a QUOTED LITERAL after `rest(`, so it was
+    # structurally blind to the shape this platform uses most:
+    #
+    #     const SV_RESOURCES = { sv_controlled: 'controlled_id', ... };
+    #     if (SV_RESOURCES[resource] && action === 'write') {
+    #       ... fetch(rest(resource + '?license_hash=eq.' + enc(licHash)), ...)
+    #
+    # MEASURED BEFORE THE FIX: 41 of 84 Tier A resources appear ONLY as keys of
+    # a dispatch table and never as a quoted path -- including `sv_controlled`,
+    # the DEA-relevant controlled-substance register, and `sv_audit_log`, which
+    # carries the witnessing lock. The checker reported CLEAN over all of them.
+    # A blind spot that covers half the Tier A surface is not a narrow rule, it
+    # is a checker measuring the wrong thing and saying nothing.
+    #
+    # THE RESOLUTION IS DELIBERATELY NARROW. A Tier A name used as an OBJECT KEY
+    # beside a variable-dispatched `rest(` call is a dispatch table -- that is
+    # what a dispatch table looks like, and v2's own recorded lesson is that a
+    # policy registry like `{ sv_controlled: true }` is a GENUINE reference, not
+    # noise to suppress. The key form alone is not enough: without a
+    # variable-dispatched call in the file, an object key is just an object key.
+    # A TABLE NAME ASSIGNED TO A VARIABLE FIRST IS STILL A LITERAL, and the
+    # first draft of this rule missed that: `const sel = 'mech_credentials?...'
+    # ; rest(sel)` is the ordinary shape in this codebase, and treating every
+    # such file as unresolvable produced COULD_NOT_TELL on dozens of modules
+    # that name their table perfectly clearly one line up. A third state that
+    # fires on the normal case is noise, and noise is how a checker gets muted.
+    QUERY = re.compile(r"['\"](\w+)\?")
+    addressed |= set(QUERY.findall(code))
+    # AND THE TABLE CAN BE THE VALUE RATHER THAN THE KEY:
+    #     const AUTH_TABLE_BY_APP = { stonedesk: 'sd_employee_auth', ... };
+    #     fetch(rest(AUTH_TABLE_BY_APP[app] + '?...'))
+    # A QUOTED TOKEN THAT IS EXACTLY A TIER A NAME is a reference to that table.
+    # This is much tighter than v1's rejected "the name appears anywhere": that
+    # matched header prose and `body.invoices`, and neither is a standalone
+    # quoted string equal to a registered resource name.
+    QUOTED = re.compile(r"['\"](\w+)['\"]")
+    addressed |= (set(QUOTED.findall(code)) & set(TIER_A))
+    # A MODULE CONSTANT IS ALSO RESOLVABLE, and missing that made the third
+    # state fire on files that are perfectly readable. api/_lib/ai-rate-limit.js
+    # does `const TABLE = 'sairn_ai_rate_limit_log'; rest(TABLE)` -- the table
+    # is right there, it simply is not Tier A, so the correct answer is "no Tier
+    # A resource" and not "cannot tell". Thirty-odd files were reported
+    # unreadable for this reason on the first draft.
+    CONSTVAL = re.compile(r"(?:const|let|var)\s+\w+\s*=\s*['\"]([^'\"]*)['\"]")
+    const_values = set(CONSTVAL.findall(code))
+    addressed |= {v.split('?')[0] for v in const_values}
+    # NOT THE DEFINITION OF THE HELPER ITSELF. `function rest(path) {` matches
+    # a naive "rest(<identifier>" and made six modules look like variable
+    # dispatchers when they were merely declaring the helper every module uses.
+    VARCALL = re.compile(r"(?<!function )(?<!function  )rest\(\s*[A-Za-z_]\w*")
+    TABLEKEY = re.compile(r"(\w+)\s*:\s*['\"]")
+    var_dispatched = bool(VARCALL.search(code))
+    resolved = set()
+    if var_dispatched:
+        resolved = set(TABLEKEY.findall(code)) & set(TIER_A)
+        addressed |= resolved
+
     names = sorted(addressed & set(TIER_A))
+
+    # ── COULD NOT TELL IS A THIRD STATE HERE TOO (PR 1.11) ─────────────────
+    # A file that dispatches through a variable and offers NO table this can
+    # resolve is a file whose Tier A surface is unknown. Reporting it as "no
+    # Tier A resource" would be the v3 defect with extra steps.
+    # THE THIRD STATE FIRES ONLY WHEN THE FILE IS GENUINELY OPAQUE: it
+    # dispatches through a variable AND offers neither a dispatch table nor a
+    # resolvable string constant. A file that names its table one line up is
+    # readable, and calling it unreadable is the over-report that gets a
+    # checker muted.
+    if var_dispatched and not resolved and not names and not const_values:
+        return 'COULD_NOT_TELL', {
+            'resources': [],
+            'why': 'calls rest(<variable>) and declares no resolvable dispatch '
+                   'table, so which tables it addresses cannot be read from the '
+                   'source. Not reported as clean.'}
     if not names:
         return None, {}
     names = set(names)
@@ -230,6 +305,37 @@ FIXTURES = [
     ('addressed in a path but never written',
      "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
      "const u=rest('sv_controlled?x=1');", 'NO_WRITE'),
+    # ── v4: THE VARIABLE-DISPATCH BLIND SPOT, KEPT AS FIXTURES ────────────
+    # v3 required a QUOTED LITERAL after `rest(`, so it never saw the shape this
+    # platform uses most. MEASURED BEFORE THE FIX: 41 of 84 Tier A resources
+    # appear only as dispatch-table keys and never as a quoted path -- including
+    # sv_controlled, the DEA-relevant controlled-substance register, and
+    # sv_audit_log, which carries the witnessing lock. The checker reported
+    # CLEAN over all of them.
+    ('v4: dispatch-table KEY plus a variable rest() -- the SV_RESOURCES shape',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "const SV_RESOURCES = { sv_controlled: 'controlled_id' };\n"
+     "verifySessionToken(t);\n"
+     "fetch(rest(resource + '?x=1'),{method:'POST'});", 'GATED'),
+    ('v4: ...and UNGATED through the same shape is still caught',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "const SV_RESOURCES = { sv_controlled: 'controlled_id' };\n"
+     "fetch(rest(resource + '?x=1'),{method:'POST'});", 'UNGATED'),
+    ('v4: the table is the VALUE, not the key',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "const BY_APP = { sairnvet: 'sv_controlled' };\n"
+     "fetch(rest(BY_APP[app] + '?x=1'),{method:'POST'});", 'UNGATED'),
+    ('v4: opaque dispatch is COULD NOT TELL, never clean',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "fetch(rest(table + '?x=1'),{method:'POST'});", 'COULD_NOT_TELL'),
+    ('v4: a module CONSTANT is resolvable -- not a third state',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "const TABLE = 'sairn_ai_rate_limit_log';\n"
+     "fetch(rest(TABLE + '?x=1'),{method:'POST'});", None),
+    ('v4: declaring the rest() HELPER is not variable dispatch',
+     "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"
+     "function rest(path) { return BASE + path; }", None),
+
     # THE THREE REAL FALSE POSITIVES, KEPT AS FIXTURES. Each cost a read of
     # the real file to recover, and each would come straight back under an
     # edit that looked tidier.
@@ -316,6 +422,15 @@ def main(argv=None):
         if verdict == 'UNGATED':
             findings.append('%s -- %s (%s)'
                             % (rel, d['why'], ', '.join(d['resources'][:4])))
+        elif verdict == 'COULD_NOT_TELL':
+            # ── A THIRD STATE IS NEVER FOLDED INTO CLEAN (PR 1.11) ─────────
+            # The v4 draft printed COULD_NOT_TELL rows and then ended with
+            # "CLEAN -- ran fully, found nothing", which is the two halves of
+            # one run disagreeing in the same output. A file whose Tier A
+            # surface cannot be read from its source was not scanned; saying
+            # the scan found nothing there is a claim about a check that did
+            # not happen.
+            could_not_run.append('%s: %s' % (rel, d['why']))
 
     if args.json:
         print(json.dumps({'rows': rows, 'tier_a': len(TIER_A),

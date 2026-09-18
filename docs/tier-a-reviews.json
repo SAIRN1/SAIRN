@@ -654,6 +654,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-18T11:23:29Z",
+      "resources": [
+        "invoices",
+        "mech_credentials",
+        "sv_audit_log",
+        "sv_controlled"
+      ],
+      "files": [
+        "tools/service_role_tier_a_gate_check.py"
+      ],
+      "what": "tools/service_role_tier_a_gate_check.py v4: the checker was blind to any Tier A resource dispatched through a variable -- 41 of 84, including sv_controlled and sv_audit_log -- and reported CLEAN over all of them. It now resolves dispatch-table keys and values, query literals and module constants, and reports COULD_NOT_TELL where a file takes its table as a parameter. REVIEW TARGETS, three: (1) the QUOTED-token rule is looser than v3 and tighter than the v1 shape rejected for matching header prose -- confirm it does not resurrect that false positive; (2) the third state now reaches the exit code, so this tool can turn a green sweep into exit 2 -- confirm that is wanted before it runs unattended; (3) it names Tier A resources in its fixtures and its own report, which is why this obligation exists -- no product code changed and every resource it newly sees classifies GATED.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
