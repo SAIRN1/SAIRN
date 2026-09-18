@@ -97,10 +97,31 @@ function isVoided(row) {
 
 /** A YYYY-MM-DD date, or null. Deliberately strict: a date this cannot read
  *  must not silently become "today" or "the epoch", both of which would put
- *  every transaction on the wrong side of the as-of boundary. */
+ *  every transaction on the wrong side of the as-of boundary.
+ *
+ *  ── IT WAS A SHAPE CHECK AND NOT A DATE CHECK (fixed 2026-09-18) ─────────
+ *  The regex alone accepted `2026-02-31` and `2026-02-29` in a non-leap year.
+ *  That is the exact defect api/_lib/credential-expiry.js records having fixed
+ *  platform-wide: "the old body validated the SHAPE of a date and not the DATE
+ *  ... `new Date` does not reject an impossible date, it SILENTLY REPAIRS IT."
+ *  Here the consequence is specific and it is money: an impossible
+ *  `statement_date` would have been used as the as-of boundary, and an
+ *  impossible `cleared_on` would have marked an uncleared cheque as cleared and
+ *  dropped it out of the outstanding set -- moving the expected bank balance by
+ *  the amount of that cheque.
+ *
+ *  FOUND BY A TEST WRITTEN FOR SOMETHING ELSE. The arm was checking that an
+ *  unreadable `cleared_on` is not a clearance, and it failed because the date
+ *  was read. This function's own comment claimed "deliberately strict" while it
+ *  was not, which is why it survived a reading.
+ *
+ *  The shared helper is the platform's one answer to what a date is; using it
+ *  here removes the second opinion rather than correcting it. */
+const isCalendarDate = require('./calendar-date').isCalendarDate;
 function dayOf(v) {
-  return (typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v.trim()))
-    ? v.trim() : null;
+  if (typeof v !== 'string') return null;
+  const t = v.trim();
+  return isCalendarDate(t) ? t : null;
 }
 
 /**
@@ -173,6 +194,20 @@ function reconcileTrustLedger(input) {
   let asOfCents = null;
   let afterStatementCents = null;
   let undatedRows = 0;
+  let undatedCents = 0;
+  // ── OUTSTANDING ITEMS (2026-09-18) ────────────────────────────────────
+  // A row is OUTSTANDING when the ledger has it on or before the statement
+  // date and the BANK has not yet taken it -- an uncleared cheque, or a deposit
+  // in transit. Before this, an uncleared $40 cheque made the bank leg read
+  // DISAGREES while the books were entirely right, and that lands in the same
+  // bucket as "the books are wrong". This file's own sentence applies: an alarm
+  // that cannot tell those apart is one nobody acts on, and one nobody acts on
+  // gets turned off. It is the commonest legitimate ledger-versus-bank
+  // difference in trust accounting and it was not modelled at all.
+  let outstandingCents = 0;      // signed: deposits in transit +, uncleared cheques -
+  let outstandingDeposits = 0;
+  let outstandingDisbursements = 0;
+  let clearanceStated = 0;       // rows that say ANYTHING about clearing
   if (latest) {
     asOfCents = 0;
     afterStatementCents = 0;
@@ -182,9 +217,28 @@ function reconcileTrustLedger(input) {
       if (c === null) return;
       const signed = (String((row && row.type) || '') === 'Deposit') ? c : -c;
       const d = dayOf(row && row.date);
-      if (d === null) { undatedRows += 1; return; }
-      if (d <= latest.date) asOfCents += signed;
-      else afterStatementCents += signed;
+      if (d === null) { undatedRows += 1; undatedCents += signed; return; }
+      if (d <= latest.date) {
+        asOfCents += signed;
+        // `cleared_on` is a DATE, same strictness as every other date here: a
+        // value this cannot read is not a clearance. `cleared === false` is an
+        // explicit statement that it has not cleared and counts as stated.
+        const clearedOn = dayOf(row && row.cleared_on);
+        const saysCleared = clearedOn !== null || row.cleared === true || row.cleared === false;
+        if (saysCleared) clearanceStated += 1;
+        // Outstanding = recorded in the ledger by the statement date, and NOT
+        // cleared the bank by it. A clearance dated AFTER the statement is
+        // still outstanding as of that statement, which is the whole point of
+        // an as-of comparison.
+        const clearedByStatement = (clearedOn !== null && clearedOn <= latest.date)
+          || (clearedOn === null && row.cleared === true);
+        if (!clearedByStatement && saysCleared) {
+          outstandingCents += signed;
+          if (signed >= 0) outstandingDeposits += 1; else outstandingDisbursements += 1;
+        }
+      } else {
+        afterStatementCents += signed;
+      }
     });
   }
 
@@ -247,12 +301,70 @@ function reconcileTrustLedger(input) {
       statement_date: latest.date,
       bank_cents: latest.cents,
       ledger_as_of_cents: asOfCents,
-      agrees: latest.cents === asOfCents,
+      // ── THE REAL BANK-REC IDENTITY (2026-09-18) ───────────────────────
+      //   bank = ledger_as_of - outstanding
+      // An uncleared cheque is IN the ledger as a negative and NOT in the bank,
+      // so subtracting a negative puts the bank ABOVE the books -- which is
+      // exactly what a real statement shows and what the old comparison called
+      // a disagreement.
+      outstanding_cents: outstandingCents,
+      outstanding_deposits_in_transit: outstandingDeposits,
+      outstanding_disbursements: outstandingDisbursements,
+      expected_bank_cents: asOfCents - outstandingCents,
+      // ── AND THE THIRD STATE, WHICH IS THE ONE THAT MATTERS ────────────
+      // If NOT ONE ROW says anything about clearing, this cannot tell "every
+      // item cleared" from "nobody records clearance". Treating silence as
+      // fully-cleared would make every practice with an uncleared cheque read
+      // DISAGREES, which is the alarm this change exists to stop; treating it
+      // as fully-outstanding would invent a reconciliation nobody performed.
+      // So `agrees` is NULL and the reason says which fact is missing.
+      // ── WHAT `agrees` COMPARES, AND WHY IT IS NOT NULL WHEN CLEARANCE IS
+      // ── UNTRACKED. The first version of this change returned null the
+      // moment no row carried clearance information -- which is EVERY practice
+      // today, since nothing has ever written the field. That would have
+      // removed the only externally-sourced leg from every existing licence to
+      // fix an over-sensitivity, and a leg that is permanently NOT COMPARED is
+      // its own kind of alarm nobody reads. Recorded because it was the wrong
+      // call and was driven before it shipped: five existing assertions went
+      // from true/false to null, which is what surfaced it.
+      //
+      // So: when clearance IS tracked the comparison is the real bank-rec
+      // identity, bank = as_of - outstanding. When it is NOT, the comparison is
+      // the same one this leg has always made, and `clearance_tracked: false`
+      // plus the sentence below say that a difference may be an outstanding
+      // cheque rather than an error. The limit is DISCLOSED rather than
+      // swallowing the answer.
+      clearance_tracked: clearanceStated > 0,
+      clearance_stated_rows: clearanceStated,
+      // UNDATED ROWS STILL FORCE NULL, and that is a different fact: it is not
+      // that the comparison might be over-sensitive, it is that part of the
+      // ledger was in neither side of it.
+      agrees: undatedRows
+        ? null
+        : (clearanceStated === 0
+          ? latest.cents === asOfCents
+          : latest.cents === (asOfCents - outstandingCents)),
+      why: undatedRows
+        ? 'NOT COMPARED. ' + undatedRows + ' transaction(s) carry no date, so '
+          + 'they fall on neither side of the statement and the as-of figure is '
+          + 'short by ' + undatedCents + ' cents. A comparison over part of the '
+          + 'ledger is not a reconciliation of it.'
+        : (clearanceStated === 0
+          ? 'COMPARED WITHOUT AN OUTSTANDING-ITEM ADJUSTMENT. No transaction '
+            + 'records whether it has cleared the bank, so an uncleared cheque or '
+            + 'a deposit in transit is indistinguishable here from a real '
+            + 'difference -- and both are normal in a trust account. If this leg '
+            + 'disagrees, check the outstanding items before treating it as an '
+            + 'error. Record `cleared_on` (or `cleared: false`) on trust '
+            + 'transactions and this leg adjusts for them.'
+          : ''),
       movement_after_statement_cents: afterStatementCents,
       undated_rows: undatedRows,
-      independence: 'external record -- compared AS OF the statement date, '
-        + 'because an all-time ledger total and a point-in-time bank balance '
-        + 'are not the same quantity',
+      undated_cents: undatedCents,
+      independence: 'external record -- compared AS OF the statement date and '
+        + 'ADJUSTED for outstanding items, because an all-time ledger total, a '
+        + 'point-in-time bank balance, and a bank balance that has not yet seen '
+        + 'last week\'s cheques are three different quantities',
     },
   };
 
@@ -280,6 +392,48 @@ function reconcileTrustLedger(input) {
       + 'the money legs.',
   };
 
+  // ── MONEY CONSERVATION ACROSS THE DATE SPLIT (2026-09-18) ─────────────
+  // row_conservation above asks whether every ROW ended up somewhere. This asks
+  // the same question of the MONEY, one axis over, and it is the defect my own
+  // review of this file found:
+  //
+  //   asOf + afterStatement must equal the ledger total, over the same
+  //   readable, non-voided rows.
+  //
+  // It silently did not, because an UNDATED row is excluded from BOTH sides of
+  // the split. Driven before the fix: one dated $100 deposit plus one UNDATED
+  // $500 deposit, with the device leg supplied so two legs compared, returned
+  // status AGREES with 50000 cents reconciled by nothing -- the only cue a
+  // `undated_rows: 1` nested inside a leg that said `agrees: true`.
+  //
+  // THE CONTROL IS WHAT MAKES IT A DEFECT RATHER THAN A LIMIT. The same $500
+  // DATED after the statement also returns AGREES, and there it is honest:
+  // movement_after_statement_cents reports it and a reader can see where the
+  // money went. Post-statement money was ACCOUNTED; undated money was DROPPED;
+  // the two were presented identically. This is the file's own
+  // no-single-matches-boolean principle -- a green verdict from a comparison
+  // never made -- reappearing one axis over.
+  //
+  // NULL WHEN THERE IS NO STATEMENT, never true: with no bank leg there is no
+  // date split to conserve across, and reporting `holds: true` for an identity
+  // nothing evaluated is the shape this whole file refuses.
+  const moneyConservation = latest === null ? {
+    holds: null,
+    why: 'no usable bank statement, so there is no date split to conserve '
+      + 'across. NOT an identity that held.',
+  } : {
+    ledger_cents: ledgerCents,
+    as_of_cents: asOfCents,
+    after_statement_cents: afterStatementCents,
+    undated_cents: undatedCents,
+    unaccounted_cents: ledgerCents - asOfCents - afterStatementCents,
+    holds: (asOfCents + afterStatementCents) === ledgerCents,
+    why: 'every readable, non-voided row falls on exactly one side of the '
+      + 'statement date, so the two sides must sum to the ledger. An UNDATED '
+      + 'row falls on neither and breaks this -- its money is in the ledger and '
+      + 'in no comparison.',
+  };
+
   const compared = Object.keys(legs).filter(
     (k) => legs[k].agrees !== null && !legs[k].structural);
   const disagreeing = compared.filter((k) => legs[k].agrees === false);
@@ -290,14 +444,35 @@ function reconcileTrustLedger(input) {
   // A BROKEN CONSERVATION IDENTITY IS A DISAGREEMENT, not a note. If rows are
   // going missing between the passes, every figure below is computed over an
   // unknown subset and none of it should read as agreement.
+  // A BROKEN MONEY IDENTITY IS NOT A DISAGREEMENT AND NOT AN AGREEMENT. Nothing
+  // here says the books are wrong -- it says part of the ledger was never
+  // compared, which is a CANNOT-RECONCILE about a subset. Folding it into
+  // DISAGREES would report a discrepancy the data does not support; folding it
+  // into AGREES is the bug. It gets the third answer, and `bank_vs_ledger`
+  // already refuses to return true while undated rows exist, so the two agree.
   let status;
   if (disagreeing.length || !conservation.holds) status = 'DISAGREES';
+  // ── THIS LINE CANNOT FIRE TODAY, AND SAYING SO IS THE POINT ────────────
+  // Driven: sabotaging it away leaves the suite GREEN. The money identity can
+  // only break when a row has no readable date, and an undated row already
+  // makes `bank_vs_ledger.agrees` null, which drops `compared` below two and
+  // reaches the PARTIAL on the next line anyway. So the two paths coincide.
+  //
+  // It is KEPT AND LABELLED rather than deleted, the same treatment this file
+  // gives `allocation_vs_ledger`: it states the intent, and it is the line that
+  // keeps holding if a future change ever lets the identity break for a reason
+  // other than an undated row -- a row filtered out of one traversal and not
+  // the other, say, which is exactly the class row_conservation exists for.
+  // A belt-and-braces line presented as a working check would be the
+  // over-claim; a labelled one is not.
+  else if (moneyConservation.holds === false) status = 'PARTIAL';
   else if (compared.length < 2) status = 'PARTIAL';
   else status = 'AGREES';
 
   return {
     status: status,
     row_conservation: conservation,
+    money_conservation: moneyConservation,
     legs_compared: compared.length,
     legs_disagreeing: disagreeing,
     legs: legs,

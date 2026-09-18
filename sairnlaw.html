@@ -554,7 +554,7 @@ label.chk input{width:auto;}
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Client Ledger Balances</span></div><div class="cb" id="tr-client-ledgers"></div></div>
   <div class="card"><div class="ch"><span class="ct">Transaction Log</span></div><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Client</th><th>Matter</th><th>Type</th><th>Amount</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Date</th><th>Client</th><th>Matter</th><th>Type</th><th>Amount</th><th>Description</th><th>Status</th><th>Bank<div style="font-weight:400;font-size:10px;color:var(--muted)">cleared / outstanding</div></th><th>Actions</th></tr></thead>
     <tbody id="trtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -3426,6 +3426,65 @@ async function explainReconciliation(){
   }catch(e){toast('Could not connect to Claude');}
   $('tr-explain-btn').textContent='Explain This Discrepancy (AI)';$('tr-explain-btn').disabled=false;
 }
+// ── MARKING A TRUST TRANSACTION CLEARED OR OUTSTANDING (2026-09-18) ──────
+// The other half of the outstanding-item work in api/_lib/law-trust-reconcile.js.
+// The engine adjusts the bank leg for items the ledger has and the bank has not
+// yet taken; until now nothing could tell it which those were, so it reported
+// `clearance_tracked: false` for every practice and said so.
+//
+// IT GOES IN THE jsonb BLOB AND NEEDS NO MIGRATION. law_trusttx.data is the
+// whole record and api/sd-data.js hands `x.data` straight to the engine, so
+// `cleared_on` reaches it with no schema change and no endpoint change. Checked
+// rather than assumed.
+//
+// THE LOCAL WRITE IS OPTIMISTIC AND THE SERVER RESULT IS READ, the same
+// discipline the void path beside it keeps: a clearance that did not reach the
+// server is a clearance no other computer can see, and on a reconciliation
+// that is the difference between an explained item and an unexplained one.
+async function lawSetClearance(id, clearedOn, outstanding){
+  var list=trustTransactions();
+  var t=list.find(function(x){return x.id===id;});
+  if(!t){toast('That transaction is no longer in this device ledger -- refresh.');return;}
+  if(t.status==='Voided'){toast('A voided transaction cannot clear the bank.');return;}
+  var prevOn=t.cleared_on, prevFlag=t.cleared;
+  if(outstanding){ t.cleared=false; delete t.cleared_on; }
+  else { t.cleared_on=clearedOn; t.cleared=true; }
+  st('law_trusttx',list);
+  rTrust();
+  var syncResult=await sdnData('write','law_trusttx',t);
+  if(!syncResult){
+    // REVERTED, not left looking saved. An unsynced clearance would make THIS
+    // device's reconciliation adjust for an item no other device knows about,
+    // which is a reconciliation two people cannot both be right about.
+    if(prevOn===undefined)delete t.cleared_on; else t.cleared_on=prevOn;
+    if(prevFlag===undefined)delete t.cleared; else t.cleared=prevFlag;
+    st('law_trusttx',list);
+    rTrust();
+    toast(lawWriteFailText('law_trusttx','The clearing status did NOT reach the server, so it was not applied here either — the reconciliation must agree across devices'),7000);
+    return;
+  }
+  toast(outstanding?'Marked outstanding':'Marked cleared '+fdate(clearedOn));
+}
+
+function lawMarkCleared(id){
+  // The date the item cleared the BANK, which is not today and not the
+  // transaction date -- a cheque written on the 14th can clear on the 20th, and
+  // the engine compares as of the statement date, so the difference decides
+  // whether it was outstanding on that statement.
+  var d=prompt('Date this cleared the bank (YYYY-MM-DD):', new Date().toISOString().slice(0,10));
+  if(d===null)return;
+  d=String(d).trim();
+  if(!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(d)){toast('Enter the date as YYYY-MM-DD. Nothing was changed.');return;}
+  // RETURNED, not fired and forgotten. The onclick ignores it, but a caller
+  // that wants to know when the write settled -- a test, or a future batch
+  // action -- cannot get that from a function that drops its own promise.
+  // The first version of the suite for this asserted on the reverted state
+  // BEFORE the await had resolved and reported a failure that was its own.
+  return lawSetClearance(id,d,false);
+}
+
+function lawMarkOutstanding(id){ return lawSetClearance(id,null,true); }
+
 function rTrust(){
   lawRenderDemoNotice('tr-demo-notice','trust');
   fillMatterSelects();
@@ -3457,8 +3516,30 @@ function rTrust(){
     return '<tr'+(t.status==='Voided'?' style="opacity:.55;text-decoration:line-through"':'')+'><td>'+fdate(t.date)+'</td><td>'+H(clientLabel(t.client_id))+'</td><td>'+H(matterLabel(t.matter_id))+'</td>'+
       '<td>'+H(t.type)+'</td><td>'+fmt(t.amount)+'</td><td>'+H(t.description||'--')+(t.status==='Voided'?' (voided: '+H(t.voided_reason)+')':'')+'</td>'+
       '<td><span class="badge '+(statusColors[t.status]||'bx')+'">'+H(t.status)+'</span></td>'+
-      '<td>'+(t.status==='Posted'?'<button class="btn bo bs" onclick="openVoidModal(\''+t.id+'\')">Void</button>':'--')+'</td></tr>';
-  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No trust transactions yet</td></tr>';
+      // ── CLEARED, OUTSTANDING, OR NOT TRACKED (2026-09-18) ──────────────
+      // THREE STATES, and the third is the one that matters. An uncleared
+      // cheque is the commonest legitimate reason a bank balance and a trust
+      // ledger differ -- and this app's own reconciliation note has been
+      // telling people to "check for uncleared checks/deposits" while giving
+      // them nowhere to record one. api/_lib/law-trust-reconcile.js now adjusts
+      // for outstanding items when the rows say anything about clearing, and
+      // reports that it could NOT adjust when they say nothing.
+      //
+      // "Not tracked" is its own answer rather than a default of outstanding:
+      // assuming an unmarked row has not cleared would invent a reconciliation
+      // nobody performed, and assuming it has would hide the very items this
+      // exists to surface.
+      '<td>'+(t.status==='Voided' ? '--'
+        : (t.cleared_on ? '<span class="badge bg">cleared '+H(fdate(t.cleared_on))+'</span>'
+          : (t.cleared===false ? '<span class="badge bw">outstanding</span>'
+            : '<span style="color:var(--muted);font-size:11px">not tracked</span>')))+'</td>'+
+      '<td>'+(t.status==='Posted'
+        ? '<button class="btn bo bs" onclick="openVoidModal(\''+t.id+'\')">Void</button>'
+          + ' <button class="btn bo bs" onclick="lawMarkCleared(\''+t.id+'\')">'
+          + (t.cleared_on?'Re-date':'Mark cleared')+'</button>'
+          + (t.cleared_on||t.cleared===false?'':' <button class="btn bo bs" onclick="lawMarkOutstanding(\''+t.id+'\')">Outstanding</button>')
+        : '--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No trust transactions yet</td></tr>';
 }
 
 // ── TIME TRACKING & BILLING ───────────────────────────────────────────────
