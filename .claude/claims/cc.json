@@ -1902,8 +1902,8 @@
       "task": "sc-credentials: an unparseable or empty representation reported as a successful write",
       "claimed_at": "2026-09-18T22:35:53Z",
       "claimed_at_epoch": 1789770953.3196478,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T22:54:52Z"
     }
   ]
 }
