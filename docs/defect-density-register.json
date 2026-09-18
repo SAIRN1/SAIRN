@@ -8594,7 +8594,7 @@
       "recurrence_open": "Nothing prevents the next message from being derived from a membership test rather than the fact it asserts. No checker looks for user-facing text built from a category predicate where a per-item lookup is in scope. Also unclosed: this fixed the refusal on sd-data.js only -- other handlers with their own BAD_ACTION-style messages were not surveyed."
     },
     {
-      "commit": "d63fdef62257",
+      "commit": "39989d903324",
       "date": "2026-09-18",
       "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
       "files": [
