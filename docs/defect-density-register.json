@@ -8495,7 +8495,7 @@
       "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
     },
     {
-      "commit": "fb0aa2f34b00",
+      "commit": "544b386f697b",
       "date": "2026-09-18",
       "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
       "files": [
