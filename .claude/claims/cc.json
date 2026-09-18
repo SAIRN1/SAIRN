@@ -1872,8 +1872,8 @@
       "task": "record the law_trust_reconcile reachability finding as a review obligation for a non-cc session",
       "claimed_at": "2026-09-18T14:43:19Z",
       "claimed_at_epoch": 1789742599.677618,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:44:10Z"
     }
   ]
 }
