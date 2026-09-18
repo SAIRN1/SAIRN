@@ -664,4 +664,55 @@ test('...and a genuinely EMPTY table is still served as an empty dataset', async
   assert.strictEqual(r.body.rows.length, 0);
 });
 
+// ── THE SAME SHAPE, TWICE MORE, IN THE FILE THE SWEEP HAD ALREADY TOUCHED ──
+// Fixing the feed read and stopping is the Ariane 5 mistake in miniature: the
+// management door carried two more copies of the identical line. Written after
+// a mechanical triage of every .json().catch(...) site in api/ flagged
+// dnt-bi.js:395 and :488 alongside the one already fixed.
+test('an unreadable token LIST refuses rather than showing no tokens', async () => {
+  seed();
+  SESSION = OWNER_SESSION;
+  TABLES.sairndental_bi_tokens.unreadable = true;
+  const r = await POST({ action: 'list' }, MGMT_HEADERS);
+  assert.notStrictEqual(r.body && r.body.ok, true,
+    'an unreadable list was shown as a real, empty token list: ' + JSON.stringify(r.body));
+  assert.strictEqual(r.statusCode, 502, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'READ_UNREADABLE');
+  // The sentence matters as much as the code: an admin reading "no tokens"
+  // concludes there is nothing live to revoke.
+  assert.match(r.body.error.message, /not empty/);
+});
+
+test('...and a practice with NO tokens still gets a real empty list', async () => {
+  seed();
+  SESSION = OWNER_SESSION;
+  TABLES.sairndental_bi_tokens = { rows: [] };
+  const r = await POST({ action: 'list' }, MGMT_HEADERS);
+  assert.strictEqual(r.statusCode, 200, JSON.stringify(r.body));
+  assert.strictEqual(r.body.ok, true);
+  assert.deepStrictEqual(r.body.tokens, []);
+});
+
+test('an unreadable REVOKE is UNKNOWN, not "no such token"', async () => {
+  // This one failed toward a refusal already -- 404 rather than a false
+  // success -- which is the safer direction and is still a lie: the revoke may
+  // have landed, and the admin is told the token never existed.
+  seed();
+  SESSION = OWNER_SESSION;
+  TABLES.sairndental_bi_tokens.unreadable = true;
+  const r = await POST({ action: 'revoke', id: 'TOK-1' }, MGMT_HEADERS);
+  assert.strictEqual(r.statusCode, 502, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'REVOKE_UNCONFIRMED');
+  assert.notStrictEqual(r.body.error.code, 'NOT_FOUND');
+  assert.match(r.body.error.message, /UNKNOWN/);
+});
+
+test('...and revoking a token that really is not there is still NOT_FOUND', async () => {
+  seed();
+  SESSION = OWNER_SESSION;
+  const r = await POST({ action: 'revoke', id: 'TOK-NOPE' }, MGMT_HEADERS);
+  assert.strictEqual(r.statusCode, 404, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'NOT_FOUND');
+});
+
 test.after(function () { global.fetch = realFetch; });

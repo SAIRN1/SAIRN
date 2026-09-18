@@ -398,8 +398,20 @@ async function manage(req, res, ctx) {
       res.status(502).json({ error: { code: 'UPSTREAM', message: 'Upstream connection error — try again' } });
       return;
     }
+    // ── THE SAME SHAPE AS THE FEED READ, one function over (2026-09-18) ────
+    // `Array.isArray(rows) ? rows : []` turned an unparseable 200 into AN
+    // EMPTY TOKEN LIST. The admin screen then says no feed tokens exist, and
+    // the decision taken off that screen is "there is nothing live to revoke"
+    // -- about a list that was never read. A real empty list still answers
+    // `tokens: []`; only null-or-not-an-array refuses.
+    if (!Array.isArray(rows)) {
+      res.status(502).json({ error: { code: 'READ_UNREADABLE',
+        message: 'The data store answered but its reply could not be read, so the feed-token '
+          + 'list is NOT being shown. It is not empty -- do not read this as "no tokens exist".' } });
+      return;
+    }
     // token_hash is not in the select list and never leaves the database.
-    res.status(200).json({ ok: true, provisioned: true, tokens: Array.isArray(rows) ? rows : [] });
+    res.status(200).json({ ok: true, provisioned: true, tokens: rows });
     return;
   }
 
@@ -490,7 +502,22 @@ async function manage(req, res, ctx) {
     // Zero rows means it was already revoked or never existed. Reported as such
     // rather than as a success, because "revoked" and "there was nothing there"
     // are different answers to the person clicking the button.
-    const n = Array.isArray(rows) ? rows.length : 0;
+    //
+    // ── AND "I COULD NOT READ THE ANSWER" IS A THIRD ONE (2026-09-18) ──────
+    // `Array.isArray(rows) ? rows.length : 0` folded an unparseable 200 into
+    // that zero, so an unreadable reply was reported as "no live feed token
+    // with that id". That fails toward a refusal rather than a false success,
+    // which is the safer direction and is still wrong: the revoke may well
+    // have LANDED, and the admin is told the token never existed. The
+    // credential stays trusted or stays feared on an answer nobody read.
+    if (!Array.isArray(rows)) {
+      res.status(502).json({ error: { code: 'REVOKE_UNCONFIRMED',
+        message: 'The data store accepted the revoke but its answer could not be read, so '
+          + 'whether this feed token is now revoked is UNKNOWN -- it was not confirmed and '
+          + 'it was not refused. Reload the token list before deciding it is still live.' } });
+      return;
+    }
+    const n = rows.length;
     if (!n) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No live feed token with that id' } }); return; }
     res.status(200).json({ ok: true, revoked: n });
     return;
