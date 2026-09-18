@@ -1685,6 +1685,16 @@
       "claimed_at_epoch": 1789770947.3504386,
       "status": "released",
       "released_at": "2026-09-18T22:42:49Z"
+    },
+    {
+      "id": "fourth-1789771487",
+      "session": "fourth",
+      "subject": "csv-row-resplit-sweep",
+      "task": "sweep for exported CSV rows re-parsed by splitting on commas and indexed by header position, apply the length guard",
+      "claimed_at": "2026-09-18T22:44:47Z",
+      "claimed_at_epoch": 1789771487.5709567,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
