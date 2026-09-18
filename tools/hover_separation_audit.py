@@ -65,12 +65,18 @@ from collections import Counter, OrderedDict
 SESSIONS = ('hank', 'cc', 'cody', 'fourth')
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
+OWN_CLAIM = '.claude/claims/hover.json'
 
 # Kept identical in meaning to tools/hover_auditor_scope_gate.py's ALLOWED, and
 # the probe asserts the two agree. They are separate constants on purpose: the
 # gate must run with no imports in a hook, and a shared module that one of them
 # silently stopped importing is a failure mode neither would report.
-AUDITOR_SCOPE = (SKILL_DIR, REGISTER)
+#
+# OWN_CLAIM added 2026-09-18 with the gate's matching entry. It has to move in
+# BOTH halves at once: leaving it out here would turn every claim commit the
+# gate now permits into a reported scope VIOLATION in the history audit, which
+# is the same defect wearing the opposite sign.
+AUDITOR_SCOPE = (SKILL_DIR, REGISTER, OWN_CLAIM)
 
 # ── SCOPE AND SIGNATURE ARE NOT THE SAME SET, AND CONFLATING THEM WAS A REAL
 # BUG IN THE FIRST VERSION OF THIS FILE, caught by its own output before it

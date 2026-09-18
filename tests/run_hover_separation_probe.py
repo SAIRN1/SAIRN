@@ -71,10 +71,12 @@ import hover_separation_audit as A            # noqa: E402
 
 IN_SCOPE = ['.claude/skills/sairn-hover-auditor/SKILL.md',
             '.claude/skills/sairn-hover-auditor/references/case-studies.md',
-            'docs/defect-density-register.json']
+            'docs/defect-density-register.json',
+            '.claude/claims/hover.json']
 OUT_OF_SCOPE = ['api/sv-witness.js', 'stonedesk.html', 'tools/defect_register.py',
                 'tests/failsafe/witness_atomicity.js', 'sql/anything.sql',
-                '.claude/skills/sairn-guardian-v2/SKILL.md']
+                '.claude/skills/sairn-guardian-v2/SKILL.md',
+                '.claude/claims/cody.json', '.claude/claims/hank.json']
 
 allowed, refused = G.violations(IN_SCOPE)
 ok('every in-scope path is allowed', not refused, refused)
@@ -102,6 +104,22 @@ _, refused = G.violations(['api\\sv-witness.js'])
 ok('a backslash path is still refused', refused == ['api/sv-witness.js'], refused)
 _, refused = G.violations(['.claude\\skills\\sairn-hover-auditor\\SKILL.md'])
 ok('a backslash path in scope is still allowed', not refused, refused)
+
+# The auditor's OWN claim file, added 2026-09-18 after this gate refused it
+# three times and blocked three real commits. Both directions matter more here
+# than anywhere else in this file: hover.json must pass, and the four build
+# agents' claim files must NOT, because a prefix-shaped fix (`.claude/claims/`)
+# would have let the auditor write claims on behalf of the parties it audits.
+_, refused = G.violations(['.claude/claims/hover.json'])
+ok('the auditor\'s own claim file is allowed -- it records its OWN actions',
+   not refused, refused)
+_, refused = G.violations(['.claude/claims/cody.json', '.claude/claims/cc.json',
+                           '.claude/claims/hank.json', '.claude/claims/fourth.json'])
+ok('...but a BUILD AGENT\'s claim file is still refused, all four',
+   len(refused) == 4, refused)
+_, refused = G.violations(['.claude/claims/hover.json.bak'])
+ok('...and a near-miss on the claim file is refused, not prefix-matched',
+   refused == ['.claude/claims/hover.json.bak'], refused)
 
 # A near-miss that must NOT be allowed: a sibling directory whose name starts
 # with the allowed one would pass a naive startswith on the un-slashed prefix.

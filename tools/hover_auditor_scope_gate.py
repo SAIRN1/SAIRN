@@ -66,6 +66,7 @@ import sys
 
 SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
 REGISTER = 'docs/defect-density-register.json'
+OWN_CLAIM = '.claude/claims/hover.json'
 
 # ── THE ALLOWLIST, AND EVERY ENTRY CARRIES THE SENTENCE THAT PUT IT THERE ────
 # Nothing is here because it seemed reasonable. If a future reader wants to add
@@ -78,6 +79,18 @@ ALLOWED = (
     (REGISTER,
      'SKILL.md, "Where findings go": "Log real findings to '
      'docs/defect-density-register.json via tools/defect_register.py --add"'),
+    # Added 2026-09-18 after this gate refused the auditor's OWN claim file on
+    # three separate occasions (blocked a claim release, a coordination-health
+    # report and a review-obligation discharge). A claim file is the record of
+    # what its own session is doing -- it is audited by nobody and it audits
+    # nothing, which is exactly the side of the skill's own test that says
+    # "it's yours to build". ONLY hover.json: the other four claim files belong
+    # to the build agents and writing one of those would be the auditor acting
+    # for a party it audits, so they stay refused.
+    (OWN_CLAIM,
+     'SKILL.md, core rule exception: "this role\'s own operational tooling -- '
+     'the self-log ... anything that records or verifies the hover auditor\'s '
+     '*own* actions rather than the platform\'s -- is not \'platform code\'"'),
 )
 
 # Named explicitly so the reader does not have to infer it from the absence of
