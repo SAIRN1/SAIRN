@@ -1439,6 +1439,16 @@
       "claimed_at_epoch": 1789742172.95633,
       "status": "released",
       "released_at": "2026-09-18T14:42:50Z"
+    },
+    {
+      "id": "cody-1789742634",
+      "session": "cody",
+      "subject": "tier-a-review-three-way-match",
+      "task": "review cc three way match mutation control sb_po sb_recv",
+      "claimed_at": "2026-09-18T14:43:54Z",
+      "claimed_at_epoch": 1789742634.5994468,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
