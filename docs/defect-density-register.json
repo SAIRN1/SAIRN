@@ -8535,6 +8535,70 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
     },
     {
+      "commit": "5e0b531f2776",
+      "date": "2026-09-18",
+      "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+      "files": [
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js"
+      ],
+      "lines_added": 553,
+      "lines_removed": 15,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/law-trust-reconcile.js excluded an UNDATED transaction from both sides of the statement-date split, so asOf + afterStatement silently stopped equalling the ledger and the reconciliation returned status AGREES with client trust money in no comparison at all -- the only cue an undated_rows count nested inside a leg reporting agrees:true. Separately it had no cleared/outstanding concept, so an uncleared cheque dated before the statement reported DISAGREES while the books were correct. And dayOf() validated the SHAPE of a date rather than the date, accepting 2026-02-31 as a statement date or a clearance",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 3
+      },
+      "citation_note": "a green verdict from a comparison that was never made -- the file's own stated principle about the single matches boolean, reappearing one axis over on the date split",
+      "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
+    },
+    {
+      "commit": "91af7b7348cd",
+      "date": "2026-09-18",
+      "subject": "fix(sairnscape): the banner I built to stop an overstated coverage claim was making one",
+      "files": [
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js"
+      ],
+      "lines_added": 105,
+      "lines_removed": 16,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the outbound queue's disclosure banner claimed coverage at RESOURCE level -- 'Queued writes cover scp_quotes, scp_designs only' -- while coverage is per CALL SITE: scp_quotes is written at four sites and exactly one is queued. Two of the three unqueued ones are the same user-facing action, 'send this to Quoting', reached from the irrigation and water-feature panels, so the sentence told a user those were protected when a failed save there leaves the quote on that device alone. The suite's guard for this asserted the banner contained the exact claim string, so it confirmed the sentence was present and never asked whether it was true",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4f674484544d",
+        "date": "2026-09-18",
+        "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
+        "lag_days": 0
+      },
+      "citation_note": "a disclosure that overstates its own scope is the unearned clearance this banner was built to prevent, made by the banner",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the banner and its test arm were written in the same change and asserted the same string, so neither could contradict the other"
+    },
+    {
       "commit": "c1443fd7eb69",
       "date": "2026-09-18",
       "subject": "fix(sd-data): the refusal named the one verb item 97 exists to forbid -- and a test was pinning it there",
@@ -8592,39 +8656,6 @@
         }
       ],
       "recurrence_open": "Nothing prevents the next message from being derived from a membership test rather than the fact it asserts. No checker looks for user-facing text built from a category predicate where a per-item lookup is in scope. Also unclosed: this fixed the refusal on sd-data.js only -- other handlers with their own BAD_ACTION-style messages were not surveyed."
-    },
-    {
-      "commit": "5e0b531f2776",
-      "date": "2026-09-18",
-      "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
-      "files": [
-        "api/_lib/law-trust-reconcile.js",
-        "api/_lib/law-trust-reconcile.test.js",
-        "sairnlaw.html",
-        "tests/sairnlaw_trust_clearance.js"
-      ],
-      "lines_added": 553,
-      "lines_removed": 15,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "api/_lib/law-trust-reconcile.js excluded an UNDATED transaction from both sides of the statement-date split, so asOf + afterStatement silently stopped equalling the ledger and the reconciliation returned status AGREES with client trust money in no comparison at all -- the only cue an undated_rows count nested inside a leg reporting agrees:true. Separately it had no cleared/outstanding concept, so an uncleared cheque dated before the statement reported DISAGREES while the books were correct. And dayOf() validated the SHAPE of a date rather than the date, accepting 2026-02-31 as a statement date or a clearance",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 3
-      },
-      "citation_note": "a green verdict from a comparison that was never made -- the file's own stated principle about the single matches boolean, reappearing one axis over on the date split",
-      "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
     },
     {
       "commit": "e09d3afdd4c2",
