@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -8560,6 +8560,58 @@
       },
       "citation_note": "the sentence was corrected on 2026-09-15 and the affordance was not -- a control that contradicts the text beside it is a could-not-tell the user resolves in the control's favour",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
+    },
+    {
+      "commit": "50ee1e321bad",
+      "date": "2026-09-18",
+      "subject": "fix(stonedesk): the pricing backtest silently dropped rows a comma tore, and reported the survivors as the whole file",
+      "files": [
+        "stonedesk.html"
+      ],
+      "lines_added": 45,
+      "lines_removed": 1,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html parseAndStress(): the Pricing Formula Backtest reads a user-uploaded CSV, splits every line on a bare comma and zips it to the header by position with headers.forEach((h,i)=>obj[h]=vals[i]). A cell containing a comma is quoted by every CSV writer, a bare split tears it, and every later column is read ONE PLACE LEFT. The shifted row's material and project_type then miss MATERIALS/PROJECTS, the row returns null, and .filter(Boolean) DROPS IT SILENTLY -- so the panel prints 'Jobs Tested: N' over a number that looks like the whole file and an average computed from whichever rows survived. Driven: a 3-row file containing one torn row reported 'Jobs Tested: 2' with no message of any kind. Fixed by refusing the file when any non-empty row's cell count disagrees with the header, naming the first offending line.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "parseAndStress() has read uploaded CSV this way since before the register began on 2026-09-09; git log on the enclosing block does not isolate a commit that introduced the naive split rather than moving it, and naming one I had not verified would be a guess."
+      },
+      "contributing_factors": [
+        {
+          "factor": "the row was zipped to the header by index after a bare comma split, so a quoted cell containing a comma shifted every later column without any error",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "refuse the file when a non-empty row cell count disagrees with the header, and name the first offending line"
+        },
+        {
+          "factor": ".filter(Boolean) turned an unparseable row into an absent row, which is the silent-partial-data shape rather than a parse error",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "torn rows are now detected before the mapping stage and refuse the whole backtest rather than being dropped"
+        },
+        {
+          "factor": "no test covers this panel at all -- parseAndStress has no suite, so the mis-parse had nothing that could go red",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a suite driving parseAndStress through its DOM stubs would pin both the guard and the reporting; the sabotage harness written for this fix is the shape it would take"
+        },
+        {
+          "factor": "the panel reports Jobs Tested without ever stating how many uploaded rows it excluded, so ANY silent exclusion reads as a complete result",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "a general skipped-row disclosure is a wider change than this sweep; the torn-row cause now refuses outright, and the remaining exclusions (unknown material, zero length) are still silent and recorded here rather than fixed"
+        }
+      ],
+      "recurrence_open": "The bare early return immediately below -- if(!results.length) return; -- still shows NOTHING when every row is excluded for any reason other than being torn. Found by driving this fix (the 'every row torn' case rendered no message at all before the guard) and deliberately not changed. And the sweep covered CSV re-parsing only; nothing was swept for the same index-by-position shape over other delimiters."
     },
     {
       "commit": "544b386f697b",
