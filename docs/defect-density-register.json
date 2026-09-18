@@ -8562,7 +8562,7 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
     },
     {
-      "commit": "f07ea03f5913",
+      "commit": "49f721c1e071",
       "date": "2026-09-18",
       "subject": "fix(stonedesk): the pricing backtest silently dropped rows a comma tore, and reported the survivors as the whole file",
       "files": [
