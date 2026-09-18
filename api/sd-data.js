@@ -2569,6 +2569,12 @@ module.exports = async (req, res) => {
         });
         const dwrows = await dw.json().catch(function () { return null; });
         if (!dw.ok) return upstream(res, dwrows);
+        const dwSays = wroteRow(dwrows);
+        if (dwSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'sd_quote_requests'); return; }
+        if (dwSays === 'MISSED') {
+          res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No sd_quote_requests record with that id when the delete was applied — nothing was deleted' } });
+          return;
+        }
         res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, dmarked) });
         return;
       }
@@ -9898,6 +9904,16 @@ module.exports = async (req, res) => {
       });
       const wRows = await w.json().catch(function () { return null; });
       if (!w.ok) return upstream(res, wRows);
+      const wSays = wroteRow(wRows);
+      if (wSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, resource); return; }
+      if (wSays === 'MISSED') {
+        // The row was there when we read it and the PATCH matched nothing, so
+        // it moved or went away in between. Reporting the soft-delete as done
+        // would tell the caller a record is gone that is not.
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No ' + resource
+          + ' record with that id when the delete was applied — nothing was deleted' } });
+        return;
+      }
       res.status(200).json({ ok: true, data: marked });
       return;
     }
@@ -12450,6 +12466,39 @@ function scNotProvisionedMessage(resource) {
 // with any promoted columns (shop_id, created_at) merged on top.
 function flat(data, extra) {
   return Object.assign({}, data || {}, extra || {});
+}
+
+// ── A WRITE LANDED ONLY IF THE REPRESENTATION CAME BACK (2026-09-18) ────────
+// Swept after the same defect was fixed in api/sc-credentials.js, where an
+// unparseable 2xx was reported as a successful credential save.
+//
+// Under `Prefer: return=representation` a PATCH that MATCHED returns one row
+// and a PATCH that matched ZERO returns `[]` with status 200. Checking only
+// `w.ok` cannot tell those apart, and `.json().catch(() => null)` cannot tell
+// either from a body that would not parse. All three reached
+// `res.json({ ok: true })`.
+//
+// THREE ANSWERS, NOT TWO. `[]` means the server LOOKED and matched nothing --
+// on a soft-delete that is "the row is gone or its id moved", which is a 404,
+// not a success. An unreadable or wrong-shaped body means the answer could not
+// be read, and calling that success is a false confirmation while calling it a
+// failure claims nothing was written when the write may well have landed.
+//
+// THE CONSEQUENCE HERE IS A DELETION THAT DID NOT HAPPEN. The caller is told
+// the record was removed and it is still there, which is the same sentence this
+// platform keeps refusing in the other direction.
+function wroteRow(rows) {
+  if (rows === null || rows === undefined) return 'UNKNOWN';   // body unreadable
+  if (!Array.isArray(rows)) return 'UNKNOWN';                  // not the shape asked for
+  if (rows.length === 0) return 'MISSED';                      // matched nothing
+  return 'WROTE';
+}
+
+function refuseUnconfirmedWrite(res, what) {
+  res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',
+    message: 'The data store accepted the request but its answer could not be read, so '
+      + 'whether the change to ' + what + ' was saved is UNKNOWN -- it was not confirmed '
+      + 'and it was not refused. Refresh and check the current value before trying again.' } });
 }
 
 function upstream(res, detail) {
