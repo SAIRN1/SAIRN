@@ -279,6 +279,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-vendorcat" onclick="nav('vendorcat')"><span class="sico">&#128722;</span>Vendor Catalog</button>
       <div class="ss">Reporting</div>
       <button class="sb" id="sb-bi" onclick="nav('bi')"><span class="sico">&#128200;</span>BI &amp; Data Warehouse</button>
+      <button class="sb" id="sb-rollup" onclick="nav('rollup')"><span class="sico">&#127970;</span>Office Roll-Up</button>
       <div class="sfoot">SAIRNdental &copy; 2026</div>
     </aside>
     <main>
@@ -1114,6 +1115,52 @@ label.chk input{width:auto;}
       </div>
 
       <!-- BI / DATA WAREHOUSE FEED (2026-09-02, competitive-gap audit B5) -->
+      <!-- ── OFFICE ROLL-UP (2026-09-18) ──────────────────────────────────
+           THE ENGINE SHIPPED 2026-09-15 AND NOTHING COULD REACH IT. Competitive
+           gap B2 was recorded BUILT in docs/SAIRN-OPEN-WORK-INDEX.md on the
+           strength of api/_lib/dnt-rollup.js, the owner-gated endpoint, 39 test
+           arms, Tier A and two independent reviews -- and `dnt_rollup` appeared
+           ZERO times in every .html file in the repo. Of the 25 resources this
+           app registers it was the only one no client named.
+           docs/2026-09-17-sairndental-competitive-gap-rederived.md is the
+           finding; this panel is the missing half. No new logic: every figure
+           below is computed server-side and rendered, never recomputed here.
+
+           THE ENGINE'S FOUR RULES HAVE TO SURVIVE THE SCREEN, which is the only
+           way a careful module stays careful. A null metric renders as COULD NOT
+           READ and never as 0 or a dash; UNASSIGNED is its own row outside the
+           office list and is never presentable as an office; an office id that
+           is not in the registry is labelled as such; and every figure carries
+           its row count. A panel that rounded any of those to a tidy number
+           would undo the reason the module was written. -->
+      <div class="panel" id="panel-rollup">
+        <div class="ph"><div><div class="ptitle">Office Roll-Up</div><div class="psub">Patients, appointments and production per office &mdash; and what it could not measure, said out loud</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="rRollup()">Refresh</button></div></div>
+
+        <!-- Owner-only, and the server is the real gate: api/sd-data.js refuses
+             dnt_rollup from any role outside DNT_MANAGEMENT_ROLES regardless of
+             what this div does. -->
+        <div id="rollup-not-owner" style="display:none" class="card"><div class="cb">
+          <div style="font-weight:600;margin-bottom:4px">The office roll-up is for practice management</div>
+          <div style="color:var(--muted);font-size:13px">It compares offices across the whole practice, so it is limited to the owner. It carries no patient rows &mdash; only counts and totals.</div>
+        </div></div>
+
+        <div id="rollup-owner-tools">
+          <!-- A REFUSAL IS NOT AN EMPTY PRACTICE and a failed read is not a
+               zero. This line carries whichever of those happened, and the
+               table stays empty rather than showing a board nothing backs. -->
+          <div id="rollup-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+
+          <div class="card"><div class="ch"><div class="ct">By office</div></div><div class="cb" style="padding:0">
+            <table><thead><tr><th>Office</th><th>Patients</th><th>Appointments</th><th>Production</th></tr></thead><tbody id="rollup-tbody"></tbody></table>
+          </div></div>
+
+          <div class="card" id="rollup-disclosure-card" style="display:none"><div class="ch"><div class="ct">What this report could not measure</div></div><div class="cb">
+            <div id="rollup-disclosure" style="font-size:13px;line-height:1.6"></div>
+          </div></div>
+        </div>
+      </div>
+
       <div class="panel" id="panel-bi">
         <div class="ph"><div><div class="ptitle">BI &amp; Data Warehouse</div><div class="psub">A read-only feed Power BI, Tableau or Looker Studio can connect to directly &mdash; instead of somebody exporting a CSV every Monday</div></div></div>
 
@@ -1924,6 +1971,7 @@ function nav(id){
   if(id==='vendorcat')rVendorCat();
   if(id==='supplies')rSupplies();
   if(id==='bi')rBiFeeds();
+  if(id==='rollup')rRollup();
   // Renders from local records immediately, then replaces that with the real
   // server-computed board when it arrives -- the panel is never blank, and
   // never shows a status it computed itself.
@@ -2369,6 +2417,142 @@ async function rBiFeeds(){
       '<td>'+H(t.last_used_at?String(t.last_used_at).slice(0,10):'Never')+'</td>'+
       '<td><button class="btn bo bs" onclick="biRevoke(\''+H(t.id)+'\')">Revoke</button></td></tr>';
   }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:18px">No live feeds</td></tr>';
+}
+
+// ── OFFICE ROLL-UP (2026-09-18) ────────────────────────────────────────────
+// The reader api/_lib/dnt-rollup.js never had. NOTHING IS COMPUTED HERE -- every
+// figure is the server's, rendered. A panel that re-derived a total would give
+// the practice two numbers for one question, which is the defect the module's
+// own third-leg reasoning exists to prevent.
+//
+// THE MODULE'S FOUR RULES ARE LOAD-BEARING ON SCREEN, not just in the JSON:
+//   1. a null metric is COULD NOT READ, never 0 and never a dash. A dash in a
+//      money column reads as "nothing billed", which is a claim about the
+//      business rather than about the read that failed.
+//   2. UNASSIGNED sits OUTSIDE the office list, labelled, and can never be
+//      mistaken for an office -- the module deliberately hoists it out of
+//      `locations` so no client can render it as one, and this one does not.
+//   3. an office id that is not in the registry is shown and named as such: a
+//      removed office still has history.
+//   4. every figure carries its row count, and an unreadable FIELD is counted
+//      beside it rather than folded into the total.
+function rollupCell(m, kind){
+  if(!m) return '<span style="color:var(--muted)">not reported</span>';
+  if(m.value===null||m.value===undefined){
+    // NEVER 0 AND NEVER A DASH. The module returns null precisely so this
+    // cannot be read as a measurement, and the screen has to keep that.
+    return '<span class="badge br">COULD NOT READ</span>'+
+      (m.unreadable?'<div style="font-size:11px;color:var(--muted)">'+H(String(m.unreadable))+'</div>':'');
+  }
+  var v = (kind==='money')
+    ? '$'+Number(m.value).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})
+    : String(m.value);
+  var sub=[];
+  if(typeof m.rows==='number') sub.push(m.rows+(m.rows===1?' row':' rows'));
+  if(m.unread) sub.push('<b style="color:var(--danger)">'+m.unread+' unreadable</b>');
+  return v+(sub.length?'<div style="font-size:11px;color:var(--muted)">'+sub.join(' &middot; ')+'</div>':'');
+}
+
+// EXTRACTED SO IT CAN BE DRIVEN (2026-09-18). This was an inline `uHas`
+// expression, and the suite's arm for it was a SOURCE-PRESENCE assertion --
+// "the file contains the words 'Not attributed to any office'". Sabotaging the
+// predicate to `false` suppressed the row entirely and the suite stayed GREEN,
+// which is the existence-assertion weakness this platform has now paid for
+// twice. A predicate in its own function is a predicate a test can drive.
+//
+// SHOWN ONLY WHEN IT HOLDS ROWS, on purpose: an empty unattributed bucket is a
+// true zero and a warning about nothing teaches people to ignore the warning.
+function rollupHasUnattributed(u){
+  if(!u||!u.metrics) return false;
+  return Object.keys(u.metrics).some(function(k){
+    return u.metrics[k] && u.metrics[k].rows;
+  });
+}
+
+function rollupRow(label, sub, mets, cls){
+  var g=function(k){return mets?mets[k]:null;};
+  return '<tr'+(cls?' style="'+cls+'"':'')+'>'+
+    '<td>'+label+(sub?'<div style="font-size:11px;color:var(--muted)">'+sub+'</div>':'')+'</td>'+
+    '<td>'+rollupCell(g('patients'))+'</td>'+
+    '<td>'+rollupCell(g('appointments'))+'</td>'+
+    '<td>'+rollupCell(g('production'),'money')+'</td>'+
+    '</tr>';
+}
+
+async function rRollup(){
+  var isOwner=prole==='owner';
+  if($('rollup-not-owner'))$('rollup-not-owner').style.display=isOwner?'none':'';
+  if($('rollup-owner-tools'))$('rollup-owner-tools').style.display=isOwner?'':'none';
+  if(!isOwner)return;
+  var tbody=$('rollup-tbody'),note=$('rollup-note'),dcard=$('rollup-disclosure-card');
+  if(!tbody)return;
+  tbody.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">Reading&hellip;</td></tr>';
+  if(dcard)dcard.style.display='none';
+
+  var b=await sdnData('read','dnt_rollup',{});
+  // A REFUSAL IS NOT AN EMPTY PRACTICE, and a failed read is not a practice
+  // that produced nothing. Both leave the table empty and say which happened --
+  // the same discipline every other panel here already keeps, and the one the
+  // module refuses to break server-side by returning null rather than 0.
+  if(!b){
+    var why=dntLastErrText('dnt_rollup');
+    if(note)note.textContent=why
+      ? ('The server declined the roll-up: '+why+' Nothing is shown rather than a partial report.')
+      : 'Could not read the roll-up. Nothing is shown rather than a report built on part of the practice.';
+    tbody.innerHTML='<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">Not shown</td></tr>';
+    return;
+  }
+
+  var locs=Array.isArray(b.locations)?b.locations:[];
+  var rows=locs.map(function(l){
+    var name=H(l.name||l.location_id||'(unnamed)');
+    // RULE 3. The registry is the list of CURRENT offices; an id on real rows
+    // that is not in it is history, not an error, and saying so is the point.
+    var sub=l.registered?H(l.location_id):('<span class="badge br">not in the office registry</span> '+H(l.location_id));
+    return rollupRow(name,sub,l.metrics);
+  });
+
+  // RULE 2. Its own row, after the offices, visually separated, and never
+  // presentable as an office. Shown only when it actually holds rows -- an
+  // empty unattributed bucket is a true zero and does not need a warning.
+  var u=b.unassigned;
+  if(rollupHasUnattributed(u)){
+    rows.push(rollupRow('<b>Not attributed to any office</b>',
+      'Recorded before this practice had offices, or with no office on the row. These are NOT part of any office above, and they are not dropped either.',
+      u.metrics,'background:#fff8e1'));
+  }
+  if(b.totals){
+    rows.push(rollupRow('<b>Whole practice</b>','every row above, including unattributed',b.totals,'border-top:2px solid var(--line)'));
+  }
+  tbody.innerHTML=rows.join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:18px">No offices and nothing recorded yet. Nothing is inferred.</td></tr>';
+
+  var d=b.disclosure||{};
+  var bits=[];
+  if(d.registry_size===0){
+    bits.push('This practice has <b>no offices in its registry</b>, so every row is reported as unattributed rather than assigned to a default office.');
+  }
+  var un=d.unreadable&&Object.keys(d.unreadable);
+  if(un&&un.length){
+    bits.push('<b>Could not read: '+H(un.join(', '))+'.</b> Those figures are blank above rather than zero &mdash; a roll-up that silently omitted them would print a total smaller than reality by an unknown amount.');
+  }
+  if(d.unread_fields){
+    bits.push('<b>'+d.unread_fields+' amount(s) could not be read</b> and are counted but not added. The rows still exist; their money does not appear in any total.');
+  }
+  if(Array.isArray(d.unregistered_location_ids)&&d.unregistered_location_ids.length){
+    bits.push('Office id(s) on real rows but not in the registry: <b>'+H(d.unregistered_location_ids.join(', '))+'</b>. Usually a closed office; its history is kept separate rather than merged.');
+  }
+  if(d.complete===false&&!bits.length){
+    bits.push('This report is <b>not complete</b> &mdash; some rows could not be attributed to an office. See the unattributed row above.');
+  }
+  if(note){
+    note.innerHTML=(d.complete===true&&!bits.length)
+      ? ('Every row was read and attributed. '+H(String(locs.length))+' office(s) in the registry.')
+      : '<b>This report does not cover everything.</b> What it missed is listed below rather than rounded away.';
+  }
+  if(dcard){
+    dcard.style.display=bits.length?'':'none';
+    if($('rollup-disclosure'))$('rollup-disclosure').innerHTML='<ul style="margin:0;padding-left:18px"><li>'+bits.join('</li><li>')+'</li></ul>';
+  }
 }
 
 async function biMint(){
@@ -3420,6 +3604,10 @@ async function submitCompleteVisit(){
   var amount=Number($('cv-amount').value);
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addChargeEntry(a.patient_id, a.id, a.procedure_type_id, amount);
+  // BRANCHED ON FIRST. A refused amount returns syncResult null and refused
+  // false, which is the UNREACHABLE shape -- without this the toast would say
+  // "saved on this device only" about a row that was never built.
+  if(result.badAmount){toast(result.why);return;}
   // THE VISIT IS NOT MARKED COMPLETED IF ITS CHARGE WAS REFUSED, and the modal
   // stays open. The two are one action to the person using it -- the button
   // says "Visit completed, charge added" -- and completing the appointment
@@ -4892,6 +5080,7 @@ async function submitCharge(){
   if(!procId){toast('Select a procedure type');return;}
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addChargeEntry(patientId,'',procId,amount);
+  if(result.badAmount){toast(result.why);return;}
   rBilling();
   if(!result.syncResult){
     // TWO DIFFERENT FACTS, AND THEY USED TO SHARE ONE SENTENCE. Refused means
@@ -4917,6 +5106,7 @@ async function submitPayment(){
   if(!patientId){toast('Select a patient first');return;}
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addPaymentEntry(patientId,amount,method);
+  if(result.badAmount){toast(result.why);return;}
   rBilling();
   if(!result.syncResult){
     if(result.refused){
@@ -5349,6 +5539,24 @@ function lookupCoverage(payer, procedureTypeId){
 // Locked-in at call time (design spec §0) -- the caller stores this
 // result on the charge record permanently. Never recomputed for an
 // existing charge, even if the underlying coverage rule changes later.
+// ── STILL CARRIES `Number(amount)||0`, AND THAT IS FLAGGED RATHER THAN FIXED
+// ── HERE (2026-09-18). The same unparseable-becomes-a-measured-zero shape
+// dntMoneyIn() removed from addChargeEntry and addPaymentEntry.
+//
+// THE PERSISTING PATH IS SAFE: addChargeEntry now passes `amt`, already
+// validated, so the figure this function STORES on a charge record can no
+// longer be derived from an amount the app could not read.
+//
+// The four other callers pass a procedure's `default_fee` or a line `fee` --
+// practice-entered numbers, used for a DISPLAYED estimate. An unreadable fee
+// there still produces a silent $0 estimate, which is a real instance of the
+// same class. It is NOT fixed in this pass because the fix is not the parse: it
+// is deciding what `estimated_insurance_portion` MEANS when the fee is
+// unreadable, and that field is persisted on the charge record and read
+// elsewhere. Changing a stored field's contract by reflex, to close a defect
+// whose persisting path is already closed, is the scope growth this platform
+// asks not to fold in silently. Named so the next person inherits the fact
+// rather than rediscovering it.
 function computeEstimatedInsurance(amount, payer, procedureTypeId){
   var cov=lookupCoverage(payer, procedureTypeId);
   return { amount: Math.round((Number(amount)||0) * (cov.coveragePercent/100) * 100)/100, found: cov.found };
@@ -5430,12 +5638,63 @@ function patientBalance(patientId){
 // EMPTY IS A LEGITIMATE VALUE. A procedure type with no cdt_version is the
 // common case today (cdtMaintenance() counts exactly those as `unverifiable`),
 // and writing a placeholder would invent an edition nobody recorded.
+// ── MONEY IN, OR NOTHING. NEVER A MEASURED ZERO. (2026-09-18) ─────────────
+// addChargeEntry and addPaymentEntry built their record with `Number(amount)||0`.
+// Both were CORRECT BY CALLER and not by construction: all three call sites
+// guard with `if(!amount||amount<=0)`, so nothing unreadable ever reached them
+// -- and a fourth caller without that guard would have stored a SILENT $0.
+//
+// THAT IS THE WORST SHAPE AVAILABLE HERE, and it is worse than the server-side
+// one it mirrors. api/_lib/dnt-rollup.js reports an unreadable AMOUNT as
+// `unread` and drops `complete` to false, so a reader can see the money is
+// missing. A zero stored at the write is not unreadable at all: it is a real,
+// readable, measured $0 charge. The roll-up counts it, `unread` stays 0,
+// `complete` stays true, and the practice's production total is short by the
+// whole amount with nothing anywhere saying so. The one case the server's
+// careful arithmetic structurally cannot see is the one this creates.
+//
+// So the parse refuses instead. This is api/_lib/safe-number.js's
+// measureNumber() -- null for absent, blank, boolean, array or unparseable --
+// plus the non-negative rule these two ledgers already enforced at their call
+// sites. A caller that genuinely wants zero passes 0, which parses to 0 and is
+// visibly a choice.
+//
+// NOT A CURRENCY PARSER, for the reason safe-number.js gives: stripping `$` and
+// `,` would be this app guessing at a locale, and `1,200` is one thousand two
+// hundred in one and one-point-two in another. An amount that arrives formatted
+// is an upstream defect and must be refused, not repaired here.
+function dntMoneyIn(v){
+  if(v===null||v===undefined) return null;
+  if(typeof v==='string'&&v.trim()==='') return null;
+  if(typeof v==='boolean'||Array.isArray(v)) return null;
+  var n=Number(v);
+  return (Number.isFinite(n)&&n>=0)?n:null;
+}
+
+// The refusal both writers return. A SHAPE THE EXISTING CALLERS CANNOT MISTAKE
+// FOR SUCCESS: syncResult is null and refused is false, which is the
+// "unreachable" shape, so this carries `badAmount` and every call site branches
+// on it FIRST. Without that the toast would say "saved on this device only"
+// about a row that was never built.
+function dntBadAmount(what){
+  return {rec:null, badAmount:true, syncResult:null, refused:false, kept:false, queued:false,
+    why:'That '+what+' amount could not be read as a number, so NOTHING was recorded. '
+      +'It was not saved as $0 -- a zero would sit in the ledger looking like a real '
+      +'figure. Enter digits only, with no currency symbol or thousands separator.'};
+}
+
 async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount){
+  // REFUSED BEFORE ANYTHING IS BUILT, not coerced. See dntMoneyIn above.
+  var amt=dntMoneyIn(amount);
+  if(amt===null) return dntBadAmount('charge');
   var pt=patients().find(function(p){return p.id===patientId;});
   var proc=procedureTypes().find(function(p){return p.id===procedureTypeId;});
-  var est=computeEstimatedInsurance(amount, pt?pt.insurance_payer:'', procedureTypeId);
+  // The VALIDATED amount, not the raw one -- the insurance estimate is a second
+  // figure derived from the same money and must not be computed from a value
+  // this function has already decided it cannot read.
+  var est=computeEstimatedInsurance(amt, pt?pt.insurance_payer:'', procedureTypeId);
   var rec={id:newId('CH'), patient_id:patientId, appointment_id:appointmentId||'', procedure_type_id:procedureTypeId,
-    amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday(),
+    amount:amt, estimated_insurance_portion:est.amount, date:dntLocalToday(),
     cdt_code:proc&&proc.cdt_code?String(proc.cdt_code):'',
     cdt_version:proc&&proc.cdt_version?String(proc.cdt_version):''};
   var syncResult=await sdnData('write','dnt_charges',rec);
@@ -5452,7 +5711,9 @@ async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount)
   return {rec:rec, coverageFound:est.found, syncResult:syncResult, refused:refused, kept:kept, queued:queued};
 }
 async function addPaymentEntry(patientId, amount, method){
-  var rec={id:newId('PM'), patient_id:patientId, amount:Number(amount)||0, method:method, date:dntLocalToday()};
+  var amt=dntMoneyIn(amount);
+  if(amt===null) return dntBadAmount('payment');
+  var rec={id:newId('PM'), patient_id:patientId, amount:amt, method:method, date:dntLocalToday()};
   var syncResult=await sdnData('write','dnt_payments',rec);
   var refused=!syncResult&&dntWriteRefused('dnt_payments');
   var kept=false;

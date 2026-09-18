@@ -229,6 +229,24 @@ function harness(mode, opts) {
     // below.
     dntPendingAdd: (resource, rec) => { calls.queued.push({ resource, id: rec.id }); return true; },
     newId: (p) => p + '-1',
+    // ── ADDED 2026-09-18, AND IT WAS RED BEFORE IT WAS ADDED ───────────────
+    // Six arms in this suite have been failing with `procedureTypes is not
+    // defined` since addChargeEntry started stamping the CDT code and edition
+    // onto the charge (a8fe1485, 2026-09-17). Not a product defect: the vm
+    // harness is a HAND-LISTED SUBSET of the app, so it does not follow a new
+    // call, and the suite goes red the moment the product grows one. Nothing
+    // blocks on this suite, so the red sat there.
+    //
+    // The identical failure arrived twice in two days -- this one, and
+    // `dntMoneyIn is not defined` from the amount hardening in the same commit
+    // that fixes it. Recorded rather than quietly patched, because the cost is
+    // structural to the harness rather than anybody's mistake.
+    //
+    // Stubbed rather than loaded from the file: this suite is about the VOICE
+    // of a write failure, and what the catalogue contains is irrelevant to it.
+    // tests/sairndental_outbound_queue.js owns the catalogue-stamping hazard
+    // and makes it overridable per-harness for exactly that reason.
+    procedureTypes: () => [{ id: 'PR-1', cdt_code: 'D1110', cdt_version: 'CDT 2026' }],
     dntLocalToday: () => '2026-09-05',
     __calls: calls,
   };
@@ -247,6 +265,14 @@ function harness(mode, opts) {
     fnBody('function dntLastErrText('),
     fnBody('function dntWriteRefused('),
     fnBody('function dntWriteFailText('),
+    // The two helpers addChargeEntry/addPaymentEntry gained on 2026-09-18 when
+    // `Number(amount)||0` was replaced by a refusal. Loaded here because both
+    // writers now CALL them -- this suite went red with 'dntMoneyIn is not
+    // defined' the moment the product stopped coercing, which is the vm
+    // harness's standing cost: the context is a hand-listed subset of the file
+    // and it does not follow a new call.
+    fnBody('function dntMoneyIn('),
+    fnBody('function dntBadAmount('),
     fnBody('async function addChargeEntry('),
     fnBody('async function addPaymentEntry('),
   ].join('\n'), ctx);

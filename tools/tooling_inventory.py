@@ -73,6 +73,29 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'resource_reachability_check.py': ('CHECKER',
+        'for every REGISTERED resource, does any client name it -- the question '
+        'that finds a capability the platform describes as BUILT while no user '
+        'can reach it. It exists because the narrower check it replaces could '
+        'not have found the second instance: the SAIRNmechanical `eligibility` '
+        'defect was caught by enumerating extraActions and asking whether each '
+        'verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it '
+        'is a plain read, so that check never looked at it. A PANEL CENSUS '
+        'CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 '
+        'sidebar ids, three identical sets, precisely because the roll-up was in '
+        'none of the three. A FINDING IS "no client names this", never "delete '
+        'it" -- a resource fed by a cron or read by another server endpoint is '
+        'legitimately here and needs somebody to SAY so. IT CARRIES A '
+        'CALIBRATION ARM, which is what makes its zeros mean anything: a '
+        'substring search that finds nothing proves nothing, because a bad path '
+        'produces the same output as a genuinely unreachable resource for every '
+        'resource at once, so it reports how many of each app it DID find and '
+        'an app below a stated floor is CANNOT TELL rather than N findings. '
+        'ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and '
+        'reported StoneDesk sd_hr_certs (Tier A) as unreachable when '
+        'stonedesk-hr.html names it, caught by hand-reading every finding before '
+        'publishing the number. It CANNOT see a name built by concatenation, a '
+        'caller behind a dead flag, or whether the panel works.'),
     'shape_search.py': ('ADVISORY',
         'the same bug SHAPE written with different identifiers, a different '
         'iteration form or in the other language -- the recurrence a grep for '

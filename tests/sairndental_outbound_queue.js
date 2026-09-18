@@ -127,6 +127,14 @@ function harness(opts) {
     fnBody('async function dntFlushPending('),
     fnBody('async function dntFlushAndReport('),
     fnBody('function dntPendingBannerHtml('),
+    // The two helpers addChargeEntry/addPaymentEntry gained on 2026-09-18 when
+    // `Number(amount)||0` was replaced by a refusal. Loaded here because both
+    // writers now CALL them -- this suite went red with 'dntMoneyIn is not
+    // defined' the moment the product stopped coercing, which is the vm
+    // harness's standing cost: the context is a hand-listed subset of the file
+    // and it does not follow a new call.
+    fnBody('function dntMoneyIn('),
+    fnBody('function dntBadAmount('),
     fnBody('async function addChargeEntry('),
     fnBody('async function addPaymentEntry('),
   ].join('\n'), ctx);

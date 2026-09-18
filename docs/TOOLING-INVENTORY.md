@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**200 files in `tools/`.** By what actually invokes them:
+**201 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 34 | nothing runs these at all |
+| **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 2 |
-| CHECKER | 140 |
+| CHECKER | 141 |
 | GENERATOR | 17 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -46,13 +46,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 9 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 4 wired nowhere at all, and 5
+**The number to act on: 10 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 5
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 9, by name, so this is actionable rather than a statistic:
+The 10, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -63,6 +63,7 @@ The 9, by name, so this is actionable rather than a statistic:
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
 | `negated_status_assertion_scan.py` | UNWIRED | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything |
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
+| `resource_reachability_check.py` | UNWIRED | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
 | `sairn_self_state.py` | UNWIRED | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED |
 
@@ -322,7 +323,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (34)
+## UNWIRED (35)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -358,6 +359,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
+| `resource_reachability_check.py` | CHECKER | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_self_state.py` | CHECKER | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED | &mdash; |
@@ -393,7 +395,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      200   git ls-files tools/
+  tools on disk                      201   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
