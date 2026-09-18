@@ -1457,8 +1457,8 @@
       "task": "negative control for sairnlaw trust clearance suite law_trusttx",
       "claimed_at": "2026-09-18T14:53:20Z",
       "claimed_at_epoch": 1789743200.3839335,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T15:03:27Z"
     }
   ]
 }
