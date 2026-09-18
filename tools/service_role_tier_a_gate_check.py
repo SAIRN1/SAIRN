@@ -284,6 +284,21 @@ def classify(rel, src):
     return 'UNGATED', d
 
 
+# ── THE VERDICT VOCABULARY, DECLARED ────────────────────────────────────────
+# Added 2026-09-18 after v4 shipped a FIFTH verdict, COULD_NOT_TELL, and broke
+# tests/run_service_role_gate_probe.py's arm asserting the fixture set reaches
+# "all four verdicts plus None". The arm was right and I was the one who made
+# it wrong: a new verdict with a fixture, and a pinned list in another file
+# that nobody updated.
+#
+# The list lives HERE, beside the returns it names, because the probe pinning a
+# copy of it is exactly what went stale. The probe now derives the set the code
+# ACTUALLY RETURNS by scanning this module's own `return '<VERDICT>'` sites --
+# a structurally different derivation from this tuple -- and requires the two
+# to agree AND the fixtures to cover them. A sixth verdict added without a
+# fixture fails; one added without being declared here fails too.
+VERDICTS = ('GATED', 'UNGATED', 'PUBLIC_BY_DESIGN', 'NO_WRITE', 'COULD_NOT_TELL')
+
 FIXTURES = [
     ('gated',
      "const k=process.env.SUPABASE_SERVICE_ROLE_KEY;\n"

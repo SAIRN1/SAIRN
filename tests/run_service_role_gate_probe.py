@@ -22,6 +22,7 @@ Exit 0 all arms passed, 1 otherwise.
 
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -52,10 +53,30 @@ import service_role_tier_a_gate_check as S   # noqa: E402
 print('\nA. every verdict, on its own')
 bad = S.self_check(verbose=False)
 ok('all fixtures classify as declared', not bad, bad)
-ok('the fixture set reaches all four verdicts plus None -- a constant would '
-   'pass a one-sided test',
-   set(w for _l, _s, w in S.FIXTURES) ==
-   {'GATED', 'UNGATED', 'PUBLIC_BY_DESIGN', 'NO_WRITE', None},
+# ── THIS ARM PINNED A COPY OF THE VERDICT LIST AND THE COPY WENT STALE ──────
+# It read `== {'GATED', 'UNGATED', 'PUBLIC_BY_DESIGN', 'NO_WRITE', None}` and
+# went red the day v4 added a FIFTH verdict, COULD_NOT_TELL, with a fixture for
+# it. The arm was doing its job -- a verdict list is exactly the thing that
+# should not change silently -- but it was doing it against a hardcoded copy in
+# a different file from the returns it describes, which is the pinned-list
+# drift shape `tools/pinned_list_drift_check.py` exists for.
+#
+# The list now lives in the subject as S.VERDICTS, and this arm asserts THREE
+# things instead of one, each derived differently:
+#   a) the declared tuple matches what the module's `return '<X>'` sites
+#      actually produce -- a lexical scan of the source, not the tuple itself,
+#      so a verdict added and not declared is caught;
+#   b) the fixtures cover every declared verdict -- so a verdict declared and
+#      not exercised is caught;
+#   c) None is still in the fixture set, which is the not-a-service-role-file
+#      case and is not a verdict.
+# A constant classifier still fails (b), which is what the original arm was for.
+returned = set(re.findall(r"return '([A-Z_]+)'", io.open(SUBJECT, encoding='utf-8').read()))
+ok('every verdict the CODE returns is declared in VERDICTS',
+   returned == set(S.VERDICTS), sorted(returned ^ set(S.VERDICTS)))
+ok('the fixture set reaches every declared verdict plus None -- a constant '
+   'would pass a one-sided test',
+   set(w for _l, _s, w in S.FIXTURES) == set(S.VERDICTS) | {None},
    sorted(str(w) for _l, _s, w in S.FIXTURES))
 
 
