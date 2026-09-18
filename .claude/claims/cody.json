@@ -1427,8 +1427,8 @@
       "task": "traceability_matrix all_tests enumeration misses api subdirectories, and master-plan totals disagree with themselves",
       "claimed_at": "2026-09-18T14:05:14Z",
       "claimed_at_epoch": 1789740314.8546646,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:35:45Z"
     }
   ]
 }
