@@ -2233,8 +2233,8 @@
       "task": "the fifth verdict COULD_NOT_TELL was added without updating the pinned verdict set",
       "claimed_at": "2026-09-18T14:57:52Z",
       "claimed_at_epoch": 1789743472.62149,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T15:01:32Z"
     }
   ]
 }
