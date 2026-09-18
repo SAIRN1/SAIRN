@@ -2253,8 +2253,8 @@
       "task": "sairnbiz_timesheet_probe sd-data-sb-void-role sairndental_ledger_export sairndental_coverage_edit sairnlaw_billing_codes sairnbuild_server_backup roofing_claim_photo_export sairnvet_dose_audit_reader roofing-gl-export sairnmechanical",
       "claimed_at": "2026-09-18T16:08:31Z",
       "claimed_at_epoch": 1789747711.3574932,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T22:00:38Z"
     },
     {
       "id": "hank-1789767238",
