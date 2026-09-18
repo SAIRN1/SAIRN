@@ -1695,6 +1695,16 @@
       "claimed_at_epoch": 1789771487.5709567,
       "status": "released",
       "released_at": "2026-09-18T22:58:44Z"
+    },
+    {
+      "id": "fourth-1789772666",
+      "session": "fourth",
+      "subject": "stonedesk-backtest-suite",
+      "task": "build a test suite for stonedesk parseAndStress pricing backtest",
+      "claimed_at": "2026-09-18T23:04:26Z",
+      "claimed_at_epoch": 1789772666.747276,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
