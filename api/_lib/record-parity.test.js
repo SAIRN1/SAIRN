@@ -243,6 +243,151 @@ t('no Reed-Solomon is implemented, and the single-erasure limit is stated', () =
   assert.ok(/Reed-Solomon/.test(src), 'the comment should still name the real remedy');
 });
 
+// ════════════════════════════════════════════════════════════════════════════
+section('7. TWO failure conventions, one per CALLER rather than one per function');
+// The module deliberately mixes styles: buildGroup() throws on programmer error,
+// recover() refuses as a value on data conditions. The hazard is a caller that
+// wraps both in one try/catch, catches nothing on a refusal, and stores
+// `result.record` -- undefined -- as a reconstructed controlled-substance row.
+// These arms pin all three halves of the settlement: the refusal shape that
+// makes the undefined unreachable, the throwing alternative, and the fact that
+// NEITHER existing convention moved.
+
+// Every reachable refusal path, built the same way for each arm below so no arm
+// can quietly exercise one case and report on four.
+const REFUSAL_CASES = [
+  { code: 'PARITY_NOT_IN_GROUP',
+    setup: () => ({ group: G(), missingId: 'C-99',
+                    survivors: [{ id: 'C-2', record: R2 }, { id: 'C-3', record: R3 }] }) },
+  { code: 'PARITY_TOO_MANY_MISSING',
+    setup: () => ({ group: G(), missingId: 'C-1',
+                    survivors: [{ id: 'C-2', record: R2 }] }) },
+  { code: 'PARITY_SURVIVOR_CHANGED',
+    setup: () => ({ group: G(), missingId: 'C-1',
+                    survivors: [{ id: 'C-2', record: R2 },
+                                { id: 'C-3', record: Object.assign({}, R3, { qty: 500 }) }] }) },
+  { code: 'PARITY_DIGEST_MISMATCH',
+    setup: () => {
+      const g = G();
+      const buf = Buffer.from(g.parity_b64, 'base64');
+      buf[0] = buf[0] ^ 0xff;
+      return { group: Object.assign({}, g, { parity_b64: buf.toString('base64') }),
+               missingId: 'C-1',
+               survivors: [{ id: 'C-2', record: R2 }, { id: 'C-3', record: R3 }] };
+    } }
+];
+
+t('NO refusal carries a `record` key, so `in` is a safe did-this-succeed test', () => {
+  // The whole point: a caller who ignores `ok` and reads `.record` gets a
+  // reference error path rather than `undefined` written to an append-only
+  // register. Asserted on every refusal, not assumed from one.
+  const seen = [];
+  REFUSAL_CASES.forEach((c) => {
+    const s = c.setup();
+    const r = P.recover(s.group, s.missingId, s.survivors);
+    assert.strictEqual(r.ok, false, c.code + ' should refuse');
+    assert.strictEqual(r.code, c.code);
+    assert.ok(!('record' in r), c.code + ' must not carry a record key');
+    assert.ok(!('bytes' in r), c.code + ' must not carry bytes either');
+    assert.ok(typeof r.reason === 'string' && r.reason.length > 0,
+      c.code + ' must say why');
+    seen.push(r.code);
+  });
+  assert.deepStrictEqual(seen.sort(), REFUSAL_CASES.map((c) => c.code).sort(),
+    'every refusal path was exercised, not just the first');
+  // And the success shape DOES carry it, or the test above proves nothing.
+  const ok = P.recover(G(), 'C-1', [{ id: 'C-2', record: R2 }, { id: 'C-3', record: R3 }]);
+  assert.ok('record' in ok && ok.ok === true,
+    'the positive half of the same test -- success carries the key');
+});
+
+t('recoverOrThrow THROWS on each refusal, carrying that refusal\'s own code and reason', () => {
+  REFUSAL_CASES.forEach((c) => {
+    const s = c.setup();
+    const asValue = P.recover(s.group, s.missingId, s.survivors);   // what recover() says
+    let threw = null, returned = 'not-called';
+    try { returned = P.recoverOrThrow(s.group, s.missingId, s.survivors); }
+    catch (e) { threw = e; }
+    assert.ok(threw, c.code + ': recoverOrThrow must throw, not return');
+    assert.strictEqual(returned, 'not-called', c.code + ': nothing was returned');
+    assert.ok(threw instanceof P.ParityError, c.code + ': a ParityError, not a bare Error');
+    assert.strictEqual(threw.code, asValue.code,
+      c.code + ': the refusal\'s OWN code, not a generic one');
+    assert.strictEqual(threw.message, asValue.reason,
+      c.code + ': the refusal\'s OWN reason, not a generic one');
+    assert.deepStrictEqual(threw.refusal, asValue,
+      c.code + ': the whole refusal is still reachable on the error');
+  });
+});
+
+t('a THROW from recover is not converted into a refusal on the way through', () => {
+  // PARITY_BAD_VERSION is a programmer error inside recover() and already throws.
+  // recoverOrThrow must let it past unchanged rather than re-wrapping it as
+  // PARITY_REFUSED, which would relabel a bad caller as bad data.
+  const g = Object.assign({}, G(), { version: 99 });
+  assert.throws(() => P.recoverOrThrow(g, 'C-1', []),
+    (e) => e.code === 'PARITY_BAD_VERSION' && e.refusal === undefined);
+});
+
+t('on SUCCESS recoverOrThrow returns exactly what recover returns', () => {
+  const all = { 'C-1': R1, 'C-2': R2, 'C-3': R3 };
+  Object.keys(all).forEach((id) => {
+    const survivors = Object.keys(all).filter((k) => k !== id)
+      .map((k) => ({ id: k, record: all[k] }));
+    const a = P.recover(G(), id, survivors);
+    const b = P.recoverOrThrow(G(), id, survivors);
+    assert.ok(a.ok && b.ok, id);
+    assert.deepStrictEqual(b.record, a.record, id + ': same record');
+    assert.ok(b.bytes.equals(a.bytes), id + ': byte-identical, not merely deep-equal');
+    assert.deepStrictEqual(Object.keys(b).sort(), Object.keys(a).sort(),
+      id + ': same shape -- the wrapper adds nothing on the success path');
+  });
+});
+
+t('recover() itself is UNCHANGED -- it still refuses as a value and does not throw', () => {
+  // The settlement adds a second convention; it does not migrate the first. If
+  // this arm ever fails, an existing caller of recover() has been broken by a
+  // change that was supposed to be additive.
+  REFUSAL_CASES.forEach((c) => {
+    const s = c.setup();
+    assert.doesNotThrow(() => P.recover(s.group, s.missingId, s.survivors),
+      c.code + ': recover refuses as a value');
+    const r = P.recover(s.group, s.missingId, s.survivors);
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(r.code, c.code);
+  });
+  assert.strictEqual(typeof P.recover, 'function');
+  assert.strictEqual(typeof P.recoverOrThrow, 'function');
+  assert.notStrictEqual(P.recover, P.recoverOrThrow, 'two functions, not an alias');
+});
+
+t('buildGroup() still THROWS -- programmer errors did not become refusal values', () => {
+  // The other half of the split. A group of one, a missing id, a duplicate id
+  // are wrong at the call site, and a returned {ok:false} here would let a
+  // caller persist a group that was never built.
+  const bad = [
+    ['PARITY_GROUP_TOO_SMALL', () => P.buildGroup('g', [{ id: 'C-1', record: R1 }])],
+    ['PARITY_DUPLICATE_ID',    () => P.buildGroup('g', [{ id: 'C-1', record: R1 },
+                                                        { id: 'C-1', record: R2 }])],
+    ['PARITY_NO_ID',           () => P.buildGroup('g', [{ id: 'C-1', record: R1 },
+                                                        { record: R2 }])],
+    ['PARITY_NO_GROUP_ID',     () => P.buildGroup('', [{ id: 'a', record: R1 },
+                                                       { id: 'b', record: R2 }])]
+  ];
+  bad.forEach(([code, call]) => {
+    let returned = 'not-called', threw = null;
+    try { returned = call(); } catch (e) { threw = e; }
+    assert.ok(threw, code + ': must throw');
+    assert.strictEqual(returned, 'not-called',
+      code + ': nothing returned -- a refusal VALUE here would be the wrong convention');
+    assert.ok(threw instanceof P.ParityError, code + ': a ParityError');
+    assert.strictEqual(threw.code, code);
+  });
+  // And a good call still builds, so the arm above is not passing because
+  // buildGroup throws on everything.
+  assert.strictEqual(G().members.length, 3);
+});
+
 (async () => {
   for (const [name, fn] of queue) {
     if (!fn) { console.log('--- ' + name + ' ---'); continue; }

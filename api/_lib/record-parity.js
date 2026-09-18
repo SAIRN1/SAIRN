@@ -264,7 +264,52 @@ function verifyGroup(group, present) {
            recoverable: (changed.length + missing.length) === 1 };
 }
 
+// ── TWO FAILURE CONVENTIONS IN ONE MODULE, SETTLED (2026-09-18) ───────────
+// Raised in the independent review of this file and left unfixed there on
+// purpose -- a reviewer who lands the fix is no longer independent of it.
+// Settling it NOW because there are still no non-test callers, so nobody has
+// to be migrated and the first real caller does not have to guess.
+//
+// THE SPLIT IS DELIBERATE AND IT STAYS. buildGroup() THROWS: a group of one, a
+// member with no id, a duplicate id -- every one is a PROGRAMMER error, wrong
+// at the call site, and should stop the process at the line that wrote it.
+// recover() REFUSES AS A VALUE: two erasures, a tampered survivor, an id not in
+// the group -- every one is a DATA condition that a correct caller must handle
+// and that will happen in production on a register nobody can re-read.
+//
+// THE HAZARD IS THE MIX, NOT EITHER HALF. A caller writing the obvious thing
+//
+//     try { const g = buildGroup(id, members);
+//           const r = recover(g, missing, survivors);
+//           save(r.record); }            // <- undefined on a refusal
+//     catch (e) { ... }
+//
+// catches nothing on a refusal and stores `undefined` as a reconstructed
+// controlled-substance record. The try/catch makes it LOOK handled.
+//
+// SO THE MODULE OFFERS ONE CONVENTION PER CALLER RATHER THAN ONE PER FUNCTION.
+// `recoverOrThrow()` is the same recovery with the other convention, throwing a
+// ParityError carrying the refusal's own code and reason. A caller picks a
+// style once and cannot half-use it. Nothing is removed and no existing arm
+// changes -- recover() behaves exactly as before.
+//
+// AND A REFUSAL NEVER CARRIES A `record` KEY, which is asserted rather than
+// assumed: `'record' in result` is a safe test for "did this succeed", so the
+// undefined above cannot be reached by accident even by a caller who ignores
+// `ok`.
+function recoverOrThrow(group, missingId, survivors) {
+  const out = recover(group, missingId, survivors);
+  if (!out || out.ok !== true) {
+    const e = new ParityError(
+      (out && out.reason) || 'recovery refused',
+      (out && out.code) || 'PARITY_REFUSED');
+    e.refusal = out;
+    throw e;
+  }
+  return out;
+}
+
 module.exports = {
-  buildGroup, recover, verifyGroup, canonical, digestOf,
+  buildGroup, recover, recoverOrThrow, verifyGroup, canonical, digestOf,
   ParityError, PARITY_VERSION, MIN_GROUP
 };
