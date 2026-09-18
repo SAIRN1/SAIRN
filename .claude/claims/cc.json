@@ -1804,6 +1804,16 @@
       "claimed_at_epoch": 1789686862.413103,
       "status": "released",
       "released_at": "2026-09-17T23:29:28Z"
+    },
+    {
+      "id": "cc-1789728008",
+      "session": "cc",
+      "subject": "tier-a-reviews",
+      "task": "discharge oldest overdue Tier A review obligation authored by cody dnt_rollup measureNumber safe-number",
+      "claimed_at": "2026-09-18T10:40:08Z",
+      "claimed_at_epoch": 1789728008.2510076,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
