@@ -48,9 +48,26 @@
 # deployed. Exit 2 is a COULD-NOT-RUN and it is a failure here, never a skip --
 # the step below does not swallow it.
 #
-# NOT VERIFIED: this workflow has never run. Read the first real run before
-# treating the attestation as exercised -- the same caveat nightly-backup.yml
-# carries on its own attest step, and for the same reason.
+# ── IT HAS RUN, AND THE CAVEAT THAT USED TO SIT HERE IS DELETED RATHER THAN
+#    LEFT TO ROT (2026-09-18) ────────────────────────────────────────────────
+# This block said "NOT VERIFIED: this workflow has never run". It ran on the
+# commit that introduced it -- run 35355044141, head 29a0b6c3, conclusion
+# SUCCESS -- so leaving that sentence would be a stale caveat, which is the
+# same defect as a stale claim pointed the other way.
+#
+# WHAT WAS ACTUALLY CHECKED, not inferred from a green tick:
+#   * `python tools/source_manifest.py --commit 29a0b6c3` re-run on a developer
+#     machine produces manifest.json with sha256
+#     523961cf9ca316291f8ceed66ee6360f55591e085813d4204ec75a4e90cb3a86.
+#   * `GET /repos/SAIRN1/SAIRN/attestations/sha256:523961cf…` returns ONE
+#     attestation. So GitHub holds a signed statement about the exact bytes a
+#     second, independent run of the generator reproduces -- which is the only
+#     form in which "this attests our manifest" is a checkable claim rather
+#     than a description of the YAML.
+#
+# STILL NOT CLAIMED, and this does not move: nothing about the Vercel deploy.
+# nightly-backup.yml's own attest step remains UNEXERCISED; that is a different
+# workflow and its caveat stands.
 
 name: source-manifest
 

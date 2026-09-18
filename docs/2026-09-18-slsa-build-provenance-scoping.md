@@ -124,8 +124,27 @@ build. It says nothing about the Vercel deploy, and both the workflow header
 and the manifest's own `what_this_is` field say so in the artifact rather than
 only in a comment nobody ships.
 
-⚠ **UNEXERCISED.** The workflow has never run. Same caveat as the backup
-attestation below it, and for the same reason: written is not proven.
+✅ **EXERCISED, AND CHECKED RATHER THAN TICKED.** This paragraph said
+"UNEXERCISED — the workflow has never run" when it was written, and the
+workflow ran on the commit that introduced it: **run `35355044141`, head
+`29a0b6c3`, conclusion SUCCESS.** The caveat is replaced rather than left
+standing, because a stale caveat is the same defect as a stale claim, pointed
+the other way.
+
+**A GREEN TICK IS NOT THE EVIDENCE. This is:**
+
+* `python tools/source_manifest.py --commit 29a0b6c3` re-run on a developer
+  machine produces `manifest.json` with sha256
+  `523961cf9ca316291f8ceed66ee6360f55591e085813d4204ec75a4e90cb3a86` — 24
+  files, 5,042 bytes. The generator is reproducible off the runner, which the
+  probe's determinism arm asserts and this confirms against a *different*
+  machine.
+* `GET /repos/SAIRN1/SAIRN/attestations/sha256:523961cf…` returns **one
+  attestation**. GitHub holds a signed statement about the exact bytes an
+  independent run reproduces.
+
+**THE BACKUP ATTESTATION IS STILL UNEXERCISED.** Different workflow, its own
+caveat, unchanged — `nightly-backup.yml` has never got past its dump step.
 
 ---
 
