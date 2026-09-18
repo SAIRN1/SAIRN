@@ -640,7 +640,7 @@ def collect(session, days, clone):
             'status_row': rows.get(session, {})}
 
 
-def bundle(days, out_path, stamp):
+def bundle(days, out_path, stamp, prefer_self=None):
     """One artifact holding EVERY clone's derived state, for the auditor.
 
     ── WHY A BUNDLE AND NOT FOUR SEPARATE RUNS ─────────────────────────────
@@ -677,8 +677,50 @@ def bundle(days, out_path, stamp):
                                    'session and is not guessed at.'
                                    % type(e).__name__})
             continue
+        # ── A COMMITTED SELF ROW BEATS AN OUTSIDE READ ────────────────────
+        # An OUTSIDE read is the fallback, not the target. When a session has
+        # run this in its OWN clone and committed the result, that row is the
+        # authoritative one and this uses it instead -- with its own stamp
+        # carried through, so a row captured yesterday is visibly older than
+        # the run that assembled the bundle rather than silently equal to it.
+        # REFUSES a file that is not what it claims: wrong session, or a row
+        # that is not SELF, is a skip with a reason, never a silent fallback
+        # to the outside read, because a substitution nobody sees is the
+        # defect this whole file was just fixed for.
+        promoted = None
+        if prefer_self:
+            cand = os.path.join(prefer_self, 'self-state-%s.json' % sess)
+            if os.path.isfile(cand):
+                try:
+                    row = json.load(io.open(cand, encoding='utf-8'))
+                except ValueError as e:
+                    skipped.append({'dir': name, 'session': sess,
+                                    'why': 'a committed self row exists at %s '
+                                           'and is not valid JSON (%s) -- NOT '
+                                           'falling back to an outside read, '
+                                           'because a silent substitution is '
+                                           'the defect this tool was fixed for'
+                                           % (cand, e)})
+                    continue
+                if row.get('session') != sess or row.get('git_derivation') != 'SELF':
+                    skipped.append({'dir': name, 'session': sess,
+                                    'why': 'the file at %s claims session %r / '
+                                           'derivation %r, not %r / SELF. '
+                                           'REFUSED rather than used or '
+                                           'silently replaced.'
+                                           % (cand, row.get('session'),
+                                              row.get('git_derivation'), sess)})
+                    continue
+                row['row_source'] = 'committed-self-row: %s' % cand
+                promoted = row
+        if promoted is not None:
+            entries.append(promoted)
+            continue
         try:
-            entries.append(collect(sess, days, path))
+            e_row = collect(sess, days, path)
+            e_row['row_source'] = 'outside read by %s at bundle time' % (
+                clone_session(),)
+            entries.append(e_row)
         except CouldNotTell as e:
             skipped.append({'dir': name, 'session': sess,
                             'why': 'COULD NOT DERIVE: %s' % e})
@@ -687,12 +729,15 @@ def bundle(days, out_path, stamp):
         'generated_at': stamp,
         'generated_by_clone': clone_session(),
         'window_days': days,
+        'prefer_self_dir': prefer_self,
         'clones': entries,
         'not_included': skipped,
         'what_this_is_not': [
             'NOT a reconciliation. It is the INPUT to one: four derived states '
             'captured in a single run so they can be compared without the '
             'branch moving underneath the comparison.',
+            'Each entry carries row_source: a committed SELF row that session '
+            'produced in its own clone, or an outside read taken at bundle time.',
             'An entry whose git_derivation is OUTSIDE was read off another '
             'clone\'s disk by this one. It is real and it is not that session '
             'speaking: it cannot see an unwritten edit, an unrecorded decision, '
@@ -742,6 +787,13 @@ def main(argv=None):
     ap.add_argument('--bundle', default=None, metavar='OUT.json',
                     help='derive EVERY provisioned clone in one run and write '
                          'the artifact the reconciliation reads')
+    ap.add_argument('--prefer-self', dest='prefer_self', default=None,
+                    metavar='DIR',
+                    help='directory holding self-state-<session>.json rows each '
+                         'session produced IN ITS OWN CLONE. A row found there '
+                         'replaces the outside read; a row that is not SELF or '
+                         'names another session is REFUSED, never silently '
+                         'replaced by the outside read.')
     ap.add_argument('--stamp', default=None,
                     help='the timestamp to record in a bundle. Passed in rather '
                          'than read from the clock so a run is reproducible and '
@@ -758,7 +810,8 @@ def main(argv=None):
                   'time, which is the failure the bundle exists to avoid.')
             return EXIT_COULD_NOT_RUN
         try:
-            return bundle(args.days, args.bundle, args.stamp)
+            return bundle(args.days, args.bundle, args.stamp,
+                          args.prefer_self)
         except CouldNotTell as e:
             print('COULD NOT RUN: %s' % e)
             return EXIT_COULD_NOT_RUN
