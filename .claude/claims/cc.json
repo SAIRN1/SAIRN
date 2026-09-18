@@ -1904,6 +1904,16 @@
       "claimed_at_epoch": 1789770953.3196478,
       "status": "released",
       "released_at": "2026-09-18T22:54:52Z"
+    },
+    {
+      "id": "cc-1789772305",
+      "session": "cc",
+      "subject": "json-catch-null-sweep",
+      "task": "platform sweep for unparseable server responses swallowed into null instead of a refusal",
+      "claimed_at": "2026-09-18T22:58:25Z",
+      "claimed_at_epoch": 1789772305.1318734,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
