@@ -69,8 +69,14 @@ MUTATIONS = [
      "so the caller is told the credential was saved and it was not -- the same "
      "data loss, now with a confirmation message on top",
      SRC,
-     "      const noRowsMatched = writeR.status === 409 ||\n"
-     "        (Array.isArray(firstRows) && firstRows.length === 0);",
+     # ANCHOR RE-AIMED 2026-09-18. The two lines this used to name were
+     # replaced when api/sc-credentials.js grew a three-way write result
+     # (WROTE / MISSED / UNKNOWN), and the harness reported ANCHOR-0 --
+     # correctly a FAILURE rather than a skip, because a stale anchor is how
+     # this class of probe quietly stops testing anything. The mutation is
+     # unchanged in intent: the zero-rows detection stops detecting, so a
+     # failed precondition becomes a silent no-op.
+     "      const noRowsMatched = firstSays === MISSED;",
      "      const noRowsMatched = false;"),
 
     ("3. `clear` removes the whole blob rather than the named service on the "
