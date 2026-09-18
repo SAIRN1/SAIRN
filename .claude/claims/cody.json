@@ -1467,8 +1467,8 @@
       "task": "negative control expect regex matched against whole run output instead of the failure line",
       "claimed_at": "2026-09-18T21:47:32Z",
       "claimed_at_epoch": 1789768052.3200989,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T21:55:00Z"
     }
   ]
 }
