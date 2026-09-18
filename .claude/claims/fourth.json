@@ -1625,6 +1625,16 @@
       "claimed_at_epoch": 1789687539.2284596,
       "status": "released",
       "released_at": "2026-09-18T11:15:15Z"
+    },
+    {
+      "id": "fourth-1789732024",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "indiana holiday statute primary source re-read, weekly state derivation tool, cc stale status row correction",
+      "claimed_at": "2026-09-18T11:47:04Z",
+      "claimed_at_epoch": 1789732024.6167552,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
