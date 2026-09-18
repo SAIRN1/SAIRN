@@ -93,7 +93,21 @@ function harness(opts) {
   opts = opts || {};
   const files = [];
   const toasts = [];
-  const src = grab('function svExportControlled(){', '\n}');
+  // ── THE GUARD IS PART OF THE FUNCTION UNDER TEST NOW (2026-09-18) ────────
+  // This extracted svExportControlled() ALONE, which was complete until the
+  // CSV formula-injection sweep (885fd0b9, 2026-09-17 18:07) made it call
+  // svCsvCell(). From that commit this suite was 3 passed / 19 FAILED with
+  // `svCsvCell is not defined` on a Class A DEA-relevant record, and it stayed
+  // that way unnoticed -- 22/22 green against sairnvet.html at 885fd0b9^,
+  // driven both ways to establish that rather than infer it.
+  //
+  // PULLED FROM THE APP, NOT RE-IMPLEMENTED IN THE SANDBOX. A hand-written
+  // stand-in would let the app's real guard rot while every arm below kept
+  // passing, which is the exact shape section 3 of this file exists to refuse.
+  // The sweep is entitled to add a dependency; a suite that extracts one
+  // function by signature is what has to notice.
+  const src = grab('function svCsvCell(', '\n')
+            + grab('function svExportControlled(){', '\n}');
   const el = ('table' in opts) ? opts.table : table(HEADERS, ROWS);
   const ctx = {
     JSON, Object, Array, String, Number, Math, Boolean, Date, RegExp,
@@ -191,7 +205,32 @@ test('THE NEGATIVE BALANCE REACHES THE FILE', () => {
   assert.strictEqual(r[0], 'Ketamine', JSON.stringify(r));
   assert.ok(/NEGATIVE/.test(r[4]),
     'a negative balance did not survive into the file: ' + JSON.stringify(r));
-  assert.strictEqual(r[2], '-3mg', 'the negative quantity was lost: ' + JSON.stringify(r));
+  // ── THE APOSTROPHE IS THE CSV GUARD AND IT IS EXPECTED, NOT TOLERATED ────
+  // From 885fd0b9 this cell is `'-3mg`, not `-3mg`. svCsvCell() forces text on
+  // any cell whose first character is =/+/-/@ UNLESS the whole cell parses as
+  // a number -- so `-50.00` passes through untouched and `-3mg`, which has a
+  // unit suffix, does not. That is the guard's stated rule working as designed:
+  // `-1+1` is a formula and nothing can tell it from `-3mg` by looking at the
+  // first character.
+  //
+  // THIS ASSERTION WAS CHANGED TO MATCH NEW BEHAVIOUR, WHICH IS NORMALLY THE
+  // WRONG MOVE, SO THE REASONING IS HERE RATHER THAN IN A COMMIT MESSAGE
+  // NOBODY WILL FIND. The alternative was to relax the guard for
+  // unit-suffixed quantities, and weakening a formula-injection control on a
+  // DEA record to make a test pass is not a trade this suite gets to make.
+  // What it CAN do is assert the two things that actually matter and keep the
+  // quantity itself under assertion: the sign and the magnitude must both be
+  // intact, and only the leading apostrophe may differ.
+  //
+  // STILL OPEN, AND FLAGGED RATHER THAN DECIDED HERE: a downstream reader of
+  // this file -- a DEA reporting tool, a script, an auditor's import -- sees
+  // the literal `'-3mg`. Excel and Calc strip the apostrophe on display; a
+  // parser does not. Whether that is acceptable on a Class A record is a
+  // question for whoever owns that reporting path, not for this arm.
+  assert.strictEqual(r[2].replace(/^'/, ''), '-3mg',
+    'the negative quantity was lost: ' + JSON.stringify(r));
+  assert.ok(/^'?-3mg$/.test(r[2]),
+    'the quantity cell is neither -3mg nor the guarded \'-3mg: ' + JSON.stringify(r[2]));
 });
 
 test('an empty cell stays empty rather than becoming "undefined" or "null"', () => {
