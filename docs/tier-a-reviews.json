@@ -752,6 +752,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-18T16:20:00Z",
+      "resources": [
+        "sc_credential_scope"
+      ],
+      "files": [
+        "api/sc-credentials.js",
+        "api/sc-credentials.test.js",
+        "tests/sc_credentials_probe.py"
+      ],
+      "what": "SAIRNcode credential store: a 2xx whose representation body could not be parsed was reported as a SUCCESSFUL write. representationSays() now returns WROTE / MISSED / UNKNOWN and the unknown gets its own refusal (502 WRITE_UNCONFIRMED) instead of being collapsed into either neighbour, applied at the first PATCH, the retry PATCH, and the final gate which also covers the INSERT path. Six new suite arms plus a per-response stub plan, and a re-aimed probe anchor. PRESS ON, five things. (1) 502 WRITE_UNCONFIRMED is a NEW status and a new code on this endpoint -- check no client branches on the status alone, and argue whether 502 is right against 409 or 503 given the caller genuinely does not know whether the write landed. (2) A 409 is deliberately kept as MISSED so the insert race stays retryable -- check that holds for every 409 this endpoint can receive and not only the unique violation. (3) TWO MUTATIONS SURVIVED ALONE and I claim they are mutually redundant rather than unpinned: dropping the first-path UNKNOWN check and dropping the final gate each leave the suite green, removing BOTH is caught. I verified the pair on the MAIN path only -- verify it on the retry path, where I did not test it. (4) The success response still re-derives from the locally computed blob rather than echoing the row the server returned; that is equivalent only because the write landed, and now that the row is in hand, echoing it would be strictly more truthful. Worth deciding rather than inheriting. (5) THE SAME .json().catch(() => null) SHAPE EXISTS ELSEWHERE ON THE PLATFORM AND I DID NOT SWEEP FOR IT. That is stated as a limit in the register record and is not fixed here. AND ONE THING THE GATE ITSELF COULD NOT SEE, recorded because it bears on this obligation existing at all: this is a Tier A product change to the handler for sc_credential_scope, and the push gate demanded NO obligation, because the string sc_credential_scope appears ZERO times in api/sc-credentials.js -- the file writes a table named sc_credentials. The obligation check matches register resource names on changed lines, so a handler whose table name differs from its register name is invisible to it. This entry is being opened by hand for that reason.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
