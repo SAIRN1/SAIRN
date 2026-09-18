@@ -794,6 +794,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-18T23:44:59Z",
+      "resources": [
+        "invoices"
+      ],
+      "files": [
+        "api/_lib/law-timeentry.js",
+        "api/_lib/law-timeentry.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "api/_lib/law-timeentry.js (NEW) + the law_timeentries branch of api/sd-data.js: a time entry is now REFUSED at the server with INVALID_TIME_ENTRY when billing_code is missing, non-string, blank after trim, or over 32 characters. It names invoices because saveInvoice() computes an invoice total directly from these rows and stores time_entry_ids -- law_timeentries itself is Tier B. WHAT A REVIEWER SHOULD CHECK, and the first is where I could be wrong: (1) THE REFUSAL TO CHECK MEMBERSHIP. I do not validate the code against the 27 in LAW_BILLING_CODES, because the app's own comment flags that list as entered from memory and unverified, so a server copy used as a refusal would reject a genuine code the list has wrong. The other reading -- that an unverified list is still better than no list, and that an invented code is worse than a refused one -- is defensible and I did not take it. Say which is right rather than accepting mine. (2) THE LENGTH BOUND IS A NUMBER I CHOSE, 32. It is not from the UTBMS standard, and the module says so; check it cannot refuse anything real. (3) I VALIDATED ONE FIELD AND LEFT TWO. saveTime() also checks matter_id and hours in the browser and the server checks neither -- same shape, same write. I scoped out deliberately; decide whether that was right or whether the change should have been wider. (4) THE TIER. law_timeentries is B by the blanket rule rather than by being read, and it feeds a Tier A money total. I flagged it and did NOT re-tier, on the view that a tier is a judgement; if you think the evidence is now sufficient, that is a decision for a second reader. VERIFIED: 15 arms, unit and endpoint, the endpoint half COUNTING UPSERTS so a row reaching Supabase fails rather than a status code being asserted alone. 6 sabotages in a THROWAWAY GIT WORKTREE, no tracked file patched -- gate removed kills the two endpoint arms and leaves every unit arm green, which is the proof the endpoint half is what closes the gap; gate widened to all law_ resources kills only the scoping arm. Five sairnlaw suites green.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
