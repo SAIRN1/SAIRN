@@ -1437,8 +1437,8 @@
       "task": "sairnscape res acceptance entry in fail_open_check matches nothing, remove or retriage",
       "claimed_at": "2026-09-18T14:36:12Z",
       "claimed_at_epoch": 1789742172.95633,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:42:50Z"
     }
   ]
 }
