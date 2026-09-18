@@ -1892,8 +1892,8 @@
       "task": "discharge my five eligible Tier A review obligations oldest first -- fourth sc_credential_scope, fourth csv sweep, fourth BAD_ACTION, hank service_role v4, cody law_trusttx",
       "claimed_at": "2026-09-18T16:00:46Z",
       "claimed_at_epoch": 1789747246.5119247,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T21:32:52Z"
     }
   ]
 }
