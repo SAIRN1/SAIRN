@@ -377,6 +377,34 @@ def cmd_set(args):
         print('state=blocked requires --blocked-on "<what is it waiting on>". '
               'A blocked row nobody can act on is a silence wearing a status.')
         return EXIT_COULD_NOT_RUN
+    # ── AND A ROW THAT IS NOT BLOCKED MUST NOT CARRY A BLOCKER (2026-09-18) ──
+    # `blocked_on` is CARRIED FORWARD by payload() when the flag is not passed,
+    # which is right for `task` and wrong for this: moving from blocked to
+    # working means the block cleared, and nothing said so. The registry then
+    # prints "BLOCKED ON: <something that is over>" under a row whose state says
+    # working, and every reader has to guess which half is current.
+    #
+    # THIS HAS NOW HAPPENED TWICE AND THE SECOND TIME WAS NOT MINE. On
+    # 2026-09-17 my own row carried a resolved push-block until I passed
+    # `--blocked-on ""` by hand. On 2026-09-18 cc's row was still reporting
+    # itself blocked on a claim of mine I had RELEASED, while its state read
+    # working -- so a real session was advertising a block that did not exist,
+    # to four other sessions, for hours.
+    #
+    # CLEARED RATHER THAN REFUSED, deliberately. Refusing the write would make
+    # the common `set --state working --task "..."` fail for a reason the caller
+    # did not ask about, and a status tool that is annoying to run is a status
+    # tool nobody runs. The clearing is ANNOUNCED so it is not silent either.
+    if body['state'] != 'blocked' and str(body.get('blocked_on') or '').strip():
+        if args.blocked_on is None:
+            print('  CLEARED a stale blocked_on: state is %r, so the block it '
+                  'named is over.\n    was: %s'
+                  % (body['state'], str(body['blocked_on'])[:120]))
+            body['blocked_on'] = None
+        else:
+            print('  NOTE: state is %r and a blocked_on was passed explicitly. '
+                  'Kept, because you asked for it -- but only state=blocked is '
+                  'read as "waiting on somebody".' % body['state'])
     written = write_status(name, body)
     print('status written: %s' % written)
     print('  %s  %s  %s' % (body['session'], body['state'],

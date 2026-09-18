@@ -178,3 +178,73 @@ gate in the run that cannot say "the engine work is zero".
 
 **Seeding may proceed only for forward rows of seven days or more**, and only
 after IC 1-1-9-1 is re-read on `iga.in.gov`.
+
+---
+
+## 9. RE-READ 2026-09-18 — the Election Day limb is RESOLVED, and by a better source than the one I was chasing
+
+**The primary statute still could not be read, and the failure is now measured
+rather than asserted.** `iga.in.gov` serves a **691-byte JavaScript shell** for
+every Indiana Code URL tried (2025 and 2026 title indexes, both identical,
+`sha256 61d9d1265c82…`) — there is no statute text in the response at all.
+`law.justia.com`'s section page 403s. The official county PDF mirror 403s.
+`law.onecle.com` 404s. So IC 1-1-9-1's own words remain second-hand.
+
+**BUT THE QUESTION THAT MATTERED WAS ANSWERABLE FROM A BETTER SOURCE, AND I WAS
+CHASING THE WRONG DOCUMENT.** T.R. 6(A) rolls off a "legal holiday", and what a
+court deadline actually turns on is which days the COURTS observe. The Indiana
+Judicial Branch publishes exactly that, itself, at **`in.gov/courts/holidays/`**
+— a primary, court-published source, and more on point than the general holiday
+statute.
+
+**IT PUBLISHES THE ELECTION DAYS.** For 2026: **Primary Election Day, 5 May**
+and **General Election Day, 3 November**, named with their dates. It also
+publishes **Good Friday, 3 April 2026**, and Lincoln's and Washington's
+Birthdays.
+
+### What that changes
+
+**THE ELECTION DAY LIMB IS NOT A PERMANENT BLOCKER. IT IS INGESTED, NEVER
+DERIVED** — which is the Maryland pattern this platform already runs: that
+calendar is "taken from the Judiciary's own published list rather than
+generated, and a year it does not cover is REFUSED rather than derived."
+Indiana takes the same shape, and for the same reason: a day that depends on an
+election schedule cannot be computed from a rule, and generating it would hide
+that behind a confident answer.
+
+**AND GOOD FRIDAY NEED NOT BE COMPUTED AT ALL** for a covered year — the
+schedule states the date. The computus is still the right mechanism if the
+calendar is ever extended past the published years, but it is not on the
+critical path for seeding.
+
+### The residual is now sharper, and it is the court's own sentence
+
+> "County court and clerk's offices **may observe different hours and holidays
+> than state offices**."
+
+That is the Judicial Branch disclaiming its own list for the county courts where
+almost every trial-level deadline is actually filed — the **Mississippi shape**,
+in the publisher's own words, and this platform already refuses to seed a
+statewide Mississippi calendar for exactly it. Two consequences:
+
+* **A MUNICIPAL election is a legal holiday under IC 1-1-9-1 and is NOT on the
+  state schedule**, which carries only the statewide primary and general. So the
+  state list is INCOMPLETE for a county in a municipal election year, and the
+  omission reports EARLY on a forward count — safe, and it must be disclosed.
+* **A county may also observe a day the state list does NOT carry.** Same
+  direction, same disclosure.
+
+### The verdict is unchanged in force and better founded
+
+Still **PASS WITH CONDITIONS**, still forward-only and seven days or more, still
+no backward rows. What changes:
+
+* Election Day moves from *"un-derivable, therefore disclosed"* to **"ingested
+  per year from the Judicial Branch schedule, and a year that schedule does not
+  cover is REFUSED"** — the Maryland rule, not a gap.
+* The **county-divergence disclaimer replaces it as the sharpest residual**, and
+  it is worse, because it is unbounded and comes from the publisher.
+* **IC 1-1-9-1 is still second-hand** and the Saturday/Sunday shift sentences
+  still rest on it. The shifts must be modelled, and the statute must be read
+  first-hand before a seed lands — the state schedule says nothing about weekend
+  observance, so it cannot substitute for the statute on that point.
