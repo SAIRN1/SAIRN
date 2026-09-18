@@ -8568,6 +8568,34 @@
       "limits": "STATIC READ ONLY -- the refusal paths were not driven with a failing upstream in a test, so this confirms the code says it and not that it behaves so under a real 500; and it covers only the MAR sweep, not the other reads in that file",
       "confirmed": "2026-09-17",
       "confirmed_by": "cody"
+    },
+    {
+      "commit": "4eaa3f05ec1f",
+      "date": "2026-09-15",
+      "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+      "app": "sairnlaw",
+      "layer": "product",
+      "method": "independent-review",
+      "claim": "api/_lib/law-trust-reconcile.js legs.allocation_vs_ledger CANNOT disagree, so marking it structural:true and excluding it from legs_compared is the correct treatment rather than an excuse -- and the bank leg's on-or-before statement-date boundary puts a transaction dated ON the statement date in ledger_as_of_cents",
+      "driven": "Drove reconcileTrustLedger() directly on ten adversarial row shapes: unreadable amount, absent client_id, non-string client_id, whitespace client_id, a null row, a voided row, a missing type, an object amount, an array amount, and 1e12 beside 0.01. agrees was true and row_conservation.holds was true in all ten. Boundary driven with rows dated one day before, exactly on, and one day after a 2026-09-30 statement. Both suites run: law-trust-reconcile.test.js 21/21 and law-trust-reconcile-endpoint.test.js 12/12.",
+      "verdict": "sound-with-limits",
+      "limits": "Ten shapes is not a proof of impossibility, only ten failures to make it disagree; the argument that it CANNOT is the code reading (both traversals skip on identical predicates), and the shapes are evidence for that reading rather than a substitute for it. Integer cents means summation order cannot matter below 2^53 and nothing here drove it above. The boundary check covers a single statement; a duplicate statement_date resolves by input order and is a separate open finding, not covered by this confirmation.",
+      "confirmed": "2026-09-18",
+      "confirmed_by": "cody"
+    },
+    {
+      "commit": "e419586b69f5",
+      "date": "2026-09-15",
+      "subject": "feat(process): five follow-ups -- and the sharpest finding is that my own tool was wrong about five of its seven",
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "method": "independent-review",
+      "claim": "first_article_inspection.py suites(): narrowing the bare-name match with a negative lookahead on a colon removes the declared-exclusion false positive WITHOUT dropping any genuine suite -- the author's stated worry was that requiring an invocation token had over-corrected",
+      "driven": "Re-implemented the OLD bare-name regex beside the shipped one and ran both over the tool's own load_tests() corpus: 569 test files x 388 artefacts (every tools/*.py and api/_lib/* on disk, not the changed-since subset). Diffed the resulting suite sets per artefact. Also ran the tool's own blind fixture lock (--fixtures, 25 arms, all pass) and a full report run.",
+      "verdict": "sound-with-limits",
+      "limits": "This measures the CHANGE, not the tool. It says no artefact lost a genuine suite TODAY; it does not say the colon rule is the right rule -- driven separately, a set literal, a list, a tuple, a dict VALUE and a comment naming the artefact all still read as coverage, and the one file that motivated the fix is a dict only because its entries carry reason strings. Nothing here checks artefacts outside tools/ and api/_lib/, and the corpus is whatever load_tests() collects, so a suite living somewhere it does not look is invisible to both regexes equally.",
+      "confirmed": "2026-09-18",
+      "confirmed_by": "cody"
     }
   ]
 }
