@@ -1713,8 +1713,8 @@
       "task": "add the open work index row tracing tests/source_manifest_probe.py",
       "claimed_at": "2026-09-18T23:15:02Z",
       "claimed_at_epoch": 1789773302.3301709,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T23:17:34Z"
     }
   ]
 }
