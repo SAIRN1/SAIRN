@@ -635,6 +635,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-18T11:07:25Z",
+      "resources": [
+        "alf_payer_rules",
+        "rf_invoices",
+        "sc_claims",
+        "sc_denial"
+      ],
+      "files": [
+        "api/_resources/extra-actions.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "BAD_ACTION message derived from EXTRA_ACTIONS[resource] instead of isSc(), and bridge_data rekeyed from raw customer licence keys to license_hash with the column renamed. THREE THINGS FOR A SECOND READER. (1) The message change is user-facing text on the gate that refuses every verb on every resource -- check that naming the real verb discloses nothing new, given the resource-visibility check already ran above it, and that no caller parses the old wording. (2) The bridge rekey hashes in place rather than deleting, BECAUSE THERE IS NO WORKING BACKUP -- check that encode(digest(shop_id,sha256),hex) really equals hashLicense for a key you hold, and that the 64-hex discriminator cannot mistake a real licence key for a hash on this deployment. (3) The column rename ships with the handler; I added an arm for the upsert conflict target after a mutation removing it came back SILENT, so check whether anything else reads bridge_data that I missed -- I found only api/bridge.js, with api/network.js mentioning it in a comment only. Tier A touched: invoices (bridge push carries StoneDesk expense invoices), and the sc_ records whose refusal message changed.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

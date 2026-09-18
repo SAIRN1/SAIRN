@@ -8385,6 +8385,65 @@
       "recurrence_open": "other endpoints that scope in JS after a read were not audited one by one -- the shape search makes them findable and finding them is not the same as having looked"
     },
     {
+      "commit": "c1443fd7eb69",
+      "date": "2026-09-18",
+      "subject": "fix(sd-data): the refusal named the one verb item 97 exists to forbid -- and a test was pinning it there",
+      "files": [
+        "api/_resources/extra-actions.test.js",
+        "api/sd-data.js",
+        "docs/tier-a-reviews.json"
+      ],
+      "lines_added": 87,
+      "lines_removed": 7,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js checkEnvelope built its BAD_ACTION message as action must be read or write, plus the word delete whenever isSc(resource) was true. isSc covers all 28 sc_ resources, but item 97 had split them into seven Tier A records granted only soft_delete and 21 granted delete. So a caller sending a bad action on a Tier A medical-billing record such as sc_claims was told the allowed verb is delete -- the exact verb the registry no longer grants there and which now answers 403 SOFT_DELETE_ONLY. Item 97 own reasoning is that a caller copying a working delete call from sc_dme to sc_claims should get a refusal naming the right verb; this message named the wrong one, unprompted, on the seven records that must never be destroyed. A test arm was asserting that wrong message on sc_denial, which is why it survived review.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "e442ca86b329",
+        "date": "2026-09-15",
+        "subject": "fix(sairncode): the seven Tier A records may be hidden and never destroyed -- item 97, decided and closed",
+        "lag_days": 3
+      },
+      "citation_note": "1.1 in the message layer: the refusal did not stop refusing, it stopped being TRUE. Item 97 split the 28 sc_ resources into seven soft-delete-only and 21 hard-deletable, and this message went on answering for all 28 from isSc() -- a statement invalidated by a change beside it, which is the shape 1.1 names.",
+      "phase_note": "The message was correct when written: every sc_ resource really did allow delete. The design choice that made it wrong later is deriving it from a MEMBERSHIP TEST (is this an sc_ resource) rather than from the per-resource grant, so a split in the grants could not reach it.",
+      "contributing_factors": [
+        {
+          "factor": "The message was derived from isSc(resource), a membership test over all 28 sc_ resources, when the fact it was asserting is per-resource. A split in the grants therefore could not reach it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Derived from extraAllowed, the same EXTRA_ACTIONS lookup the gate itself uses one line above, so the message and the gate cannot disagree."
+        },
+        {
+          "factor": "A test ASSERTED the wrong message. The arm was named the sc_ error message still names delete, and only there, and it pinned sc_denial -- one of the seven -- to the verb item 97 forbids there.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Replaced by two arms driving both halves of the split plus a control that the two sc_ messages differ, which a message naming no verb at all would fail."
+        },
+        {
+          "factor": "A second arm passed for the wrong reason and hid the same blind spot: it used alf_payer_rules as a resource with no extra verbs, and that resource really does grant route -- it only looked verbless because the old message never named a NON-sc_ extra verb.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Moved to profile, which genuinely has none, and a new arm asserts alf_payer_rules now names route."
+        },
+        {
+          "factor": "Item 97 changed what each resource is granted and nothing linked that change to the text that tells a caller what is granted.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "A general link from a grant table to the prose that describes it is a platform mechanism and out of scope here; named so the next instance is recognised rather than re-derived."
+        }
+      ],
+      "recurrence_open": "Nothing prevents the next message from being derived from a membership test rather than the fact it asserts. No checker looks for user-facing text built from a category predicate where a per-item lookup is in scope. Also unclosed: this fixed the refusal on sd-data.js only -- other handlers with their own BAD_ACTION-style messages were not surveyed."
+    },
+    {
       "commit": "e09d3afdd4c2",
       "date": "2026-09-18",
       "subject": "fix(hover-gate): the scope gate had no entry for the auditor's OWN claim file -- it blocked three real commits before anyone read the allowlist",
