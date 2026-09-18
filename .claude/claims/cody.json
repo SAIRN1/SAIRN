@@ -1397,8 +1397,8 @@
       "task": "add hover.json claim file to scope gate ALLOWED list",
       "claimed_at": "2026-09-18T10:52:19Z",
       "claimed_at_epoch": 1789728739.3566117,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T11:09:17Z"
     }
   ]
 }
