@@ -1715,6 +1715,16 @@
       "claimed_at_epoch": 1789773302.3301709,
       "status": "released",
       "released_at": "2026-09-18T23:17:34Z"
+    },
+    {
+      "id": "fourth-1789773591",
+      "session": "fourth",
+      "subject": "expect-anchoring-sweep",
+      "task": "anchor negative control expect regexes on the FAIL line across mutation controls",
+      "claimed_at": "2026-09-18T23:19:51Z",
+      "claimed_at_epoch": 1789773591.9022708,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
