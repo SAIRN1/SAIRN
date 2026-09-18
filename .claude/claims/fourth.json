@@ -1623,8 +1623,8 @@
       "task": "tier A review discharge oldest first, sc BAD_ACTION message per-resource verb, bridge_data raw licence key rekey migration, sairnlaw next jurisdiction gate",
       "claimed_at": "2026-09-17T23:25:39Z",
       "claimed_at_epoch": 1789687539.2284596,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T11:15:15Z"
     }
   ]
 }
