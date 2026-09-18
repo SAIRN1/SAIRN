@@ -254,6 +254,72 @@ def inline_control(src):
     return (True, bool(_INLINE_APPLIED.search(s)))
 
 
+# ── A THIRD SHAPE: THE MODULE STUB (2026-09-18) ────────────────────────────
+# `api/sd-data-dental-ledger-validation.test.js` carries FORTY-SEVEN mutation
+# arms and this counter could not see one of them. It does not sabotage source
+# TEXT at all -- there is no `.replace(` to find. It replaces a module's
+# EXPORTS in `require.cache` with a permissive stub, re-requires the handler so
+# it binds the stub, and asserts that each bad row now REACHES THE STORE. That
+# is a negative control in the only sense that matters: it proves the refusal
+# the suite above it asserts is coming from the validator and not from
+# somewhere incidental.
+#
+# THE ASSIGNMENT IS THE MUTATION; THE DELETE IS NOT. Measured across
+# tests/*.js and api/*.test.js before writing a line of this: TWENTY-TWO files
+# install something into require.cache and TEN more only `delete` from it. A
+# delete is cache hygiene -- re-require this module so it picks up new env --
+# and crediting it would hand a control badge to a third of the api/ suites.
+# Even the assignment alone is not enough: of those 22, TWENTY-ONE are stubbing
+# a dependency to make the handler testable at all, which is scaffolding, not
+# sabotage. Exactly ONE also announces a mutation. That is the discrimination
+# doing the work, and the fixtures below pin both must-not-fire cases because
+# over-claiming here would be worse than the blindness it replaces -- a suite
+# wrongly called controlled is one nobody will ever come back to.
+#
+# THE APPLIED-CHECK HAS TO BE BEHAVIOURAL, AND THAT IS NOT A WEAKER STANDARD.
+# For a `str.replace` control the applied-check is textual: compare the mutated
+# copy with the original and see that they differ. A module stub has no "before"
+# string to diff -- the swap either bound or it did not, and Node reports a
+# failed bind as a warning, not an error. This file's own header records that
+# exact defect: an early version installed an UNDEFINED validator instead of a
+# permissive one, Node said only "non-existent property ... inside circular
+# dependency", and the arms would have died on a TypeError while looking like
+# they had proved something. So the check is an assertion that the NEUTERED run
+# behaves differently from the real one, carrying a message that says the arm
+# proves nothing if the mutation did not take. That is the same guarantee the
+# textual diff gives, obtained the only way this shape allows.
+# ── THE SENTINELS LIVE HERE, BECAUSE A SECOND COPY WENT STALE IMMEDIATELY ──
+# `tests/run_suite_control_coverage_probe.py` carried the literal `'(inline)'`
+# in three places to mean "this credit is a sentinel, not a filename". Adding a
+# SECOND sentinel broke all three arms at once -- the probe read
+# `(inline: module stub)` as a probe FILENAME, went looking for a file by that
+# name, and reported the tool as over-claiming. The set is defined once, here,
+# beside the code that emits it, and the probe imports it. A third shape added
+# later cannot repeat this.
+INLINE_SENTINELS = ('(inline)', '(inline: module stub)')
+
+_STUB_INSTALL = re.compile(
+    r'require\s*\.\s*cache\s*\[\s*require\s*\.\s*resolve\s*\([^)]*\)\s*\]\s*=')
+_STUB_APPLIED = re.compile(
+    r'proves? nothing|asserts? nothing|did not restore|mutation did not', re.I)
+
+
+def module_stub_control(src):
+    """(mutates_a_module, verifies_the_mutation_applied) for the stub shape.
+
+    Same contract and the same conservative bias as inline_control(): a suite
+    that merely re-requires a module is NOT a control, and one that stubs
+    without a behavioural check is reported separately rather than credited.
+    """
+    from checker_kit import strip_comments
+    s = strip_comments(src or '')
+    if not _INLINE_KEYWORD.search(s):
+        return (False, False)
+    if not _STUB_INSTALL.search(s):
+        return (False, False)
+    return (True, bool(_STUB_APPLIED.search(s)))
+
+
 def _default_probes():
     """Python probes, plus the JS spellings MASTER-PLAN already counts as probes."""
     return (sorted(glob.glob(os.path.join(REPO, 'tests', '*.py')))
@@ -314,12 +380,17 @@ def survey(suite_paths=None, probe_paths=None):
             unreadable.append((b, '%s: %s' % (type(e).__name__, e)))
             continue
         mutates, applied = inline_control(ssrc)
-        if not mutates:
+        sm, sa = module_stub_control(ssrc)
+        if not mutates and not sm:
             continue
-        if applied:
+        if applied or sa:
             # Credited under a sentinel rather than a filename, so a reader can
-            # never mistake it for a probe file that does not exist.
-            controllers.setdefault(b, []).append('(inline)')
+            # never mistake it for a probe file that does not exist. The two
+            # shapes carry DIFFERENT sentinels: a reader looking at a coverage
+            # figure should be able to see which kind of control is behind it
+            # without opening the suite, because they fail in different ways.
+            controllers.setdefault(b, []).append(
+                '(inline)' if applied else '(inline: module stub)')
         elif b not in controllers:
             inline_unverified.append(b)
     return ([os.path.basename(s) for s in suites], controllers, unreadable,
@@ -475,6 +546,92 @@ def self_check():
         "const CODE = src.replace(/<!--[\\s\\S]*?-->/g, '');\n"
         "assert.ok(CODE.length > 0);\n")
 
+    # ── THE MODULE-STUB SHAPE, LOCKED IN BOTH DIRECTIONS ──────────────────
+    # Reduced from api/sd-data-dental-ledger-validation.test.js. The two
+    # must-NOT-fire fixtures are the important ones: 21 of the 22 files that
+    # install into require.cache are stubbing a dependency to make a handler
+    # testable, and 10 more only delete from it. Crediting either would hand a
+    # control badge to a third of api/.
+    STUB_OK = (
+        "// MUTATION: the validator is stubbed to null so the bad row is stored.\n"
+        "delete require.cache[require.resolve('./_lib/dental-ledger')];\n"
+        "require.cache[require.resolve('./_lib/dental-ledger')] = { exports: stub };\n"
+        "assert.strictEqual(res.statusCode, 200,\n"
+        "  'the mutation did not restore the pre-fix behaviour -- the arm above proves nothing');\n")
+    STUB_UNVERIFIED = (
+        "await test('MUTATION (validator stubbed): the bad row is stored', async () => {\n"
+        "  require.cache[require.resolve('./_lib/dental-ledger')] = { exports: stub };\n"
+        "  assert.strictEqual(res.statusCode, 200);\n"
+        "});\n")
+    # ── THE ANNOUNCEMENT MUST SURVIVE COMMENT-STRIPPING, AND THAT WAS
+    #    MEASURED RATHER THAN PREFERRED ─────────────────────────────────────
+    # The keyword is looked for in the STRIPPED source, so a suite that says
+    # MUTATION only in a comment is not recognised. That is under-claiming and
+    # it is deliberate: reading the keyword from RAW source instead admits FIVE
+    # more files immediately -- sd-agent-budget, dental-financial-tier,
+    # dental-provider-scope, employees-refusal, sairnlaw-resources -- and I read
+    # all five. Every one is PROSE: a comment narrating that some SEPARATE
+    # negative control found a defect, or that an arm survived a probe. Not one
+    # is a stub control. Crediting them would be precisely the over-claim this
+    # file's docstring says it must never make, so the cost is paid the other
+    # way: a real stub control announced only in a comment reads as
+    # uncontrolled until the word appears in the arm's own label.
+    #
+    # THIS FIXTURE ALSO CARRIES AN APPLIED-CHECK PHRASE, on purpose. It must
+    # fail on the KEYWORD rule alone, so it cannot pass by accidentally missing
+    # two conditions at once.
+    STUB_COMMENT_ONLY = (
+        "// MUTATION: the validator is stubbed to null.\n"
+        "require.cache[require.resolve('./_lib/dental-ledger')] = { exports: stub };\n"
+        "assert.strictEqual(res.statusCode, 200, 'otherwise the arm proves nothing');\n")
+    # SCAFFOLDING, NOT SABOTAGE. The real shape of the other 21.
+    STUB_SCAFFOLD = (
+        "// Stub the licence check so the handler can be driven at all.\n"
+        "require.cache[require.resolve('./_lib/license')] = { exports: fakeLicense };\n"
+        "assert.strictEqual(res.statusCode, 200);\n")
+    # CACHE HYGIENE, NOT A MUTATION. The real shape of the other 10.
+    #
+    # ⚠ THE FIRST VERSION OF THIS FIXTURE COULD NOT FAIL, and it was caught by
+    # mutating this file rather than by reading it. It announced the mutation
+    # in a COMMENT, which strip_comments removes, so it never reached the
+    # assignment-vs-delete rule at all -- it was stopped one gate earlier by the
+    # keyword. Loosening _STUB_INSTALL to match any `require.cache[` left the
+    # self-check GREEN, which is the whole defect this platform records as a
+    # control that cannot fail. The announcement is in a test LABEL now, so the
+    # fixture reaches the rule it is named after.
+    #
+    # IT IS LOAD-BEARING AGAINST REAL FILES: of the ten suites that only delete
+    # from require.cache, sairnbiz_timesheet_hours.js and
+    # claude-guardrail-metamorphic.test.js DO announce a mutation in code, so a
+    # loosened shape rule would credit both of them on cache hygiene alone.
+    STUB_DELETE_ONLY = (
+        "await test('MUTATION arms re-require the handler for a clean state',\n"
+        "  async () => {\n"
+        "    delete require.cache[require.resolve('./sd-data.js')];\n"
+        "    const handler = require('./sd-data.js');\n"
+        "  });\n")
+
+    ck('a module-stub control that checks the mutation BEHAVED counts',
+       module_stub_control(STUB_OK) == (True, True), module_stub_control(STUB_OK))
+    ck('...with no behavioural check it is MUTATES-BUT-UNVERIFIED',
+       module_stub_control(STUB_UNVERIFIED) == (True, False),
+       module_stub_control(STUB_UNVERIFIED))
+    ck('MUST NOT FIRE: stubbing a dependency to make a handler testable is '
+       'scaffolding, not sabotage',
+       module_stub_control(STUB_SCAFFOLD) == (False, False),
+       module_stub_control(STUB_SCAFFOLD))
+    ck('MUST NOT FIRE: a bare delete from require.cache is cache hygiene, '
+       'even with the word MUTATION in the file',
+       module_stub_control(STUB_DELETE_ONLY) == (False, False),
+       module_stub_control(STUB_DELETE_ONLY))
+    ck('MUST NOT FIRE: an announcement living only in a COMMENT -- reading the '
+       'keyword raw would admit five prose mentions, measured and read today',
+       module_stub_control(STUB_COMMENT_ONLY) == (False, False),
+       module_stub_control(STUB_COMMENT_ONLY))
+    ck('MUST NOT FIRE: the replace-shape fixtures are not module stubs',
+       module_stub_control(INLINE_OK) == (False, False),
+       module_stub_control(INLINE_OK))
+
     ck('an inline control that VERIFIES the mutation applied counts',
        inline_control(INLINE_OK) == (True, True), inline_control(INLINE_OK))
     ck('...and the notStrictEqual spelling of the same check counts',
@@ -499,9 +656,22 @@ def self_check():
     io.open(os.path.join(tmpi, 'unverified.js'), 'w',
             encoding='utf-8').write(INLINE_UNVERIFIED)
     io.open(os.path.join(tmpi, 'plain.js'), 'w', encoding='utf-8').write(INLINE_NONE)
+    io.open(os.path.join(tmpi, 'stubcontrolled.js'), 'w',
+            encoding='utf-8').write(STUB_OK)
+    io.open(os.path.join(tmpi, 'stubscaffold.js'), 'w',
+            encoding='utf-8').write(STUB_SCAFFOLD)
+    io.open(os.path.join(tmpi, 'stubunverified.js'), 'w',
+            encoding='utf-8').write(STUB_UNVERIFIED)
     _ni, _ci, _bi, _ii = survey(sorted(glob.glob(os.path.join(tmpi, '*.js'))), [])
     ck('end to end: the self-controlled suite is CREDITED, tagged (inline)',
        _ci.get('selfcontrolled.js') == ['(inline)'], _ci)
+    ck('end to end: the module-stub suite is CREDITED under its OWN sentinel',
+       _ci.get('stubcontrolled.js') == ['(inline: module stub)'], _ci)
+    ck('end to end: dependency scaffolding is credited by NEITHER shape and is '
+       'not even named as unverified',
+       'stubscaffold.js' not in _ci and 'stubscaffold.js' not in _ii, (_ci, _ii))
+    ck('end to end: a stub with no behavioural check is NOT credited and IS named',
+       'stubunverified.js' not in _ci and 'stubunverified.js' in _ii, (_ci, _ii))
     ck('end to end: the unverified one is NOT credited and IS named',
        'unverified.js' not in _ci and 'unverified.js' in _ii, (_ci, _ii))
     ck('end to end: the plain suite appears in neither',
@@ -572,7 +742,18 @@ def main(argv):
         return EXIT_COULD_NOT_RUN
 
     uncontrolled = [n for n in names if n not in ctl]
+    # ── COUNT BOTH SENTINELS, AND SAY WHICH ─────────────────────────────────
+    # This read `'(inline)' in ctl[b]` and nothing else, so the module-stub
+    # suite was credited in the headline total and then invisible in the line
+    # that breaks that total down -- 62 controlled, 9 inline, and one suite
+    # inline-but-not-counted-as-inline. That is this file's own docstring
+    # defect, "a census whose universe is one spelling of a thing reports every
+    # other spelling as absent", reproduced by me one screen below where it is
+    # written down. Both shapes are counted and they are counted SEPARATELY,
+    # because they fail differently: a replace-shape control goes quiet when
+    # its anchor rots, a module stub goes quiet when the bind does not take.
     inline_n = len([b for b in ctl if '(inline)' in ctl[b]])
+    stub_n = len([b for b in ctl if '(inline: module stub)' in ctl[b]])
 
     if args.json:
         print(json.dumps({'suites': len(names), 'controlled': sorted(ctl),
@@ -589,6 +770,7 @@ def main(argv):
         print('  the suite goes red); %d have never been sabotaged at all.'
               % len(uncontrolled))
         print('  of the controlled ones, %d carry the control INLINE rather than in\n  a separate probe file -- invisible to this counter until 2026-09-17,\n  which is why every earlier headline was an undercount.' % inline_n)
+        print('  and %d sabotage a MODULE rather than source text -- a require.cache\n  stub, invisible here until 2026-09-18. The two are counted apart because\n  they go quiet differently: a replace when its anchor rots, a stub when the\n  bind does not take.' % stub_n)
         if inline_unverified:
             print('')
             print('  MUTATES WITH NO VISIBLE APPLIED-CHECK -- not counted as')

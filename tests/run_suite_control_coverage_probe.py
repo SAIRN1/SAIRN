@@ -71,7 +71,13 @@ for p in sorted(C._default_probes()):
 # the shape it was extended to see. They are checked instead in section 3,
 # against the suite's own source -- which is the evidence that actually backs
 # the claim, and a stricter test than this one.
-from_probe_files = set(b for b in ctl if any(p != '(inline)' for p in ctl[b]))
+# EVERY sentinel, derived from the tool rather than spelled again here.
+# This line carried the literal '(inline)' and a SECOND sentinel broke it
+# and two arms below at once -- the probe read '(inline: module stub)' as a
+# probe FILENAME and reported the tool as over-claiming. C.INLINE_SENTINELS
+# is the one definition; a third shape cannot repeat this.
+from_probe_files = set(b for b in ctl
+                      if any(p not in C.INLINE_SENTINELS for p in ctl[b]))
 inline_only = sorted(set(ctl) - from_probe_files)
 over = sorted(from_probe_files - set(loose))
 check('the tool claims NO suite from a PROBE FILE that a broader, dumber '
@@ -99,16 +105,27 @@ for suite, probes in sorted(ctl.items()):
         # path would be worse than not crediting it -- so the sentinel is
         # checked against the SUITE's own source instead, which is the thing it
         # is actually claiming about.
-        if pb == '(inline)':
+        if pb in C.INLINE_SENTINELS:
             spath = os.path.join(REPO, 'tests', suite)
             if not os.path.exists(spath):
                 spath = os.path.join(REPO, 'api', suite)
             ssrc = (io.open(spath, encoding='utf-8', errors='replace').read()
                     if os.path.exists(spath) else '')
-            m, applied = C.inline_control(ssrc)
-            check('%s: the (inline) credit is real -- it mutates its own source '
-                  'AND asserts the mutation applied' % suite, m and applied,
-                  (m, applied))
+            # EACH SENTINEL IS CHECKED AGAINST ITS OWN PREDICATE. Verifying a
+            # module-stub credit with inline_control() would ask the wrong
+            # question -- there is no .replace() in that shape at all -- and the
+            # arm would fail against a sound control, which is how a probe
+            # teaches people to ignore it.
+            if pb == '(inline: module stub)':
+                m, applied = C.module_stub_control(ssrc)
+                check('%s: the module-stub credit is real -- it installs a stub '
+                      'into require.cache AND checks the neutered run behaved '
+                      'differently' % suite, m and applied, (m, applied))
+            else:
+                m, applied = C.inline_control(ssrc)
+                check('%s: the (inline) credit is real -- it mutates its own source '
+                      'AND asserts the mutation applied' % suite, m and applied,
+                      (m, applied))
             continue
         path = os.path.join(REPO, 'tests', pb)
         ok = os.path.exists(path)
