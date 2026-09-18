@@ -1419,6 +1419,16 @@
       "claimed_at_epoch": 1789732718.847414,
       "status": "released",
       "released_at": "2026-09-18T13:12:28Z"
+    },
+    {
+      "id": "cody-1789740314",
+      "session": "cody",
+      "subject": "all-tests-denominator",
+      "task": "traceability_matrix all_tests enumeration misses api subdirectories, and master-plan totals disagree with themselves",
+      "claimed_at": "2026-09-18T14:05:14Z",
+      "claimed_at_epoch": 1789740314.8546646,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
