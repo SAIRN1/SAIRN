@@ -2193,8 +2193,8 @@
       "task": "peerconsult 64KB check rejection svSyncSuppressed no finally hydration additive disclosure",
       "claimed_at": "2026-09-18T12:12:22Z",
       "claimed_at_epoch": 1789733542.0309339,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T12:20:07Z"
     }
   ]
 }
