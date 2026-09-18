@@ -8474,6 +8474,39 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
     },
     {
+      "commit": "67d181dc6cae",
+      "date": "2026-09-18",
+      "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js"
+      ],
+      "lines_added": 559,
+      "lines_removed": 18,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "scpSendDesignToQuote disabled the send button and relabelled it 'Sent to Quoting (Q-...)' UNCONDITIONALLY, three lines before the branch that decided whether either write had landed -- so a quote that never reached the server showed the same disabled button and the same 'Sent to Quoting' label as one that did, while the toast beside it said to try again with a connection. SAIRNscape also had no retry path at all, and scpData discarded the HTTP status so a 4xx refusal and an unreachable server were indistinguishable to every caller",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 3
+      },
+      "citation_note": "the sentence was corrected on 2026-09-15 and the affordance was not -- a control that contradicts the text beside it is a could-not-tell the user resolves in the control's favour",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
+    },
+    {
       "commit": "c1443fd7eb69",
       "date": "2026-09-18",
       "subject": "fix(sd-data): the refusal named the one verb item 97 exists to forbid -- and a test was pinning it there",
