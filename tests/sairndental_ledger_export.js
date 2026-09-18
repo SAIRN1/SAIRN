@@ -181,13 +181,47 @@ test('a patient who no longer exists leaves the NAME blank and the ID intact', (
   // A cell headed Patient holding an identifier nobody can resolve looks like
   // data and is not, which is the whole reason blank is the right answer.
   //
-  // Split naively on commas, which is sound HERE and is said rather than
-  // assumed: the Patient column is index 2 and the two cells before it are a
-  // date and an id, neither of which can contain a comma in this fixture.
+  // Split naively on commas. Sound HERE -- the two cells before Patient are a
+  // date and an id, neither of which can contain a comma in this fixture -- and
+  // GUARDED below rather than left resting on that sentence.
+  //
+  // ── THE COMMENT ABOVE USED TO NAME THE WRONG FRAGILITY, AND THE RIGHT ONE
+  //    PASSED ON THE DEFECT (2026-09-18, independent review) ────────────────
+  // It said the reasoning could rot "if a column is reordered". It cannot:
+  // `head.indexOf('Patient')` tracks a reorder. The real fragility is a comma
+  // inside any cell BEFORE Patient, because dntCsvCell() QUOTES such a cell and
+  // a naive split then tears it into pieces.
+  //
+  // MOSTLY THAT FAILS SAFE -- a charge id 'CH,1' quotes to "CH,1" and cells[2]
+  // becomes '1"', so the arm goes red on correct code. BUT NOT ALWAYS. Any
+  // preceding cell carrying two adjacent commas at the right offset yields
+  // cells[2] === '' and THIS ARM PASSED WITH THE NAME-IS-ID DEFECT PRESENT --
+  // driven with date values 'a,,,b', 'a,,,,b', 'x,,,y,,,z' and ',,,,', all four
+  // green on the mutated app. That is precisely the defect this arm was fixed
+  // for in the first place, reappearing one layer down.
+  //
+  // THE GUARD IS A COUNT, NOT A PARSER. If the split disagrees with the header
+  // the row contains a quoted comma and the naive index is meaningless -- so
+  // the arm REFUSES rather than indexing into the pieces. "Could not tell" is a
+  // third state and is never folded into "passed" (PR 1.11). A real parser
+  // would be the wrong trade here: it would make this arm keep answering on
+  // input shapes nobody has decided are legal, where a refusal makes somebody
+  // look.
+  //
+  // IT IS DORMANT TODAY BY CONSTRUCTION -- Date and Charge ID are both app
+  // generated -- and it arms itself the moment a free-text column is INSERTED
+  // before Patient, which is the change the old comment should have warned
+  // about.
   const head = lines[0].split(',');
   const cells = row.split(',');
   const nameIdx = head.indexOf('Patient');
   assert.ok(nameIdx !== -1, 'no Patient column in the header: ' + lines[0]);
+  assert.strictEqual(cells.length, head.length,
+    'a cell in this row contains a quoted comma, so splitting on commas does '
+    + 'NOT line up with the header and the Patient cell cannot be located. '
+    + 'This arm is REFUSING rather than indexing into the pieces -- it is not a '
+    + 'pass and it is not a failure of the export. header=' + head.length
+    + ' cells=' + cells.length + '  row=' + JSON.stringify(row));
   assert.strictEqual(cells[nameIdx], '',
     'the NAME cell must be BLANK, not an unresolvable identifier: ' + JSON.stringify(cells[nameIdx]));
 });

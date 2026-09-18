@@ -367,6 +367,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The local-only checker cleared a wrapper on its OWN SIGNATURE — and nine deliberate decisions were invisible to it** — ⚠ **ALREADY SHIPPED; DO NOT RE-FIX. `c7c24983` claimed this AFTER `e3b38a8c` was on origin — the narrowing is live at `tools/local_only_collection_check.py`, `others = reaches - {fname}`** | **FIXED 2026-09-10 (CC)** — `e3b38a8c`, held by `tests/local_only_self_evidence_probe.py`. Closes the row above | `tests/local_only_self_evidence_probe.py` |
 | **Three live apps were a PERMANENT “could not read” in the local-only checker — and clearing it exposed a false accusation on a fourth** | **FIXED 2026-09-10 (CC)** — `1fa74f2f`, held by `tests/local_only_shape_probe.py` | `tests/local_only_shape_probe.py` |
 | ~~`dnt_settings_obj` has FOUR writers under two backing variables — the same shape StoneDesk had, unchecked~~ | **CLOSED 2026-09-04 (CC)** — the collision is benign and now ACKNOWLEDGED with the trace; the real defect found in the same read was NOT the collision, and is fixed | `tests/sairndental_settings_patch.js` |
+| ~~`piac.html`, 138 KB untracked at the repo root since 2026-08-28, is a saved copy of an INDIANA DEPARTMENT OF HEALTH 404 PAGE~~ &mdash; **deleted 2026-09-18** | **CLOSED 2026-09-18 (Fourth). Michael authorised the deletion; the file is gone from `SAIRN-fourth` and existed nowhere else.** Original status follows unchanged &mdash; Open &mdash; **identified 2026 | `api/sd-data-exec-context.test.js`, `tests/rootpages.js` |
 | ~~**No app can deactivate a departing employee through its own UI — `set_active` has ZERO client callers platform-wide**~~ | **CLOSED 2026-09-03 (Fourth) — 9/9 endpoints, 8/9 screens.** ⚠️ **THE NUMBERS IN THIS ROW WERE ALREADY STALE WHEN IT WAS CLOSED, AND THAT IS THE REUSABLE LESSON:** it said client UI in ZERO apps and t | `api/_lib/employee-lifecycle-wiring.test.js` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
@@ -557,8 +558,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 267 |
-| `declared` | 233 |
-| `declared+index` | 12 |
+| `declared` | 231 |
+| `declared+index` | 14 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -652,7 +653,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 578   tests/**, api/** (both walked)
-  open-work rows citing a test       271   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       272   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
