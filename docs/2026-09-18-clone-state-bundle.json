@@ -1,8 +1,9 @@
 {
  "bundle_of": "sairn_self_state",
- "generated_at": "2026-09-18T15:49:01Z",
+ "generated_at": "2026-09-18T15:54:03Z",
  "generated_by_clone": "hank",
  "window_days": 7,
+ "prefer_self_dir": "docs/self-state",
  "clones": [
   {
    "session": "cc",
@@ -1769,7 +1770,7 @@
     },
     {
      "kind": "OWED",
-     "detail": "opened 2026-09-17T01:22:16Z, 39h -- rf_claim_photos, rf_claims"
+     "detail": "opened 2026-09-17T01:22:16Z, 40h -- rf_claim_photos, rf_claims"
     },
     {
      "kind": "OWED",
@@ -1796,7 +1797,8 @@
     "state": "idle",
     "task": "sairnscape banner corrected and live: names the Design Walk send path plus the 3 unqueued siblings; suite pins 18 sites / 2 queued. Holding idle.",
     "updated": "2026-09-18T11:26:51"
-   }
+   },
+   "row_source": "outside read by hank at bundle time"
   },
   {
    "session": "cody",
@@ -2816,7 +2818,8 @@
     "state": "idle",
     "task": "9 CSV exports LIVE-verified; all_tests 558->574 + 512/518 collapsed; fail-open stale acceptance resolved; 1 review discharged; rotation TIER A 38->37",
     "updated": "2026-09-18T11:03:45"
-   }
+   },
+   "row_source": "outside read by hank at bundle time"
   },
   {
    "session": "fourth",
@@ -4300,7 +4303,8 @@
     "state": "idle",
     "task": "source manifest DONE; PA rollover disclosed DONE; Maine gate PASSED; Tier A reviews BLOCKED on cody tier-a-reviews claim",
     "updated": "2026-09-18T10:37:46"
-   }
+   },
+   "row_source": "outside read by hank at bundle time"
   },
   {
    "session": "hank",
@@ -4308,9 +4312,11 @@
    "git": {
     "repo": "C:\\Users\\marsh\\Documents\\SAIRN-hank",
     "branch": "main",
-    "head": "6a130ec0",
+    "head": "e2d1ff4f",
     "dirty": [],
-    "untracked": [],
+    "untracked": [
+     "docs/self-state/"
+    ],
     "behind": 0,
     "ahead": 0,
     "unpushed": []
@@ -5682,11 +5688,6 @@
      "sha": "a2f7698596f2",
      "date": "2026-09-12",
      "subject": "docs(worklog): the queue live check -- the client half CAN be verified live"
-    },
-    {
-     "sha": "d05892401d74",
-     "date": "2026-09-11",
-     "subject": "feat(sairndental,sd-data): the unlinked-referral queue -- findable, not required"
     }
    ],
    "claims": [
@@ -6291,7 +6292,7 @@
      "what": "sairndental-recall-outreach-validation -- contact log date suppression"
     }
    ],
-   "worklog_entries": 34,
+   "worklog_entries": 33,
    "obligations_owed": 1,
    "obligations_dischargeable": 17,
    "findings": [
@@ -6325,6 +6326,10 @@
     },
     {
      "kind": "NO-LOG",
+     "detail": "claimed 2026-09-14 (1d031030c020) and no worklog entry in this window mentions any of: declared, detection, first, item34, leak, scope"
+    },
+    {
+     "kind": "NO-LOG",
      "detail": "claimed 2026-09-14 (733188296df7) and no worklog entry in this window mentions any of: baseline, frozen, shrinkage, spof, visible"
     },
     {
@@ -6350,21 +6355,26 @@
     {
      "kind": "NO-LOG",
      "detail": "claimed 2026-09-14 (b0a1aa688712) and no worklog entry in this window mentions any of: 504s, across, correlate, crons, limit, rate"
+    },
+    {
+     "kind": "NO-LOG",
+     "detail": "claimed 2026-09-13 (681b29278cd0) and no worklog entry in this window mentions any of: changed, control, must, negative, noop, prove"
     }
    ],
    "status_row": {
-    "blocked_on": "",
+    "blocked_on": "cc, cody and fourth each running: python tools/sairn_self_state.py --json > docs/self-state/self-state-<session>.json  (their own clone; mine are OUTSIDE reads and cannot be authoritative)",
     "claude_pid": 34616,
     "claude_start": 134342058287408144,
     "clone": "C:\\Users\\marsh\\Documents\\SAIRN-hank",
     "item": "1",
     "note": null,
-    "pid": 34552,
+    "pid": 24332,
     "session": "hank",
-    "state": "idle",
-    "task": "exit-code false finding corrected; stale_row_sweep shipped; 4 cody reviews discharged; 2 red suites fixed",
-    "updated": "2026-09-18T11:30:04"
-   }
+    "state": "blocked",
+    "task": "four-clone state bundle: SELF rows needed from cc, cody and fourth",
+    "updated": "2026-09-18T11:52:46"
+   },
+   "row_source": "committed-self-row: docs/self-state\\self-state-hank.json"
   }
  ],
  "not_included": [
@@ -6375,6 +6385,7 @@
  ],
  "what_this_is_not": [
   "NOT a reconciliation. It is the INPUT to one: four derived states captured in a single run so they can be compared without the branch moving underneath the comparison.",
+  "Each entry carries row_source: a committed SELF row that session produced in its own clone, or an outside read taken at bundle time.",
   "An entry whose git_derivation is OUTSIDE was read off another clone's disk by this one. It is real and it is not that session speaking: it cannot see an unwritten edit, an unrecorded decision, or what that session believes it is doing. Only that session running this tool in its own clone produces SELF.",
   "COMMIT AUTHORSHIP IS STILL NOT DERIVABLE. Every clone commits as one git identity; only commits touching a session's own claim file or worklog are attributable and that is a small fraction of real work."
  ]
