@@ -1399,6 +1399,16 @@
       "claimed_at_epoch": 1789728739.3566117,
       "status": "released",
       "released_at": "2026-09-18T11:09:17Z"
+    },
+    {
+      "id": "cody-1789729790",
+      "session": "cody",
+      "subject": "tier-a-reviews",
+      "task": "discharge overdue Tier A review obligations authored by cc and fourth, oldest first",
+      "claimed_at": "2026-09-18T11:09:50Z",
+      "claimed_at_epoch": 1789729790.2853796,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
