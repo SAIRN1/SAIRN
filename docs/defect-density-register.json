@@ -8594,6 +8594,39 @@
       "recurrence_open": "Nothing prevents the next message from being derived from a membership test rather than the fact it asserts. No checker looks for user-facing text built from a category predicate where a per-item lookup is in scope. Also unclosed: this fixed the refusal on sd-data.js only -- other handlers with their own BAD_ACTION-style messages were not surveyed."
     },
     {
+      "commit": "d63fdef62257",
+      "date": "2026-09-18",
+      "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+      "files": [
+        "api/_lib/law-trust-reconcile.js",
+        "api/_lib/law-trust-reconcile.test.js",
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js"
+      ],
+      "lines_added": 553,
+      "lines_removed": 15,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/law-trust-reconcile.js excluded an UNDATED transaction from both sides of the statement-date split, so asOf + afterStatement silently stopped equalling the ledger and the reconciliation returned status AGREES with client trust money in no comparison at all -- the only cue an undated_rows count nested inside a leg reporting agrees:true. Separately it had no cleared/outstanding concept, so an uncleared cheque dated before the statement reported DISAGREES while the books were correct. And dayOf() validated the SHAPE of a date rather than the date, accepting 2026-02-31 as a statement date or a clearance",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 3
+      },
+      "citation_note": "a green verdict from a comparison that was never made -- the file's own stated principle about the single matches boolean, reappearing one axis over on the date split",
+      "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
+    },
+    {
       "commit": "e09d3afdd4c2",
       "date": "2026-09-18",
       "subject": "fix(hover-gate): the scope gate had no entry for the auditor's OWN claim file -- it blocked three real commits before anyone read the allowlist",

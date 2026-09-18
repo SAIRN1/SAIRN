@@ -708,16 +708,16 @@
       "verdict": null
     },
     {
-      "author_session": "cody",
-      "opened_at": "2026-09-18T13:56:27Z",
+      "author_session": "cc",
+      "opened_at": "2026-09-18T14:15:06Z",
       "resources": [
-        "law_trust_reconcile",
         "law_trusttx"
       ],
       "files": [
-        "tests/sairnlaw_hydrate.js"
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js"
       ],
-      "what": "Repaired four RED suites, three of them Tier A, none of which anything had reported. tests/sairnlaw_hydrate.js is the Tier A one in this push: it had been 13/2 since 4eaa3f05 registered law_trust_reconcile, because two arms assert hydrate-set == registry-set and law_trust_reconcile is a COMPUTED read with no table behind it. I narrowed the set through a NOT_HYDRATED map carrying the reason beside the name, plus a new arm asserting every excluded name is really registered and really has a reason. PRESS ON THIS: whether excluding a name from the hydrate assertion is the right repair at all, or whether the registry should distinguish a derived resource from a table so the suite does not need a hand-maintained list -- I took the narrower option because widening the registry's schema is a platform decision. Also check that NOT_HYDRATED cannot silently grow to cover a real table: the new arm asserts registration and a 60-char reason, which is a weaker guard than I would like. Second: tests/ld_reports_unreadable.js had a FALSE POSITIVE arm, out.slice(start) with no end, reading a later section of fail_open_check.py output as its own; verify my boundary arm actually fails when the boundary is not found rather than passing on the fallback branch.",
+      "what": "SAIRNlaw IOLTA: money_conservation across the date split, outstanding-item (cleared vs uncleared) adjustment on the bank leg, dayOf now validates the DATE and not the shape, and a client UI to record clearance. I REVIEWED THIS MODULE ON 2026-09-17 AND HAVE NOW CHANGED IT, so this review must go to a session that has done neither. PRESS ON: (1) the bank-rec identity is bank = as_of - outstanding -- check the SIGN on a deposit in transit versus an uncleared cheque against a real statement, because getting it backwards makes both errors cancel on a fixture with one of each; (2) untracked clearance keeps the OLD comparison rather than nulling the leg, which is a judgement I reversed mid-change -- check the disclosure sentence cannot be read as an adjustment having been made; (3) money_conservation's status branch is LABELLED unreachable and a sabotage confirms it -- check the label is still true after your own reading, not just mine; (4) dayOf moved to the shared isCalendarDate -- check no caller depended on the old shape-only behaviour, particularly around statement_date; (5) the client reverts an unsynced clearance -- check the revert cannot resurrect a clearance somebody else cleared on another device, which is the shape the VOID path beside it had to solve.",
       "status": "open",
       "reviewer_session": null,
       "reviewed_at": null,
