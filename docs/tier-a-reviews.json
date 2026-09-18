@@ -706,6 +706,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-18T13:56:27Z",
+      "resources": [
+        "law_trust_reconcile",
+        "law_trusttx"
+      ],
+      "files": [
+        "tests/sairnlaw_hydrate.js"
+      ],
+      "what": "Repaired four RED suites, three of them Tier A, none of which anything had reported. tests/sairnlaw_hydrate.js is the Tier A one in this push: it had been 13/2 since 4eaa3f05 registered law_trust_reconcile, because two arms assert hydrate-set == registry-set and law_trust_reconcile is a COMPUTED read with no table behind it. I narrowed the set through a NOT_HYDRATED map carrying the reason beside the name, plus a new arm asserting every excluded name is really registered and really has a reason. PRESS ON THIS: whether excluding a name from the hydrate assertion is the right repair at all, or whether the registry should distinguish a derived resource from a table so the suite does not need a hand-maintained list -- I took the narrower option because widening the registry's schema is a platform decision. Also check that NOT_HYDRATED cannot silently grow to cover a real table: the new arm asserts registration and a 60-char reason, which is a weaker guard than I would like. Second: tests/ld_reports_unreadable.js had a FALSE POSITIVE arm, out.slice(start) with no end, reading a later section of fail_open_check.py output as its own; verify my boundary arm actually fails when the boundary is not found rather than passing on the fallback branch.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

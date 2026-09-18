@@ -41,7 +41,24 @@ assert.ok(start > 0, 'the saw-ticket block was not found in stonedesk.html');
 const endRe = /\r?\n\}\)\(\);/;
 const rel = html.slice(start).search(endRe);
 assert.ok(rel > 0, 'the saw-ticket block is not terminated as expected');
-const src = html.slice(start, start + rel);
+// ── sdCsvCell IS PART OF THE BLOCK'S DEPENDENCIES NOW (2026-09-18) ──────────
+// The CSV formula-injection sweep (885fd0b9, 2026-09-17 18:07) made the saw
+// ticket's CSV go through sdCsvCell(), which lives OUTSIDE this IIFE. From
+// that commit this suite ran 10 passed / 6 FAILED with `sdCsvCell is not
+// defined` and stayed that way unread. Fourth suite broken the same way by
+// the same commit -- the others are sairnvet_controlled_export.js,
+// sairncare_credential_export.js and sairnmechanical_credential_export.js.
+//
+// PULLED FROM THE PAGE, NOT STUBBED IN THE HARNESS. escHtml below IS stubbed,
+// which is a pre-existing choice and a different risk; the point of the CSV
+// arm at the bottom of this file is what the REAL guard does to a label
+// containing a quote, so a re-implementation here would test the harness.
+const csvCellStart = html.indexOf('function sdCsvCell(');
+assert.ok(csvCellStart > 0, 'sdCsvCell was not found in stonedesk.html -- the '
+  + 'saw ticket calls it and a stub here would test the harness, not the app');
+const csvCellSrc = html.slice(csvCellStart,
+  csvCellStart + html.slice(csvCellStart).search(/\r?\n/));
+const src = csvCellSrc + '\n' + html.slice(start, start + rel);
 
 function harness(opts) {
   opts = opts || {};

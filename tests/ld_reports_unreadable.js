@@ -243,11 +243,39 @@ function checkerOutput() {
   }
 }
 
-test('fail_open_check no longer lists any of them', () => {
-  const out = checkerOutput();
-  const start = out.indexOf('BROWSER-SIDE');
+// ── THE SLICE HAD NO END, AND THAT MADE THIS ARM A FALSE POSITIVE (2026-09-18)
+// `out.slice(start)` ran to the END of the tool's output. That was the whole
+// output once; fail_open_check.py later grew a `=== STALE ACCEPTANCES ===`
+// section AFTER the browser-side one, which names the file whose acceptance
+// entry has gone stale -- today `sairnscape.html`. So this arm reported
+// "SAIRNscape is still listed as silent" while the tool's browser-side section
+// said `none` and its loader count said 0, and this suite has been RED on it.
+//
+// An anchor that still matches is not an anchor that still points at the right
+// thing (PR 1.3). The repair is an END boundary plus a control that the
+// boundary was actually found -- without that control an unbounded slice is
+// exactly what comes back the next time a section is appended.
+function browserSection(out) {
+  const start = out.indexOf('=== BROWSER-SIDE');
   assert.ok(start > 0, 'the browser-side section is missing from the tool output');
-  const listed = out.slice(start);
+  const rel = out.slice(start + 4).indexOf('\n=== ');
+  return rel === -1 ? out.slice(start) : out.slice(start, start + 4 + rel);
+}
+
+test('the browser-side section is BOUNDED -- a later section must not leak in', () => {
+  const out = checkerOutput();
+  const sec = browserSection(out);
+  assert.ok(sec.indexOf('BROWSER-SIDE') !== -1, 'the section does not start where it should');
+  assert.ok(sec.length < out.length,
+    'the slice reached the end of the output, so anything appended after this '
+    + 'section is being read as part of it -- which is the defect this arm exists for');
+  assert.ok(out.indexOf('=== STALE ACCEPTANCES') === -1
+    || sec.indexOf('STALE ACCEPTANCES') === -1,
+    'the STALE ACCEPTANCES section is inside the browser-side slice');
+});
+
+test('fail_open_check no longer lists any of them', () => {
+  const listed = browserSection(checkerOutput());
   APPS.forEach((app) => {
     assert.ok(listed.indexOf(app.file) === -1, app.name + ' is still listed as silent');
   });

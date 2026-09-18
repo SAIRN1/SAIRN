@@ -118,14 +118,63 @@ test('a locally present id is NEVER overwritten by the server copy', async () =>
   assert.strictEqual(c.__stored.law_matters.find((x) => x.id === 'M-1').note, 'EDITED HERE');
 });
 
-test('EVERY registered resource is read -- derived from the registry, not retyped', async () => {
+// ── NOT EVERY REGISTERED RESOURCE IS A TABLE (2026-09-18) ────────────────────
+// This suite was RED for three days and nobody read it. 4eaa3f05 (2026-09-15)
+// registered `law_trust_reconcile`, and these two arms assert
+// hydrate-set == registry-set, so both failed the moment it landed. Driven: the
+// only difference either arm reports is that one name.
+//
+// THE ARMS WERE RIGHT TO FAIL AND THE PREMISE IS WHAT CHANGED. Every other
+// law_ resource is a stored table whose rows the client keeps a local copy of.
+// `law_trust_reconcile` is a COMPUTED READ -- api/sd-data.js runs
+// reconcileTrustLedger() over law_trusttx and law_bankstatements and returns
+// the verdict. There is no table behind it and nothing to merge; hydrating it
+// would cache a point-in-time reconciliation as if it were data, which is the
+// worse outcome on the one figure a bar association audits.
+//
+// SO THE SET IS NARROWED, EXPLICITLY, WITH THE REASON BESIDE EACH NAME, and
+// the exclusion is itself asserted below -- a bare exclusion list is how a real
+// gap goes quiet. A future derived resource has to be added here deliberately,
+// and a future TABLE added here by mistake stops being hydrated silently, which
+// is why the list carries a justification a reader can check rather than a
+// count somebody can bump.
+const NOT_HYDRATED = {
+  law_trust_reconcile:
+    'a COMPUTED read, not a table -- api/sd-data.js reconciles law_trusttx '
+    + 'against law_bankstatements and returns a verdict. Nothing to merge, and '
+    + 'caching a point-in-time reconciliation as local data would make a stale '
+    + 'verdict look like a record.'
+};
+
+function hydratableLaw() {
+  return registry.resources
+    .filter((r) => r.indexOf('law_') === 0)
+    .filter((r) => !Object.prototype.hasOwnProperty.call(NOT_HYDRATED, r))
+    .slice().sort();
+}
+
+test('every NOT_HYDRATED name is really registered, and really has a reason', () => {
+  const names = Object.keys(NOT_HYDRATED);
+  assert.ok(names.length > 0, 'the exclusion list is empty -- delete it rather '
+    + 'than leaving a mechanism with nothing in it');
+  names.forEach((n) => {
+    assert.ok(registry.resources.indexOf(n) !== -1,
+      n + ' is excluded from hydration but is not in the registry at all -- '
+      + 'a stale exclusion silently widens as the registry changes');
+    assert.ok(String(NOT_HYDRATED[n]).trim().length >= 60,
+      n + ' carries no real reason, and an exclusion with no reason is how a '
+      + 'resource nobody reads back stops being a finding');
+  });
+});
+
+test('EVERY HYDRATABLE registered resource is read -- derived from the registry, not retyped', async () => {
   const c = harness({});
   await c.lawHydrateAll();
-  const registeredLaw = registry.resources.filter((r) => r.indexOf('law_') === 0).slice().sort();
-  assert.strictEqual(c.__reads.slice().sort().join(','), registeredLaw.join(','),
+  const expected = hydratableLaw();
+  assert.strictEqual(c.__reads.slice().sort().join(','), expected.join(','),
     'the hydrate reads a different set than the registry declares');
-  assert.ok(registeredLaw.length >= 19,
-    'expected all nineteen law resources registered, found ' + registeredLaw.length);
+  assert.ok(expected.length >= 19,
+    'expected at least nineteen hydratable law resources, found ' + expected.length);
 });
 
 test('a FAILED read leaves local data alone and is counted as failed', async () => {
@@ -174,8 +223,7 @@ test('and the list is not silently smaller than the registry', () => {
   // are on the server and still unreachable -- which is the original defect,
   // narrowed rather than fixed.
   const names = syncNames();
-  const registeredLaw = registry.resources.filter((r) => r.indexOf('law_') === 0);
-  assert.strictEqual(names.slice().sort().join(','), registeredLaw.slice().sort().join(','),
+  assert.strictEqual(names.slice().sort().join(','), hydratableLaw().join(','),
     'the hydrate list and the registry disagree -- a registered resource that is never read back is still unreachable');
 });
 
