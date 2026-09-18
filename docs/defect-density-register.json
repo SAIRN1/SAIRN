@@ -8905,7 +8905,7 @@
       "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
     },
     {
-      "commit": "b5a25812f9d4",
+      "commit": "92be209aadda",
       "date": "2026-09-18",
       "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
       "files": [
@@ -8936,7 +8936,7 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the paths had no suite of their own before this commit, so no stub could produce a 2xx over an unreadable body and the branch was never exercised. The sd_quote_requests path at dc04f2ea (2026-09-12) copied the same shape four days later, which is a second injection this record does not separately count"
     },
     {
-      "commit": "37407d982f28",
+      "commit": "5cedf088ebe3",
       "date": "2026-09-18",
       "subject": "fix(sairndental): an unreadable BI read was served as an EMPTY dataset",
       "files": [
