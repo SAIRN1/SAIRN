@@ -1894,6 +1894,16 @@
       "claimed_at_epoch": 1789747246.5119247,
       "status": "released",
       "released_at": "2026-09-18T21:32:52Z"
+    },
+    {
+      "id": "cc-1789770953",
+      "session": "cc",
+      "subject": "sairncode",
+      "task": "sc-credentials: an unparseable or empty representation reported as a successful write",
+      "claimed_at": "2026-09-18T22:35:53Z",
+      "claimed_at_epoch": 1789770953.3196478,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
