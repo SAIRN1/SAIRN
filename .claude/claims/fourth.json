@@ -1665,6 +1665,16 @@
       "claimed_at_epoch": 1789738252.9759479,
       "status": "released",
       "released_at": "2026-09-18T14:37:25Z"
+    },
+    {
+      "id": "fourth-1789766904",
+      "session": "fourth",
+      "subject": "tier-a-reviews-cc-authored",
+      "task": "discharge cc authored overdue Tier A review obligations oldest first",
+      "claimed_at": "2026-09-18T21:28:24Z",
+      "claimed_at_epoch": 1789766904.4341786,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
