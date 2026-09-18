@@ -8568,6 +8568,62 @@
       "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
     },
     {
+      "commit": "975a88ff0bf7",
+      "date": "2026-09-18",
+      "subject": "fix(self-state): the tool built to derive TRUE state was deriving its own identity from a folder name, and reporting one clone's git as another's",
+      "files": [
+        "docs/TOOLING-INVENTORY.md",
+        "tools/sairn_self_state.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 329,
+      "lines_removed": 33,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_self_state.py reported the CALLER's clone git state as the named session's: --session cc printed cc's claims, obligations and worklog beside this clone's branch, dirt and ahead/behind under one heading. Measured with the four build clones at four different HEADs and one of them dirty. It also derived its own session identity from the directory name, 43 minutes before that method was banned platform-wide.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4213c84f28ee",
+        "date": "2026-09-18",
+        "subject": "feat(tools): the weekly reconciliation is a tool now, and its first run found cc's stale block and two debts of my own",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule in SAIRN-PROCESS-RULES.md names \"a report that mixes one clone's git state with another session's records under one heading\". The nearest is PR 1.11 on could-not-tell, and this was not a could-not-tell -- it was a confident wrong answer, which is a different shape and citing 1.11 would manufacture agreement the FMEA scorer would then match on.",
+      "contributing_factors": [
+        {
+          "factor": "git_state() read the module-level REPO unconditionally, so the working-copy half of a report was always the CALLER's clone no matter whose session was named",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "git_state(repo) takes the working copy, and resolve_git_source() returns one of SELF / OUTSIDE / NOT DERIVED -- the git half is omitted with a printed reason rather than substituted"
+        },
+        {
+          "factor": "the tool was written the same morning as the platform-wide identity fix and 43 minutes BEFORE it, so the migration that removed directory-derived identity from sairn_claim.py and tier_a_review_gate.py had nothing to migrate here yet and nobody came back",
+          "kind": "process",
+          "action_status": "done",
+          "action": "clone_session() now calls sairn_session_identity.session_name() and fails closed; the two remaining unmigrated call sites, bypass_log.py and sairn_status.py, are named in the fix commit rather than silently left"
+        },
+        {
+          "factor": "the self-check arm covering identity read 'the clone name is DERIVED from the directory, not from a list' and PASSED -- it asserted the defect as the requirement, so the control could never have caught either half",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arm is rewritten in both directions: a directory named after nobody resolves from its marker, and a directory NAMED SAIRN-cody with no marker RAISES instead of answering cody. Four new arms cover the SELF/OUTSIDE/NOT-DERIVED split"
+        },
+        {
+          "factor": "every clone is currently named after its own session, so the directory-derived identity returned the correct answer on every real run and left no evidence anywhere that the method was wrong",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "renaming a clone to break the coincidence deliberately would be a worse trade than the marker, which is the control that actually closes it"
+        }
+      ],
+      "recurrence_open": "Two call sites still derive session identity from basename(REPO): tools/bypass_log.py and tools/sairn_status.py. The actions here close this tool and name those; they do not fix them. Nothing yet sweeps for the shape \"a report that presents fields from two different sources under one heading\"."
+    },
+    {
       "commit": "9cfc8eec7bf3",
       "date": "2026-09-18",
       "subject": "fix(sairnscape): the banner I built to stop an overstated coverage claim was making one",
