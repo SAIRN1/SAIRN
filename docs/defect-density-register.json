@@ -8474,7 +8474,7 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
     },
     {
-      "commit": "f9b49ac6ca6d",
+      "commit": "4f674484544d",
       "date": "2026-09-18",
       "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
       "files": [
