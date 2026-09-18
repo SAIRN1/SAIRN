@@ -2223,8 +2223,8 @@
       "task": "stale string anchors in the memory app scope suite",
       "claimed_at": "2026-09-18T14:44:16Z",
       "claimed_at_epoch": 1789742656.6848898,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:49:43Z"
     }
   ]
 }
