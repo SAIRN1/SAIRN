@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -8411,6 +8411,63 @@
       },
       "citation_note": "api/_lib/dnt-rollup.js states the platform rule one layer up -- NEVER 0, zero is a measurement -- and this is the same rule at the FIELD, on the patient-facing number",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the persisting path was hardened first and these display callers were flagged and deferred in that pass rather than missed"
+    },
+    {
+      "commit": "332132f7ed49",
+      "date": "2026-09-18",
+      "subject": "fix(tests)+chore: the ledger-export arm REFUSES instead of indexing into a torn row, and piac.html is gone",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/sairndental_ledger_export.js"
+      ],
+      "lines_added": 42,
+      "lines_removed": 7,
+      "app": "sairndental",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/sairndental_ledger_export.js: the arm 'a patient who no longer exists leaves the NAME blank and the ID intact' split the CSV row on commas and indexed by header position, so a preceding cell carrying two adjacent commas was quoted by dntCsvCell(), torn into pieces by the split, and left cells[nameIdx] === '' -- the arm then PASSED with the NAME-IS-ID defect present. That is the same defect the arm had been fixed for two days earlier, one layer down: an assertion satisfied by exactly the thing it is named after. Fixed by asserting cells.length === head.length BEFORE indexing, so a row the naive split cannot line up with its header is a REFUSAL rather than a verdict.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "f567d0c2d0b0",
+        "date": "2026-09-16",
+        "subject": "feat(control): the SAIRNdental ledger export, and the arm that tested half its own label",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "factor": "the row was split on commas while dntCsvCell() quotes any cell containing one, so the index could silently stop pointing at the Patient cell",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "assert cells.length === head.length before indexing; a mismatch refuses instead of returning a verdict"
+        },
+        {
+          "factor": "the justifying comment named the WRONG fragility -- it warned about column REORDERING, which head.indexOf() already tracks, so the real hazard (a comma in any cell before Patient) was never guarded or even stated",
+          "kind": "process",
+          "action_status": "done",
+          "action": "comment rewritten to name the insertion of a free-text column before Patient as the change that arms the guard"
+        },
+        {
+          "factor": "no negative control existed for this arm shape -- the mutation control plants NAME-IS-ID with the ordinary fixture only, so no run ever exercised a quoted comma",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a fifth mutation planting a comma-bearing cell before Patient would pin the guard; not added here to keep the change to what was asked"
+        },
+        {
+          "factor": "CSV quoting is invisible at the point of use -- the guard lives in dntCsvCell() and every consumer that re-parses by splitting inherits the hazard without seeing it",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the quoting is correct and required; what cannot be fixed globally is that any future naive re-parse of an exported row carries the same trap"
+        }
+      ],
+      "recurrence_open": "The guard is per-arm. Every OTHER place that re-parses an exported CSV row by splitting on commas carries the identical hazard and none was swept for; this record closes one arm, not the shape."
     },
     {
       "commit": "3cc02f974279",
