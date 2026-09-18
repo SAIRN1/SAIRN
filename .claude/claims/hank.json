@@ -2265,6 +2265,16 @@
       "claimed_at_epoch": 1789767238.530587,
       "status": "released",
       "released_at": "2026-09-18T21:56:49Z"
+    },
+    {
+      "id": "hank-1789774634",
+      "session": "hank",
+      "subject": "suite-control-coverage-require-cache",
+      "task": "recognise require.cache mutation controls as a third shape",
+      "claimed_at": "2026-09-18T23:37:14Z",
+      "claimed_at_epoch": 1789774634.9049585,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
