@@ -8383,6 +8383,57 @@
         }
       ],
       "recurrence_open": "other endpoints that scope in JS after a read were not audited one by one -- the shape search makes them findable and finding them is not the same as having looked"
+    },
+    {
+      "commit": "caa5d2475407",
+      "date": "2026-09-18",
+      "subject": "fix(hover-gate): the scope gate had no entry for the auditor's OWN claim file -- it blocked three real commits before anyone read the allowlist",
+      "files": [
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_auditor_scope_gate.py",
+        "tools/hover_separation_audit.py"
+      ],
+      "lines_added": 40,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/hover_auditor_scope_gate.py ALLOWED had no entry for .claude/claims/hover.json, so the gate refused the auditor's own claim file and blocked three real commits (a claim release, a coordination-health report, a review-obligation discharge). The skill's exception sentence covers it -- the allowlist was derived from that sentence but only for the two paths the skill names by NAME, and the claim file is named only by the sentence's general clause.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "792117dd16e6",
+        "date": "2026-09-15",
+        "subject": "feat(process): the hover auditor's separation becomes mechanical -- and both alleged breaches did not happen",
+        "lag_days": 3
+      },
+      "citation_note": "No class rule in SAIRN-PROCESS-RULES.md names a gate that REFUSES legitimate work. Every rule in Part 1 is about a check that passes when it should not; this is the opposite sign, and citing one of them would be a stretched match rather than a real citation.",
+      "phase_note": "The allowlist was incomplete the moment it was written -- no later change broke it.",
+      "contributing_factors": [
+        {
+          "factor": "The allowlist was derived by transcribing the two paths the skill names literally, not by applying the skill sentence that authorises them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Added the .claude/claims/hover.json entry carrying the general clause of the exception sentence as its justification"
+        },
+        {
+          "factor": "The one clone the gate is armed in is also the only clone with no second reader, so a false refusal there is reported by the refused party alone and had to be relayed three times before anyone read the allowlist",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The auditor escalating a gate refusal should be treated as a build-agent obligation, not a note"
+        },
+        {
+          "factor": "The probe drove the REFUSING direction on platform code and the ALLOWING direction on the two named paths, so a path that was neither was outside every arm",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Three probe arms added: hover.json allowed, all four build agents claim files refused, hover.json.bak refused rather than prefix-matched"
+        }
+      ],
+      "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
     }
   ],
   "started": "2026-09-09",
