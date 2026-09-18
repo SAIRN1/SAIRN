@@ -8385,6 +8385,34 @@
       "recurrence_open": "other endpoints that scope in JS after a read were not audited one by one -- the shape search makes them findable and finding them is not the same as having looked"
     },
     {
+      "commit": "2a81009bb206",
+      "date": "2026-09-18",
+      "subject": "fix(sairndental): an unreadable fee is no longer a $0 estimate, and a plan total that is short says so",
+      "files": [
+        "sairndental.html",
+        "tests/sairndental_estimate_null.js"
+      ],
+      "lines_added": 309,
+      "lines_removed": 29,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "computeEstimatedInsurance used Number(amount)||0 and tpItemMoney used Number(item.fee)||0, so a procedure or treatment-plan fee that could not be read as a number became a measured zero: the coverage note rendered 'Estimated insurance: $0.00' from a fee nobody could read, and a plan line contributed a silent 0 to the fee, insurance and patient-portion totals -- so the figure a patient is asked to accept and sign was short by that line with nothing on screen saying so",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "the two coercions predate the fee fields' current use and no commit introduces them as a change; they were the shape the code was written in"
+      },
+      "citation_note": "api/_lib/dnt-rollup.js states the platform rule one layer up -- NEVER 0, zero is a measurement -- and this is the same rule at the FIELD, on the patient-facing number",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the persisting path was hardened first and these display callers were flagged and deferred in that pass rather than missed"
+    },
+    {
       "commit": "3cc02f974279",
       "date": "2026-09-18",
       "subject": "fix(csv): the SEVEN unguarded exports and the TWO that threw -- fourth built the detectors for one of those, nobody had fixed either, and a fourth check now asks the question none of the three could",
@@ -8444,36 +8472,6 @@
       "recurrence_open": "The SINK pass matches source text within 2500 characters, not a call graph, so a guard applied through a helper defined far away reads as unreached and a guard named only in a nearby COMMENT reads as a false clear. Both are arms in the lock rather than repairs. Nothing here covers an export built server-side and streamed, beyond one declared exemption."
     },
     {
-      "commit": "544b386f697b",
-      "date": "2026-09-18",
-      "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
-      "files": [
-        "api/_resources/extra-actions.test.js"
-      ],
-      "lines_added": 23,
-      "lines_removed": 6,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "api/_resources/extra-actions.test.js pinned rf_invoices to ['issue','add_payment','reconcile_claim'] and the 'gl_export' verb was granted on that resource when SAIRNroofing's accounting export shipped the same day, so the arm went RED on origin/main and stayed red -- the suite is not in GUARD_TESTS, so nothing blocked on it and the only signal was a failing run somebody had to choose to look at",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "api/_resources/extra-actions.test.js",
-      "injection": {
-        "commit": "fb0aa2f34b00",
-        "date": "2026-09-18",
-        "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
-        "lag_days": 0
-      },
-      "citation_note": "the tripwire fired correctly and the population it guards kept moving; a red arm with no gate behind it is a could-not-tell that reads as noise",
-      "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
-    },
-    {
       "commit": "4f674484544d",
       "date": "2026-09-18",
       "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
@@ -8505,6 +8503,36 @@
       },
       "citation_note": "the sentence was corrected on 2026-09-15 and the affordance was not -- a control that contradicts the text beside it is a could-not-tell the user resolves in the control's favour",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
+    },
+    {
+      "commit": "544b386f697b",
+      "date": "2026-09-18",
+      "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
+      "files": [
+        "api/_resources/extra-actions.test.js"
+      ],
+      "lines_added": 23,
+      "lines_removed": 6,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/_resources/extra-actions.test.js pinned rf_invoices to ['issue','add_payment','reconcile_claim'] and the 'gl_export' verb was granted on that resource when SAIRNroofing's accounting export shipped the same day, so the arm went RED on origin/main and stayed red -- the suite is not in GUARD_TESTS, so nothing blocked on it and the only signal was a failing run somebody had to choose to look at",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "api/_resources/extra-actions.test.js",
+      "injection": {
+        "commit": "fb0aa2f34b00",
+        "date": "2026-09-18",
+        "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
+        "lag_days": 0
+      },
+      "citation_note": "the tripwire fired correctly and the population it guards kept moving; a red arm with no gate behind it is a could-not-tell that reads as noise",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
     },
     {
       "commit": "c1443fd7eb69",
