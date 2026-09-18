@@ -1469,6 +1469,16 @@
       "claimed_at_epoch": 1789768052.3200989,
       "status": "released",
       "released_at": "2026-09-18T21:55:00Z"
+    },
+    {
+      "id": "cody-1789774671",
+      "session": "cody",
+      "subject": "tier-a-gate-covering-narrow",
+      "task": "review gate covering is per-resource not per-change, narrow to the resources actually changed",
+      "claimed_at": "2026-09-18T23:37:51Z",
+      "claimed_at_epoch": 1789774671.6498878,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
