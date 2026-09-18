@@ -152,6 +152,48 @@ if _usable and _best:
        L.recommend(rows, known_fp=0.999))
 
 print('')
+print('6b. A ZERO FALSE-POSITIVE RATE IS FREE IF NOTHING IS CLUSTERED')
+# ADDED AFTER THE REGISTER RUN NEARLY SHIPPED A RECOMMENDATION. Over the defect
+# register's PROSE summaries the two populations came out indistinguishable --
+# related p50 0.296 against unrelated p50 0.295, and the unrelated MAXIMUM above
+# the related maximum -- yet every threshold scored 0.00% FP and 0.00% TP, and
+# the FP-only rule recommended 0.92. A cut that groups nothing has a perfect
+# false-positive rate. Same disease as a check that cannot fail.
+_rows_empty = [{'threshold': t, 'fp': 0, 'fp_rate': 0.0, 'tp': 0, 'tp_rate': 0.0}
+               for t in L.THRESHOLDS]
+_pick = L.recommend(_rows_empty)
+ok('a table of all-zero rates still RETURNS a candidate from recommend() -- '
+   'which is why the caller, not recommend(), has to check separation',
+   _pick is not None, _pick)
+ok('...and the register corpus is the real case: it exits NOT TRUSTWORTHY',
+   True, 'driven below')
+# STATED RATHER THAN LEFT LOOKING PROVEN: the zero-true-positive guard in
+# main() is unreachable on every corpus available today, because the separation
+# check fires first and returns. Removing it kills no arm. It is belt to that
+# check's braces, not a second tested guard, and the tool says so at the branch.
+ok('the zero-TP guard is DOCUMENTED as unexercised rather than counted as '
+   'covered',
+   'currently unexercised' in open(
+       os.path.join(REPO, 'tools', 'log_cluster.py'), encoding='utf-8').read().lower()
+   or 'CURRENTLY UNEXERCISED' in open(
+       os.path.join(REPO, 'tools', 'log_cluster.py'), encoding='utf-8').read())
+
+import subprocess                                                 # noqa: E402
+_r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'log_cluster.py'),
+                     '--register'], capture_output=True, text=True,
+                    encoding='utf-8', errors='replace')
+ok('the register run exits 1 (not trustworthy), not 0',
+   _r.returncode == 1, 'exit %s' % _r.returncode)
+ok('...and says the populations do not separate, with both medians',
+   'DO NOT SEPARATE' in _r.stdout and 'p50' in _r.stdout,
+   _r.stdout[-400:])
+ok('TEETH: the api corpus still SUCCEEDS, so the refusal is about the corpus '
+   'and not about the tool having stopped working',
+   subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'log_cluster.py')],
+                  capture_output=True, text=True, encoding='utf-8',
+                  errors='replace').returncode == 0)
+
+print('')
 print('7. IT REFUSES rather than clustering on an unvalidated threshold')
 _rows_bad = [{'threshold': t, 'fp': 999, 'fp_rate': 0.5, 'tp': 1, 'tp_rate': 1.0}
              for t in L.THRESHOLDS]

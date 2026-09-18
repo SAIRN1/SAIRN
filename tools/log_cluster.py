@@ -181,6 +181,40 @@ def harvest(root='api'):
     return out
 
 
+def harvest_register():
+    """(app, commit, summary) for every defect-register record.
+
+    ── WHY THIS CORPUS AND NOT api/ ──────────────────────────────────────────
+    The api/ pass clusters MESSAGE LITERALS -- what the code is able to say. It
+    cannot show the same failure shape recurring under different wording ACROSS
+    SESSIONS, because a literal is written once and then stays put.
+
+    The register is the opposite: 160-odd descriptions of real defects, written
+    by four different sessions over six weeks, in prose, with no shared
+    vocabulary enforced. If one failure shape keeps coming back wearing
+    different words, this is the only place on the platform it is written down
+    more than once.
+
+    THE `rules` FIELD ALREADY GROUPS THEM BY CITED RULE, and that is a DIFFERENT
+    grouping: it records what the AUTHOR decided the shape was. Clustering the
+    prose finds shapes nobody assigned a rule to, and the disagreements between
+    the two are the rows worth reading.
+    """
+    import json
+    path = os.path.join(REPO, 'docs', 'defect-density-register.json')
+    try:
+        recs = json.load(io.open(path, encoding='utf-8'))['records']
+    except Exception:                                              # noqa: BLE001
+        return []
+    out = []
+    for r in recs:
+        txt = str(r.get('summary') or '').strip()
+        if len(txt) >= MIN_LEN:
+            out.append((str(r.get('app') or '?'),
+                        str(r.get('commit') or '')[:12], txt))
+    return out
+
+
 def labelled_pairs(corpus, limit=4000, seed=20260917):
     """(related, unrelated) pairs derived from STRUCTURE, not from judgement.
 
@@ -224,6 +258,80 @@ def labelled_pairs(corpus, limit=4000, seed=20260917):
         if templatise(m1) == templatise(m2):
             continue
         unrelated.append((m1, m2))
+    return related[:limit], unrelated
+
+
+def labelled_pairs_by_rule(limit=4000, seed=20260917):
+    """Register pairs labelled by the CITED STANDING RULE, not by structure.
+
+    ── WHY A SECOND LABEL RULE EXISTS, AND WHY IT IS BETTER HERE ─────────────
+    The structural rule -- identical strings, or identical templates -- produces
+    ZERO related pairs on the register, and the tool correctly refuses rather
+    than measuring nothing. Defect summaries are free prose: no two are the same
+    string and none reduce to the same template. A labelling method that works
+    on message literals does not transfer to prose, and discovering that by
+    refusal is the tool behaving.
+
+    THE REGISTER CARRIES ITS OWN GROUND TRUTH. Every record cites a standing
+    rule from docs/SAIRN-PROCESS-RULES.md -- a HUMAN judgement, made by the
+    author at the time, about what shape the defect was. Two records citing the
+    same rule are two people independently saying "this is the same kind of
+    failure". That is a far stronger related-label than string identity, and it
+    is INDEPENDENT of the thing being measured, which string identity is not.
+
+    IT ALSO FIXES THE DEGENERATE TRUE-POSITIVE RATE. Same-rule summaries are
+    textually different, so the TP rate finally varies with the threshold and
+    becomes a real selection signal instead of a flat 100%.
+
+    BOTH DIRECTIONS ARE STILL IMPERFECT AND THE DIRECTIONS ARE STATED. Two
+    records can cite one rule and be genuinely different shapes, so the TP rate
+    is a LOWER bound. Two records citing different rules can be the same
+    underlying shape seen from two angles, so the FP rate stays an UPPER bound.
+    Both errors push the model's score DOWN, which is the safe direction.
+
+    `not-citable` records are excluded outright: that value means the author
+    found no rule that fit, so it is the absence of a label rather than a label.
+    """
+    import json
+    rnd = random.Random(seed)
+    path = os.path.join(REPO, 'docs', 'defect-density-register.json')
+    try:
+        recs = json.load(io.open(path, encoding='utf-8'))['records']
+    except Exception:                                              # noqa: BLE001
+        return [], []
+    by_rule = {}
+    for r in recs:
+        txt = str(r.get('summary') or '').strip()
+        if len(txt) < MIN_LEN:
+            continue
+        for rule in (r.get('rules') or []):
+            rule = str(rule)
+            if rule == 'not-citable':
+                continue
+            by_rule.setdefault(rule, []).append(txt)
+
+    related = []
+    for rule, msgs in by_rule.items():
+        msgs = sorted(set(msgs))
+        if len(msgs) < 2:
+            continue
+        for a, b in itertools.islice(itertools.combinations(msgs, 2), 60):
+            related.append((a, b))
+
+    rules = [r for r in sorted(by_rule) if len(set(by_rule[r])) >= 1]
+    unrelated = []
+    guard = 0
+    while len(unrelated) < limit and guard < limit * 40 and len(rules) >= 2:
+        guard += 1
+        r1, r2 = rnd.sample(rules, 2)
+        a = rnd.choice(by_rule[r1])
+        b = rnd.choice(by_rule[r2])
+        if a == b:
+            continue
+        # A summary citing BOTH rules is not an unrelated pair with itself.
+        if any(a in by_rule[r2] for _ in (0,)) and a == b:
+            continue
+        unrelated.append((a, b))
     return related[:limit], unrelated
 
 
@@ -353,14 +461,20 @@ def main(argv):
         print('\nself-check clean.')
         return EXIT_OK
 
-    corpus = harvest()
-    print('\nCORPUS: %d message strings from %d files'
-          % (len(corpus), len({f for _a, f, _m in corpus})))
+    which = 'register' if '--register' in argv else 'api'
+    corpus = harvest_register() if which == 'register' else harvest()
+    print('')
+    print('CORPUS (%s): %d strings from %d sources'
+          % (which, len(corpus), len({f for _a, f, _m in corpus})))
     if len(corpus) < 50:
         print('COULD NOT RUN: too few messages to measure anything.')
         return EXIT_COULD_NOT
 
-    related, unrelated = labelled_pairs(corpus)
+    # THE LABEL RULE FOLLOWS THE CORPUS. Structure works on message literals;
+    # prose needs the register's own cited rules. Using the wrong one produces
+    # zero related pairs and an honest refusal, which is how this was found.
+    related, unrelated = (labelled_pairs_by_rule() if which == 'register'
+                          else labelled_pairs(corpus))
     print('LABELLED PAIRS: %d related, %d unrelated' % (len(related), len(unrelated)))
     if len(related) < 20 or len(unrelated) < 200:
         print('COULD NOT RUN: the labelled set is too small to pin a rate.')
@@ -428,8 +542,54 @@ def main(argv):
     # unrelated pairs, 0.85 at 1500 -- below the known false positive. A
     # recommendation that moves with sample size has not converged, and taking
     # the lower one would have shipped the exact mistake the tool is about.
+    # ── SEPARATION FIRST: A ZERO FALSE-POSITIVE RATE IS FREE IF YOU ────────
+    # ── CLUSTER NOTHING, AND THAT IS HOW THIS NEARLY SHIPPED ──────────────
+    # Run against the defect register's PROSE summaries the two populations came
+    # out indistinguishable -- related p50 0.296 against unrelated p50 0.295,
+    # and the unrelated MAXIMUM (0.527) higher than the related maximum (0.484).
+    # Every threshold scored 0.00% false positives and 0.00% true positives, and
+    # the FP-only rule happily recommended 0.92: a cut that groups nothing has a
+    # perfect false-positive rate.
+    #
+    # That is the same disease as a check that cannot fail. So separation is
+    # tested BEFORE a threshold is chosen, on two independent conditions -- the
+    # medians must actually differ, and the chosen cut must still group
+    # something.
+    sep = (rq['p50'] - uq['p50']) if (rq and uq) else 0.0
+    if sep <= 0.05:
+        print('')
+        print('NOT TRUSTWORTHY ON THIS CORPUS -- THE TWO POPULATIONS DO NOT SEPARATE.')
+        print('  related p50 %.3f vs unrelated p50 %.3f (difference %+.3f)'
+              % (rq['p50'], uq['p50'], sep))
+        print('  unrelated max %.3f vs related max %.3f'
+              % (uq['max'], rq['max']))
+        print('')
+        print('A ZERO FALSE-POSITIVE RATE IS FREE IF NOTHING IS CLUSTERED, so the')
+        print('per-threshold table above is not evidence of anything here. This is')
+        print('a finding ABOUT THE MODEL, not about the corpus: character n-grams')
+        print('over free prose measure shared vocabulary, and two descriptions of')
+        print('one failure shape written by different people six weeks apart share')
+        print('almost none. Templating cannot help -- there are no parameters to')
+        print('strip. WHAT WOULD WORK IS A REAL SENTENCE EMBEDDING, which is a')
+        print('model this platform cannot run locally and is a spend decision.')
+        return EXIT_UNTRUSTWORTHY
+
     known_fp = known_false_positive()
     best = recommend(rows, known_fp)
+    # BELT TO THE SEPARATION CHECK'S BRACES, AND CURRENTLY UNEXERCISED -- said
+    # rather than left to look proven. On every corpus available today the
+    # separation check fires first and returns, so a sabotage that removes THIS
+    # guard kills no arm. It stays because the two conditions are genuinely
+    # different -- populations can separate at the median and still leave the
+    # chosen cut grouping nothing -- and because the cost of keeping it is a
+    # branch. It should not be counted as a tested guard.
+    if best is not None and (best['tp_rate'] or 0) <= 0.0:
+        print('')
+        print('NOT TRUSTWORTHY: the best threshold above the floor groups NOTHING')
+        print('(%.0f%% true positives). A cut that clusters nothing cannot produce'
+              % (100 * (best['tp_rate'] or 0)))
+        print('a false positive, which is why the FP table looks perfect. Refusing.')
+        return EXIT_UNTRUSTWORTHY
     if best is None:
         print('')
         print('NOT TRUSTWORTHY: every threshold meeting the sampled FP target is')
@@ -470,7 +630,9 @@ def main(argv):
     # whether the RECOMMENDATION would survive a different one -- and the arm
     # that produced the floor above found exactly that: 0.92 on 4000 pairs,
     # 0.85 on 1500.
-    _r2, _u2 = labelled_pairs(corpus, limit=1500, seed=20260918)
+    _r2, _u2 = (labelled_pairs_by_rule(limit=1500, seed=20260918)
+                if which == 'register' else
+                labelled_pairs(corpus, limit=1500, seed=20260918))
     _, _, rows2 = measure(_r2, _u2)
     best2 = recommend(rows2, known_fp)
     print('')
