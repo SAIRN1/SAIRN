@@ -473,9 +473,18 @@ def build():
     tv.leg('app files', len(names), "git ls-files '*.html'")
     tv.leg('apps owning a resource', len(res),
            'api/_resources/index.js OWNER_BY_RESOURCE')
-    tv.leg('test files on disk', len(tests), 'tests/**, api/*.test.js')
+    # BOTH LEGS NOW SAY WHERE THEY LOOKED, AND THE api/ HALF IS RECURSIVE.
+    # The source string read 'tests/**, api/*.test.js' while the function
+    # listed exactly api/ and api/_lib/ -- so the citation was already wider
+    # than the code, and 16 real test files under api/sairndental/,
+    # api/sairncash/, api/_resources/ and api/agent/ were in neither.
+    tv.leg('test files on disk', len(tests), 'tests/**, api/** (both walked)')
+    # `len(cited)` and the prose figure below used to be DIFFERENT POPULATIONS
+    # and differed by six, in the same run of the same generator. traced() now
+    # drops a citation naming a file that is not on disk, so the two are one
+    # number; the dropped ones are printed as their own finding below.
     tv.leg('tests traced to a requirement', len(cited),
-           'traceability_matrix.traced()')
+           'traceability_matrix.traced(), citations to files ON DISK only')
     tv.leg('declared fault probes', len(fault_declarers),
            'MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js '
            '+ tests/faults/*.js')
@@ -587,6 +596,40 @@ def build():
       'A rate over the subset you looked at is not a rate.'
       % (len(tests), len([t for t in tests if t in cited])))
     W('')
+    # ── THE TWO FIGURES THAT USED TO DISAGREE, AND WHY THEY NOW CANNOT ───────
+    dead = TM.dead_citations()
+    W('**THIS DOCUMENT USED TO PRINT TWO DIFFERENT VALUES FOR THAT SECOND '
+      'NUMBER, IN ONE RUN.** The prose above counted citations to files that '
+      'are on disk; the closing-error leg at the bottom counted citations '
+      'outright, and on 2026-09-18 they read **512** and **518**. Four of the '
+      'six were real test files under `api/` subdirectories that `all_tests()` '
+      'listed two hardcoded directories instead of walking, and two were '
+      'citations to files that are not there. Both halves are fixed at the '
+      'source: `all_tests()` now walks `api/` the same way it always walked '
+      '`tests/`, and `traced()` drops a citation naming a file that does not '
+      'exist. The two figures are now one population and cannot diverge '
+      'again without a code change.')
+    W('')
+    if dead:
+        W('**DEAD CITATIONS — %d row(s) promise a test file this repo does NOT '
+          'hold.** Dropped from the traced count and printed here, because a '
+          'dead citation is not a rounding error: it is a row asserting '
+          'coverage that does not exist, and silently dropping it would turn '
+          'one finding into a slightly better number.' % len(dead))
+        W('')
+        for t, srcs in dead:
+            W('- `%s` — cited by %s' % (t, ', '.join(srcs)))
+        W('')
+        W('**These are NOT counted as a refusal, deliberately.** A hard refusal '
+          'here would stop this document generating, and the push gate '
+          'requires it to be current — so one stale filename would freeze '
+          'every unrelated push on the platform. That is the same trade the '
+          'push gate itself names when it explains why a refusal blocks '
+          'immediately rather than waiting. Reported loudly, fixed by hand.')
+        W('')
+    else:
+        W('**No dead citations: every cited test file is on disk.**')
+        W('')
     W('### What these three columns cannot see')
     W('')
     W('- **`suites` counts test files whose PATH names the app.** A test that '

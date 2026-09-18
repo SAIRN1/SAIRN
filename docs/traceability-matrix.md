@@ -190,7 +190,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **&#9888; `all_tests()` MISSES 16 REAL TEST FILES, so the denominator under every coverage figure on this platform is 555 when it is 571 &mdash; and `master-plan.md` publishes TWO different values for the same quantity in one run** | **MEASURED 2026-09-18 (Cody), NOT FIXED, and deliberately so** &mdash; changing a shared denominator moves every published coverage number at once, which is a decision rather than a patch | `api/_resources/app-boundary.test.js`, `api/_resources/extra-actions.test.js`, `api/sairncash/stripe-webhook.test.js`, `api/sairndental/public-book-guardian.test.js`, `tests/X_probe.py`, `tests/sairndental_settings_merge_base.js` |
 | **&#9888; TEN OF ELEVEN third-party fetches have NO timeout at all &mdash; and the most exposed one had no size limit either, on an endpoint anyone can call** | **AUDITED AND HIGHEST-RISK HARDENED 2026-09-17 (Hank)** &mdash; `api/bridge.js` `proxy_get` now bounded in time, size and concurrency; 18 arms in `api/bridge-push-auth.test.js`, 4 mutations killed. ** | `api/bridge-push-auth.test.js` |
 | **&#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two stacked defects, and the outer one had hidden the inner one for the tool&rsquo;s entire life** | **VERIFIED END TO END 2026-09-17 (Hank)** at 14:47:29Z, GitHub Actions run **#9 success**. `watchdog_url()` + the `Response` unpack in `tools/cron_liveness_check.py`; `tests/run_cron_liveness_probe.py | `tests/run_cron_liveness_probe.py` |
 | **Twelve red suites cleared &mdash; and ELEVEN OF TWELVE were the PROBE, not the thing it tests** | **FIXED 2026-09-17 (Cody)** &mdash; 32 &rarr; 17 red over 411 files; `docs/known-red-suites.json` re-measured; 3 new Tier A negative controls (41 &rarr; 44 of 157) | `api/license-trial-gate.test.js` |
@@ -322,7 +321,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Self-referential guards -- a guard that derives its SUBJECT from the thing it guards can be disarmed by the defect it exists to catch, and reports green** | **BOTH HALVES SWEPT 2026-09-10 (Fourth)** -- tests in `22a77434`, `tools/` in this commit; one document, `docs/2026-09-10-self-referential-guard-sweep.md` | `api/_lib/anon-rate-limit.test.js`, `tests/checker_cwd_anchoring_probe.py`, `tests/run_all_tests_floor_probe.py`, `tests/sairnvet_seed_never_syncs.js` |
 | **The defect register pointed at commits that never existed on `main`, and the cause was STRUCTURAL rather than anybody's mistake** | **CLOSED 2026-09-11 (Fourth)** &mdash; `tools/defect_register.py` + `docs/defect-density-register.json` + `tests/run_defect_register_probe.py` (37 arms, was 24) | `tests/run_defect_register_probe.py` |
 | **One `cd` into a subdirectory bricks every Bash call for the rest of the session, and the command that would undo it is blocked too** | **CLOSED 2026-09-11 (Fourth)** &mdash; all 9 hook commands anchored to `${CLAUDE_PROJECT_DIR:-.}`, plus the one script the fix would otherwise have EXPOSED; `tests/hook_command_anchoring_probe.py` | `tests/hook_command_anchoring_probe.py` |
-| ~~29 rows claim negative controls and before 2026-09-08 NOT ONE app-fix suite had any~~ &mdash; **THAT HEADLINE WAS MINE AND IT WAS WRONG. Corrected within the hour: controls are common, they just live INSIDE the suites** | Open (decision), **and the first version of this row is retracted** &mdash; swept 2026-09-08 (CC) on Michael's direction, then corrected by CC the same session | `api/sairndental/public-book-guardian.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-settings-patch.test.js`, `tests/X_probe.py`, `tests/local_only_probe.py`, `tests/sairnbiz_server_backup.js`, `tests/sairndental_coverage_edit.js`, `tests/sairnlaw_hydrate.js`, `tests/sairnsenior_org_hydrate.js`, `tests/suite_control_backfill_probe.py`, `tests/sv_storage_guard.js` |
+| ~~29 rows claim negative controls and before 2026-09-08 NOT ONE app-fix suite had any~~ &mdash; **THAT HEADLINE WAS MINE AND IT WAS WRONG. Corrected within the hour: controls are common, they just live INSIDE the suites** | Open (decision), **and the first version of this row is retracted** &mdash; swept 2026-09-08 (CC) on Michael's direction, then corrected by CC the same session | `api/sairndental/public-book-guardian.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-settings-patch.test.js`, `tests/local_only_probe.py`, `tests/sairnbiz_server_backup.js`, `tests/sairndental_coverage_edit.js`, `tests/sairnlaw_hydrate.js`, `tests/sairnsenior_org_hydrate.js`, `tests/suite_control_backfill_probe.py`, `tests/sv_storage_guard.js` |
 | ~~No app clears local data on a license/device re-key; storage keys are not license-scoped~~ | **CLOSED 2026-09-03 for 13 of 15 apps (Fourth, `343c5a3`)** — SAIRNdental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape, freedom. **NOT by the fix this row proposed, an | `tests/licence_rekey_isolation.js` |
 | **`(x \\|\\| 0)` in a numeric fold CONCATENATES a string instead of adding it** &mdash; made mechanical, and it is a hazard on **80 file+field keys across 10 files** | **BUILT AND WIRED 2026-09-11 (Hank)** as report-only checker &mdash; `tools/truthy_sum_check.py` + `tools/truthy_sum_baseline.json` + `tests/run_truthy_sum_probe.py` (24 arms). **The 135 occurrences a | `tests/run_truthy_sum_probe.py` |
 | ~~The same false *"server sync not yet enabled for this app"* message is still on 29 sites in `sairnlaw.html` and 58 in `sairnlegacy.html`~~ | **CLOSED 2026-09-05 (Hank)** — SAIRNlegacy done in `dc02df8`, live-verified; **SAIRNlaw was ALREADY done and this row's 29 was stale** | `tests/sairnlegacy_write_failure_voice.js` |
@@ -366,7 +365,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~36 `*.test.js` files under `api/` were DEPLOYED as publicly invocable serverless functions~~ | **FIXED 2026-09-05 (Fourth)** — one `*.test.js` line in `.vercelignore`; found in the production runtime logs while live-verifying an unrelated fix, then reproduced | `api/sairncash/stripe-webhook.test.js` |
 | **The local-only checker cleared a wrapper on its OWN SIGNATURE — and nine deliberate decisions were invisible to it** — ⚠ **ALREADY SHIPPED; DO NOT RE-FIX. `c7c24983` claimed this AFTER `e3b38a8c` was on origin — the narrowing is live at `tools/local_only_collection_check.py`, `others = reaches - {fname}`** | **FIXED 2026-09-10 (CC)** — `e3b38a8c`, held by `tests/local_only_self_evidence_probe.py`. Closes the row above | `tests/local_only_self_evidence_probe.py` |
 | **Three live apps were a PERMANENT “could not read” in the local-only checker — and clearing it exposed a false accusation on a fourth** | **FIXED 2026-09-10 (CC)** — `1fa74f2f`, held by `tests/local_only_shape_probe.py` | `tests/local_only_shape_probe.py` |
-| ~~`dnt_settings_obj` has FOUR writers under two backing variables — the same shape StoneDesk had, unchecked~~ | **CLOSED 2026-09-04 (CC)** — the collision is benign and now ACKNOWLEDGED with the trace; the real defect found in the same read was NOT the collision, and is fixed | `tests/sairndental_settings_merge_base.js` |
+| ~~`dnt_settings_obj` has FOUR writers under two backing variables — the same shape StoneDesk had, unchecked~~ | **CLOSED 2026-09-04 (CC)** — the collision is benign and now ACKNOWLEDGED with the trace; the real defect found in the same read was NOT the collision, and is fixed | `tests/sairndental_settings_patch.js` |
 | ~~**No app can deactivate a departing employee through its own UI — `set_active` has ZERO client callers platform-wide**~~ | **CLOSED 2026-09-03 (Fourth) — 9/9 endpoints, 8/9 screens.** ⚠️ **THE NUMBERS IN THIS ROW WERE ALREADY STALE WHEN IT WAS CLOSED, AND THAT IS THE REUSABLE LESSON:** it said client UI in ZERO apps and t | `api/_lib/employee-lifecycle-wiring.test.js` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
@@ -544,21 +543,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 45 test files are traced to no stated requirement
+### 57 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 515 of 560 traced, 92.0%.
+For context and not as the headline: 519 of 576 traced, 90.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 521 citations come from
+### Where the 519 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 269 |
-| `declared` | 236 |
-| `declared+index` | 8 |
+| `index` | 267 |
+| `declared` | 235 |
+| `declared+index` | 9 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -569,14 +568,26 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 5 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 40 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 14 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 43 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 5 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 14 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/csv-cell.test.js`
 - `api/_lib/roofing-gl-export.test.js`
+- `api/agent/enqueue.test.js`
 - `api/provisioner-health-rate-limit.test.js`
+- `api/sairncash/trial-renew-idempotency.test.js`
+- `api/sairncash/trial-renew.test.js`
+- `api/sairncash/trial-start.test.js`
+- `api/sairncash/verify.test.js`
+- `api/sairndental/complaint-race.test.js`
+- `api/sairndental/complaint-respond.test.js`
+- `api/sairndental/public-book-orphan.test.js`
+- `api/sairndental/public-book.test.js`
+- `api/sairndental/public-complaint-submit.test.js`
+- `api/sairndental/public-complaint-thread.test.js`
+- `api/sairndental/send-reminder.test.js`
 - `api/sd-agent-budget.test.js`
 - `tests/active_credential_gate_probe.py`
 - `tests/app_session_isolation_probe.py`
@@ -622,10 +633,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 ### Citations pointing at a file that does not exist
 
-**2.** A row names a test as its proof and the file is not there, so the requirement is UNPROVED however the row reads. Some of these are prose placeholders rather than real citations -- this cannot tell the difference, so it reports both and says so.
+None. Every cited test file exists.
 
-- `tests/X_probe.py`
-- `tests/sairndental_settings_merge_base.js`
+**This is a real zero, not an empty filter.** The input is `dead_citations()`, which is computed from the RAW citations before `traced()` drops anything -- so a dead citation can still reach this section. Until 2026-09-18 the filter read from `traced()` itself, and once that function started dropping them this section would have printed None forever.
 
 ### What this matrix cannot tell you
 
@@ -639,8 +649,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 560   tests/**, api/*.test.js
-  open-work rows citing a test       271   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 576   tests/**, api/** (both walked)
+  open-work rows citing a test       270   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

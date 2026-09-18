@@ -238,6 +238,82 @@ check('R8 the declared source is not carrying the whole figure -- if it were, '
       len([1 for v in tm_live.traced().values() if v == ['declared']])
       < len(tm_live.traced()) // 2, True)
 
+# ══ E. THE ENUMERATOR AND THE DEAD-CITATION DROP (2026-09-18) ═══════════════
+# all_tests() walked `tests/**` recursively and then listed exactly two `api`
+# directories, so SIXTEEN real *.test.js files under api/sairndental/,
+# api/sairncash/, api/_resources/ and api/agent/ were invisible -- and that
+# number is the denominator under every coverage figure on this platform.
+#
+# THE ASSERTION IS AGAINST A DIFFERENT MECHANISM, NOT AGAINST THE FUNCTION
+# ITSELF. `git ls-files` reads the index; all_tests() walks the filesystem.
+# Comparing the function to a re-implementation of the same walk would be the
+# generator-checking-its-own-output shape this repo already has a rule about
+# (PR 1.8). Two mechanisms disagreeing is the finding; two mechanisms agreeing
+# is the only version of this check worth running.
+_gl = subprocess.run(['git', '-C', REPO, 'ls-files'], capture_output=True,
+                     text=True, encoding='utf-8', errors='replace').stdout
+_indexed = sorted(x.strip() for x in _gl.split('\n') if x.strip()
+                  and ((x.strip().startswith('tests/')
+                        and x.strip().endswith(('.js', '.py')))
+                       or (x.strip().startswith('api/')
+                           and x.strip().endswith('.test.js'))))
+_walked = tm_live.all_tests()
+check('N1 all_tests() agrees with the GIT INDEX exactly -- a different '
+      'mechanism, not a second copy of the same walk',
+      sorted(_walked), _indexed)
+check('N2 ...and every api/ SUBDIRECTORY is reached, not just api/ and '
+      'api/_lib/ -- the two that used to be hardcoded',
+      sorted(set(os.path.dirname(x) for x in _walked
+                 if x.startswith('api/'))) != ['api', 'api/_lib'], True)
+check('N3 CONTROL the api/ subdirectories really are non-empty, so N2 is not '
+      'passing on an absence',
+      len([x for x in _walked if x.startswith('api/')
+           and os.path.dirname(x) not in ('api', 'api/_lib')]) > 0, True)
+
+# traced() must DROP a citation naming a file that is not on disk, and
+# dead_citations() must REPORT it. Both directions, because dropping quietly is
+# how a row promising coverage it does not have becomes a better number.
+_cited = tm_live.traced()
+_dead = tm_live.dead_citations()
+check('N4 no cited file is missing from disk -- traced() counts only what is '
+      'there', [t for t in _cited if not os.path.isfile(os.path.join(REPO, t))],
+      [])
+check('N5 the prose figure and the closing-error leg are ONE population -- '
+      'they read 512 and 518 in the same run before this',
+      len(_cited), len([t for t in _walked if t in _cited]))
+check('N6 dead_citations() is REPORTED rather than folded into traced()',
+      isinstance(_dead, list), True)
+# THE CONTROL THAT MAKES E4/E6 MEAN ANYTHING. Both currently pass on an empty
+# set -- there are no dead citations today, which is the point of having fixed
+# them, and a check that only ever sees the clean case has never run. So one
+# real cited file is made to LOOK absent by narrowing all_tests() for the
+# duration, and the two questions are asked again: traced() must lose it, and
+# dead_citations() must name it.
+_real_all = tm_live.all_tests
+# THE VICTIM MUST BE CITED BY A SOURCE THAT DOES NOT ITSELF READ all_tests().
+# `declared` is scraped FROM the files all_tests() returns, so hiding such a
+# file removes it from the raw citations too and it is simply gone rather than
+# dead -- the first version of this control picked one and N8 failed for a
+# reason that was about the control, not about the tool. An `index` or
+# `GUARD_TESTS` citation lives in a document and survives the file vanishing,
+# which is exactly the real-world shape: a row citing a deleted test.
+_victim = sorted(t for t, srcs in _cited.items()
+                 if 'index' in srcs or 'GUARD_TESTS' in srcs)[0]
+try:
+    tm_live.all_tests = lambda: [t for t in _real_all() if t != _victim]
+    _c2 = tm_live.traced()
+    _d2 = dict(tm_live.dead_citations())
+finally:
+    tm_live.all_tests = _real_all
+check('N7 CONTROL with one cited file made to look absent, traced() DROPS it',
+      _victim in _c2, False)
+check('N8 CONTROL ...and dead_citations() NAMES it, so the drop is reported '
+      'rather than silent', _victim in _d2, True)
+check('N9 CONTROL ...and it drops exactly that one, not the population',
+      len(_c2), len(_cited) - 1)
+check('N10 the real tool is restored after the control', tm_live.all_tests,
+      _real_all)
+
 check('Z1 the worktree was cleaned up', os.path.exists(wt), False)
 check('Z2 and this clone is exactly as it was',
       git(REPO, 'status', '--porcelain').stdout, TREE_BEFORE)

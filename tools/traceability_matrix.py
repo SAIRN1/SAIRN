@@ -184,23 +184,45 @@ def app_of_test(path, app_names):
     return alias or 'PLATFORM'
 
 
+# ── THE api/ HALF WALKED TWO DIRECTORIES AND api/ HAS FIVE (fixed 2026-09-18) ─
+# `tests/` was always walked RECURSIVELY. The api/ half was two hardcoded
+# os.listdir calls -- the top level and `api/_lib/` -- which was complete on the
+# day it was written and silently stopped being complete as api/ grew
+# subdirectories. SIXTEEN real `*.test.js` files were invisible to it: nine
+# under api/sairndental/, five under api/sairncash/, two under api/_resources/
+# and one under api/agent/.
+#
+# THIS IS THE DENOMINATOR UNDER EVERY COVERAGE FIGURE ON THE PLATFORM, so the
+# error was not confined to one number. docs/MASTER-PLAN.md published "555 test
+# files on disk" against a real 571; its `traced` under-count row, its WORST
+# CASE stack-up, and every per-app suites/traced column all rested on it.
+#
+# AND IT MADE THE DOCUMENT CONTRADICT ITSELF. MASTER-PLAN.md printed 512 traced
+# in prose (`t in tests if t in cited`) and 518 in its closing-error leg
+# (`len(cited)`), in the SAME RUN. Four of that six were real files on disk this
+# function could not see; the other two were citations to files that do not
+# exist and are fixed separately in docs/SAIRN-OPEN-WORK-INDEX.md.
+#
+# WALKED, NOT LISTED, and the exclusions are named rather than implied: skip
+# `node_modules` (vendored, not ours) and `__pycache__` (build output), the same
+# two the tests/ walk already skips. Nothing else is excluded -- an api/
+# subdirectory added tomorrow is counted the day it appears, which is the
+# property the old form did not have.
+API_SKIP_DIRS = ('node_modules', '__pycache__')
+
+
 def all_tests():
     found = []
-    for root, dirs, files in os.walk(os.path.join(REPO, 'tests')):
-        dirs[:] = [d for d in dirs if d != '__pycache__']
-        for f in sorted(files):
-            if f.endswith(('.js', '.py')):
-                found.append(os.path.relpath(os.path.join(root, f), REPO)
-                             .replace(os.sep, '/'))
-    api = os.path.join(REPO, 'api')
-    for f in sorted(os.listdir(api)):
-        if f.endswith('.test.js'):
-            found.append('api/' + f)
-    lib = os.path.join(api, '_lib')
-    if os.path.isdir(lib):
-        for f in sorted(os.listdir(lib)):
-            if f.endswith('.test.js'):
-                found.append('api/_lib/' + f)
+    for base, exts in ((os.path.join(REPO, 'tests'), ('.js', '.py')),
+                       (os.path.join(REPO, 'api'), ('.test.js',))):
+        if not os.path.isdir(base):
+            continue
+        for root, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in API_SKIP_DIRS]
+            for f in sorted(files):
+                if f.endswith(exts):
+                    found.append(os.path.relpath(os.path.join(root, f), REPO)
+                                 .replace(os.sep, '/'))
     return sorted(set(found))
 
 
@@ -292,7 +314,50 @@ def traced():
             cited.setdefault(t, []).append('index')
     for t, _req in declared_requirements():
         cited.setdefault(t, []).append('declared')
-    return cited
+    # ── A CITATION TO A FILE THAT DOES NOT EXIST IS NOT COVERAGE ─────────────
+    # Added 2026-09-18. `len(cited)` was the number published as "tests traced
+    # to a requirement" in MASTER-PLAN.md's closing-error leg, while the prose
+    # in the same document counted `t in tests if t in cited`. The two differed
+    # by SIX and nothing reported it. Four of the six were real files
+    # all_tests() could not see (fixed above); TWO were citations to files that
+    # are not there:
+    #
+    #   tests/X_probe.py  -- a PLACEHOLDER inside an index row's prose. A row
+    #     explaining how rows should be written says a row should read "N
+    #     mutation probes, held by `tests/X_probe.py`", and the citation
+    #     extractor cannot tell an example filename from a real one.
+    #   tests/sairndental_settings_merge_base.js  -- RENAMED to
+    #     sairndental_settings_patch.js in 8b9201c7, with the row still citing
+    #     the old name. A genuinely stale citation asserting 21 assertions in a
+    #     file that is gone.
+    #
+    # DROPPED FROM THE COUNT AND REPORTED, NOT DROPPED SILENTLY. A dead
+    # citation inflates a coverage figure and is itself a finding: it means a
+    # row promises a suite the repo does not hold. `dead_citations()` below is
+    # what the documents print, and the traverse refuses on it rather than
+    # closing over a population containing files that do not exist.
+    on_disk = set(all_tests())
+    return dict((t, v) for t, v in cited.items() if t in on_disk)
+
+
+def dead_citations():
+    """[(cited file, [sources])] for every citation naming a file not on disk.
+
+    Deliberately recomputed rather than returned alongside `traced()`: this is
+    the answer to a DIFFERENT question -- not "how much is covered" but "which
+    promises does the repo not keep" -- and folding it into one return value is
+    how it would stop being read.
+    """
+    raw = {}
+    for t, _guards, _why in guard_tests():
+        raw.setdefault(t, []).append('GUARD_TESTS')
+    for _app, _item, _status, ts in rows_citing_tests():
+        for t in ts:
+            raw.setdefault(t, []).append('index')
+    for t, _req in declared_requirements():
+        raw.setdefault(t, []).append('declared')
+    on_disk = set(all_tests())
+    return sorted((t, sorted(set(v))) for t, v in raw.items() if t not in on_disk)
 
 
 # A declaration has to SAY something. The floor is deliberately not a keyword
@@ -364,7 +429,11 @@ def build():
     # argument for the counts being printed in the document.
     _reg, _not_promoted = registry()
     tv.leg('app files', len(app_names), "git ls-files '*.html'")
-    tv.leg('test files on disk', len(tests), 'tests/**, api/*.test.js')
+    # The source string said `api/*.test.js` -- one level -- while the function
+    # listed api/ and api/_lib/, and the real tree has five api/ subdirectories.
+    # The citation, the code and the tree were three different answers. Both
+    # halves are now the same walk.
+    tv.leg('test files on disk', len(tests), 'tests/**, api/** (both walked)')
     tv.leg('open-work rows citing a test', len(rows_citing_tests()), INDEX)
     tv.leg('GUARD_TESTS entries', len(guard_tests()),
            'sairn_push_gate_hook.GUARD_TESTS')
@@ -508,6 +577,13 @@ def build():
       'tell what would be lost if it were deleted. The fix is one line in the '
       'open-work index or a `GUARD_TESTS` entry -- not a new document.')
     W('')
+    # A SECOND REPORT OF THE SAME THING WAS WRITTEN HERE AND DELETED.
+    # This file already carries `### Citations pointing at a file that
+    # does not exist` further down, and it predates the 2026-09-18 fix. A
+    # second copy is a second thing to drift, which is the defect this
+    # repo eliminates at the source rather than copies more carefully --
+    # so the existing section was REPOINTED at dead_citations() instead,
+    # and that is where dead citations are reported.
 
     # ── WHERE THE CITATIONS ACTUALLY COME FROM ──────────────────────────
     # A concentration finding, not a count: if one source dries up, this
@@ -586,7 +662,20 @@ def build():
     # An auditor following a row to its proof and finding no file is exactly
     # the claim-versus-reality failure this repo keeps recording. Found on the
     # first run: two of them.
-    absent = sorted(t for t in cited if not os.path.isfile(os.path.join(REPO, t)))
+    # ── THIS SECTION'S INPUT MOVED ON 2026-09-18 AND IT WOULD HAVE GONE QUIET
+    # It read `t for t in cited if not isfile(t)`. `traced()` now drops a
+    # citation to a missing file at the source -- which is the right place,
+    # because counting one inflated the traced figure and made MASTER-PLAN.md
+    # publish 512 and 518 for the same quantity in one run. But that change
+    # makes `cited` unable to contain an absent file BY CONSTRUCTION, so this
+    # filter would have been empty forever and this section would have printed
+    # "None. Every cited test file exists." as a FALSE CLEAR.
+    #
+    # A check whose input can no longer hold the thing it looks for has stopped
+    # checking and says nothing about it -- the eighth cross-domain discipline,
+    # arriving here as a side effect of a fix two hundred lines away. Repointed
+    # at dead_citations(), which is the function that now holds them.
+    absent = [t for t, _srcs in dead_citations()]
     W('### Citations pointing at a file that does not exist')
     W('')
     if absent:
@@ -595,10 +684,23 @@ def build():
           'are prose placeholders rather than real citations -- this cannot '
           'tell the difference, so it reports both and says so.' % len(absent))
         W('')
-        for t in absent:
-            W('- `%s`' % t)
+        for t, srcs in dead_citations():
+            W('- `%s` — cited by %s' % (t, ', '.join(srcs)))
+        W('')
+        W('**Not counted in the traced figure since 2026-09-18.** Two of these '
+          'were, and that is how the closing-error leg and the prose in '
+          '`docs/MASTER-PLAN.md` came to read 518 and 512 in the same run. '
+          'A row promising a suite the repo does not hold is a finding; '
+          'letting it count was a better number.')
     else:
         W('None. Every cited test file exists.')
+        W('')
+        W('**This is a real zero, not an empty filter.** The input is '
+          '`dead_citations()`, which is computed from the RAW citations before '
+          '`traced()` drops anything -- so a dead citation can still reach '
+          'this section. Until 2026-09-18 the filter read from `traced()` '
+          'itself, and once that function started dropping them this section '
+          'would have printed None forever.')
     W('')
     W('### What this matrix cannot tell you')
     W('')
