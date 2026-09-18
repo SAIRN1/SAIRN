@@ -49,6 +49,37 @@
 // `s[0] === '='`. `\t5` is still a number and passes through; `\t=cmd` does
 // not.
 //
+// ── null AND undefined RENDER BLANK, AND THAT IS A SCOPE ADDITION ─────────
+// Asked by the hover auditor on 2026-09-18: was this intentional, or did it ride
+// along undocumented? INTENTIONAL, AND IT WAS UNDOCUMENTED -- both halves are
+// true and the second is the auditor's point.
+//
+// IT IS A REAL BEHAVIOUR CHANGE, MEASURED RATHER THAN ASSUMED. Thirty of
+// stonedesk's thirty-nine sites used a BARE `String(c)`, and:
+//
+//     '"' + String(null).replace(...) + '"'        ->   "null"
+//     '"' + String(undefined).replace(...) + '"'   ->   "undefined"
+//
+// So those thirty exports wrote the literal text `null` into a cell. csvCell's
+// `v == null ? '' : String(v)` writes a blank instead. The other nine sites and
+// several apps already used `String(c == null ? '' : c)` and were unaffected --
+// which is exactly why it slipped through: the majority of call sites agreed
+// with the new behaviour and the minority that did not were the ones nobody
+// diffed.
+//
+// WHY BLANK IS RIGHT. A cell containing `null` is the four-character STRING
+// "null" to every spreadsheet that opens it. It sorts with text, it breaks a
+// SUM over the column, it survives a copy-paste into a report, and it looks
+// like data -- an accountant reading a charge column sees a value where there
+// was none. A blank is what "absent" actually is. It also matches what this
+// platform's own export layer already does: `api/_lib/dental-bi.js`'s coerce()
+// maps undefined, null and '' to null BEFORE any conversion, and has since
+// before this module existed. Diverging from that would have been the surprise.
+//
+// The two assertions in csv-cell.test.js are named as REGRESSION GUARDS rather
+// than filed under ordinary inputs, so a future "simplification" back to a bare
+// String() has something to fail against.
+//
 // ── WHY A MODULE HERE AND A COPY IN EACH APP ──────────────────────────────
 // The single-file HTML apps cannot require() anything -- that is the whole
 // shape of this platform -- so each one carries a named helper with this body

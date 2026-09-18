@@ -99,6 +99,8 @@ import time
 STALE_HOURS = float(os.environ.get('SAIRN_CLAIM_STALE_HOURS', '4'))
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import sairn_session_identity as _identity            # noqa: E402
 CLAIM_DIR = os.path.join(REPO, '.claude', 'claims')
 
 # Words that carry no matching signal. Deliberately short: over-flagging costs a
@@ -395,12 +397,27 @@ def sh(args, check=True):
     return r.stdout.strip()
 
 
+# ── IDENTITY COMES FROM A MARKER, NOT FROM THE FOLDER NAME (2026-09-18) ────
+# Hover finding #258, HIGH. This function existed here AND in tools/tier_a_review_gate.py,
+# byte for byte, and both derived identity from `os.path.basename(REPO)`. So
+# "who am I" was a property of a directory name: a clone renamed `SAIRN-cody`
+# would discharge its own Tier A obligation and the gate would report an
+# INDEPENDENT REVIEW, and the same string decides who holds a claim, so a
+# rename silently reassigns work in the other direction too.
+#
+# tools/sairn_session_identity.py is now the ONE implementation -- two answers
+# to "who am I" is what made the self-review refusal meaningless. It reads a
+# per-clone marker in .git/, the convention hover_auditor_scope_gate.py already
+# uses, and it RAISES when the marker is absent rather than falling back: a
+# fallback would leave the spoofable path live with nothing to say which one
+# answered (PR 1.11).
+#
+# IT IS NOT A CRYPTOGRAPHIC CONTROL. Anything that can rename the directory can
+# also write the marker. What it closes is DRIFT AND ACCIDENT -- identity stops
+# being a side effect of a folder name and becomes a deliberate act with a file
+# to point at.
 def session_name():
-    """Derived from the clone directory, which is how the four sessions are
-    already distinguished everywhere else (SAIRN-ACTIVE-WORK-<name>.md)."""
-    base = os.path.basename(REPO)
-    m = re.match(r'^SAIRN-(.+)$', base, re.I)
-    return (m.group(1) if m else base).lower()
+    return _identity.session_name()
 
 
 def now():

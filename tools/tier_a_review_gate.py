@@ -83,6 +83,8 @@ import sys
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import sairn_session_identity as _identity            # noqa: E402
 REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
 REVIEWS = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
 # Module-level rather than inlined in _register_records(), for the same reason
@@ -164,14 +166,27 @@ class CouldNotTell(Exception):
     pass
 
 
+# ── IDENTITY COMES FROM A MARKER, NOT FROM THE FOLDER NAME (2026-09-18) ────
+# Hover finding #258, HIGH. This function existed here AND in tools/sairn_claim.py,
+# byte for byte, and both derived identity from `os.path.basename(REPO)`. So
+# "who am I" was a property of a directory name: a clone renamed `SAIRN-cody`
+# would discharge its own Tier A obligation and the gate would report an
+# INDEPENDENT REVIEW, and the same string decides who holds a claim, so a
+# rename silently reassigns work in the other direction too.
+#
+# tools/sairn_session_identity.py is now the ONE implementation -- two answers
+# to "who am I" is what made the self-review refusal meaningless. It reads a
+# per-clone marker in .git/, the convention hover_auditor_scope_gate.py already
+# uses, and it RAISES when the marker is absent rather than falling back: a
+# fallback would leave the spoofable path live with nothing to say which one
+# answered (PR 1.11).
+#
+# IT IS NOT A CRYPTOGRAPHIC CONTROL. Anything that can rename the directory can
+# also write the marker. What it closes is DRIFT AND ACCIDENT -- identity stops
+# being a side effect of a folder name and becomes a deliberate act with a file
+# to point at.
 def session_name():
-    """The clone directory, which is how the four sessions are distinguished
-    everywhere else on this platform (SAIRN-ACTIVE-WORK-<name>.md). Imported in
-    spirit from tools/sairn_claim.py rather than invented -- two different
-    answers to "who am I" would make the self-review check meaningless."""
-    base = os.path.basename(REPO)
-    m = re.match(r'^SAIRN-(.+)$', base, re.I)
-    return (m.group(1) if m else base).lower()
+    return _identity.session_name()
 
 
 def tier_a_resources():

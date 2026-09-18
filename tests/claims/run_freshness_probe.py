@@ -141,6 +141,18 @@ def build():
         git(clone, 'config', k, v)
     os.makedirs(os.path.join(clone, 'tools'), exist_ok=True)
     shutil.copy(TOOL, os.path.join(clone, 'tools', 'sairn_claim.py'))
+    # IDENTITY IS A DEPENDENCY NOW (2026-09-18, hover #258). sairn_claim.py no
+    # longer derives the session from the directory name -- it reads a marker
+    # in .git/ via tools/sairn_session_identity.py and RAISES when it is
+    # absent. The throwaway clone therefore needs the module AND a provisioned
+    # marker, and PROVISIONING IT HERE IS PART OF THE PROOF: the probe drives
+    # the real fail-closed path rather than a copy that still guesses.
+    shutil.copy(os.path.join(ROOT, 'tools', 'sairn_session_identity.py'),
+                os.path.join(clone, 'tools', 'sairn_session_identity.py'))
+    _mk = os.path.join(clone, '.git', 'sairn-session')
+    _fh = open(_mk, 'w', encoding='utf-8')
+    _fh.write('probe')
+    _fh.close()
     return tmp, origin, seed, clone
 
 

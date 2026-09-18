@@ -69,11 +69,32 @@ test('a payload that ALSO contains a quote gets both treatments', () => {
 });
 
 // ── 4. THE BORING INPUTS, because a helper on every export path meets them ─
-test('null, undefined and empty are an empty quoted cell', () => {
+// ── REGRESSION GUARDS, NOT ORDINARY INPUTS (2026-09-18) ───────────────────
+// These two are here because they pin a SCOPE ADDITION the 2026-09-17 sweep
+// made and did not document, raised by the hover auditor. Thirty of stonedesk's
+// thirty-nine sites used a bare String(c), so `null` reached the file as the
+// four-character text "null" and `undefined` as "undefined". csvCell writes a
+// blank. See the module header for why blank is right; these exist so a future
+// simplification back to a bare String() has something to fail against.
+test('REGRESSION: null renders as a BLANK cell, never the text "null"', () => {
   assert.strictEqual(csvCell(null), '""');
-  assert.strictEqual(csvCell(undefined), '""');
-  assert.strictEqual(csvCell(''), '""');
+  assert.ok(!csvCell(null).includes('null'),
+    'the literal word null reached the cell -- it sorts as text, breaks a SUM, '
+    + 'and reads as data to whoever opens the file');
 });
+
+test('REGRESSION: undefined renders as a BLANK cell, never the text "undefined"',
+  () => {
+    assert.strictEqual(csvCell(undefined), '""');
+    assert.ok(!csvCell(undefined).includes('undefined'));
+  });
+
+test('CONTROL: the empty string agrees with them, so all three absences look '
+  + 'the same in the file', () => {
+    assert.strictEqual(csvCell(''), '""');
+    assert.strictEqual(csvCell(null), csvCell(undefined));
+    assert.strictEqual(csvCell(''), csvCell(null));
+  });
 
 test('ordinary text is untouched apart from the quotes', () => {
   assert.strictEqual(csvCell('Jane Smith'), '"Jane Smith"');

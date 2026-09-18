@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**201 files in `tools/`.** By what actually invokes them:
+**202 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | ADVISORY | 2 |
 | CHECKER | 141 |
 | GENERATOR | 17 |
-| LIBRARY | 22 |
+| LIBRARY | 23 |
 | LIVE | 18 |
 | REPORTER | 1 |
 
@@ -294,7 +294,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (19)
+## SUITE-ONLY (20)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -318,6 +318,7 @@ fixtures. Nothing points them at the real codebase.
 | `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py`, `run_guard_ablation_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files -- plus `audit`, which catches a duplicate claim recorded AFTER the guard that covers it and, just as importantly, reports one recorded BEFORE as HISTORY. Released claims are kept on purpose, so every duplicate ever recorded stays in the file and a reader concludes the bug is live -- WHICH HAS NOW HAPPENED TWICE. Measured 2026-09-16: 631 claims, 6 duplicate groups, EVERY ONE predating its guard (the fourth triple by 43 minutes, the cc pair by 22) and zero in the ~150 claims since. It also counts, APART, the shape that IS live: claims never released, which is not a duplicate and needs the opposite fix. It refuses to decide that two DIFFERENT task strings are the same work -- exact means exact | `run_all_tests_hook_gate_probe.py`, `run_claim_audit_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `run_cron_liveness_probe.py`, `sairn_http_challenge.py` |
+| `sairn_session_identity.py` | LIBRARY | the ONE answer to 'which session is this clone', read from a per-clone marker in .git/ rather than from the directory name. Hover finding #258, HIGH: session_name() existed byte-for-byte in BOTH tier_a_review_gate.py and sairn_claim.py and both derived identity from os.path.basename(REPO), so a clone renamed SAIRN-cody would DISCHARGE ITS OWN TIER A OBLIGATION and the gate would report an independent review -- and the same string decides who holds a claim, so a rename reassigns work in the other direction too. FAILS CLOSED: a missing marker RAISES and is never guessed, because a fallback would leave the spoofable path live with nothing to say which one answered. NOT A CRYPTOGRAPHIC CONTROL and does not claim to be -- anything that can rename a directory can write a file; what it closes is DRIFT AND ACCIDENT, turning identity from a side effect of a folder name into a deliberate act with a file to point at. Self-check drives all four: missing fails closed, a planted value is actually used from a directory named after nobody, a rename survives, and a marker holding junk is refused rather than returned | `run_freshness_probe.py` |
 | `sc_tier_a_write_gate_live_probe.py` | LIVE | a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass | `run_sc_tier_a_live_probe_probe.py` |
 | `shape_search.py` | ADVISORY | the same bug SHAPE written with different identifiers, a different iteration form or in the other language -- the recurrence a grep for the fixed defect cannot find because it shares no words with it. The case it was built from: api/sd-data.js resolves a patient scope before its read and api/dnt-bi.js did it after, deriving the same ids from the same table, and both contain the string SCOPE_LOOKUP_FAILED so no text search could rank them as the same thing. ADVISORY, NOT A CHECKER, and the measurement is why: the unrelated-pair hit rate on this repository is 1.155% +- 0.148pp, and the hits were READ -- they are genuinely identical shapes (a helper copied into two fault files, a cluster of tools/ main() functions), so it is a BASE RATE rather than confusion and raising the threshold barely moves it. A hit is a candidate for a person, never a finding. IT IS NOT A NEURAL EMBEDDING: there is no model on this interpreter, two functions computing the same answer by different control flow score low, and that gap is printed on every run rather than left to be discovered. | `run_shape_search_probe.py` |
 
@@ -395,11 +396,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      201   git ls-files tools/
+  tools on disk                      202   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            145   tests/**/*.py, *.js
+  tools invoked by tests/            146   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
