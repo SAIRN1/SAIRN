@@ -1882,8 +1882,8 @@
       "task": "correct the outbound queue banner coverage sentence -- name the queued call site, not the resource",
       "claimed_at": "2026-09-18T14:47:40Z",
       "claimed_at_epoch": 1789742860.4881787,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T15:26:39Z"
     }
   ]
 }
