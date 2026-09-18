@@ -3012,9 +3012,37 @@ async function scpApproveDesign(){
 // coverage is stated. scpPendingCoverage() below names what is covered so the
 // banner can never imply more than is true.
 var SCP_PENDING_KEY='scp_pending_writes';
-var SCP_QUEUED_RESOURCES=['scp_quotes','scp_designs'];
 
-function scpPendingCoverage(){return SCP_QUEUED_RESOURCES.slice();}
+// ── COVERAGE IS A CALL SITE, NOT A RESOURCE (corrected 2026-09-18) ────────
+// This shipped as SCP_QUEUED_RESOURCES=['scp_quotes','scp_designs'] and the
+// banner said "Queued writes cover scp_quotes, scp_designs only" -- which reads
+// as "every write to those resources is queued", and it is not. MEASURED
+// against the file: scp_quotes is written at FOUR sites and exactly ONE is
+// queued.
+//
+//   scpSaveQuote            :2877   NOT queued
+//   scpSendDesignToQuote    :3137   QUEUED  <- the only one
+//   scpSendIrrZoneToQuote   :3567   NOT queued
+//   scpSendWfToQuote        :3639   NOT queued
+//
+// The three unqueued ones are the dangerous part, because two of them are the
+// SAME user-facing action -- "send this to Quoting" -- reached from the
+// irrigation and water-feature panels instead of the design walk. A user who
+// read the old sentence would have believed those were protected.
+//
+// A RESOURCE-LEVEL CLAIM CANNOT BE TRUE HERE and the fix is not a better
+// wording of one: coverage is per call site, so the banner names the SITE. The
+// three siblings are named too, because "other writes" is not something a user
+// can act on and "Send Irrigation Zone to Quoting is not covered" is.
+//
+// tests/sairnscape_outbound_queue.js pins the real counts -- 18 write sites, 2
+// queued -- so a new unqueued write, or a newly queued one, turns the suite RED
+// and forces this sentence to be re-read rather than quietly outgrown.
+var SCP_QUEUED_PATH='the Design Walk → Quoting send';
+var SCP_UNQUEUED_QUOTE_PATHS=['Save Quote','Send Irrigation Zone to Quoting','Send Water Feature to Quoting'];
+
+function scpPendingCoverage(){return SCP_QUEUED_PATH;}
+function scpUnqueuedQuotePaths(){return SCP_UNQUEUED_QUOTE_PATHS.slice();}
 function scpPendingAll(){var q=scpLd(SCP_PENDING_KEY,[]);return Array.isArray(q)?q:[];}
 function scpPendingCount(){return scpPendingAll().filter(function(p){return p&&p.status==='pending';}).length;}
 function scpRefusedAll(){return scpPendingAll().filter(function(p){return p&&p.status==='refused';});}
@@ -3107,8 +3135,9 @@ function scpRenderPendingBanner(){
   if(ref.length)parts.push('<b>'+ref.length+' record(s) were REFUSED by the server</b> and will not be retried: '
     +ref.map(function(p){return scpH(p.resource+' '+((p.rec&&p.rec.id)||'?')+' -- '+(p.refused_message||'no reason given'));}).join('; ')
     +'. The local copy is kept, so the two disagree until somebody decides.');
-  parts.push('<span style="opacity:.8">Queued writes cover '+scpH(scpPendingCoverage().join(', '))
-    +' only &mdash; other writes in this app still have no retry.</span>');
+  parts.push('<span style="opacity:.8">Only <b>'+scpH(scpPendingCoverage())+'</b> is queued for retry. '
+    +scpH(scpUnqueuedQuotePaths().join(', '))+' are NOT &mdash; nor is any other write in this app. '
+    +'A quote created any other way is on this device only if its save fails.</span>');
   el.innerHTML='<div style="background:#fff8e1;border:1px solid #f0c36d;border-radius:8px;padding:10px 12px;'
     +'font-size:12px;line-height:1.6;color:#6b4e00;margin:10px 0">'+parts.join('<br>')
     +'<div style="margin-top:8px"><button class="scp-btn scp-bo scp-bs" onclick="scpFlushAndReport()">Try uploading now</button></div></div>';

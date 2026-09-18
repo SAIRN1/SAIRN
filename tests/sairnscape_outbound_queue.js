@@ -105,8 +105,14 @@ function harness(opts) {
     grab('function scpLastErrText(', '\n'),
     grab('function scpWriteRefused(', '\n'),
     "var SCP_PENDING_KEY='scp_pending_writes';",
-    "var SCP_QUEUED_RESOURCES=['scp_quotes','scp_designs'];",
+    // PULLED FROM THE PAGE, NOT RESTATED HERE. These were two literals typed
+    // into this harness, and a harness that restates a constant cannot notice
+    // when the page's copy changes -- which is how the banner claim under test
+    // drifted from the code in the first place.
+    grab('var SCP_QUEUED_PATH=', '\n'),
+    grab('var SCP_UNQUEUED_QUOTE_PATHS=', '\n'),
     grab('function scpPendingCoverage(', '\n'),
+    grab('function scpUnqueuedQuotePaths(', '\n'),
     grab('function scpPendingAll(', '\n'),
     grab('function scpPendingCount(', '\n'),
     grab('function scpRefusedAll(', '\n'),
@@ -272,22 +278,76 @@ await test('a failed send queues, and the message says which state it is in', ()
 
 section('5. THE BANNER CANNOT IMPLY MORE COVERAGE THAN EXISTS');
 
-await test('it names what is covered, not just a count -- RENDERED, not grepped', () => {
+// ── THE BANNER SHIPPED OVERSTATING ITS COVERAGE, AND THIS IS THE ARM THAT
+// ── WOULD HAVE CAUGHT IT (corrected 2026-09-18) ──────────────────────────
+// The first version said "Queued writes cover scp_quotes, scp_designs only" and
+// the arm asserted exactly that string, so the suite agreed with the claim
+// instead of checking it. Coverage is per CALL SITE: scp_quotes is written at
+// four sites and one is queued. A resource-level sentence told a user that the
+// irrigation and water-feature "send to Quoting" buttons -- the same action from
+// a different panel -- were protected. They are not.
+//
+// So this arm no longer asks whether the banner says a particular thing. It
+// asks whether what the banner says MATCHES THE FILE, and the count arms below
+// are what make that answer move when the code does.
+await test('the banner names the covered CALL SITE, not a resource -- RENDERED', () => {
   const c = harness({});
-  // join() rather than deepStrictEqual: the array is built inside the vm realm,
-  // so its prototype is a different Array and deepStrictEqual fails on
-  // reference identity while the VALUES match.
-  assert.strictEqual(c.scpPendingCoverage().join(','), 'scp_quotes,scp_designs');
+  assert.strictEqual(typeof c.scpPendingCoverage(), 'string',
+    'coverage is still expressed as a list of resources, which cannot be true '
+    + 'while one of those resources has unqueued write sites');
   c.scpPendingAdd('scp_quotes', Q('Q-B1'));
   c.scpRenderPendingBanner();
   const out = c.__banner.innerHTML;
-  assert.ok(/scp_quotes, scp_designs/.test(out),
-    'the RENDERED banner does not name its coverage, so an empty one reads as '
-    + '"nothing is waiting anywhere" over twelve writes that are not queued at '
-    + 'all: ' + out);
-  assert.ok(/other writes in this app still have no retry/.test(out),
-    'the rendered banner does not disclose the uncovered writes');
+  assert.ok(/Design Walk/.test(out), 'the rendered banner does not name the queued path: ' + out);
+  assert.ok(!/cover scp_quotes/.test(out),
+    'the banner still makes a resource-level claim: ' + out);
+  assert.ok(/Send Irrigation Zone to Quoting/.test(out) && /Send Water Feature to Quoting/.test(out)
+    && /Save Quote/.test(out),
+    'the three UNQUEUED quote paths are not named, so "other writes" is '
+    + 'something no user can act on: ' + out);
   assert.ok(/1 record\(s\) are on this device only/.test(out), 'no count rendered: ' + out);
+});
+
+// ── THE COUNTS, PINNED AGAINST THE REAL FILE ─────────────────────────────
+// These are what force the sentence above to be re-read. A new
+// scpData('write', ...) site, or a newly queued one, moves a number here and
+// turns this suite RED rather than letting the banner quietly outgrow its own
+// claim -- which is exactly what happened between writing it and checking it.
+await test('EXACTLY 18 write sites and EXACTLY 2 are queued', () => {
+  const sites = html.match(/scpData\('write','[a-z_]+'/g) || [];
+  // One of the matches is inside a comment recording the original defect.
+  const inComment = (html.match(/\/\/ This was `scpData\('write','scp_quotes'/g) || []).length;
+  const real = sites.length - inComment;
+  assert.strictEqual(real, 18,
+    'the number of scpData write sites changed to ' + real + '. Read them, decide '
+    + 'whether the new one needs the queue, and update the banner sentence -- do '
+    + 'not just raise this number.');
+  const queued = (html.match(/scpPendingAdd\('scp_[a-z_]+'/g) || []).length;
+  assert.strictEqual(queued, 2,
+    'the number of queued call sites changed to ' + queued + '. The banner names '
+    + 'ONE path; if that is no longer true it has to say so.');
+});
+
+await test('the three sibling quote paths are still UNQUEUED -- the banner says they are', () => {
+  // If one of these ever gets the queue, the banner becomes wrong in the
+  // opposite direction: it would be telling a user their quote is unprotected
+  // when it is not. Both directions matter.
+  ['scpSaveQuote', 'scpSendIrrZoneToQuote', 'scpSendWfToQuote'].forEach((fn) => {
+    const at = html.indexOf('async function ' + fn);
+    assert.ok(at > 0, fn + ' is gone -- the banner names it and it must exist');
+    const end = html.indexOf('\n}\n', at);
+    const body = html.slice(at, end);
+    assert.ok(/scpData\('write','scp_quotes'/.test(body), fn + ' no longer writes a quote');
+    assert.ok(!/scpPendingAdd/.test(body),
+      fn + ' IS now queued, so the banner listing it as unqueued is wrong');
+  });
+});
+
+await test('and the ONE queued path really is the Design Walk send', () => {
+  const at = html.indexOf('async function scpSendDesignToQuote');
+  const body = html.slice(at, html.indexOf('\n}\n', at));
+  assert.ok(/scpPendingAdd\('scp_quotes',qrec\)/.test(body),
+    'the path the banner names as covered does not queue its quote');
 });
 
 await test('a REFUSED entry is named in the banner, with its reason', async () => {
