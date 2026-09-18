@@ -2215,6 +2215,16 @@
       "claimed_at_epoch": 1789740242.414772,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789742656",
+      "session": "hank",
+      "subject": "sd-data-memory-app-scope-test",
+      "task": "stale string anchors in the memory app scope suite",
+      "claimed_at": "2026-09-18T14:44:16Z",
+      "claimed_at_epoch": 1789742656.6848898,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
