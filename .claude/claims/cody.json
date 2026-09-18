@@ -1389,6 +1389,16 @@
       "claimed_at_epoch": 1789658226.162162,
       "status": "released",
       "released_at": "2026-09-17T23:23:11Z"
+    },
+    {
+      "id": "cody-1789728739",
+      "session": "cody",
+      "subject": "hover-scope-gate",
+      "task": "add hover.json claim file to scope gate ALLOWED list",
+      "claimed_at": "2026-09-18T10:52:19Z",
+      "claimed_at_epoch": 1789728739.3566117,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
