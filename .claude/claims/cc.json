@@ -1842,8 +1842,8 @@
       "task": "scp_quotes send button ordering and a real outbound retry queue",
       "claimed_at": "2026-09-18T12:41:43Z",
       "claimed_at_epoch": 1789735303.8701427,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T13:28:41Z"
     }
   ]
 }
