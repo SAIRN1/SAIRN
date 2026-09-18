@@ -170,12 +170,29 @@ async function callHandler(action, resource, key) {
     // Phase 4a/4d single-owner verbs.
     assert.deepStrictEqual(grants('set_status'), ['rf_schedule']);
     assert.deepStrictEqual(grants('agreement_status'), ['rf_claim_agreements']);
-    // Phase 4b.
-    // gl_export ADDED 2026-09-17 by another session and this pin was not
-    // updated with it, so this arm has been RED on origin/main since.
-    // Fixed here rather than left: a red arm nobody acts on is how the next
-    // genuinely red arm beside it gets read as noise, and this file is the
-    // gate on every verb on every resource.
+    // Phase 4b, plus 'gl_export' (2026-09-17, gap A5).
+    //
+    // THE TRIPWIRE FIRED AND THIS IS THE WIDENING IT ASKS FOR, not a number
+    // raised to get past it. `gl_export` was granted on rf_invoices when
+    // SAIRNroofing's accounting export shipped, this pin was not updated with
+    // it, and the arm has been RED on origin/main since -- with nothing
+    // blocking on it, because this suite is not in GUARD_TESTS. A red arm
+    // nobody acts on is how the next genuinely red arm beside it gets read as
+    // noise, and this file is the gate on every verb on every resource.
+    //
+    // TWO SESSIONS FOUND AND FIXED THIS INDEPENDENTLY, hours apart, and the
+    // resolution keeps both halves rather than one: the sentence above is
+    // Hank's account of the red, and the paragraph below is the verification
+    // that justifies widening rather than merely silencing it.
+    //
+    // CHECKED BEFORE WIDENING, the same way rf_company_programs was in
+    // 2026-08-25, and read rather than inferred from the verb's name: the
+    // handler branch (api/sd-data.js) issues three GETs and no POST, PATCH or
+    // DELETE; it reuses the read branch's query and the SAME summarizeInvoice()
+    // the customer's own screen uses; and its own suite carries a dedicated arm
+    // -- roofing-billing-endpoint.test.js:356, "gl_export writes NOTHING -- an
+    // export must never change a book". Compute-only and single-owner like the
+    // other three.
     assert.deepStrictEqual(reg.EXTRA_ACTIONS.rf_invoices,
       ['issue', 'add_payment', 'reconcile_claim', 'gl_export']);
     ['issue', 'add_payment', 'reconcile_claim', 'gl_export'].forEach((v) => {
