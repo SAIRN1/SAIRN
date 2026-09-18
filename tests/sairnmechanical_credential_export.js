@@ -130,7 +130,16 @@ function harness(opts) {
   opts = opts || {};
   const files = [];
   const toasts = [];
+  // ── mechCsvCell IS PART OF THE SUBJECT NOW (2026-09-18) ──────────────────
+  // mechCsvField() delegates to mechCsvCell(), which the CSV formula-injection
+  // sweep (885fd0b9, 2026-09-17 18:07) introduced. This list did not include
+  // it, so from that commit this suite ran 15 passed / 14 FAILED with
+  // `mechCsvCell is not defined` -- on mech_credentials, a Tier A record --
+  // and stayed that way unread. Third suite broken the same way by the same
+  // commit; the other two are sairnvet_controlled_export.js and
+  // sairncare_credential_export.js. PULLED FROM THE APP rather than stubbed.
   const src = [
+    grab('function mechCsvCell(v){', '\n'),
     grab('var MECH_TYPE_LABELS = {', '\n  };'),
     grab('var MECH_SECTION_LABELS = {', '\n  };'),
     grab('function mechCsvField(v) {', '\n  }'),

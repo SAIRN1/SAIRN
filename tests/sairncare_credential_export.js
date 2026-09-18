@@ -83,7 +83,16 @@ function harness(opts) {
   opts = opts || {};
   const files = [];
   const toasts = [];
+  // ── alfCsvCell IS PART OF THE SUBJECT NOW (2026-09-18) ───────────────────
+  // alfCsvField() delegates to alfCsvCell(), which the CSV formula-injection
+  // sweep (885fd0b9, 2026-09-17 18:07) introduced. This list did not include
+  // it, so from that commit this suite ran 4 passed / 12 FAILED with
+  // `alfCsvCell is not defined` -- on alf_staff_credentials, a Tier A record --
+  // and stayed that way unread. PULLED FROM THE APP rather than stubbed: a
+  // hand-written stand-in would let the real guard rot while every arm below
+  // kept passing.
   const src = [
+    grab('function alfCsvCell(v){', '\n'),
     grab('function alfCsvField(v){', '\n}'),
     grab('var ALF_EXPORTS={', '\n};'),
     grab('function alfExportDataset(key){', '\n}')
