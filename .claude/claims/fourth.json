@@ -1675,6 +1675,16 @@
       "claimed_at_epoch": 1789766904.4341786,
       "status": "released",
       "released_at": "2026-09-18T21:52:56Z"
+    },
+    {
+      "id": "fourth-1789770947",
+      "session": "fourth",
+      "subject": "dnt-ledger-arm-and-piac",
+      "task": "assert cells.length equals head.length in sairndental ledger export arm, delete piac.html, close open work row 604",
+      "claimed_at": "2026-09-18T22:35:47Z",
+      "claimed_at_epoch": 1789770947.3504386,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
