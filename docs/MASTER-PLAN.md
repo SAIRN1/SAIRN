@@ -54,7 +54,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 **Platform totals: 387 resources owned by an app, 200 test files attributed to one, 189 of those traced, 49 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **558** test files on disk in total and **515** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **559** test files on disk in total and **515** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -72,12 +72,12 @@ The table above names every contributor, which is necessary and is not enough: a
 
 | Contributor | Could be understating by | Direction | What that figure counts |
 |---|---|---|---|
-| `suites` | 358 | UNDER-counts | test files on disk attributed to no single app by path |
-| `traced` | 43 | UNDER-counts | test files no source ties to a stated requirement |
+| `suites` | 359 | UNDER-counts | test files on disk attributed to no single app by path |
+| `traced` | 44 | UNDER-counts | test files no source ties to a stated requirement |
 | `fault` | 29 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 430.** RSS for context: 362.
+**WORST CASE: 432.** RSS for context: 363.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
@@ -124,7 +124,7 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               558   tests/**, api/*.test.js
+  test files on disk               559   tests/**, api/*.test.js
   tests traced to a requirement    521   traceability_matrix.traced()
   declared fault probes             71   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
