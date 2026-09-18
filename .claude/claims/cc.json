@@ -1862,8 +1862,8 @@
       "task": "law_trust_reconcile undated-row money conservation and outstanding-item cleared tracking",
       "claimed_at": "2026-09-18T13:56:04Z",
       "claimed_at_epoch": 1789739764.1868386,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T14:25:40Z"
     }
   ]
 }
