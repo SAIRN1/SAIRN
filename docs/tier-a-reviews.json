@@ -769,6 +769,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-18T23:19:37Z",
+      "resources": [
+        "dnt_charges",
+        "sd_aiquotes",
+        "sd_fin_jobs",
+        "sd_invoices",
+        "sd_negotiated_prices",
+        "sd_order_history",
+        "sd_pricing_rules",
+        "sd_quote_requests",
+        "stonedesk_quote_history"
+      ],
+      "files": [
+        "api/dnt-bi.test.js",
+        "api/sd-data-unconfirmed-write.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "json-catch-null sweep: api/sd-data.js soft-delete now answers WROTE/MISSED/UNKNOWN instead of ok:true on every 2xx, and api/dnt-bi.js refuses an unreadable dataset read instead of serving zero rows. The generic soft-delete serves seven Tier A resources. What needs a second pair of eyes: (1) that 404 is the right answer for a zero-row PATCH match rather than 502 -- a caller that treats 404 as 'already gone' may now behave differently; (2) that the dnt-bi 502 cannot fire on a legitimately empty table, since a dashboard losing a real empty is the failure this fix could have introduced; (3) that wroteRow()'s UNKNOWN branch on a non-array body is not over-broad for any PostgREST response shape these paths can actually receive.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
