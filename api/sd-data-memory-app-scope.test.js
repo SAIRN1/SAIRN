@@ -51,7 +51,19 @@ test('it is derived from ROLES_BY_APP, which is the set that can pass the gate',
   // is exactly what this resource requires -- so the set the gate accepts and
   // the set that can pass it are the same set by construction.
   assert.match(SRC, /Object\.keys\(ROLES_BY_APP\)\.forEach/);
-  assert.match(SRC, /ROLES_BY_APP \} = require\('\.\/_lib\/auth'\)/);
+  // ── THE ANCHOR ROTTED, AND IT ROTTED ON A FORMATTING CHANGE (2026-09-18) ──
+  // This read /ROLES_BY_APP \} = require\('\.\/_lib\/auth'\)/ -- ROLES_BY_APP
+  // followed immediately by the closing brace. It went red the day
+  // `credentialStillActive` was added to the same destructure, which changed
+  // nothing about what this arm claims: ROLES_BY_APP still comes from
+  // _lib/auth. A false RED is cheaper than a false green and this one was
+  // loud, but it is still an arm asserting the SPELLING of an import rather
+  // than the fact of it, and the next import would break it again.
+  // Anchored on the fact now: the destructure contains ROLES_BY_APP, whatever
+  // else it contains, and it comes from _lib/auth.
+  assert.match(SRC,
+    /const\s*\{[^}]*\bROLES_BY_APP\b[^}]*\}\s*=\s*require\('\.\/_lib\/auth'\)/,
+    'ROLES_BY_APP is no longer imported from ./_lib/auth');
 });
 
 test('every app with a session is accepted -- including the one that was refused', () => {
@@ -206,7 +218,27 @@ test('slabs, profile and locations stay pinned to stonedesk', () => {
   // would turn a fix into a hole.
   const at = SRC.indexOf('const gateApp =');
   const line = SRC.slice(at, SRC.indexOf(';', at));
-  assert.match(line, /: 'stonedesk'/, 'the non-memory default is no longer stonedesk');
+  // ── THE SECOND ROTTED ANCHOR, AND THIS ONE HID A REAL QUESTION (2026-09-18)
+  // This read /: 'stonedesk'/ -- the ternary's else branch as a literal. It
+  // went red when the else branch became `(SD_GATE_APP[resource] ||
+  // 'stonedesk')`, a per-resource OVERRIDE MAP. The default is still
+  // stonedesk, so the arm's own sentence was still true and it failed anyway.
+  //
+  // But the override map is exactly what this arm exists to watch: the name
+  // says three resources "stay pinned to stonedesk", and the way that stops
+  // being true now is an entry appearing in SD_GATE_APP, not the default
+  // changing. So the arm asserts BOTH halves -- the default, and that the
+  // three named resources are absent from the override.
+  assert.match(line, /\|\|\s*'stonedesk'|:\s*'stonedesk'/,
+    'the non-memory default is no longer stonedesk');
+  const mapAt = SRC.indexOf('const SD_GATE_APP');
+  assert.ok(mapAt > 0, 'the per-resource gate-app override is gone -- re-read '
+                       + 'this arm rather than deleting it');
+  const map = SRC.slice(mapAt, SRC.indexOf(';', mapAt));
+  for (const pinned of ['slabs', 'profile', 'locations']) {
+    assert.ok(map.indexOf("'" + pinned + "'") === -1,
+      pinned + ' now follows a caller-supplied app instead of stonedesk: ' + map);
+  }
 });
 
 test('the app is validated BEFORE it is used as the expected session app', () => {
