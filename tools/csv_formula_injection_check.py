@@ -61,7 +61,8 @@ import os
 import re
 import sys
 
-CRITERIA_VERSION = '2026-09-18.1'   # third check added: unreachable call sites
+CRITERIA_VERSION = '2026-09-18.2'   # third check: unreachable call sites
+#                                     fourth check: the SINK pass
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -226,6 +227,91 @@ def scan_text(src):
     return raw, helpers, unreachable, orphan
 
 
+# ── THE FOURTH CHECK: THE SINK PASS (2026-09-18, cody) ──────────────────────
+# The three checks above all ask about a CONSTRUCTION or a HELPER -- something
+# this file has to RECOGNISE first. Its own closing paragraph has always named
+# the cost: "an export written with a CSV library, a template, or Array.join on
+# unquoted values is INVISIBLE to it -- and an export with no quoting at all is
+# invisible twice over, because there is no .replace to match."
+#
+# THAT WAS NOT ABOUT THE FUTURE. On 2026-09-18, with this file reporting 0 raw
+# constructions and 0 unguarded helpers across all 13 files, stonedesk.html held
+# SEVEN live export paths none of the three checks could see, six of them
+# wrapping cells in bare quotes with no `.replace` (so there was no token to
+# match) and one -- crExportCSV -- emitting `[a,b,c].join(',')` with no quoting
+# at all. Customer names, employee names, OSHA incident records.
+#
+# SO THIS ASKS THE QUESTION THAT NEEDS NOTHING RECOGNISED: is every place a CSV
+# actually LEAVES the app reached by a guard? The sink is the media type
+# `text/csv`, which a Blob and a data: URI both carry and a file INPUT
+# (`accept=".csv"`) does not -- which is why it is the media type and not the
+# extension.
+#
+# IT IS A POINTER, NOT A VERDICT, AND THE WINDOW IS WHY. "Reached" is
+# SINK_WINDOW characters of source text before the sink, not a call graph. A
+# guard applied in a helper defined far away is a false alarm here; a guard
+# named only in a nearby COMMENT is a false clear. Both directions are arms in
+# the lock, so neither is a surprise to whoever reads the output.
+SINK = re.compile(r'text/csv')
+SINK_WINDOW = 2500
+# The prefix is OPTIONAL and that is not cosmetic: api/_lib/csv-cell.js names
+# its helpers `csvCell` and `csvRow` with nothing in front, and a required
+# prefix reported the one module that exports the shared guard as unreached --
+# the same inversion HELPER_DECL already carries an explicit `|csvCell` for.
+GUARD_CALL = re.compile(r'\b[A-Za-z_$][\w$]*[Cc]sv(?:Cell|Field|Row)\s*\('
+                        r'|\bcsv(?:Cell|Field|Row)\s*\(')
+# AN ALIASED GUARD IS STILL A GUARD. sairnvet.html writes `var q = svCsvCell;`
+# and then calls `q(cell.textContent)` -- shorter code in a long export, and
+# genuinely guarded. Without this the pass reported both SAIRNvet exports as
+# unreached, which is the cry-wolf direction, and the FIRST version of this
+# pass did exactly that on its first real run.
+ALIAS_DECL = re.compile(r'(?:var|let|const)\s+([A-Za-z_$][\w$]*)\s*=\s*'
+                        r'([A-Za-z_$][\w$]*[Cc]sv(?:Cell|Field|Row)|'
+                        r'csv(?:Cell|Field|Row))\s*[;,\n]')
+
+# DECLARED EXEMPTIONS, EACH WITH THE SENTENCE THAT PUT IT THERE, and the
+# sentence is PRINTED. A list of bare names is where a real finding goes to be
+# forgotten -- the same reason `--rule not-citable` in the defect register
+# demands a note rather than accepting a bare refusal.
+SINK_EXEMPT = {
+    'sairnroofing.html': 'rfGlDownload() streams a CSV built SERVER-SIDE by '
+                         'api/_lib/roofing-gl-export.js, which is guarded and '
+                         'has its own suite; the client never builds a cell.',
+}
+
+
+def enclosing(src, pos):
+    """Name of the nearest preceding function declaration, or ''."""
+    m = None
+    for f in re.finditer(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\(', src[:pos]):
+        m = f
+    return m.group(1) if m else ''
+
+
+def scan_sinks(src):
+    """[(line, function_name, context)] for CSV sinks with no guard call in the
+    window. Sinks within 400 chars are one export path, counted once."""
+    aliases = set(m.group(1) for m in ALIAS_DECL.finditer(src))
+    alias_call = (re.compile(r'\b(?:%s)\s*\('
+                             % '|'.join(sorted(map(re.escape, aliases))))
+                  if aliases else None)
+    out, last = [], -10 ** 9
+    for m in SINK.finditer(src):
+        if m.start() - last <= 400:
+            last = m.start()
+            continue
+        last = m.start()
+        back = src[max(0, m.start() - SINK_WINDOW):m.start()]
+        if GUARD_CALL.search(back):
+            continue
+        if alias_call and alias_call.search(back):
+            continue
+        line = src[:m.start()].count('\n') + 1
+        ctx = ' '.join(src[max(0, m.start() - 90):m.start() + 20].split())
+        out.append((line, enclosing(src, m.start()), ctx[-100:]))
+    return out
+
+
 # ── THE BLIND LOCK ──────────────────────────────────────────────────────────
 FIXTURES = [
     ('an UNGUARDED inline cell is a raw site',
@@ -288,6 +374,78 @@ function csvCell(v) {
      0, [('csvCell', True)]),
 ]
 
+# The SINK pass gets its own lock, in both directions, for the same reason the
+# passes above have one: criteria fixed against synthetic fixtures BEFORE any
+# real file is read. The first two are REAL shapes that stood in stonedesk.html
+# while this file reported the platform clean.
+SINK_FIXTURES = [
+    ('THE REAL ONE: bare quotes, no .replace -- invisible to the RAW pattern '
+     'because there is no token for it to match',
+     """function invExportCSV(){
+  var csv = rows.map(function(r){ return r.map(function(c){ return '"'+(c||'')+'"'; }).join(','); }).join('\\n');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+}""",
+     1, 'invExportCSV'),
+
+    ('THE ONE INVISIBLE TWICE OVER: no quoting at all, so there is no .replace '
+     'AND no quote pair',
+     """function crExportCSV(){
+  var csv = 'Date,Payee\\n' + arr.map(function(e){ return [e.date,e.payee].join(','); }).join('\\n');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+}""",
+     1, 'crExportCSV'),
+
+    ('CONTROL: a sink reached by a guard helper is NOT reported -- without this '
+     'arm the pass flags every export on the platform and means nothing',
+     """function okExportCSV(){
+  var csv = rows.map(function(r){ return r.map(function(x){ return sdCsvCell(x); }).join(','); }).join('\\n');
+  var bl = new Blob([csv], {type:'text/csv'});
+}""",
+     0, ''),
+
+    ('CONTROL: a *CsvRow helper counts as a guard call too, so factoring the '
+     'row out does not score worse than inlining the cell',
+     """function rowExportCSV(){
+  var csv = rows.map(function(r){ return csvRow(r); }).join('\\n');
+  var bl = new Blob([csv], {type:'text/csv'});
+}""",
+     0, ''),
+
+    ('CONTROL: a file INPUT is not an export. accept=".csv" carries the '
+     'extension and NOT the media type, which is why the sink is text/csv',
+     """<input type="file" accept=".csv" onchange="importRows(event)">""",
+     0, ''),
+
+    ('CONTROL: an ALIASED guard is still a guard. sairnvet.html writes '
+     '`var q = svCsvCell;` and calls q() -- the first version of this pass '
+     'reported both its exports as unreached, which is the cry-wolf direction',
+     """function svExportDoseAudit(){
+  var q = svCsvCell;
+  table.querySelectorAll('tr').forEach(function(row){ rowData.push(q(row.textContent)); });
+  var blob = new Blob([csv], {type:'text/csv'});
+}""",
+     0, ''),
+
+    ('CONTROL: an alias to something that is NOT a guard does not launder it -- '
+     'otherwise any `var q = f;` in the window would silence the pass',
+     """function badExportCSV(){
+  var q = escapeHtml;
+  rowData.push(q(row.textContent));
+  var blob = new Blob([csv], {type:'text/csv'});
+}""",
+     1, 'badExportCSV'),
+
+    ('THE FALSE CLEAR THIS PASS CAN GIVE, RECORDED RATHER THAN HIDDEN: a guard '
+     'named only in a COMMENT satisfies the window. The pass is a pointer, not '
+     'a verdict, and this arm is what stops that sentence being decoration',
+     """function sneakyExportCSV(){
+  // sdCsvCell( is deliberately NOT used here, see note
+  var csv = rows.map(function(r){ return r.join(','); }).join('\\n');
+  var bl = new Blob([csv], {type:'text/csv'});
+}""",
+     0, ''),
+]
+
 
 def selftest():
     ok = True
@@ -338,6 +496,17 @@ def selftest():
     check('CONTROL: the two differ -- without this both arms would pass on a '
           'predicate that never fires', (len(unre) > 0) != (len(unre2) > 0))
 
+    print('\n1c. the SINK lock: is every place a CSV LEAVES the app reached by')
+    print('    a guard -- the question that needs no construction to be')
+    print('    recognisable, in both directions')
+    for name, src, want, want_fn in SINK_FIXTURES:
+        got = scan_sinks(src)
+        check('%-3d sink %s' % (len(got), name), len(got) == want,
+              'expected %d, got %d: %r' % (want, len(got), got))
+        if want and got:
+            check('     ...and it names the function: %s' % want_fn,
+                  got[0][1] == want_fn, 'got %r' % (got[0][1],))
+
     print('\n2. the counter can tell the FIX from the DEFECT')
     # The first version of the sweep script counted the helper it had just
     # inserted as a raw site, so every fixed file reported the same number
@@ -380,14 +549,16 @@ def main(argv):
                   'dirty' % (rel, e))
             return 2
         raw, helpers, unreachable, orphan = scan_text(src)
-        if raw or helpers or unreachable:
+        sinks = [] if rel in SINK_EXEMPT else scan_sinks(src)
+        if raw or helpers or unreachable or sinks:
             rows.append({'file': rel, 'raw': raw, 'helpers': helpers,
-                         'unreachable': unreachable, 'orphan': orphan})
+                         'unreachable': unreachable, 'orphan': orphan,
+                         'sinks': sinks})
 
     if '--json' in argv:
         print(json.dumps({'criteria_version': CRITERIA_VERSION, 'files': rows},
                          indent=1))
-        return 1 if any(r['raw'] or r.get('unreachable')
+        return 1 if any(r['raw'] or r.get('unreachable') or r.get('sinks')
                         or [h for h in r['helpers'] if not h[1]]
                         for r in rows) else 0
 
@@ -408,6 +579,9 @@ def main(argv):
           'run at all' % nunre)
     print('  helpers never called       : %d   <- a sweep that inserted a guard '
           'and replaced nothing' % norph)
+    nsink = sum(len(r.get('sinks') or []) for r in rows)
+    print('  SINKS with no guard nearby : %d   <- a CSV leaving the app by a '
+          'path no guard reaches' % nsink)
     print('')
     for r in rows:
         marks = ['%s %s' % ('GUARDED  ' if g else '*** NO GUARD', n)
@@ -425,15 +599,34 @@ def main(argv):
         for n, g, why in r['helpers']:
             if not g:
                 print('      *** %s : %s' % (n, why))
+        for line, fname, ctx in (r.get('sinks') or []):
+            print('      *** SINK L%-6d %s()  %s'
+                  % (line, fname or '<top level>', ctx))
+    if SINK_EXEMPT:
+        print('')
+        print('  SINKS DECLARED EXEMPT, WITH THE REASON, because a list of bare')
+        print('  names is where a real finding goes to be forgotten:')
+        for f, why in sorted(SINK_EXEMPT.items()):
+            print('    %-24s %s' % (f, why))
     print('')
-    print('  WHAT A ZERO HERE DOES NOT MEAN. This finds cells built by the')
-    print('  string-concatenation shape this platform uses. A future export')
+    print('  FOUR CHECKS, TWO QUESTIONS, AND THEY FAIL DIFFERENTLY.')
+    print('  Checks 1-3 ask about something this file has to RECOGNISE -- a')
+    print('  construction, a helper, a call. They find cells built by the')
+    print('  string-concatenation shape this platform uses, and an export')
     print('  written with a CSV library, a template, or Array.join on unquoted')
-    print('  values is INVISIBLE to it -- and an export with no quoting at all')
-    print('  is invisible twice over, because there is no .replace to match.')
-    print('  The naming convention is what makes coverage checkable; a new')
-    print('  export path that skips it is not detected by this file.')
-    return 1 if (nraw or bad or nunre or norph) else 0
+    print('  values is INVISIBLE to them -- invisible twice over with no')
+    print('  quoting at all, because there is no .replace to match. That is')
+    print('  not hypothetical: SEVEN live export paths in stonedesk.html stood')
+    print('  through the 2026-09-17 sweep AND through this file reporting the')
+    print('  platform clean, until the sink pass was added on 2026-09-18.')
+    print('  Check 4 asks whether every place a CSV LEAVES the app is reached')
+    print('  by a guard, which needs nothing recognised. Its own limit:')
+    print('  "reached" is %d characters of source TEXT, not a call graph. A'
+          % SINK_WINDOW)
+    print('  guard defined far away is a false alarm here; a guard named only')
+    print('  in a nearby COMMENT is a false clear. Both are arms in the lock.')
+    print('  A SINK line is a pointer at an export path worth reading.')
+    return 1 if (nraw or bad or nunre or norph or nsink) else 0
 
 
 def selftest_quiet():

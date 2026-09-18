@@ -12021,7 +12021,14 @@ function invExportCSV() {
   sd_invoices.forEach(function(i) {
     rows.push([i.num, i.customer, i.desc, i.amount, i.deposit, i.balance, i.status, i.date, i.due, i.method]);
   });
-  var csv = rows.map(function(r) { return r.map(function(c) { return '"' + (c||'') + '"'; }).join(','); }).join('\n');
+  // MISSED BY THE 2026-09-17 SWEEP (885fd0b9) AND BY ITS CHECKER. This wrapped
+  // each cell in bare quotes with no `.replace(/"/g,'""')`, which is the shape
+  // tools/csv_formula_injection_check.py matches on -- so an export path with
+  // WORSE quoting than the ones it fixed was invisible to it, and the tool
+  // reported 0 raw constructions across the platform while this stood. Two
+  // defects in one line: a customer name starting with = ran as a formula, and
+  // a customer name CONTAINING a quote broke the cell boundary.
+  var csv = rows.map(function(r) { return r.map(function(x) { return sdCsvCell(x); }).join(','); }).join('\n');
   var a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
   a.download = 'stonedesk-invoices-' + sdLocalToday() + '.csv';
@@ -19745,8 +19752,13 @@ function crRenderExpenses(arr) {
 
 function crExportCSV() {
   var arr = JSON.parse(localStorage.getItem(_crExpKey) || '[]');
+  // ALSO MISSED BY THE 2026-09-17 SWEEP, and this one was invisible TWICE OVER
+  // exactly as tools/csv_formula_injection_check.py predicts in its own closing
+  // paragraph: there was no quoting at all, so there was no `.replace` for the
+  // checker to match on. A payee containing a comma shifted every column after
+  // it, and a payee starting with = ran as a formula.
   var csv = 'Date,Payee,Category,Amount,Memo\n' +
-    arr.map(function(e){ return [e.date,e.payee,e.category,e.amount,e.memo].join(','); }).join('\n');
+    arr.map(function(e){ return [e.date,e.payee,e.category,e.amount,e.memo].map(function(x){ return sdCsvCell(x); }).join(','); }).join('\n');
   var a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
   a.download = 'stonedesk-expenses.csv'; a.click();
@@ -24846,7 +24858,7 @@ function custExportCSV(){
   if(!sdCustomers.length){notify('No customers to export','warn');return;}
   var rows=[['Name','Phone','Email','Project','Quote','Status','Referral','Material','Added']];
   sdCustomers.forEach(function(c){rows.push([c.name,c.phone,c.email,c.project,c.quote,c.status,c.referral||'',c.material||'',new Date(c.createdAt).toLocaleDateString()]);});
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(x){return sdCsvCell(x);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='stonedesk-customers-'+sdLocalToday()+'.csv';a.click();
 }
 
@@ -26331,7 +26343,7 @@ function pmExportDeals() {
   Object.entries(sdPricingRules.vendorDiscounts).forEach(function(e){ if(e[1]>0) rows.push(['Vendor Discount',e[0],'ALL',e[1]+'%']); });
   sdPricingRules.categoryDiscounts.forEach(function(r){ rows.push(['Category Discount',r.vendor,r.category,r.discount+'%']); });
   Object.entries(sdPricingRules.productOverrides).forEach(function(e){ rows.push(['Product Override',e[0],'','$'+e[1]]); });
-  var csv = rows.map(function(r){return r.map(function(x){return '"'+x+'"';}).join(',');}).join('\n');
+  var csv = rows.map(function(r){return r.map(function(x){return sdCsvCell(x);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='stonedesk-negotiated-prices-'+sdLocalToday()+'.csv';a.click();
 }
@@ -26944,7 +26956,7 @@ function safetyExport() {
   sdSafetyData.training.forEach(function(t){rows.push(['Training',t.employee,t.type,t.date,t.expiry?'Expires '+t.expiry:'No expiry']);});
   sdSafetyData.incidents.forEach(function(i){rows.push(['Incident',i.employee||'Unknown',i.type,i.datetime.split('T')[0],i.oshaReportable==='yes'?'OSHA Reportable':'Non-reportable']);});
   sdSafetyData.inspections.forEach(function(i){rows.push(['Inspection',i.equipment,i.type,i.date,i.result]);});
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(x){return sdCsvCell(x);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='stonedesk-safety-report-'+sdLocalToday()+'.csv';a.click();
 }
@@ -27398,7 +27410,7 @@ function finExport(){
   if(!sdFinJobs.length){notify('No jobs to export','warn');return;}
   var rows=[['Customer','Date','Material','Quote','Slab Cost','Labor','Consumables','Install','COGS','Profit','Margin%','Sqft']];
   sdFinJobs.forEach(function(j){rows.push([j.customer,j.date.split('T')[0],j.material,j.quote,j.slab,j.hours*j.rate,j.consumables,j.install,j.cogs,j.profit,j.margin,j.sqft]);});
-  var csv=rows.map(function(r){return r.map(function(x){return '"'+(x||'')+'"';}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(x){return sdCsvCell(x);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='stonedesk-job-financials-'+sdLocalToday()+'.csv';a.click();
 }
@@ -30861,7 +30873,7 @@ document.addEventListener('DOMContentLoaded', function() {
     d.forEach(function(x){rows.push([x.emp,x.date,x.inn,x.out,x.hrs.toFixed(1),x.job||"",tsCell(x)]);});
     var expTot=tsTotal(d);
     if(expTot.unpriced)rows.push(["","","","","","","NOTE: "+expTot.unpriced+" row(s) above have no hourly rate on file and are blank in Pay Est."]);
-    var csv=rows.map(function(r){return r.map(function(c){return "\""+String(c).replace(/"/g,"\"\"")+"\""}).join(",");}).join("\n");
+    var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(",");}).join("\n");
     var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
     a.download="timesheets-"+sdShopSlug()+"-"+today+".csv";a.click();
   };
@@ -40775,7 +40787,7 @@ function taxExport(){
   var invs=sd_invoices||[];
   var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
   var rows=[['Type','Date','Description','Amount']].concat(invs.map(function(i){return['Revenue',i.date,i.customer+' — '+i.desc,i.amount];})).concat(bills.map(function(b){return['Expense',b.due,b.vendor+' — '+(b.category||''),-(b.amt||0)];}));
-  var csv=rows.map(function(r){return r.map(function(c){returnsdCsvCell(c);}).join(',');}).join('\n');
+  var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='StoneDesk_TaxReport_'+sdLocalToday()+'.csv';a.click();
 }
 

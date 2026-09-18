@@ -4713,7 +4713,7 @@ function csv(type){
     toast('No CSV export is built for "'+type+'" yet — nothing was downloaded.',5000);
     return;
   }
-  var c=rows.map(function(r){return r.map(function(x){returnsbCsvCell(x);}).join(',');}).join('\n');
+  var c=rows.map(function(r){return r.map(function(x){return sbCsvCell(x);}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
   // Export is never blocked (final-review Finding 2, 2026-08-10) -- a
   // downloadable CSV with unflagged payroll issues is worse than the
