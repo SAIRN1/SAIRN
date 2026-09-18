@@ -19,11 +19,22 @@ as one inline one-liner copied over and over:
 
     '"' + String(c).replace(/"/g, '""') + '"'
 
-── TWO THINGS IT CHECKS, AND THEY FAIL DIFFERENTLY ──────────────────────────
+── THREE THINGS IT CHECKS, AND THEY FAIL DIFFERENTLY ───────────────────────
   1. A RAW CELL CONSTRUCTION anywhere outside a guard helper. That is an
      unguarded export path.
   2. A GUARD HELPER whose body no longer contains the guard. That is worse,
      because every call site still reads as covered.
+  3. A CALL TO A HELPER THAT IS NOT DEFINED. That is WORST, and it was added
+     on 2026-09-18 because the sweep this file was written to verify SHIPPED
+     TWO OF THEM. Where the original read `{return'"'+String(x||'')...}` with
+     no space after `return`, replacing the quoted expression glued the
+     keyword to the new call -- `{returnsbCsvCell(x);}` -- which is a call to
+     an undefined function. The export does not lose its guard, IT THROWS.
+     Nothing caught it: `node --check` passes on a valid expression
+     statement, the raw count correctly went to zero, and this file reported
+     the app GUARDED. Three checks agreeing, none of them asking whether the
+     NEW code was reachable. A fourth signal comes free -- the helper is then
+     declared and never called.
 
 ── WHY IT ACCEPTS TWO GUARD SHAPES ─────────────────────────────────────────
 `sairnroofing.html`'s rfCsvCell() was written with a guard BEFORE this sweep and
@@ -50,7 +61,7 @@ import os
 import re
 import sys
 
-CRITERIA_VERSION = '2026-09-17.1'
+CRITERIA_VERSION = '2026-09-18.1'   # third check added: unreachable call sites
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -165,7 +176,54 @@ def scan_text(src):
         if 0 <= cut < (m.start() - a):
             continue
         raw.append((src[:m.start()].count('\n') + 1, ' '.join(line.split())[:110]))
-    return raw, helpers
+    # ── THE THIRD CHECK, AND MY OWN SWEEP IS WHY IT EXISTS (2026-09-18) ─────
+    # The 2026-09-17 sweep replaced 53 inline constructions with calls to a
+    # named helper. In two files the original read `{return'"'+String(x||'')...}`
+    # with NO SPACE after `return`, and replacing only the quoted expression
+    # glued the keyword to the new call:
+    #
+    #     {return'"'+String(x||'')...}   ->   {returnsbCsvCell(x);}
+    #
+    # That is a call to an UNDEFINED function. It throws a ReferenceError, so
+    # the export does not merely lose its guard -- IT DOES NOT RUN AT ALL.
+    #
+    # NOTHING I BUILT COULD SEE IT, AND THAT IS THE POINT. `node --check` on
+    # every script block PASSED, because `returnsbCsvCell(x);` is a perfectly
+    # valid expression statement. The raw-construction count went to ZERO,
+    # correctly -- the construction really was gone. And this file reported both
+    # apps GUARDED, because a helper existed and carried the guard. Three checks
+    # agreeing, all three answering a question that was not the one that
+    # mattered: I verified that the OLD code was gone and never that the NEW
+    # code was reachable.
+    #
+    # Found by cody, on my work, the morning after. Reported as its own state
+    # because it is WORSE than a raw construction: an unguarded export still
+    # produces a file.
+    defined = set(re.findall(
+        r'(?:function\s+|(?:var|let|const)\s+)([A-Za-z_$][\w$]*'
+        r'(?:CsvCell|CsvField))\b', src))
+    defined |= set(re.findall(r'require\([^)]*\)\.(\w*[Cc]svCell)\b', src))
+    defined |= set(re.findall(r'\bconst\s*\{[^}]*\b(csvCell|csvRow)\b', src))
+    unreachable = []
+    for m in re.finditer(r'\b([A-Za-z_$][\w$]*(?:CsvCell|CsvField))\s*\(', src):
+        name = m.group(1)
+        if name in defined:
+            continue
+        a = src.rfind('\n', 0, m.start()) + 1
+        unreachable.append((src[:m.start()].count('\n') + 1, name,
+                            ' '.join(src[a:src.find('\n', m.end())].split())[:96]))
+
+    # AND THE INVERSE: a file that declares a guard helper and never calls it.
+    # That is a sweep that inserted the helper and replaced nothing, which would
+    # also show zero raw constructions and a guarded helper.
+    orphan = []
+    for name, _g, _w in helpers:
+        calls = len(re.findall(r'\b' + re.escape(name) + r'\s*\(', src))
+        # The declaration itself matches, so one occurrence means zero calls.
+        if calls <= 1 and not re.search(r'=\s*' + re.escape(name) + r'\b', src):
+            orphan.append(name)
+
+    return raw, helpers, unreachable, orphan
 
 
 # ── THE BLIND LOCK ──────────────────────────────────────────────────────────
@@ -245,7 +303,7 @@ def selftest():
     print('\n1. the blind lock: criteria fixed against synthetic fixtures in BOTH')
     print('   directions BEFORE any real file is read')
     for name, src, want_raw, want_helpers in FIXTURES:
-        raw, helpers = scan_text(src)
+        raw, helpers, _unre, _orph = scan_text(src)
         check('%-3d raw  %s' % (len(raw), name), len(raw) == want_raw,
               'expected %d raw, got %d' % (want_raw, len(raw)))
         got = dict((n, g) for n, g, _ in helpers)
@@ -253,12 +311,39 @@ def selftest():
             check('     %s -> %s' % (hn, 'GUARDED' if hg else 'UNGUARDED'),
                   got.get(hn) == hg, 'got %r' % (got.get(hn),))
 
+    # ── THE THIRD CHECK, LOCKED IN BOTH DIRECTIONS (2026-09-18) ────────────
+    # These fixtures exist because the real defect they describe passed every
+    # check on this platform: node --check on the script block, a raw-site
+    # count of zero, and this file reporting the app GUARDED. Three green
+    # answers to questions that were not the one that mattered.
+    print('\n1b. the UNREACHABLE call site -- the defect my own sweep shipped')
+    GLUED = (
+        "function sbCsvCell(v){var s=v==null?'':String(v);"
+        "if(/^[=+\\-@]/.test(s))s=\"'\"+s;"
+        "return '\"'+s.replace(/\"/g,'\"\"')+'\"';}\n"
+        "var c=rows.map(function(r){return r.map(function(x){"
+        "returnsbCsvCell(x);}).join(',');});\n")
+    WIRED = GLUED.replace('returnsbCsvCell(x);', 'return sbCsvCell(x);')
+    _r, _h, unre, orph = scan_text(GLUED)
+    check('a keyword glued to the call is UNREACHABLE', len(unre) == 1, unre)
+    check('...and it names the undefined identifier, not the helper',
+          bool(unre) and unre[0][1] == 'returnsbCsvCell', unre)
+    check('...and the helper is ALSO reported as never called -- two '
+          'independent signals on one defect', orph == ['sbCsvCell'], orph)
+    check('CONTROL: zero raw constructions either way, which is exactly why '
+          'the raw count could not see this', len(_r) == 0, _r)
+    _r2, _h2, unre2, orph2 = scan_text(WIRED)
+    check('the SAME source with the space restored is clean',
+          not unre2 and not orph2, (unre2, orph2))
+    check('CONTROL: the two differ -- without this both arms would pass on a '
+          'predicate that never fires', (len(unre) > 0) != (len(unre2) > 0))
+
     print('\n2. the counter can tell the FIX from the DEFECT')
     # The first version of the sweep script counted the helper it had just
     # inserted as a raw site, so every fixed file reported the same number
     # before and after -- a checker that cannot tell them apart proves nothing.
     guarded = FIXTURES[2][1]
-    raw, _ = scan_text(guarded)
+    raw, _h, _u, _o = scan_text(guarded)
     check('a file containing ONLY the guard has zero raw sites', len(raw) == 0, raw)
 
     print('\n' + ('  all arms pass' if ok else '  ARMS FAILED'))
@@ -294,14 +379,16 @@ def main(argv):
             print('COULD NOT READ %s (%s) -- counted as neither clean nor '
                   'dirty' % (rel, e))
             return 2
-        raw, helpers = scan_text(src)
-        if raw or helpers:
-            rows.append({'file': rel, 'raw': raw, 'helpers': helpers})
+        raw, helpers, unreachable, orphan = scan_text(src)
+        if raw or helpers or unreachable:
+            rows.append({'file': rel, 'raw': raw, 'helpers': helpers,
+                         'unreachable': unreachable, 'orphan': orphan})
 
     if '--json' in argv:
         print(json.dumps({'criteria_version': CRITERIA_VERSION, 'files': rows},
                          indent=1))
-        return 1 if any(r['raw'] or [h for h in r['helpers'] if not h[1]]
+        return 1 if any(r['raw'] or r.get('unreachable')
+                        or [h for h in r['helpers'] if not h[1]]
                         for r in rows) else 0
 
     print('CSV FORMULA INJECTION CHECK -- criteria %s, report only'
@@ -309,12 +396,18 @@ def main(argv):
     st = selftest_quiet()
     print('  blind lock: %s' % st)
     nraw = sum(len(r['raw']) for r in rows)
+    nunre = sum(len(r.get('unreachable') or []) for r in rows)
+    norph = sum(len(r.get('orphan') or []) for r in rows)
     bad = [(r['file'], h) for r in rows for h in r['helpers'] if not h[1]]
     print('  files with a CSV cell path : %d' % len(rows))
     print('  RAW cell constructions     : %d   <- an unguarded export path' % nraw)
     print('  guard helpers              : %d' % sum(len(r['helpers']) for r in rows))
     print('  helpers WITHOUT a guard    : %d   <- worse: the call sites still '
           'read as covered' % len(bad))
+    print('  UNREACHABLE helper calls   : %d   <- WORST: the export does not '
+          'run at all' % nunre)
+    print('  helpers never called       : %d   <- a sweep that inserted a guard '
+          'and replaced nothing' % norph)
     print('')
     for r in rows:
         marks = ['%s %s' % ('GUARDED  ' if g else '*** NO GUARD', n)
@@ -322,6 +415,13 @@ def main(argv):
         print('  %-24s %s' % (r['file'], '; '.join(marks) or '-'))
         for line, text in r['raw']:
             print('      *** RAW  L%-7d %s' % (line, text))
+        for line, nm, text in (r.get('unreachable') or []):
+            print('      *** UNREACHABLE  L%-7d %s -- NOT DEFINED, so this '
+                  'export throws' % (line, nm))
+            print('          %s' % text)
+        for nm in (r.get('orphan') or []):
+            print('      *** NEVER CALLED  %s -- a guard nothing routes '
+                  'through' % nm)
         for n, g, why in r['helpers']:
             if not g:
                 print('      *** %s : %s' % (n, why))
@@ -333,7 +433,7 @@ def main(argv):
     print('  is invisible twice over, because there is no .replace to match.')
     print('  The naming convention is what makes coverage checkable; a new')
     print('  export path that skips it is not detected by this file.')
-    return 1 if (nraw or bad) else 0
+    return 1 if (nraw or bad or nunre or norph) else 0
 
 
 def selftest_quiet():
