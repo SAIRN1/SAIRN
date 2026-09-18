@@ -1417,8 +1417,8 @@
       "task": "fix returnsbCsvCell runtime break and two unguarded stonedesk CSV exports the sweep missed",
       "claimed_at": "2026-09-18T11:58:38Z",
       "claimed_at_epoch": 1789732718.847414,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T13:12:28Z"
     }
   ]
 }
