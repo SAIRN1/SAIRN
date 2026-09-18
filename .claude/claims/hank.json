@@ -2213,8 +2213,8 @@
       "task": "open work index rows whose named artifacts moved after the row was written",
       "claimed_at": "2026-09-18T14:04:02Z",
       "claimed_at_epoch": 1789740242.414772,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T15:29:53Z"
     },
     {
       "id": "hank-1789742656",
