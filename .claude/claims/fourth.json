@@ -1673,8 +1673,8 @@
       "task": "discharge cc authored overdue Tier A review obligations oldest first",
       "claimed_at": "2026-09-18T21:28:24Z",
       "claimed_at_epoch": 1789766904.4341786,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T21:52:56Z"
     }
   ]
 }
