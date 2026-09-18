@@ -243,3 +243,33 @@ clear the same bar).
   rows should be durable and the 08-26 rows should not be trusted at all — but
   that is a prediction from a shape, tested once, on two documents. Re-derive
   before building. The grep is cheap and the wasted build is not.
+
+---
+
+## Spot-verified 2026-09-18 (Hank) — the four "Absent → built" rows
+
+**THE CLAIMS HOLD, AND ONE NEEDED A SECOND LOOK TO SAY SO.** This document is
+the oldest of the current re-derivations and the day since has been heavy, so
+its four closures were checked against the tree rather than re-read:
+
+| row | artefact cited | on disk |
+|---|---|---|
+| SAIRNroofing B1 | `api/_lib/roofing-asset-registry.js`, `sql/sairnroofing_asset_registry_schema.sql` | present |
+| SAIRNroofing B4 | `api/_lib/roofing-safety.js`, `sql/sairnroofing_safety_schema.sql` | present |
+| SAIRNdental A7 | `api/_lib/dental-gfe.js`, `sql/sairndental_gfe_schema.sql` | present |
+| SAIRNsenior B3 | `sql/sairnsenior_franchise_schema.sql`, `api/_lib/sairnsenior-franchise.test.js` | present |
+
+**SAIRNsenior B3 LOOKED LIKE A TEST WITH NO IMPLEMENTATION**, which would have
+been a real finding — a suite citing a feature that does not exist. It is not:
+the implementation lives in `sairnsenior.html` and the suite drives it verbatim
+from the app file, which is this platform's normal shape for panel logic. **81 of
+81 assertions pass**, run rather than assumed. Recording the near-miss because
+the citation naming only a `.test.js` is exactly what a fabricated closure would
+also look like, and the difference took a run to establish.
+
+**AND THE RECONCILIATION IS NOW COMPLETE ACROSS EVERY AUDIT.** roofing, dental,
+senior and mechanical were re-derived 2026-09-17; build/vet/biz/grounds/cash
+here on 2026-09-15; StoneDesk on 2026-09-17. **No untouched rows remain.** What
+is still open is open by decision or by hardware, not for want of a pass —
+StoneDesk row 4 (slab-scanner, hardware) and row 6 (QuickBooks, Michael's call
+of 2026-09-02) are the residue, and both are named in the open-work index.
