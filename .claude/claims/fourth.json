@@ -1693,8 +1693,8 @@
       "task": "sweep for exported CSV rows re-parsed by splitting on commas and indexed by header position, apply the length guard",
       "claimed_at": "2026-09-18T22:44:47Z",
       "claimed_at_epoch": 1789771487.5709567,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-18T22:58:44Z"
     }
   ]
 }
