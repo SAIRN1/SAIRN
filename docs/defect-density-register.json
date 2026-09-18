@@ -8888,7 +8888,7 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the banner and its test arm were written in the same change and asserted the same string, so neither could contradict the other"
     },
     {
-      "commit": "a13fa6a66ad2",
+      "commit": "f090879a88bb",
       "date": "2026-09-18",
       "subject": "fix(sairnlaw): a billable hour could reach the server with no UTBMS code -- refused by nothing at either end",
       "files": [
