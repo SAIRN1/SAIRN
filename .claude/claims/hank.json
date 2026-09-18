@@ -2165,6 +2165,16 @@
       "claimed_at_epoch": 1789728754.6909075,
       "status": "released",
       "released_at": "2026-09-18T11:05:14Z"
+    },
+    {
+      "id": "hank-1789729763",
+      "session": "hank",
+      "subject": "service-role-gate-v4",
+      "task": "tier A gate blind to variable-dispatched resources SV_RESOURCES",
+      "claimed_at": "2026-09-18T11:09:23Z",
+      "claimed_at_epoch": 1789729763.9266112,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
