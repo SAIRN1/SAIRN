@@ -1844,6 +1844,16 @@
       "claimed_at_epoch": 1789735303.8701427,
       "status": "released",
       "released_at": "2026-09-18T13:28:41Z"
+    },
+    {
+      "id": "cc-1789738140",
+      "session": "cc",
+      "subject": "sairncare-roofing-dental",
+      "task": "reachability investigation of alf_claim_routes alf_signals rf_contingency_rules plus dental estimate null rendering",
+      "claimed_at": "2026-09-18T13:29:00Z",
+      "claimed_at_epoch": 1789738140.8035433,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
