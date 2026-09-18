@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; `all_tests()` MISSES 16 REAL TEST FILES, so the denominator under every coverage figure on this platform is 555 when it is 571 &mdash; and `master-plan.md` publishes TWO different values for the same quantity in one run** | **MEASURED 2026-09-18 (Cody), NOT FIXED, and deliberately so** &mdash; changing a shared denominator moves every published coverage number at once, which is a decision rather than a patch | `api/_resources/app-boundary.test.js`, `api/_resources/extra-actions.test.js`, `api/sairncash/stripe-webhook.test.js`, `api/sairndental/public-book-guardian.test.js`, `tests/X_probe.py`, `tests/sairndental_settings_merge_base.js` |
 | **&#9888; TEN OF ELEVEN third-party fetches have NO timeout at all &mdash; and the most exposed one had no size limit either, on an endpoint anyone can call** | **AUDITED AND HIGHEST-RISK HARDENED 2026-09-17 (Hank)** &mdash; `api/bridge.js` `proxy_get` now bounded in time, size and concurrency; 18 arms in `api/bridge-push-auth.test.js`, 4 mutations killed. ** | `api/bridge-push-auth.test.js` |
 | **&#9989; THE SECOND WATCHDOG IS GREEN FOR THE FIRST TIME &mdash; two stacked defects, and the outer one had hidden the inner one for the tool&rsquo;s entire life** | **VERIFIED END TO END 2026-09-17 (Hank)** at 14:47:29Z, GitHub Actions run **#9 success**. `watchdog_url()` + the `Response` unpack in `tools/cron_liveness_check.py`; `tests/run_cron_liveness_probe.py | `tests/run_cron_liveness_probe.py` |
 | **Twelve red suites cleared &mdash; and ELEVEN OF TWELVE were the PROBE, not the thing it tests** | **FIXED 2026-09-17 (Cody)** &mdash; 32 &rarr; 17 red over 411 files; `docs/known-red-suites.json` re-measured; 3 new Tier A negative controls (41 &rarr; 44 of 157) | `api/license-trial-gate.test.js` |
@@ -637,7 +638,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 555   tests/**, api/*.test.js
-  open-work rows citing a test       270   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       271   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
