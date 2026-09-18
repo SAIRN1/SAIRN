@@ -2185,6 +2185,16 @@
       "claimed_at_epoch": 1789730725.2008722,
       "status": "released",
       "released_at": "2026-09-18T12:09:44Z"
+    },
+    {
+      "id": "hank-1789733542",
+      "session": "hank",
+      "subject": "sairnvet",
+      "task": "peerconsult 64KB check rejection svSyncSuppressed no finally hydration additive disclosure",
+      "claimed_at": "2026-09-18T12:12:22Z",
+      "claimed_at_epoch": 1789733542.0309339,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
