@@ -8529,39 +8529,6 @@
       "recurrence_open": "The SINK pass matches source text within 2500 characters, not a call graph, so a guard applied through a helper defined far away reads as unreached and a guard named only in a nearby COMMENT reads as a false clear. Both are arms in the lock rather than repairs. Nothing here covers an export built server-side and streamed, beyond one declared exemption."
     },
     {
-      "commit": "4f674484544d",
-      "date": "2026-09-18",
-      "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
-      "files": [
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md",
-        "sairnscape.html",
-        "tests/sairnscape_outbound_queue.js"
-      ],
-      "lines_added": 559,
-      "lines_removed": 18,
-      "app": "sairnscape",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "scpSendDesignToQuote disabled the send button and relabelled it 'Sent to Quoting (Q-...)' UNCONDITIONALLY, three lines before the branch that decided whether either write had landed -- so a quote that never reached the server showed the same disabled button and the same 'Sent to Quoting' label as one that did, while the toast beside it said to try again with a connection. SAIRNscape also had no retry path at all, and scpData discarded the HTTP status so a 4xx refusal and an unreachable server were indistinguishable to every caller",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "4eaa3f05ec1f",
-        "date": "2026-09-15",
-        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
-        "lag_days": 3
-      },
-      "citation_note": "the sentence was corrected on 2026-09-15 and the affordance was not -- a control that contradicts the text beside it is a could-not-tell the user resolves in the control's favour",
-      "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
-    },
-    {
       "commit": "49f721c1e071",
       "date": "2026-09-18",
       "subject": "fix(stonedesk): the pricing backtest silently dropped rows a comma tore, and reported the survivors as the whole file",
@@ -8614,6 +8581,39 @@
       "recurrence_open": "The bare early return immediately below -- if(!results.length) return; -- still shows NOTHING when every row is excluded for any reason other than being torn. Found by driving this fix (the 'every row torn' case rendered no message at all before the guard) and deliberately not changed. And the sweep covered CSV re-parsing only; nothing was swept for the same index-by-position shape over other delimiters."
     },
     {
+      "commit": "4f674484544d",
+      "date": "2026-09-18",
+      "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js"
+      ],
+      "lines_added": 559,
+      "lines_removed": 18,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "scpSendDesignToQuote disabled the send button and relabelled it 'Sent to Quoting (Q-...)' UNCONDITIONALLY, three lines before the branch that decided whether either write had landed -- so a quote that never reached the server showed the same disabled button and the same 'Sent to Quoting' label as one that did, while the toast beside it said to try again with a connection. SAIRNscape also had no retry path at all, and scpData discarded the HTTP status so a 4xx refusal and an unreachable server were indistinguishable to every caller",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4eaa3f05ec1f",
+        "date": "2026-09-15",
+        "subject": "feat(sairnlaw): IOLTA reconciliation -- the leg the existing check was asked about could not fail",
+        "lag_days": 3
+      },
+      "citation_note": "the sentence was corrected on 2026-09-15 and the affordance was not -- a control that contradicts the text beside it is a could-not-tell the user resolves in the control's favour",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the 2026-09-15 fix changed the message and left the button, and the review that caught it was three days later"
+    },
+    {
       "commit": "544b386f697b",
       "date": "2026-09-18",
       "subject": "fix(resources): extra-actions.test.js was RED at HEAD -- and two sessions found it independently",
@@ -8642,6 +8642,37 @@
       },
       "citation_note": "the tripwire fired correctly and the population it guards kept moving; a red arm with no gate behind it is a could-not-tell that reads as noise",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the verb was added in one registry file and the pin lives in another, which the file's own header already names as the failure mode it was restructured to reduce"
+    },
+    {
+      "commit": "5cedf088ebe3",
+      "date": "2026-09-18",
+      "subject": "fix(sairndental): an unreadable BI read was served as an EMPTY dataset",
+      "files": [
+        "api/dnt-bi.js",
+        "api/dnt-bi.test.js"
+      ],
+      "lines_added": 67,
+      "lines_removed": 1,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/dnt-bi.js read its dataset through .json().catch(() => null) and consumed it as `(Array.isArray(drows) ? drows : []).map(...)`, so a 200 whose body would not parse arrived as null, failed Array.isArray, and was served as ZERO ROWS with ok:true. A Power BI, Tableau or Looker dashboard polling this feed then charts a period with no production, no charges and no appointments -- a claim about the practice rather than about the read. First site in this sweep on a READ rather than a write: the consequence is a fabricated-looking empty rather than a false confirmation",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "363b8304a91e",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+        "lag_days": 16
+      },
+      "citation_note": "the file argues this rule four lines below the defect, about a neighbouring path -- 'the refusal above is what keeps a FAILED lookup from ever reaching here looking like that legitimate empty'. It did not keep this one, because an unparseable body is not a !ok response and walked past that refusal. A correct principle, written down, one branch away from where it was needed",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's fetch stub could only answer the way PostgREST does when everything works, so a successful status over an unreadable body was unreachable from the suite and the branch was never exercised. The same gap that held 8e3a18a2 in place"
     },
     {
       "commit": "5e0b531f2776",
@@ -8677,6 +8708,37 @@
       "factors_unknown_reason": "not analysed beyond the immediate causes: the as-of fix removed one false-alarm class and the outstanding-item class was never modelled, and the suite's own arm for the undated case asserted agrees:true beside the undated_rows count, holding the defect in place"
     },
     {
+      "commit": "73f96009bfcb",
+      "date": "2026-09-18",
+      "subject": "fix(sairndental): the BI management door carried two more copies of the same line",
+      "files": [
+        "api/dnt-bi.js",
+        "api/dnt-bi.test.js"
+      ],
+      "lines_added": 80,
+      "lines_removed": 2,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "Two further sites of the swept shape in api/dnt-bi.js, in the file whose feed read had already been fixed. list: 'tokens: Array.isArray(rows) ? rows : []' turned an unparseable 200 into an EMPTY TOKEN LIST served with ok:true, so the admin screen says no feed tokens exist and the decision taken off it is 'there is nothing live to revoke', about a list nobody read. revoke: 'const n = Array.isArray(rows) ? rows.length : 0' folded an unparseable 200 into that zero and reported 'No live feed token with that id' -- this one already failed TOWARD a refusal rather than a false success, the safer direction, and is still wrong because the revoke may have landed while the admin is told the token never existed. Both now refuse (READ_UNREADABLE, REVOKE_UNCONFIRMED); a real empty list and a genuine miss keep their existing answers",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "a one-off mechanical triage of every .json().catch(...) site in api/, run after the first dnt-bi fix; not a committed checker",
+      "injection": {
+        "commit": "363b8304a91e",
+        "date": "2026-09-02",
+        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
+        "lag_days": 16
+      },
+      "citation_note": "the propagation failure named in docs/2026-09-13-cross-domain-disciplines.md: a correct fix applied to one site while identical code sat one function over. The first dnt-bi fix earlier the same day did not sweep its own file, and only a mechanical pass over every site in api/ found these",
+      "factors_unknown_reason": "not analysed beyond the immediate cause. What IS known and is not comfortable: the triage that found these reports 13 coalesced sites and 60 could-not-tell sites still outstanding across api/, so this sweep is incomplete and is recorded as incomplete rather than closed"
+    },
+    {
       "commit": "8e3a18a24564",
       "date": "2026-09-18",
       "subject": "fix(sairncode): a credential write that could not be confirmed was reported as saved -- this file's own defect through a different door",
@@ -8706,6 +8768,37 @@
       },
       "citation_note": "could-not-tell folded into passed -- the third state absent, so an unreadable answer was reported as a confirmed one",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's stub could only answer the way PostgREST does when everything works, so a 2xx with an unreadable body was unreachable from the suite and the branch was never exercised"
+    },
+    {
+      "commit": "92be209aadda",
+      "date": "2026-09-18",
+      "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
+      "files": [
+        "api/sd-data-unconfirmed-write.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 221,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Both soft-delete paths in api/sd-data.js read the PATCH representation through .json().catch(() => null) and then checked only w.ok before answering {ok:true}. Under Prefer: return=representation a PATCH that MATCHED returns one row and a PATCH that matched ZERO returns [] with status 200, so neither w.ok nor a null from the catch could separate 'it landed' from 'it matched nothing' from 'the answer could not be read' -- all three reached the same success response and the caller was told a record was removed while it was still there. Driven on both paths with the stub row untouched: the generic path and the sd_quote_requests path each returned 200 {ok:true} over a delete that did not happen. The generic SD_LOCAL_RESOURCES path serves seven Tier A resources (sd_invoices, sd_fin_jobs, sd_pricing_rules, sd_negotiated_prices, sd_order_history, stonedesk_quote_history, sd_aiquotes)",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "2e1bd777d4e4",
+        "date": "2026-09-08",
+        "subject": "feat(sd-data): soft delete -- marked and hidden, never destroyed, and no new privilege",
+        "lag_days": 10
+      },
+      "citation_note": "could-not-tell folded into passed -- the third state absent, so an unreadable answer and a zero-row match were each reported as a confirmed deletion. Same shape as 8e3a18a2 in api/sc-credentials.js, found by the sweep that fix opened",
+      "factors_unknown_reason": "not analysed beyond the immediate cause: the paths had no suite of their own before this commit, so no stub could produce a 2xx over an unreadable body and the branch was never exercised. The sd_quote_requests path at dc04f2ea (2026-09-12) copied the same shape four days later, which is a second injection this record does not separately count"
     },
     {
       "commit": "975a88ff0bf7",
@@ -8793,6 +8886,63 @@
       },
       "citation_note": "a disclosure that overstates its own scope is the unearned clearance this banner was built to prevent, made by the banner",
       "factors_unknown_reason": "not analysed beyond the immediate cause: the banner and its test arm were written in the same change and asserted the same string, so neither could contradict the other"
+    },
+    {
+      "commit": "a13fa6a66ad2",
+      "date": "2026-09-18",
+      "subject": "fix(sairnlaw): a billable hour could reach the server with no UTBMS code -- refused by nothing at either end",
+      "files": [
+        "api/_lib/law-timeentry.js",
+        "api/_lib/law-timeentry.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 315,
+      "lines_removed": 10,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js law_timeentries write branch: a time entry was upserted with whatever billing_code arrived, including an empty string or no field at all. sairnlaw.html's saveTime() writes the select value unchecked, and billing_code appeared in NO server validator -- zero hits across api/sd-data.js and api/_lib/*.js -- so the entire law_ write branch validated one thing for twenty-odd resources: that a payload has an id. A codeless billable hour renders as a normal billable hour with an empty column, on the record saveInvoice() computes an invoice total from. The app file described this defect in its own comment above LAW_BILLING_CODES; the 2026-09-09 fix made the code list a constant so the select cannot render empty, which closed the CAUSE and left the gate unbuilt. Fixed by api/_lib/law-timeentry.js, presence and shape only, wired into the write branch before the upsert.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The write path has accepted an unvalidated billing_code since law_timeentries was first wired; git log on the law_ write branch shows the branch being moved and extended, not a commit that removed a check that used to exist. Naming one I had not verified would be a guess."
+      },
+      "contributing_factors": [
+        {
+          "factor": "the law_ write branch had no per-resource validators at all -- one id check served twenty-odd resources, so there was no place a field rule would naturally have been added",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a resource-scoped validator call added before the upsert, with a test arm proving it does not catch the neighbouring law_ resources"
+        },
+        {
+          "factor": "the 2026-09-09 fix removed the CAUSE (an empty select) and read as closing the defect, so the missing gate stopped looking like an open item",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the server gate now exists independently of the select staying populated, and its header records that the earlier fix closed the cause and not the gate"
+        },
+        {
+          "factor": "nothing tested the write path for this field -- the billing-codes suite proves the select is FILLED, which is a different claim from the save REFUSING an empty code",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/_lib/law-timeentry.test.js adds an endpoint half that counts upserts, so a row reaching Supabase fails the arm rather than a status code being asserted in isolation"
+        },
+        {
+          "factor": "law_timeentries is Tier B by the blanket rule rather than by being read, while saveInvoice computes a Tier A invoice total directly from these rows",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "flagged for a human re-tier read in the open-work row; deliberately not re-tiered here because a tier is a judgement and the checker reports rather than rewrites"
+        }
+      ],
+      "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
       "commit": "c1443fd7eb69",
@@ -8903,99 +9053,6 @@
         }
       ],
       "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
-    },
-    {
-      "commit": "92be209aadda",
-      "date": "2026-09-18",
-      "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
-      "files": [
-        "api/sd-data-unconfirmed-write.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 221,
-      "lines_removed": 0,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "Both soft-delete paths in api/sd-data.js read the PATCH representation through .json().catch(() => null) and then checked only w.ok before answering {ok:true}. Under Prefer: return=representation a PATCH that MATCHED returns one row and a PATCH that matched ZERO returns [] with status 200, so neither w.ok nor a null from the catch could separate 'it landed' from 'it matched nothing' from 'the answer could not be read' -- all three reached the same success response and the caller was told a record was removed while it was still there. Driven on both paths with the stub row untouched: the generic path and the sd_quote_requests path each returned 200 {ok:true} over a delete that did not happen. The generic SD_LOCAL_RESOURCES path serves seven Tier A resources (sd_invoices, sd_fin_jobs, sd_pricing_rules, sd_negotiated_prices, sd_order_history, stonedesk_quote_history, sd_aiquotes)",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "2e1bd777d4e4",
-        "date": "2026-09-08",
-        "subject": "feat(sd-data): soft delete -- marked and hidden, never destroyed, and no new privilege",
-        "lag_days": 10
-      },
-      "citation_note": "could-not-tell folded into passed -- the third state absent, so an unreadable answer and a zero-row match were each reported as a confirmed deletion. Same shape as 8e3a18a2 in api/sc-credentials.js, found by the sweep that fix opened",
-      "factors_unknown_reason": "not analysed beyond the immediate cause: the paths had no suite of their own before this commit, so no stub could produce a 2xx over an unreadable body and the branch was never exercised. The sd_quote_requests path at dc04f2ea (2026-09-12) copied the same shape four days later, which is a second injection this record does not separately count"
-    },
-    {
-      "commit": "5cedf088ebe3",
-      "date": "2026-09-18",
-      "subject": "fix(sairndental): an unreadable BI read was served as an EMPTY dataset",
-      "files": [
-        "api/dnt-bi.js",
-        "api/dnt-bi.test.js"
-      ],
-      "lines_added": 67,
-      "lines_removed": 1,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/dnt-bi.js read its dataset through .json().catch(() => null) and consumed it as `(Array.isArray(drows) ? drows : []).map(...)`, so a 200 whose body would not parse arrived as null, failed Array.isArray, and was served as ZERO ROWS with ok:true. A Power BI, Tableau or Looker dashboard polling this feed then charts a period with no production, no charges and no appointments -- a claim about the practice rather than about the read. First site in this sweep on a READ rather than a write: the consequence is a fabricated-looking empty rather than a false confirmation",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "363b8304a91e",
-        "date": "2026-09-02",
-        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
-        "lag_days": 16
-      },
-      "citation_note": "the file argues this rule four lines below the defect, about a neighbouring path -- 'the refusal above is what keeps a FAILED lookup from ever reaching here looking like that legitimate empty'. It did not keep this one, because an unparseable body is not a !ok response and walked past that refusal. A correct principle, written down, one branch away from where it was needed",
-      "factors_unknown_reason": "not analysed beyond the immediate cause: the suite's fetch stub could only answer the way PostgREST does when everything works, so a successful status over an unreadable body was unreachable from the suite and the branch was never exercised. The same gap that held 8e3a18a2 in place"
-    },
-    {
-      "commit": "73f96009bfcb",
-      "date": "2026-09-18",
-      "subject": "fix(sairndental): the BI management door carried two more copies of the same line",
-      "files": [
-        "api/dnt-bi.js",
-        "api/dnt-bi.test.js"
-      ],
-      "lines_added": 80,
-      "lines_removed": 2,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "Two further sites of the swept shape in api/dnt-bi.js, in the file whose feed read had already been fixed. list: 'tokens: Array.isArray(rows) ? rows : []' turned an unparseable 200 into an EMPTY TOKEN LIST served with ok:true, so the admin screen says no feed tokens exist and the decision taken off it is 'there is nothing live to revoke', about a list nobody read. revoke: 'const n = Array.isArray(rows) ? rows.length : 0' folded an unparseable 200 into that zero and reported 'No live feed token with that id' -- this one already failed TOWARD a refusal rather than a false success, the safer direction, and is still wrong because the revoke may have landed while the admin is told the token never existed. Both now refuse (READ_UNREADABLE, REVOKE_UNCONFIRMED); a real empty list and a genuine miss keep their existing answers",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "a one-off mechanical triage of every .json().catch(...) site in api/, run after the first dnt-bi fix; not a committed checker",
-      "injection": {
-        "commit": "363b8304a91e",
-        "date": "2026-09-02",
-        "subject": "feat(sairndental): [B5] an open BI feed Power BI, Tableau and Looker can poll -- facts, not this app's calculations",
-        "lag_days": 16
-      },
-      "citation_note": "the propagation failure named in docs/2026-09-13-cross-domain-disciplines.md: a correct fix applied to one site while identical code sat one function over. The first dnt-bi fix earlier the same day did not sweep its own file, and only a mechanical pass over every site in api/ found these",
-      "factors_unknown_reason": "not analysed beyond the immediate cause. What IS known and is not comfortable: the triage that found these reports 13 coalesced sites and 60 could-not-tell sites still outstanding across api/, so this sweep is incomplete and is recorded as incomplete rather than closed"
     }
   ],
   "started": "2026-09-09",
