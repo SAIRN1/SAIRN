@@ -2,9 +2,23 @@
 
     python tools/sairn_self_state.py                # this clone, last 7 days
     python tools/sairn_self_state.py --days 14
-    python tools/sairn_self_state.py --session cc   # somebody else's, read-only
+    python tools/sairn_self_state.py --session cc   # cc's shared sources only
+    python tools/sairn_self_state.py --session cc --clone ../SAIRN-cc
+    python tools/sairn_self_state.py --bundle out.json --stamp "<iso time>"
     python tools/sairn_self_state.py --json
     python tools/sairn_self_state.py --self-check
+
+── THREE WAYS TO GET A ROW, AND THEY ARE NOT EQUIVALENT ────────────────────
+  SELF     run inside a session's own clone. The only authoritative form.
+  OUTSIDE  `--clone <path>`, whose identity marker must match `--session` or it
+           refuses. Real, and blind to everything not on disk.
+  NOT DERIVED  `--session X` with no `--clone`, from somebody else's clone: the
+           git half is ABSENT and says so. It used to be silently filled in
+           from the clone you happened to be standing in -- see git_state().
+
+`--bundle` captures every provisioned clone in ONE run, which is what makes the
+rows comparable: these clones push to one branch, so four readings taken ten
+minutes apart are four readings of different repositories.
 
 Exit 0 when nothing needs attention, 1 when something does, 2 when a source
 could not be read -- never folded into either of the others (PR 1.11).
@@ -56,8 +70,10 @@ import io
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -96,28 +112,72 @@ def run(cmd, cwd=REPO):
     return p.stdout
 
 
-def clone_session():
-    """This clone's session name, from the directory rather than from a list."""
-    base = os.path.basename(REPO)
-    return base.split('-', 1)[1].lower() if '-' in base else base.lower()
+def clone_session(repo=None):
+    """This clone's session name, FROM THE MARKER, never from the folder name.
+
+    ── THIS FUNCTION WAS THE DEFECT ITS OWN AUTHOR FIXED 43 MINUTES LATER ────
+    It read `os.path.basename(REPO).split('-', 1)[1]`. That is exactly the
+    spoofable derivation hover finding #258 is about, and
+    `tools/sairn_session_identity.py` replaced it platform-wide in `527b31bf`
+    at 08:46 -- 43 minutes after this file landed in `4213c84f` at 08:03. The
+    migration reached `sairn_claim.py` and `tier_a_review_gate.py` and did not
+    reach here, so the tool whose entire purpose is deriving TRUE state was
+    deriving its own identity from the one source the platform had just ruled
+    untrustworthy. Nothing was wrong on disk -- every clone is named after its
+    session today -- which is precisely why it survived: a wrong method that
+    returns the right answer leaves no evidence.
+
+    FAILS CLOSED, like the module it now calls: an unprovisioned clone raises
+    rather than guessing, because a fallback would leave the spoofable path
+    live with nothing to say which one answered.
+    """
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import sairn_session_identity as _identity                   # noqa: E402
+    if repo is None:
+        return _identity.session_name()
+    return _identity.session_name(repo)
 
 
 # ── the five sources ────────────────────────────────────────────────────────
 
-def git_state():
-    out = {}
-    out['branch'] = run(['git', 'rev-parse', '--abbrev-ref', 'HEAD']).strip()
-    dirty = [l for l in run(['git', 'status', '--porcelain']).splitlines()
-             if l.strip() and not l.startswith('??')]
-    out['dirty'] = dirty
-    out['untracked'] = [l[3:] for l in run(['git', 'status', '--porcelain']).splitlines()
-                        if l.startswith('??')]
+def git_state(repo=None):
+    """Branch, HEAD, dirt and ahead/behind FOR ONE WORKING COPY.
+
+    ── IT USED TO IGNORE WHICH ONE, AND THAT MADE `--session cc` WRONG ──────
+    This read the module-level REPO unconditionally, so `--session cc` printed
+    cc's claims, cc's obligations and cc's worklog next to THIS clone's branch,
+    dirt and ahead/behind, under one heading, with nothing saying they came
+    from different places. Measured 2026-09-18: the four build clones sat at
+    four different HEADs (hank 179fde48, cc d01011d1, cody 952a5cc4, fourth
+    57b44c05) and fourth had one modified file. Run from here, `--session
+    fourth` reported fourth as clean at my HEAD. Every field was real and the
+    row was false.
+
+    `--no-optional-locks` on every call: reading ANOTHER live clone must not
+    contend for its `index.lock` while an agent in it is mid-commit. That flag
+    is what makes an outside read genuinely read-only rather than merely
+    read-intent.
+    """
+    cwd = repo or REPO
+    def g(*a):
+        return run(['git', '--no-optional-locks'] + list(a), cwd=cwd)
+    out = {'repo': cwd}
+    out['branch'] = g('rev-parse', '--abbrev-ref', 'HEAD').strip()
+    out['head'] = g('rev-parse', '--short', 'HEAD').strip()
+    porcelain = g('status', '--porcelain').splitlines()
+    out['dirty'] = [l for l in porcelain if l.strip() and not l.startswith('??')]
+    out['untracked'] = [l[3:] for l in porcelain if l.startswith('??')]
     try:
-        counts = run(['git', 'rev-list', '--left-right', '--count',
-                      'origin/main...HEAD']).split()
+        counts = g('rev-list', '--left-right', '--count',
+                   'origin/main...HEAD').split()
         out['behind'], out['ahead'] = int(counts[0]), int(counts[1])
     except Exception:                                            # noqa: BLE001
         out['behind'] = out['ahead'] = None
+    try:
+        out['unpushed'] = [l for l in g('log', '--format=%h %s',
+                                        'origin/main..HEAD').splitlines() if l.strip()]
+    except Exception:                                            # noqa: BLE001
+        out['unpushed'] = None
     return out
 
 
@@ -297,9 +357,49 @@ def reconcile(session, days):
 
 # ── report ──────────────────────────────────────────────────────────────────
 
-def report(session, days, as_json):
+def resolve_git_source(session, clone):
+    """(repo_or_None, derivation, why) -- WHOSE working copy the git half is.
+
+    Three honest answers and never a silent fourth:
+      SELF     the caller is inside `session`'s own clone. Authoritative.
+      OUTSIDE  a path was named and its marker says `session`. Real, and it
+               cannot see anything that is not on disk -- an edit held in the
+               running agent's head, a decision not yet written down, or what
+               that session BELIEVES it is doing.
+      None     no path was named and this is not that session's clone, so the
+               git half COULD NOT BE DERIVED. It is left out rather than
+               filled in from here, which is what the old version did.
+    """
+    here = None
     try:
-        g = git_state()
+        here = clone_session()
+    except Exception:                                            # noqa: BLE001
+        pass
+    if clone:
+        clone = os.path.abspath(clone)
+        if not os.path.isdir(os.path.join(clone, '.git')):
+            raise CouldNotTell('%s is not a git clone' % clone)
+        marker = clone_session(clone)
+        if marker != session:
+            raise CouldNotTell(
+                'REFUSED: --clone %s carries the marker %r, not %r. A state '
+                'row attributed to the wrong session is worse than a missing '
+                'one, so this does not proceed on the assumption that the '
+                'path was meant.' % (clone, marker, session))
+        return clone, ('SELF' if os.path.abspath(clone) == os.path.abspath(REPO)
+                       else 'OUTSIDE'), ''
+    if here == session:
+        return REPO, 'SELF', ''
+    return None, None, (
+        'no --clone was given and this is %s\'s clone, so %s\'s branch, dirt, '
+        'ahead/behind and unpushed commits were NOT derived. They are absent '
+        'rather than filled in from here.' % (here or 'an unidentified clone', session))
+
+
+def report(session, days, as_json, clone=None):
+    try:
+        repo, derivation, why = resolve_git_source(session, clone)
+        g = git_state(repo) if repo else None
         commits = my_commits(session, days)
         findings, claims, log, owed, dischargeable = reconcile(session, days)
         rows = status_rows()
@@ -314,6 +414,7 @@ def report(session, days, as_json):
     if as_json:
         print(json.dumps({
             'session': session, 'window_days': days, 'git': g,
+            'git_derivation': derivation, 'git_not_derived_because': why,
             'attributable_commits': commits, 'claims': claims,
             'worklog_entries': len(log),
             'obligations_owed': len(owed),
@@ -325,17 +426,29 @@ def report(session, days, as_json):
     print('SELF STATE -- %s, derived, window %d day(s)' % (session, days))
     print('')
     print('  GIT')
-    print('    branch %s   ahead %s   behind %s'
-          % (g['branch'], g['ahead'], g['behind']))
-    if g['ahead']:
-        print('    *** %d commit(s) exist ONLY in this clone' % g['ahead'])
-    if g['dirty']:
-        print('    *** %d tracked file(s) modified and uncommitted:' % len(g['dirty']))
-        for d in g['dirty'][:8]:
-            print('        %s' % d)
-    if g['untracked']:
-        print('    %d untracked file(s): %s'
-              % (len(g['untracked']), ', '.join(g['untracked'][:4])))
+    if not g:
+        print('    NOT DERIVED -- this is a third state, not "clean":')
+        print('      %s' % why)
+    else:
+        print('    derived %s from %s' % (derivation, g['repo']))
+        if derivation == 'OUTSIDE':
+            print('      An outside read sees the DISK. It cannot see an edit the')
+            print('      running agent has not written, a decision it has not')
+            print('      recorded, or what it believes it is doing. Only that')
+            print('      session running this in its own clone can.')
+        print('    branch %s   head %s   ahead %s   behind %s'
+              % (g['branch'], g['head'], g['ahead'], g['behind']))
+        if g['ahead']:
+            print('    *** %d commit(s) exist ONLY in that clone' % g['ahead'])
+            for u in (g.get('unpushed') or [])[:6]:
+                print('        %s' % u)
+        if g['dirty']:
+            print('    *** %d tracked file(s) modified and uncommitted:' % len(g['dirty']))
+            for d in g['dirty'][:8]:
+                print('        %s' % d)
+        if g['untracked']:
+            print('    %d untracked file(s): %s'
+                  % (len(g['untracked']), ', '.join(g['untracked'][:4])))
 
     print('')
     print('  ATTRIBUTABLE COMMITS -- %d' % len(commits))
@@ -399,9 +512,63 @@ def self_check():
             ok = False
 
     print('SELF STATE -- self-check')
-    print('\n1. the clone name is DERIVED from the directory, not from a list')
+    print('\n1. the clone name comes from the MARKER, not from the directory')
+    # THIS ARM USED TO SAY "derived from the directory, not from a list" and
+    # passed while doing the spoofable thing. The label was the tell and nothing
+    # read it. Both directions now: the marker is what answers, and a directory
+    # named after nobody still resolves.
     ck('this clone resolves to a session name', bool(clone_session()),
        clone_session())
+    _tmp = tempfile.mkdtemp(prefix='selfstate_id_')
+    try:
+        # REAL clones, not a bare `.git` folder. The identity module resolves
+        # the marker through `git rev-parse --git-dir`, so a directory that is
+        # not a repository walks UP to the first one above it -- and on this
+        # box `C:\Users\marsh\.git` exists, so EVERYTHING under the user
+        # profile, including the system temp directory, resolves there. The arm
+        # would have been reading somebody else's repository and reporting on
+        # it. Found by this arm naming C:/Users/marsh/.git in its own failure.
+        _fake = os.path.join(_tmp, 'NOT-NAMED-AFTER-ANY-SESSION')
+        os.makedirs(_fake)
+        subprocess.run(['git', 'init', '-q', _fake], capture_output=True)
+        with io.open(os.path.join(_fake, '.git', 'sairn-session'), 'w',
+                     encoding='utf-8') as _fh:
+            _fh.write('cody\n')
+        ck('a directory named after NOBODY still resolves, from its marker',
+           clone_session(_fake) == 'cody', clone_session(_fake))
+        _bare = os.path.join(_tmp, 'SAIRN-cody')
+        os.makedirs(_bare)
+        subprocess.run(['git', 'init', '-q', _bare], capture_output=True)
+        _raised = False
+        try:
+            clone_session(_bare)
+        except Exception:                                         # noqa: BLE001
+            _raised = True
+        ck('a directory NAMED SAIRN-cody with no marker RAISES rather than '
+           'answering "cody" -- the rename attack, refused', _raised)
+
+        print('\n1b. the git half is attributed to the RIGHT working copy')
+        # The defect: --session cc printed cc's claims beside THIS clone's
+        # branch and dirt, under one heading, with nothing saying so.
+        _repo, _deriv, _why = resolve_git_source(clone_session(), None)
+        ck('no --clone, own session -> SELF from this clone',
+           _deriv == 'SELF' and _repo == REPO, (_deriv, _repo))
+        _repo2, _deriv2, _why2 = resolve_git_source('nobody_else', None)
+        ck('no --clone, ANOTHER session -> NOT DERIVED, never this clone\'s git',
+           _repo2 is None and _deriv2 is None and 'NOT derived' in _why2,
+           (_repo2, _deriv2, _why2))
+        _refused = False
+        try:
+            resolve_git_source('hank', _fake)      # marker says cody
+        except CouldNotTell:
+            _refused = True
+        ck('--clone whose marker disagrees with --session REFUSES', _refused)
+        _r3, _d3, _ = resolve_git_source('cody', _fake)
+        ck('--clone whose marker AGREES is accepted, and labelled OUTSIDE',
+           _d3 == 'OUTSIDE' and _r3 == os.path.abspath(_fake), (_d3, _r3))
+    finally:
+        shutil.rmtree(_tmp, ignore_errors=True)
+    ck('the scratch clones are gone', not os.path.isdir(_tmp))
 
     print('\n2. the reconciliation predicates, locked against synthetic input')
     # A generic claim cannot be matched by any method and must be UNCHECKABLE
@@ -457,6 +624,109 @@ def self_check():
     return EXIT_CLEAN if ok else EXIT_COULD_NOT_RUN
 
 
+def collect(session, days, clone):
+    """The same dict --json prints, as data rather than stdout."""
+    repo, derivation, why = resolve_git_source(session, clone)
+    g = git_state(repo) if repo else None
+    findings, claims, log, owed, dischargeable = reconcile(session, days)
+    rows = status_rows()
+    return {'session': session, 'window_days': days, 'git': g,
+            'git_derivation': derivation, 'git_not_derived_because': why,
+            'attributable_commits': my_commits(session, days),
+            'claims': claims, 'worklog_entries': len(log),
+            'obligations_owed': len(owed),
+            'obligations_dischargeable': len(dischargeable),
+            'findings': [{'kind': k, 'detail': d} for k, d in findings],
+            'status_row': rows.get(session, {})}
+
+
+def bundle(days, out_path, stamp):
+    """One artifact holding EVERY clone's derived state, for the auditor.
+
+    ── WHY A BUNDLE AND NOT FOUR SEPARATE RUNS ─────────────────────────────
+    The reconciliation is a comparison. Four outputs read at four different
+    moments cannot be compared, because the thing being compared moves: these
+    clones push to one branch and a row read ten minutes apart is a row about a
+    different repository. So every entry here is stamped with the SAME run, and
+    each carries its own derivation label so an OUTSIDE reading is never mistaken
+    for a session's own account of itself.
+
+    CLONES ARE COUNTED FROM DISK, never from a list. CLAUDE.md said "Four
+    clones" for weeks after a fifth was pushing; `sibling_clones()` in
+    nhi_register.py already enumerates them and fails closed if it cannot find
+    even itself, so it is imported rather than reimplemented.
+
+    A CLONE WITH NO IDENTITY MARKER IS NAMED AND NOT READ FURTHER. That is the
+    honest handling of the auditor clone, which is not a build session and whose
+    directory a build agent must not reach into -- and it falls out of the
+    marker rule rather than out of a hardcoded name, so a sixth clone provisioned
+    tomorrow is included and an unprovisioned one never is.
+    """
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    from nhi_register import sibling_clones                       # noqa: E402
+    parent = os.path.dirname(REPO)
+    entries, skipped = [], []
+    for name in sibling_clones():
+        path = os.path.join(parent, name)
+        try:
+            sess = clone_session(path)
+        except Exception as e:                                    # noqa: BLE001
+            skipped.append({'dir': name,
+                            'why': 'no identity marker (%s). Not read further: '
+                                   'an unprovisioned clone is not a build '
+                                   'session and is not guessed at.'
+                                   % type(e).__name__})
+            continue
+        try:
+            entries.append(collect(sess, days, path))
+        except CouldNotTell as e:
+            skipped.append({'dir': name, 'session': sess,
+                            'why': 'COULD NOT DERIVE: %s' % e})
+    doc = {
+        'bundle_of': 'sairn_self_state',
+        'generated_at': stamp,
+        'generated_by_clone': clone_session(),
+        'window_days': days,
+        'clones': entries,
+        'not_included': skipped,
+        'what_this_is_not': [
+            'NOT a reconciliation. It is the INPUT to one: four derived states '
+            'captured in a single run so they can be compared without the '
+            'branch moving underneath the comparison.',
+            'An entry whose git_derivation is OUTSIDE was read off another '
+            'clone\'s disk by this one. It is real and it is not that session '
+            'speaking: it cannot see an unwritten edit, an unrecorded decision, '
+            'or what that session believes it is doing. Only that session '
+            'running this tool in its own clone produces SELF.',
+            'COMMIT AUTHORSHIP IS STILL NOT DERIVABLE. Every clone commits as '
+            'one git identity; only commits touching a session\'s own claim '
+            'file or worklog are attributable and that is a small fraction of '
+            'real work.',
+        ],
+    }
+    with io.open(out_path, 'w', encoding='utf-8', newline='\n') as fh:
+        json.dump(doc, fh, indent=1, ensure_ascii=False)
+        fh.write('\n')
+    print('BUNDLE -- %d clone(s) derived, %d not included'
+          % (len(entries), len(skipped)))
+    for e in entries:
+        g = e['git'] or {}
+        print('  %-8s %-7s head=%-9s ahead=%-3s dirty=%-3s untracked=%-3s '
+              'owed=%-2s dischargeable=%-3s findings=%s'
+              % (e['session'], e['git_derivation'], g.get('head'),
+                 g.get('ahead'), len(g.get('dirty') or []),
+                 len(g.get('untracked') or []), e['obligations_owed'],
+                 e['obligations_dischargeable'], len(e['findings'])))
+    for s in skipped:
+        print('  %-8s NOT INCLUDED -- %s' % (s.get('session') or s['dir'], s['why']))
+    print('  written: %s' % out_path)
+    if not entries:
+        print('COULD NOT RUN: no clone yielded a state, which is a broken '
+              'enumeration rather than an empty platform.')
+        return EXIT_COULD_NOT_RUN
+    return EXIT_ATTENTION if any(e['findings'] for e in entries) else EXIT_CLEAN
+
+
 def _stale(row):
     return (row.get('state') != 'blocked'
             and bool(str(row.get('blocked_on') or '').strip()))
@@ -466,12 +736,38 @@ def main(argv=None):
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--days', type=int, default=7)
     ap.add_argument('--session', default=None)
+    ap.add_argument('--clone', default=None,
+                    help='the working copy to derive the GIT half from. Its '
+                         'identity marker must match --session or this refuses.')
+    ap.add_argument('--bundle', default=None, metavar='OUT.json',
+                    help='derive EVERY provisioned clone in one run and write '
+                         'the artifact the reconciliation reads')
+    ap.add_argument('--stamp', default=None,
+                    help='the timestamp to record in a bundle. Passed in rather '
+                         'than read from the clock so a run is reproducible and '
+                         'so nothing here has to be trusted about when it ran.')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--self-check', dest='selfcheck', action='store_true')
     args = ap.parse_args(argv)
     if args.selfcheck:
         return self_check()
-    return report(args.session or clone_session(), args.days, args.json)
+    if args.bundle:
+        if not args.stamp:
+            print('COULD NOT RUN: --bundle needs --stamp "<iso time>". A '
+                  'bundle with no stamp is four rows nobody can place in '
+                  'time, which is the failure the bundle exists to avoid.')
+            return EXIT_COULD_NOT_RUN
+        try:
+            return bundle(args.days, args.bundle, args.stamp)
+        except CouldNotTell as e:
+            print('COULD NOT RUN: %s' % e)
+            return EXIT_COULD_NOT_RUN
+    try:
+        session = args.session or clone_session()
+    except Exception as e:                                        # noqa: BLE001
+        print('COULD NOT RUN: %s' % e)
+        return EXIT_COULD_NOT_RUN
+    return report(session, args.days, args.json, args.clone)
 
 
 if __name__ == '__main__':
