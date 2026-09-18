@@ -1854,6 +1854,16 @@
       "claimed_at_epoch": 1789738140.8035433,
       "status": "released",
       "released_at": "2026-09-18T13:55:20Z"
+    },
+    {
+      "id": "cc-1789739764",
+      "session": "cc",
+      "subject": "sairnlaw-iolta",
+      "task": "law_trust_reconcile undated-row money conservation and outstanding-item cleared tracking",
+      "claimed_at": "2026-09-18T13:56:04Z",
+      "claimed_at_epoch": 1789739764.1868386,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
