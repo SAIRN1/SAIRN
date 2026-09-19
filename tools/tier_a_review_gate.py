@@ -743,20 +743,66 @@ def check(diff_text, verbose=True):
         return 0, lines
 
     session = session_name()
-    covering = [r for r in open_records(data, session)
-                if set(hits) & set(r.get('resources') or [])]
-    if covering:
+    # ── COVERAGE IS PER RESOURCE, NOT PER CHANGE (hover #270, 2026-09-18) ────
+    # This read:
+    #
+    #     covering = [r for r in open_records(data, session)
+    #                 if set(hits) & set(r.get('resources') or [])]
+    #     if covering: return 0
+    #
+    # An INTERSECTION, so ONE resource in common cleared the WHOLE change. A
+    # session holding an open obligation on sc_claims could push a change
+    # touching sc_claims AND dnt_patients and the gate said covered, with the
+    # dnt_patients half unrecorded and invisible to every later reader.
+    #
+    # REPRODUCED BEFORE IT WAS CHANGED, and the sharpest part is that the gate
+    # PRINTED THE EVIDENCE OF ITS OWN GAP: the pass message read
+    # "Tier A code changed: dnt_patients, sc_claims" on the very run where it
+    # cleared a push carrying one obligation for two resources.
+    #
+    # THE UNION ACROSS ALL OF THIS SESSION'S OPEN RECORDS, not "one record must
+    # cover everything". A session may legitimately hold two obligations that
+    # together cover one change, and requiring a single record to carry the
+    # whole set would block honest work -- which is how a gate gets talked past.
+    #
+    # WHAT IS DELIBERATELY NOT CHANGED HERE: a record whose own text says "no
+    # product code changed" still covers a later PRODUCT change to the same
+    # resource. That is the kind axis, it is a separate decision about a
+    # blocking gate, and folding it in would make one change do two things.
+    mine = open_records(data, session)
+    covered = set()
+    for r in mine:
+        covered |= set(r.get('resources') or [])
+    uncovered = sorted(set(hits) - covered)
+    if not uncovered:
         if verbose:
             lines.append('Tier A code changed: %s' % ', '.join(sorted(hits)))
-            lines.append('An OPEN review obligation covers it (%s, opened %s). '
-                         'Recording it is this session\'s job; discharging it is '
-                         'somebody else\'s.'
-                         % (session, covering[0].get('opened_at', '?')))
+            lines.append('EVERY resource it touches has an OPEN review obligation '
+                         '(%s). Recording it is this session\'s job; discharging '
+                         'it is somebody else\'s.' % session)
+            for r in mine:
+                shared = sorted(set(hits) & set(r.get('resources') or []))
+                if shared:
+                    lines.append('  opened %s covers %s'
+                                 % (r.get('opened_at', '?'), ', '.join(shared)))
         return 0, lines
 
-    lines.append('TIER A CODE CHANGED WITH NO RECORDED REVIEW OBLIGATION.')
-    lines.append('')
-    for name in sorted(hits):
+    partial = sorted(set(hits) & covered)
+    if partial:
+        lines.append('TIER A CODE CHANGED AND ONLY PART OF IT IS RECORDED.')
+        lines.append('')
+        lines.append('  already covered by an open obligation:  %s'
+                     % ', '.join(partial))
+        lines.append('  NOT covered, and this is what blocks:    %s'
+                     % ', '.join(uncovered))
+        lines.append('')
+        lines.append('An obligation covers the RESOURCES IT NAMES, not every resource')
+        lines.append('a later change happens to touch alongside them.')
+        lines.append('')
+    else:
+        lines.append('TIER A CODE CHANGED WITH NO RECORDED REVIEW OBLIGATION.')
+        lines.append('')
+    for name in uncovered:
         lines.append('  %-22s %s' % (name, ', '.join(sorted(set(hits[name])))[:110]))
     lines.append('')
     lines.append('The standing rule is that a Tier A change is reviewed by a session')

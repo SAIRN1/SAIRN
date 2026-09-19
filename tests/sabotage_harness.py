@@ -46,8 +46,21 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       errors='replace').stdout.strip()
 
 
+# ── THE RUNNER IS CHOSEN BY EXTENSION (2026-09-18) ──────────────────────────
+# `node` was hardcoded, so this harness -- whose own header calls it "the ONE
+# worktree-isolated sabotage harness every new negative control uses" -- could
+# not drive a PYTHON suite at all. Every control built on it guards a .js
+# suite, which is why nobody had hit it.
+#
+# IT FAILED IN THE SAFE DIRECTION AND THAT IS WORTH RECORDING: node on a .py
+# file exits non-zero, the baseline arm reports RED and the harness stops with
+# "no mutation below would mean anything" rather than counting four refusals it
+# never obtained. The defect cost a confusing message, not a false pass.
+#
+# A .js suite still goes to node, byte for byte as before.
 def _run_suite(wt, suite):
-    r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
+    runner = ([sys.executable] if suite.endswith('.py') else ['node'])
+    r = subprocess.run(runner + [os.path.join(wt, suite)], cwd=wt,
                        capture_output=True, text=True, encoding='utf-8',
                        errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
@@ -70,7 +83,39 @@ def _dirty_now():
     return set(l.strip() for l in out.split('\n') if l.strip())
 
 
-def run_probe(suite, mutations, title='', stage=()):
+# ── CARRYING THE SESSION IDENTITY INTO THE WORKTREE (2026-09-18) ────────────
+# A git worktree gets its OWN `.git/worktrees/<id>/` directory, so the marker
+# hover #258 introduced -- this clone's session name, deliberately NOT derived
+# from a directory name -- is absent inside it. Any suite that reaches
+# session_name() therefore dies on NoIdentity before a single mutation is
+# planted, and the baseline arm reports RED.
+#
+# THIS IS NOT THE SPOOF #258 CLOSED, and the difference is worth stating
+# because the two look alike. A spoof is a clone claiming to be a DIFFERENT
+# session. This copies THIS clone's own already-provisioned identity into a
+# disposable copy of THIS clone, so the suite sees the same answer it would see
+# here. It cannot invent one: if this clone is unprovisioned the helper raises
+# and the probe reports COULD NOT RUN rather than guessing a name.
+#
+# OPT-IN, so no existing control changes behaviour.
+def _carry_identity(wt):
+    """Write this clone's session marker into the worktree's private git dir."""
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import sairn_session_identity as ident
+    name = ident.session_name()            # raises if THIS clone is unprovisioned
+    g = subprocess.run(['git', '-C', wt, 'rev-parse', '--absolute-git-dir'],
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    if g.returncode != 0:
+        raise RuntimeError('could not locate the worktree git dir: '
+                           + g.stderr.strip()[:200])
+    p = os.path.join(g.stdout.strip(), ident.MARKER)
+    with io.open(p, 'w', encoding='utf-8', newline='\n') as fh:
+        fh.write(name + '\n')
+    return name
+
+
+def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
     """0 when every planted defect was refused, 1 when one was not, 3 when the
     probe could not run at all -- which is NOT a pass and says so.
 
@@ -106,6 +151,17 @@ def run_probe(suite, mutations, title='', stage=()):
         print(add.stderr.strip()[:300])
         return 3
     try:
+        if carry_identity:
+            try:
+                who = _carry_identity(wt)
+                print('  (session identity %r carried into the worktree -- see '
+                      '_carry_identity)' % who)
+            except Exception as e:                            # noqa: BLE001
+                print('COULD NOT RUN: the session identity could not be carried '
+                      'into the worktree, so the suite would die on NoIdentity '
+                      'before anything was planted -- NOTHING WAS VERIFIED. %s'
+                      % e)
+                return 3
         try:
             for rel in [suite] + list(stage):
                 dst = os.path.join(wt, rel)

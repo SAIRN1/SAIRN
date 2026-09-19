@@ -317,6 +317,92 @@ try:
     code, _ = g.check(diff_for('api/x.js', "'sc_claims'"))
     check('a DISCHARGED obligation does not cover a NEW Tier A change -- the '
           'next change needs its own', code == 1, code)
+
+    # ── COVERAGE IS PER RESOURCE, NOT PER CHANGE (hover #270) ───────────────
+    # Every arm above drives a change touching ONE resource, so the difference
+    # between an INTERSECTION and a SUBSET was invisible to this probe -- which
+    # is why the defect lived. The shipped test was
+    # `set(hits) & set(record.resources)`, so one resource in common cleared
+    # the whole change.
+    hits_names = {'sc_claims', 'dnt_patients'}
+
+    def two_res_diff():
+        return diff_for('api/x.js', "'sc_claims'", "'dnt_patients'")
+
+    g.REVIEWS = covering            # names sc_claims only
+    code, lines = g.check(two_res_diff())
+    check('#270 a change touching TWO Tier A resources is NOT cleared by an '
+          'obligation naming ONE of them', code == 1, '%s %s' % (code, lines))
+    blob = '\n'.join(lines)
+    check('#270 ...and the refusal names the UNCOVERED resource',
+          'dnt_patients' in blob, blob[:200])
+    check('#270 ...and says which half IS already covered, so the session is '
+          'not told to re-record everything', 'sc_claims' in blob, blob[:200])
+    check('#270 ...and says so in its own heading rather than reading as a '
+          'change with nothing recorded at all',
+          'ONLY PART OF IT IS RECORDED' in blob, blob[:120])
+    # The BLOCKING list must be the uncovered set and nothing else. Without
+    # this arm the gate could name every touched resource again and the three
+    # arms above would all still pass, because each only asks whether a name is
+    # present somewhere in the output.
+    blockline = [l for l in lines if 'NOT covered' in l]
+    check('#270 ...and the BLOCKING summary names exactly the uncovered set',
+          len(blockline) == 1 and 'dnt_patients' in blockline[0]
+          and 'sc_claims' not in blockline[0], blockline)
+    # AND THE PER-RESOURCE LISTING BELOW IT, which is a different line built
+    # from a different variable. The arm above reads the SUMMARY; a gate that
+    # printed the right summary and then listed every touched resource would
+    # satisfy it, and did -- tests/run_tier_a_review_gate_sabotage_probe.py
+    # planted exactly that and this probe stayed green until this arm existed.
+    listed = set()
+    for l in lines:
+        parts = l.split()
+        if l.startswith('  ') and len(parts) >= 2 and parts[0] in hits_names:
+            listed.add(parts[0])
+    check('#270 ...and the per-resource LISTING is the uncovered set too, not '
+          'every resource the change touched',
+          listed == {'dnt_patients'}, sorted(listed))
+
+    # THE OTHER DIRECTION, and without it the arm above is satisfied by a gate
+    # that simply refuses every multi-resource change.
+    both = os.path.join(tmp, 'both.json')
+    io.open(both, 'w', encoding='utf-8').write(json.dumps({'records': [
+        {'author_session': g.session_name(), 'reviewer_session': None,
+         'status': 'open', 'opened_at': 'x',
+         'resources': ['sc_claims', 'dnt_patients']}]}))
+    g.REVIEWS = both
+    code, _ = g.check(two_res_diff())
+    check('#270 CONTROL: ONE obligation naming BOTH resources still clears it',
+          code == 0, code)
+
+    # TWO records that TOGETHER cover the change. The union is deliberate: a
+    # session may hold two obligations, and requiring one record to carry the
+    # whole set would block honest work.
+    split = os.path.join(tmp, 'split.json')
+    io.open(split, 'w', encoding='utf-8').write(json.dumps({'records': [
+        {'author_session': g.session_name(), 'reviewer_session': None,
+         'status': 'open', 'opened_at': 'a', 'resources': ['sc_claims']},
+        {'author_session': g.session_name(), 'reviewer_session': None,
+         'status': 'open', 'opened_at': 'b', 'resources': ['dnt_patients']}]}))
+    g.REVIEWS = split
+    code, _ = g.check(two_res_diff())
+    check('#270 CONTROL: TWO obligations that TOGETHER cover it also clear it '
+          '-- coverage is the union, not one record carrying everything',
+          code == 0, code)
+
+    # And the union must not reach across sessions: half mine, half somebody
+    # else's is NOT covered.
+    mixed = os.path.join(tmp, 'mixed.json')
+    io.open(mixed, 'w', encoding='utf-8').write(json.dumps({'records': [
+        {'author_session': g.session_name(), 'reviewer_session': None,
+         'status': 'open', 'opened_at': 'a', 'resources': ['sc_claims']},
+        {'author_session': 'somebody-else', 'reviewer_session': None,
+         'status': 'open', 'opened_at': 'b', 'resources': ['dnt_patients']}]}))
+    g.REVIEWS = mixed
+    code, lines = g.check(two_res_diff())
+    check('#270 CONTROL: the union is MINE only -- another session\'s open '
+          'obligation does not fill my gap', code == 1,
+          '%s %s' % (code, lines))
 finally:
     g.REGISTER, g.REVIEWS = real_register, real_reviews
     try:
