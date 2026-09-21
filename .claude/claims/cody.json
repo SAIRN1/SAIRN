@@ -1612,8 +1612,8 @@
       "task": "review cc bld_bids obligation 14:48:30Z unowned FILES: docs/tier-a-reviews.json -- review-only, reads sairnbuild.html and its hydration tests",
       "claimed_at": "2026-09-21T15:03:07Z",
       "claimed_at_epoch": 1790002987.538515,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T15:11:48Z"
     }
   ]
 }
