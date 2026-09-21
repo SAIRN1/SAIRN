@@ -1795,6 +1795,16 @@
       "claimed_at_epoch": 1789995221.8288267,
       "status": "released",
       "released_at": "2026-09-21T13:34:43Z"
+    },
+    {
+      "id": "fourth-1789997768",
+      "session": "fourth",
+      "subject": "tier-a-review-hank-dispatchers",
+      "task": "FILES: docs/tier-a-reviews.json -- review-only, reads api/sd-data-cross-tenant-dispatchers.test.js and tools/cross_tenant_isolation_scope.py. Discharge hank obligation 2026-09-21T12:40:23Z phases 1-2. Not editing any read file.",
+      "claimed_at": "2026-09-21T13:36:08Z",
+      "claimed_at_epoch": 1789997768.742956,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
