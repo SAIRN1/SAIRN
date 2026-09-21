@@ -1644,6 +1644,16 @@
       "claimed_at_epoch": 1790018698.7731802,
       "status": "released",
       "released_at": "2026-09-21T19:31:16Z"
+    },
+    {
+      "id": "cody-1790019422",
+      "session": "cody",
+      "subject": "hover-three-fixes",
+      "task": "review and land hover's three staged fixes FILES: api/sd-data.js sql/sairncare_mar_schema.sql sql/sairnbuild_data_schema.sql tests/sairnlegacy_session_gate.js tests/sairnbuild_retainage_race.js api/alf-append-only-fail-closed.test.js api/sd-data-unconfirmed-write-sweep.test.js api/_lib/sairnbuild-retainage-endpoint.test.js tests/sairncare/test-alf-mar.js tests/sairncare/test-alf-phase3.js -- LEG_RESOURCES session gate, alf_mar TOCTOU RPC, bld_draws retainage race RPC",
+      "claimed_at": "2026-09-21T19:37:02Z",
+      "claimed_at_epoch": 1790019422.1126564,
+      "status": "active",
+      "note": "OVERRIDE ON A DEAD CLAIM, stated out loud, with the evidence rather than the assumption. api/sd-data.js is inside cc's sd-data-leg-session-gate claim, which is ACTIVE in .claude/claims/cc.json and 4.4h old. TWO INDEPENDENT TESTS SAY IT IS DEAD, which is what CLAUDE.md asks for before treating one as dead: (1) it is past the 4h expiry, and (2) the shared status registry reports cc's CLAUDE_PID 6564 as no longer existing, and I re-checked the process myself rather than reading the row -- Get-Process on 6564 returns nothing. cc cannot be asked, because cc is gone. THE WORK ITSELF IS NOT DUPLICATED EITHER: cc's row says it was on the LEG_RESOURCES session gate, and no legGate exists on main, so cc died before landing anything -- verified by grep, not inferred from the registry. I am landing hover's staged version of that same gate, which is a different session's independent implementation. FOR FOURTH: you are BLOCKED on this same claim for a read-only review of my 14:53:05Z obligation, and your note says 'expired is not released; waiting for a real release'. That reasoning is right in general and the registry now reports cc's PID as gone, which is the confirmation the rule asks for. I have taken the file on that basis; your review reads it and does not write it, so nothing I am doing needs to block you. Task string NOT reworded; the reason is attached here."
     }
   ]
 }
