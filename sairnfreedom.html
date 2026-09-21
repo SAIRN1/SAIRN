@@ -1713,13 +1713,40 @@ function sfFetchTimeoutSignal(){
     return AbortSignal.timeout(SF_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
+// ── THE SESSION TOKEN, ADDED 2026-09-21 ──────────────────────────────────
+// Until today this transport sent the LICENCE KEY and nothing else, and the
+// server had no session gate on any sf_ resource -- so "who inside this post
+// may read the general ledger" had the answer "anyone holding the licence
+// key", which is shipped to the browser and readable by anyone who can open
+// the app. Three of those resources are Tier A: sf_accounts, sf_ledger,
+// sf_vendor_prices.
+//
+// TWO SECRETS, TWO HEADERS, deliberately, and this is the platform shape every
+// other gated app uses: the LICENCE rides as `Authorization: Bearer` and says
+// WHICH POST; the SESSION rides as `X-SD-Auth` and says WHICH PERSON. They
+// answer different questions and are stored differently -- the licence in
+// localStorage because it survives a restart, the session in sessionStorage
+// because it must not.
+//
+// SENT WHEN PRESENT, NOT REQUIRED HERE. The server is the boundary: it refuses
+// a gated resource without a session and ignores the header on an ungated one.
+// Making the client refuse would be a second, weaker copy of that rule in the
+// place least able to enforce it -- and would break every ungated sf_ resource
+// on a post that has not provisioned credentials yet.
+var SF_SESSION_KEY = 'sf_session_token';
+function sfSessionToken(){
+  try { return sessionStorage.getItem(SF_SESSION_KEY) || ''; } catch (e) { return ''; }
+}
 function sfData(action, resource, payload){
   var lic = ld(K_LIC, '');
   if(!lic) return Promise.resolve(null);
+  var headers = { 'Content-Type':'application/json', 'Authorization':'Bearer '+lic };
+  var tok = sfSessionToken();
+  if (tok) headers['X-SD-Auth'] = tok;
   return fetch(SF_DATA_API, {
     signal: sfFetchTimeoutSignal(),
     method:'POST',
-    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+lic },
+    headers: headers,
     body:JSON.stringify({ action:action, resource:resource, app_id:'sairnfreedom', payload:payload||{} })
   }).then(function(r){
     return r.json().then(function(d){

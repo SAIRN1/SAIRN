@@ -91,6 +91,11 @@ def main():
           % (len(sf_tier_a), ', '.join(sf_tier_a)))
     print('')
 
+    # Read the shared gate table first -- the loop below consults it.
+    k = src.index('const SD_SESSION_GATED = {')
+    m = src.index('};', k)
+    shared = sorted(set(re.findall(r"'(sf_[a-z0-9_]+)'", src[k:m])))
+
     findings = 0
     for action in ('read', 'write'):
         at = src.index("if (SF_RESOURCES[resource] && action === '%s')" % action)
@@ -98,22 +103,32 @@ def main():
         branch = src[at:end]
         present = [m for m in MARKERS if m in branch]
         refuses = bool(re.search(r'status\((401|403)\)', branch))
-        gated = bool(present) or refuses
-        print('  %-5s branch: session markers=%-12s 401/403=%-5s  -> %s'
+        inline = bool(present) or refuses
+        # ── THE GATE NEED NOT BE INLINE, AND ASSUMING IT MUST WOULD KEEP THIS
+        # ── PROBE PERMANENTLY RED AFTER THE FIX (corrected 2026-09-21) ───────
+        # api/sd-data.js gates a resource EITHER inside its own branch OR from
+        # the shared SD_SESSION_GATED table near the top of the handler, which
+        # runs before any branch is reached. law_trusttx has been gated that
+        # way since 2026-09-16 and its branches carry no inline marker either.
+        # A probe that only looked inline would have gone on reporting this
+        # finding after it was closed -- and a finding that never clears is a
+        # finding people stop reading, which is the failure this platform
+        # keeps recording.
+        by_table = sorted(set(shared) & set(sf_tier_a))
+        gated = inline or bool(by_table)
+        print('  %-5s branch: inline markers=%-12s 401/403=%-5s  -> %s'
               % (action, ','.join(present) or 'NONE', refuses,
-                 'GATED' if gated else 'NO SESSION CHECK'))
+                 'GATED inline' if inline else
+                 ('GATED by SD_SESSION_GATED' if by_table else 'NO SESSION CHECK')))
         if not gated:
             findings += 1
 
-    # The shared table is the other place a gate could live, so it is checked
-    # rather than assumed absent.
-    k = src.index('const SD_SESSION_GATED = {')
-    m = src.index('};', k)
-    table = src[k:m]
-    in_table = sorted(set(re.findall(r"'(sf_[a-z0-9_]+)'", table)))
     print('')
     print('  SD_SESSION_GATED entries naming an sf_ resource: %s'
-          % (', '.join(in_table) if in_table else 'NONE'))
+          % (', '.join(shared) if shared else 'NONE'))
+    missing = sorted(set(sf_tier_a) - set(shared))
+    if missing:
+        print('  TIER A RESOURCES STILL UNGATED: %s' % ', '.join(missing))
     print('  (law_trusttx was added to that table on 2026-09-16 for exactly this')
     print("   defect class -- see the table's own comment. SF was not swept with it.)")
 

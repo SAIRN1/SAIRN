@@ -120,6 +120,23 @@ function postgrestMock(rows, calls) {
       const m = part.match(/^([a-z0-9_]+)=eq\.(.*)$/);
       if (m) eqs.push([m[1], decodeURIComponent(m[2])]);
     });
+    // ── A CREDENTIAL LOOKUP IS NOT THE QUERY UNDER TEST (2026-09-21) ─────
+    // api/sd-data.js's session gate re-checks that the signed-in employee is
+    // STILL ACTIVE, and it does that with a real read of the app's employee
+    // table. Without an answer here, SAIRNfreedom's newly gated resources
+    // answered CREDENTIAL_INACTIVE and eight arms went UNREACHED.
+    //
+    // ANSWERED FOR THE TENANT IN THE QUERY, so it stays tenant-scoped rather
+    // than becoming a hole: a credential lookup for tenant B gets tenant B's
+    // credential. And never for a table under test -- no credential store is
+    // in UNITS today, but the discipline is cheap and the ownbranch suite
+    // already had to learn it the hard way.
+    if (/_employee_auth\?/.test(u)) {
+      const forHash = (eqs.filter(function (kv) { return kv[0] === 'license_hash'; })[0] || [])[1];
+      return { ok: true, status: 200, json: async function () {
+        return [{ license_hash: forHash || HASH_A, employee_id: 'emp-1',
+                  role: 'post.govern', active: true }]; } };
+    }
     if (opts && opts.method === 'POST') {
       const sent = JSON.parse(opts.body);
       return { ok: true, status: 200, json: async function () { return [sent]; } };
@@ -236,14 +253,26 @@ const UNITS = [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
     ['sd_order_history', 'order_id'], ['sd_pricing_rules', 'pricing_rule_id']] },
-  // NO SESSION GATE ON THIS BRANCH. SF_RESOURCES goes straight from the map
-  // test to the query -- `sairnfreedom` is not even in api/_lib/auth.js's
-  // ROLES_BY_APP, so no session token can be signed for it. Recorded rather
-  // than worked around: three Tier A resources here (sf_accounts, sf_ledger,
-  // sf_vendor_prices -- money) are authorised by the LICENCE ALONE, which is
-  // the same shape the register already carries for law_trusttx. Isolation is
-  // still asserted; who may call is a separate question and a separate finding.
-  { map: 'SF_RESOURCES', app: null, role: null, members: [
+  // ── THIS BRANCH HAD NO SESSION GATE, AND NOW IT DOES (2026-09-21) ───────
+  // The first version of this entry read `app: null, role: null` and recorded
+  // why: SF_RESOURCES went straight from the map test to the query,
+  // `sairnfreedom` was not in ROLES_BY_APP so no token could be signed for it,
+  // and three Tier A resources -- sf_accounts, sf_ledger, sf_vendor_prices --
+  // were authorised by the LICENCE ALONE. That was reported as a separate
+  // finding rather than worked around, and it has since been fixed: the app
+  // got a credential table, a ROLES_BY_APP entry, api/sf-auth.js, an X-SD-Auth
+  // header, and those three resources are in SD_SESSION_GATED.
+  //
+  // SO THE CONFIG CHANGES, NOT THE ASSERTION. The gate answering 403 turned
+  // eight arms RED as UNREACHED rather than letting them pass, which is the
+  // third state doing exactly its job -- a config that no longer matches the
+  // handler is not an isolation failure and is not a pass.
+  //
+  // post.govern is the app's SOLE governance capability, from its own
+  // CAPABILITIES array. The gate asks for identity, not rank, so any active
+  // capability would reach the query; this one is used because it is the one
+  // bootstrap mints.
+  { map: 'SF_RESOURCES', app: 'sairnfreedom', role: 'post.govern', members: [
     ['sf_accounts', 'account_id'], ['sf_ledger', 'ledger_id'],
     ['sf_vendor_prices', 'vendor_price_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [

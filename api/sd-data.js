@@ -753,6 +753,35 @@ module.exports = async (req, res) => {
     // exception nobody can see from the other side is worse than a small
     // migration, so the migration happened instead of the carve-out.
     const SD_SESSION_GATED = {
+      // ── SAIRNfreedom, 2026-09-21. THREE TIER A RESOURCES ON A LICENCE KEY ──
+      //    sf_accounts (the chart of accounts), sf_ledger (the general ledger)
+      //    and sf_vendor_prices. Measured while building the cross-tenant
+      //    isolation arms: SF_RESOURCES' read and write branches carried NO
+      //    session check of any kind, so the licence key -- shipped to the
+      //    browser and readable by anyone who can open the app -- was the whole
+      //    authorisation. Identical shape to law_trusttx below, which was swept
+      //    on 2026-09-16; SAIRNfreedom was not swept with it.
+      //
+      //    THE TENANT BOUNDARY WAS NEVER THE PROBLEM and is asserted in
+      //    api/sd-data-cross-tenant-dispatchers.test.js. This is identity
+      //    WITHIN a post, plus the audit half: a write with no session has no
+      //    employee_id to record, so the ledger cannot say who made an entry.
+      //
+      //    ARMED LAST, AND DELIBERATELY. This one line answers 403 to every
+      //    call that does not carry a session, and until 2026-09-21 the app
+      //    could not send one -- no sf_employee_auth table, no ROLES_BY_APP
+      //    entry, no api/sf-auth.js, and no X-SD-Auth header in
+      //    sairnfreedom.html. All four landed first. Adding this without them
+      //    locks every real call out of the general ledger, which was driven
+      //    and confirmed before the order was chosen.
+      //
+      //    ONLY THESE THREE. The other 32 sf_ resources stay ungated: the
+      //    finding was about Tier A, widening it further is a product decision
+      //    about who may see a duty roster or a bottle count, and nobody has
+      //    made that one.
+      'sf_accounts':      ['read', 'write'],
+      'sf_ledger':        ['read', 'write'],
+      'sf_vendor_prices': ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -785,7 +814,16 @@ module.exports = async (req, res) => {
     // against expectedApp 'stonedesk' would refuse every correctly signed-in
     // attorney -- the same defect this gate already recorded for `memory` on
     // 2026-09-03, which is why the lesson is applied rather than rediscovered.
-    const SD_GATE_APP = { 'law_trusttx': 'sairnlaw' };
+    // Per-resource expected app. Without the right entry a correctly
+    // signed-in caller fails verification and gets FORBIDDEN "sign in first"
+    // no matter what they do -- the exact defect `memory` produced on
+    // 2026-09-03 while pinned to 'stonedesk'.
+    const SD_GATE_APP = {
+      'law_trusttx': 'sairnlaw',
+      'sf_accounts': 'sairnfreedom',
+      'sf_ledger': 'sairnfreedom',
+      'sf_vendor_prices': 'sairnfreedom'
+    };
     // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
     // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
     // on license_hash ALONE on read, so `ai_memories` was a single per-licence

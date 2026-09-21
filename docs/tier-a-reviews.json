@@ -1248,6 +1248,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T14:37:06Z",
+      "resources": [
+        "law_trusttx",
+        "sf_accounts",
+        "sf_ledger",
+        "sf_vendor_prices"
+      ],
+      "files": [
+        "api/_lib/auth.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data.js",
+        "api/sf-auth.js",
+        "api/sf-auth.test.js",
+        "api/sf-session-gate.test.js",
+        "sairnfreedom.html",
+        "tests/sf_resources_session_gate_probe.py"
+      ],
+      "what": "SAIRNfreedom per-employee auth, all five pieces, closing the finding that its general ledger, chart of accounts and vendor pricing were authorised by the LICENCE KEY ALONE. Pieces: sql/sairnfreedom_employee_auth_schema.sql (NEW); sairnfreedom in ROLES_BY_APP and AUTH_TABLE_BY_APP; api/sf-auth.js (NEW, modelled on rf-auth.js); X-SD-Auth on sairnfreedom.html's sfData(); sf_accounts/sf_ledger/sf_vendor_prices in SD_SESSION_GATED with SD_GATE_APP entries. 44 assertions across api/sf-auth.test.js and api/sf-session-gate.test.js; 15 of 15 endpoint sabotages and 6 of 6 chain sabotages caught.\nPRESS ON, and the first two are the places I am most likely wrong:\n(1) THE GATE IS IDENTITY, NOT RANK, AND THAT IS MY CALL. Any active credential of the post reaches the ledger -- a chaplain or a ceremonial officer can read sf_ledger. I chose that because narrowing to finance.write is a product decision about who may see a post's books and nobody has made it, and because the finding was about \"no identity at all\" rather than about tiering. Judge whether shipping identity-only is right or whether it should have waited for the tier decision. If it should be tiered, MANAGEMENT_ROLES and the CAPABILITIES array are where that lives.\n(2) THE LAST-GOVERNOR GUARD COUNTS THE SOLE CAPABILITY, NOT THE PROVISIONING LIST, and that is a real divergence from rf/sc/sd. My reasoning: post.govern carries sole:true in the app's own CAPABILITIES and is one per post, post.govern.deputy is not a substitute for it in the bootstrap-trapdoor sense, and counting both would block a governor from deactivating a departing deputy. The consequence is that the guard is REACHABLE here (a deputy can try to deactivate the governor) where it is unreachable in rf. Check the trade: is there a state where this lets a post reach zero active governors?\n(3) THE ROLE LIST NOW LIVES IN THREE PLACES -- ROLES_BY_APP, the schema check constraint, and sairnfreedom.html's CAPABILITIES. One arm asserts all three agree, and that arm is the only thing preventing a capability the UI offers that the database rejects with a check violation nobody can read. Judge whether an arm is enough or whether one of the three should be generated from another.\n(4) I ONLY GATED THREE OF THIRTY-FIVE sf_ RESOURCES. The other 32 -- duty rosters, bottle fills, member records, service referrals -- stay open to anyone with the licence key. sf_members and sf_youth_participants in particular hold personal data about veterans and minors. I scoped to Tier A because that was the finding, and I have an arm PINNING the other 32 as ungated so widening is deliberate. Judge whether that scope is defensible or whether I have closed a narrow door and left a wider one.\n(5) TWO OF MY OWN ARMS SURVIVED SABOTAGE BEFORE I FIXED THEM and there may be more of the same kind: the dummy-salt timing branch (asserting the two RESPONSES are identical cannot see a TIMING defect -- now a timing arm over medians, and timing arms are inherently flaky, so judge the 1/3 threshold) and the cross-app check (my arm used roster, which refuses a foreign token on its ROLE check first, so it proved nothing about the app argument -- re-aimed at whoami). Look for other arms that pass for a reason other than the one named.\n(6) I EDITED api/_lib/auth.js, WHICH ALL SEVENTEEN AUTH ENDPOINTS REQUIRE. Two additions only -- a ROLES_BY_APP entry and an AUTH_TABLE_BY_APP entry -- but check neither changes behaviour for any existing app, and in particular that adding sairnfreedom to AUTH_TABLE_BY_APP cannot make credentialStillActive answer differently for anybody else.\n(7) THE SCHEMA IS NOT RUN. Everything here is code; sql/sairnfreedom_employee_auth_schema.sql has not been executed against Supabase, so the first real call will answer NOT_PROVISIONED until it is. That is stated in the file and in the endpoint's diagnostics, and it is the live-verification step this change cannot do for itself.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

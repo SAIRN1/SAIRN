@@ -221,7 +221,46 @@ const ROLES_BY_APP = {
   //
   // Judgment call on the SHORT NAMES only, not on the vocabulary -- same
   // disclosed-not-silent convention as every other app above.
-  sairnvet: ['owner', 'dvm', 'tech', 'assistant', 'manager', 'frontdesk']
+  sairnvet: ['owner', 'dvm', 'tech', 'assistant', 'manager', 'frontdesk'],
+  // SAIRNfreedom (2026-09-21) -- the SEVENTEENTH app to get per-employee auth,
+  // and it had none at all until today. Found while building the cross-tenant
+  // isolation arms: api/sd-data.js's SF_RESOURCES dispatcher serves 35
+  // resources, three of them Tier A -- sf_accounts, sf_ledger,
+  // sf_vendor_prices -- and NEITHER its read nor its write branch carried a
+  // session check. The licence key was the whole authorisation, and it is
+  // shipped to the browser. Same shape law_trusttx had until 2026-09-16;
+  // SAIRNfreedom was not swept with it. The tenant boundary was never the
+  // problem and is asserted -- this is identity WITHIN a post.
+  //
+  // ── THE ROLES ARE CAPABILITY IDS, AND THEY ARE THE APP'S OWN ───────────
+  // LIFTED, NOT INVENTED, which matters because a generic owner/admin/staff
+  // list would have been actively wrong here. sairnfreedom.html already
+  // carries a CAPABILITIES array with its reasoning written down: "Capabilities
+  // are the enum. Officer titles are display, mapped per org type." A VFW
+  // finance officer is the Quartermaster; an Elks one is the Treasurer; a
+  // Moose post is governed by a Governor rather than a Commander. The app
+  // maps FIVE org types -- American Legion, VFW, Elks, Moose, Eagles -- onto
+  // one stable capability set, and its own words are that "hardcoding one
+  // vocabulary would be wrong for three of the five target orders".
+  //
+  // So these ten are sairnfreedom.html's CAPABILITIES ids verbatim. NOT a
+  // judgment call I made -- a judgment call the app made, recorded, and
+  // justified, and the right move was to read it rather than decide again.
+  //
+  // THE LIST NOW LIVES IN THREE PLACES and that is a real drift risk, named
+  // here rather than left to be discovered: this array,
+  // sql/sairnfreedom_employee_auth_schema.sql's check constraint, and
+  // sairnfreedom.html's CAPABILITIES. api/sf-auth.js imports from here and
+  // adds no fourth copy.
+  //
+  // PROVISIONING is post.govern and post.govern.deputy, from the app's own
+  // PROVISIONING_CAPS. post.govern carries `sole:true` there, which is what
+  // sf-auth.js's last-admin refusal keys on.
+  sairnfreedom: [
+    'post.govern', 'post.govern.deputy', 'records.write', 'finance.write',
+    'member.admit', 'services.refer', 'legal.review', 'history.write',
+    'ceremonial.manage', 'chaplain.pastoral'
+  ]
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
@@ -879,7 +918,14 @@ const AUTH_TABLE_BY_APP = {
   sairnsenior: 'sairnsenior_employee_auth',
   sairncare: 'sairncare_employee_auth',
   sairnroofing: 'sairnroofing_employee_auth',
-  sairnvet: 'sairnvet_employee_auth'
+  sairnvet: 'sairnvet_employee_auth',
+  // Added 2026-09-21 with the app's first credentials. WITHOUT THIS ENTRY the
+  // session gate on sf_accounts / sf_ledger / sf_vendor_prices would verify
+  // the token and then answer NO_ACTIVE_CHECK -- allowing the request on the
+  // token alone and logging that it did. Correct behaviour for an app with no
+  // employee table; wrong the moment one exists, and it fails OPEN, which is
+  // the direction that says nothing.
+  sairnfreedom: 'sairnfreedom_employee_auth'
   // stonedesk_sub is DELIBERATELY ABSENT. Subcontractors authenticate against
   // `sd_sub_auth` keyed on sub_id, not employee_id, and their removal path is
   // a different one. Listing it here with the wrong key would refuse every
