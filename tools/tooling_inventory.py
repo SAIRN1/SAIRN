@@ -253,6 +253,18 @@ PURPOSES = {
         'for a one-line edit to api/sd-data.js, because that file names every '
         'resource on the platform. It cannot read a review and says so; what it '
         'refuses is a Tier A change nobody was told about and a self-signed one'),
+    'cross_tenant_isolation_scope.py': ('CHECKER',
+        'a Tier A resource whose license_hash filter is asserted by NOTHING, '
+        'and -- separately graded, because conflating them would overstate '
+        'coverage on exactly the control where that is worst -- one asserted '
+        'only by a string check wearing a behaviour check. Reports a THIRD '
+        'state for a resource whose serving code it cannot locate, never '
+        'folded into either column. Also sizes the remaining work in TEST '
+        'UNITS rather than resources: a generic dispatcher builds one query '
+        'for its whole map, so 84 resources are 48 units. Its grader is '
+        'controlled by tests/run_cross_tenant_scope_probe.py and stamped with '
+        'CRITERIA_VERSION, because it has already inverted once -- scoring the '
+        'more general test WEAK because the criteria encoded one file spelling'),
     'pinned_list_drift_check.py': ('CHECKER',
         'a hand-written list of resource names that is a PARTIAL cover of an '
         'app Tier A set with nothing comparing the two -- the shape that left '

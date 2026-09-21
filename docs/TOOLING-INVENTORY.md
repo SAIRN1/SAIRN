@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**204 files in `tools/`.** By what actually invokes them:
+**205 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 22 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 2 |
-| CHECKER | 142 |
+| CHECKER | 143 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
 | LIVE | 18 |
@@ -46,17 +46,18 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 11 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 6
+**The number to act on: 12 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 7
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 11, by name, so this is actionable rather than a statistic:
+The 12, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `bypass_log.py` | UNWIRED | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it |
+| `cross_tenant_isolation_scope.py` | SUITE-ONLY | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling |
 | `csv_formula_injection_check.py` | UNWIRED | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
@@ -295,7 +296,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (22)
+## SUITE-ONLY (23)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -305,6 +306,7 @@ fixtures. Nothing points them at the real codebase.
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
 | `claim_search.py` | ADVISORY | the gap between a WRITTEN CLAIM about what is built and the code that implements it -- this platform's most recurring incident class, and the half nobody does is RETRIEVAL. Checking is easy once the implementation is in front of you; finding it from an English sentence is not, because "pinned to an exact version" appears nowhere in a <script src=...> tag. BM25 over identifier-split tokens and comment prose, with an optional structural rerank. IT NEVER RETURNS A VERDICT in any mode -- the conformance judgement stays with a reader and with independent review where the claim matters, and a retrieval tool that also graded would be an assertion nobody re-checked with a search index underneath it. --verify excludes .md, because the first real run ranked the document a claim was copied out of above the code it describes. The embedding stage of "hybrid lexical + embedding + rerank" is ABSENT, not stubbed, and says so every run. | `run_claim_search_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
+| `cross_tenant_isolation_scope.py` | CHECKER | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling | `run_cross_tenant_scope_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
@@ -399,11 +401,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      204   git ls-files tools/
+  tools on disk                      205   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            148   tests/**/*.py, *.js
+  tools invoked by tests/            149   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
