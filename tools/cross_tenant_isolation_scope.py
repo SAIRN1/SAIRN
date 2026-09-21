@@ -477,6 +477,15 @@ SELF_EXCLUDED = (
     # already putting two lines of noise into the disclosure list attributed to
     # a file whose subject is the measurer.
     'tests/cross_tenant_dispatchers_review_probe.py',
+    # THE FOURTH, AND IT DEMONSTRATED THE RULE ON ITSELF (2026-09-21). cc's
+    # review of hank's d538f1e8. Its press-on (5) arm mutates the reference
+    # suite's declaration line, so it must carry that line as a literal -- and
+    # the parser read the literal as a declaration, crediting the review probe
+    # with law_invoices, law_opaccounts and law_barcerts on its first run. A
+    # file whose subject is the measurer is not a measurement, for the fourth
+    # time; the importer arm in tests/run_cross_tenant_scope_probe.py would
+    # have refused the push had this been left out.
+    'tests/cross_tenant_grader_declaration_review_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
