@@ -1968,8 +1968,15 @@ function nav(id){
 // which ld() handles and logs -- render as an EMPTY <select> in the Log Time
 // modal, whose .value is ''. saveTime() has no billing-code validation, so it
 // wrote billing_code:'' into law_timeentries AND SYNCED IT: a billable hour
-// with no UTBMS code, silently, on the exact record invoices and LEDES export
-// are built from.
+// with no UTBMS code, silently, on the exact record invoices are built from.
+// (This sentence said "invoices and LEDES export" until 2026-09-21. There is
+// no LEDES export in this file and never has been -- no exporter, no CSV
+// writer, nothing. api/_lib/law-timeentry.js had repeated the claim in its own
+// voice and in the refusal a firm reads on screen, which is how a missing
+// feature became a premise. Tracked as a real gap in
+// docs/SAIRN-OPEN-WORK-INDEX.md instead. The OTHER LEDES references in this
+// file are to the published UTBMS/LEDES STANDARD, which does exist, and they
+// are right to stay.)
 //
 // THIS IS NOT THE SEED-FALLBACK PATTERN GUARDIAN WARNS ABOUT, and the
 // difference is the whole reason it is allowed here. That rule exists because
@@ -3558,9 +3565,27 @@ async function saveTime(){
   var matterId=$('ttmatter').value,hours=Number($('tthours').value)||0;
   if(!matterId){toast('Select a matter');return;}
   if(hours<=0){toast('Hours must be greater than 0');return;}
+  // ── A BILLABLE HOUR AT RATE ZERO (2026-09-21) ───────────────────────────
+  // This function checked matter and hours and then wrote
+  // `rate:Number($('ttrate').value)||0` -- a blank or unparseable rate became
+  // ZERO, silently, at both ends. saveInvoice() computes the invoice total as
+  // hours x rate, so such an hour adds $0.00 to the bill while rendering in
+  // the billing table as an ordinary billable hour: the work is recorded, the
+  // fee is not, and nothing downstream says so. Same shape as the codeless
+  // hour above it, and arguably worse -- a codeless hour at least shows '--'
+  // in the code column, while a zero-rate hour shows a number.
+  //
+  // ONLY WHEN BILLABLE. A no-charge entry legitimately has no rate; that is
+  // what no-charge means, and refusing it would refuse real work.
+  //
+  // THE SERVER REFUSES IT TOO, in api/_lib/law-timeentry.js -- this is the
+  // convenience half. A check that lives only here is not a gate, which is
+  // the lesson the billing-code comment above LAW_BILLING_CODES records.
+  var billable=$('ttbillable').checked,rate=Number($('ttrate').value)||0;
+  if(billable&&!(rate>0)){toast('A billable hour needs an hourly rate above zero. The invoice total is hours x rate, so this entry would add $0.00 to the bill while showing as an ordinary billable hour. Enter the rate, or untick Billable if this hour is no-charge.',8000);return;}
   var rec={id:newId('TT'),matter_id:matterId,attorney:$('ttattorney').value.trim(),date:$('ttdate').value||lawLocalToday(),
-    billing_code:$('ttcode').value,hours:hours,rate:Number($('ttrate').value)||0,description:$('ttdesc').value.trim(),
-    billable:$('ttbillable').checked,invoiced:false,created_at:lawLocalToday()};
+    billing_code:$('ttcode').value,hours:hours,rate:rate,description:$('ttdesc').value.trim(),
+    billable:billable,invoiced:false,created_at:lawLocalToday()};
   var list=timeEntries();list.push(rec);st('law_timeentries',list);
   closeTimeModal();rBilling();rDash();
   var syncResult=await sdnData('write','law_timeentries',rec);

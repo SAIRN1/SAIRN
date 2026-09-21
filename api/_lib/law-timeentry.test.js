@@ -1,8 +1,14 @@
 // api/_lib/law-timeentry.test.js
 // REQUIREMENT: a billable hour cannot reach law_timeentries without a UTBMS
-//   billing code -- that record is what invoices and the LEDES export are
-//   built from, and a codeless hour renders as a normal billable hour with an
-//   empty column rather than as anything wrong
+//   billing code -- that record is what invoices are built from, and a
+//   codeless hour renders as a normal billable hour with an empty column
+//   rather than as anything wrong
+//
+// The clause "and the LEDES export" was removed from that requirement on
+// 2026-09-21: SAIRNlaw has no LEDES export and never has. A requirement is the
+// one line an auditor reads to decide what deleting this suite would lose, so
+// it must not name a consumer that does not exist. Tracked as a real gap in
+// docs/SAIRN-OPEN-WORK-INDEX.md.
 //
 // Run: node api/_lib/law-timeentry.test.js
 //

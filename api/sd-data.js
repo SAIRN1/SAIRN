@@ -10242,12 +10242,21 @@ module.exports = async (req, res) => {
       // which made the code list a constant so the <select> cannot render
       // empty. That closed the CAUSE. The gate was never built, so any other
       // caller -- an import, a new write path, a direct API call -- still wrote
-      // a codeless billable hour into the record invoices and the LEDES export
-      // are built from.
+      // a codeless billable hour into the record invoices are built from.
+      // (Said "invoices and the LEDES export" until 2026-09-21. SAIRNlaw has
+      // no LEDES export -- tracked as a real gap in
+      // docs/SAIRN-OPEN-WORK-INDEX.md rather than cited as a premise.)
       //
       // It is PRESENCE AND SHAPE, not membership, and api/_lib/law-timeentry.js
       // says at length why a server-side copy of the code list would point the
       // error in the dangerous direction.
+      //
+      // AND A BILLABLE HOUR AT RATE ZERO IS REFUSED HERE TOO (2026-09-21), by
+      // the same call: the invoice total is hours x rate, so a zero-rate
+      // billable hour adds $0.00 to the bill while showing as an ordinary
+      // billable hour. A NO-CHARGE entry is left alone -- that is what
+      // no-charge means. tests/sairnlaw_billable_rate.js, with
+      // tests/run_sairnlaw_billable_rate_sabotage_probe.py as its control.
       if (resource === 'law_timeentries') {
         const tep = lawTimeEntry.timeEntryProblem(payload);
         if (tep) { res.status(400).json({ error: { code: 'INVALID_TIME_ENTRY', message: tep } }); return; }
