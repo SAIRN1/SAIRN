@@ -193,6 +193,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Independent review of the cross-tenant grader DECLARATION probe (CC) &mdash; the &ldquo;at the moment hank shipped it&rdquo; reconstruction is not hank&rsquo;s list, and its guard cannot tell** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/grader_declaration_reconstruction_review_probe.py`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/grader_declaration_reconstruction_review_probe.py` |
 | **&#9888; `press_on_1` prints a THREE-entry exclusion list under a heading that says two, and the guard passes &mdash; a reconstruction that is wrong TODAY, not merely fragile later** | **OPEN 2026-09-21, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s review of cc&rsquo;s `2026-09-21T21:11:17Z` obligation. Driven both ways on the real 627-file corpus: `tests/grader_declaration_recon | `tests/cross_tenant_grader_declaration_review_probe.py`, `tests/grader_declaration_reconstruction_review_probe.py` |
 | **`SELF_EXCLUDED` press-on (3) needs a reviewer who has never edited that tuple &mdash; two sessions have now judged their own edits to it** | **OPEN 2026-09-21** &mdash; raised by Fourth while discharging cc&rsquo;s `21:11:17Z` obligation; **cannot be closed by cc or by Fourth** | `tests/run_cross_tenant_scope_probe.py` |
+| **&#9989; The trapdoor detector shared the blind spot the guard had &mdash; and watched 6 of 16 apps. Both closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/provisioner-health.js` and `tools/licence_recoverability_check.py`; new `api/provisioner-health-sole-role.test.js` **10 arms**, new `tests/run_provisioner_heal | `api/provisioner-health-sole-role.test.js`, `tests/run_provisioner_health_sole_role_sabotage_probe.py` |
 | **&#9989; A deputy provisioning role could deactivate the last `owner` in SAIRNgrounds, SAIRNbiz and SAIRNscape &mdash; the SD-AUDIT-2026 loss shape, through the API** | **FIXED 2026-09-21 (Hank)** &mdash; `SOLE_ROLE = 'owner'` wired into `setActive()` in all three; new suite `api/_lib/last-admin-sole-role.test.js` **24 arms**, new probe `tests/run_last_admin_sole_rol | `api/_lib/last-admin-sole-role.test.js`, `tests/run_last_admin_sole_role_sabotage_probe.py` |
 | **&#9989; The six write-class cross-tenant gaps Phase 3 disclosed by line are closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data-cross-tenant-ownbranch.test.js`, 73 &rarr; 76 assertions, **6 of 6 sabotages caught individually**, and a full re-sweep of all 37 filtered queries leav | `api/sd-data-cross-tenant-ownbranch.test.js` |
 | **&#128308; FOUR MORE representation-PATCHes in `api/sd-data.js` report a change that did not happen &mdash; and the guard added to stop exactly this cannot see them** | **OPEN. Found 2026-09-21 (cc) while reviewing hank's json-catch-null sweep. NOT fixed: shared file, two sessions live in it, and a five-site repair is its own change** | `api/sd-data-unconfirmed-write-sweep.test.js` |
@@ -560,6 +561,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **&#9989; An `admin` could deactivate the last active `owner` &mdash; the FOURTH instance of the last-admin defect, in a Tier A auth path, behind a comment calling it &ldquo;unreachable by construction&rdquo;** | **FIXED 2026-09-21 (Hank)** &mdash; `GUARD_ROLES = [SOLE_ROLE]` in `api/sd-auth.js`; new `api/sd-auth-last-admin.test.js` **8 arms**, new `tests/run_sd_auth_last_admin_sabotage_probe.py` **8 mutations | `api/sd-auth-last-admin.test.js`, `tests/run_sd_auth_last_admin_sabotage_probe.py` |
+| **~~&#128308; THE SAME DEFECT IS LIVE IN StoneDesk &mdash; an `admin` can deactivate the last `owner`~~ &mdash; SUPERSEDED, it was fixed the same evening** | **CLOSED 2026-09-21 (Hank).** Kept rather than deleted so the FOUND&rarr;FIXED sequence stays on file; the live row is the **&#9989; StoneDesk** one above | `api/sd-auth-last-admin.test.js`, `tests/run_sd_auth_last_admin_sabotage_probe.py` |
 | **The pricing backtest had NO suite at all, which is why it spent its whole life mis-parsing uploads &mdash; suite and negative control both built** | **BUILT 2026-09-18 (Fourth)** &mdash; `tests/stonedesk_pricing_backtest.js` 13 arms, `tests/stonedesk_pricing_backtest_mutation_control.js` 14 assertions, 5 mutations all caught | `tests/stonedesk_pricing_backtest.js`, `tests/stonedesk_pricing_backtest_mutation_control.js` |
 | **`tests/stonedesk_server_backup.js` had been RED on `main` since item 97 landed and nobody had read the red** | **FIXED 2026-09-16 (Hank)** &mdash; the `soft_delete` spread assertion now names the seven SAIRNcode resources. 23/23 green | `tests/stonedesk_server_backup.js` |
 | **Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise was wrong, which is stated before anything was built** | **BUILT 2026-09-15 (Hank)** &mdash; `9bc2dd2b`. `tests/stonedesk_inside_corner_radius.js` 14 arms + `tests/stonedesk_fixture_catalog.js` 15 arms | `tests/stonedesk_fixture_catalog.js`, `tests/stonedesk_inside_corner_radius.js` |
@@ -591,15 +593,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 568 of 631 traced, 90.0%.
+For context and not as the headline: 570 of 633 traced, 90.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 568 citations come from
+### Where the 570 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 290 |
+| `index` | 292 |
 | `declared` | 238 |
 | `declared+index` | 32 |
 | `GUARD_TESTS+index` | 5 |
@@ -699,8 +701,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 631   tests/**, api/** (both walked)
-  open-work rows citing a test       314   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 633   tests/**, api/** (both walked)
+  open-work rows citing a test       316   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

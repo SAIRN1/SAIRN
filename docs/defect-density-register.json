@@ -10292,7 +10292,7 @@
       "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
     },
     {
-      "commit": "fd5e4029874d",
+      "commit": "4f4afc8a113f",
       "date": "2026-09-21",
       "subject": "fix(monitoring): the trapdoor detector shared the blind spot it exists to catch, and watched 6 of 16 apps",
       "files": [
