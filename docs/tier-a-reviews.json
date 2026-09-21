@@ -1316,6 +1316,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T20:03:40Z",
+      "resources": [
+        "alf_claim_routes",
+        "alf_incidents",
+        "alf_op_audits",
+        "alf_staff_credentials"
+      ],
+      "files": [
+        "api/alf-append-only-fail-closed.test.js",
+        "tests/alf_append_only_probe.py"
+      ],
+      "what": "alf_mar and bld_draws check-then-write races closed in Postgres RPCs (hover_log #314/#315): api/sd-data.js now calls alf_check_and_insert_mar_entry and bld_release_retainage_atomic instead of SELECT-then-merge-duplicates-POST and read-then-PATCH. Tier A surface touched is the append-only suite and probe -- alf_mar left the six-site appendOnlyExisting list for a stricter guarantee, so alf_claim_routes/alf_incidents/alf_op_audits/alf_staff_credentials assertions and mutation anchors moved. REVIEW THE COUNT CHANGE MOST: 6 -> 5 checked reads is the kind of edit that can hide a site being dropped rather than upgraded. SQL for both RPCs is committed but NOT yet run in Supabase.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-21T20:03:40Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
