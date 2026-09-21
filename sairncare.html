@@ -1286,9 +1286,65 @@ function alfFetchTimeoutSignal(){
     return AbortSignal.timeout(ALF_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
+// ── WHAT HAPPENED, RECORDED PER RESOURCE (2026-09-21) ──────────────────────
+// `return null` on every failure path collapsed three facts that need three
+// different sentences into one:
+//
+//   MISSED   the server LOOKED and said no, or nothing was ever sent
+//   UNKNOWN  nobody answered, or the answer could not be read -- so the write
+//            MAY WELL HAVE LANDED and claiming otherwise is a false negative
+//   WROTE    the server confirmed it
+//
+// This is the same WROTE/MISSED/UNKNOWN vocabulary `wroteRow()` already uses
+// on the server in api/sd-data.js, applied at the client end of the same
+// round trip. IT MATTERS MOST ON AN APPEND-ONLY TABLE: alf_claim_routes has
+// `grant select, insert` and no delete, so telling a biller "Nothing was
+// saved" after a 15s timeout that DID land is how one determination becomes
+// two rows with nothing marking the duplicate.
+//
+// THE SPLIT AT 500 IS THE LOAD-BEARING LINE. A 4xx is the server reading the
+// request and refusing it -- nothing was written, and MISSED is a fact. A 5xx
+// is a gateway, a proxy or the data store failing somewhere along a request
+// that was already accepted; whether the row landed is not established, so it
+// is UNKNOWN. Folding 5xx into MISSED would be the same false negative as the
+// timeout.
+//
+// `null` IS STILL WHAT EVERY CALLER GETS. 31 call sites in this file are
+// written for it and none of them change; the reason is recorded beside it,
+// the same shape scpLastErr already carries in sairnscape.html.
+//
+// EVERY PATH WRITES AN ENTRY, INCLUDING SUCCESS. A stale entry left standing
+// from an earlier failure of the same resource would read as a fresh
+// judgement -- the defect sairndental.html records having shipped -- so this
+// overwrites rather than leaving the last one in place. And the transport
+// path deliberately records NO `status`: nothing answered, so it is not a
+// refusal and must not inherit one.
+var alfLastOutcome={};
+function alfNote(resource,verdict,extra){
+  alfLastOutcome[resource]=Object.assign({verdict:verdict},extra||{});
+}
+// UNKNOWN when there is no entry at all, never WROTE and never MISSED: an
+// absent entry means nobody has asked this resource anything, and both of the
+// other two would be a claim made from no evidence.
+function alfWriteVerdict(resource){
+  var e=alfLastOutcome[resource];
+  return (e&&e.verdict)||'UNKNOWN';
+}
+function alfLastErrText(resource){
+  var e=alfLastOutcome[resource];
+  return (e&&(e.message||e.code))||'';
+}
+// STRICTLY `=== false`. `undefined` means the branch did not say, which is not
+// the same as saying the table is absent, and treating it as such would put a
+// "not set up" banner on every resource whose endpoint does not report the
+// flag. Only the server's own explicit `provisioned:false` counts.
+function alfNotProvisioned(resource){
+  var e=alfLastOutcome[resource];
+  return !!e&&e.provisioned===false;
+}
 function alfData(action,resource,payload,withSession){
   var lic=alfLicenseKey();
-  if(!lic)return Promise.resolve(null);
+  if(!lic){alfNote(resource,'MISSED',{code:'NO_LICENCE',message:'No licence key in this browser — nothing was sent.'});return Promise.resolve(null);}
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
   if(withSession&&alfSession&&alfSession.token)h['X-SD-Auth']=alfSession.token;
   return fetch(DATA_API,{
@@ -1298,10 +1354,28 @@ function alfData(action,resource,payload,withSession){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('alfData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        var code=(d&&d.error&&d.error.code)||('HTTP_'+r.status);
+        console.warn('alfData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
+        alfNote(resource,r.status>=500?'UNKNOWN':'MISSED',
+                {status:r.status,code:code,message:(d&&d.error&&d.error.message)||''});
+        return null;
+      }
+      // `provisioned` is the server saying, in its own words, that the table
+      // behind this resource does not exist yet -- 149 branches of
+      // api/sd-data.js answer 404/400 with `{ok:true,data:[],provisioned:false}`
+      // rather than an error, precisely so the client can tell "never migrated"
+      // from "genuinely empty". Returning `d.data` alone threw that away.
+      alfNote(resource,'WROTE',{status:r.status,provisioned:d.provisioned});
       return d.data;
     });
-  }).catch(function(e){console.warn('alfData network error:',e.message);return null;});
+  }).catch(function(e){
+    console.warn('alfData network error:',e.message);
+    var timedOut=!!(e&&(e.name==='TimeoutError'||e.name==='AbortError'));
+    alfNote(resource,'UNKNOWN',{code:timedOut?'TIMEOUT':'NETWORK',
+      message:timedOut?('No answer in '+(ALF_FETCH_TIMEOUT_MS/1000)+'s.'):('The server could not be reached or its answer could not be read. '+((e&&e.message)||''))});
+    return null;
+  });
 }
 
 // Routing needs its OWN transport, deliberately not alfData(): alfData collapses
@@ -1324,7 +1398,32 @@ function alfRoute(payload){
       // A transport/auth failure (401/403/503) arrives with an error but no routing
       // decision -- surface it in the same shape the engine's own refusals use so the
       // renderer has exactly one contract to handle.
-      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,message:'The server refused this request.'}};
+      //
+      // ── `&& !d.error` WAS HERE, AND IT WAS THE HOLE (2026-09-21) ───────────
+      // With it, this normalisation only fired when the server sent NO error
+      // body -- so every sd-data refusal that DOES carry one passed through
+      // wearing its own code: NO_SESSION, FORBIDDEN, NOT_PROVISIONED, and
+      // `upstream()`'s 502, whose body is `{error:{message}}` with NO CODE AT
+      // ALL. alfRouteRecordable() below is a deny-list over the codes THIS
+      // FUNCTION mints, and it cannot name a code minted somewhere else. A 502
+      // from the alf_payer_rules read therefore reached the biller wearing a
+      // "Record this determination" button, and pressing it wrote a permanent
+      // "not routed" row into an append-only table with no delete grant --
+      // a claim about the engine's judgement when the engine never judged.
+      //
+      // THE ENGINE JUDGES ON 200 AND ONLY ON 200. Every routing answer, refusal
+      // included, is `res.status(200)`; everything else is somebody other than
+      // the engine saying no. So EVERY non-200 is stamped HTTP_<status> here,
+      // which makes the not-judged set exactly the three codes this function
+      // mints -- closed by construction rather than by a list somebody has to
+      // remember to extend.
+      //
+      // THE SERVER'S MESSAGE IS KEPT. It is the actionable half ("Billing rules
+      // are not set up yet -- run sql/sairncare_payer_rules_schema.sql"), and
+      // losing it to make room for the code would trade a sentence the operator
+      // can act on for a number they cannot.
+      if(!r.ok)return {ok:false,error:{code:'HTTP_'+r.status,
+        message:(d.error&&d.error.message)||'The server refused this request.'}};
       return d;
     }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response — nothing was routed.'}};});
   }).catch(function(e){return {ok:false,error:{code:'NETWORK',message:'Network error — nothing was routed. '+e.message}};});
@@ -2988,8 +3087,41 @@ function alfRouteRecordable(res,residentId,serviceMonth){
   // HTTP_* code mean nobody answered or the answer was unreadable -- recording
   // one as a billing decision would put a claim about the engine's judgement in
   // an evidence table when the engine never judged.
-  var code=(res.error&&res.error.code)||'';
-  if(code==='NETWORK'||code==='BAD_RESPONSE'||code.indexOf('HTTP_')===0)return false;
+  //
+  // ── THIS LIST WAS OPEN AT BOTH ENDS UNTIL 2026-09-21 ──────────────────────
+  // The three codes below are the three alfRoute() MINTS ITSELF, so as a
+  // deny-list over that set it is complete. It was not complete over what it
+  // was actually being handed: alfRoute's contract is "return the full body,
+  // success or refusal", so the body carried whatever api/sd-data.js emitted,
+  // and FOUR shapes the engine never judged walked straight through -- 401
+  // NO_SESSION, 403 FORBIDDEN, 503 NOT_PROVISIONED, and 502 `upstream()`,
+  // whose body has no `code` at all so `code` resolved to '' and matched none
+  // of the three. A deny-list cannot name a code that does not exist yet.
+  //
+  // alfRoute() now stamps HTTP_<status> on EVERY non-200, which closes it at
+  // the producer. The two guards below close it again at the consumer, because
+  // one edit to alfRoute would otherwise reopen it silently:
+  //
+  //   * AN ERROR WITH NO CODE IS REFUSED. The 502 case exactly. An error the
+  //     transport did not name is one this function has no grounds to call a
+  //     determination.
+  //   * A CODE IS ONLY CONSULTED ON AN ERROR BODY. A routed result carries no
+  //     `error`, and the engine's own refusals (NOT_ROUTABLE, NO_RULE_FOR_STATE,
+  //     DX_MATCH_WOULD_DENY, MISSING_TIER and the rest) arrive at 200 with the
+  //     engine's code, which is what a biller acts on and what the trail exists
+  //     to hold.
+  //
+  // NOT AN ALLOW-LIST OF ENGINE CODES, and that is a decision. There are 17 of
+  // them in api/_lib/payer-routing.js plus two more minted in sd-data's route
+  // branch; copying that list here would be a second copy to keep in step, and
+  // the day somebody adds a refusal and forgets this file the button silently
+  // stops appearing for a real determination. "Did the engine answer at all"
+  // is one fact that cannot rot, and it is the fact this function needs.
+  if(res.ok===false||res.error){
+    var code=(res.error&&res.error.code)||'';
+    if(!code)return false;
+    if(code==='NETWORK'||code==='BAD_RESPONSE'||code.indexOf('HTTP_')===0)return false;
+  }
   return true;
 }
 
@@ -3003,6 +3135,40 @@ async function alfRecordRoute(){
   if(!alfIsManagement()){toast('Only management can record a routing determination');return;}
   var btn=$('pr-record-btn');
   if(btn){btn.disabled=true;btn.textContent='Recording…';}
+  // ── WHAT GOES IN THE BLOB IS A PHI DECISION, AND IT IS MADE HERE ──────────
+  // Written down 2026-09-21 after a Tier A review asked the question and found
+  // the answer existed nowhere. READ THIS BEFORE ADDING A FIELD BELOW.
+  //
+  // `result` and `inputs` are stored WHOLESALE. The server strips id,
+  // resident_id and service_month into their own columns and puts everything
+  // else in `alf_claim_routes.data`, a jsonb blob. For hospice routing that
+  // blob therefore carries `hospice_principal_diagnosis` and
+  // `claim_principal_diagnosis` -- RAW ICD CODES, and PHI beyond the
+  // resident_id the table already held.
+  //
+  // THAT IS ACCEPTED, NOT OVERLOOKED, and here is the whole reasoning so a
+  // future reader can disagree with it on the merits rather than rediscover
+  // it. A diagnosis is not incidental to this record: the relatedness of the
+  // claim diagnosis to the terminal diagnosis IS the determination in the
+  // hospice carve-out, so a trail that holds the answer and not the question
+  // cannot be audited at all. HIPAA's minimum-necessary standard is satisfied
+  // because the read is gated server-side to ALF_MANAGEMENT_ROLES -- owner and
+  // billing -- and a billing role is the role that puts a diagnosis on the
+  // claim in the first place. The row is license_hash-scoped and the table is
+  // append-only with `grant select, insert` and no delete.
+  //
+  // WHAT IS NOT ACCEPTED IS DOING IT BY ACCIDENT. `Object.assign` copying two
+  // whole objects means ANY field the routing engine starts returning, or any
+  // input a future modal starts collecting, lands in a management-read Tier A
+  // blob without anybody deciding it should. IF YOU ADD AN INPUT TO EITHER
+  // ROUTING MODAL, OR A FIELD TO api/_lib/payer-routing.js's RESULT, DECIDE
+  // HERE WHETHER IT BELONGS IN THE PERMANENT RECORD -- it cannot be taken out
+  // afterwards. The candidates that would NOT belong are the ones a
+  // determination does not rest on: a resident's name, address, date of birth,
+  // payer member number, or free text a biller typed for themselves.
+  //
+  // The schema carries the same note on the `data` column; they are two places
+  // somebody arrives from, not two copies of a rule.
   var payload=Object.assign({
     id:'ROUTE-'+Date.now()+'-'+Math.floor(Math.random()*1000),
     resident_id:r.resident_id,
@@ -3014,13 +3180,36 @@ async function alfRecordRoute(){
   // THE BUTTON FOLLOWS THE OUTCOME. A determination that did not reach the
   // server is not recorded, and saying otherwise would be the same defect this
   // session fixed in sairnscape: a control asserting what the message denies.
+  //
+  // ── THE FAILURE BRANCH ASSERTED MISSED WHERE THE TRUTH WAS UNKNOWN ────────
+  // It read "Nothing was saved; try again with a connection" for every falsy
+  // answer -- a 15s timeout, a 409, a 503 and a dead connection alike. On a
+  // TIMEOUT the row may well have landed: the biller presses again, Date.now()
+  // mints a different id, the 409 that would have caught a repeat never fires,
+  // and an APPEND-ONLY table with no delete grant ends up holding two rows for
+  // one determination with nothing marking the duplicate.
+  //
+  // SO UNKNOWN DOES NOT RE-ENABLE THE BUTTON. That is the whole fix: the one
+  // action that can do harm is the retry, and offering it under a message that
+  // says the write failed is offering it under a claim nobody established.
+  // The trail is re-read on BOTH branches now, so the screen answers the
+  // question the toast cannot.
   if(saved){
     if(btn){btn.textContent='Recorded';}
     toast('Determination recorded for '+(r.service_month||''));
     prRenderRecorded();
   }else{
-    if(btn){btn.disabled=false;btn.textContent='Record this determination';}
-    toast('NOT recorded — the determination did not reach the server. Nothing was saved; try again with a connection.',7000);
+    var verdict=alfWriteVerdict('alf_claim_routes');
+    var why=alfLastErrText('alf_claim_routes');
+    prRenderRecorded();
+    if(verdict==='UNKNOWN'){
+      if(btn){btn.disabled=true;btn.textContent='NOT CONFIRMED — check the trail';}
+      toast('NOT CONFIRMED — the server never answered, so whether this determination was recorded is UNKNOWN. It was not confirmed and it was not refused'
+        +(why?(' ('+why+')'):'')+'. Check the trail below before recording it again: a second press mints a new id and would enter a SECOND row for the same determination.',12000);
+    }else{
+      if(btn){btn.disabled=false;btn.textContent='Record this determination';}
+      toast('NOT recorded — the server refused it'+(why?(': '+why):'')+'. Nothing was saved.',7000);
+    }
   }
 }
 
@@ -3036,6 +3225,20 @@ async function prRenderRecorded(){
     return;
   }
   if(!rows.length){
+    // ── NEVER MIGRATED IS NOT GENUINELY EMPTY (2026-09-21) ──────────────────
+    // The server already tells the truth here: the alf_claim_routes read
+    // branch answers a 404/400 from the data store with
+    // `{ok:true,data:[],provisioned:false}` rather than an error, precisely so
+    // a client can tell the two apart. alfData() returned `d.data` and dropped
+    // the flag, so an ABSENT TABLE rendered as "No routing determination has
+    // been recorded yet ... press Record this determination to enter it in the
+    // trail" -- an instruction that cannot work, under a reading of the
+    // evidence that is not merely unhelpful but wrong: it says the trail is
+    // empty when in fact there is no trail.
+    if(alfNotProvisioned('alf_claim_routes')){
+      box.innerHTML='<div class="note"><b>The routing trail is NOT SET UP in this database.</b> This is NOT an empty trail &mdash; the <code>alf_claim_routes</code> table does not exist, so nothing can be recorded until it does. Run <code>sql/sairncare_payer_rules_schema.sql</code> in Supabase.</div>';
+      return;
+    }
     box.innerHTML='<div class="note">No routing determination has been recorded yet. Running the router does not record one &mdash; press <b>Record this determination</b> on a result to enter it in the trail.</div>';
     return;
   }

@@ -87,6 +87,30 @@ create index if not exists idx_alfpr_lookup on public.alf_payer_rules(license_ha
 -- claim was billed -- if the determination changes, that is a NEW decision
 -- with its own timestamp, not an edit erasing what was previously believed
 -- and acted on. Same reasoning as alf_mar's administration entries.
+--
+-- WHAT IS IN `data`, AND WHY IT IS PHI (written down 2026-09-21, after a Tier
+-- A review asked and found the answer recorded nowhere). The client stores the
+-- routing engine's whole RESULT and the whole set of INPUTS it was given; the
+-- write branch strips entry_id, resident_id and service_month into their own
+-- columns and everything else lands here. For hospice routing that includes
+-- `hospice_principal_diagnosis` and `claim_principal_diagnosis` -- RAW ICD
+-- CODES, beside the resident_id in the same row. That is PHI beyond what the
+-- other columns carry, and it is deliberate: the relatedness of the claim
+-- diagnosis to the terminal diagnosis IS the determination in the hospice
+-- carve-out, so a trail holding the answer without the question cannot be
+-- audited. Minimum-necessary rests on the read being gated in
+-- api/sd-data.js to ALF_MANAGEMENT_ROLES (owner, billing) -- the role that
+-- puts a diagnosis on the claim in the first place -- and on the row being
+-- license_hash-scoped, insert-only and never updatable (see the grants below).
+--
+-- THE RISK IS ACCRETION, NOT TODAY'S CONTENT. The client copies two whole
+-- objects, so any field the engine starts returning or any input a future
+-- modal starts collecting arrives here without a decision, permanently, in a
+-- table with no delete grant. BEFORE ADDING AN INPUT TO EITHER ROUTING MODAL
+-- OR A FIELD TO api/_lib/payer-routing.js's RESULT, decide whether it belongs
+-- in the permanent record. The reasoning is also at the write site in
+-- sairncare.html's alfRecordRoute(), which is the other place somebody arrives
+-- from.
 create table if not exists public.alf_claim_routes (
   id            uuid primary key default gen_random_uuid(),
   license_hash  text not null,

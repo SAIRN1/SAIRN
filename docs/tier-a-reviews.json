@@ -853,6 +853,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T07:29:49Z",
+      "resources": [
+        "alf_claim_routes",
+        "alf_payer_rules"
+      ],
+      "files": [
+        "sairncare.html",
+        "tests/run_sairncare_route_record_sabotage_probe.py",
+        "tests/sairncare_route_record.js"
+      ],
+      "what": "SAIRNcare alf_claim_routes + alf_payer_rules: the three findings from the 2026-09-18T13:48:51Z review, fixed. (1) alfRouteRecordable() was a deny-list of the three codes alfRoute() mints, handed bodies api/sd-data.js minted -- 401 NO_SESSION, 403 FORBIDDEN, 503 NOT_PROVISIONED and 502 upstream() (no code at all) all reached the biller with a Record button, and the 502 would have written a permanent 'not routed' row into an append-only table with no delete grant. Closed at the PRODUCER (alfRoute now stamps HTTP_<status> on every non-200 -- the engine judges on 200 and only on 200) and again at the CONSUMER (an error with no code is refused on its own merits). (2) alfData() now answers WROTE/MISSED/UNKNOWN per resource, the same vocabulary wroteRow() uses server-side; a 15s timeout or a 5xx is UNKNOWN, a 4xx or a 200-with-ok:false is MISSED, and the UNKNOWN branch of alfRecordRoute() deliberately does NOT re-enable the retry button because the retry mints a new id and would enter a SECOND row for one determination. null is still what all 31 call sites get. (3) alfData() no longer drops the server's provisioned flag, so an unprovisioned alf_claim_routes renders 'NOT SET UP' instead of 'No routing determination has been recorded yet'. PLUS the PHI decision the review accepted is now WRITTEN DOWN at both places somebody arrives from -- the write site in alfRecordRoute() and the data column in sql/sairncare_payer_rules_schema.sql -- because result and inputs are stored wholesale and hospice routing puts raw ICD codes in a management-read Tier A blob. PRESS ON: (a) the 500 split is the load-bearing line -- check that no 4xx sd-data can emit on this write is actually a case where the row MAY have landed, because MISSED re-enables the button; (b) alfRoute's stamping drops the server's error CODE and keeps only its message -- check no caller or renderer depended on seeing NO_SESSION/FORBIDDEN by code; (c) alfNotProvisioned uses ===false and 149 sd-data branches report the flag while others do not -- check no OTHER alfData caller now behaves differently because an entry exists where none did before; (d) the UNKNOWN branch leaves the button disabled with no way back except a re-render -- check a biller who legitimately needs to record after a timeout is not stranded; (e) tests/sairncare_route_record.js extracts the shipped functions by LINE RANGE and throws on ANCHOR-0/2 -- check that a reasonable edit to sairncare.html cannot silently orphan an anchor and leave the suite testing a subset.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
