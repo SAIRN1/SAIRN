@@ -1273,6 +1273,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T15:11:47Z",
+      "resources": [
+        "law_trusttx",
+        "sf_accounts",
+        "sf_ledger",
+        "sf_vendor_prices"
+      ],
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/employee-lifecycle-wiring.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data.js",
+        "api/sf-auth.js",
+        "api/sf-auth.test.js",
+        "api/sf-session-gate.test.js",
+        "sairnfreedom.html",
+        "tests/sf_resources_session_gate_probe.py"
+      ],
+      "what": "SAIRNfreedom per-employee auth -- amendment to the 14:31 obligation after a SIXTH piece proved necessary and a shared file had to change. Additions since that record: api/sf-auth.js is WIRED onto api/_lib/employee-lifecycle.js rather than hand-written; employee-lifecycle.js gained an OPT-IN soleRole parameter; sairnfreedom.html gained a full sign-in pane, bootstrap route, session restore with whoami, sign-out and an Access panel with roster and set_active; api/_lib/employee-lifecycle-wiring.test.js gained the sairnfreedom rows and its label arm now derives role words from dots as well as underscores. 47 assertions; 15 of 15 endpoint, 6 of 6 chain and 5 of 5 arrival-path sabotages caught.\nPRESS ON:\n(1) I CHANGED api/_lib/employee-lifecycle.js, WHICH TEN ENDPOINTS NOW SHARE. The change is one optional parameter -- soleRole -- and when absent the behaviour is byte-identical to before. Check that claim properly: the guard previously counted activeProvisioners over provisioningRoles and now counts over guardRoles, which is provisioningRoles when soleRole is absent. Verify no existing caller passes soleRole and that none of the nine other apps changes behaviour. If I am wrong here it is wrong for every app with credentials.\n(2) THE soleRole SEMANTICS ARE MINE AND THEY DIVERGE FROM EVERY OTHER APP. SAIRNfreedom has TWO provisioning capabilities and only post.govern carries sole:true, so the last-admin guard counts governors only. That means a governor CAN deactivate the last deputy, and a deputy CANNOT deactivate the last governor. Check there is no sequence reaching zero active governors -- in particular whether a governor can deactivate themselves indirectly, or whether setup can downgrade the only governor's capability to something non-sole, which would walk around the guard entirely. I did NOT check that second one and it is the likeliest hole.\n(3) I RELAXED A SEAM TEST'S LABEL ARM from _ to [_.] so dotted capability ids resolve to words. The arm's intent is that a refusal message names every role it tells somebody to go and ask, and I believe the intent is preserved -- but I changed a check to fit my app, which is exactly what that gate's own message warns against. Judge it. The alternative I rejected was a customer-facing message containing the literal string post.govern.deputy.\n(4) THE SIGN-IN UI IS NEW AND UNVERIFIED IN A BROWSER. It is asserted by source inspection only: no Playwright, no rendered check. The panes could be visually broken, the Access table could render wrong, and every arm would still pass. Treat every UI claim here as unverified.\n(5) I CHANGED THE ARRIVAL PATH OF A LIVE APP. sfUnlock now validates the licence and routes to sign-in; the boot handler no longer opens the app on a stored licence. Anybody with an existing sf_license_key in localStorage will land on a sign-in screen for an account that does not exist yet, and the only way forward is the bootstrap link. Judge whether that is an acceptable migration or whether it needs a message explaining it.\n(6) THREE OF MY OWN ARMS PASSED FOR THE WRONG REASON AND SABOTAGE FOUND ALL THREE -- an anchor on the word DOMContentLoaded whose first hit is a comment 5,000 lines earlier, an assertion on check_license that my own comment satisfied, and the label arm above. Assume there are more of that shape in the two new suites and look for them.\n(7) THE SCHEMA IS STILL NOT RUN. Nothing here has touched Supabase. The first real call answers NOT_PROVISIONED until sql/sairnfreedom_employee_auth_schema.sql is executed, and the grants at its foot are unverified.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

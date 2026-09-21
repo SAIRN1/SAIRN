@@ -313,6 +313,58 @@ async function provision(w, employee_id, role) {
       'the licence header is gone -- two secrets, two headers');
   });
 
+  section('THE CLIENT CAN ACTUALLY OBTAIN A SESSION -- a gate nothing satisfies is a break');
+
+  // -- ADDED AFTER TWO SABOTAGES SURVIVED ----------------------------------
+  // api/_lib/employee-lifecycle-wiring.test.js checks the DEACTIVATION screen,
+  // which is its subject, and nothing checked the ARRIVAL path. Mutating the
+  // boot handler and sfUnlock to walk straight into the app -- which is what
+  // they BOTH did before today -- left every arm on the platform green while
+  // making sf_accounts, sf_ledger and sf_vendor_prices unreachable from the
+  // real client. A 403 nobody can clear is a break, not a control, and it is
+  // the exact failure that made the five pieces land in the order they did.
+  const clientSrc = fs.readFileSync(path.join(__dirname, '..', 'sairnfreedom.html'), 'utf8');
+
+  await test('the licence gate hands off to SIGN-IN, not straight to the app', async () => {
+    const at = clientSrc.indexOf('function sfUnlock(');
+    assert.ok(at > 0, 'sfUnlock is gone -- the licence gate was renamed or removed');
+    const body = clientSrc.slice(at, at + 1600);
+    assert.ok(body.indexOf("$('pin').classList.add('on')") !== -1,
+      'sfUnlock no longer opens the sign-in pane, so a licence walks straight '
+      + 'into an app whose ledger answers 403 with nothing on screen to say why');
+    // THE CALL, NOT THE WORD. Asserting on `check_license` alone SURVIVED a
+    // sabotage that replaced the call with a resolved promise -- because the
+    // comment three lines above it in the source still contains the word, and
+    // a comment is not a call. Caught by mutation, not by review.
+    assert.ok(body.indexOf("sfAuth('check_license'") !== -1,
+      'sfUnlock no longer validates the licence before moving on');
+  });
+
+  await test('a stored licence does not boot past sign-in either', async () => {
+    // ANCHORED ON THE LISTENER, NOT THE WORD. The first occurrence of
+    // "DOMContentLoaded" in this file is inside a COMMENT 5,000 lines earlier,
+    // so a bare indexOf window read prose and proved nothing.
+    const at = clientSrc.indexOf("document.addEventListener('DOMContentLoaded'");
+    assert.ok(at > 0, 'no boot handler found');
+    const body = clientSrc.slice(at, at + 2600);
+    assert.ok(body.indexOf('sfRestoreSession()') !== -1,
+      'the boot handler does not try to restore a session, so a stored licence '
+      + 'opens the app with no token and every gated call answers 403');
+    assert.ok(body.indexOf("$('pin').classList.add('on')") !== -1,
+      'the boot handler has no path to the sign-in pane');
+  });
+
+  await test('the sign-in pane and the bootstrap link both exist in the markup', async () => {
+    // A handler with no pane to show is the dormant-code failure one layer up.
+    assert.ok(clientSrc.indexOf('id="pin"') !== -1, 'no sign-in pane');
+    assert.ok(clientSrc.indexOf('id="l-eid"') !== -1 && clientSrc.indexOf('id="l-pin"') !== -1,
+      'the sign-in pane has no employee ID / PIN fields');
+    assert.ok(clientSrc.indexOf('sfShowBootstrap()') !== -1,
+      'no route to bootstrap -- the FIRST officer of a post could never sign in, '
+      + 'and there is deliberately no client-side first-run probe to fall back on');
+  });
+
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   process.exit(fail ? 1 : 0);
 })();

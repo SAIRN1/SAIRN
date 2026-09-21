@@ -180,10 +180,33 @@ async function setActive(ctx) {
     return refusal(404, 'NOT_FOUND', 'No such employee on this license');
   }
 
+  // ── THE LAST-ADMIN COUNT IS OVER `roles` UNLESS AN APP NAMES A SOLE ONE ──
+  // (2026-09-21, added for SAIRNfreedom and OPT-IN so no existing caller
+  // changes.) Every app before it had one provisioning role, so "who may
+  // provision" and "who must not reach zero" were the same set and counting
+  // over `roles` was right.
+  //
+  // SAIRNfreedom IS THE FIRST WITH TWO, and there the two questions come
+  // apart. Its capability model -- the app's own, in sairnfreedom.html's
+  // CAPABILITIES -- has post.govern carrying `sole:true`, one per post, and
+  // post.govern.deputy alongside it. Both provision, and only the governor is
+  // the one the licence cannot lose.
+  //
+  // WITHOUT THIS, COUNTING OVER `roles` IS A REAL DEFECT AND NOT A NUANCE: a
+  // deputy deactivating the sole governor sees TWO active provisioners, the
+  // guard does not fire, the post reaches zero governors, and bootstrap still
+  // 409s because it deliberately does not filter on active. That is a licence
+  // dead through the API, recoverable only by direct database access, which is
+  // exactly how SD-AUDIT-2026 was lost.
+  //
+  // `soleRole` ABSENT keeps the old behaviour EXACTLY, which is what makes
+  // this safe to add to a file nine endpoints share.
+  const soleRole = ctx.soleRole || null;
+  const guardRoles = soleRole ? [soleRole] : roles;
   const activeProvisioners = rowsAll.filter(
-    (x) => x.active === true && roles.indexOf(x.role) !== -1);
+    (x) => x.active === true && guardRoles.indexOf(x.role) !== -1);
 
-  if (!nextActive && roles.indexOf(target.role) !== -1 &&
+  if (!nextActive && guardRoles.indexOf(target.role) !== -1 &&
       target.active === true && activeProvisioners.length <= 1) {
     const a = await doAudit('credential_change_refused',
       { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN',

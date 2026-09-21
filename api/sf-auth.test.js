@@ -82,10 +82,22 @@ function store(rows) {
       }
       if (method === 'PATCH') {
         const patch = JSON.parse(opts.body);
-        db.forEach(function (r, i) { if (match(r)) db[i] = Object.assign({}, r, patch); });
-        // 204 No Content, which is what PostgREST really answers without
-        // Prefer: return=representation. Parsing it would throw -- that is the
-        // defect rf proved live on 2026-08-27 and this reproduces the shape.
+        const touched = [];
+        db.forEach(function (r, i) {
+          if (match(r)) { db[i] = Object.assign({}, r, patch); touched.push(db[i]); }
+        });
+        // ── THE ANSWER DEPENDS ON THE Prefer HEADER, THE WAY IT REALLY DOES ─
+        // WITHOUT `return=representation` PostgREST answers 204 No Content and
+        // parsing the body THROWS -- the defect rf proved live on 2026-08-27,
+        // where the outer catch turned a landed mutation into a 502.
+        // api/sf-auth.js's own patchEmployee (the lockout counters) takes that
+        // path. api/_lib/employee-lifecycle.js DOES set the header and expects
+        // a body, so answering 204 to it would be modelling a server that does
+        // not exist and would fail a correct handler.
+        const prefer = (opts.headers && (opts.headers.Prefer || opts.headers.prefer)) || '';
+        if (prefer.indexOf('return=representation') !== -1) {
+          return { ok: true, status: 200, json: async function () { return touched; } };
+        }
         return { ok: true, status: 204, json: async function () { throw new SyntaxError('Unexpected end of JSON input'); } };
       }
       // HONOURS `select=` THE WAY POSTGREST DOES. Without this the mock hands
@@ -519,6 +531,87 @@ async function call(h, body, token) {
       + (r.body.error || {}).code);
   });
 
+  await test('THE OTHER ROUTE TO ZERO GOVERNORS: setup cannot downgrade the last one', async () => {
+    // ── FOUND BY CHECKING A PRESS-ON POINT INSTEAD OF FILING IT ───────────
+    // set_active guards DEACTIVATING the last sole-capability holder and says
+    // nothing about CHANGING their capability. `setup` upserts on
+    // (license_hash, employee_id), so the only governor could set their own
+    // role to records.write, reach ZERO governors, and find bootstrap still
+    // answering 409 -- a licence dead through the API, by a route the
+    // deactivation guard was never looking at. Driven before the fix existed:
+    // 200, zero active governors, re-bootstrap 409.
+    const { s, token } = await withGovernor();
+    let h = load(LIC, s.fn);
+    const down = await call(h, { action: 'setup', employee_id: 'gov',
+                                 pin: '123456', role: 'records.write' }, token);
+    assert.strictEqual(down.statusCode, 409,
+      'the only governor downgraded themselves and emptied the post: '
+      + JSON.stringify(down.body));
+    assert.strictEqual(down.body.error.code, 'LAST_ADMIN', JSON.stringify(down.body));
+    const govs = s.rows.filter(function (r) {
+      return r.active === true && r.role === 'post.govern'; }).length;
+    assert.strictEqual(govs, 1, 'the refusal did not prevent the write');
+  });
+
+  await test('...but a SECOND governor makes that change ordinary business', async () => {
+    // The other side of the same guard. A rule that blocks a legitimate
+    // handover is a rule people route around.
+    const { s, token } = await withGovernor();
+    let h = load(LIC, s.fn);
+    await call(h, { action: 'setup', employee_id: 'gov2', pin: '654321',
+                    role: 'post.govern' }, token);
+    h = load(LIC, s.fn);
+    const down = await call(h, { action: 'setup', employee_id: 'gov',
+                                 pin: '123456', role: 'records.write' }, token);
+    assert.strictEqual(down.statusCode, 200, JSON.stringify(down.body));
+  });
+
+  await test('a DEPUTY does not count as a governor for the downgrade guard', async () => {
+    // Counting the PROVISIONING list here instead of the sole capability
+    // survived the first sabotage run: with a governor and a deputy the count
+    // is two, the guard does not fire, and the sole governor downgrades
+    // themselves to zero. The deputy provisions; it does not govern.
+    const { s, token } = await withGovernor();
+    let h = load(LIC, s.fn);
+    await call(h, { action: 'setup', employee_id: 'deputy', pin: '654321',
+                    role: 'post.govern.deputy' }, token);
+    h = load(LIC, s.fn);
+    const down = await call(h, { action: 'setup', employee_id: 'gov',
+                                 pin: '123456', role: 'records.write' }, token);
+    assert.strictEqual(down.statusCode, 409,
+      'a deputy was counted as a governor, so the only real governor emptied '
+      + 'the post: ' + JSON.stringify(down.body));
+  });
+
+  await test('an INACTIVE governor can be re-roled -- it is not holding the post up', async () => {
+    // The other direction of the same condition, and it also survived the
+    // first run. A guard that refuses more than it must is a guard people
+    // route around: a deactivated governor is not what keeps the licence
+    // reachable, so changing their capability is ordinary record-keeping.
+    const { s, token } = await withGovernor();
+    let h = load(LIC, s.fn);
+    await call(h, { action: 'setup', employee_id: 'old', pin: '654321',
+                    role: 'post.govern' }, token);
+    s.rows.forEach(function (r) { if (r.employee_id === 'old') r.active = false; });
+    h = load(LIC, s.fn);
+    const r = await call(h, { action: 'setup', employee_id: 'old', pin: '654321',
+                              role: 'history.write' }, token);
+    assert.strictEqual(r.statusCode, 200,
+      'a DEACTIVATED governor could not be re-roled, though an active governor '
+      + 'remains: ' + JSON.stringify(r.body));
+  });
+
+  await test('and a governor can still be PROMOTED without tripping the guard', async () => {
+    const { s, token } = await withGovernor();
+    let h = load(LIC, s.fn);
+    await call(h, { action: 'setup', employee_id: 'qm', pin: '654321',
+                    role: 'finance.write' }, token);
+    h = load(LIC, s.fn);
+    const up = await call(h, { action: 'setup', employee_id: 'qm', pin: '654321',
+                               role: 'post.govern' }, token);
+    assert.strictEqual(up.statusCode, 200, JSON.stringify(up.body));
+  });
+
   await test('THE LAST-GOVERNOR REFUSAL: a deputy cannot deactivate the sole governor', async () => {
     // LIVE HERE in a way it is not in rf. rf has one provisioning role, so
     // reaching its guard needs two active owners and is unreachable by
@@ -538,7 +631,12 @@ async function call(h, body, token) {
     assert.strictEqual(r.statusCode, 409,
       'the deputy deactivated the only governor, which bricks the licence: '
       + JSON.stringify(r.body));
-    assert.strictEqual(r.body.error.code, 'LAST_OWNER');
+    // THE SHARED HELPER'S SPELLING, not rf's. The platform has two --
+    // LAST_OWNER/remaining_owners in rf/sc/sd's hand-written set_active, and
+    // LAST_ADMIN/remaining_admins in api/_lib/employee-lifecycle.js -- and a
+    // client written against one breaks against the other. This endpoint is
+    // wired to the helper, so it emits the helper's.
+    assert.strictEqual(r.body.error.code, 'LAST_ADMIN', JSON.stringify(r.body));
     const gov = s.rows.filter(function (x) { return x.employee_id === 'gov'; })[0];
     assert.strictEqual(gov.active, true, 'the refusal did not prevent the write');
   });

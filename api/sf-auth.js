@@ -67,6 +67,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
   ROLES_BY_APP
@@ -94,6 +95,12 @@ const MANAGEMENT_ROLES = { 'post.govern': true, 'post.govern.deputy': true };
 // what the last-governor guard counts, NOT the provisioning list, because a
 // deputy is not a substitute for the governor in the bootstrap-trapdoor sense.
 const SOLE_ROLE = 'post.govern';
+// NAMES BOTH PROVISIONING CAPABILITIES, because the refusal message tells a
+// customer who to go and ask, and a label naming only the governor would send
+// somebody to the one officer who might be away. The wiring seam asserts this
+// -- it derives the words from the role tokens, so the label has to contain
+// them. Reads acceptably because the capability ids are already English.
+const PROVISIONING_LABEL = 'post govern officer, or a post govern deputy';
 const BOOTSTRAP_ROLE = SOLE_ROLE;
 
 // Exported so gates elsewhere import these rather than re-listing capability
@@ -331,6 +338,50 @@ module.exports = Object.assign(async (req, res) => {
         res.status(400).json({ error: { message: 'display_name max 128 chars' } });
         return;
       }
+      // ── A ROLE CHANGE CAN EMPTY THE POST OF GOVERNORS, AND set_active's
+      // ── GUARD DOES NOT SEE IT (found 2026-09-21, driven before fixing) ───
+      // set_active refuses deactivating the last sole-capability holder. It
+      // says nothing about CHANGING that holder's capability, and `setup`
+      // upserts on (license_hash, employee_id) -- so the only governor could
+      // set their own role to records.write, reach ZERO governors, and find
+      // bootstrap still answering 409 ALREADY_PROVISIONED because it
+      // deliberately does not filter on active. A licence dead through the
+      // API, which is exactly how SD-AUDIT-2026 was lost, reached by a route
+      // the deactivation guard was never looking at.
+      //
+      // FOUND BY WRITING THE PRESS-ON POINT AND THEN CHECKING IT instead of
+      // filing it. Driven before this guard existed: bootstrap -> setup self
+      // to records.write -> 200, zero active governors, re-bootstrap 409.
+      //
+      // ── IT IS NOT ONLY THIS APP, AND THAT IS REPORTED RATHER THAN SWEPT ──
+      // api/rf-auth.js's setup has no such guard either, and neither do the
+      // nine wired onto api/_lib/employee-lifecycle.js -- that helper owns
+      // set_active and not setup. Fixing ten apps belongs in its own claim
+      // with its own review; this closes the hole in the app being built.
+      if (SF_ROLES.indexOf(role) !== -1 && role !== SOLE_ROLE) {
+        const beforeR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) +
+          '&select=employee_id,role,active'), { headers });
+        const beforeRows = await beforeR.json();
+        if (!beforeR.ok) return upstream(res, beforeRows);
+        const all = Array.isArray(beforeRows) ? beforeRows : [];
+        const target = all.filter(function (x) { return x.employee_id === employee_id; })[0];
+        const activeGovernors = all.filter(function (x) {
+          return x.active === true && x.role === SOLE_ROLE;
+        });
+        if (target && target.active === true && target.role === SOLE_ROLE
+            && activeGovernors.length <= 1) {
+          res.status(409).json({
+            error: {
+              code: 'LAST_ADMIN',
+              message: 'This is the only active governing officer on this license. '
+                + 'Changing their capability would leave the post with none and lock '
+                + 'everyone out with no way back in through the app. Appoint another '
+                + 'governing officer first, then change this one.'
+            }
+          });
+          return;
+        }
+      }
       const { pin_hash, pin_salt } = hashPin(pin);
       const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
         method: 'POST',
@@ -347,137 +398,57 @@ module.exports = Object.assign(async (req, res) => {
     }
 
     if (action === 'roster') {
+      // THROUGH THE SHARED HELPER. It includes INACTIVE rows on purpose --
+      // set_active can reactivate, and a governor has to be able to SEE a
+      // deactivated person in order to turn them back on -- and it never
+      // returns pin_hash, pin_salt, failed_attempts or locked_until.
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || !MANAGEMENT_ROLES[caller.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the post governance officers can view the credential roster' } });
-        return;
-      }
-      // INCLUDES INACTIVE ROWS on purpose: set_active can reactivate, and a
-      // governor has to be able to SEE a deactivated person in order to turn
-      // them back on. StoneDesk originally filtered active=eq.true and flipped
-      // it on 2026-08-23 for exactly this reason. Never returns pin_hash,
-      // pin_salt, failed_attempts or locked_until.
-      const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) +
-        '&select=employee_id,display_name,role,active&order=employee_id.asc'), { headers });
-      const rows = await r.json();
-      if (!r.ok) return upstream(res, rows);
-      const callerRow = (rows || []).filter(function (x) { return x.employee_id === caller.employee_id; })[0];
-      if (!callerRow || callerRow.active !== true) {
-        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
-        return;
-      }
-      res.status(200).json({ ok: true, employees: rows || [] });
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && MANAGEMENT_ROLES[caller.role]),
+        viewLabel: 'a post governance officer'
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
 
+    // ── set_active: the credential lifecycle, through the shared helper ──
+    // WIRED FROM THE FIRST COMMIT rather than hand-written. The recorded
+    // precedent is explicit: api/_lib/employee-lifecycle-wiring.test.js's
+    // PRE_EXISTING list means "already live before the helper existed", and
+    // sv-auth.js was briefly added there on 2026-09-13 before being migrated
+    // instead, because "a SAME-DAY endpoint does not qualify". Adding a new
+    // endpoint to that list would be raising a count to clear a gate, which is
+    // what the gate's own message warns against.
+    //
+    // NOTE THE WIRE FORMAT. The helper emits LAST_ADMIN / remaining_admins.
+    // The platform has two spellings and a client written against one breaks
+    // against the other; sv-auth.js's header records shipping a description of
+    // the version before last for exactly this reason. Read the helper, not
+    // this comment, if they ever disagree.
+    //
+    // ── soleRole IS WHY THIS APP NEEDED A HELPER CHANGE ──────────────────
+    // Every app before SAIRNfreedom had ONE provisioning role, so "who may
+    // provision" and "who must not reach zero" were the same set. Here they
+    // come apart: post.govern and post.govern.deputy both provision, and only
+    // post.govern carries `sole:true` in the app's own CAPABILITIES. Counting
+    // the guard over the provisioning list would let a DEPUTY deactivate the
+    // sole governor -- two active provisioners, the guard does not fire, the
+    // post reaches zero governors, and bootstrap still 409s. A dead licence.
     if (action === 'set_active') {
-      // ── GUARD ORDERING IS COPIED EXACTLY AND THE ORDER IS LOAD-BEARING ───
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || PROVISIONING_ROLES.indexOf(caller.role) === -1) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only the post governance officers can activate or deactivate a credential' } });
-        return;
-      }
-
-      const target_id = String(body.employee_id || '').trim();
-      const nextActive = body.active === true;
-      const reason = String(body.reason || '').trim();
-      if (!target_id) { res.status(400).json({ error: { message: 'employee_id is required' } }); return; }
-      if (typeof body.active !== 'boolean') { res.status(400).json({ error: { message: 'active must be true or false' } }); return; }
-      // Required to switch someone OFF, not on. Reactivating is self-explanatory
-      // and always safe; a deactivation is what somebody reconstructs later.
-      if (!nextActive && !reason) {
-        res.status(400).json({ error: { message: 'reason is required when deactivating a credential' } });
-        return;
-      }
-      if (reason.length > 500) { res.status(400).json({ error: { message: 'reason max 500 characters' } }); return; }
-
-      // SELF-DEACTIVATION REFUSAL BEFORE THE ROSTER READ, deliberately: an
-      // already-deactivated caller deactivating themselves gets
-      // SELF_DEACTIVATE, not CREDENTIAL_INACTIVE. It is the likeliest
-      // accidental route to a licence with zero active governors.
-      if (!nextActive && target_id === caller.employee_id) {
-        res.status(409).json({ error: { code: 'SELF_DEACTIVATE', message: 'You cannot deactivate your own credential. Ask another governance officer to do it.' } });
-        return;
-      }
-
-      // ONE roster read, and every decision below comes off it -- never off
-      // what the client claimed about the target or about who else exists.
-      const allR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&select=employee_id,role,active'), { headers });
-      const all = await allR.json();
-      if (!allR.ok) return upstream(res, all);
-      const rowsAll = Array.isArray(all) ? all : [];
-
-      // Caller-still-active, computed off that same read. Costs no extra query.
-      const callerRow = rowsAll.filter(function (x) { return x.employee_id === caller.employee_id; })[0];
-      if (!callerRow || callerRow.active !== true) {
-        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
-        return;
-      }
-
-      const target = rowsAll.filter(function (x) { return x.employee_id === target_id; })[0];
-      if (!target) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } });
-        return;
-      }
-
-      // ── THE LAST-GOVERNOR GUARD, AND IT COUNTS THE SOLE CAPABILITY ───────
-      // NOT the provisioning list. post.govern carries `sole:true` in the app's
-      // CAPABILITIES and is one per post; post.govern.deputy is not a
-      // substitute for it in the bootstrap-trapdoor sense, so deactivating a
-      // deputy while a governor is in place is ordinary business and is
-      // allowed. This is the one place SAIRNfreedom's guard differs from rf's,
-      // and it differs because the app's own capability model differs.
-      //
-      // bootstrap refuses once ANY row exists and does not filter on active, so
-      // a licence with zero active governors cannot log in, cannot run setup,
-      // and cannot re-bootstrap -- dead through the API, recoverable only by
-      // direct database access. That is exactly how SD-AUDIT-2026 was lost.
-      //
-      // QUARANTINED, NOT DEAD. It is currently unreachable while the
-      // caller-still-active check above stands AND the caller is themselves a
-      // governor -- but a DEPUTY caller can reach it, because a deputy
-      // deactivating the sole governor satisfies every condition. That makes it
-      // live here in a way it is not in rf, which has one provisioning role.
-      // Keep it.
-      const activeGovernors = rowsAll.filter(function (x) {
-        return x.active === true && x.role === SOLE_ROLE;
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        soleRole: SOLE_ROLE,
+        rest: rest, headers: headers
+        // No `audit`: api/_lib/audit.js allowlists sairnlaw, sairncode and
+        // stonedesk only, so SAIRNfreedom cannot audit today. Saying so beats
+        // letting silence read as coverage.
       });
-      if (!nextActive && target.role === SOLE_ROLE && target.active === true && activeGovernors.length <= 1) {
-        res.status(409).json({
-          error: {
-            code: 'LAST_OWNER',
-            message: 'This is the only active governing officer on this license. Deactivating it would lock everyone out with no way back in through the app. Appoint another first.'
-          }
-        });
-        return;
-      }
-
-      if (target.active === nextActive) {
-        res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, unchanged: true, remaining_owners: activeGovernors.length });
-        return;
-      }
-
-      const patchR = await patchEmployee(target_id, { active: nextActive });
-      // PostgREST answers a PATCH with 204 No Content unless Prefer:
-      // return=representation is set, and patchEmployee deliberately does not
-      // set it. Parsing the body unconditionally THREW on success in rf, the
-      // outer catch turned it into a 502, and the caller saw a failure for a
-      // mutation that had already landed -- proven live 2026-08-27. Only parse
-      // when there is an error to read.
-      if (!patchR.ok) { const detail = await patchR.json().catch(function () { return null; }); return upstream(res, detail); }
-
-      const remaining = rowsAll.filter(function (x) {
-        var isActive = (x.employee_id === target_id) ? nextActive : x.active === true;
-        return isActive && x.role === SOLE_ROLE;
-      }).length;
-
-      // NO AUDIT LOG, stated rather than silently absent: api/_lib/audit.js
-      // allowlists sairnlaw, sairncode and stonedesk only, so SAIRNfreedom
-      // cannot audit today. Saying so beats letting silence read as coverage.
-      // `audited: false` is reported on the SUCCESS path here; the NOT_FOUND
-      // and unchanged branches above carry no audited key, which is the same
-      // honest limit sc and sd record about their own.
-      res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, remaining_owners: remaining, audited: false });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
   } catch (err) {

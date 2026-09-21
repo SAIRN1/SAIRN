@@ -451,6 +451,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **A recorded NEGATIVE with an expiry measured in hours, being set by its own author &mdash; `sf_resources_session_gate_probe.py` says SAIRNfreedom has no session plumbing, and hank is building it now** | **NOTED 2026-09-21 (Cody), NOTHING TO FIX YET** &mdash; from the Tier A review of hank&rsquo;s 14:06:04Z obligation (discharged, no finding against the work) | `tests/sf_resources_session_gate_probe.py` |
+| **&#9989; The general ledger, the chart of accounts and vendor pricing were authorised by the LICENCE KEY ALONE &mdash; the app now has per-employee credentials and those three are gated** | **BUILT 2026-09-21 (Hank)** &mdash; `sql/sairnfreedom_employee_auth_schema.sql`, `ROLES_BY_APP` + `AUTH_TABLE_BY_APP` in `api/_lib/auth.js`, `api/sf-auth.js` (NEW), `X-SD-Auth` in `sairnfreedom.html`& | `api/_lib/employee-lifecycle-wiring.test.js` |
 | **&#128308; The session gate CANNOT be wired yet &mdash; four pieces of employee-auth plumbing are missing, and the table entry is the LAST of them** | **INVESTIGATED 2026-09-21 (Hank)**, answer recorded in `tests/sf_resources_session_gate_probe.py`. **NOT wired &mdash; wiring it today 403s every real call** | `tests/sf_resources_session_gate_probe.py` |
 | **&#128308; THREE TIER A RESOURCES ARE AUTHORISED BY THE LICENCE KEY ALONE &mdash; `SF_RESOURCES` has no session gate, and `sairnfreedom` is not in `ROLES_BY_APP`** | **OPEN. Found by hank while building the dispatcher isolation suite, disclosed rather than fixed; given its own row 2026-09-21 (cc) because three mentions inside test files is not a queue anybody read | `tests/sf_resources_session_gate_probe.py` |
 | **&#128308; `SF_RESOURCES` has NO employee session check at all &mdash; the general ledger, the chart of accounts and vendor pricing are authorised by the LICENCE KEY ALONE** | **FOUND AND MEASURED 2026-09-21 (Hank)**, while building the cross-tenant isolation arms. `tests/sf_resources_session_gate_probe.py`, report-only, exit 0. **NOT FIXED &mdash; the scope is Michael&rsqu | `api/sd-data-cross-tenant-dispatchers.test.js`, `tests/sf_resources_session_gate_probe.py` |
@@ -581,16 +582,16 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 554 of 614 traced, 90.2%.
+For context and not as the headline: 556 of 616 traced, 90.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 554 citations come from
+### Where the 556 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 284 |
-| `declared` | 234 |
+| `declared` | 236 |
 | `declared+index` | 28 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
@@ -686,8 +687,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 614   tests/**, api/** (both walked)
-  open-work rows citing a test       304   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 616   tests/**, api/** (both walked)
+  open-work rows citing a test       305   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

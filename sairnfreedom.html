@@ -42,6 +42,11 @@ background-size:224px 100%;animation:sfSlide 18s linear infinite;}
 clip-path:polygon(50% 0%,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%);}
 
 #gate{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:flex;align-items:center;justify-content:center;z-index:9999;}
+/* The SIGN-IN pane. Same chrome as the licence gate on purpose -- they are
+   two steps of one arrival, not two different places. Hidden by default and
+   shown only after a licence is accepted; `.on` is the same switch #app uses. */
+#pin{position:fixed;inset:0;background:linear-gradient(135deg,var(--pd),var(--p));display:none;align-items:center;justify-content:center;z-index:9998;}
+#pin.on{display:flex;}
 .gbox{background:#fff;border-radius:16px;padding:44px 40px;width:410px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.25);}
 .glogo{font-size:27px;font-weight:800;color:var(--pd);letter-spacing:-1px;margin-bottom:4px;}
 .gsub{color:var(--muted);font-size:13px;margin-bottom:26px;}
@@ -142,6 +147,42 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- ── SIGN-IN, ADDED 2026-09-21 WITH THE APP'S FIRST CREDENTIALS ──────────
+     The licence gate above says WHICH POST. This says WHICH PERSON, and until
+     today the app had no answer to the second question at all -- which is why
+     its general ledger, chart of accounts and vendor pricing were readable by
+     anyone holding the licence key.
+
+     NO CLIENT-SIDE FIRST-RUN DETECTION. The bootstrap pane is reached by a
+     link and the SERVER is the sole arbiter, answering 409 ALREADY_PROVISIONED.
+     A "does an officer exist?" probe would be an unauthenticated existence
+     oracle, which is why no app on this platform has one. -->
+<div id="pin">
+  <div class="gbox">
+    <div class="glogo">SAIRNfreedom</div>
+    <div class="gsub" id="pin-sub">Sign in to your post</div>
+    <div id="pstep-login">
+      <input class="ginp" id="l-eid" placeholder="Employee ID" autocomplete="off">
+      <input class="ginp" id="l-pin" type="password" placeholder="PIN" autocomplete="off">
+      <button class="gbtn" onclick="sfLogin()">Sign in</button>
+      <div class="gsub" style="margin-top:14px;font-size:12px">
+        First officer for this post?
+        <a href="#" onclick="sfShowBootstrap();return false;">Set up the first account</a>
+      </div>
+    </div>
+    <div id="pstep-bootstrap" style="display:none">
+      <input class="ginp" id="b-eid" placeholder="Your employee ID" autocomplete="off">
+      <input class="ginp" id="b-name" placeholder="Your name (optional)" autocomplete="off">
+      <input class="ginp" id="b-pin" type="password" placeholder="Choose a 6-8 digit PIN" autocomplete="off">
+      <button class="gbtn" onclick="sfBootstrap()">Create the first account</button>
+      <div class="gsub" style="margin-top:14px;font-size:12px">
+        <a href="#" onclick="sfLoginReset();return false;">Back to sign in</a>
+      </div>
+    </div>
+    <div class="gerr" id="perr"></div>
+  </div>
+</div>
+
 <div id="app">
   <header>
     <div class="hlogo">SAIRNfreedom</div>
@@ -167,6 +208,10 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem on" id="nav-dashboard" onclick="sfNav('dashboard')">Dashboard</div>
       <div class="nitem" id="nav-post" onclick="sfNav('post')">Post Profile</div>
       <div class="nitem" id="nav-officers" onclick="sfNav('officers')">Officers</div>
+      <!-- Shown only to a provisioning capability. COSMETIC: the server
+           refuses anybody else regardless -- this just stops offering a
+           tab that would always 403. -->
+      <div class="nitem" id="nav-access" onclick="sfNav('access')" style="display:none">Access</div>
       <div class="nitem" id="nav-members" onclick="sfNav('members')">Members</div>
       <div class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</div>
       <div class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</div>
@@ -308,6 +353,32 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       </div>
 
       <!-- OFFICERS -->
+      <!-- ── ACCESS: the credential roster and the deactivation path ───────
+           sairn-employee-auth-scaffold section 7 records that NO SAIRN app had a
+           client UI for set_active -- the endpoint existed in three and nothing
+           called it, so removing a departing officer took a hand-written SQL
+           edit, which is what lost three StoneDesk licences. This app ships the
+           endpoint AND the UI together rather than repeating that. -->
+      <div class="panel" id="panel-access">
+        <div class="card">
+          <h3>Post credentials</h3>
+          <div class="note">Every officer signs in with their own ID and PIN. Deactivating
+          someone keeps their record and their history &mdash; it only stops them signing in,
+          and it can be undone. Nothing is ever deleted.</div>
+          <div style="margin-top:12px" class="grid">
+            <div><label>Employee ID</label><input id="ac-eid"></div>
+            <div><label>Name</label><input id="ac-name"></div>
+            <div><label>Capability</label><select id="ac-cap"></select></div>
+            <div><label>PIN (6-8 digits)</label><input id="ac-pin" type="password"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfProvision()">Add or update</button></div>
+          <div class="gerr" id="ac-err"></div>
+        </div>
+        <div class="card"><div class="tw"><table>
+          <thead><tr><th>Employee</th><th>Name</th><th>Capability</th><th>Title (this org type)</th><th>Status</th><th></th></tr></thead>
+          <tbody id="ac-tbody"></tbody></table></div></div>
+      </div>
+
       <div class="panel" id="panel-officers">
         <div class="ph"><div><div class="ptitle">Officers</div>
           <div class="pdesc">Capabilities, with officer titles mapped per organisation type</div></div></div>
@@ -1666,10 +1737,15 @@ function addMonthsLocal(s, months){
    IT IS A BACKUP, NOT TWO-WAY SYNC. Per-record last-write-wins, additive-only
    hydration, deletions do not propagate. Stated here rather than discovered.
 
-   THE GATE ON THIS APP DOES NOT VALIDATE THE LICENCE and that is unchanged:
-   the DOMContentLoaded handler opens the app on any non-empty `sf_license_key`.
-   A wrong key therefore opens the app and gets a 401 from the backup, which
-   surfaces as the console warning below rather than as a silent no-op. */
+   THE GATE ON THIS APP DID NOT VALIDATE THE LICENCE, AND THAT CHANGED ON
+   2026-09-21. This paragraph used to end "and that is unchanged: the
+   DOMContentLoaded handler opens the app on any non-empty `sf_license_key`. A
+   wrong key therefore opens the app and gets a 401 from the backup." Both
+   halves are now false: sfUnlock() calls check_license before moving on, and
+   the boot handler routes to the SIGN-IN pane rather than into the app,
+   because three Tier A resources now require an employee session. Corrected
+   rather than left -- a standing comment describing the version before last is
+   how the next reader is sent to the wrong place. */
 var SF_SYNCED=[
   'sf_accounts','sf_bottle_fills','sf_ceremonial_items','sf_disbursements',
   'sf_district_imports','sf_documents','sf_donations','sf_donor_awards',
@@ -2213,14 +2289,210 @@ function sfLicenceGuard(k) {
   return true;
 }
 
+/* -- EMPLOYEE SIGN-IN, 2026-09-21 ----------------------------------------
+   Until today this app had NO employee auth: sfData() sent the licence key and
+   nothing else, and api/sd-data.js had no session gate on any sf_ resource. So
+   "who inside this post may read the general ledger" had the answer "anyone
+   holding the licence key", which is shipped to the browser.
+
+   TWO SECRETS, TWO HEADERS, TWO STORES, deliberately. The LICENCE says which
+   POST and lives in localStorage because it survives a restart. The SESSION
+   says which PERSON and lives in sessionStorage because it must NOT -- closing
+   the tab should end the shift.
+
+   ROLE-DRIVEN UI GATING BELOW IS COSMETIC ONLY. The server refuses regardless;
+   hiding the Access tab just stops offering a button that would always 403. */
+var SF_AUTH_API = 'https://sairn.vercel.app/api/sf-auth';
+var sfSession = null;
+
+function sfAuth(action, payload, withSession){
+  var lic = ld(K_LIC, '');
+  var h = {'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  if (withSession && sfSession && sfSession.token) h['X-SD-Auth'] = sfSession.token;
+  return fetch(SF_AUTH_API, {
+    signal: sfFetchTimeoutSignal(),
+    method: 'POST', headers: h,
+    body: JSON.stringify(Object.assign({action:action}, payload || {}))
+  }).then(function(r){
+    return r.json().catch(function(){ return {}; }).then(function(d){
+      return { ok: r.ok && d && d.ok, status: r.status, data: d,
+               msg: (d && d.error && d.error.message) || '',
+               code: (d && d.error && d.error.code) || '' };
+    });
+  }).catch(function(e){
+    return { ok:false, status:0, data:null, msg:'Network error - check your connection.', code:'NETWORK' };
+  });
+}
+
+function sfLoginErr(m){ var e = $('perr'); if (e) e.textContent = m || ''; }
+function sfShowBootstrap(){ $('pstep-login').style.display='none'; $('pstep-bootstrap').style.display='block'; sfLoginErr(''); }
+function sfLoginReset(){ $('pstep-bootstrap').style.display='none'; $('pstep-login').style.display='block'; sfLoginErr(''); }
+
+function sfLogin(){
+  var eid = ($('l-eid').value||'').trim(), pin = ($('l-pin').value||'').trim();
+  if (!eid || !pin) { sfLoginErr('Enter your employee ID and PIN.'); return; }
+  sfLoginErr('Signing in...');
+  sfAuth('login', {employee_id:eid, pin:pin}).then(function(r){
+    if (!r.ok) { sfLoginErr(r.msg || 'Sign-in failed.'); return; }
+    sfEnterApp(r.data);
+  });
+}
+
+function sfBootstrap(){
+  var eid = ($('b-eid').value||'').trim(), nm = ($('b-name').value||'').trim(), pin = ($('b-pin').value||'').trim();
+  if (!eid || !/^[0-9]{6,8}$/.test(pin)) { sfLoginErr('Employee ID and a 6-8 digit PIN are required.'); return; }
+  sfLoginErr('Creating account...');
+  sfAuth('bootstrap', {employee_id:eid, display_name:nm||eid, pin:pin}).then(function(r){
+    if (!r.ok) { sfLoginErr(r.msg || 'Setup failed.'); return; }
+    sfEnterApp(r.data);
+  });
+}
+
+function sfEnterApp(d){
+  sfSession = { token:d.token, role:d.role, employee_id:d.employee_id };
+  try { sessionStorage.setItem(SF_SESSION_KEY, d.token); } catch (e) {}
+  try { sessionStorage.setItem('sf_session', JSON.stringify(sfSession)); } catch (e) {}
+  $('pin').classList.remove('on');
+  $('app').classList.add('on');
+  var hu = $('h-user');
+  if (hu) hu.textContent = (d.employee_id||'') + ' - ' + titleFor(d.role, (getPost()||{}).orgType);
+  var ab = $('nav-access');
+  if (ab) ab.style.display = (PROVISIONING_CAPS.indexOf(d.role) !== -1) ? '' : 'none';
+  sfLoginErr('');
+  var pf = $('l-pin'); if (pf) pf.value = '';
+  var bf = $('b-pin'); if (bf) bf.value = '';
+  sfRenderAll();
+}
+
+/* Decode, check expiry and app, enter, THEN fire a non-blocking whoami. The
+   failure this closes is recorded in api/law-auth.js: a page load that trusts a
+   cached token's own payload for identity renders a REVOKED account as logged
+   in indefinitely. whoami asks the server, and the server reads the row. */
+function sfRestoreSession(){
+  var s = null; try { s = JSON.parse(sessionStorage.getItem('sf_session')||'null'); } catch (e) {}
+  if (!s || !s.token || !s.role) return false;
+  var payload = null;
+  try { payload = JSON.parse(atob(s.token.split('.')[0].replace(/-/g,'+').replace(/_/g,'/'))); } catch (e) {}
+  if (!payload || !payload.exp || Date.now() >= payload.exp) { sfClearSession(); return false; }
+  if (payload.app !== 'sairnfreedom') { sfClearSession(); return false; }
+  sfEnterApp(s);
+  sfAuth('whoami', {}, true).then(function(r){
+    if (!r.ok) { sfSignOut(); toast('Your session is no longer valid - please sign in again','err'); return; }
+    if (r.data && r.data.role && r.data.role !== sfSession.role) {
+      /* The ROW is the authority, not the token: a capability changed through
+         setup takes effect on the next call rather than waiting out 12h. */
+      sfSession.role = r.data.role;
+      try { sessionStorage.setItem('sf_session', JSON.stringify(sfSession)); } catch (e) {}
+      var ab = $('nav-access');
+      if (ab) ab.style.display = (PROVISIONING_CAPS.indexOf(r.data.role) !== -1) ? '' : 'none';
+    }
+  });
+  return true;
+}
+
+function sfClearSession(){
+  sfSession = null;
+  try { sessionStorage.removeItem(SF_SESSION_KEY); } catch (e) {}
+  try { sessionStorage.removeItem('sf_session'); } catch (e) {}
+}
+
+/* LOCAL ONLY. There is no server call and no revocation -- the token stays
+   valid until it expires. Said out loud rather than implied, the way
+   sairnlegacy.html does, because "sign out" reads like revocation and is not. */
+function sfSignOut(){
+  sfClearSession();
+  $('app').classList.remove('on');
+  $('pin').classList.add('on');
+  sfLoginReset();
+}
+
+/* -- THE ACCESS PANEL ---------------------------------------------------- */
+function sfAccessErr(m){ var e = $('ac-err'); if (e) e.textContent = m || ''; }
+
+function sfRenderAccess(){
+  var sel = $('ac-cap');
+  if (sel && !sel.options.length) {
+    var org0 = (getPost()||{}).orgType;
+    sel.innerHTML = CAPABILITIES.map(function(c){
+      return '<option value="' + c.id + '">' + H(titleFor(c.id, org0)) + ' (' + H(c.label) + ')</option>';
+    }).join('');
+  }
+  var tb = $('ac-tbody'); if (!tb) return;
+  tb.innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+  sfAuth('roster', {}, true).then(function(r){
+    if (!r.ok) { tb.innerHTML = '<tr><td colspan="6">' + H(r.msg||'Could not read the roster') + '</td></tr>'; return; }
+    var org = (getPost()||{}).orgType;
+    var rows = (r.data && r.data.employees) || [];
+    if (!rows.length) { tb.innerHTML = '<tr><td colspan="6">No credentials yet.</td></tr>'; return; }
+    tb.innerHTML = rows.map(function(e){
+      var on = e.active === true;
+      return '<tr><td>' + H(e.employee_id) + '</td><td>' + H(e.display_name||'') + '</td>' +
+        '<td>' + H(e.role) + '</td><td>' + H(titleFor(e.role, org)) + '</td>' +
+        '<td><span class="tag ' + (on ? 'ok' : 'warn') + '">' + (on ? 'Active' : 'Deactivated') + '</span></td>' +
+        '<td><button class="btn sm" onclick="sfSetActive(' + JSON.stringify(e.employee_id).replace(/"/g,'&quot;') +
+        ',' + (on ? 'false' : 'true') + ')">' + (on ? 'Deactivate' : 'Reactivate') + '</button></td></tr>';
+    }).join('');
+  });
+}
+
+function sfProvision(){
+  var eid = ($('ac-eid').value||'').trim(), nm = ($('ac-name').value||'').trim();
+  var cap = $('ac-cap').value, pin = ($('ac-pin').value||'').trim();
+  if (!eid || !/^[0-9]{6,8}$/.test(pin)) { sfAccessErr('Employee ID and a 6-8 digit PIN are required.'); return; }
+  sfAccessErr('Saving...');
+  sfAuth('setup', {employee_id:eid, display_name:nm||eid, pin:pin, role:cap}, true).then(function(r){
+    if (!r.ok) { sfAccessErr(r.msg || 'Could not save that credential.'); return; }
+    sfAccessErr(''); $('ac-pin').value=''; $('ac-eid').value=''; $('ac-name').value='';
+    sfRenderAccess();
+  });
+}
+
+/* NO CLIENT-SIDE COPY OF "last governor" OR "not yourself". A second copy of a
+   security rule is free to drift from the one that enforces it; the server
+   answers LAST_ADMIN or SELF_DEACTIVATE and this shows what it said. */
+function sfSetActive(employee_id, next){
+  var reason = '';
+  if (!next) {
+    reason = window.prompt('Why is this credential being deactivated?\n\n' +
+      'The record and its history are kept - this only stops them signing in, ' +
+      'and it can be undone.');
+    if (reason === null) return;
+    reason = String(reason).trim();
+    if (!reason) { sfAccessErr('A reason is required to deactivate a credential.'); return; }
+  }
+  sfAccessErr('Saving...');
+  sfAuth('set_active', {employee_id:employee_id, active:!!next, reason:reason}, true).then(function(r){
+    if (!r.ok) { sfAccessErr(r.msg || 'Could not change that credential.'); return; }
+    sfAccessErr(''); sfRenderAccess();
+  });
+}
+
 function sfUnlock(){
   var v=($('lic').value||'').trim();
   if(!v){ $('licerr').textContent='Enter a licence key.'; return; }
   if(!sfLicenceGuard(v)){ $('licerr').textContent='Cancelled -- this device still holds another licence’s data.'; return; }
   st(K_LIC, v);
-  $('gate').style.display='none';
-  $('app').classList.add('on');
-  sfRenderAll();
+  /* CHECKS THE KEY BEFORE MOVING ON. This gate used to open the app on any
+     non-empty string -- its own comment said so -- so a wrong key opened
+     everything and surfaced as a 401 from the backup much later, by which
+     time the operator was looking at the wrong problem. check_license
+     answers before any table is touched, which is why that action exists. */
+  $('licerr').textContent='Checking key...';
+  sfAuth('check_license',{}).then(function(r){
+    if(!r.ok){
+      try{localStorage.removeItem(K_LIC);}catch(e){}
+      $('licerr').textContent=r.msg||'That licence key was not accepted.';
+      return;
+    }
+    $('licerr').textContent='';
+    $('gate').style.display='none';
+    /* TO THE SIGN-IN PANE, NOT THE APP. The licence says which post; it
+       does not say which person, and three Tier A resources now require
+       the second answer. */
+    $('pin').classList.add('on');
+    sfLoginReset();
+    var e=$('l-eid'); if(e)e.focus();
+  });
 }
 function sfLock(){
   $('app').classList.remove('on');
@@ -2236,6 +2508,7 @@ function sfNav(id){
   var items=document.querySelectorAll('.nitem');
   for(var j=0;j<items.length;j++) items[j].classList.remove('on');
   var n=$('nav-'+id); if(n) n.classList.add('on');
+  if(id==='access') sfRenderAccess();
   /* SPEC 1d, IMPLEMENTED RATHER THAN JUST RECORDED: animated app-wide, STATIC
      on onboarding -- "the one place a new member is being asked to concentrate
      is the one place the banner does not move." Same component, .static
@@ -6551,7 +6824,17 @@ function sfRenderAll(){
 }
 
 document.addEventListener('DOMContentLoaded', function(){
-  if(ld(K_LIC,null)){ $('gate').style.display='none'; $('app').classList.add('on'); }
+  /* THE BOOT PATH GOES THROUGH SIGN-IN TOO (2026-09-21). This opened the app
+     on any stored licence key, which was the whole arrival before employee
+     credentials existed. It cannot stay: three Tier A resources now require a
+     session, and a boot that walks straight in would show an app whose ledger
+     answers 403 with nothing on screen to explain why.
+     sfRestoreSession() enters the app directly when a live session is in
+     sessionStorage; otherwise the sign-in pane is where a licence lands. */
+  if(ld(K_LIC,null)){
+    $('gate').style.display='none';
+    if(!sfRestoreSession()){ $('pin').classList.add('on'); sfLoginReset(); }
+  }
   sfRenderAll();
   /* PULL THE SERVER'S COPY IN (2026-09-09), after the first render rather than
      before it: hydration is additive and fire-and-forget, so a post with no

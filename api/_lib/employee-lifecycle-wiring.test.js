@@ -58,7 +58,18 @@ const WIRED = [
   // caught it at the push gate. PRE_EXISTING would have been the wrong
   // list: its entry reason is 'already live before the helper existed', and
   // adding a same-day endpoint there is raising a count to clear a gate.
-  { file: 'sv-auth.js', app: 'sairnvet', table: 'sairnvet_employee_auth' }
+  { file: 'sv-auth.js', app: 'sairnvet', table: 'sairnvet_employee_auth' },
+  // SAIRNfreedom, 2026-09-21. WIRED FROM ITS FIRST COMMIT, not migrated later
+  // and not added to PRE_EXISTING -- the sv-auth.js sequence recorded below
+  // settled that a SAME-DAY endpoint does not qualify for that list.
+  //
+  // It is also the FIRST caller to pass `soleRole`. Every app before it had
+  // one provisioning role, so "who may provision" and "who must not reach
+  // zero" were one set; SAIRNfreedom has post.govern AND post.govern.deputy
+  // provisioning, and only post.govern carries `sole:true` in the app's own
+  // CAPABILITIES. Counting the last-admin guard over the provisioning list
+  // would let a DEPUTY deactivate the sole governor and brick the licence.
+  { file: 'sf-auth.js', app: 'sairnfreedom', table: 'sairnfreedom_employee_auth' }
 ];
 
 // The five that already had their own hand-written set_active before the shared
@@ -242,7 +253,17 @@ WIRED.forEach((e) => {
     const label = m[1].toLowerCase();
     declaredProvisioningRoles(src).forEach((r) => {
       // crew_lead -> "crew lead"; the label is prose, the role is a token.
-      const word = r.replace(/_/g, ' ');
+      //
+      // DOTS TOO, ADDED 2026-09-21. SAIRNfreedom is the first app whose roles
+      // are DOTTED CAPABILITY IDS -- post.govern, post.govern.deputy -- taken
+      // from its own CAPABILITIES array because a VFW finance officer is the
+      // Quartermaster and an Elks one the Treasurer, so one hardcoded
+      // vocabulary would be wrong for three of its five target orders.
+      // Without this the arm demanded a customer-facing refusal message
+      // containing the literal string "post.govern.deputy", which is worse
+      // for the customer, not better. The ARM'S INTENT is unchanged: a label
+      // must name every role it tells somebody to go and ask.
+      const word = r.replace(/[_.]/g, ' ');
       assert.ok(label.indexOf(word) !== -1,
         'the refusal message says "' + m[1] + '" but the role list includes ' + r +
         ' — a customer would be told to ask a role that cannot help them');
@@ -336,7 +357,13 @@ const UI = [
   // before today: zero references to sv-auth, to X-SD-Auth, or to any
   // session, and a gate comparing the licence to a literal and the PIN to
   // '1234' in the browser with the ROLE PICKED FROM A DROPDOWN.
-  { file: 'sairnvet.html', fn: 'svSetActive', render: 'svRenderAccess' }
+  { file: 'sairnvet.html', fn: 'svSetActive', render: 'svRenderAccess' },
+  // SAIRNfreedom, 2026-09-21. Endpoint and screen landed together, and the
+  // screen is not optional here: arming the session gate on sf_accounts /
+  // sf_ledger / sf_vendor_prices while the app had no way to OBTAIN a session
+  // would have made three Tier A resources unreachable from the real client.
+  // A gate nothing can satisfy is a break, not a control.
+  { file: 'sairnfreedom.html', fn: 'sfSetActive', render: 'sfRenderAccess' }
 ];
 
 // Empty as of 2026-09-03: all nine wired endpoints have a screen.
