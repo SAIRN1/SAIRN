@@ -9179,7 +9179,7 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
-      "commit": "9be3ade1975c",
+      "commit": "0dd84d944306",
       "date": "2026-09-21",
       "subject": "fix(sd-data): the json-catch-null sweep finishes -- four more sites, one serving seven Tier A resources and one moving money",
       "files": [
