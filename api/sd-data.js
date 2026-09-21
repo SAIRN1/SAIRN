@@ -2403,6 +2403,21 @@ module.exports = async (req, res) => {
         });
         const cwrows = await cw.json().catch(function () { return null; });
         if (!cw.ok) return upstream(res, cwrows);
+        // ── THE WRITE HALF OF AN ARGUMENT THIS BRANCH ALREADY MADE ─────────
+        // (2026-09-21.) Twelve lines above, the READ half of this same branch
+        // was hardened on 2026-09-04 with the sentence "NOT A SILENT SUCCESS
+        // ... saying 'deleted' would be reporting work that did not happen."
+        // The write below it then did exactly that: a PATCH matching ZERO rows
+        // returns `[]` with status 200, `cw.ok` is true, and the caller was
+        // told the customer record was removed. The argument for this fix was
+        // already written, in this branch, against this defect.
+        const cwSays = wroteRow(cwrows);
+        if (cwSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'sd_customers'); return; }
+        if (cwSays === 'MISSED') {
+          res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No customer record '
+            + 'with that id when the delete was applied — nothing was deleted' } });
+          return;
+        }
         res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, cmarked) });
         return;
       }
@@ -4134,6 +4149,29 @@ module.exports = async (req, res) => {
       });
       const wrote = await w.json().catch(() => null);
       if (!w.ok) return upstream(res, wrote);
+      // ── A RELEASE THE STORE NEVER CONFIRMED IS NOT A RELEASE (2026-09-21) ─
+      // Swept after the review of the 2026-09-18 json-catch-null pass found
+      // this site and three others still carrying the shape that pass removed
+      // from two. THIS ONE IS NOT A DELETE, IT IS MONEY: under `Prefer:
+      // return=representation` a PATCH that matched ZERO rows returns `[]` with
+      // status 200, so `w.ok` was true, the catch's null was never looked at,
+      // and the response said ok:true AND HANDED BACK `release_log: trail` --
+      // the audit entry describing a release that may never have been written.
+      // A retainage release the draw does not carry is a payment the job
+      // history cannot account for, and the trail beside it made it look
+      // accounted for.
+      const relSays = wroteRow(wrote);
+      if (relSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'the retainage release on ' + drawId); return; }
+      if (relSays === 'MISSED') {
+        // Not the delete wording: nothing was deleted and saying so would send
+        // somebody to look for a missing draw. The draw was READ moments ago,
+        // so a zero-row match means it moved or went away in between.
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Draw ' + drawId
+          + ' was no longer there when the release was applied, so NOTHING WAS RELEASED '
+          + 'and no release was recorded. Re-open the draw and check its current '
+          + 'retainage before trying again.' } });
+        return;
+      }
       res.status(200).json({ ok: true, provisioned: true, summary: after, release_log: trail });
       return;
     }
@@ -11256,6 +11294,16 @@ module.exports = async (req, res) => {
       });
       const wRows = await w.json().catch(function () { return null; });
       if (!w.ok) return upstream(res, wRows);
+      // The fourth site of the same shape (2026-09-21). dnt_supplies is Tier B
+      // and is swept anyway: the defect is in the SHAPE, not in the tier, and
+      // leaving one copy behind is how the shape comes back.
+      const supSays = wroteRow(wRows);
+      if (supSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'dnt_supplies'); return; }
+      if (supSays === 'MISSED') {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No dnt_supplies record '
+          + 'with that id when the delete was applied — nothing was deleted' } });
+        return;
+      }
       res.status(200).json({ ok: true, data: supMarked });
       return;
     }
@@ -12421,6 +12469,27 @@ module.exports = async (req, res) => {
         });
         const scWRows = await scW.json().catch(function () { return null; });
         if (!scW.ok) return upstream(res, scWRows);
+        // ── THE SAME THREE ANSWERS THE GENERIC PATH GOT ON 2026-09-18 ───────
+        // (2026-09-21.) This branch is structurally the same code as the
+        // SD_LOCAL_RESOURCES soft-delete that the json-catch-null pass fixed --
+        // same read-then-PATCH, same Prefer header, same `.json().catch`, same
+        // `!ok`-only check -- and it was left behind, because that sweep
+        // searched for `.json().catch(() => null)`, which matches 27 sites in
+        // this file and is mostly reads handling null correctly. The defect is
+        // the catch AND a representation PATCH AND an ok:true.
+        //
+        // IT SERVES SEVEN TIER A RESOURCES: sc_ar, sc_claims, sc_compliance,
+        // sc_credential_scope, sc_denial, sc_denial_events, sc_revenue. The
+        // branch is gated to Compliance Admin and its own refusal says "Only
+        // Compliance Admin can remove records" -- so a removal reported as done
+        // and not done is a compliance record the admin believes is gone.
+        const scSays = wroteRow(scWRows);
+        if (scSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, resource); return; }
+        if (scSays === 'MISSED') {
+          res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No ' + resource
+            + ' record with that id when the removal was applied — nothing was removed' } });
+          return;
+        }
         res.status(200).json({ ok: true, data: scMarked });
         return;
       }

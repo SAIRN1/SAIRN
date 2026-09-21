@@ -930,6 +930,22 @@
       "verdict": null
     },
     {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T12:38:30Z",
+      "resources": [
+        "alf_claim_routes"
+      ],
+      "files": [
+        "sairncare.html",
+        "tests/faults/alf_rule_read_faults.js"
+      ],
+      "what": "COMMENT AND TEST-HARNESS ONLY -- NO PRODUCT BEHAVIOUR CHANGED, and the obligation exists because the gate's known false-positive half fired on my own change. Two files name alf_claim_routes on a changed line and both mentions are PROSE: (1) a block comment above alfPostRaw() in sairncare.html recording two known-unfixed defect shapes and saying why they are not being fixed in that change, which adds no statement and alters no path -- verified by checkblocks 3/3 and by the diff being entirely inside a comment; (2) a one-line no-op stub, function prRenderRecorded(){}, added to the vm sandbox in tests/faults/alf_rule_read_faults.js, whose comment names the resource. THE SECOND ONE IS THE ONLY THING WITH ANY SUBSTANCE and it is a test repair: that suite had been RED since 2026-09-18 with 'prRenderRecorded is not defined' on six of thirteen arms, because rPayerRouting() gained a real call to a real function and the sandbox builds its context one named global at a time. PRESS ON, and it is short because there is little to press on: (1) confirm by reading the diff that the sairncare.html hunk is entirely comment -- if any executable line slipped in, this record understates what happened and that is the failure mode it should be checked for; (2) the stub gives up this suite's ability to notice rPayerRouting no longer calling prRenderRecorded at all -- check my claim that the property is covered instead by tests/sairncare_route_record.js section 8 and mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py, because a stub with a pointer to coverage that does not exist is worse than no stub; (3) the alfPostRaw comment asserts that NEITHER caller persists -- alfEvaluate via cqRenderResult and alfCredRead via crRefresh, two call sites, neither writing -- and that claim is what justifies leaving the defects unfixed, so it is the one worth re-deriving rather than reading.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
       "author_session": "hank",
       "opened_at": "2026-09-21T12:40:23Z",
       "resources": [
@@ -993,16 +1009,27 @@
       "verdict": null
     },
     {
-      "author_session": "cody",
-      "opened_at": "2026-09-21T12:38:30Z",
+      "author_session": "hank",
+      "opened_at": "2026-09-21T12:58:32Z",
       "resources": [
-        "alf_claim_routes"
+        "law_trusttx",
+        "sc_ar",
+        "sc_claims",
+        "sc_compliance",
+        "sc_credential_scope",
+        "sc_denial",
+        "sc_denial_events",
+        "sc_revenue",
+        "sf_accounts",
+        "sf_ledger",
+        "sf_vendor_prices"
       ],
       "files": [
-        "sairncare.html",
-        "tests/faults/alf_rule_read_faults.js"
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "tests/sf_resources_session_gate_probe.py"
       ],
-      "what": "COMMENT AND TEST-HARNESS ONLY -- NO PRODUCT BEHAVIOUR CHANGED, and the obligation exists because the gate's known false-positive half fired on my own change. Two files name alf_claim_routes on a changed line and both mentions are PROSE: (1) a block comment above alfPostRaw() in sairncare.html recording two known-unfixed defect shapes and saying why they are not being fixed in that change, which adds no statement and alters no path -- verified by checkblocks 3/3 and by the diff being entirely inside a comment; (2) a one-line no-op stub, function prRenderRecorded(){}, added to the vm sandbox in tests/faults/alf_rule_read_faults.js, whose comment names the resource. THE SECOND ONE IS THE ONLY THING WITH ANY SUBSTANCE and it is a test repair: that suite had been RED since 2026-09-18 with 'prRenderRecorded is not defined' on six of thirteen arms, because rPayerRouting() gained a real call to a real function and the sandbox builds its context one named global at a time. PRESS ON, and it is short because there is little to press on: (1) confirm by reading the diff that the sairncare.html hunk is entirely comment -- if any executable line slipped in, this record understates what happened and that is the failure mode it should be checked for; (2) the stub gives up this suite's ability to notice rPayerRouting no longer calling prRenderRecorded at all -- check my claim that the property is covered instead by tests/sairncare_route_record.js section 8 and mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py, because a stub with a pointer to coverage that does not exist is worse than no stub; (3) the alfPostRaw comment asserts that NEITHER caller persists -- alfEvaluate via cqRenderResult and alfCredRead via crRefresh, two call sites, neither writing -- and that claim is what justifies leaving the defects unfixed, so it is the one worth re-deriving rather than reading.",
+      "what": "The json-catch-null sweep finished: the FOUR sites cc's 2026-09-18 pass missed, found by my review of it (4453fa88) and fixed here. All four had the identical shape -- a PATCH sent with Prefer: return=representation, its body read through .json().catch(() => null), only !ok consulted, then res.status(200).json({ok:true}) -- and under PostgREST a PATCH matching ZERO rows returns [] with status 200, so each reported a change that did not happen. api/sd-data.js:4135 bld_draws RETAINAGE RELEASE (money, and it handed back release_log describing a release that may never have been written); :12422 the SAIRNcode soft-delete serving sc_ar, sc_claims, sc_compliance, sc_credential_scope, sc_denial, sc_denial_events and sc_revenue; :2404 sd_customers; :11257 dnt_supplies. New standing guard api/sd-data-unconfirmed-write-sweep.test.js, 18 assertions, 9 of 9 sabotages caught, api/sd-data.js byte-identical after each.\nPRESS ON:\n(1) THE bld_draws 404 WORDING IS BESPOKE AND I WROTE IT. The other three say \"nothing was deleted\"; this one is a RELEASE, so it says the draw was no longer there and NOTHING WAS RELEASED. Check that sentence is true of the state the caller is actually left in -- in particular that no partial write happened before the PATCH, and that the audit trail entry in `trail` really is not persisted anywhere when the PATCH misses.\n(2) MISSED IS 404 ON ALL FOUR, and on the money one that is a judgement rather than an obvious call. The draw was READ moments earlier, so a zero-row PATCH is a TOCTOU window, not \"already gone\". 502 would blame the store for answering correctly; 409 would imply a conflict the caller can resolve. Judge whether 404 is right for a financial release or whether it should be louder.\n(3) THE GUARD'S PREDICATE IS THE HALF THAT KEEPS THIS TRUE, and it is mine rather than measured from anywhere: three conditions -- a representation PATCH, a catch on its body, and an ok:true that never consults it -- with POST excluded because upserts are a different shape. Check the POST exclusion cannot hide a real instance, and check the 12-line lookback and 6-line lookahead windows are not the kind of window that reads across a branch boundary. That exact window mistake is recorded in tools/cross_tenant_isolation_scope.py's _block_after().\n(4) ONE SABOTAGE SURVIVED THE FIRST RUN and the gap it exposed may not be the only one of its kind: mutating wroteRow's non-array branch to WROTE passed all 14 arms, because the only UNKNOWN arm drove a body that would not PARSE -- which the catch turns into null, handled by the function's FIRST line. The non-array branch was untested by anything on the platform. I added an arm for a bare object. Check whether the two UNKNOWN sub-cases are now both covered at every one of the four sites and not just at the one I noticed.\n(5) I DID NOT SWEEP OTHER FILES. The predicate runs over api/sd-data.js only. api/sc-credentials.js is where this shape was first found and is already fixed, but nothing here checks api/dnt-bi.js, api/alf-alerts.js or any other handler for it. Judge whether the guard should widen, and say so rather than leaving the scope to be inferred from where it happens to point.",
       "status": "open",
       "reviewer_session": null,
       "reviewed_at": null,
