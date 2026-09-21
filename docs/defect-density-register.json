@@ -9111,7 +9111,7 @@
       "recurrence_open": "the predicate still only runs over api/sd-data.js -- 159 handler files were measured with it and returned zero, but a handler added tomorrow under api/ is not watched. And 60 PATCH sites exist across the handlers WITHOUT a representation preference; those cannot distinguish matched-zero either, and the predicate excludes them by construction."
     },
     {
-      "commit": "7803d55f1971",
+      "commit": "fcd622dfd47d",
       "date": "2026-09-21",
       "subject": "fix(stonedesk): the private CEO/CFO/CTO channel was readable, writable and deletable by anyone holding the shop's licence key",
       "files": [
