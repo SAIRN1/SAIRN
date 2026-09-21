@@ -1,0 +1,430 @@
+{
+  "_readme": "MAINE SUPERIOR AND DISTRICT COURT CIVIL ROWS -- the Maine Rules of Civil Procedure, which by their own Rule 1 govern \"all suits of a civil nature\" in the Superior Court and the District Court. NO APPELLATE ROW EXISTS: the Maine Rules of Appellate Procedure were not read, so a notice-of-appeal deadline must not be computed from these rows. NO CRIMINAL ROW EXISTS: 1 M.R.S. sec. 71(12) points criminal periods at Rule 45(a) of the Maine Rules of Unified Criminal Procedure, a different rule that was not read. NO BACKWARD ROW EXISTS, AND THAT IS A SAFETY BOUND RATHER THAN A CITATION ONE -- the holiday calendar is deliberately under-inclusive, which is safe counting forward and UNSAFE counting backward; see JURISDICTION_COVERAGE.me and the me_mr_civ_p_6 comment in api/_lib/deadline-engine.js. SOURCES, AND THE TRAP FOUND WHILE GATHERING THEM. The rule text here is verified in TWO independently published documents: the per-rule PDF the courts.maine.gov civil-rules index actually links, and the consolidated mr_civ_p_only_2026-06-01.pdf (\"Last reviewed and edited May 14, 2026 / Includes amendments effective June 1, 2026\"). BOTH ARE NEEDED BECAUSE THE SITE ALSO SERVES SUPERSEDED PER-RULE FILES AT A GUESSABLE URL WITH HTTP 200 AND NO MARKING. RULE%2012.pdf, RULE%2033.pdf, RULE%2034.pdf and RULE%2036.pdf all return 200 and are DIFFERENT documents from the mr_civ_p_NN_plus_2023-11-15.pdf files the index links. The undated Rule 12 copy is 23 years stale -- its latest Advisory Committee's Note is 1 May 2000 and its Rule 12(a) still reads \"within 20 days after the service of the summons and complaint upon that defendant\", omitting the notice regarding Electronic Service that the 15 November 2023 amendment added to the trigger. A seed built from the guessable URL would carry the right COUNT and the WRONG TRIGGER and nothing would have said so. Rule 6 is the exception and was checked: it has no dated \"plus\" file, and the undated RULE%206.pdf agrees with the June 2026 consolidated text word for word. EVERY ROW'S effective_from IS THE EFFECTIVE DATE STATED ON THE DOCUMENT ITSELF, not the filename and not a guess: 2023-11-15 for the rules the e-service amendment touched (\"Includes amendments effective November 15, 2023\") and 2014-11-01 for the Rule 59 rows (\"Includes amendments effective November 1, 2014\"). A Maine matter triggered before those dates is REFUSED rather than computed, which is the intended behaviour and not a gap. ONE COMPUTATION STANDARD COVERS BOTH RULE-MADE AND STATUTE-MADE PERIODS, because 1 M.R.S. sec. 71(12) says a statutory period related to a civil judicial proceeding \"is governed by and computed under Rule 6(a) of the Maine Rules of Civil Procedure as amended from time to time\". California needed two standards for the same split. Full gate: docs/sairnlaw-maine-deadline-seed-gate.md.",
+  "rules": [
+    {
+      "rule_id": "me-mrcivp-12a-answer-after-service-20-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons, complaint and notice regarding Electronic Service -- 20 days (Maine)",
+      "trigger_event": "service_of_summons_complaint_and_electronic_service_notice",
+      "trigger_document": {
+        "id": "service_of_summons_complaint_and_electronic_service_notice",
+        "label": "the date service of ALL THREE documents was complete -- the summons, the complaint, AND the notice regarding Electronic Service",
+        "not_the": "the date the complaint alone was served, and not the filing date. THE TRIGGER CHANGED ON 15 NOVEMBER 2023: Rule 12(a) used to read \"after the service of the summons and complaint upon that defendant\" and now reads \"after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant\"",
+        "authority": "M.R. Civ. P. 12(a), as amended effective 15 November 2023",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "TWENTY DAYS, NOT TWENTY-ONE. Maine did not follow the 2009 federal restyling that moved FRCP 12(a)(1)(A) to 21 days, and it did not follow Montana, Delaware or any of the 21-day states. A number carried across from the FRCP family would be one day LATE on every Maine answer. THE TRIGGER IS THREE DOCUMENTS AND THAT IS THE PART MOST LIKELY TO BE GOT WRONG, because the count did not change when the trigger did. Since 15 November 2023 the period runs from service of \"the summons, complaint, AND notice regarding Electronic Service\"; before that it ran from the summons and complaint alone. The superseded text is still served at courts.maine.gov/rules/text/MRCivPPlus/RULE%2012.pdf with HTTP 200 and no marking -- see this file's _readme. The trigger_document guard on this row exists for that reason and is set to \"warn\", the platform convention for the civil class. NO SERVICE EXTENSION, AND THE OMISSION IS THE SAFE SIDE OF A GENUINELY OPEN QUESTION RATHER THAN A CITATION. Rule 6(c) adds its 3 days \"whenever a party has the right or is required to do some act ... within a prescribed period after the service of A NOTICE OR OTHER PAPER upon the party and the notice or paper is served upon the party by mail\". Unlike Mont. R. Civ. P. 6(d), which names the service subsections it reaches and therefore settles this, Maine's 6(c) does not say whether a summons and complaint served by mail is \"a notice or other paper\" for its purposes -- the Delaware Rule 6(e) shape. THE DIRECTION DECIDES IT: adding three days to a period that does not get them reports LATE, which is how an answer is filed out of time; omitting three days that are due reports EARLY. So no extension is encoded, and a mail-served Maine defendant should check whether 6(c) reaches their answer before relying on the earlier date. NOT COVERED BY THIS ROW: the rule's own carve-out \"unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g)\" -- service by publication or by an alternative method the court ordered. A defendant served that way must not use this row. The 50-day foreign-service limb has its own row.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-12a-answer-served-outside-continental-us-or-canada-50-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Answer where the defendant was served outside the Continental United States or Canada -- 50 days (Maine)",
+      "trigger_event": "service_outside_continental_united_states_or_canada",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 50,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "FIFTY DAYS, AND THE GEOGRAPHY IS THE RULE'S OWN AND NOT A CONVENTION. \"Outside the Continental United States or Canada\" is narrower than \"in a foreign country\": a defendant served in Canada gets the ordinary 20 days, and so does one served in Alaska or Hawaii on the ordinary reading of \"Continental United States\" -- which this row does not resolve, because it does not have to: both readings give a period at least as long as the one seeded, so using the 20-day row for a Canadian defendant and this row for a defendant served in Europe are both safe, and the ambiguous middle is flagged rather than decided. THE RULE'S OWN GATE IS THE SERVICE SUBSECTION: the 50 days are available only to a defendant \"served pursuant to Rule 4(e), 4(f), or 4(j)\". Rule 4 was not read in full for this seed, so a caller who cannot confirm the subsection should use the 20-day row, which is EARLIER. Rule 6(c) is not applied here for the same reason as the 20-day row.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-12a-answer-to-crossclaim-20-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Answer to a pleading stating a cross-claim -- 20 days (Maine)",
+      "trigger_event": "service_of_pleading_stating_crossclaim",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "THE EXTENSION APPLIES HERE AND NOT ON THE ANSWER ROW, AND THE DIFFERENCE IS IN THE RULE RATHER THAN IN A POLICY. This period runs from \"the service upon that party\" of a PLEADING -- a Rule 5(a) document served under Rule 5(b), which is squarely \"a notice or other paper\" within Rule 6(c). The answer row's trigger is service of process under Rule 4, which is the open question. Same rule, same 20 days, different answer on the extension, and both are read from the text rather than applied uniformly. MAIL ONLY: Electronic Service gets no added days -- see the me_mr_civ_p_6_c comment in api/_lib/deadline-engine.js for why Maine's own Rule 5(b)(2) is the reason that is a reading rather than an omission.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-12a-reply-to-counterclaim-20-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Reply to a counterclaim contained in the answer -- 20 days (Maine)",
+      "trigger_event": "service_of_the_answer",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "A REPLY IS REQUIRED WITHOUT A COURT ORDER WHEN THE COUNTERCLAIM IS IN THE ANSWER, which is not true everywhere and is the reason this row exists as a plain 20-day period: \"The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer\". The court-ordered variant -- \"or, if a reply is ordered by the court, within 20 days after service of the order\" -- is a DIFFERENT trigger and has its own row, because the two dates diverge whenever the order is later than the answer. Rule 6(c) applies: the answer is a pleading served under Rule 5.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-12a-reply-after-court-order-20-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Reply ordered by the court -- 20 days after service of the order (Maine)",
+      "trigger_event": "service_of_order_to_reply",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "SEEDED SEPARATELY FROM THE COUNTERCLAIM REPLY because the trigger is the ORDER and not the answer, and the rule adds a condition the engine cannot model: \"unless the order otherwise directs\". AN ORDER THAT FIXES ITS OWN DATE DISPLACES THIS ROW ENTIRELY, and a caller holding such an order must use the date in it rather than this computation. Rule 6(c) applies to a court order served under Rule 5(a), which names \"every order required by its terms to be served\".",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-12a1-responsive-pleading-after-motion-denied-or-postponed-10-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after the court denies or postpones a Rule 12 motion -- 10 days (Maine)",
+      "trigger_event": "notice_of_court_action_denying_or_postponing_motion",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)(1)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "TEN DAYS, AND IT CLEARS THE SEVEN-DAY EXCLUSION THRESHOLD BY THREE, which is worth saying because Maine's Rule 6(a) DOES exclude intermediate weekends and holidays on periods \"less than 7 days\" and this one is counted straight through. The only row in this seed that takes the exclusion is the Rule 30(b)(5) five-day objection. NO SERVICE EXTENSION, AND IT IS THE SAFE SIDE OF A SECOND OPEN QUESTION RATHER THAN A CITATION. The period runs from \"NOTICE of the court's action\", not from \"service of\" a notice. Rule 77(d) has the clerk serve notice of an entry \"in a manner provided for in Rule 5\", so a mailed clerk's notice is arguably within Rule 6(c) -- but 12(a)(1) keys on the notice arriving rather than on its service, and adding three days to a period that does not get them reports LATE. Omitted, which reports EARLY. \"UNLESS A DIFFERENT TIME IS FIXED BY ORDER OF THE COURT\" displaces this row and the engine has no field for it.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-12a2-responsive-pleading-after-more-definite-statement-10-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after service of a more definite statement -- 10 days (Maine)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 12(a)(2)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_12_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "A defendant shall serve that defendant's answer within 20 days after the service of the summons, complaint, and notice regarding Electronic Service upon that defendant, unless the court directs otherwise when service of process is made pursuant to an order of court under Rule 4(d) or 4(g), and provided that a defendant served pursuant to Rule 4(e), 4(f), or 4(j) outside the Continental United States or Canada may serve the answer at any time within 50 days after such service. A party who is served with a pleading stating a cross-claim against that party shall serve an answer thereto within 20 days after the service upon that party. The plaintiff shall serve a reply to a counterclaim in the answer within 20 days after service of the answer or, if a reply is ordered by the court, within 20 days after service of the order, unless the order otherwise directs. The service of a motion permitted under this rule alters these periods of time as follows, unless a different time is fixed by order of the court: (1) if the court denies the motion or postpones its disposition until the trial on the merits, the responsive pleading shall be served within 10 days after notice of the court's action; (2) if the court grants a motion for a more definite statement the responsive pleading shall be served within 10 days after the service of the more definite statement.",
+        "note": "THE EXTENSION APPLIES HERE AND NOT ON THE SIBLING 10-DAY ROW, and the two sit in adjacent numbered clauses of one sentence. 12(a)(2) runs from \"the SERVICE of the more definite statement\" -- a paper served under Rule 5, which is what Rule 6(c) reaches -- while 12(a)(1) runs from \"NOTICE of the court's action\". Reading the pair as one period with one answer would have been wrong on one of them, and the difference is three days on a ten-day period. \"Unless a different time is fixed by order of the court\" displaces this row.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-33a-interrogatory-answers-30-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Maine)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 33(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_33_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons, complaint, and notice regarding Electronic Service upon that defendant. The court may allow a shorter or longer time.",
+        "note": "THE DEFENDANT'S 45-DAY LIMB IS AN ELECTION, NOT A FLOOR, AND IS NOT MODELLED. \"A defendant MAY serve\" offers two limbs with two different triggers and lets the party choose. Compare this seed's own Rule 36 row, which reads \"a defendant SHALL NOT BE REQUIRED to serve answers or objections before the expiration of 45 days\" and IS a floor, and is seeded as a later_of. MAINE THEREFORE SPLITS 33/34 FROM 36 the way Montana, Mississippi, New Mexico, South Carolina and Hawaii do, and the OPPOSITE way from Delaware, whose Rule 36 carries no defendant limb while its 33 and 34 carry elections. All three Maine rules were read in full for this seed; none was inferred from the other two. Seeding the 30-day limb reports EARLIER than a defendant who elects the 45 days, which is safe. \"The court may allow a shorter or longer time\" displaces this row and the engine has no field for a court order. MAINE CAPS INTERROGATORIES AT 30 PER PARTY with each distinct subpart counted separately, which is not a deadline and is recorded because it is the kind of limit a user reading this row will ask about. Rule 6(c) applies: interrogatories are served under Rule 5.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-34b-production-response-30-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production or entry upon land -- 30 days (Maine)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 34(b)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_34_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request, except that a defendant may serve a response within 45 days after service of the summons, complaint, and notice regarding Electronic Service upon that defendant. The court may allow a shorter or longer time.",
+        "note": "IDENTICAL IN SHAPE TO RULE 33(a) AND READ SEPARATELY RATHER THAN ASSUMED FROM IT. THE DEFENDANT'S 45-DAY LIMB IS AN ELECTION, NOT A FLOOR, AND IS NOT MODELLED. \"A defendant MAY serve\" offers two limbs with two different triggers and lets the party choose. Compare this seed's own Rule 36 row, which reads \"a defendant SHALL NOT BE REQUIRED to serve answers or objections before the expiration of 45 days\" and IS a floor, and is seeded as a later_of. MAINE THEREFORE SPLITS 33/34 FROM 36 the way Montana, Mississippi, New Mexico, South Carolina and Hawaii do, and the OPPOSITE way from Delaware, whose Rule 36 carries no defendant limb while its 33 and 34 carry elections. All three Maine rules were read in full for this seed; none was inferred from the other two. Seeding the 30-day limb reports EARLIER than a defendant who elects the 45 days, which is safe. \"The court may allow a shorter or longer time\" displaces this row and the engine has no field for a court order. Rule 6(c) applies: the request is served under Rule 5.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-36a-admissions-later-of",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defendant floor, self-executing (Maine)",
+      "trigger_event": {
+        "id": "me_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "me_service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons, complaint and notice regarding Electronic Service on the defendant"
+          }
+        ]
+      },
+      "computation": "me_mr_civ_p_6",
+      "authority": {
+        "citation": "M.R. Civ. P. 36(a)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_36_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "Subject to the provisions of subdivision (b) of this rule, the matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons, complaint, and notice regarding Electronic Service upon that defendant.",
+        "note": "THE ONLY MAINE DISCOVERY PERIOD THAT IS A REAL FLOOR, AND THE ROW WHERE READING THE WRONG SHAPE COSTS THE MOST. \"A defendant SHALL NOT BE REQUIRED TO SERVE answers or objections BEFORE THE EXPIRATION OF 45 days\" is mandatory, where Rules 33(a) and 34(b) both say a defendant \"MAY serve\" and are plain thirty-day rows. All three were read; the third was not inferred from the pair. SELF-EXECUTING: \"the matter is admitted unless ...\", so seeding the flat thirty would tell a Maine defendant a matter is still open when it has already been admitted. THE SERVICE EXTENSION IS SCOPED TO THE REQUEST LIMB, WHICH IS WHY applies_to_limbs IS SET. The 30-day limb runs from service of the REQUEST, a Rule 5 paper Rule 6(c) reaches. The 45-day limb runs from service of the summons, complaint and notice regarding Electronic Service, which is Rule 4 service and the open question this seed answers by omission -- see the answer row. Adding three days when the floor governs would report LATE. THE COURT MAY SHORTEN THE 45-DAY FLOOR and may allow a shorter or longer time on the 30; the engine has no field for either.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "me_mr_civ_p_6_c",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
+        ]
+      }
+    },
+    {
+      "rule_id": "me-mrcivp-30b5-objection-to-deposition-production-request-5-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Written objection to a production request accompanying a deposition notice -- 5 days (Maine)",
+      "trigger_event": "service_of_deposition_notice_with_production_request",
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 5,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 30(b)(5)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_30_plus_2023-11-15.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "The notice to a party deponent may be accompanied by a request that at the taking of the deposition the party deponent produce and permit inspection and copying of designated books, papers, documents, or tangible things which constitute or contain matters within the scope of Rule 26(b). The party deponent may, within 5 days after service of the notice, serve upon the party taking the deposition written objection to inspection or copying of any or all of the designated materials.",
+        "note": "THE ONLY ROW IN THIS SEED THAT TAKES RULE 6(a)'s SHORT-PERIOD EXCLUSION, and it is seeded largely for that reason: five is \"less than 7 days\", so intermediate Saturdays, Sundays and legal holidays are EXCLUDED FROM THE COUNT rather than merely rolled at the end. Every other Maine row here is 10 days or more and counts straight through. Without this row the whole short-period limb of Maine's computation standard would be live and never exercised, which is the shape this platform has shipped before: a control that looks present and never runs. Driven: a Monday 2026-06-15 trigger returns 2026-06-23, which is five counted days with Juneteenth (Friday 2026-06-19) and the weekend behind it skipped rather than merely rolled.\n\nNO SERVICE EXTENSION ON THIS ROW, AND IT IS THE ONLY PLACE IN THE SEED WHERE THE OMISSION IS ABOUT AN INTERACTION RATHER THAN ABOUT WHAT 6(c) REACHES. A deposition notice IS served under Rule 5, so Rule 6(c) plainly reaches it -- the problem is what happens next, and it was found by driving the row rather than by reading it. Maine's 6(c) LENGTHENS the period (\"3 days shall be added to the prescribed period\") instead of adding days after it expires, and 6(a)'s exclusion is gated on \"the period of time prescribed or allowed\" being less than 7 days. Five plus three is eight. TWO READINGS, AND THEY DISAGREE BY THREE DAYS ON A FIVE-DAY PERIOD: (A) the exclusion applies to the 5 days Rule 30(b)(5) prescribes and the 3 days are added to the result, which is what this engine computes and which returned 2026-06-26 on the trigger above; (B) 6(c) makes the prescribed period 8, the under-7 test is no longer met, the count runs straight through, and the answer is 2026-06-23. Maine's text settles neither. READING A IS THE LATER ONE, and every other disclosed gap in this seed fails EARLY -- so rather than ship the one that fails LATE on a period whose consequence is losing the right to object to inspection, the extension is not attached. This row therefore computes the UNEXTENDED date, which is at or before both readings. A MAILED RULE 30(b)(5) OBJECTION IS NOT COMPUTED BY THIS ROW. It belongs on the same bundled lawyer's question as the Rule 6(a)/77(c) cross-reference: one sentence from counsel closes it, and attaching the extension afterwards is a one-line change.\n\n\"If objection is made, the party taking the deposition shall not be entitled to inspect the materials except pursuant to an order\" -- so this is a real deadline with a real consequence, not a formality.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2023-11-15",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-59b-motion-for-new-trial-14-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 14 days after entry of the judgment (Maine)",
+      "trigger_event": "entry_of_judgment",
+      "trigger_document": {
+        "id": "entry_of_judgment",
+        "label": "the date the clerk ENTERED the judgment on the docket",
+        "not_the": "the date it was signed, decided, announced from the bench, or the date the clerk served notice of the entry under Rule 77(d) -- those are different events and they bear different dates",
+        "authority": "M.R. Civ. P. 59(b), (c) and (e), each of which runs from \"the entry of the judgment\"",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 59(b)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_59_plus_2014-10-10.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "(b) Time for Motion. A motion for a new trial shall be filed not later than 14 days after the entry of the judgment. (c) Time for Serving Affidavits. When a motion for new trial is based upon affidavits they shall be served with the motion. The opposing party shall serve opposing affidavits within 24 days after the entry of judgment, which period may be extended for an additional period either by the justice or judge before whom the action has been tried for good cause shown or by the parties by written stipulation. (e) Motion to Alter or Amend a Judgment. A motion to alter or amend the judgment shall be filed not later than 14 days after entry of the judgment. A motion for reconsideration of the judgment shall be treated as a motion to alter or amend the judgment.",
+        "note": "FOURTEEN DAYS, AND FILED RATHER THAN SERVED -- \"shall be FILED not later than 14 days after the entry of the judgment\". A row computed as a service deadline would be measuring the wrong act. NO SERVICE EXTENSION, AND THIS ONE IS A CITATION RATHER THAN A JUDGEMENT CALL. Rule 6(c) requires BOTH that the period run \"after the service of a notice or other paper\" AND that the paper be served by mail. This period runs from ENTRY OF THE JUDGMENT, so the first half of the test is not met at all and the method of service is irrelevant. Nothing is being withheld on a safe reading here; 6(c) simply does not reach the row. THIS PERIOD CANNOT BE ENLARGED BY THE COURT, which makes it the most dangerous kind of row to get LATE. Rule 6(b) lets the court enlarge a period \"but it may not extend the time for taking any action under Rules 50(b), 52(b), 59(b), (d), and (e), and 60(b), except to the extent and under the conditions stated in those rules.\" Rule 59(c) is NOT in that list -- its own text expressly allows extension for good cause or by written stipulation -- so the three Rule 59 rows here are not uniform on this point and must not be treated as if they were. THE TRIGGER GUARD IS \"warn\" RATHER THAN \"refuse\", which is a decision and not a default: the platform convention is refuse for the appellate class, where a late notice of appeal is jurisdictional, and warn for civil. Rule 6(b)'s bar on enlargement is an argument the other way and is recorded here as considered rather than missed. THE 2014 TEXT AND THE JUNE 2026 CONSOLIDATED TEXT ARE IDENTICAL on all three Rule 59 periods, checked letter for letter, so the older per-rule file is current rather than stale -- unlike the undated Rule 12 copy this seed's _readme warns about.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2014-11-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-59e-motion-to-alter-or-amend-judgment-14-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend the judgment -- 14 days after entry (Maine)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_motion_to_alter_or_amend",
+        "label": "the date the clerk ENTERED the judgment on the docket",
+        "not_the": "the date it was signed, decided, announced from the bench, or the date the clerk served notice of the entry under Rule 77(d) -- those are different events and they bear different dates",
+        "authority": "M.R. Civ. P. 59(b), (c) and (e), each of which runs from \"the entry of the judgment\"",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 59(e)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_59_plus_2014-10-10.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "(b) Time for Motion. A motion for a new trial shall be filed not later than 14 days after the entry of the judgment. (c) Time for Serving Affidavits. When a motion for new trial is based upon affidavits they shall be served with the motion. The opposing party shall serve opposing affidavits within 24 days after the entry of judgment, which period may be extended for an additional period either by the justice or judge before whom the action has been tried for good cause shown or by the parties by written stipulation. (e) Motion to Alter or Amend a Judgment. A motion to alter or amend the judgment shall be filed not later than 14 days after entry of the judgment. A motion for reconsideration of the judgment shall be treated as a motion to alter or amend the judgment.",
+        "note": "A MOTION FOR RECONSIDERATION IS THIS MOTION, BY THE RULE'S OWN WORDS: \"A motion for reconsideration of the judgment shall be treated as a motion to alter or amend the judgment.\" So a party who styles their filing as a motion to reconsider gets 14 days and not a longer general period, which is exactly the trap this sentence exists to close and the reason it is quoted here. NO SERVICE EXTENSION, AND THIS ONE IS A CITATION RATHER THAN A JUDGEMENT CALL. Rule 6(c) requires BOTH that the period run \"after the service of a notice or other paper\" AND that the paper be served by mail. This period runs from ENTRY OF THE JUDGMENT, so the first half of the test is not met at all and the method of service is irrelevant. Nothing is being withheld on a safe reading here; 6(c) simply does not reach the row. THIS PERIOD CANNOT BE ENLARGED BY THE COURT, which makes it the most dangerous kind of row to get LATE. Rule 6(b) lets the court enlarge a period \"but it may not extend the time for taking any action under Rules 50(b), 52(b), 59(b), (d), and (e), and 60(b), except to the extent and under the conditions stated in those rules.\" Rule 59(c) is NOT in that list -- its own text expressly allows extension for good cause or by written stipulation -- so the three Rule 59 rows here are not uniform on this point and must not be treated as if they were. SEEDED ON ITS OWN TRIGGER NAME rather than sharing entry_of_judgment with the Rule 59(b) row, because the engine matches one rule per (jurisdiction, domain, trigger_event) and two rows on one trigger would be ambiguous. Same date arithmetic, different rule and different label.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2014-11-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "me-mrcivp-59c-opposing-affidavits-24-days",
+      "jurisdiction": "me",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavits on a motion for a new trial -- 24 days after entry of judgment (Maine)",
+      "trigger_event": "entry_of_judgment_for_opposing_affidavits",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_opposing_affidavits",
+        "label": "the date the clerk ENTERED the judgment on the docket",
+        "not_the": "the date it was signed, decided, announced from the bench, or the date the clerk served notice of the entry under Rule 77(d) -- those are different events and they bear different dates",
+        "authority": "M.R. Civ. P. 59(b), (c) and (e), each of which runs from \"the entry of the judgment\"",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "me_mr_civ_p_6",
+      "count": {
+        "value": 24,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "M.R. Civ. P. 59(c)",
+        "url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/mr_civ_p_59_plus_2014-10-10.pdf",
+        "consolidated_url": "https://www.courts.maine.gov/rules/text/mr_civ_p_only_2026-06-01.pdf",
+        "quote": "(b) Time for Motion. A motion for a new trial shall be filed not later than 14 days after the entry of the judgment. (c) Time for Serving Affidavits. When a motion for new trial is based upon affidavits they shall be served with the motion. The opposing party shall serve opposing affidavits within 24 days after the entry of judgment, which period may be extended for an additional period either by the justice or judge before whom the action has been tried for good cause shown or by the parties by written stipulation. (e) Motion to Alter or Amend a Judgment. A motion to alter or amend the judgment shall be filed not later than 14 days after entry of the judgment. A motion for reconsideration of the judgment shall be treated as a motion to alter or amend the judgment.",
+        "note": "TWENTY-FOUR DAYS FROM ENTRY OF JUDGMENT, WHICH IS NOT THE FEDERAL SHAPE AND IS THE REASON THIS ROW IS HERE. FRCP 59(c) gives the opposing party 14 days after SERVICE of the motion; Maine gives 24 days after ENTRY OF THE JUDGMENT, so the two run from different events and neither number transfers. Because the Rule 59(b) motion is itself due at 14 days from the same trigger, the opposing party has at least ten days after the last possible filing date -- which is how the rule is coherent without a service trigger. UNLIKE ITS TWO SIBLINGS THIS PERIOD CAN BE EXTENDED, by the trial justice or judge for good cause shown or by the parties by written stipulation, and it is NOT in Rule 6(b)'s no-enlargement list. An extension displaces this row. NO SERVICE EXTENSION, AND THIS ONE IS A CITATION RATHER THAN A JUDGEMENT CALL. Rule 6(c) requires BOTH that the period run \"after the service of a notice or other paper\" AND that the paper be served by mail. This period runs from ENTRY OF THE JUDGMENT, so the first half of the test is not met at all and the method of service is irrelevant. Nothing is being withheld on a safe reading here; 6(c) simply does not reach the row.",
+        "retrieved_at": "2026-09-21"
+      },
+      "effective_from": "2014-11-01",
+      "effective_to": null
+    }
+  ]
+}

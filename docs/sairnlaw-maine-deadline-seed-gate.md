@@ -6,6 +6,14 @@ since 1974.** Maine is the best source position in this series since Ohio, and
 the one real ambiguity **has a safe side**, which is what separates it from
 Pennsylvania.
 
+> **SEEDED 2026-09-21 (Fourth). §7 at the foot of this file is the record of
+> what was built, what the gate got right, and the THREE things it did not
+> have** — including the resolution of §5's UNVERIFIED prediction, which turned
+> out to be the wrong question rather than a wrong answer. **Read §7 before
+> relying on §5's build list**: two of its items changed on contact with the
+> code. Nothing in §1–§6 is retracted; both PDF hashes were re-verified on
+> 2026-09-21 and both matched.
+
 **Why Maine.** The population-against-source-access criterion, continued from
 the Pennsylvania gate. The states above Maine by population are all already
 gated and all blocked or failed — Arizona (Westlaw), Colorado (rules behind an
@@ -263,3 +271,156 @@ correct under one reading and EARLY under the other.
 **THE SEED ITSELF WAS NOT BUILT IN THIS PASS.** This is the gate. The rule rows,
 the 2026–2027 calendars and the engine standard are the next unit of work, and
 the §5 prediction must be verified rather than assumed on the way in.
+
+---
+
+## 7. THE SEED, BUILT 2026-09-21 — and the three things this gate did not have
+
+**§6 said "THE SEED ITSELF WAS NOT BUILT IN THIS PASS." It is built now.** This
+section is appended rather than replacing anything above: the gate's reasoning is
+what made the build cheap, and a gate rewritten after the fact stops being
+evidence of what was known when.
+
+### 7.1 Sources re-verified, not trusted
+
+Both PDFs were downloaded again on 2026-09-21, three days after the gate, by a
+plain `urllib` request:
+
+| File | Bytes | sha256 | Matches §1? |
+|---|---|---|---|
+| `RULE 6.pdf` | 100,386 | `8875d50a…1283c7` | **yes** |
+| `mr_civ_p_only_2026-06-01.pdf` | 1,326,535 | `263f9b45…7584d0` | **yes** |
+
+4 M.R.S. §1051, 1 M.R.S. §71(12) and the Court Holidays Observed page were
+re-fetched and re-read; every quotation in §2, §3 and §4 was confirmed word for
+word, including Rule 77(c)'s "Chief Justice of the **Supreme Judicial** Court"
+and Rule 6's 1974 Advisory Note.
+
+### 7.2 What was built
+
+* **`COMPUTATION_STANDARDS.me_mr_civ_p_6`** — `short_period_exclusion_days: 7`,
+  `base_period_suffix` and `rollover_suffix_forward` both `(a)`,
+  `months_years_suffix` and `rollover_suffix_backward` both blank.
+* **`SERVICE_EXTENSION_STANDARDS.me_mr_civ_p_6_c`** — 3 days, **mail only**,
+  `sequence: 'add_to_period_then_roll'`.
+* **`JURISDICTION_COVERAGE.me`** — `direction: 'early'`, carrying §3's calendar
+  divergence, §4's dangling cross-reference, the Thanksgiving-designation
+  problem, and the 2023 trigger change.
+* **`sql/sairnlaw_deadline_calendars_maine.json`** — the statutory twelve for
+  2026 (11 dated entries) and 2027 (10). A statutory holiday falling on a
+  weekend is **omitted rather than shifted**, because Rule 6(a) excludes
+  Saturdays and Sundays by name; only §1051's Sunday→Monday limb produces an
+  observed day, and in these two years it fires exactly once (Monday
+  2027-07-05).
+* **`sql/sairnlaw_deadline_seed_maine.json`** — 14 forward rows: Rule 12(a)'s
+  five periods, the two 10-day post-motion periods, Rules 33 and 34 at 30 days,
+  Rule 36 as a `later_of` **floor**, Rule 30(b)(5) at 5 days, and the three
+  Rule 59 periods.
+* **`api/legal-deadlines.js`** — `me: 'Maine'`, in the same commit as the seed.
+* **`api/_lib/deadline-maine.test.js`** — 102 arms. **Sabotage-verified against
+  20 deliberate defects, all 20 caught, control passing on the unmutated copy.**
+
+### 7.3 §5's UNVERIFIED PREDICTION IS RESOLVED, AND IT WAS THE WRONG QUESTION
+
+§5 predicted Maine would "map to the `ohio_civ_r_6a` implementation" and refused
+to assume it, because Florida had been predicted "data-only" on the same
+reasoning and was wrong in the dangerous direction. That caution was right and
+the answer is not the one either side of the prediction expected:
+
+**`impl` IS READ BY NOTHING IN THE ENGINE.** Every occurrence in
+`api/_lib/deadline-engine.js` is a property definition or a comment; the only
+readers of `std.impl` anywhere in the repository are test files asserting the
+declaration. Behaviour comes entirely from the declared properties —
+`short_period_exclusion_days`, `shifted_start`, `weekend_days` and the suffixes.
+
+So there was never an implementation to map onto. **Verified by MUTATION rather
+than by reading**, because reading only shows that nothing *appears* to use it:
+the test replaces `impl` with `there-is-no-such-implementation` and asserts the
+computed date does not move.
+
+### 7.4 THREE THINGS THIS GATE DID NOT HAVE
+
+**(a) A SUPERSEDED RULE TEXT IS SERVED AT A GUESSABLE URL WITH HTTP 200.** The
+gate found Rule 6 at
+`courts.maine.gov/rules/text/MRCivPPlus/RULE%206.pdf` and that file is current.
+The same pattern **also returns 200 for `RULE%2012.pdf`, `RULE%2033.pdf`,
+`RULE%2034.pdf` and `RULE%2036.pdf` — and those are DIFFERENT DOCUMENTS from the
+`mr_civ_p_NN_plus_2023-11-15.pdf` files the civil-rules index actually links.**
+The undated Rule 12 copy is **23 years stale**: its latest Advisory Committee's
+Note is 1 May 2000 and its Rule 12(a) reads "within 20 days after the service of
+the summons and complaint upon that defendant".
+
+The current text, in both the index-linked per-rule PDF and the June 2026
+consolidated book, reads "within 20 days after the service of the summons,
+**complaint, and notice regarding Electronic Service** upon that defendant".
+
+**THE COUNT DID NOT CHANGE. THE TRIGGER DID.** A seed built from the guessable
+URL would have carried the right number of days and the wrong starting event,
+and nothing would have said so — the date would simply have run from whenever
+the complaint was served. This is the same family as the four moved-citation
+traps §4 records, one level out: not a stale citation inside a document, but a
+**stale document at a live address**. Every row's `effective_from` is therefore
+taken from the effective date each document states on its own face —
+**2023-11-15** for the rules the e-service amendment touched, **2014-11-01** for
+the Rule 59 rows — and a matter triggered earlier is REFUSED.
+
+**(b) THE UNDER-7-DAY EXCLUSION AND THE MAIL EXTENSION INTERACT, AND THE
+ENGINE'S ORDER IS THE LATER OF TWO READINGS.** Found by driving the rows, not by
+reading them. Rule 30(b)(5) gives 5 days, the only Maine period short enough to
+reach 6(a)'s exclusion. Rule 6(c) **lengthens the period** rather than adding
+days after it expires. Five plus three is eight.
+
+* **Reading A**, which is what this engine computes: the exclusion applies to the
+  5 days Rule 30(b)(5) prescribes, and 6(c)'s days are added to the result. From
+  a Monday 2026-06-15 trigger: **2026-06-26**.
+* **Reading B**: 6(c) makes the prescribed period 8, so 6(a)'s "less than 7
+  days" test is no longer met and the count runs straight through: **2026-06-23**.
+
+Maine's text settles neither, and **Reading A is the later**. Every other
+disclosed gap in this seed fails EARLY, so rather than ship the one that fails
+LATE on a period whose consequence is losing the right to object to inspection,
+**the extension is not attached to that row**. It computes the unextended date,
+which is at or before both readings, and **a mailed Rule 30(b)(5) objection is
+declared not-computed**. Attaching the extension afterwards is a one-line change
+once counsel answers.
+
+**(c) MAIL-ONLY IS A POSITIVE READING, NOT A SHORTER LIST.** §6 reached "encode
+mail only, never electronic" from the ABSENCE of a Tennessee-style deeming
+sentence. Reading Rule 5(b) in full gives a stronger basis: 5(b)(2) offers three
+routes in one sentence — "by **Electronic Service** to the last known electronic
+mail address … or, if no electronic mail address is known, **mailing** it to the
+last known regular mail address, or, if neither is known, by **leaving it with
+the clerk** of the court" — and 6(c) picks out the middle one by name. So Maine's
+own service rule distinguishes all three inside a single provision. That also
+settles a question §5 did not ask: **leaving it with the clerk gets no days
+either**, where `frcp_6d` extends for it. Carrying the federal allowlist across
+would have added three days to two methods Maine does not extend, and added days
+are the LATE direction.
+
+One more thing read and found not to matter: Rule 5(b) says "Service by regular
+mail is complete upon mailing", so Maine needs **no**
+`SERVICE_COMPLETION_STANDARDS` entry. Missouri needed one because its rule moves
+the completion date instead of adding days.
+
+### 7.5 One more thing the gate's §3 did not name: Thanksgiving has no date
+
+§3 lists "annual Thanksgiving" among §1051's twelve. Read again for the calendar,
+the statute says **"any day designated for the annual Thanksgiving"** — a
+designation, not the fourth Thursday. So its date comes from an annual
+proclamation this engine cannot read. It is encoded as the fourth Thursday and
+that derivation was **checked against the published court list for both seeded
+years** rather than assumed. It is also the sharpest reason a year beyond 2027 is
+REFUSED rather than generated: eleven of the twelve days would generate
+mechanically, and a generated year would hide this one behind a confident answer.
+
+### 7.6 What is still not seeded, restated because §6's list has changed
+
+Unchanged and still out of scope: **criminal** (M.R.U. Crim. P. 45(a), not read),
+**appellate** (M.R. App. P., not read), **backward-counted rows** (the
+under-inclusive calendar is safe forward and unsafe backward — a hard bound, not
+a formality), **administrative-week part-day closures** (not a 77(c) closed day
+on this text), and **years beyond 2027** (REFUSED rather than derived).
+
+Newly on the bundled lawyer's question, alongside §4's cross-reference: whether
+Rule 6(c) reaches a summons and complaint served by mail under Rule 4 (omitted,
+which reports EARLY), and the §7.4(b) exclusion-versus-extension order.

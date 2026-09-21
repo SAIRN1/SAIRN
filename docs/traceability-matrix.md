@@ -471,6 +471,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~15 of the 20 resources this app writes are NOT REGISTERED — they have never reached the server at all~~ | **CODE CLOSED 2026-09-05 (CC). ⚠ SQL PENDING — `sql/sairnlaw_data_extended_schema.sql` must be run in Supabase. ⚠ NEEDS INDEPENDENT REVIEW (aviation-grade — billable time, invoices, matter documents,  | `api/sd-data-sairnlaw-resources.test.js` |
 | ~~AI Chain of Custody gap 2: `matter_id` is an unvalidated localStorage id~~ | **CLOSED 2026-09-05 (Hank)** — `b5a76cf`, client half live-verified; the blocker was gone and was CHECKED rather than assumed | `api/law-auth-custody-matter-attribution.test.js` |
 | ~~`ai_list` derived-status window can go stale at high license-wide volume~~ — **the premise was half wrong; the real defect was the note claiming something it never checked** | **CLOSED 2026-09-08 (Hank)** — `2612aca`, client half live-verified | `api/law-auth-custody-matter-attribution.test.js` |
+| **&#9989; Maine SEEDED &mdash; 14 rows on the statutory twelve-day calendar, and the gate's one UNVERIFIED prediction turned out to be a question the engine does not have** | **SEEDED 2026-09-21 (Fourth)** &mdash; `api/_lib/deadline-engine.js` (`me_mr_civ_p_6`, `me_mr_civ_p_6_c`, `JURISDICTION_COVERAGE.me`), `sql/sairnlaw_deadline_seed_maine.json` (14 rows), `sql/sairnlaw_ | `api/_lib/deadline-maine.test.js` |
 | **Connecticut: SOURCES PASS but NOT seedable in the shape this engine models — the pleading rule is a CHAIN and the rollover has no holiday basis** | **Blocked 2026-08-26** ⚠️ | `api/_lib/deadline-connecticut.test.js` |
 | **Utah gate PASSED — cleanest since Minnesota; the holiday list is INSIDE the rule, and one dated landmine caps the calendar at 2026** | **✅ RESOLVED — audited 2026-09-01 (Hank). 9 rules live, 59/59 tests.** The 2026 calendar cap this row named IS in force and is self-disclosing: the calendar carries 2026 only, and the engine refuses N | `api/_lib/deadline-utah.test.js` |
 | **⚠ RAISED FOR A DECISION: the FEDERAL seed attaches Rule 6(d) to the answer-to-complaint row, and if that is wrong it computes THREE DAYS LATE** | Open — **needs a call, not a fix by me** | `api/_lib/deadline-us-federal-service-extension.test.js` |
@@ -565,15 +566,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 541 of 596 traced, 90.8%.
+For context and not as the headline: 542 of 597 traced, 90.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 541 citations come from
+### Where the 542 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 279 |
+| `index` | 280 |
 | `declared` | 231 |
 | `declared+index` | 23 |
 | `GUARD_TESTS+index` | 5 |
@@ -665,8 +666,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 596   tests/**, api/** (both walked)
-  open-work rows citing a test       288   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 597   tests/**, api/** (both walked)
+  open-work rows citing a test       289   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

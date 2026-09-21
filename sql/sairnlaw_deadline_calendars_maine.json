@@ -1,0 +1,160 @@
+{
+  "holiday_calendars": [
+    {
+      "jurisdiction": "me",
+      "year": 2026,
+      "authority": {
+        "citation": "4 M.R.S. sec. 1051 (Legal holidays), the undefined term in M.R. Civ. P. 6(a)",
+        "url": "https://legislature.maine.gov/statutes/4/title4sec1051-1.html",
+        "computation_url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/RULE%206.pdf",
+        "cross_check_url": "https://www.courts.maine.gov/courts/schedules/holidays.html",
+        "quote": "Court may not be held on Sunday or any day designated for the annual Thanksgiving; New Year's Day, January 1st; Martin Luther King, Jr., Day, the 3rd Monday in January; Washington's Birthday, the 3rd Monday in February; Patriot's Day, the 3rd Monday in April; Memorial Day, the last Monday in May, but if the Federal Government designates May 30th as the date for observance of Memorial Day, the 30th of May; Juneteenth, June 19th; the 4th of July; Labor Day, the first Monday of September; Indigenous Peoples Day, the 2nd Monday in October; Veterans Day, November 11th; or on Christmas Day. The Chief Justice of the Supreme Judicial Court may order that court be held on a legal holiday when the Chief Justice finds that the interests of justice and judicial economy in any particular case will be served. The public offices in county buildings may be closed to business on the holidays named in this section. When any one of the holidays named in this section falls on Sunday, the Monday following must be observed as a holiday, with all the privileges applying to any of the days named in this section.",
+        "note": "THE OPERATIVE TEST IS M.R. CIV. P. 6(a), WHICH SAYS \"legal holiday\" AND STOPS -- it defines the term nowhere, and 4 M.R.S. sec. 1051 is the section that names Maine's legal holidays. THIS CALENDAR IS SEC. 1051 AND IS DELIBERATELY NARROWER THAN THE SCHEDULE THE JUDICIAL BRANCH PUBLISHES. The published Court Holidays Observed list adds a Saturday-to-Friday observance and a THANKSGIVING FRIDAY, and sec. 1051 contains neither: its only observance rule is \"When any one of the holidays named in this section falls on SUNDAY, the Monday following must be observed as a holiday.\" THERE IS NO SATURDAY LIMB IN THE STATUTE AT ALL. Every date below was DERIVED from the statutory phrase quoted in its own derivation and then CHECKED BY DAY OF WEEK against the published list; all twelve matched in both seeded years, so the two lists agree on everything except the divergent Fridays named in JURISDICTION_COVERAGE.me. UNDER-INCLUSION IS THE SAFE SIDE AND BOTH LIMBS OF RULE 6(a) WERE CHECKED, not just the rollover: a missing holiday means no roll (EARLIER) and one fewer intermediate day excluded on the under-7-day limb (also EARLIER). Encoding the bigger list would roll a deadline off a day no statute makes a holiday, which reports LATE. SUNDAYS ARE NOT ENUMERATED HERE even though sec. 1051 opens with \"Court may not be held on Sunday\": Rule 6(a) names \"a Saturday, a Sunday, or a legal holiday\" in its own words, so the engine's ordinary weekend handling already covers them and a per-date entry would be redundant. SATURDAY IS NOT A SEC. 1051 HOLIDAY AT ALL -- it is excluded by Rule 6(a) directly, which is why no Saturday appears below and why a statutory holiday falling on a Saturday is simply omitted rather than shifted. THANKSGIVING IS NOT A DATE IN THE STATUTE: sec. 1051 says \"any day designated for the annual Thanksgiving\", a designation this engine cannot read, so the fourth Thursday is a derivation checked against the published list rather than a citation. NOT DERIVABLE AND DISCLOSED IN JURISDICTION_COVERAGE.me RATHER THAN GUESSED AT: the Rule 6(a) limb making legal holidays of days the clerk's office is ordered closed under Rule 77(c), and sec. 1051's own power for the Chief Justice to order court held ON a legal holiday in a particular case -- which does not remove the day from this section's list, so the rollover is still correct. NOT PRESENT AND NOT TO BE ADDED FROM A NEIGHBOUR: Maine has NO Good Friday (Hawaii and Delaware do), NO Columbus Day by that name, NO general election day (Delaware, Montana and Nevada have one) and NO day-after-Thanksgiving in the statute. AND ONE DAY NO OTHER CALENDAR ON THIS PLATFORM HAS: PATRIOT'S DAY, the third Monday in April, which sec. 1051 names and which exists in Maine and Massachusetts only. 2026 AND 2027 ONLY: a later year is REFUSED rather than generated. Eleven of the twelve days would generate mechanically, which is exactly why generating is refused -- the Thanksgiving designation and the two open limbs above would still be open, and a generated year hides that behind a confident answer.",
+        "retrieved_at": "2026-09-21"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"New Year's Day, January 1st\". 2026-01-01 is a Thursday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Martin Luther King, Jr., Day, the 3rd Monday in January\". 2026-01-19 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Washington's Birthday, the 3rd Monday in February\". THE STATUTE'S NAME, NOT THE COURT LIST'S: the Judicial Branch publishes this day as \"Presidents Day\". Same third Monday, different label, and the statutory name is used here because sec. 1051 is the operative list. 2026-02-16 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-04-20",
+          "name": "Patriot's Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Patriot's Day, the 3rd Monday in April\". THIS DAY EXISTS ON NO OTHER CALENDAR IN THIS PLATFORM -- Maine and Massachusetts are the only states that make it a holiday, and Massachusetts's own Rule 6(a) calendar here reaches it through Mass. G.L. c. 4, sec. 7, Cl. 18 rather than through this section. A calendar copied from any other state would be missing it. 2026-04-20 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Memorial Day, the last Monday in May, but if the Federal Government designates May 30th as the date for observance of Memorial Day, the 30th of May\". THE CONDITIONAL LIMB IS DORMANT AND WAS CHECKED RATHER THAN ASSUMED DORMANT: 5 U.S.C. sec. 6103(a) fixes Memorial Day at \"the last Monday in May\", so the Federal Government does not designate May 30th and the first limb governs. If that ever changes this date moves and the calendar must be rebuilt, which is one more reason a later year is refused rather than generated. 2026-05-25 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Juneteenth, June 19th\". 2026-06-19 is a Friday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Labor Day, the first Monday of September\". 2026-09-07 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Indigenous Peoples Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Indigenous Peoples Day, the 2nd Monday in October\". Sec. 1051 names ONLY Indigenous Peoples Day on this day -- unlike Montana, whose statute names both it and Columbus Day, and unlike Oregon, which omits the day entirely. 2026-10-12 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Veterans Day, November 11th\". 2026-11-11 is a Wednesday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "the annual Thanksgiving",
+          "kind": "declared",
+          "derivation": "NOT A DATE IN THE STATUTE, AND THAT IS STATED RATHER THAN SMOOTHED OVER. 4 M.R.S. sec. 1051 reaches \"any day designated for the annual Thanksgiving\" -- a designation, not the fourth Thursday -- so the date comes from an annual proclamation this engine cannot read. Derived as the fourth Thursday in November, which is also 5 U.S.C. sec. 6103(a)'s federal date, and CHECKED against the Judicial Branch's published Thanksgiving Day for this year. THE FRIDAY AFTER IS NOT HERE: the published court list carries a \"Thanksgiving Friday\" and sec. 1051 does not name it. That is one of the divergences JURISDICTION_COVERAGE.me discloses. 2026-11-26 is a Thursday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"or on Christmas Day\". 2026-12-25 is a Friday, verified by weekday, so no observance shift applies."
+        }
+      ]
+    },
+    {
+      "jurisdiction": "me",
+      "year": 2027,
+      "authority": {
+        "citation": "4 M.R.S. sec. 1051 (Legal holidays), the undefined term in M.R. Civ. P. 6(a)",
+        "url": "https://legislature.maine.gov/statutes/4/title4sec1051-1.html",
+        "computation_url": "https://www.courts.maine.gov/rules/text/MRCivPPlus/RULE%206.pdf",
+        "cross_check_url": "https://www.courts.maine.gov/courts/schedules/holidays.html",
+        "quote": "Court may not be held on Sunday or any day designated for the annual Thanksgiving; New Year's Day, January 1st; Martin Luther King, Jr., Day, the 3rd Monday in January; Washington's Birthday, the 3rd Monday in February; Patriot's Day, the 3rd Monday in April; Memorial Day, the last Monday in May, but if the Federal Government designates May 30th as the date for observance of Memorial Day, the 30th of May; Juneteenth, June 19th; the 4th of July; Labor Day, the first Monday of September; Indigenous Peoples Day, the 2nd Monday in October; Veterans Day, November 11th; or on Christmas Day. The Chief Justice of the Supreme Judicial Court may order that court be held on a legal holiday when the Chief Justice finds that the interests of justice and judicial economy in any particular case will be served. The public offices in county buildings may be closed to business on the holidays named in this section. When any one of the holidays named in this section falls on Sunday, the Monday following must be observed as a holiday, with all the privileges applying to any of the days named in this section.",
+        "note": "THE OPERATIVE TEST IS M.R. CIV. P. 6(a), WHICH SAYS \"legal holiday\" AND STOPS -- it defines the term nowhere, and 4 M.R.S. sec. 1051 is the section that names Maine's legal holidays. THIS CALENDAR IS SEC. 1051 AND IS DELIBERATELY NARROWER THAN THE SCHEDULE THE JUDICIAL BRANCH PUBLISHES. The published Court Holidays Observed list adds a Saturday-to-Friday observance and a THANKSGIVING FRIDAY, and sec. 1051 contains neither: its only observance rule is \"When any one of the holidays named in this section falls on SUNDAY, the Monday following must be observed as a holiday.\" THERE IS NO SATURDAY LIMB IN THE STATUTE AT ALL. Every date below was DERIVED from the statutory phrase quoted in its own derivation and then CHECKED BY DAY OF WEEK against the published list; all twelve matched in both seeded years, so the two lists agree on everything except the divergent Fridays named in JURISDICTION_COVERAGE.me. UNDER-INCLUSION IS THE SAFE SIDE AND BOTH LIMBS OF RULE 6(a) WERE CHECKED, not just the rollover: a missing holiday means no roll (EARLIER) and one fewer intermediate day excluded on the under-7-day limb (also EARLIER). Encoding the bigger list would roll a deadline off a day no statute makes a holiday, which reports LATE. SUNDAYS ARE NOT ENUMERATED HERE even though sec. 1051 opens with \"Court may not be held on Sunday\": Rule 6(a) names \"a Saturday, a Sunday, or a legal holiday\" in its own words, so the engine's ordinary weekend handling already covers them and a per-date entry would be redundant. SATURDAY IS NOT A SEC. 1051 HOLIDAY AT ALL -- it is excluded by Rule 6(a) directly, which is why no Saturday appears below and why a statutory holiday falling on a Saturday is simply omitted rather than shifted. THANKSGIVING IS NOT A DATE IN THE STATUTE: sec. 1051 says \"any day designated for the annual Thanksgiving\", a designation this engine cannot read, so the fourth Thursday is a derivation checked against the published list rather than a citation. NOT DERIVABLE AND DISCLOSED IN JURISDICTION_COVERAGE.me RATHER THAN GUESSED AT: the Rule 6(a) limb making legal holidays of days the clerk's office is ordered closed under Rule 77(c), and sec. 1051's own power for the Chief Justice to order court held ON a legal holiday in a particular case -- which does not remove the day from this section's list, so the rollover is still correct. NOT PRESENT AND NOT TO BE ADDED FROM A NEIGHBOUR: Maine has NO Good Friday (Hawaii and Delaware do), NO Columbus Day by that name, NO general election day (Delaware, Montana and Nevada have one) and NO day-after-Thanksgiving in the statute. AND ONE DAY NO OTHER CALENDAR ON THIS PLATFORM HAS: PATRIOT'S DAY, the third Monday in April, which sec. 1051 names and which exists in Maine and Massachusetts only. 2026 AND 2027 ONLY: a later year is REFUSED rather than generated. Eleven of the twelve days would generate mechanically, which is exactly why generating is refused -- the Thanksgiving designation and the two open limbs above would still be open, and a generated year hides that behind a confident answer.",
+        "retrieved_at": "2026-09-21"
+      },
+      "dates": [
+        {
+          "date": "2027-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"New Year's Day, January 1st\". 2027-01-01 is a Friday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-01-18",
+          "name": "Martin Luther King, Jr., Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Martin Luther King, Jr., Day, the 3rd Monday in January\". 2027-01-18 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-02-15",
+          "name": "Washington's Birthday",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Washington's Birthday, the 3rd Monday in February\". THE STATUTE'S NAME, NOT THE COURT LIST'S: the Judicial Branch publishes this day as \"Presidents Day\". Same third Monday, different label, and the statutory name is used here because sec. 1051 is the operative list. 2027-02-15 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-04-19",
+          "name": "Patriot's Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Patriot's Day, the 3rd Monday in April\". THIS DAY EXISTS ON NO OTHER CALENDAR IN THIS PLATFORM -- Maine and Massachusetts are the only states that make it a holiday, and Massachusetts's own Rule 6(a) calendar here reaches it through Mass. G.L. c. 4, sec. 7, Cl. 18 rather than through this section. A calendar copied from any other state would be missing it. 2027-04-19 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-05-31",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Memorial Day, the last Monday in May, but if the Federal Government designates May 30th as the date for observance of Memorial Day, the 30th of May\". THE CONDITIONAL LIMB IS DORMANT AND WAS CHECKED RATHER THAN ASSUMED DORMANT: 5 U.S.C. sec. 6103(a) fixes Memorial Day at \"the last Monday in May\", so the Federal Government does not designate May 30th and the first limb governs. If that ever changes this date moves and the calendar must be rebuilt, which is one more reason a later year is refused rather than generated. 2027-05-31 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-07-05",
+          "name": "the 4th of July (observed)",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"the 4th of July\". 2027-07-04 is a SUNDAY, verified by weekday, so sec. 1051's only observance limb applies -- \"When any one of the holidays named in this section falls on Sunday, the Monday following must be observed as a holiday\" -- and the observed day is Monday 2027-07-05. The Sunday itself is not enumerated: Rule 6(a) excludes Sundays by name."
+        },
+        {
+          "date": "2027-09-06",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Labor Day, the first Monday of September\". 2027-09-06 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-10-11",
+          "name": "Indigenous Peoples Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Indigenous Peoples Day, the 2nd Monday in October\". Sec. 1051 names ONLY Indigenous Peoples Day on this day -- unlike Montana, whose statute names both it and Columbus Day, and unlike Oregon, which omits the day entirely. 2027-10-11 is a Monday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "4 M.R.S. sec. 1051, \"Veterans Day, November 11th\". 2027-11-11 is a Thursday, verified by weekday, so no observance shift applies."
+        },
+        {
+          "date": "2027-11-25",
+          "name": "the annual Thanksgiving",
+          "kind": "declared",
+          "derivation": "NOT A DATE IN THE STATUTE, AND THAT IS STATED RATHER THAN SMOOTHED OVER. 4 M.R.S. sec. 1051 reaches \"any day designated for the annual Thanksgiving\" -- a designation, not the fourth Thursday -- so the date comes from an annual proclamation this engine cannot read. Derived as the fourth Thursday in November, which is also 5 U.S.C. sec. 6103(a)'s federal date, and CHECKED against the Judicial Branch's published Thanksgiving Day for this year. THE FRIDAY AFTER IS NOT HERE: the published court list carries a \"Thanksgiving Friday\" and sec. 1051 does not name it. That is one of the divergences JURISDICTION_COVERAGE.me discloses. 2027-11-25 is a Thursday, verified by weekday, so no observance shift applies."
+        }
+      ]
+    }
+  ]
+}

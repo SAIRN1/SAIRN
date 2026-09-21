@@ -74,7 +74,13 @@ const JURISDICTION_LABELS = {
   // Added with the Montana seed itself rather than after it, which is the whole
   // point of the guard above: every one of the twelve bare codes was seeded
   // first and labelled later, and nothing noticed in between.
-  mt: 'Montana'
+  mt: 'Montana',
+  // Added with the Maine seed itself, in the same commit, for the same reason
+  // the line above says: the guard in
+  // api/_lib/deadline-jurisdiction-labels.test.js derives the jurisdiction set
+  // from the seed files on disk, so landing sql/sairnlaw_deadline_seed_maine.json
+  // without this line turns that suite RED rather than shipping a bare "me".
+  me: 'Maine'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

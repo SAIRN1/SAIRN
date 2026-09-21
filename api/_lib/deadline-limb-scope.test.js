@@ -102,10 +102,10 @@ function drive(rule, whichGoverns) {
 }
 
 // ── the corpus itself ───────────────────────────────────────────────────
-check('sixteen multi-trigger rows carry a service extension', multi.length, 16);
+check('seventeen multi-trigger rows carry a service extension -- Maine\'s Rule 36 floor is the seventeenth', multi.length, 17);
 check('and they span nine jurisdictions',
   [...new Set(multi.map(r => r.jurisdiction))].sort(),
-  ['al', 'ar', 'hi', 'md', 'mn', 'mo', 'ms', 'mt', 'ne', 'nm', 'wi'].filter(j => multi.some(r => r.jurisdiction === j)));
+  ['al', 'ar', 'hi', 'md', 'me', 'mn', 'mo', 'ms', 'mt', 'ne', 'nm', 'wi'].filter(j => multi.some(r => r.jurisdiction === j)));
 check('EVERY one declares applies_to_limbs -- an undeclared row is refused, so a gap here is not silent',
   multi.filter(r => !Array.isArray(r.service_extension.applies_to_limbs)).map(r => r.rule_id), []);
 check('none scopes the extension to ALL its limbs -- that would be the old behaviour spelled out',

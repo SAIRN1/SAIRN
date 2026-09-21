@@ -2170,7 +2170,88 @@ var COMPUTATION_STANDARDS = {
   // omission could not be made safe. See JURISDICTION_COVERAGE.mt.
   mt_rcp_6a: { label: 'Mont. R. Civ. P. 6(a)', impl: 'frcp_6a',
     base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
-    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' }
+    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' },
+  // ── MAINE, M.R. Civ. P. 6 (2026-09-21) ──────────────────────────────────
+  // Read verbatim from the Judicial Branch's own per-rule PDF and cross-checked
+  // word for word against the consolidated Maine Rules of Civil Procedure
+  // current to 1 June 2026. Both files were re-downloaded for this seed and
+  // both sha256 hashes matched the ones docs/sairnlaw-maine-deadline-seed-gate.md
+  // recorded three days earlier -- 8875d50a... for RULE 6.pdf and 263f9b45...
+  // for mr_civ_p_only_2026-06-01.pdf -- so the text encoded here is the text
+  // the gate passed on, checked rather than assumed.
+  //
+  // ONE STANDARD COVERS BOTH RULE-MADE AND STATUTE-MADE DEADLINES, AND THAT IS
+  // A CITATION RATHER THAN A CONVENIENCE. 1 M.R.S. Sec. 71(12), verbatim in the
+  // operative part: a statutory period "involved in or related to the
+  // commencement, prosecution or defense of any civil ... action or other
+  // judicial proceeding or any action or proceeding of the Public Utilities
+  // Commission is governed by and computed under Rule 6(a) of the Maine Rules
+  // of Civil Procedure as amended from time to time". California needed TWO
+  // standards for exactly this split -- ca_ccp_12_12a for statutes and
+  // ca_crc_1_10 for rules -- because nothing joined them. Maine's legislature
+  // pointed its own statutes at the court rule, so one standard is correct
+  // here because a statute says so.
+  //
+  // THE ROLLOVER IS EXPLICIT, WHICH IS THE WHOLE DIFFERENCE FROM PENNSYLVANIA.
+  // Rule 6(a): "The last day of the period so computed is to be included,
+  // unless it is a Saturday, a Sunday, or a legal holiday, IN WHICH EVENT THE
+  // PERIOD RUNS UNTIL THE END OF THE NEXT DAY which is not a Saturday, a
+  // Sunday, or a holiday." pa_rja_107 above carries a long note because
+  // Pa.R.J.A. 107(b) only OMITS the day and never says the period runs on, so
+  // its rollover is a stated assumption. Maine says it, so nothing is assumed.
+  //
+  // THE SEVEN IS DELIBERATE AND MAINE'S OWN, AND FOR ONCE THERE IS DIRECT
+  // EVIDENCE OF THAT RATHER THAN A WARNING NOT TO INFER IT. Ohio, Indiana and
+  // Florida also use 7, and the standing lesson from those three is that a
+  // shared threshold is a coincidence of drafting. Maine's wording is nearly
+  // Ohio's, which makes it the most tempting case yet -- and Rule 6's own
+  // Advisory Committee's Note settles it: the Court PROMULGATED an amendment
+  // effective 15 February 1995 raising the threshold from 7 to 11 days to
+  // match the then-federal rule, STAYED it before it took effect, and then
+  // "permanently withdrew" it because "the benefit of conformity with the
+  // federal rule is outweighed by the potential for confusion and
+  // inconsistency in Maine law" -- the stated concern being "unintended
+  // effects on statutory time provisions because of the incorporation of
+  // Rule 6(a) in 1 M.R.S.A. Sec. 71(12)". Maine considered 11, and chose 7.
+  //
+  // `impl` IS A LABEL HERE AND NOTHING READS IT, which resolves the one thing
+  // the gate flagged as UNVERIFIED rather than leaving it flagged. Sec. 5 of
+  // the gate predicted Maine would "map to the ohio_civ_r_6a implementation"
+  // and said the prediction must be checked, because Florida was predicted
+  // "data-only" on the same reasoning and was wrong in the dangerous
+  // direction. Checked: there is no implementation dispatch in this engine at
+  // all. Grep `impl` across this file -- every occurrence is a property
+  // DEFINITION or a comment, and the only readers of `std.impl` anywhere in
+  // the repository are test files asserting the declaration. Behaviour comes
+  // from the declared properties: short_period_exclusion_days, shifted_start,
+  // weekend_days and the suffixes. So the right question was never which impl
+  // string to copy -- it was which properties Maine declares, and
+  // api/_lib/deadline-maine.test.js drives Maine and Ohio through identical
+  // inputs to show where they agree and where the suffixes differ.
+  //
+  // SUBDIVISION LETTERING IS REAL AND CITABLE, unlike Ohio's and Indiana's
+  // unlettered paragraphs: the computation and the rollover are both in (a).
+  //
+  // months_years_suffix IS BLANK BECAUSE RULE 6 DOES NOT ADDRESS MONTHS OR
+  // YEARS AT ALL. No Maine row uses either unit. If one is ever added the
+  // citation would read a bare "M.R. Civ. P. 6", which is the signal to go and
+  // find the provision that actually governs rather than to fill the field in.
+  //
+  // rollover_suffix_backward IS BLANK AND BACKWARD ROWS ARE OUT OF SCOPE, AND
+  // HERE THAT IS A SAFETY BOUND RATHER THAN A CITATION ONE. Michigan,
+  // Pennsylvania and Illinois leave it blank because their rules are silent,
+  // and silence is only a citation problem. For Maine it is worse: the holiday
+  // calendar is deliberately UNDER-inclusive (see JURISDICTION_COVERAGE.me),
+  // which is safe forward -- a missing holiday means no roll and no skipped
+  // intermediate day, so the date comes out EARLIER -- and unsafe backward,
+  // where a holiday that should have pushed the date further from the trigger
+  // and does not leaves it CLOSER, i.e. later than the rule allows. A Maine
+  // backward row would invert the one property this whole seed rests on. Do
+  // not add one without resolving the calendar question in Sec. 3 of the gate.
+  me_mr_civ_p_6: { label: 'M.R. Civ. P. 6', impl: 'ohio_civ_r_6a',
+    short_period_exclusion_days: 7,
+    base_period_suffix: '(a)', months_years_suffix: '',
+    rollover_suffix_forward: '(a)', rollover_suffix_backward: '' }
 };
 
 // A MALFORMED weekend_days FAILS AT LOAD, LOUDLY, AND TAKES THE MODULE WITH
@@ -2422,6 +2503,19 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'DISTRICT COURT ONLY -- the Montana Justice and City Court Rules of Civil Procedure are a DIFFERENT computation, numbered Rule 6 in the same title of the same code, and are not seeded. Montana also extends the time for filing when the clerk\'s office is inaccessible, and Rule 6(a)(6) reaches days declared by the President or the Governor and, for forward periods only, any other day declared a holiday by the state; none of those is modelled. Every omission makes this date EARLIER than the true deadline, never later.',
     detail: "SCOPE FIRST, BECAUSE THE COLLISION IS SHARPER HERE THAN IN DELAWARE: these rows are Mont. R. Civ. P. 6(a) and the Montana Rules of Civil Procedure, MCA Title 25 ch. 20, which govern the DISTRICT COURTS. Mont. Just. & City Ct. R. Civ. P. 6 sits in MCA Title 25 ch. 23, is also called Rule 6, and is a different computation in four ways that all move dates: it contains NO definition of \"legal holiday\" at all, so nothing narrows MCA 1-1-216 the way Rule 6(a)(6) does; it has NO clerk-inaccessibility limb; it has NO backward \"next day\" rule, so a period measured before an event has no stated rollover direction; and its mail extension is MAIL ONLY and reads \"3 days must be added to the prescribed period\" -- period-lengthening with ONE rollover -- against District Court Rule 6(d)'s \"3 days are added AFTER the period would otherwise expire\", which rolls, adds, and rolls again. A Justice or City Court deadline must not be computed from these rows. THE CLERK-INACCESSIBILITY LIMB IS NOT MODELLED: Rule 6(a)(3) extends the time for filing to the first accessible day when the clerk's office is inaccessible. It is an ADDITIONAL limb beside the weekend/holiday test rather than a replacement for it -- the Minnesota and Utah shape, not the Wisconsin one -- so omitting an inaccessible day returns the earlier unrolled date and is EARLY. Closures are per-court and published nowhere this engine can read. THE HOLIDAY DEFINITION HAS TWO OPEN LIMBS AND ONE ASYMMETRY. Rule 6(a)(6)(B) reaches \"any day declared a holiday by the President of the United States or by the Governor of this state\", which is open-ended and underivable -- the Idaho and Hawaii shape. Rule 6(a)(6)(C) reaches, FOR PERIODS MEASURED AFTER AN EVENT ONLY, \"any other day declared a holiday by the state\". So Montana's holiday set is genuinely WIDER for forward periods than for backward ones, and this calendar carries the MCA 1-1-216 enumeration, which is the same in both directions. THE ONE PLACE THAT ASYMMETRY BITES IS PRESIDENTS' DAY, AND IT IS CARRIED IN BOTH DIRECTIONS DELIBERATELY. Rule 6(a)(6)(A) names \"the day set aside by statute for observing ... Lincoln's and Washington's Birthdays\" -- which was MCA 1-1-216(1)(d)'s own wording, verbatim, when the rule was adopted in 2011 and remained so through the 2023 edition. Ch. 561, L. 2025 renamed that entry \"Presidents' Day\" and left the third Monday in February exactly where it was; the rule's list was not conformed. The day is therefore reached by (A) on any ordinary reading and, for forward periods, by (C) beyond argument, since the State plainly declares it. Carrying it forward is certain; carrying it BACKWARD is the safe direction on the residual reading question, because a backward period that fails to roll off a holiday reports a date LATER than the true one. For 2026 that day is Monday 16 February. WHAT IS NOT OMITTED, and both are citations rather than readings: THE SATURDAY OBSERVANCE SHIFT IS CARRIED. MCA 1-1-216(2)(b), added by Ch. 131, L. 2013, provides that a holiday in (1)(b) through (1)(l) falling on a Saturday makes the PRECEDING FRIDAY a holiday, and Rule 6(a)(6)(A) reaches \"the day SET ASIDE BY STATUTE FOR OBSERVING\" the named holidays -- an observance reference, so the shifted day is inside it. 4 July 2026 is a Saturday, so FRIDAY 3 JULY 2026 is a Montana legal holiday and this calendar carries it. Contrast Hawaii, whose rule names HRS Sec. 8-1 BY NUMBER and leaves the Sec. 8-2 shift outside, and New Hampshire, whose shift clause has no Saturday limb at all. AND THE STATE GENERAL ELECTION DAY IS CARRIED. Rule 6(a)(6)(A) names \"state general election day\" IN THE RULE'S OWN LIST, MCA 1-1-216(1)(l) makes it a legal holiday under the same words, and MCA 13-1-104(1) fixes it on \"the first Tuesday after the first Monday in November\" -- for 2026 TUESDAY 3 NOVEMBER, verified by weekday. This is a shorter reach than Delaware's, which needed the state constitution, and the opposite of New Hampshire's, where the holiday statute used a term the election code never defines. NO SHORT-PERIOD EXCLUSION EXISTS IN MONTANA and its absence is not a gap: Rule 6(a)(1)(B) counts \"every day, including intermediate Saturdays, Sundays, and legal holidays\", so the five seeded rows shorter than 15 days are straight calendar counts. A threshold borrowed from a neighbour would report them LATE. NOT MODELLED AND NOT A DATE QUESTION: Rule 6(a)(4) ends the last day at midnight for electronic filing but \"when the clerk's office is scheduled to close\" for filing by other means. This engine computes a DATE and expresses no time of day, so a paper filing made after the counter closes on the correct date is late by a rule this seed cannot express. 2026 ONLY: a later year is REFUSED rather than derived. Every date here would generate mechanically, which is precisely why generating is refused -- 2027 is an ODD year in which the general election limb produces no state general election day, and a generator that silently dropped it would look identical to one that had reasoned about it."
+  },
+  // ── MAINE (2026-09-21) ───────────────────────────────────────────────
+  // The gate for this state is docs/sairnlaw-maine-deadline-seed-gate.md and
+  // it PASSED with two things disclosed rather than resolved. Both are here
+  // rather than in a comment, because this table is what rides on the answer
+  // a lawyer actually reads. Direction is 'early' and it was checked on BOTH
+  // limbs of Rule 6(a) rather than inferred from the rollover alone -- see
+  // the detail, and see me_mr_civ_p_6 above for why no backward row exists.
+  me: {
+    complete: false,
+    direction: 'early',
+    summary: "MAINE SUPERIOR AND DISTRICT COURT CIVIL RULES ONLY, AND THE HOLIDAY CALENDAR IS DELIBERATELY THE NARROWER OF THE TWO LISTS MAINE PUBLISHES. 4 M.R.S. Sec. 1051's twelve statutory days are encoded; the Judicial Branch's published court-holiday schedule carries up to three more Fridays a year that no statute makes holidays. Rule 6(a) also makes a legal holiday of any day the clerk's office is ordered closed, which is not knowable in advance, and Thanksgiving is fixed by annual designation rather than by date. Backward-counted rows are NOT seeded. Every omission makes this date EARLIER than the true deadline, never later.",
+    detail: 'THE CALENDAR QUESTION FIRST, BECAUSE IT DECIDES EVERY DATE. MAINE PUBLISHES TWO SETS OF DAYS AND THEY ARE NOT THE SAME SET. (1) 4 M.R.S. Sec. 1051 names twelve: the annual Thanksgiving, New Year\'s Day, Martin Luther King, Jr., Day, Washington\'s Birthday, Patriot\'s Day (the 3rd Monday in April -- Maine and Massachusetts only), Memorial Day, Juneteenth, the 4th of July, Labor Day, Indigenous Peoples Day, Veterans Day and Christmas Day, and its ONLY observance rule is "When any one of the holidays named in this section falls on SUNDAY, the Monday following must be observed as a holiday." THERE IS NO SATURDAY LIMB IN THE STATUTE AT ALL. (2) The Judicial Branch\'s published Court Holidays Observed list adds a Saturday-to-Friday observance and a THANKSGIVING FRIDAY, neither of which appears in Sec. 1051. THIS CALENDAR IS SET (1), THE STATUTE, AND IS UNDER-INCLUSIVE BY DESIGN. Measured rather than described: for 2026 the published list carries two days the statute does not -- Friday 3 July 2026 (4 July is a Saturday) and Friday 27 November 2026 -- and for 2027 it carries three -- Friday 18 June 2027 (Juneteenth is a Saturday), Friday 26 November 2027 and Friday 24 December 2027 (Christmas is a Saturday). Every derived statutory day was checked by DAY OF WEEK against the published list and all twelve matched in both years, so the two lists agree on everything except those five Fridays. WHY UNDER-INCLUSION IS THE SAFE SIDE HERE, AND WHY BOTH LIMBS OF RULE 6(a) HAD TO BE CHECKED RATHER THAN ONE: on the ROLLOVER limb a missing holiday means no roll, so the date comes out EARLIER; on the SHORT-PERIOD limb (under 7 days, intermediate Saturdays, Sundays and legal holidays excluded) a missing holiday is one fewer intermediate day excluded, so the count finishes sooner and the date again comes out EARLIER. Both limbs fail the same way, which is exactly what Maryland\'s short-period/backward interaction did NOT do. Encoding the BIGGER list would roll a deadline off a day no statute makes a holiday and report LATE, which is how a filing is missed. A MAINE DATE LANDING ON OR JUST BEFORE ONE OF THOSE FIVE FRIDAYS SHOULD BE CHECKED BY HAND, because a practitioner will treat the court list as authoritative and the courts really are closed. THE FIFTY-ONE-YEAR DANGLING CROSS-REFERENCE, which is the other half of the same question and is disclosed rather than resolved: Rule 6(a)\'s second paragraph makes legal holidays of "days on which the Chief Justice of the SUPERIOR Court or Chief Judge of the DISTRICT Court pursuant to Rule 77(c) specifically orders the clerk\'s office closed" -- and Rule 77(c), read for this seed, gives those officers no such power: "such other days as the CHIEF JUSTICE OF THE SUPREME JUDICIAL COURT may designate." Rule 6\'s own 1974 Advisory Committee\'s Note says the amendment was made "simultaneously with the amendment of Rule 77(c) placing in the hands of the Chief Justice of the Supreme Judicial Court the fixing of days on which the clerks\' offices will be closed", so the operative text and its own note disagreed on the day they were adopted. Under the reading that the names are a stale label, the closure limb is live, the published list is the Rule 6 holiday set, and Thanksgiving Friday counts -- this calendar is then EARLY. Under the reading that the rule means what it says, the limb is a dead letter and only the statutory twelve count -- this calendar is then exactly right. Either way it is never late, which is why this does not refuse. THANKSGIVING IS NOT A DATE IN THE STATUTE. Sec. 1051 says "any day designated for the annual Thanksgiving" -- a designation, not the fourth Thursday -- so its date comes from an annual proclamation this engine cannot read. It is encoded as the fourth Thursday and that derivation was CHECKED against the published list for both seeded years rather than assumed. A year in which the designation moved would make this wrong, and that is the reason a year beyond 2027 is REFUSED rather than generated even though eleven of the twelve days would generate mechanically. NOT MODELLED, ALL EARLY: the clerk\'s-office closure limb above, which is per-court and ad hoc; the Chief Justice\'s power under Sec. 1051 to "order that court be held on a legal holiday when the Chief Justice finds that the interests of justice and judicial economy in any particular case will be served", which is per-case and does not remove the day from the section\'s list, so the rollover here is still correct; and the Judicial Branch\'s three ADMINISTRATIVE WEEKS a year, when clerks\' windows are open 8am-noon only. A PARTIAL-DAY CLOSURE IS NOT A CLOSED DAY ON THIS TEXT, and that is recorded because Maryland\'s Rule 1-203(a)(2) expressly DOES reach a clerk\'s office "closed for a part of the day" and somebody will ask whether Maine\'s is the same thing. It is not. OUT OF SCOPE AND NAMED SO NOBODY READS COVERAGE THAT WAS NEVER OFFERED: the Maine Rules of Unified Criminal Procedure Rule 45(a), which 1 M.R.S. Sec. 71(12) names for criminal matters and which was not read; the Maine Rules of Appellate Procedure, not read, so no appellate row exists; and BACKWARD-COUNTED ROWS, which are refused for a SAFETY reason rather than a citation one -- counting backward, an omitted holiday moves the computed date LATER, so the deliberately under-inclusive calendar that is safe forward is unsafe backward. THE TRIGGER FOR THE ANSWER PERIOD CHANGED IN 2023 AND THE OLD TEXT IS STILL SERVED BY A GUESSABLE URL. Rule 12(a) now runs from service of "the summons, COMPLAINT, AND NOTICE REGARDING ELECTRONIC SERVICE", not from the summons and complaint alone; the amendment is effective 15 November 2023 and every affected row carries that effective_from, so a matter triggered before it is REFUSED rather than computed.'
   }
 };
 
@@ -3931,6 +4025,62 @@ var SERVICE_EXTENSION_STANDARDS = {
   // decided every time by the time rule rather than the pleading rule.
   hi_hrcp_6_e: {
     label: 'Haw. R. Civ. P. 6(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return method === 'mail';
+    }
+  },
+  // ── MAINE, M.R. Civ. P. 6(c) (2026-09-21) ───────────────────────────────
+  // Verbatim, and the whole subdivision: "Whenever a party has the right or is
+  // required to do some act or take some proceedings within a prescribed period
+  // after the service of a notice or other paper upon the party and the notice
+  // or paper is served upon the party BY MAIL, 3 days shall be added to the
+  // prescribed period."
+  //
+  // THE SEQUENCING IS THE NEW YORK ONE, NOT THE FEDERAL ONE, AND GETTING IT
+  // BACKWARDS WOULD REPORT LATE. "3 days SHALL BE ADDED TO THE PRESCRIBED
+  // PERIOD" is the CPLR 2103(b)(2) construction word for word in shape -- the
+  // days lengthen the period, so there is one period and one rollover at the
+  // end of it. FRCP 6(d) and Fla. 2.514(b) say "added AFTER the period would
+  // otherwise expire", which rolls first and can land two or three days later.
+  // See the worked example above this table: on the same facts the two
+  // sequencings came out three days apart and the FRCP order was the LATER.
+  // Maine's text never mentions expiration, so 'add_to_period_then_roll'.
+  //
+  // MAIL ONLY, AND THE OTHER TWO METHODS IN THE SAME BREATH ARE WHY THAT IS A
+  // READING RATHER THAN A SHORTER LIST. frcp_6d extends for mail, leaving with
+  // the clerk, or other consented means. Maine's Rule 5(b)(2) offers exactly
+  // three routes in one sentence -- "by Electronic Service to the last known
+  // electronic mail address ... or, if no electronic mail address is known,
+  // MAILING it to the last known regular mail address, or, if neither is known,
+  // by LEAVING IT WITH THE CLERK of the court" -- and 6(c) picks out only the
+  // middle one. So Maine's own service rule distinguishes mail from electronic
+  // service and from leaving it with the clerk inside a single provision, and
+  // 6(c) then says "by mail". Carrying frcp_6d's three-method allowlist across
+  // would add three days to two methods Maine does not extend, and added days
+  // are the LATE direction.
+  //
+  // ELECTRONIC SERVICE GETS NOTHING, and this is the reading the platform has
+  // been burned on before, in both directions. Rule 5(b) says Electronic
+  // Service "shall be complete when transmitted, shall be presumed to have been
+  // received by the intended recipient, and shall have the same legal effect as
+  // the service of an original paper document" -- same legal EFFECT, which does
+  // not say the paper document was mailed. TENNESSEE IS THE WARNING IN REVERSE:
+  // its R. 5.02 expressly DEEMS an emailed document "mailed for purposes of
+  // computation of time under Rule 6", so reading its time rule alone gave a
+  // wrong EARLY answer, which is why SERVICE_COMPLETION_STANDARDS exists below.
+  // Maine has no deeming sentence anywhere in Rule 5, and it distinguishes the
+  // two methods positively in 5(b)(2). Omitting the days for Electronic Service
+  // reports EARLIER if that reading is ever wrong.
+  //
+  // NO SERVICE-COMPLETION ENTRY IS NEEDED, checked rather than skipped: Rule
+  // 5(b) states "Service by regular mail is complete upon mailing", which is
+  // the assumption every other jurisdiction here already makes, so the trigger
+  // date needs no adjustment. Missouri needed one because R. 43.01(d) moves the
+  // completion date instead of adding days; Maine does not.
+  me_mr_civ_p_6_c: {
+    label: 'M.R. Civ. P. 6(c)',
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) {
