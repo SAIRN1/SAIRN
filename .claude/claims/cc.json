@@ -1954,6 +1954,16 @@
       "claimed_at_epoch": 1789976895.952058,
       "status": "released",
       "released_at": "2026-09-21T11:59:36Z"
+    },
+    {
+      "id": "cc-1789991991",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "FILES: sairnlaw.html api/_lib/law-timeentry.js tests/server_wins_hydration.js tests/sairnlaw_billable_rate.js tests/sairnlaw_hydrate.js -- server-wins hydration in lawHydrateAll, and the hours gate on billable time entries. Deadlines subsystem NOT touched.",
+      "claimed_at": "2026-09-21T11:59:51Z",
+      "claimed_at_epoch": 1789991991.4714818,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
