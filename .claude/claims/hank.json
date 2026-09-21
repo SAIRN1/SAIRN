@@ -2365,6 +2365,16 @@
       "claimed_at_epoch": 1790000034.2610545,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1790017876",
+      "session": "hank",
+      "subject": "sairnfreedom",
+      "task": "employee auth session gate verify and live-verify",
+      "claimed_at": "2026-09-21T19:11:16Z",
+      "claimed_at_epoch": 1790017876.4804232,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
