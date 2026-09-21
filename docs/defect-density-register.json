@@ -9475,7 +9475,7 @@
       "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
     },
     {
-      "commit": "56c692653d41",
+      "commit": "591531ce6fd6",
       "date": "2026-09-21",
       "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
       "files": [
