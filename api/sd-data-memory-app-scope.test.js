@@ -194,10 +194,18 @@ test('the shop_id lookup follows the same app', () => {
 test('memory stays session-gated for every app', () => {
   // The 2026-09-02 licence-key-exposure audit closed this. A second caller must
   // not be the reason it reopens.
-  const at = SRC.indexOf('const SD_SESSION_GATED');
-  assert.ok(at > 0);
-  const table = SRC.slice(at, at + 700);
-  assert.match(table, /'memory':\s*\['read', 'write'\]/);
+  // ── A FIXED BYTE WINDOW STOPS READING ITS SUBJECT WITHOUT SAYING SO ──────
+  // This sliced 700 bytes from the table's opening and looked for 'memory'
+  // inside them. It went RED on 2026-09-21 when SAIRNfreedom's three entries
+  // and the comment explaining them were added ABOVE 'memory', pushing it past
+  // byte 700 -- the arm was reporting on a window, not on the table. It failed
+  // loudly here, which is the lucky direction; the same shape fails SILENTLY
+  // whenever the thing being searched for would have been absent anyway.
+  // Matched against the WHOLE table now, the way every other suite reading
+  // this structure already does.
+  const m = SRC.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/);
+  assert.ok(m, 'the gate table is gone');
+  assert.match(m[0], /'memory':\s*\['read', 'write'\]/);
 });
 
 test('the session gate verifies against the CALLING app, not always stonedesk', () => {
