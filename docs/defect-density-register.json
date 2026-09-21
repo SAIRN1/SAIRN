@@ -9055,6 +9055,62 @@
       "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
+      "commit": "0dd84d944306",
+      "date": "2026-09-21",
+      "subject": "fix(sd-data): the json-catch-null sweep finishes -- four more sites, one serving seven Tier A resources and one moving money",
+      "files": [
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/sf_resources_session_gate_probe.py"
+      ],
+      "lines_added": 552,
+      "lines_removed": 18,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js: the 2026-09-18 json-catch-null pass described itself as a platform SWEEP and left FOUR sites of the identical shape in the same file -- a PATCH sent with Prefer: return=representation, its body read through .json().catch(() => null), only !ok consulted, then res.status(200).json({ok:true}). Under PostgREST a PATCH matching ZERO rows returns [] with status 200, so each reported a change that did not happen. :4135 bld_draws RETAINAGE RELEASE is money rather than a delete and handed the caller release_log describing a release that may never have been written; :12422 is the SAIRNcode soft-delete serving SEVEN TIER A resources (sc_ar, sc_claims, sc_compliance, sc_credential_scope, sc_denial, sc_denial_events, sc_revenue), gated to Compliance Admin whose own refusal says only they can remove records; :2404 sd_customers, whose READ half had been hardened on 2026-09-04 with the exact argument the WRITE half twelve lines below it ignored; :11257 dnt_supplies.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "92be209aadda",
+        "date": "2026-09-18",
+        "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
+        "lag_days": 3
+      },
+      "citation_note": "Arguable, and the same citation the original pass took for the same shape: a 200 that could mean WROTE, MISSED or UNREADABLE was reported as a confirmed write. 'Could not tell' folded into 'passed', one level down from a gate and inside a request handler.",
+      "contributing_factors": [
+        {
+          "factor": "the sweep searched for the SYMPTOM (.json().catch) rather than the defect, and that string matches 27 sites in this file of which most are reads handling null correctly -- so the search returned a haystack and the two obvious needles came out of it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the separating predicate is three conditions (representation PATCH AND a catch on its body AND an ok:true that never consults it) and it now runs as an assertion in api/sd-data-unconfirmed-write-sweep.test.js on every run, so a fifth copy turns the suite red"
+        },
+        {
+          "factor": "a commit that says SWEEP is making a completeness claim, and nothing on this platform checks a completeness claim -- the three press-on questions the author asked a reviewer were all about the two sites he DID fix",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the review that found this drove the three questions and then asked the fourth the author had not: is the sweep complete"
+        },
+        {
+          "factor": "api/sd-data.js is 12,600 lines and the same read-then-PATCH idiom is hand-written in each branch rather than shared, so a repair to one copy is invisible to the others",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "extracting a shared soft-delete helper across 9 bespoke branches with different validators, role gates and 404 wordings is a refactor with its own blast radius, not a rider on this fix"
+        }
+      ],
+      "recurrence_open": "The predicate runs over api/sd-data.js ONLY. api/sc-credentials.js is where this shape was first found and is fixed, but nothing checks api/dnt-bi.js, api/alf-alerts.js or any other handler for it. The guard points where this fix happened to look."
+    },
+    {
       "commit": "1884f8148112",
       "date": "2026-09-21",
       "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
@@ -9179,60 +9235,60 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
-      "commit": "0dd84d944306",
+      "commit": "733506717d29",
       "date": "2026-09-21",
-      "subject": "fix(sd-data): the json-catch-null sweep finishes -- four more sites, one serving seven Tier A resources and one moving money",
+      "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
       "files": [
-        "api/sd-data-unconfirmed-write-sweep.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/tier-a-reviews.json",
-        "docs/traceability-matrix.md",
-        "tests/sf_resources_session_gate_probe.py"
+        "tests/server_wins_hydration.js"
       ],
-      "lines_added": 552,
-      "lines_removed": 18,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js: the 2026-09-18 json-catch-null pass described itself as a platform SWEEP and left FOUR sites of the identical shape in the same file -- a PATCH sent with Prefer: return=representation, its body read through .json().catch(() => null), only !ok consulted, then res.status(200).json({ok:true}). Under PostgREST a PATCH matching ZERO rows returns [] with status 200, so each reported a change that did not happen. :4135 bld_draws RETAINAGE RELEASE is money rather than a delete and handed the caller release_log describing a release that may never have been written; :12422 is the SAIRNcode soft-delete serving SEVEN TIER A resources (sc_ar, sc_claims, sc_compliance, sc_credential_scope, sc_denial, sc_denial_events, sc_revenue), gated to Compliance Admin whose own refusal says only they can remove records; :2404 sd_customers, whose READ half had been hardened on 2026-09-04 with the exact argument the WRITE half twelve lines below it ignored; :11257 dnt_supplies.",
+      "lines_added": 23,
+      "lines_removed": 1,
+      "app": "platform",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tests/server_wins_hydration.js's UNGUARDED-overwrite detector shipped as a regex that could NEVER match. The backreference `\u0001` -- which is what makes the pattern mean 'the RHS is the same variable whose .id is the key', i.e. an overwrite rather than a seen-set -- was authored through a shell heredoc that consumed the backslash and left a raw 0x01 control byte. The pattern read `= <control-byte>`, matched nothing, and the arm asserting that NOBODY hydrates with an unguarded overwrite passed on every file vacuously. That arm exists because sairnsenior was found shipping four hydrates in exactly that state, invisible to the additive detector; a vacuous version of it reports the whole platform clean. Caught by the push gate's control-byte check, which is precisely the failure mode its own message describes. Fixed by building the pattern with explicit escapes and giving it a two-direction fixture.",
       "rules": [
-        "1.11"
+        "1.1"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": null,
+      "found_by_tool": "sairn_push_gate_hook.py",
       "injection": {
-        "commit": "92be209aadda",
-        "date": "2026-09-18",
-        "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
-        "lag_days": 3
+        "commit": "bf9c7c4fc522",
+        "date": "2026-09-21",
+        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
+        "lag_days": 0
       },
-      "citation_note": "Arguable, and the same citation the original pass took for the same shape: a 200 that could mean WROTE, MISSED or UNREADABLE was reported as a confirmed write. 'Could not tell' folded into 'passed', one level down from a gate and inside a request handler.",
+      "citation_note": "1.1 is the right rule and the fit is close rather than exact: 'a check that stopped checking' is usually about a check that once worked and later went inert. This one was NEVER live -- it was inert from the commit that introduced it, which is the same failure with no good period before it.",
       "contributing_factors": [
         {
-          "factor": "the sweep searched for the SYMPTOM (.json().catch) rather than the defect, and that string matches 27 sites in this file of which most are reads handling null correctly -- so the search returned a haystack and the two obvious needles came out of it",
-          "kind": "process",
+          "factor": "the regex backreference was authored through a shell heredoc, which consumed the backslash and left a raw 0x01 byte in its place -- so the pattern that shipped was not the pattern that was written",
+          "kind": "technical",
           "action_status": "done",
-          "action": "the separating predicate is three conditions (representation PATCH AND a catch on its body AND an ok:true that never consults it) and it now runs as an assertion in api/sd-data-unconfirmed-write-sweep.test.js on every run, so a fifth copy turns the suite red"
+          "action": "the pattern is built with explicit escapes and no longer passes through a heredoc"
         },
         {
-          "factor": "a commit that says SWEEP is making a completeness claim, and nothing on this platform checks a completeness claim -- the three press-on questions the author asked a reviewer were all about the two sites he DID fix",
+          "factor": "a detector whose regex stops matching reports the BEST possible answer -- a clean platform -- so nothing about the output looks wrong. The arm was added and passed in the same minute it was written, which is the moment a green result carries the least information",
           "kind": "detection",
           "action_status": "done",
-          "action": "the review that found this drove the three questions and then asked the fourth the author had not: is the sweep complete"
+          "action": "the detector now has a two-direction fixture: it must match sairnsenior's real old shape and must NOT match the seen-set assignment it would otherwise confuse with one"
         },
         {
-          "factor": "api/sd-data.js is 12,600 lines and the same read-then-PATCH idiom is hand-written in each branch rather than shared, so a repair to one copy is invisible to the others",
+          "factor": "the arm was written in the same session, from the same reading, as the code it checks -- so there was no independent signal that it was inert",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the sabotage probe covers the merge and the bootstrap but does NOT yet plant a defect that only this detector would catch; adding one would have caught it"
+        },
+        {
+          "factor": "the platform has no general check that a suite's assertions are non-vacuous, and regexes authored through shells are a standing hazard here -- two privilege guards were found in this exact state on 2026-09-10",
           "kind": "latent-condition",
           "action_status": "not-actionable",
-          "note": "extracting a shared soft-delete helper across 9 bespoke branches with different validators, role gates and 404 wordings is a refactor with its own blast radius, not a rider on this fix"
+          "note": "the push gate's control-byte check IS the general check, and it worked -- this defect was caught by it rather than by the suite or by review. Nothing further is actionable; the note is that the gate earned its place again."
         }
       ],
-      "recurrence_open": "The predicate runs over api/sd-data.js ONLY. api/sc-credentials.js is where this shape was first found and is fixed, but nothing checks api/dnt-bi.js, api/alf-alerts.js or any other handler for it. The guard points where this fix happened to look."
+      "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
     },
     {
       "commit": "b09674f65e9d",
