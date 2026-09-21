@@ -2403,8 +2403,8 @@
       "task": "trapdoor detector provisioner health licence recoverability",
       "claimed_at": "2026-09-21T21:30:18Z",
       "claimed_at_epoch": 1790026218.678133,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T22:49:56Z"
     }
   ]
 }
