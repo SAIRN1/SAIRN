@@ -182,15 +182,29 @@ async function setActive(ctx) {
 
   // ── THE LAST-ADMIN COUNT IS OVER `roles` UNLESS AN APP NAMES A SOLE ONE ──
   // (2026-09-21, added for SAIRNfreedom and OPT-IN so no existing caller
-  // changes.) Every app before it had one provisioning role, so "who may
-  // provision" and "who must not reach zero" were the same set and counting
-  // over `roles` was right.
+  // changes.) Where an app has ONE provisioning role, "who may provision" and
+  // "who must not reach zero" are the same set and counting over `roles` is
+  // exactly right.
   //
-  // SAIRNfreedom IS THE FIRST WITH TWO, and there the two questions come
-  // apart. Its capability model -- the app's own, in sairnfreedom.html's
-  // CAPABILITIES -- has post.govern carrying `sole:true`, one per post, and
-  // post.govern.deputy alongside it. Both provision, and only the governor is
-  // the one the licence cannot lose.
+  // SAIRNfreedom is the first app to SET this field, and there the two
+  // questions come apart. Its capability model -- the app's own, in
+  // sairnfreedom.html's CAPABILITIES -- has post.govern carrying `sole:true`,
+  // one per post, and post.govern.deputy alongside it. Both provision, and
+  // only the governor is the one the licence cannot lose.
+  //
+  // IT IS NOT THE FIRST APP WITH TWO PROVISIONING ROLES, and an earlier draft
+  // of this comment said it was. Corrected 2026-09-21 by counting instead of
+  // asserting: SAIRNgrounds (`owner`, `superintendent`), SAIRNbiz (`owner`,
+  // `hr`) and SAIRNscape (`owner`, `crew_lead`) each have two and each passes
+  // `soleRole: null`, so each still counts over both. All three also refuse to
+  // let a non-owner CREATE an owner, and bootstrap 409s on any existing
+  // credential without filtering on active -- so the deputy role emptying the
+  // licence of owners is not recoverable through the API. DRIVEN, not argued:
+  // with soleRole null the deactivation is ALLOWED and the PATCH is sent; with
+  // soleRole 'owner' the same call is refused 409 LAST_ADMIN. Recorded in
+  // docs/SAIRN-OPEN-WORK-INDEX.md and NOT fixed here, because naming a sole
+  // role changes who those three apps can deactivate and that is a product
+  // decision about each app's role model, not a rider on this change.
   //
   // WITHOUT THIS, COUNTING OVER `roles` IS A REAL DEFECT AND NOT A NUANCE: a
   // deputy deactivating the sole governor sees TWO active provisioners, the

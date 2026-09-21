@@ -408,6 +408,13 @@ module.exports = async (req, res) => {
       const out = await lifecycle.setActive({
         caller: caller, body: body, licHash: licHash, table: TABLE,
         provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        // `soleRole: null` -- STATED, not defaulted (2026-09-21). The engine
+        // reads this field, and a call site that never sets it takes the
+        // engine's default branch in silence, which is the seam-check defect
+        // class. This app has ONE provisioning role, so the last-admin count
+        // over `provisioningRoles` and over a sole role are the same set and
+        // null is not merely safe here, it is exact.
+        soleRole: null,
         rest: rest, headers: headers
         // No `audit`: api/_lib/audit.js allowlists sairnlaw / sairncode /
         // stonedesk only. This app HAS sv_audit_log, but that is the DOSING

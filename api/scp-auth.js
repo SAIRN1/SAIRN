@@ -281,6 +281,17 @@ module.exports = async (req, res) => {
       const out = await lifecycle.setActive({
         caller: caller, body: body, licHash: licHash, table: TABLE,
         provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        // `soleRole: null` -- STATED, and it is NOT obviously right here.
+        // This app has TWO provisioning roles (owner, crew_lead), so "who may
+        // provision" and "who must not reach zero" can come apart exactly as
+        // they do in SAIRNfreedom: the holder of the second role can
+        // deactivate the last holder of the first, see two active
+        // provisioners, and the guard does not fire. null preserves TODAY'S
+        // behaviour byte for byte and changes nothing; naming a sole role
+        // would change who can be deactivated, which is a product decision
+        // about this app's role model and is not mine to make in passing.
+        // Recorded in docs/SAIRN-OPEN-WORK-INDEX.md rather than decided here.
+        soleRole: null,
         rest: rest, headers: headers
         // No `audit`: this app has no audit-log table (api/_lib/audit.js's
         // allow-list is sairnlaw / sairncode / stonedesk only).
