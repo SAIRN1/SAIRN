@@ -2333,8 +2333,8 @@
       "task": "own branch coverage for the remaining thirty five resources",
       "claimed_at": "2026-09-21T13:14:54Z",
       "claimed_at_epoch": 1789996494.1410336,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:33:04Z"
     }
   ]
 }
