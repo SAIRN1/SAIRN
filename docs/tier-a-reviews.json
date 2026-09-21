@@ -1310,12 +1310,12 @@
         "api/sd-data-leg-session-gate.test.js"
       ],
       "what": "SAIRNlegacy LEG_RESOURCES session gate: all 36 leg_* tables (incl leg_deathrecords, leg_custodylog, leg_invoices) were authorised by the licence key alone -- no verifySessionToken on either the read or the write branch of api/sd-data.js. Added one gate BEFORE the read/write dispatch, scoped to 'sairnlegacy' via verifySessionToken's third arg (Check 28 cross-app collision). Client half in the same commit: sairnlegacy.html's transport now attaches X-SD-Auth unconditionally, because 56 of 58 sdnData() call sites passed no session flag and the gate alone would have been an outage. REVIEW FOCUS: (1) the gate is BEFORE the query, not after -- a 401 issued post-fetch passes every status assertion and leaks anyway; (2) the app-scoping third argument is present; (3) both verbs covered, not just write; (4) the unconditional client token does not leak a token to a non-SAIRNlegacy endpoint. Evidence: api/sd-data-leg-session-gate.test.js 20/20, tests/run_leg_session_gate_sabotage_probe.py 6/6 mutations refused.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-09-21T19:47:07Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-09-21T22:37:32Z",
+      "verdict": "ONE FINDING, live-reproduced, and the gate itself is sound. All four review points hold and two of them hold more strongly than the obligation claims: the gate is keyed on the RESOURCE before the verb dispatch, so all 36 members refuse and an unborn verb is covered too (driven individually, not sampled); zero fetches on every refused verb including leg_deathrecords and leg_custodylog; a sairndental owner session is refused and a sairnlegacy one reads normally, so it is a split not a lockout; and no leg_ table is addressed anywhere ABOVE the gate, which was the one shape that could have defeated one-gate-before-dispatch. THE FINDING IS THE CLIENT HALF, WHICH IS INCOMPLETE. The transport fix attached X-SD-Auth inside sdnData(), but sairnlegacy.html:2649 -- reserveUnit() -- deliberately bypasses sdnData() to read the real 409 ALREADY_RESERVED status, and posts Authorization-only headers. It writes leg_merch_units, a gated member. Reproduced LIVE against the deployed page and endpoint: the exact header set that call site sends answers 401 NO_SESSION, while the same resource reads 200 with a session. Consequence is not cosmetic: on a non-409 failure that function does NOT roll back its optimistic local write, so the unit shows Reserved on that device with nothing on the server -- which is the two-families-one-casket case the reservation lock exists to prevent, now failing with a toast instead of a lock. releaseUnit() uses sdnData() and still works, so reserve and release are asymmetric. NOT FIXED BY ME: I hold a review claim on this obligation, not sairnlegacy.html, and a reviewer who lands the fix is no longer independent of it. Evidence: tests/sairnlegacy_session_gate_review_probe.js, report-only, 1 finding. Its own first spelling of that arm FALSELY flagged sdnData() line 1555 because a 3-line window missed where the header object is built twelve lines earlier -- corrected before reporting, because a review probe that accuses the session under review is worse than one that finds nothing. SECONDARY, NOT A FINDING: an unrecognised verb on a leg_ resource is refused 400 by the action validator BEFORE the session gate, not 401. Nothing is served and no query runs, and both answers already confirm the resource is known, so it discloses nothing the 401 does not."
     },
     {
       "author_session": "cody",
@@ -1433,6 +1433,23 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-09-21T22:26:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T22:38:40Z",
+      "resources": [
+        "leg_invoices"
+      ],
+      "files": [
+        "tests/sairnlegacy_session_gate_review_probe.js"
+      ],
+      "what": "REVIEW ARTEFACT, not serving code: tests/sairnlegacy_session_gate_review_probe.js, the report-only probe that discharged cc's leg_invoices obligation. It names leg_invoices on changed lines, so this gate fires -- correctly, and the exclusion is deliberately NOT widened, same decision fourth's law_trusttx probe reached on 2026-09-21: a probe CAN fail and CAN be wrong, so is_report_only_artefact() must not swallow this shape. WHAT TO ATTACK: (1) arm 1 drives all 27 verbs and treats a 400 from the action validator as acceptable -- check that reasoning, it is the arm most likely to be wrong; (2) arm 6's window is 12 lines back and 6 forward around each fetch(DATA_API), chosen after a 3-line version FALSELY flagged sdnData(); a window is a heuristic and a third call site written differently would slip it; (3) the probe asserts nothing about whether the 401 I reproduced live is reachable through the real UI path rather than only through the header set I replayed.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-21T22:38:40Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
