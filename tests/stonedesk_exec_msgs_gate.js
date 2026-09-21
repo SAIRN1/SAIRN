@@ -224,6 +224,43 @@ async function fetchImpl(url, opts) {
     }
   });
 
+  // ── THE REGISTER ENTRY THAT LET THIS SHIP, PINNED ────────────────────────
+  // sd_exec_msgs sat at Tier B on "an internal message lost" for eleven days.
+  // That sentence is TRUE and describes the wrong axis: a lost message is a
+  // nuisance, so nothing about the row invited anyone to ask who could READ
+  // the thing, and the missing gate looked acceptable the whole time. It moved
+  // to A on 2026-09-21 on the third A criterion (its failure has already caused
+  // a documented one), which is also what makes every later change to this
+  // resource require a recorded independent review --
+  // tools/tier_a_review_gate.py takes its Tier A set from this file and nowhere
+  // else, so the letter in that cell is a live gate input, not a label.
+  //
+  // ASSERTED HERE because nothing else would notice it moving back: the
+  // register's own checker verifies that every resource HAS a tier and that A
+  // rows cite evidence -- never that a particular resource is rated correctly.
+  // Reverting this cell to B is a silent, one-character un-gating of every
+  // future change, and this arm is the only thing on the platform that fails
+  // when it happens.
+  await test('docs/CRITICALITY-TIERS.md still rates sd_exec_msgs Tier A, with evidence', () => {
+    const fs = require('fs');
+    const reg = fs.readFileSync(path.join(__dirname, '..', 'docs', 'CRITICALITY-TIERS.md'), 'utf8');
+    const rows = reg.split('\n').filter((l) => l.indexOf('| `sd_exec_msgs` |') === 0);
+    assert.strictEqual(rows.length, 1, 'expected exactly one sd_exec_msgs row, found ' + rows.length);
+    const cells = rows[0].split('|').map((c) => c.trim());
+    assert.strictEqual(cells[2], '**A**',
+      'sd_exec_msgs is rated ' + cells[2] + '. It is the private executive channel and it has a '
+      + 'documented exposure behind it; Tier A is what makes tools/tier_a_review_gate.py demand a '
+      + 'review on the next change to it.');
+    assert.ok(cells[4] && cells[4].length > 40,
+      'the A row carries no real evidence cell -- a tier asserted with nothing to check it against is a label');
+    // CONTROL: a genuinely-B sibling, so this arm cannot pass by matching any
+    // row anywhere or by the file having been replaced with all-A rows.
+    const cust = reg.split('\n').filter((l) => l.indexOf('| `sd_customers` |') === 0);
+    assert.strictEqual(cust.length, 1);
+    assert.strictEqual(cust[0].split('|').map((c) => c.trim())[2], '**B**',
+      'the control row moved too -- this arm is matching the file, not the decision');
+  });
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   if (fail) process.exit(1);
 })();
