@@ -40,6 +40,17 @@ const rf = require('./rf-auth');
 const sc = require('./sc-auth');
 const sd = require('./sd-auth');
 const sv = require('./sv-auth');
+// The ten added 2026-09-21 -- see THE UNWATCHED TEN below.
+const alf = require('./alf-auth');
+const bld = require('./bld-auth');
+const grd = require('./grd-auth');
+const law = require('./law-auth');
+const leg = require('./leg-auth');
+const sb = require('./sb-auth');
+const scp = require('./scp-auth');
+const sdn = require('./sdn-auth');
+const sen = require('./sen-auth');
+const sf = require('./sf-auth');
 
 // app_id -> { table, roles }. Only apps that implement set_active have a
 // provisioner concept at all; the other ten auth files have neither
@@ -52,13 +63,54 @@ const sv = require('./sv-auth');
 // app means nobody can mint a credential and therefore nobody can be recorded
 // as the author of a controlled-substance entry. A new auth endpoint that is
 // not in this map is one whose trapdoor nothing watches.
+// ── THE UNWATCHED TEN, REGISTERED 2026-09-21 ───────────────────────────────
+// The comment above said the other auth files "have neither set_active nor
+// PROVISIONING_ROLES and cannot reach this state, so they are out of scope
+// rather than unaudited". THAT WAS FALSE WHEN MEASURED. Ten more apps
+// implement set_active and declare PROVISIONING_ROLES, and every one of them
+// could reach the trapdoor with nothing watching: sairncare, sairnbuild,
+// sairngrounds, sairnlaw, sairnlegacy, sairnbiz, sairnscape, sairndesign,
+// sairnsenior, sairnfreedom. Six watched against ten unwatched.
+//
+// FOUND BY COUNTING, NOT BY READING -- the sentence had been true when written
+// and nothing re-derived it as apps were added. It is exactly the drift this
+// file's own SAIRNvet note warns about: "a new auth endpoint that is not in
+// this map is one whose trapdoor nothing watches."
+//
+// THREE OF THE TEN had the last-admin defect fixed hours earlier the same day,
+// which is the argument for registering them rather than filing it: the defect
+// class was proven live four times in one day and the monitor could not see
+// the state it produces.
+//
+// ── `sole` IS WHY THE MAP GREW A SECOND COLUMN ─────────────────────────────
+// Five apps have TWO provisioning roles, and there "who may provision" and
+// "who must not reach zero" come apart. StoneDesk's provisioning set is
+// owner+admin, so counting active PROVISIONERS reported a licence with an
+// active admin as HEALTHY -- including when it had NO owner row at all, which
+// is the state nobody can leave. Same blind spot the guard itself had, in the
+// tool built to catch it.
+//
+// Imported per app rather than derived here, for the reason the header already
+// gives about roles: this file must not re-implement the rule it is checking.
+// `sole` is undefined for the single-provisioning-role apps, where the two
+// questions genuinely coincide and the extra states below cannot fire.
 const APPS = {
-  sairndental: { table: dnt.EMPLOYEE_TABLE, roles: dnt.PROVISIONING_ROLES },
-  sairnmechanical: { table: mech.EMPLOYEE_TABLE, roles: mech.PROVISIONING_ROLES },
-  sairnroofing: { table: rf.EMPLOYEE_TABLE, roles: rf.PROVISIONING_ROLES },
-  sairncode: { table: sc.EMPLOYEE_TABLE, roles: sc.PROVISIONING_ROLES },
-  stonedesk: { table: sd.EMPLOYEE_TABLE, roles: sd.PROVISIONING_ROLES },
-  sairnvet: { table: sv.EMPLOYEE_TABLE, roles: sv.PROVISIONING_ROLES }
+  sairndental: { table: dnt.EMPLOYEE_TABLE, roles: dnt.PROVISIONING_ROLES, sole: dnt.SOLE_ROLE },
+  sairnmechanical: { table: mech.EMPLOYEE_TABLE, roles: mech.PROVISIONING_ROLES, sole: mech.SOLE_ROLE },
+  sairnroofing: { table: rf.EMPLOYEE_TABLE, roles: rf.PROVISIONING_ROLES, sole: rf.SOLE_ROLE },
+  sairncode: { table: sc.EMPLOYEE_TABLE, roles: sc.PROVISIONING_ROLES, sole: sc.SOLE_ROLE },
+  stonedesk: { table: sd.EMPLOYEE_TABLE, roles: sd.PROVISIONING_ROLES, sole: sd.SOLE_ROLE },
+  sairnvet: { table: sv.EMPLOYEE_TABLE, roles: sv.PROVISIONING_ROLES, sole: sv.SOLE_ROLE },
+  sairncare: { table: alf.EMPLOYEE_TABLE, roles: alf.PROVISIONING_ROLES, sole: alf.SOLE_ROLE },
+  sairnbuild: { table: bld.EMPLOYEE_TABLE, roles: bld.PROVISIONING_ROLES, sole: bld.SOLE_ROLE },
+  sairngrounds: { table: grd.EMPLOYEE_TABLE, roles: grd.PROVISIONING_ROLES, sole: grd.SOLE_ROLE },
+  sairnlaw: { table: law.EMPLOYEE_TABLE, roles: law.PROVISIONING_ROLES, sole: law.SOLE_ROLE },
+  sairnlegacy: { table: leg.EMPLOYEE_TABLE, roles: leg.PROVISIONING_ROLES, sole: leg.SOLE_ROLE },
+  sairnbiz: { table: sb.EMPLOYEE_TABLE, roles: sb.PROVISIONING_ROLES, sole: sb.SOLE_ROLE },
+  sairnscape: { table: scp.EMPLOYEE_TABLE, roles: scp.PROVISIONING_ROLES, sole: scp.SOLE_ROLE },
+  sairndesign: { table: sdn.EMPLOYEE_TABLE, roles: sdn.PROVISIONING_ROLES, sole: sdn.SOLE_ROLE },
+  sairnsenior: { table: sen.EMPLOYEE_TABLE, roles: sen.PROVISIONING_ROLES, sole: sen.SOLE_ROLE },
+  sairnfreedom: { table: sf.EMPLOYEE_TABLE, roles: sf.PROVISIONING_ROLES, sole: sf.SOLE_ROLE }
 };
 
 module.exports = async (req, res) => {
@@ -241,24 +293,58 @@ module.exports = async (req, res) => {
     const active = rows.filter((x) => x && x.active === true &&
       cfg.roles.indexOf(x.role) !== -1).length;
 
-    // Three states, and NO_CREDENTIALS is deliberately not lumped in with
+    // ── THE SOLE-ROLE COUNTS, AND THE DISTINCTION IS DRIVEN, NOT ASSUMED ───
+    // An earlier statement of this finding claimed "zero active owners plus an
+    // active admin is unrecoverable". THAT WAS TOO STRONG and driving it said
+    // so: `set_active`'s guard only blocks DEACTIVATION, so an active admin
+    // CAN reactivate an INACTIVE owner -- 200, write sent. What an admin
+    // cannot do is CREATE one: `setup` refuses `role === 'owner' &&
+    // caller.role !== 'owner'` with 403.
+    //
+    // So the unrecoverable sole-role state is NO SOLE-ROLE ROW AT ALL, not
+    // "none active". Both are reported, because they need different actions
+    // and only one of them is an emergency.
+    const soleRows = cfg.sole
+      ? rows.filter((x) => x && x.role === cfg.sole) : [];
+    const soleActive = soleRows.filter((x) => x.active === true).length;
+
+    // FIVE states now. NO_CREDENTIALS is still deliberately not lumped in with
     // TRAPDOOR: zero rows RE-ARMS bootstrap and is recovery, not lockout.
     // Conflating the two is what made this hard to reason about for a day.
-    const state = rows.length === 0 ? 'NO_CREDENTIALS'
-      : (active === 0 ? 'TRAPDOOR' : 'HEALTHY');
+    //
+    // ORDER MATTERS: the classic TRAPDOOR (no active provisioner at all) is
+    // checked BEFORE the sole-role states, because it is strictly worse and a
+    // licence in it is also in them. Reporting the narrower finding would
+    // understate the situation.
+    let state;
+    if (rows.length === 0) state = 'NO_CREDENTIALS';
+    else if (active === 0) state = 'TRAPDOOR';
+    else if (cfg.sole && soleRows.length === 0) state = 'SOLE_ROLE_TRAPDOOR';
+    else if (cfg.sole && soleActive === 0) state = 'SOLE_ROLE_DEGRADED';
+    else state = 'HEALTHY';
+
+    const MESSAGES = {
+      TRAPDOOR: 'UNRECOVERABLE THROUGH THE API: this licence has credential rows and no active provisioner. bootstrap refuses while any row exists; setup and set_active both need an active provisioner. Fix with one SQL statement — reactivate or promote a provisioner, or delete every credential row for this licence to re-arm bootstrap. Never delete a subset of the provisioners.',
+      SOLE_ROLE_TRAPDOOR: 'UNRECOVERABLE THROUGH THE API: there is an active provisioner, so ordinary provisioning still works — but this licence holds NO "' + cfg.sole + '" row at all, active or not, and setup refuses to let a non-"' + cfg.sole + '" create one. There is nothing to reactivate and nothing that can be minted. Fix with one SQL statement: insert or promote a "' + cfg.sole + '". This state reported as HEALTHY until 2026-09-21 because the count was over every provisioning role.',
+      SOLE_ROLE_DEGRADED: 'RECOVERABLE, BUT ONE STEP FROM THE TRAPDOOR: every "' + cfg.sole + '" on this licence is INACTIVE. An active provisioner can still reactivate one through set_active, so no SQL is required — but nobody can CREATE a new "' + cfg.sole + '", so if the last such row is ever deleted the licence is unrecoverable. Reactivate one now rather than relying on the row surviving.',
+      NO_CREDENTIALS: 'No credential rows. bootstrap is armed and this licence is recoverable — this is the healthy empty state, not a fault.',
+      HEALTHY: 'At least one active provisioner. setup and set_active both work.'
+    };
 
     res.status(200).json({
       ok: true,
       app_id: lic.app_id,
       provisioning_roles: cfg.roles,
+      // Null rather than omitted for a single-provisioning-role app: an absent
+      // key reads as "not checked", and here it means "the two questions
+      // coincide, so there is nothing separate to check".
+      sole_role: cfg.sole || null,
       credential_rows: rows.length,
       active_provisioners: active,
+      sole_role_rows: cfg.sole ? soleRows.length : null,
+      active_sole_role: cfg.sole ? soleActive : null,
       state,
-      message: state === 'TRAPDOOR'
-        ? 'UNRECOVERABLE THROUGH THE API: this licence has credential rows and no active provisioner. bootstrap refuses while any row exists; setup and set_active both need an active provisioner. Fix with one SQL statement — reactivate or promote a provisioner, or delete every credential row for this licence to re-arm bootstrap. Never delete a subset of the provisioners.'
-        : state === 'NO_CREDENTIALS'
-          ? 'No credential rows. bootstrap is armed and this licence is recoverable — this is the healthy empty state, not a fault.'
-          : 'At least one active provisioner. setup and set_active both work.'
+      message: MESSAGES[state]
     });
   } catch (err) {
     console.error('provisioner-health read failed:', err && err.message);

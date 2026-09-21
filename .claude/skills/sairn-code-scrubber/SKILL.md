@@ -108,3 +108,70 @@ Two modules pass a value across a boundary and both are internally correct; what
 `api/_lib/ledger.js` already states the rule in its own header: *"a ledger that decides balance with a float comparison will one day refuse a correct entry or accept a wrong one."* This was the first of the two, which is the safe direction and is still a gate people route around.
 
 **THE RULE: convert to integer cents at the boundary and compare integers.** Convert the TOLERANCE too rather than assuming it is zero, so a future non-zero tolerance does not become a second place somebody has to remember. And return `0`, never `NaN`, for a non-finite input — **NaN compares false against everything including the tolerance, so a corrupt row would silently MATCH.**
+
+## 22. Borrowed safety reasoning that is never re-verified against the new context
+A justification is copied along with the code it justifies, into a file where
+its PREMISE no longer holds. The code may even be correct; the argument for why
+it is safe is what got propagated unchecked. Distinct from items 19 and 20,
+which are about a value crossing a boundary — this one is about a CLAIM crossing
+one, and a claim has no type, no shape and no unit for anything to check.
+
+**THE INSTANCE THAT NAMED IT (2026-09-21, StoneDesk, Tier A auth).**
+`api/sd-auth.js`'s last-admin guard carried:
+
+> *"Quarantined guard, same as SAIRNcode's: unreachable by construction while
+> the caller-still-active check above stands, because an active caller plus a
+> DIFFERENT active admin target implies at least two."*
+
+Every clause is true. The conclusion is backwards. It implies at least two
+**provisioners** — and the guard was counting provisioners, so it never fired.
+SAIRNcode has ONE provisioning role, where "provisioner" and "the role that must
+not reach zero" are the same set and the quarantine argument is sound.
+StoneDesk has TWO. The sentence was moved; the premise was not re-checked. An
+`admin` could deactivate the last `owner`: 200, PATCH sent, licence at zero
+owners, and with `bootstrap` not filtering on `active` and `setup` refusing a
+non-owner creating an owner, no route back through the API. That is the
+SD-AUDIT-2026 loss, reached through a door a comment said was welded shut.
+
+**THE SECOND HALF IS WHY IT SURVIVED REVIEW, and it is the more dangerous half:
+the guard never fired, and non-firing was written down as PROOF IT WAS NOT
+NEEDED.** "Never fires" and "cannot be reached" look identical from inside the
+file. One is a guard that is unnecessary; the other is a guard that is BLIND.
+Nothing distinguishes them except driving the case the guard exists to refuse.
+
+**IT IS THE SAME ROOT AS `docs/2026-09-13-cross-domain-disciplines.md` §7,
+"byte-identical is not safe-in-context"** — Ariane 5 Flight 501, correct Ariane 4
+software reused into a flight profile its conversion was never qualified for.
+§7 is about propagating CODE. This item is its twin for propagating the
+REASONING, which is worse in one specific way: a diff shows the copied code, and
+reviewers do compare those. A copied justification reads as *documentation* and
+gets skimmed, so it propagates further and is questioned less.
+
+**MEASURED, so the shape is not theoretical: FOUR instances of this one defect
+class in a single day, 2026-09-21** — SAIRNgrounds, SAIRNbiz, SAIRNscape (all
+three counting the last-admin guard over both provisioning roles), then
+StoneDesk. The first three were a missing argument; the fourth was this item,
+and it is the one that had a comment defending it.
+
+**THE RULE, in two parts.**
+
+1. **A justification copied with code must name the PREMISE it depends on, and
+   that premise must be re-checked in the destination.** Not "same as X's" —
+   *"safe because this app has exactly one provisioning role"*, so the day a
+   second one is added the sentence is visibly false instead of quietly wrong.
+   Prefer an assertion over a sentence where one is possible: a comment cannot
+   fail, and this class is defined by a comment that should have.
+2. **Never record a guard's silence as evidence it is unnecessary.** "Could not
+   fire" is a third state and must not be folded into "did not need to" — the
+   same shape as **PR §1.11**, one layer up: there a check that could not run
+   reported a pass, here a guard that could not fire reported safety. If a guard
+   is believed unreachable, DRIVE the case it refuses and let it refuse; if it
+   cannot be made to fire, that is the finding.
+
+**WHERE TO LOOK FOR THE NEXT ONE:** any comment containing *"same as"*, *"as in
+X"*, *"unreachable"*, *"cannot happen"*, *"by construction"*, or *"quarantined"*
+— especially in a file whose role vocabulary, tier list or resource set differs
+from the one the phrase came from. `tests/run_sd_auth_last_admin_sabotage_probe.py`
+mutation 7 is the control shape for this class: it re-asserts the removed comment
+and **changes no code**, and the suite must still refuse it, because the sentence
+is what carried the defect through review.

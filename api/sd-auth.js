@@ -510,5 +510,11 @@ function upstream(res, detail) {
 // credential rows and ZERO rows that are both `active` and hold one of these
 // roles. The detector must read THIS list rather than assume 'owner' --
 // SAIRNcode's is 'admin' -- so the list is exported instead of duplicated.
+// SOLE_ROLE too, added 2026-09-21 with the guard fix above. The detector
+// counted PROVISIONING_ROLES and therefore reported a StoneDesk licence with
+// ZERO owner rows and one active admin as HEALTHY -- the same blind spot the
+// guard had, in the tool built to catch it. Exported so the detector reads the
+// rule instead of re-deriving it.
+module.exports.SOLE_ROLE = SOLE_ROLE;
 module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
 module.exports.EMPLOYEE_TABLE = 'sd_employee_auth';

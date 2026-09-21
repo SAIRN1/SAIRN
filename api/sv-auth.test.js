@@ -423,8 +423,25 @@ t('the verify block is one query per statement with its expected answer', () => 
 section('9. provisioner-health registers the new app');
 t('sairnvet is in the APPS map, reading the exported list not a literal', () => {
   const PH = fs.readFileSync(path.join(ROOT, 'api', 'provisioner-health.js'), 'utf8');
-  assert.ok(/sairnvet:\s*\{\s*table:\s*sv\.EMPLOYEE_TABLE,\s*roles:\s*sv\.PROVISIONING_ROLES\s*\}/.test(PH),
+  // ── PINNED TO THE INTENT, NOT THE PUNCTUATION (2026-09-21) ───────────────
+  // This matched the entry's EXACT shape, closing brace included, and went red
+  // the moment the map grew a third key (`sole`, for the apps whose
+  // must-not-reach-zero role is narrower than their provisioning list). The
+  // entry was still present and still importing; only the literal had moved.
+  //
+  // An arm that fails on a change it does not care about trains people to edit
+  // the arm, which is how a real finding gets edited away next time. So it now
+  // asserts the two things it actually means: sairnvet is registered, and its
+  // values are IMPORTED rather than restated -- which is the property the
+  // original comment names.
+  const entry = /^ {2}sairnvet: \{([^}]*)\}/m.exec(PH);
+  assert.ok(entry,
     'a new auth endpoint absent from this map is one whose trapdoor nothing watches');
+  assert.match(entry[1], /table:\s*sv\.EMPLOYEE_TABLE/);
+  assert.match(entry[1], /roles:\s*sv\.PROVISIONING_ROLES/);
+  assert.ok(!/\[|'/.test(entry[1]),
+    'a table name or role list is written out literally instead of imported -- '
+    + 'this file and the detector would then drift apart silently');
 });
 
 (async () => {

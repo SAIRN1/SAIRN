@@ -35,8 +35,23 @@ roles it used so the answer can be audited rather than trusted.
 
 Exit codes:
   0  every licence checked is HEALTHY or NO_CREDENTIALS
-  1  at least one licence is in the TRAPDOOR
+  1  at least one licence is UNRECOVERABLE -- TRAPDOOR or SOLE_ROLE_TRAPDOOR
   2  at least one licence could not be checked — NOT a pass
+
+SOLE_ROLE_TRAPDOOR ADDED 2026-09-21, AND IT WOULD HAVE EXITED 0 UNTIL TODAY.
+This tool keyed its verdict on `state == "TRAPDOOR"` alone, so a licence in the
+new state -- an active provisioner, but NO row holding the role that only that
+role can create -- printed its state and then reported all-clear. An
+unrecoverable licence with a zero exit code is this platform's most-repeated
+defect shape (PR 1.11) wearing a different hat: the check RAN, and its silence
+was the answer. The verdict is now derived from a NAMED SET, and an
+unrecognised state is COULD NOT TELL rather than a pass.
+
+SOLE_ROLE_DEGRADED is deliberately NOT in that set and does NOT exit 1: every
+sole-role holder is inactive, and an active provisioner can reactivate one
+through set_active with no SQL at all. Driven against the real api/sd-auth.js
+before it was classified. It is printed as a warning, because it is one deleted
+row away from the state above.
 
 Usage:
     python tools/licence_recoverability_check.py
@@ -55,6 +70,31 @@ import sairn_http  # noqa: E402  -- browser-shaped fetch; see that module
 
 
 DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/provisioner-health"
+
+# -- THE STATE VOCABULARY, NAMED HERE SO AN UNKNOWN ONE CANNOT PASS ---------
+# api/provisioner-health.js owns these. Listing them is a deliberate
+# duplication and the ONLY one in this file -- tables, roles and sole roles are
+# all read from the endpoint's response precisely so they cannot drift. The
+# duplication buys the property that matters: a state added there and not here
+# is COULD NOT TELL (exit 2), never a silent pass.
+#
+# That is not hypothetical. Until 2026-09-21 the verdict was
+# `state == "TRAPDOOR"`, so SOLE_ROLE_TRAPDOOR -- a licence that genuinely
+# cannot be recovered through the API -- would have printed itself and then
+# exited 0.
+KNOWN_STATES = (
+    "HEALTHY",
+    "NO_CREDENTIALS",
+    "TRAPDOOR",
+    "SOLE_ROLE_TRAPDOOR",
+    "SOLE_ROLE_DEGRADED",
+)
+
+# The subset meaning NOBODY CAN RECOVER THIS THROUGH THE APP. Exit 1.
+# SOLE_ROLE_DEGRADED is deliberately absent: an active provisioner can
+# reactivate an inactive sole-role holder, which was DRIVEN against the real
+# api/sd-auth.js rather than assumed.
+UNRECOVERABLE = ("TRAPDOOR", "SOLE_ROLE_TRAPDOOR")
 
 # The licences this platform actually has for the five apps that implement
 # set_active. These are demo/verification keys already committed in
@@ -105,7 +145,7 @@ def main():
     targets = ([("(given)", None, args.key)] if args.key
                else [(a, e, os.environ.get(e) or d) for a, e, d in LICENCES])
 
-    trapped, unknown = [], []
+    trapped, unknown, degraded = [], [], []
     print("%-16s %-22s %-14s %s" % ("APP", "LICENCE", "STATE", "rows / active provisioners"))
     print("-" * 78)
     for app, _env, key in targets:
@@ -117,21 +157,62 @@ def main():
             unknown.append((key, msg))
             continue
         state = res.get("state")
-        detail = ("%s / %s   roles=%s"
+        # AN UNRECOGNISED STATE IS NOT A PASS. The old code tested
+        # `state in (...)` for the detail line and `== "TRAPDOOR"` for the
+        # verdict, so a state added at the endpoint arrived here, printed
+        # itself, and was counted as fine.
+        if state not in KNOWN_STATES:
+            msg = ("endpoint reported unknown state %r -- this tool has not "
+                   "been taught it" % state)
+            print("%-16s %-22s %-14s %s"
+                  % (res.get("app_id") or app, key, "COULD NOT TELL", msg))
+            unknown.append((key, msg))
+            continue
+        sole = res.get("sole_role")
+        detail = ("%s rows / %s active   roles=%s"
                   % (res.get("credential_rows"), res.get("active_provisioners"),
-                     ",".join(res.get("provisioning_roles") or []))
-                  if state in ("HEALTHY", "TRAPDOOR", "NO_CREDENTIALS") else "")
-        print("%-16s %-22s %-14s %s" % (res.get("app_id") or app, key, state, detail))
-        if state == "TRAPDOOR":
+                     ",".join(res.get("provisioning_roles") or [])))
+        if sole:
+            detail += ("   sole=%s (%s row(s), %s active)"
+                       % (sole, res.get("sole_role_rows"),
+                          res.get("active_sole_role")))
+        print("%-16s %-22s %-14s %s"
+              % (res.get("app_id") or app, key, state, detail))
+        if state in UNRECOVERABLE:
             trapped.append((key, res))
+        elif state == "SOLE_ROLE_DEGRADED":
+            degraded.append((key, res))
 
     print("-" * 78)
+    if degraded:
+        # PRINTED BEFORE THE VERDICT so an early return cannot swallow it.
+        # Not an error: no SQL is needed for this one.
+        print("")
+        print("ONE STEP FROM UNRECOVERABLE -- every sole-role holder is INACTIVE:")
+        for key, res in degraded:
+            print("   %s (%s): %s row(s) of %r, 0 active. An active provisioner"
+                  % (key, res.get("app_id"), res.get("sole_role_rows"),
+                     res.get("sole_role")))
+            print("      can reactivate one through set_active -- no SQL required.")
+            print("      But nobody can CREATE one, so if that row is deleted the")
+            print("      licence is unrecoverable.")
+
+
     if trapped:
-        print("\nUNRECOVERABLE LICENCE(S) -- credential rows with no active provisioner:")
+        print("\nUNRECOVERABLE LICENCE(S):")
         for key, res in trapped:
-            print("   %s (%s): %d row(s), 0 active of %s"
-                  % (key, res.get("app_id"), res.get("credential_rows"),
-                     ",".join(res.get("provisioning_roles") or [])))
+            if res.get("state") == "SOLE_ROLE_TRAPDOOR":
+                print("   %s (%s): %d row(s) and %s active provisioner(s), but"
+                      % (key, res.get("app_id"), res.get("credential_rows"),
+                         res.get("active_provisioners")))
+                print("      NO %r row at all. Ordinary provisioning still works,"
+                      % res.get("sole_role"))
+                print("      which is why this read as HEALTHY until 2026-09-21.")
+                print("      Insert or promote a %r." % res.get("sole_role"))
+            else:
+                print("   %s (%s): %d row(s), 0 active of %s"
+                      % (key, res.get("app_id"), res.get("credential_rows"),
+                         ",".join(res.get("provisioning_roles") or [])))
         print("\nFix with ONE SQL statement: reactivate or promote a provisioner, or")
         print("delete EVERY credential row for that licence to re-arm bootstrap.")
         print("NEVER delete a subset of the provisioners -- that is how this state")

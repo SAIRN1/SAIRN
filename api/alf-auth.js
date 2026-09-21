@@ -339,3 +339,12 @@ function upstream(res, detail) {
   }
   res.status(502).json({ error: { message: 'Data store error — try again' } });
 }
+
+// ── Exported for api/provisioner-health.js, added 2026-09-21 ───────────────
+// The trapdoor is a licence with credential rows and no way back to an active
+// provisioner. This app implements set_active and could always reach it; until
+// today it was one of TEN such apps the detector did not watch, against six it
+// did. Exported rather than duplicated so the detector cannot drift from the
+// rule it is checking -- the same reason api/sd-auth.js gives.
+module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
+module.exports.EMPLOYEE_TABLE = TABLE;
