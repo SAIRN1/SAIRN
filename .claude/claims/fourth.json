@@ -1855,6 +1855,16 @@
       "claimed_at_epoch": 1790026406.222117,
       "status": "released",
       "released_at": "2026-09-21T22:25:46Z"
+    },
+    {
+      "id": "fourth-1790031959",
+      "session": "fourth",
+      "subject": "sairnsenior-hydration-suites",
+      "task": "FILES: the three sairnsenior suites whose assertion says hydration replaces the local row rather than only adding unseen ones -- diagnose the stale-assertion class and update them to the server-wins behaviour, with a control.",
+      "claimed_at": "2026-09-21T23:05:59Z",
+      "claimed_at_epoch": 1790031959.655383,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
