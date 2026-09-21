@@ -1972,8 +1972,8 @@
       "task": "FILES: sairnsenior.html stonedesk.html sairnbiz.html sairnfreedom.html sairnlegacy.html sairndesign.html tests/server_wins_hydration.js tests/run_server_wins_hydration_sabotage_probe.py -- one-time read-only seeding bootstrap, then the server-wins merge in four more apps. The seventh app's file is held by another session's review claim and is NOT in this one; it will be a separate claim.",
       "claimed_at": "2026-09-21T12:29:16Z",
       "claimed_at_epoch": 1789993756.0146976,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T12:40:15Z"
     }
   ]
 }
