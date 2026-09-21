@@ -9711,6 +9711,122 @@
       "recurrence_open": "Nothing on this platform detects a shared static element whose handler is reassigned by one code path and restored by none. There are other inline-onclick controls reassigned at runtime in these apps and they have not been swept."
     },
     {
+      "commit": "b5e20fe80b4e",
+      "date": "2026-09-21",
+      "subject": "fix(sairncare,sairnbuild): two check-then-write races closed in Postgres -- a medication record that could be overwritten, and a retainage release that could be lost",
+      "files": [
+        "api/_lib/sairnbuild-retainage-endpoint.test.js",
+        "api/alf-append-only-fail-closed.test.js",
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "sql/sairnbuild_data_schema.sql",
+        "sql/sairncare_mar_schema.sql",
+        "tests/alf_append_only_probe.py",
+        "tests/sairnbuild_retainage_race.js",
+        "tests/sairncare/test-alf-mar.js",
+        "tests/sairncare/test-alf-phase3.js",
+        "tests/sairncare_fault_probe.py"
+      ],
+      "lines_added": 734,
+      "lines_removed": 124,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "alf_mar append-only TOCTOU: the handler SELECTed for an existing entry_id, answered 409 ALREADY_RECORDED if found, then POSTed with Prefer: resolution=merge-duplicates. Two callers racing the SAME entry_id could both pass the SELECT before either POST landed, and the second POST's merge-duplicates resolution silently OVERWROTE the first row instead of reaching the 409 -- a recorded medication administration of 'given' replaced by 'refused', unrecoverably, with no error anywhere. Fixed by routing through public.alf_check_and_insert_mar_entry(), which holds pg_advisory_xact_lock across the check and the write in one transaction.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4bcdd21c01c8",
+        "date": "2026-08-20",
+        "subject": "feat: sairncare.html + api/sd-data.js -- MAR (Medication Administration Record)",
+        "lag_days": 32
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers check-then-act atomicity. The nearest, 1.1 'A check that stopped checking', is about a check going stale over time; this check never stopped matching -- it was simply not atomic with the write it guarded, which is a different failure and the rules document does not state it.",
+      "contributing_factors": [
+        {
+          "factor": "The check and the write were two round trips to PostgREST with no lock between them, and merge-duplicates made the losing write succeed rather than conflict",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Replaced with a single RPC holding pg_advisory_xact_lock(license_hash||entry_id) across both statements, with the READ COMMITTED precondition raised rather than assumed"
+        },
+        {
+          "factor": "The suite that covered append-only integrity tested it one caller at a time, so no arm could ever observe the window",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairncare/test-alf-mar.js now mocks the RPC rather than the raw upsert, and tests/sairncare_fault_probe.py arms 8 and 9 were re-aimed at the two levers the caller still owns -- mislabelling an entry type and reporting the RPC refusal as success"
+        },
+        {
+          "factor": "The platform already had a proven atomic pattern (law_check_and_insert_disbursement) when this path was written on 2026-08-20, and it was not reached for",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "No mechanical check names a check-then-write pair on a PostgREST path and none is proposed here; all three instances found so far were found by a human reading the code, which is stated in recurrence_open rather than closed by an action this record can claim"
+        }
+      ],
+      "recurrence_open": "Nothing prevents the next append-only table from being written as SELECT-then-upsert. The fix is per-site and there is no checker that finds a check-then-act pair across api/sd-data.js -- all three found so far were found by reading."
+    },
+    {
+      "commit": "b5e20fe80b4e",
+      "date": "2026-09-21",
+      "subject": "fix(sairncare,sairnbuild): two check-then-write races closed in Postgres -- a medication record that could be overwritten, and a retainage release that could be lost",
+      "files": [
+        "api/_lib/sairnbuild-retainage-endpoint.test.js",
+        "api/alf-append-only-fail-closed.test.js",
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "sql/sairnbuild_data_schema.sql",
+        "sql/sairncare_mar_schema.sql",
+        "tests/alf_append_only_probe.py",
+        "tests/sairnbuild_retainage_race.js",
+        "tests/sairncare/test-alf-mar.js",
+        "tests/sairncare/test-alf-phase3.js",
+        "tests/sairncare_fault_probe.py"
+      ],
+      "lines_added": 734,
+      "lines_removed": 124,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "bld_draws retainage release lost update: the branch read the draw's jsonb data, computed a new retainage_released and appended one audit entry to retainage_release_log client-side, then PATCHed the whole blob back with only license_hash and draw_id in the WHERE clause -- no version or CAS predicate. Two concurrent release_retainage calls on the same draw each read the same starting value and whichever PATCH landed second silently won, discarding the first release's figure AND its audit-trail entry with no error. Fixed by routing through public.bld_release_retainage_atomic(), an optimistic-CAS RPC that compares the row's current retainage_released against what the caller read under pg_advisory_xact_lock and raises RETAINAGE_RELEASE_CONFLICT rather than overwriting blind.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "e262457745a4",
+        "date": "2026-09-15",
+        "subject": "feat(sairnbuild): retainage can come back out, and the panel stops calling a lifetime accrual a balance",
+        "lag_days": 6
+      },
+      "citation_note": "Same gap as the sairncare record on this commit: docs/SAIRN-PROCESS-RULES.md has no section on check-then-act atomicity or lost updates, and citing 1.1 would misdescribe it -- nothing here went stale, the read and the write were simply never one operation.",
+      "contributing_factors": [
+        {
+          "factor": "A read-modify-write over a whole jsonb blob with no version predicate, so the losing writer overwrote fields it had never read",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Replaced with public.bld_release_retainage_atomic(), which re-reads retainage_released under the advisory lock and refuses on mismatch; the caller passes back the value it actually read"
+        },
+        {
+          "factor": "The business rule that decides whether a release is legal lives in bwip.summariseDraw() in JS, so the obvious fix -- move the whole operation into plpgsql like law_check_and_insert_disbursement -- would have duplicated a real rule into a second language where the copies are free to drift",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Kept the rule in JS and made the SQL side a plain CAS comparison, so the function carries no business logic to drift; the reasoning is written into sql/sairnbuild_data_schema.sql above the function"
+        },
+        {
+          "factor": "api/sd-data-unconfirmed-write-sweep.test.js covered this site for the zero-rows-matched failure and could not model two writers, so the race was outside what any arm could express",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The site moved out of that harness (an RPC cannot produce its matched-zero-rows shape) and into tests/sairnbuild_retainage_race.js, which drives the concurrent case directly"
+        }
+      ],
+      "recurrence_open": "Every other jsonb read-modify-write on this platform still has the same shape. This fixed one branch; no checker enumerates the rest, and the retainage branch was found by a hover audit rather than by a sweep."
+    },
+    {
       "commit": "b73fb28af0dc",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): the hours were billed here and the server never heard -- invoiced:true went to localStorage and stopped",
