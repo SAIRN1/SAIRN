@@ -2042,8 +2042,8 @@
       "task": "FILES: sairnvet.html tests/sairnvet_controlled_export.js -- declare the CSV leading-apostrophe guard in the controlled-substance register preamble",
       "claimed_at": "2026-09-21T22:29:55Z",
       "claimed_at_epoch": 1790029795.888196,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T22:45:33Z"
     }
   ]
 }
