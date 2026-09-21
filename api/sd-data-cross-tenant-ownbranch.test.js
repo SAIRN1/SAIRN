@@ -54,28 +54,45 @@
 // indistinguishable from one that ran and found nothing, and on 35 bespoke
 // branches that distinction is most of the work.
 //
-// ── UNCOVERED, MEASURED RATHER THAN DESCRIBED ────────────────────────────
-// WRITE isolation. Each branch has its own payload contract and its own extra
-// verbs, and a write arm that stops at a validator asserts nothing. The
-// dispatcher suite covers write for the 46 resources where one conflict key is
-// shared; here it would be 35 separate contracts.
+// ── THE SIX WRITE-CLASS GAPS, AND THEY ARE NOW CLOSED ────────────────────
+// The first version of this suite asserted READ only. The full sabotage sweep
+// -- removing `license_hash=eq.` from EVERY filtered query in all 32 own
+// branches, 37 of them, because several build more than one -- left SIX
+// survivors, all write-class verbs. Each is now driven and each is caught:
 //
-// NOT LEFT AS PROSE. The full sabotage sweep removed `license_hash=eq.` from
-// EVERY filtered query inside all 32 own branches -- 37 of them, because
-// several branches build more than one -- and these six SURVIVED, which is
-// exactly the set this paragraph claims is uncovered and nothing else:
+//   api/sd-data.js:7499  rf_invoices        issue        PATCH
+//   api/sd-data.js:7535  rf_invoices        add_payment  PATCH
+//   api/sd-data.js:2565  sd_quote_requests  soft_delete  read leg
+//   api/sd-data.js:2581  sd_quote_requests  soft_delete  PATCH
+//   api/sd-data.js:2605  sd_quote_requests  write        read leg
+//   api/sd-data.js:2633  sd_quote_requests  write        PATCH
 //
-//   api/sd-data.js:7499  rf_invoices        action 'issue'
-//   api/sd-data.js:7535  rf_invoices        action 'add_payment'
-//   api/sd-data.js:2565  sd_quote_requests  action 'soft_delete' (read leg)
-//   api/sd-data.js:2581  sd_quote_requests  action 'soft_delete' (PATCH leg)
-//   api/sd-data.js:2605  sd_quote_requests  action 'soft_delete' (read leg)
-//   api/sd-data.js:2633  sd_quote_requests  action 'soft_delete' (PATCH leg)
+// THE FIRST DISCLOSURE CALLED 2605/2633 A SECOND soft_delete PAIR. They are
+// the WRITE path. Corrected rather than left standing: a wrong label on a
+// closed gap sends the next reader into the wrong branch.
 //
-// 30 of 37 caught, and the 7th -- rf_invoices' `gl_export` -- is covered only
-// by the weaker query-shape assertion, which is said at that arm rather than
-// here. Anyone extending this file should re-run that sweep rather than trust
-// this list: it is a measurement from one day, not a property.
+// THE FIX WAS NOT MORE ARMS, IT WAS ONE LINE IN A FILTER. The query-shape
+// assertion skipped POST *and* PATCH -- POST rightly, PATCH for no reason --
+// and a write verb's decisive query IS the PATCH. See the arm for the full
+// account.
+//
+// ONE OF THE 37 IS A NO-OP AND IS REPORTED AS ONE, NOT COUNTED AS A PASS:
+// api/sd-data.js:1371 (mech_site_assets) builds its filter across two lines,
+// so a SINGLE-line mutation changes nothing. 36 of 37 were really mutated and
+// all 36 were caught; that one was skipped, not survived.
+//
+// AND THE SKIP WAS CHECKED RATHER THAN ASSERTED, because "it is only a parser
+// limit" is exactly what a real gap would also sound like: mutating that
+// filter ACROSS BOTH LINES is CAUGHT (76 -> 74 passed, 1 failed). The single
+// line was a limit of the sweep, not a hole in the coverage.
+//
+// ── STILL UNCOVERED ──────────────────────────────────────────────────────
+// WRITE isolation on the other 33 own-branch resources. Each has its own
+// payload contract, and a write arm that stops at a validator asserts nothing.
+// The dispatcher suite covers write for the 46 resources where one conflict
+// key is shared; here it would be 33 separate contracts. Anyone extending this
+// file should RE-RUN THE SWEEP rather than trust the list above -- it is a
+// measurement from one day, not a property.
 //
 // THE DATABASE. A wrong RLS policy or an over-wide GRANT passes every arm
 // here. This is the APPLICATION half of tenant isolation -- the half a
@@ -126,6 +143,15 @@ function postgrestMock(rows, calls, underTest) {
       const m = part.match(/^([a-z0-9_]+)=eq\.(.*)$/);
       if (m) eqs.push([m[1], decodeURIComponent(m[2])]);
     });
+    // AN RPC IS NOT A TABLE READ. rf_invoices' `issue` allocates a gapless
+    // invoice number through rpc/rf_allocate_invoice_number BEFORE its PATCH,
+    // and echoing the request body back gives it nothing -- the handler then
+    // refuses 502 and the PATCH under test never runs. Answered as a real
+    // allocation so the arm reaches the query it is about.
+    if (u.indexOf('/rpc/') !== -1) {
+      return { ok: true, status: 200, json: async function () {
+        return [{ invoice_number: 'INV-0001', invoice_seq: 1 }]; } };
+    }
     if (opts && (opts.method === 'POST' || opts.method === 'PATCH')) {
       const sent = opts.body ? JSON.parse(opts.body) : {};
       return { ok: true, status: 200, json: async function () { return [sent]; } };
@@ -202,13 +228,29 @@ const RESOURCES = [
   // One arm per query, because one arm per RESOURCE is not the unit when the
   // resource has three places the filter can be dropped.
   ['rf_invoices', 'sairnroofing', 'owner',
-   // The id is the DEFAULT fixture's, not a shared one: the `query` shape
-   // asserts on the URL the handler built, so it needs the row to EXIST (or
-   // the branch 404s before querying) and does not need both tenants to hold
-   // the same id.
-   { invoice_id: 'A-1', id: 'A-1' }, 'query', 'issue'],
-  ['rf_invoices', 'sairnroofing', 'owner',
    { account_map: {}, basis: 'accrual' }, 'query', 'gl_export'],
+  // ── THE SIX WRITE-CLASS SURVIVORS FROM PHASE 3'S SWEEP, CLOSED HERE ─────
+  // Driven with SHARED IDS across both tenants, which is what makes the URL
+  // assertion decisive rather than suggestive: with the same id under two
+  // tenants, a PATCH that lost `license_hash=eq.` updates BOTH rows.
+  //
+  // status:'draft' is REQUIRED on the rf_invoices row -- `issue` is idempotent
+  // and short-circuits on already_issued for anything else, so without it the
+  // arm would pass a sabotage on a PATCH that never ran. Applied to BOTH
+  // tenants: a field present on A and absent on B would make the two rows
+  // behave differently for a reason that is not tenancy.
+  ['rf_invoices', 'sairnroofing', 'owner',
+   { invoice_id: 'SHARED-1', id: 'SHARED-1', issue_date: '2026-09-21' },
+   'query', 'issue', { status: 'draft' }],
+  ['rf_invoices', 'sairnroofing', 'owner',
+   { invoice_id: 'SHARED-1', id: 'SHARED-1',
+     payment: { payment_id: 'P-1', amount: 10, received_on: '2026-09-21' } },
+   'query', 'add_payment', { status: 'issued' }],
+  ['sd_quote_requests', 'stonedesk', 'owner',
+   { id: 'SHARED-1', request_id: 'SHARED-1' }, 'query', 'soft_delete'],
+  ['sd_quote_requests', 'stonedesk', 'owner',
+   { id: 'SHARED-1', request_id: 'SHARED-1', status: 'promoted' },
+   'query', 'write'],
   ['rf_claims', 'sairnroofing', 'owner'],
   // These two refuse a read with no claim_id BEFORE any query is built, so
   // the payload is the minimum needed to reach the filter -- not a relaxation.
@@ -350,11 +392,14 @@ function ownersIn(body) {
   console.log('CROSS-TENANT ISOLATION -- own-branch Tier A resources (phase 3)');
   section('LIST READ: tenant A sees ONLY tenant A rows');
 
-  for (const [resource, app, role, extraPayload, shape, verb] of RESOURCES) {
+  for (const [resource, app, role, extraPayload, shape, verb, rowExtra] of RESOURCES) {
     await test(resource + (verb ? ' [' + verb + ']' : '') + ' -- A reads A only', async () => {
-      const rows = shape === 'count' ? countFixtures()
-        : shape === 'sharedid' ? sharedIdFixtures()
+      let rows = shape === 'count' ? countFixtures()
+        : (shape === 'sharedid' || shape === 'query') ? sharedIdFixtures()
         : [fixtureRows('A', 'A-1'), fixtureRows('B', 'B-1')];
+      // Fields a branch needs on the ROW before it will reach its write.
+      // Applied to BOTH tenants, deliberately.
+      if (rowExtra) rows = rows.map(function (r) { return Object.assign({}, r, rowExtra); });
       const calls = [];
       const h = loadHandler(HASH_A, app, postgrestMock(rows, calls, resource));
       const res = mockRes();
@@ -372,18 +417,25 @@ function ownersIn(body) {
       }
       if (shape === 'query') {
         // ── A WEAKER ASSERTION, AND SAID SO ────────────────────────────────
-        // These two verbs read the table and then answer something that echoes
-        // no row -- `{ok:true, already_issued:true}`, or a refusal about a
-        // missing account map. There is no content to assert on, so the
-        // assertion is on the REQUEST the handler built: EVERY query it issued
-        // against this table must carry license_hash. That is weaker than a
-        // content assertion -- it cannot catch a filter that is present and
-        // ANDed wrong -- and it is stronger than nothing, which is what these
-        // two paths had. It does catch the sabotage that motivated them:
-        // removing license_hash from the query produces a URL without it.
+        // These verbs read the table and then answer something that echoes no
+        // row -- `{ok:true, already_issued:true}`, a refusal about a missing
+        // account map, a soft-delete acknowledgement. There is no content to
+        // assert on, so the assertion is on the REQUEST the handler built:
+        // EVERY query it issued against this table must carry license_hash.
+        // Weaker than a content assertion -- it cannot catch a filter present
+        // but ANDed wrong -- and stronger than nothing, which is what these
+        // paths had. With SHARED IDS across both tenants it is decisive for
+        // the thing it is about: a query that lost the filter addresses BOTH.
+        //
+        // ── PATCH IS INCLUDED, AND EXCLUDING IT IS WHY SIX SABOTAGES SURVIVED
+        // A write verb's decisive query IS the PATCH. The first version of
+        // this filter skipped POST and PATCH together -- POST rightly, because
+        // an upsert carries its scope in the BODY and the conflict key and is
+        // asserted separately; PATCH for no reason at all. Only POST is
+        // skipped now.
         const mine = calls.filter(function (c) {
           return c.url.indexOf('/' + resource + '?') !== -1
-            && !(c.opts && (c.opts.method === 'POST' || c.opts.method === 'PATCH'));
+            && !(c.opts && c.opts.method === 'POST');
         });
         assert.ok(mine.length > 0,
           'no query was issued against ' + resource + ', so this arm reached '

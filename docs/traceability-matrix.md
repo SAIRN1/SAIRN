@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; The six write-class cross-tenant gaps Phase 3 disclosed by line are closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data-cross-tenant-ownbranch.test.js`, 73 &rarr; 76 assertions, **6 of 6 sabotages caught individually**, and a full re-sweep of all 37 filtered queries leav | `api/sd-data-cross-tenant-ownbranch.test.js` |
 | **&#128308; FOUR MORE representation-PATCHes in `api/sd-data.js` report a change that did not happen &mdash; and the guard added to stop exactly this cannot see them** | **OPEN. Found 2026-09-21 (cc) while reviewing hank's json-catch-null sweep. NOT fixed: shared file, two sessions live in it, and a five-site repair is its own change** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; The `json-catch-null` sweep finished &mdash; the 4 sites it missed, including the one serving seven Tier A resources and the one moving money** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data.js`; new standing guard `api/sd-data-unconfirmed-write-sweep.test.js`, 18 assertions, **9 of 9 sabotages caught** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; A negative-control arm was DISARMED BY AN UNRELATED COMMIT IN ANOTHER APP&rsquo;S SWEEP, and nothing announced it &mdash; arm 5 of the append-only probe went silent for three days** | **FIXED 2026-09-21 (Cody)** &mdash; the assertion is now scoped to the function body, the way the two beside it already were; `tests/alf_append_only_probe.py` back to 11/11 with all 7 mutations refuse | `api/alf-append-only-fail-closed.test.js`, `tests/alf_append_only_probe.py` |
@@ -447,6 +448,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; The session gate CANNOT be wired yet &mdash; four pieces of employee-auth plumbing are missing, and the table entry is the LAST of them** | **INVESTIGATED 2026-09-21 (Hank)**, answer recorded in `tests/sf_resources_session_gate_probe.py`. **NOT wired &mdash; wiring it today 403s every real call** | `tests/sf_resources_session_gate_probe.py` |
 | **&#128308; THREE TIER A RESOURCES ARE AUTHORISED BY THE LICENCE KEY ALONE &mdash; `SF_RESOURCES` has no session gate, and `sairnfreedom` is not in `ROLES_BY_APP`** | **OPEN. Found by hank while building the dispatcher isolation suite, disclosed rather than fixed; given its own row 2026-09-21 (cc) because three mentions inside test files is not a queue anybody read | `tests/sf_resources_session_gate_probe.py` |
 | **&#128308; `SF_RESOURCES` has NO employee session check at all &mdash; the general ledger, the chart of accounts and vendor pricing are authorised by the LICENCE KEY ALONE** | **FOUND AND MEASURED 2026-09-21 (Hank)**, while building the cross-tenant isolation arms. `tests/sf_resources_session_gate_probe.py`, report-only, exit 0. **NOT FIXED &mdash; the scope is Michael&rsqu | `api/sd-data-cross-tenant-dispatchers.test.js`, `tests/sf_resources_session_gate_probe.py` |
 | ~~No dedicated test suite at all, and no fault probe -- 35 registered resources reaching a server with nothing named for them~~ | **CLOSED 2026-09-10 (Fourth), `4cc3831d`** -- `tests/sairnfreedom_server_backup.js` (14 assertions) and `tests/sairnfreedom_fault_probe.py` (8 arms) | `tests/sairnfreedom_fault_probe.py`, `tests/sairnfreedom_server_backup.js` |
@@ -583,8 +585,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 283 |
-| `declared` | 232 |
-| `declared+index` | 26 |
+| `declared` | 231 |
+| `declared+index` | 27 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -678,7 +680,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 607   tests/**, api/** (both walked)
-  open-work rows citing a test       297   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       299   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

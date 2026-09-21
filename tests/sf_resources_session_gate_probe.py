@@ -29,13 +29,28 @@ the licence key", with no employee identity, no role, and nothing in the audit
 trail saying who.
 
 -- WHY IT IS REPORT-ONLY AND NOT A FIX ---------------------------------------
-Adding sf_* to SD_SESSION_GATED would refuse every SAIRNfreedom call that does
-not carry a session token -- which is every call the app makes today if it has
-no sign-in flow wired to these resources. That is a product decision with a
-blast radius (does SAIRNfreedom have employee sessions at all? is any of this
-reached by an unauthenticated public path by design?), not a one-line repair,
-and it is Michael's to make rather than a session's to assume. Measured and
-recorded here so the decision is made against a number.
+INVESTIGATED 2026-09-21, AND THE ANSWER IS THAT THE GATE MUST NOT BE WIRED YET.
+The first version of this file said the blast radius was unknown. It is not:
+
+  * sairnfreedom.html has ONE transport, sfData() at :1716, and it sends
+    `Authorization: Bearer <licence>` and NOTHING ELSE. No X-SD-Auth header
+    exists anywhere in the file. Every other gated app sends one.
+  * `sairnfreedom` is not in api/_lib/auth.js's ROLES_BY_APP, so no session
+    token CAN be signed for it -- signSessionToken throws on an unknown app.
+  * there is no api/sf-auth.js. Sixteen other apps have their own -auth.js.
+  * there is no sf_employee_auth table in sql/ and no reference to one
+    anywhere in api/sd-data.js.
+  * the nine auth-shaped hits in sairnfreedom.html are all about DOCUMENT
+    SIGNING KEYS -- cryptographic signatures on posts -- not employee sessions.
+
+DRIVEN, not reasoned: adding `sf_accounts` to SD_SESSION_GATED in memory and
+replaying exactly what sfData() sends answers
+
+    403 FORBIDDEN "A valid employee session is required - sign in first"
+
+so wiring the gate today locks every real call out of the general ledger. The
+repair is NOT one line in that table; the table entry is the LAST step of four.
+Scoped as its own item -- see the open-work row -- rather than guessed at.
 """
 import io
 import os
@@ -126,11 +141,21 @@ employee session check, on a dispatcher serving %d Tier A resources.
   session has no employee_id to record, so the ledger cannot say who made an
   entry. On sf_ledger that is the question an audit asks first.
 
-  NOT FIXED HERE, DELIBERATELY. Adding sf_* to SD_SESSION_GATED refuses every
-  call that does not carry a session token, and whether SAIRNfreedom wires one
-  to these resources today is a product fact this probe does not know. Decide
-  the scope first; the repair after that is one line in the table, the same one
-  law_trusttx took.""" % (findings, len(sf_tier_a)))
+  NOT FIXED, AND NOW FOR A MEASURED REASON RATHER THAN AN UNKNOWN ONE. The
+  client cannot send a session token: there is no api/sf-auth.js, no
+  sf_employee_auth table, no `sairnfreedom` entry in ROLES_BY_APP, and no
+  X-SD-Auth header anywhere in sairnfreedom.html. Wiring the table entry today
+  answers 403 to every real call -- driven, not assumed.
+
+  FOUR PIECES, IN THIS ORDER, and the table entry is the LAST:
+    1. sql/sairnfreedom_employee_auth_schema.sql   the roster and PIN store
+    2. `sairnfreedom` in api/_lib/auth.js ROLES_BY_APP, with its real roles
+    3. api/sf-auth.js                              sign-in, lockout, set_active
+    4. sairnfreedom.html sends X-SD-Auth on sfData()
+    5. THEN sf_* in SD_SESSION_GATED -- one line, and only then
+
+  Steps 1-4 are sairn-employee-auth-scaffold's whole subject and that skill
+  says thirteen apps already ship this; SAIRNfreedom is not one of them.""" % (findings, len(sf_tier_a)))
 
     print('\n%d finding(s). Report-only: exit 0 by design.' % findings)
     return 0
