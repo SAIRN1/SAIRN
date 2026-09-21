@@ -9110,6 +9110,67 @@
         }
       ],
       "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
+    },
+    {
+      "commit": "e4fc9aaad205",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlaw): a BILLABLE hour at rate zero bills nothing and says nothing -- refused now at both ends",
+      "files": [
+        "api/_lib/law-timeentry.js",
+        "api/_lib/law-timeentry.test.js",
+        "api/sd-data.js",
+        "sairnlaw.html",
+        "tests/run_sairnlaw_billable_rate_sabotage_probe.py",
+        "tests/sairnlaw_billable_rate.js"
+      ],
+      "lines_added": 543,
+      "lines_removed": 11,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnlaw.html saveTime() wrote rate:Number($('ttrate').value)||0, so a blank, unparseable or missing hourly rate became ZERO with no complaint at either end -- `rate` appeared in no validator anywhere in api/. saveInvoice() computes the invoice total as hours x rate, so a billable hour stored at rate 0 adds $0.00 to the bill while rendering in the billing table as an ordinary billable hour: the work is on the record and the fee is not, and nothing downstream reports it. Same shape as the codeless-hour defect one field over and arguably worse, since a codeless hour at least shows '--' in the code column. Fixed by refusing a BILLABLE entry whose rate is not a finite number above zero, in api/_lib/law-timeentry.js and in the browser path; a no-charge entry is left alone because rate 0 is what no-charge MEANS, and an absent `billable` field is read as no-charge exactly as every reader in the app reads it. THE SAME COMMIT also removed a second, non-behavioural defect recorded on its own open-work row: the module justified itself -- in its header, its REQUIREMENT line and the user-facing refusal NO_CODE_MESSAGE -- on a LEDES export that does not exist in this app. NOT closed: `hours` is still unchecked at the server and hours 0 produces the identical $0.00 line.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4c9f3c3a141f",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlaw Phase 1 scaffold -- legal practice management, ground-up build",
+        "lag_days": 45
+      },
+      "citation_note": "1.2 is cited because the field's ABSENCE from api/ was established by grepping for the name `billing_code` and `rate`, and a grep over a 10,000-line handler cannot tell a validator from a comment that mentions one -- which is how the enumeration three days earlier concluded matter_id and hours were the only two left and missed the third. The fit is arguable: 1.2 is usually about a grep that OVER-counts text as code, and this one UNDER-counted by looking for the wrong names. Part 1 has no rule for 'an inventory of what is validated, taken from a search rather than from the arithmetic that consumes the field'.",
+      "contributing_factors": [
+        {
+          "factor": "saveTime() guarded matter_id and hours and then wrote `rate:Number($('ttrate').value)||0` -- the `|| 0` reads as defensive and is what converts a blank box into a zero-fee billable hour",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the rate is computed once, refused in the browser when the entry is billable, and refused again in api/_lib/law-timeentry.js so a non-UI caller cannot skip it"
+        },
+        {
+          "factor": "the review that BUILT the billing-code gate three days earlier enumerated what saveTime() validates and what it does not, named matter_id and hours, and stopped there -- an inventory that missed the one field the invoice arithmetic multiplies",
+          "kind": "process",
+          "action_status": "done",
+          "action": "recorded in the module beside the new check, so the next reader sees the enumeration was incomplete rather than repeating it"
+        },
+        {
+          "factor": "nothing looks for a MONEY field that is accepted at zero. The fabrication and silent-failure scanners on this platform look for numbers with no function behind them and for writes that fail quietly; a real field, really stored, really multiplied, whose zero value is indistinguishable from a deliberate no-charge, is outside all of them",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker for `Number(x)||0` on fields that reach an arithmetic total would have found this and the same shape in the other billing apps; not written"
+        },
+        {
+          "factor": "the app's own vocabulary makes zero AMBIGUOUS -- rate 0 is legitimate on a no-charge entry and catastrophic on a billable one, so no unconditional bound on the field could ever have been right and the check had to be conditioned on a second field",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the refusal is scoped to `r.billable`, read exactly as every reader in sairnlaw.html reads it, and arms pin the permissive side as hard as the refusing side"
+        }
+      ],
+      "recurrence_open": "`hours` is unchecked at the SERVER and hours 0 produces the identical $0.00 line -- asserted as still-open by section 5 of tests/sairnlaw_billable_rate.js so the index row cannot go stale, but NOT fixed. The `Number(x)||0`-into-an-arithmetic-total checker does not exist, so the same shape in the other billing apps is unmeasured. And the LEDES export named in the summary is still not built."
     }
   ],
   "started": "2026-09-09",
