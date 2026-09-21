@@ -301,3 +301,72 @@ where a single sabotage arm reaches it for all of them.
 The 11-unit ratio that justified doing dispatchers first is spent: the tail is
 roughly one unit per resource. Re-derive the case for it against a fresh number
 rather than against the one at the top of this document.
+
+---
+
+## RESULT — phase 3 is built; 84 of 84 (2026-09-21, Hank)
+
+**Every Tier A resource now has a genuine cross-tenant isolation test.**
+`api/sd-data-cross-tenant-ownbranch.test.js` covers the remaining 35 own-branch
+resources: 73 assertions, **30 of 37 sabotages caught**, `api/sd-data.js`
+restored byte-identical. Re-measure with
+`python tools/cross_tenant_isolation_scope.py`; do not quote the figure here.
+
+```
+  Tier A resources         84
+  GENUINE isolation test   84
+  WEAK                      0
+  NONE                      0
+  serving code UNLOCATED    0
+```
+
+### What phase 3 asserts, and what it does not
+
+**READ isolation on all 35**, in both directions. Not write: these branches are
+bespoke — each has its own validator, its own role gate, its own id column and
+often its own verbs (`issue`, `add_payment`, `gl_export`, `reconcile_claim`,
+`eligibility`, `soft_delete`) — and a write arm that stops at a validator
+asserts nothing. That was hit six times in phases 1–2 and is why `UNREACHED` is
+a first-class outcome here rather than a silent pass.
+
+**The uncovered set is MEASURED, not described.** The sabotage sweep removed
+`license_hash=eq.` from *every* filtered query in all 32 own branches — 37 of
+them, because several branches build more than one — and exactly six survived,
+all write-class verbs. They are listed by file and line in the suite's header.
+
+### Three things the sabotage sweep found that reading would not have
+
+1. **A green arm was proving nothing on two resources.** `rf_claim_photos` and
+   `rf_claim_agreements` filter `license_hash` **and** a `claim_id` from the
+   payload. With every fixture row carrying a per-tenant id, dropping the tenant
+   filter *still* returned only tenant A's row — the id filter alone was
+   sufficient. Fixed by seeding **both tenants with the same id**, which is the
+   reference case's own shape and the only seeding under which an id-narrowed
+   query proves anything about tenancy.
+2. **One resource had three separately-filtered queries in one branch.**
+   `rf_invoices` is rank 15, the highest-risk resource on the board. Removing
+   the filter from its list read failed the arm; removing it from `loadInvoice`
+   or `gl_export` failed nothing. **One arm per resource is not the unit when a
+   resource has three places the filter can be dropped.**
+3. **A mock that hijacks the query under test cannot fail.** Three of these
+   resources *are* credential stores, and the interception added to satisfy
+   `CREDENTIAL_INACTIVE` re-checks was answering their own reads. Scoped to
+   exclude the table under test.
+
+### One thing changed in the suite rather than in the scanner
+
+The suite first graded `WEAK` for *"only one tenant appears"* — the fixtures
+bound both hashes behind a ternary, which the grader cannot see through. **The
+suite was changed, not the grader**: `tools/cross_tenant_isolation_scope.py` was
+under an open review by another session and must not move while they read it.
+The explicit form is clearer anyway.
+
+### What is still not covered, platform-wide
+
+- **Write isolation** on the 35 own-branch resources (six queries, listed).
+- **The database.** A wrong RLS policy or an over-wide GRANT passes every arm in
+  all three suites. This is the application half.
+- **`SF_RESOURCES` has no session gate at all** — a separate finding with its own
+  row and its own probe, `tests/sf_resources_session_gate_probe.py`. Isolation
+  is asserted there; *who may call* is not.
+

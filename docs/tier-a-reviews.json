@@ -1053,6 +1053,55 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T13:27:28Z",
+      "resources": [
+        "alf_billing",
+        "alf_claim_routes",
+        "alf_compliance_rules",
+        "alf_incidents",
+        "alf_op_audits",
+        "alf_payer_rules",
+        "alf_staff_credentials",
+        "bld_bids",
+        "dnt_credentials",
+        "dnt_rollup",
+        "dnt_vendor_pricing_rules",
+        "grd_invoices",
+        "invoices",
+        "law_deadlines",
+        "law_trust_reconcile",
+        "law_trusttx",
+        "mech_credentials",
+        "mech_quotes",
+        "mech_site_assets",
+        "msb_food_cost_log",
+        "msb_licenses",
+        "quotes",
+        "rf_cert_rules",
+        "rf_certifications",
+        "rf_claim_agreements",
+        "rf_claim_photos",
+        "rf_claims",
+        "rf_contingency_rules",
+        "rf_invoices",
+        "scp_quotes",
+        "sd_quote_requests",
+        "sen_claims",
+        "sen_pay_rates",
+        "sen_payer_contracts",
+        "stonedesk_quote_history"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-ownbranch.test.js"
+      ],
+      "what": "Phase 3 of the cross-tenant isolation plan: api/sd-data-cross-tenant-ownbranch.test.js (NEW) covers the remaining 35 own-branch Tier A resources with a READ isolation arm in both directions. 73 assertions, 30 of 37 sabotages caught, api/sd-data.js byte-identical after every one. GENUINE coverage 49 -> 84 of 84. NO SERVING CODE CHANGED.\nPRESS ON, and the first two are gaps I found by sabotage rather than by reading, so assume there are more of the same kind:\n(1) A GREEN ARM WAS PROVING NOTHING ON TWO RESOURCES AND I ONLY FOUND OUT BY MUTATING. rf_claim_photos and rf_claim_agreements filter license_hash AND a claim_id from the payload; with per-tenant fixture ids, dropping the tenant filter still returned only tenant A's row because the id filter alone sufficed. Fixed by seeding BOTH tenants with the SAME id. Check every other arm for the same property -- an arm whose branch narrows by any id the fixtures make unique per tenant is in the same position, and I did not audit all 35 for it, I fixed the two the sweep caught.\n(2) ONE ARM PER RESOURCE IS NOT THE UNIT. rf_invoices' read branch builds THREE separately-filtered queries reached by different verbs; the list-read arm caught one and the other two failed nothing until I added arms. Check the other 34 for branches with more than one filtered query -- my sweep found 37 queries across 32 branches, so at least five branches have multiples, and I only added arms for rf_invoices.\n(3) THE CREDENTIAL INTERCEPTION IN THE MOCK. Several branches re-check that the employee is still ACTIVE, and the fixture rows do not say active, so law_trusttx answered 403. I intercept credential-shaped queries and answer an active credential SCOPED TO THE TENANT IN THE QUERY. Judge whether that interception can mask a real defect: it is skipped for the table under test (three of these resources ARE credential stores and the first version hijacked their own reads), but the URL pattern is mine and may match something it should not.\n(4) THE QUERY SHAPE IS WEAKER AND I SAY SO AT THE ARM. rf_invoices' issue and gl_export verbs answer something that echoes no row, so those two assert on the REQUEST the handler built rather than on content. That cannot catch a filter present but ANDed wrong. Judge whether that is acceptable on the highest-ranked resource on the board or whether those two paths need a real content assertion.\n(5) THE AGGREGATE SHAPE. law_trust_reconcile and dnt_rollup answer a computed report with no owner field, so the arm seeds 2 rows for A and 3 for B and asserts no integer anywhere in the report exceeds 2. That is indirect: a report that counted A's 2 and reported some unrelated 2 would pass. Judge it.\n(6) I CHANGED MY FILE RATHER THAN THE GRADER, deliberately: the suite first graded WEAK because the fixtures bound both hashes behind a ternary, and tools/cross_tenant_isolation_scope.py is under fourth's open review and must not move while they read it. Check the rewrite did not change what is seeded, only how it is spelled.\n(7) SIX SURVIVING SABOTAGES ARE DISCLOSED BY FILE AND LINE in the suite header and are all write-class verbs. Check that list is complete and that none of the six is actually a READ path I mislabelled.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
