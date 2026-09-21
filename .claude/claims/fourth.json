@@ -1815,6 +1815,16 @@
       "claimed_at_epoch": 1789999202.89981,
       "status": "released",
       "released_at": "2026-09-21T14:34:13Z"
+    },
+    {
+      "id": "fourth-1790020563",
+      "session": "fourth",
+      "subject": "sairnlaw-trusttx-server",
+      "task": "review cody obligation 14:53:05Z CLEARANCE_NOT_STORED refusal -- review-only, reads api/sd-data.js sql/sairnlaw_trusttx_functions.sql api/sd-data-law-trusttx-clearance.test.js. Writes only docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-fourth.md and a new probe under tests. NOT editing any serving code.",
+      "claimed_at": "2026-09-21T19:56:03Z",
+      "claimed_at_epoch": 1790020563.4218545,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
