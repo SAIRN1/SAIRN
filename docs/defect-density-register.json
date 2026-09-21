@@ -9475,6 +9475,58 @@
       "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
     },
     {
+      "commit": "39195bee350e",
+      "date": "2026-09-21",
+      "subject": "fix(register): the hover auditor had no detection-method value, so its findings were being HELD in chat instead of recorded",
+      "files": [
+        "tests/run_defect_register_probe.py",
+        "tests/run_hover_audit_method_sabotage_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 140,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py's METHODS vocabulary had no value for the hover auditor, the platform's fifth and structurally separate agent role. .claude/skills/sairn-hover-auditor/SKILL.md recorded the gap on 2026-09-14, stated that adding one is 'a code edit this role does not make itself', and instructed the role to HOLD findings needing the tag and route the enum fix to a build agent rather than force an existing mismatched value. It did. The result is a register that was internally consistent, passed --check, and was missing real findings that existed only in chat -- a gap no check could report, because every record present was valid. Added 'hover-audit' with a CHECKPOINT_OF row of human-read: tool_required() is derived from the checkpoint, so classing a diff-reading role as an automated-checker would have made --add refuse every hover finding for want of a --found-by-tool that does not exist.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "1818e05f52ed",
+        "date": "2026-09-10",
+        "subject": "feat(docs,tools): the defect register -- and the number is not the signal",
+        "lag_days": 11
+      },
+      "citation_note": "ARGUABLE. 1.1 is a check that stopped checking. This is a check that could not START -- a vocabulary with no term for a real data source, so the source's findings never entered the corpus at all. Same consequence as a vacuous check (the register reports on a population it is not measuring) reached from the opposite direction, and the rule's own wording is about a check going silently vacuous rather than about a missing category.",
+      "contributing_factors": [
+        {
+          "factor": "METHODS was written when four build agents were the only reviewing population, and the fifth role was created later. The enum was a closed vocabulary with no signal that it had fallen behind the org it describes.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "an arm asserts every detection_method the hover skill NAMES is in the vocabulary, read out of the skill rather than typed twice, so the next role added the same way fails loudly"
+        },
+        {
+          "factor": "The role behaved correctly and the correct behaviour produced silence: it held the findings, said so in its own skill, and reported in chat. A hold with no ticket is indistinguishable from nothing to report.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the holding instruction in the skill should point at an open-work row rather than at chat; not changed here because a build agent editing the hover clone is the boundary problem running the other way"
+        },
+        {
+          "factor": "Nothing connected the enum to the role that consumes it. The two live in different files and the only link was prose in the skill.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Q13 reads the tag from the SKILL and fails -- naming the path -- if the skill is unreadable, rather than reporting agreement it never checked"
+        }
+      ],
+      "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
+    },
+    {
       "commit": "591531ce6fd6",
       "date": "2026-09-21",
       "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
@@ -9630,58 +9682,6 @@
       "recurrence_open": "The sweep for the same shape across the OTHER resource maps in api/sd-data.js has not been run -- three instances found one at a time is not evidence that the fourth does not exist. And the gate is verified against the handler in-process; a deployment where verifySessionToken's secret is unset in the environment would be a different failure this record does not cover."
     },
     {
-      "commit": "39195bee350e",
-      "date": "2026-09-21",
-      "subject": "fix(register): the hover auditor had no detection-method value, so its findings were being HELD in chat instead of recorded",
-      "files": [
-        "tests/run_defect_register_probe.py",
-        "tests/run_hover_audit_method_sabotage_probe.py",
-        "tools/defect_register.py"
-      ],
-      "lines_added": 140,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/defect_register.py's METHODS vocabulary had no value for the hover auditor, the platform's fifth and structurally separate agent role. .claude/skills/sairn-hover-auditor/SKILL.md recorded the gap on 2026-09-14, stated that adding one is 'a code edit this role does not make itself', and instructed the role to HOLD findings needing the tag and route the enum fix to a build agent rather than force an existing mismatched value. It did. The result is a register that was internally consistent, passed --check, and was missing real findings that existed only in chat -- a gap no check could report, because every record present was valid. Added 'hover-audit' with a CHECKPOINT_OF row of human-read: tool_required() is derived from the checkpoint, so classing a diff-reading role as an automated-checker would have made --add refuse every hover finding for want of a --found-by-tool that does not exist.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "requirement",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "1818e05f52ed",
-        "date": "2026-09-10",
-        "subject": "feat(docs,tools): the defect register -- and the number is not the signal",
-        "lag_days": 11
-      },
-      "citation_note": "ARGUABLE. 1.1 is a check that stopped checking. This is a check that could not START -- a vocabulary with no term for a real data source, so the source's findings never entered the corpus at all. Same consequence as a vacuous check (the register reports on a population it is not measuring) reached from the opposite direction, and the rule's own wording is about a check going silently vacuous rather than about a missing category.",
-      "contributing_factors": [
-        {
-          "factor": "METHODS was written when four build agents were the only reviewing population, and the fifth role was created later. The enum was a closed vocabulary with no signal that it had fallen behind the org it describes.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "an arm asserts every detection_method the hover skill NAMES is in the vocabulary, read out of the skill rather than typed twice, so the next role added the same way fails loudly"
-        },
-        {
-          "factor": "The role behaved correctly and the correct behaviour produced silence: it held the findings, said so in its own skill, and reported in chat. A hold with no ticket is indistinguishable from nothing to report.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "the holding instruction in the skill should point at an open-work row rather than at chat; not changed here because a build agent editing the hover clone is the boundary problem running the other way"
-        },
-        {
-          "factor": "Nothing connected the enum to the role that consumes it. The two live in different files and the only link was prose in the skill.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Q13 reads the tag from the SKILL and fails -- naming the path -- if the skill is unreadable, rather than reporting agreement it never checked"
-        }
-      ],
-      "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
-    },
-    {
       "commit": "8ed8b14d46c8",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): a billing code was VALIDATED trimmed and STORED untrimmed, and at the length bound the two differ in whether they pass",
@@ -9739,6 +9739,38 @@
         }
       ],
       "recurrence_open": "Only billing_code is normalised. Every other field on a time entry -- description, attorney, matter_id -- reaches the store exactly as typed, which is correct today because nothing validates them; the day one of them gains a validator the same seam is available again, and nothing checks for it generically. And matter_id is still unvalidated at the server, which this record does not close."
+    },
+    {
+      "commit": "a799c774b83a",
+      "date": "2026-09-21",
+      "subject": "fix(stonedesk): an admin could deactivate the last owner -- the fourth instance, and the comment that called it safe is corrected too",
+      "files": [
+        "api/_lib/last-admin-sole-role.test.js",
+        "api/sd-auth-last-admin.test.js",
+        "api/sd-auth.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_sd_auth_last_admin_sabotage_probe.py"
+      ],
+      "lines_added": 547,
+      "lines_removed": 20,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/sd-auth.js's last-admin guard counted active PROVISIONERS (owner + admin) instead of active OWNERS, so an admin deactivating the last active owner was allowed: 200 with the PATCH sent, the licence reached zero owners, and with bootstrap's unfiltered existence check plus the non-owner-cannot-create-an-owner rule there is no route back through the API.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The second provisioning role predates the guard's current form and there is no single commit where the counts diverged -- the defect began when 'admin' joined PROVISIONING_ROLES on a guard whose contract assumed one role, and the comment asserting it was unreachable arrived separately."
+      },
+      "citation_note": "Same family rather than a tool-absence skip: the guard ran, never fired, and its silence was recorded IN THE FILE as proof it was not needed. 'Could not fire' was folded into 'did not need to'.",
+      "phase_note": "The guard was written when StoneDesk had one provisioning role; 'admin' was added later and nothing re-asked which of the two the licence could not lose. The quarantine comment was then copied from SAIRNcode, a single-provisioning-role app where the same reasoning is sound.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The code is one wrong set in one predicate, but the reason it survived review is a separate question about copied justifications: the quarantine argument was correct at its source and was never re-qualified for a file with two provisioning roles."
     },
     {
       "commit": "b09674f65e9d",
