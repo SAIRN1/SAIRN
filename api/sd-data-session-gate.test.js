@@ -157,8 +157,21 @@ async function main() {
     // suite left red by its own correct finding is a suite whose next finding
     // is read as noise.
     assert.match(m[0], /'law_trusttx':\s*\['read', 'write'\]/);
+    // SAIRNfreedom's three Tier A resources, 2026-09-21. Same shape as
+    // law_trusttx above and found the same way: SF_RESOURCES' read and write
+    // branches carried NO session check of any kind, so the licence key --
+    // shipped to the browser and readable by anyone who can open the app --
+    // was the whole authorisation on the general ledger, the chart of accounts
+    // and vendor pricing. SAIRNfreedom was not swept with law_trusttx on
+    // 2026-09-16. Gated LAST of five pieces, deliberately: until sf-auth.js,
+    // the ROLES_BY_APP/AUTH_TABLE_BY_APP entries, the schema and the client's
+    // X-SD-Auth header existed, arming this line would have 403'd every real
+    // call with no way to clear it.
+    assert.match(m[0], /'sf_accounts':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_ledger':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'sf_vendor_prices':\s*\['read', 'write'\]/);
     const pairs = (m[0].match(/'(read|write|reserve)'/g) || []).length;
-    assert.strictEqual(pairs, 11,
+    assert.strictEqual(pairs, 17,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -185,7 +198,17 @@ async function main() {
       // here would be this arm asserting its own premise.
       const drivenElsewhere = {
         locations: 'api/sd-data-locations.test.js',
-        law_trusttx: 'api/sd-data-law-trusttx-session.test.js'
+        law_trusttx: 'api/sd-data-law-trusttx-session.test.js',
+        // SAIRNfreedom's three, driven in their own suite for the same reason
+        // law_trusttx is: they need a SAIRNfreedom session, and this file mints
+        // StoneDesk ones. That suite drives the whole chain -- no session
+        // refused, a real session minted by api/sf-auth.js accepted, a write
+        // gated as well as a read, a deactivated employee refused on a token
+        // that is still cryptographically valid, and a token from another SAIRN
+        // app refused.
+        sf_accounts: 'api/sf-session-gate.test.js',
+        sf_ledger: 'api/sf-session-gate.test.js',
+        sf_vendor_prices: 'api/sf-session-gate.test.js'
       };
       const covered = [...drivenHere, ...Object.keys(drivenElsewhere)].sort();
       assert.deepStrictEqual(inTable, covered,
