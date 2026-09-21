@@ -3613,11 +3613,47 @@ async function saveInvoice(){
     time_entry_ids:entryIds,total:total,split_fees:splits,status:'Draft',issued_date:lawLocalToday(),created_at:lawLocalToday()};
   var list=invoices();list.push(rec);st('law_invoices',list);
   var teList=timeEntries();
-  teList.forEach(function(t){if(entryIds.indexOf(t.id)!==-1)t.invoiced=true;});
+  var touched=[];
+  teList.forEach(function(t){if(entryIds.indexOf(t.id)!==-1){t.invoiced=true;touched.push(t);}});
   st('law_timeentries',teList);
   closeInvoiceModal();rBilling();rDash();
   var syncResult=await sdnData('write','law_invoices',rec);
-  toast(syncResult?'Invoice created':lawWriteFailText('law_invoices','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
+  // ── THE BILLED FLAG HAS TO REACH THE SERVER TOO (2026-09-21) ────────────
+  // Until today the line above was the ONLY network write in this function.
+  // `invoiced=true` went into localStorage and stopped there, so the server's
+  // copy of every hour on this invoice still read `invoiced:false`.
+  //
+  // THAT IS A DOUBLE-BILLING PATH, not a sync inconvenience. lawHydrateAll()
+  // merges additively and never overwrites a locally-held id -- deliberately.
+  // A workstation with no copy yet (a new laptop, a cleared profile, the
+  // second attorney's machine) hydrates these hours FRESH as invoiced:false,
+  // rInvoiceEntryPicker() filters on `billable && !invoiced` and offers them
+  // again as unbilled work, and nothing anywhere says they were already sent
+  // to the client. The same hours get invoiced twice.
+  //
+  // WHAT THIS DOES NOT FIX, and it is named rather than left to be found: a
+  // device that ALREADY HOLDS these entries keeps its stale invoiced:false,
+  // because additive hydration will not overwrite it. That is a property of
+  // lawHydrateAll(), platform-wide rather than billing-specific, and changing
+  // it is a conflict-resolution decision this fix does not make. What is
+  // closed here is the SERVER's own record of a billed hour being wrong --
+  // which is what every fresh device, and anything reading the table, sees.
+  //
+  // THE WHOLE RECORD IS SENT, not a patch: api/sd-data.js upserts `data:
+  // payload` wholesale, so a partial write would replace the row and lose
+  // hours, rate and billing_code -- and would be refused outright by
+  // api/_lib/law-timeentry.js for the missing code.
+  //
+  // A FAILURE HERE IS SAID OUT LOUD. A legacy row with no billing_code is
+  // REFUSED by that same gate, so this can genuinely fail on real data; a
+  // silent failure would leave the server saying "unbilled" while the toast
+  // said "Invoice created", which is the worse of the two states this whole
+  // change exists to remove.
+  var teResults=await Promise.all(touched.map(function(t){return sdnData('write','law_timeentries',t);}));
+  var teFailed=teResults.filter(function(r){return !r;}).length;
+  var parts=[syncResult?'Invoice created':lawWriteFailText('law_invoices','Saved on this device only -- it did not reach the server, so no other computer can see it')];
+  if(teFailed)parts.push(teFailed+' of '+touched.length+' time entries are still marked UNBILLED on the server ('+lawWriteFailText('law_timeentries','the write did not land')+'), so another computer could invoice those hours again. Re-issue this invoice once the connection is back.');
+  toast(parts.join(' -- '),(syncResult&&!teFailed)?3000:8000);
 }
 async function setInvoiceStatus(id,status){
   var list=invoices();
