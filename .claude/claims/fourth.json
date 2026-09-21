@@ -1803,8 +1803,8 @@
       "task": "FILES: docs/tier-a-reviews.json -- review-only, reads api/sd-data-cross-tenant-dispatchers.test.js and tools/cross_tenant_isolation_scope.py. Discharge hank obligation 2026-09-21T12:40:23Z phases 1-2. Not editing any read file.",
       "claimed_at": "2026-09-21T13:36:08Z",
       "claimed_at_epoch": 1789997768.742956,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:55:25Z"
     }
   ]
 }
