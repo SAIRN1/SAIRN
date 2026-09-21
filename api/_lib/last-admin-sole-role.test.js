@@ -96,10 +96,31 @@ const ALL_MULTI = fs.readdirSync(API)
 // multi-role endpoint that is off the helper, so one cannot quietly drop out
 // of this suite's reach by never having been in it -- which is exactly how
 // api/sd-auth.js's identical defect survived the 2026-09-21 sweep of the other
-// three. Driven separately against the real handler, recorded in
-// docs/SAIRN-OPEN-WORK-INDEX.md, and NOT fixed under a three-app claim.
-const isWired = (c) =>
-  fs.readFileSync(path.join(API, c.file), 'utf8').indexOf('employee-lifecycle') !== -1;
+// three.
+//
+// api/sd-auth.js IS NOW FIXED (2026-09-21, later the same day) -- it narrows
+// its own guard to GUARD_ROLES = ['owner'] instead of passing soleRole, and
+// api/sd-auth-last-admin.test.js plus
+// tests/run_sd_auth_last_admin_sabotage_probe.py cover it. It stays on this
+// list because the list is about REACH, not about health: these arms drive the
+// shared engine and still cannot speak for an endpoint that does not call it.
+// ── MATCHES THE CALL, NOT THE WORD, AND IT HAD TO LEARN THAT ───────────────
+// This was `src.indexOf('employee-lifecycle') !== -1` and it broke the same
+// day: api/sd-auth.js got a comment explaining that the other three apps use
+// the shared helper, and the substring match promptly classified StoneDesk as
+// WIRED on the strength of a sentence describing somebody else's code. The
+// engine arms then ran against an endpoint that never calls the engine, and
+// the pinned NOT_WIRED list emptied itself.
+//
+// Caught by this suite's own arms rather than by review, which is the argument
+// for pinning the list by name. A predicate that cannot tell a call from a
+// mention of a call is reading prose, not wiring -- so this matches the actual
+// require and the actual call site.
+const isWired = (c) => {
+  const s = fs.readFileSync(path.join(API, c.file), 'utf8');
+  return /require\([^)]*employee-lifecycle[^)]*\)/.test(s)
+      && /lifecycle\.setActive\(/.test(s);
+};
 const MULTI = ALL_MULTI.filter(isWired);
 const MULTI_NOT_WIRED = ALL_MULTI.filter((c) => !isWired(c));
 
@@ -176,9 +197,9 @@ function section(t) { console.log('\n' + t); }
     assert.deepStrictEqual(MULTI_NOT_WIRED.map((c) => c.file), ['sd-auth.js'],
       'the set of multi-provisioning-role endpoints NOT on '
       + 'api/_lib/employee-lifecycle.js has changed. Nothing below tests these -- '
-      + 'they run their own hand-written set_active. If an endpoint APPEARED here, '
-      + 'it has the same unfixed defect api/sd-auth.js does and needs its own '
-      + 'driven check; if one DISAPPEARED, it was wired or fixed and this list '
+      + 'they run their own hand-written set_active. If an endpoint APPEARED '
+      + 'here, it needs its own driven check and its own suite the way '
+      + 'api/sd-auth.js got one; if one DISAPPEARED, it was wired and this list '
       + 'should shrink deliberately rather than by accident.');
   });
 

@@ -47,11 +47,37 @@ const AUDIT_TABLE = 'stonedesk_audit_log';
 // The VALUE is unchanged -- the five call sites below said 'stonedesk' before
 // and say APP now, byte-for-byte the same string.
 const APP = 'stonedesk';
-// Roles that can provision or change credentials on StoneDesk. BOTH count
-// toward the last-admin guard -- unlike SAIRNcode, where 'admin' is the only
-// provisioning role. Matches this file's own setup and roster gates exactly,
-// so the three checks cannot drift apart.
+// Roles that can provision or change credentials on StoneDesk. Matches this
+// file's own setup and roster gates exactly, so the three checks cannot drift
+// apart.
 const PROVISIONING_ROLES = ['owner', 'admin'];
+
+// ── THE ROLE THE LICENCE CANNOT LOSE, AND IT IS NOT THE PROVISIONING LIST ──
+// This comment used to read "BOTH count toward the last-admin guard", stated
+// as a deliberate difference from SAIRNcode. It was the defect, written down
+// as a decision. Corrected 2026-09-21 after it was driven.
+//
+// WHO MAY PROVISION and WHO MUST NOT REACH ZERO are different questions the
+// moment an app has two provisioning roles. Counting the guard over both let
+// an `admin` deactivate the last active `owner`: two active provisioners, the
+// guard never fired, 200 and the PATCH went out.
+//
+// AND THERE IS NO WAY BACK, which is what makes it terminal rather than
+// untidy. Three facts in THIS file: `bootstrap` creates role 'owner'; its
+// existence check is `select=id&limit=1` with NO `active` filter, so it
+// answers 409 ALREADY_PROVISIONED even when every credential is inactive; and
+// `setup` refuses `role === 'owner' && caller.role !== 'owner'`, so the
+// surviving admin cannot mint a replacement. Zero active owners is a licence
+// dead through the API, recoverable only by direct database access -- which is
+// exactly how SD-AUDIT-2026 was lost.
+//
+// SAME FIX AS grd/sb/scp GOT THE SAME DAY, different code: those three pass
+// `soleRole` to api/_lib/employee-lifecycle.js. StoneDesk is PRE_EXISTING and
+// runs its own set_active, so the guard set is narrowed here instead. The
+// SHAPE is deliberately identical so the two cannot be reasoned about
+// separately.
+const SOLE_ROLE = 'owner';
+const GUARD_ROLES = [SOLE_ROLE];
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -393,17 +419,45 @@ module.exports = async (req, res) => {
         return;
       }
 
+      // ── COUNTED OVER GUARD_ROLES, NOT PROVISIONING_ROLES (fixed 2026-09-21)
+      // This counted both provisioning roles, and the comment below asserted
+      // the resulting non-firing as proof of safety. Both are corrected.
+      const activeOwners = rowsAll.filter(function (x) {
+        return x.active === true && GUARD_ROLES.indexOf(x.role) !== -1;
+      });
+      // `remaining_admins` still answers "how many provisioners are left",
+      // which is a different question from "is the licence about to lose its
+      // last owner" and is what every existing caller reads it as.
       const activeAdmins = rowsAll.filter(function (x) {
         return x.active === true && PROVISIONING_ROLES.indexOf(x.role) !== -1;
       });
-      // Quarantined guard, same as SAIRNcode's: unreachable by construction
-      // while the caller-still-active check above stands, because an active
-      // caller plus a DIFFERENT active admin target implies at least two.
-      // Kept because reachability is a property of today's rule set -- a new
-      // provisioning role or any path skipping that check makes it live
-      // again, and a lockout is not worth re-discovering in production.
-      if (!nextActive && PROVISIONING_ROLES.indexOf(target.role) !== -1 && target.active === true && activeAdmins.length <= 1) {
-        const lastAdminAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeAdmins.length });
+      // ── THIS COMMENT CALLED THE DEFECT A GUARANTEE, AND THAT IS THE PART
+      // ── WORTH RECORDING (corrected 2026-09-21, driven before and after) ──
+      // It read: "Quarantined guard, same as SAIRNcode's: unreachable by
+      // construction while the caller-still-active check above stands, because
+      // an active caller plus a DIFFERENT active admin target implies at least
+      // two." Every clause was true and the conclusion was backwards. Yes, an
+      // active caller plus a different active provisioner implies at least two
+      // PROVISIONERS -- and the guard was counting provisioners, so it never
+      // fired. That is not the guard being unnecessary. That is the guard
+      // being unable to see the thing it exists to stop, because it was
+      // counting the wrong set.
+      //
+      // THE BORROWED REASONING IS WHY IT SURVIVED. SAIRNcode has ONE
+      // provisioning role, so there "provisioner" and "the role that must not
+      // reach zero" are the same set and the quarantine argument holds. It was
+      // copied to a file with TWO, where it does not. Byte-identical is not
+      // safe-in-context: the target's own role model has to be re-qualified,
+      // not just the code matched.
+      //
+      // DRIVEN, NOT ARGUED, both directions -- an admin deactivating the only
+      // active owner answered 200 AND SENT THE PATCH before this change, and
+      // answers 409 LAST_ADMIN and sends nothing after.
+      if (!nextActive && GUARD_ROLES.indexOf(target.role) !== -1 && target.active === true && activeOwners.length <= 1) {
+        // `active_admins` records the count that TRIGGERED the refusal, which
+        // is the owner count -- logging the provisioner count here would put a
+        // number in the audit log that does not explain the entry beside it.
+        const lastAdminAudited = await audit('credential_change_refused', { target: target_id, requested_active: false, reason_code: 'LAST_ADMIN', active_admins: activeOwners.length, active_provisioners: activeAdmins.length });
         res.status(409).json({
           audited: lastAdminAudited,
           error: {
