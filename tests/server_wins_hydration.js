@@ -123,11 +123,18 @@ const PENDING = [
        + 'clinical-documentation decision about whose entry survives a '
        + 'disagreement, not a mechanical sync one, and it is not this session\'s to make.' },
   { file: 'sairnbuild.html', sites: 2, fns: ['bldHydrateAll', 'bldHydrateBids'],
-    why: 'HELD DELIBERATELY. st() pushes to the server itself via '
-       + 'bldSyncCollection(), suppressed during hydration by a bldSeeding flag '
-       + 'that bldHydrateAll sets and bldHydrateBids does NOT. Server-wins '
-       + 'writes more often, so that asymmetry has to be READ and settled as '
-       + 'part of the conversion rather than inherited.' },
+    why: 'HELD DELIBERATELY, and the reason for holding it was CORRECTED once '
+       + 'somebody read the file: bldHydrateBids does not need to suppress, '
+       + 'because bld_bids is not in BLD_SYNCED and so is not hooked to st() at '
+       + 'all -- it reaches the server through two explicit session-gated '
+       + 'writes instead. The real blockers are different and larger: this app '
+       + 'already has bld_sync_pending, which knows about ANY unpushed change '
+       + 'rather than only a first push, so its carve-out should be built from '
+       + 'that and not from a synced-id map -- which conflicts with the '
+       + 'same-rule arm below and has to be settled deliberately. Plus a '
+       + 'missing try/finally around bldSeeding, an __overflow flag that must '
+       + 'make the carve-out fail closed, and bld_bids sitting outside every '
+       + 'mechanism. Full reading: docs/2026-09-21-sairnbuild-server-wins-conversion-plan.md' },
 ];
 
 let pass = 0, fail = 0;

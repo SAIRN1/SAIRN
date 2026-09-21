@@ -3850,6 +3850,69 @@ function payerContracts(){return ld('sen_payer_contracts',[]);}
 // never arrived here, which is precisely the "billing from memory" failure this
 // whole panel exists to remove. So a server row wins over the local row of the
 // same id, and local-only rows (written offline, not yet synced) are kept.
+// ── WHY THESE FOUR HYDRATES REPLACE, AND WHERE THAT REASON HAD BEEN LIVING ─
+// Added to the FILE 2026-09-21 because it was not in the file. It was in the
+// commit message of 517c47b1 (2026-09-02, [B4]) and nowhere else, so a reader
+// of sairnsenior.html -- including the session that routed all eleven hydrates
+// through one merge on 2026-09-21 -- could not see that the difference between
+// these four and the other seven was DELIBERATE. Verbatim, so it cannot be
+// paraphrased away:
+//
+//     "HYDRATION REPLACES RATHER THAN ONLY ADDING, deliberately unlike
+//      senHydrateClaims(): a claim's local copy may be an unsynced edit, but a
+//      stale local contract is a rate changed on another manager's machine that
+//      never arrived. Billing hydrates contracts alongside claims so a fresh
+//      device does not price a screenful of claims at zero. Saving calls
+//      pcPaint, not pcRender -- a hydrate racing the write would silently undo
+//      the edit just made on screen."
+//
+// THAT IS A GOOD REASON AND IT IS SPECIFIC TO THIS SHAPE. These four are not
+// boot hydrates; each runs when a MANAGEMENT PANEL OPENS and its return value
+// drives a repaint (pcPaint, frPaint, prPaint, azPaint). They are a refresh of
+// an authoritative figure somebody is about to price work from, not a merge of
+// two devices' work.
+//
+// ── ONE OF THE FOUR HAS THE REASON. THE OTHER THREE INHERITED THE SHAPE. ──
+// senHydrateFranchise (c7928b21), senHydratePayRates (e3f840ef) and
+// senHydrateAuthorizations (c7613ecd) all landed the same day and none of their
+// commit messages says anything about hydration at all -- checked, not assumed.
+// So the reason was written ONCE, for payer contracts, and copied three times
+// without being re-derived for franchise agreements, pay rates or authorised
+// unit burn-down. That is the byte-identical-is-not-safe-in-context shape this
+// platform has a standing rule about, and it is recorded here rather than
+// resolved, because re-deriving it is not this session's call either.
+//
+// ── WHAT THE 2026-09-21 CARVE-OUT ACTUALLY CHANGES, MEASURED ─────────────
+// senServerWinsMerge() withholds an overwrite ONLY when the local id is absent
+// from sen_synced_ids -- meaning that record's own first push has never landed.
+// Walk the ways a row gets into the local store:
+//   * arrived FROM the server (appended by the merge)      -> marked synced
+//   * created here and pushed successfully                 -> marked by senData
+//   * held before 2026-09-21                               -> marked by the
+//     one-time bootstrap, which cannot tell and marks them all
+//   * created here and the push FAILED                     -> NOT marked
+// Only the last is protected now and was overwritten before. For the server to
+// hold that same id, another device must have generated it -- newId() is
+// prefix + Date.now() + a 0-999 draw, so same millisecond and same draw. The
+// reason above is about "a rate changed on another manager's machine", which is
+// the SAME contract, whose id this device got from the server and which is
+// therefore still marked and still overwritten. THE DELIBERATE BEHAVIOUR IS
+// PRESERVED; what the carve-out withholds is a case that reason never
+// contemplated, and in that case keeping the local row is plainly right.
+//
+// ── AND ONE THING THE BOOTSTRAP DOES BITE, NAMED RATHER THAN BURIED ──────
+// On the single page load where the one-time bootstrap runs, NOTHING is
+// overwritten in this app. For most resources that is a stale view for one
+// session. For THESE four it is a stale contracted RATE, a stale pay rate or a
+// stale remaining-units figure -- and 517c47b1's own worry was pricing a
+// screenful of claims wrongly. A fresh device is unaffected (it holds no local
+// rows to protect, so everything is appended), so this is specifically the
+// UPGRADING device, once. That is the bounded cost the decision accepted,
+// appearing here in its most expensive form.
+//
+// STATUS: FLAGGED TO MICHAEL, NOT RESOLVED. The analysis above says the merge
+// is safe; the decision that it is safe is not this session's to take alone.
+// See the SAIRNsenior row in docs/SAIRN-OPEN-WORK-INDEX.md.
 function senHydratePayerContracts(){
   if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
   senSyncedBootstrap(SEN_SYNCED);
