@@ -902,6 +902,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T12:19:22Z",
+      "resources": [
+        "dnt_charges",
+        "dnt_patients",
+        "invoices",
+        "law_barcerts",
+        "law_invoices",
+        "law_opaccounts",
+        "law_trusttx",
+        "quotes",
+        "sdn_invoices"
+      ],
+      "files": [
+        "api/dnt-bi.test.js",
+        "api/sd-data-cross-tenant-isolation.test.js",
+        "tests/run_cross_tenant_scope_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "what": "Grader corrections from CC's review of 3c249d46 (d840b112 verdict). NO SERVING CODE CHANGED -- this is tools/cross_tenant_isolation_scope.py, its control tests/run_cross_tenant_scope_probe.py, and a one-line CROSS-TENANT-ISOLATION declaration comment added to three test files. The Tier A resource names appear because a coverage tool and its fixtures necessarily NAME what they measure. Four findings fixed: (1) _REFUSAL had no expression for a CONTENT assertion, so the reference implementation graded WEAK while a transplant doing what its header calls wrong would have graded GENUINE -- three refusal spellings now, status/content/length, reported separately; (2) self_check was anchored on ONE reference and the commit had introduced a second, so the guard reported the criteria as matching while the artefact they measure graded WEAK -- REFERENCE_TESTS is a list now and the probe gained REAL-FILE arms, because all seven of its fixtures were synthetic and a fixture written from the same reading as the criteria cannot contradict them; (3) the grader's own control file graded GENUINE and credited law_trusttx off a string inside a fixture -- SELF_EXCLUDED, and the exclusion is printed; (4) a file-level grade was being used as a per-resource grade, crediting dnt_charges and dnt_patients from an arm about sairndental_bi_tokens -- coverage is now DECLARED per file and cross-checked, after two proximity heuristics both scored the better-structured test worse. Plus a substring bug: 'invoices' in body is true of any file naming law_invoices, so the bare resources invoices and quotes were credited by every file mentioning a prefixed sibling. PRESS ON: (1) THE DECLARATION IS THE WEAKEST PART AND I KNOW IT. A machine-read comment is only as true as whoever wrote it, and nothing verifies that a declared resource is actually driven by an arm. I chose it because two heuristics inverted and a guess is worse than a claim somebody signs, but judge whether the cross-check -- declared AND grading GENUINE -- is enough, or whether the declaration should itself be checkable. (2) THE \"none (reason)\" ESCAPE HATCH: I added it so the disclosure list can empty, and I then used it on two files I do not own. Check the two reasons are TRUE -- that complaint-respond's arm really is about dnt_complaints and dnt-bi's really is about sairndental_bi_tokens -- because if either actually does cover a Tier A resource I have just written a false 'none' into their file. (3) THE THREE REFUSAL SPELLINGS: I kept the bare length-zero assertion as a refusal signal even though the reference's own header warns against it for list reads, on the grounds that removing it would lose real id-read coverage. Judge that trade; the alternative is to demand content for list-shaped tests and status for id-shaped ones, which means classifying the test's shape, which is another guess. (4) I EDITED THREE TEST FILES I DO NOT OWN, one line each, non-behavioural. Check the edits are only the declaration comment. (5) GENUINE reads 3 before and after these fixes and the content is entirely different -- check the three are really the reference implementation's three and that nothing is being counted twice.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
