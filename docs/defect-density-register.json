@@ -8888,63 +8888,6 @@
       "factors_unknown_reason": "not analysed beyond the immediate cause: the banner and its test arm were written in the same change and asserted the same string, so neither could contradict the other"
     },
     {
-      "commit": "f090879a88bb",
-      "date": "2026-09-18",
-      "subject": "fix(sairnlaw): a billable hour could reach the server with no UTBMS code -- refused by nothing at either end",
-      "files": [
-        "api/_lib/law-timeentry.js",
-        "api/_lib/law-timeentry.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md"
-      ],
-      "lines_added": 315,
-      "lines_removed": 10,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js law_timeentries write branch: a time entry was upserted with whatever billing_code arrived, including an empty string or no field at all. sairnlaw.html's saveTime() writes the select value unchecked, and billing_code appeared in NO server validator -- zero hits across api/sd-data.js and api/_lib/*.js -- so the entire law_ write branch validated one thing for twenty-odd resources: that a payload has an id. A codeless billable hour renders as a normal billable hour with an empty column, on the record saveInvoice() computes an invoice total from. The app file described this defect in its own comment above LAW_BILLING_CODES; the 2026-09-09 fix made the code list a constant so the select cannot render empty, which closed the CAUSE and left the gate unbuilt. Fixed by api/_lib/law-timeentry.js, presence and shape only, wired into the write branch before the upsert.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "The write path has accepted an unvalidated billing_code since law_timeentries was first wired; git log on the law_ write branch shows the branch being moved and extended, not a commit that removed a check that used to exist. Naming one I had not verified would be a guess."
-      },
-      "contributing_factors": [
-        {
-          "factor": "the law_ write branch had no per-resource validators at all -- one id check served twenty-odd resources, so there was no place a field rule would naturally have been added",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a resource-scoped validator call added before the upsert, with a test arm proving it does not catch the neighbouring law_ resources"
-        },
-        {
-          "factor": "the 2026-09-09 fix removed the CAUSE (an empty select) and read as closing the defect, so the missing gate stopped looking like an open item",
-          "kind": "process",
-          "action_status": "done",
-          "action": "the server gate now exists independently of the select staying populated, and its header records that the earlier fix closed the cause and not the gate"
-        },
-        {
-          "factor": "nothing tested the write path for this field -- the billing-codes suite proves the select is FILLED, which is a different claim from the save REFUSING an empty code",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/_lib/law-timeentry.test.js adds an endpoint half that counts upserts, so a row reaching Supabase fails the arm rather than a status code being asserted in isolation"
-        },
-        {
-          "factor": "law_timeentries is Tier B by the blanket rule rather than by being read, while saveInvoice computes a Tier A invoice total directly from these rows",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "flagged for a human re-tier read in the open-work row; deliberately not re-tiered here because a tier is a judgement and the checker reports rather than rewrites"
-        }
-      ],
-      "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
-    },
-    {
       "commit": "c1443fd7eb69",
       "date": "2026-09-18",
       "subject": "fix(sd-data): the refusal named the one verb item 97 exists to forbid -- and a test was pinning it there",
@@ -9053,6 +8996,120 @@
         }
       ],
       "recurrence_open": "Nothing checks the allowlist against the skill sentence that is supposed to generate it. A second path the exception covers and the allowlist omits would fail exactly the same way, and the only signal would again be the auditor reporting a refusal."
+    },
+    {
+      "commit": "f090879a88bb",
+      "date": "2026-09-18",
+      "subject": "fix(sairnlaw): a billable hour could reach the server with no UTBMS code -- refused by nothing at either end",
+      "files": [
+        "api/_lib/law-timeentry.js",
+        "api/_lib/law-timeentry.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 315,
+      "lines_removed": 10,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js law_timeentries write branch: a time entry was upserted with whatever billing_code arrived, including an empty string or no field at all. sairnlaw.html's saveTime() writes the select value unchecked, and billing_code appeared in NO server validator -- zero hits across api/sd-data.js and api/_lib/*.js -- so the entire law_ write branch validated one thing for twenty-odd resources: that a payload has an id. A codeless billable hour renders as a normal billable hour with an empty column, on the record saveInvoice() computes an invoice total from. The app file described this defect in its own comment above LAW_BILLING_CODES; the 2026-09-09 fix made the code list a constant so the select cannot render empty, which closed the CAUSE and left the gate unbuilt. Fixed by api/_lib/law-timeentry.js, presence and shape only, wired into the write branch before the upsert.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The write path has accepted an unvalidated billing_code since law_timeentries was first wired; git log on the law_ write branch shows the branch being moved and extended, not a commit that removed a check that used to exist. Naming one I had not verified would be a guess."
+      },
+      "contributing_factors": [
+        {
+          "factor": "the law_ write branch had no per-resource validators at all -- one id check served twenty-odd resources, so there was no place a field rule would naturally have been added",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a resource-scoped validator call added before the upsert, with a test arm proving it does not catch the neighbouring law_ resources"
+        },
+        {
+          "factor": "the 2026-09-09 fix removed the CAUSE (an empty select) and read as closing the defect, so the missing gate stopped looking like an open item",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the server gate now exists independently of the select staying populated, and its header records that the earlier fix closed the cause and not the gate"
+        },
+        {
+          "factor": "nothing tested the write path for this field -- the billing-codes suite proves the select is FILLED, which is a different claim from the save REFUSING an empty code",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/_lib/law-timeentry.test.js adds an endpoint half that counts upserts, so a row reaching Supabase fails the arm rather than a status code being asserted in isolation"
+        },
+        {
+          "factor": "law_timeentries is Tier B by the blanket rule rather than by being read, while saveInvoice computes a Tier A invoice total directly from these rows",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "flagged for a human re-tier read in the open-work row; deliberately not re-tiered here because a tier is a judgement and the checker reports rather than rewrites"
+        }
+      ],
+      "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
+    },
+    {
+      "commit": "a12a8e064d08",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlaw): the hours were billed here and the server never heard -- invoiced:true went to localStorage and stopped",
+      "files": [
+        "sairnlaw.html",
+        "tests/sairnlaw_invoiced_sync.js"
+      ],
+      "lines_added": 301,
+      "lines_removed": 2,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnlaw.html saveInvoice() marked every time entry on a new invoice invoiced=true and wrote the list back with st('law_timeentries', teList) -- localStorage -- while making exactly ONE network write, the invoice itself. The flag that says these hours have been billed never reached the server, so its copy of every billed row still read invoiced:false. Because lawHydrateAll() merges additively and never overwrites a locally-held id, a workstation with no copy yet hydrates those hours FRESH as unbilled, rInvoiceEntryPicker() filters on billable && !invoiced and offers them again, and nothing says they were already sent to the client: the same hours can be invoiced twice. Fixed by writing each touched entry back whole (sd-data.js upserts data:payload wholesale, so a patch would lose hours, rate and billing_code) and by NAMING a write that did not land -- a legacy row with no billing_code is refused by api/_lib/law-timeentry.js, so this can genuinely fail on real data. NOT closed: a device that already holds the entries keeps its stale invoiced:false.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4c9f3c3a141f",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlaw Phase 1 scaffold -- legal practice management, ground-up build",
+        "lag_days": 45
+      },
+      "citation_note": "1.5 is the closest standing rule and the fit is arguable, which is why it is noted rather than cited clean. 1.5 is about a success line printed after a failure was RETURNED; here the failing call was never MADE, so there was no return value to ignore -- the toast said 'Invoice created' over a server record that was simply never updated. The second half of the fix is squarely 1.5 (the new write's failure is read and reported rather than swallowed). Part 1 has no rule for 'a local state change with no paired propagation', which may be worth adding.",
+      "contributing_factors": [
+        {
+          "factor": "saveInvoice() changed a record's state locally and paired no network write with it, while every other mutation in the file pairs st() with sdnData('write',...)",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the touched entries are now written back whole, and a write that did not land is named in the toast"
+        },
+        {
+          "factor": "the sync layer was retrofitted onto a file written offline-first: law_timeentries was not even REGISTERED until 2026-09-04, so for months there was no server copy for this flag to be wrong on, and the review that added registration checked that each resource COULD be written, not that every state change on it WAS",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the remaining law_ write paths need the same st()-without-a-paired-write sweep; none is done here"
+        },
+        {
+          "factor": "nothing looks for a local mutation with no paired sync -- tests/sairnlaw_hydrate.js checks 20+ paired WRITE PATHS but pairs them by resource, not by mutation site, so a second st() on an already-paired resource is invisible to it",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker for st(<key>) calls not followed by a write of <key> in the same function would have found this and would find the rest"
+        },
+        {
+          "factor": "lawHydrateAll() merges additively and never overwrites a locally-held id, so a stale local flag can never be corrected from the server even once the server is right -- a standing condition that turns any missed sync on this platform into a permanent divergence rather than a temporary one",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "changing it is a conflict-resolution decision across all twenty law_ resources and is not this diff's to make; named in the code, the suite and the open-work row instead"
+        }
+      ],
+      "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
     }
   ],
   "started": "2026-09-09",
