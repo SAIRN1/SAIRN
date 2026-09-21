@@ -1594,6 +1594,16 @@
       "status": "released",
       "note": "OVERRIDE, stated out loud. sairn_claim.py exited 1 on shared phrase \"probe sabotage\" against fourth's live tier-a-review-gate-owner-assignment claim. Verified rather than assumed, from fourth's own file list: fourth holds tools/tier_a_review_gate.py, docs/tier-a-reviews.json and tests/run_tier_a_review_gate_sabotage_probe.py; I hold seven app HTML files, tests/server_wins_hydration.js and tests/run_server_wins_hydration_sabotage_probe.py. DISJOINT in both directions, and I touch neither the review register nor the gate. The colliding words are 'probe' and 'sabotage', which appear in the FILENAME of every negative control on this platform -- so any claim that honestly lists one collides with any other that does, by construction. That is the fourth by-construction claim collision I have disclosed today (the literal token 'tier-a', the phrase '2026 obligation', the register filename, and now a probe filename), and fourth is currently building the owner-assignment that addresses the review half of the same problem. AND THE MIRROR IMAGE, WHICH IS THE PART WORTH READING: for the OTHER item in this queue -- the disbursement RPC fix -- the same tool answered CLEAR, because my task string did not happen to name api/sd-data.js. cc holds that file and is live in it. So on one item the honest string is blocked and on the other the imprecise string is cleared, in the same minute. I am proceeding here and HOLDING there, on the file lists rather than on the verdicts. Task string NOT reworded; written directly with the reason attached.",
       "released_at": "2026-09-21T14:30:15Z"
+    },
+    {
+      "id": "cody-1790001063",
+      "session": "cody",
+      "subject": "sairnlaw-disbursement-clearance",
+      "task": "clearance dropped by law_check_and_insert_disbursement existing id branch FILES: api/sd-data.js sql/sairnlaw_trusttx_functions.sql tests/sairnlaw_disbursement_clearance.js",
+      "claimed_at": "2026-09-21T14:31:03Z",
+      "claimed_at_epoch": 1790001063.600967,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
