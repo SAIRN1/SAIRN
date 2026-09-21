@@ -1833,8 +1833,8 @@
       "task": "review cc obligation 2026-09-21T21:11:17Z -- review-only, reads tests/cross_tenant_grader_declaration_review_probe.py and tools/cross_tenant_isolation_scope.py. Writes docs/tier-a-reviews.json, the open-work index, my worklog, and a probe of my own.",
       "claimed_at": "2026-09-21T21:19:21Z",
       "claimed_at_epoch": 1790025561.2205172,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T21:30:27Z"
     }
   ]
 }
