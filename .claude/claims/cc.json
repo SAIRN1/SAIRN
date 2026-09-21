@@ -1932,8 +1932,8 @@
       "task": "rate validation billable zero LEDES header additive hydration tracking",
       "claimed_at": "2026-09-21T07:23:20Z",
       "claimed_at_epoch": 1789975400.0891812,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T07:36:00Z"
     }
   ]
 }
