@@ -1914,6 +1914,16 @@
       "claimed_at_epoch": 1789772305.1318734,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1789974340",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "invoiced flag never syncs createInvoice law_timeentries double billing",
+      "claimed_at": "2026-09-21T07:05:40Z",
+      "claimed_at_epoch": 1789974340.3357174,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
