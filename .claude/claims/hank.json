@@ -2295,6 +2295,16 @@
       "claimed_at_epoch": 1789976748.8875105,
       "status": "released",
       "released_at": "2026-09-21T08:07:51Z"
+    },
+    {
+      "id": "hank-1789978132",
+      "session": "hank",
+      "subject": "tier-a-reviews",
+      "task": "review cc json catch null soft delete sweep obligation 2026-09-18T23:19:37Z",
+      "claimed_at": "2026-09-21T08:08:52Z",
+      "claimed_at_epoch": 1789978132.5136046,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
