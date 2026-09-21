@@ -9055,7 +9055,7 @@
       "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
-      "commit": "a12a8e064d08",
+      "commit": "b73fb28af0dc",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): the hours were billed here and the server never heard -- invoiced:true went to localStorage and stopped",
       "files": [
