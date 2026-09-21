@@ -452,6 +452,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The IOLTA clearance revert never re-reads the ledger and never stamps its own change &mdash; so it can ERASE another device's clearance and write away a whole concurrent hydration, and the bank leg claims an adjustment it did not make** | **FOUND 2026-09-21 (Cody), NOT FIXED** &mdash; three findings from the Tier A review of cc's `law_trusttx` obligation (opened 2026-09-18T14:15:06Z, discharged 2026-09-21 with the full verdict in `docs | `tests/sairnlaw_trust_clearance_probe.py` |
 | **&#9989; A BILLABLE hour at rate zero bills nothing and says nothing &mdash; `rate` was validated in NEITHER layer, so a blank rate became `0` and the hour added $0.00 to the invoice while showing as ordinary billable work** | **FIXED 2026-09-21 (cc)** &mdash; `api/_lib/law-timeentry.js` refuses a billable entry whose `rate` is not a finite number above zero; `saveTime()` in `sairnlaw.html` refuses it in the browser first.  | `tests/run_sairnlaw_billable_rate_sabotage_probe.py`, `tests/sairnlaw_billable_rate.js` |
 | **&#128308; There is NO LEDES export, and three files plus a user-facing refusal were justifying themselves on it** | **OPEN &mdash; the false claims removed 2026-09-21 (cc), the FEATURE is not built** | `api/_lib/law-timeentry.test.js`, `tests/sairnlaw_billing_codes.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
 | **&#128308; Additive hydration means a device holding a STALE record is never corrected by the server &mdash; a fix that makes the server right does not make the twenty `law_` resources right** | **OPEN &mdash; named, deliberately not fixed 2026-09-21 (cc)** | `tests/sairnlaw_hydrate.js` |
@@ -568,8 +569,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 275 |
-| `declared` | 233 |
-| `declared+index` | 19 |
+| `declared` | 232 |
+| `declared+index` | 20 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -662,7 +663,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 592   tests/**, api/** (both walked)
-  open-work rows citing a test       282   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       283   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
