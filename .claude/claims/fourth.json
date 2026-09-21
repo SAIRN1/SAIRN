@@ -1785,6 +1785,16 @@
       "claimed_at_epoch": 1789993558.4948506,
       "status": "released",
       "released_at": "2026-09-21T12:37:15Z"
+    },
+    {
+      "id": "fourth-1789995221",
+      "session": "fourth",
+      "subject": "tier-a-review-hank-grader",
+      "task": "FILES: docs/tier-a-reviews.json -- review-only, reads tools/cross_tenant_isolation_scope.py tests/run_cross_tenant_scope_probe.py api/dnt-bi.test.js api/sd-data-cross-tenant-isolation.test.js. Discharge hank obligation 2026-09-21T12:19:22Z. Not editing any of the read files.",
+      "claimed_at": "2026-09-21T12:53:41Z",
+      "claimed_at_epoch": 1789995221.8288267,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
