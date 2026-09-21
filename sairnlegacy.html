@@ -1560,6 +1560,13 @@ function sdnData(action,resource,payload,withSession){
         return null;
       }
       delete legLastErr[resource];
+      // ── ONE LINE IN THE TRANSPORT, NOT 57 CALL SITES (2026-09-21) ───────
+      // The server-wins carve-out needs to know which ids have really reached
+      // the server. Recording that at every save path is 57 chances to miss
+      // one, and a missed one means a record silently loses its protection.
+      // Here it is unmissable: a write that got past the `!r.ok||!d.ok` guard
+      // above is a write the server accepted.
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)legMarkSynced(resource,payload.id);
       return d.data;
     });
   }).catch(function(e){legLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
@@ -4505,12 +4512,78 @@ function init(){
 // in this app was write-only until now -- even once writes reach the
 // server (see sql/sairnlegacy_data_schema.sql), a second device/browser
 // would still show nothing from the first, because nothing ever pulled
-// server data back down. Runs once per login, additive-only merge by id
-// (a locally-present id is never overwritten by this merge -- a real,
-// disclosed limitation: two devices editing the SAME record id between
-// hydrations is not resolved here, only each device's distinct new
-// records showing up on the other is). Runs after init() renders local/
-// seed data immediately, then re-runs init() once merged data lands.
+// server data back down. Runs after init() renders local/seed data
+// immediately, then re-runs init() once merged data lands.
+//
+// ── SERVER-WINS, AS OF 2026-09-21. THIS USED TO BE ADDITIVE-ONLY. ─────────
+// The paragraph here used to end "a locally-present id is never overwritten
+// by this merge -- a real, disclosed limitation: two devices editing the SAME
+// record id between hydrations is not resolved here". That disclosure
+// UNDERSTATED it, and the understatement is why the rule changed:
+//
+//   it was never only about concurrent EDITS. Any field corrected on the
+//   server was invisible FOREVER to a device that already held that id,
+//   whether or not anything raced. Workstation A marks a record; workstation
+//   B, which hydrated it last week and has done nothing since, never sees the
+//   change and never will. No conflict occurred, and nothing would ever
+//   reconcile them.
+//
+// Michael's decision, taken for the platform rather than per resource: once a
+// record's id exists on BOTH sides, the server's copy wins. No timestamp
+// comparison and no conflict UI -- both were considered and neither is here.
+// The cost is stated rather than hidden: an edit made on this device and not
+// yet pushed IS LOST at the next hydrate. That is the deal server-wins makes.
+//
+// ── THE CARVE-OUT, AND IT IS ENFORCED BY STATE RATHER THAN INFERRED ──────
+// A record that has not yet completed its FIRST successful push keeps its
+// local value. Not "the server has no row for it" -- that case is handled by
+// the merge anyway. The case this protects is a server row arriving for an id
+// whose own push has never landed, which happens when `newId()` collides
+// (prefix + Date.now() + a 0-999 draw: same millisecond and same draw, so
+// roughly 1 in 1000 per collided millisecond, not zero). Inferring the
+// carve-out from "the server has this id" would get that case backwards and
+// overwrite a record with a stranger's.
+//
+// So sdnData() records an id in `leg_synced_ids` when its write REALLY
+// LANDED, and only those ids may be overwritten. Per RESOURCE, not per app,
+// so a partial first hydrate does not permanently exempt the resources whose
+// read failed.
+//
+// ── AND AN UNREADABLE MAP IS A THIRD ANSWER, NOT A PASS ──────────────────
+// ld() returns its default for "absent" AND for "corrupt", which here would
+// mean a corrupt map read as "nothing has ever been seeded" and therefore as
+// permission to overwrite everything. That is the destructive direction, so
+// this reads the key RAW and tells the three apart. Unreadable => nothing is
+// treated as synced, nothing is overwritten, nothing is seeded, and the
+// console says so: the merge degrades to the old additive behaviour rather
+// than clobbering local data on the strength of a read that failed.
+var LEG_SYNCED_KEY='leg_synced_ids';
+function legSyncedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(LEG_SYNCED_KEY);}catch(e){
+    try{console.error('SAIRNlegacy: could not read "'+LEG_SYNCED_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('SAIRNlegacy: "'+LEG_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
+// Called from sdnData() on a write that really landed, so every save path in
+// the file is covered by one line instead of 57 call sites that can be missed.
+function legMarkSynced(resource,id){
+  if(!resource||id===undefined||id===null)return;
+  var r=legSyncedRead();
+  if(r.state==='unreadable')return;      // do not overwrite a map we could not read
+  var arr=r.map[resource];
+  if(!Array.isArray(arr))arr=[];
+  if(arr.indexOf(String(id))===-1)arr.push(String(id));
+  r.map[resource]=arr;
+  st(LEG_SYNCED_KEY,r.map);
+}
 var LEG_SYNC_RESOURCES=['leg_aftercare','leg_bookings','leg_cases','leg_catererorders','leg_caterers','leg_certs',
   'leg_clergy','leg_clergybookings','leg_cremations','leg_custodylog','leg_deathrecords','leg_dispatches',
   'leg_documents','leg_facilities','leg_floristorders','leg_florists','leg_gplservices','leg_guestbook',
@@ -4521,18 +4594,52 @@ async function sdnHydrateAll(){
   if(!legLicenseKey())return;
   var results=await Promise.all(LEG_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
   var anyMerged=false;
+  var syncedRead=legSyncedRead();
+  var syncedMap=syncedRead.map,mapUsable=syncedRead.state!=='unreadable';
+  var mapDirty=false;
   for(var i=0;i<LEG_SYNC_RESOURCES.length;i++){
     var key=LEG_SYNC_RESOURCES[i],serverRows=results[i];
     if(!serverRows||!Array.isArray(serverRows))continue; // read failed, no license, or not provisioned -- leave local data as-is
     var local=ld(key,[]);
-    var localIds={};
-    local.forEach(function(r){if(r&&r.id)localIds[r.id]=true;});
-    var addedHere=false;
+    if(!Array.isArray(local))continue;
+    // NEVER SEEDED means this resource has never completed a hydrate that
+    // could record what the server already held -- every id present on both
+    // sides at that moment was demonstrably pushed by somebody, so server-wins
+    // applies and they are seeded. It is deliberately per RESOURCE: a first
+    // hydrate where 10 of 36 reads succeed must not exempt the other 26
+    // forever. Unreadable map => never true, so nothing is overwritten.
+    var seeded=mapUsable&&Array.isArray(syncedMap[key])?syncedMap[key]:null;
+    var neverSeeded=mapUsable&&seeded===null;
+    var syncedHere={};
+    if(seeded)seeded.forEach(function(id){syncedHere[String(id)]=true;});
+    var idx={};
+    local.forEach(function(r,n){if(r&&r.id!==undefined&&r.id!==null)idx[String(r.id)]=n;});
+    var changedHere=false,landed=[];
     serverRows.forEach(function(r){
-      if(r&&r.id&&!localIds[r.id]){local.push(r);localIds[r.id]=true;addedHere=true;}
+      if(!r||r.id===undefined||r.id===null)return;
+      var id=String(r.id),at=idx[id];
+      if(at===undefined){local.push(r);idx[id]=local.length-1;changedHere=true;landed.push(id);return;}
+      // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+      // never landed, in which case the server's row belongs to somebody else.
+      if(neverSeeded||syncedHere[id]){
+        if(JSON.stringify(local[at])!==JSON.stringify(r)){local[at]=r;changedHere=true;}
+        landed.push(id);
+      }
+      // else: pending first push. Keep local, and do NOT record it as synced --
+      // recording it here would hand the next hydrate permission to overwrite
+      // the very record this branch exists to protect.
     });
-    if(addedHere){st(key,local);anyMerged=true;}
+    if(changedHere){st(key,local);anyMerged=true;}
+    if(mapUsable){
+      var arr=Array.isArray(syncedMap[key])?syncedMap[key]:[];
+      landed.forEach(function(id){if(arr.indexOf(id)===-1)arr.push(id);});
+      // Written even when `landed` is empty: the presence of the key is what
+      // says this resource HAS been seeded, and without it every later hydrate
+      // would re-enter the never-seeded branch and overwrite unconditionally.
+      syncedMap[key]=arr;mapDirty=true;
+    }
   }
+  if(mapDirty)st(LEG_SYNCED_KEY,syncedMap);
   return anyMerged;
 }
 // ================================================================
