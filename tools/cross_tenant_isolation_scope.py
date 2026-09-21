@@ -62,13 +62,26 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
-CRITERIA_VERSION = '2026-09-21.2'
+CRITERIA_VERSION = '2026-09-21.3'
 
 # The one known-good instance, named rather than described, so --check can
 # assert the grader still recognises it. A grader that stops recognising its
 # own reference case is a grader whose criteria have drifted, and nothing else
 # would announce that.
 REFERENCE_TEST = 'api/sairndental/complaint-respond.test.js'
+# ── THE SECOND REFERENCE, AND ADDING IT IS THE FIX FOR HOW THE FIRST
+# ── INVERSION SHIPPED ────────────────────────────────────────────────────────
+# The self-check was anchored on the file the criteria were DERIVED from, which
+# is right, and on nothing else. The commit that introduced
+# api/sd-data-cross-tenant-isolation.test.js named it the reference
+# implementation in its own header and did not add it here -- so the guard went
+# on reporting "the criteria still match what they were derived from" while the
+# artefact they exist to measure graded WEAK. A guard anchored on one file
+# checks one file. Every reference goes in this list.
+REFERENCE_TESTS = (
+    'api/sairndental/complaint-respond.test.js',   # SHAPE I -- id read, 404
+    'api/sd-data-cross-tenant-isolation.test.js',  # SHAPE L + W -- list read, write
+)
 
 
 class CouldNotTell(Exception):
@@ -338,10 +351,45 @@ _HASH_RETURNED = re.compile(r"""license_hash:\s*['"`]([^'"`]+)['"`]""")
 # so an unrelated `const HASH = ...` does not inflate the count.
 _HASH_CONST = re.compile(r"""const\s+([A-Z][A-Z0-9_]*)\s*=\s*['"`]([^'"`]+)['"`]""")
 _HASH_USE = re.compile(r"""license_hash\s*[:=]\s*([A-Z][A-Z0-9_]*)\b""")
-_REFUSAL = re.compile(
+# ── "A REFUSAL" HAS THREE SPELLINGS AND THE FIRST VERSION KNEW TWO ───────────
+# Found by CC's independent review of the reference implementation, and it is
+# the SECOND inversion in this grader, in the same session, in the opposite
+# direction to the first:
+#
+#   api/sd-data-cross-tenant-isolation.test.js -- the reference implementation,
+#   whose own header says "the refusal is not a status code, it is an ABSENCE:
+#   200 OK carrying only tenant A's rows. Assert the CONTENT of the array,
+#   never its length alone" -- graded WEAK, because _REFUSAL could see a status
+#   code and a bare length check and had NO EXPRESSION AT ALL for a content
+#   assertion. So a transplant doing the thing the reference calls wrong scored
+#   GENUINE, and the reference doing the thing it calls right scored WEAK. Every
+#   one of the 48 planned units, done correctly, would have landed as WEAK and
+#   the plan's own progress measure would have read zero while the work was
+#   being done properly.
+#
+# THREE SHAPES, REPORTED SEPARATELY RATHER THAN MERGED, because which one a
+# test uses is information a reader wants:
+#   STATUS   -- a 4xx/5xx status or a named refusal code. The id-read shape.
+#   CONTENT  -- an assertion about WHICH rows came back, or that a foreign
+#               row/hash is absent or unchanged. The list-read shape, and the
+#               only one that can catch a handler returning everybody's rows
+#               with a 200.
+#   LENGTH   -- `.length, 0`. A real refusal assertion for an id read and a
+#               WEAK one for a list read, and nothing here can tell which. Kept
+#               because removing it would lose real coverage, but NAMED in the
+#               output so "length only" is visible rather than silently equal
+#               to the other two.
+_REFUSAL_STATUS = re.compile(
     r"""statusCode,\s*(40[0-9]|41[0-9]|5\d\d)|"""
-    r"""\.length,\s*0\b|"""
     r"""code,\s*['"`](NOT_FOUND|FORBIDDEN|UNAUTHORIZED|DENIED)""")
+_REFUSAL_LENGTH = re.compile(r"""\.length,\s*0\b""")
+_REFUSAL_CONTENT = re.compile(
+    # deepStrictEqual/deepEqual over a projection -- "exactly A's rows"
+    r"""deep(?:Strict)?Equal\(|"""
+    # an explicit assertion that the other tenant is absent or unchanged
+    r"""assert\.ok\(\s*!\s*\w+[.\[]|"""
+    r"""(?:notStrictEqual|strictEqual)\(\s*\w+(?:\.\w+|\[[^\]]*\])*\s*,\s*(?:undefined|null)\)|"""
+    r"""\.(?:some|find|filter|includes|indexOf)\([^)]*\)[^;\n]{0,60}(?:false|=== *-1|, *0\))""")
 
 
 def grade(body):
@@ -356,11 +404,19 @@ def grade(body):
         if name in consts:
             hashes.add(consts[name])
     two_tenants = len(hashes) >= 2
-    # 3. Is a refusal asserted?
-    refuses = bool(_REFUSAL.search(body))
+    # 3. Is a refusal asserted, and in which of the three spellings?
+    kinds = []
+    if _REFUSAL_STATUS.search(body):
+        kinds.append('status')
+    if _REFUSAL_CONTENT.search(body):
+        kinds.append('content')
+    if _REFUSAL_LENGTH.search(body):
+        kinds.append('length')
+    refuses = bool(kinds)
 
     if filters_url and two_tenants and refuses:
-        return 'GENUINE', 'url-filtering mock + %d distinct hashes + refusal asserted' % len(hashes)
+        return 'GENUINE', ('url-filtering mock + %d distinct hashes + refusal asserted (%s)'
+                           % (len(hashes), '+'.join(kinds)))
     # ── WEAK MUST BE ABOUT THE TENANT BOUNDARY, NOT ABOUT REFUSALS ────────────
     # The first version graded WEAK on "asserts a refusal" alone, which every
     # serious test file on this platform does -- 67 of 84 came back WEAK and the
@@ -390,22 +446,129 @@ def grade(body):
     return 'NONE', 'names the resource but exercises no tenant boundary'
 
 
+# ── A FILE WHOSE SUBJECT IS THIS GRADER IS NOT PLATFORM COVERAGE ────────────
+# tests/run_cross_tenant_scope_probe.py contains seven FIXTURE bodies written
+# to grade GENUINE, and those fixtures name real resources. So the grader's own
+# negative control graded GENUINE and credited `law_trusttx` with a genuine
+# cross-tenant isolation test -- on the strength of a string inside a fixture.
+# Found by CC's review. Two of the three reported GENUINEs were one real file
+# and this; the tool was counting itself.
+#
+# NAMED AND DISCLOSED rather than silently dropped, because an exclusion nobody
+# can see is how a coverage number starts lying in the other direction.
+SELF_EXCLUDED = ('tests/run_cross_tenant_scope_probe.py',)
+
+# ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
+# A file-level grade is not a per-resource grade, and this tool REPORTS and
+# PLANS in resources. api/dnt-bi.test.js earns GENUINE on an arm about
+# sairndental_bi_tokens and was crediting dnt_charges and dnt_patients purely
+# because their names appear somewhere in it (CC's finding 4).
+#
+# TWO HEURISTICS WERE TRIED AND BOTH INVERTED, WHICH IS WHY THIS IS A
+# DECLARATION INSTEAD. "The name appears within N lines of a license_hash
+# mention" credited dnt_charges off an arm about UNREADABLE datasets.
+# Tightening the anchor to "a SECOND tenant is in play nearby" then credited
+# NOTHING from api/sd-data-cross-tenant-isolation.test.js -- because a
+# well-structured parameterised test declares its resources in a table at the
+# top and drives them in loops below, so the shared mock is nowhere near the
+# names. That is the THIRD time in this tool that a heuristic has scored the
+# better-structured artefact worse, and the lesson is not "tune the window".
+# Static analysis cannot attribute a parameterised arm to its resources, and a
+# coverage number built on a guess about that is not auditable.
+#
+# So a test file SAYS what its cross-tenant arms cover:
+#
+#     // CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts
+#
+# Same shape as the MUTATIONS blocks and GUARD_TESTS entries this platform
+# already uses. The declaration is CROSS-CHECKED, never trusted alone: a file
+# that declares coverage and does NOT grade GENUINE credits nothing and is
+# reported, and a file that grades GENUINE with no declaration credits nothing
+# and is ALSO reported -- an undeclared genuine test is real coverage the
+# number cannot see, which is a gap worth naming rather than silently
+# absorbing.
+#
+# `none` IS A DECLARATION, NOT AN ABSENCE, and it needs a reason. A genuine
+# cross-tenant test can be about a resource that is not Tier A at all --
+# complaint-respond covers dnt_complaints, dnt-bi's arm covers
+# sairndental_bi_tokens -- and those files credit nothing here and are CORRECT
+# to. Without a way to say so they would sit in the undeclared list forever,
+# and a disclosure list that never empties is a disclosure list nobody reads,
+# which is the failure this platform keeps recording. Same decision the defect
+# register made for `--rule not-citable`: an escape hatch, with a sentence.
+_DECLARES = re.compile(r'CROSS-TENANT-ISOLATION\s*:\s*([a-z0-9_, \t]+)')
+_DECLARES_NONE = re.compile(r'CROSS-TENANT-ISOLATION\s*:\s*none\s*\(([^)\n]{10,})\)', re.I)
+
+
+def declared_coverage(body):
+    """(resources, none_reason). A `none` declaration returns an empty set and
+    a reason; an absent declaration returns an empty set and None, and the two
+    are not the same thing."""
+    m = _DECLARES_NONE.search(body)
+    if m:
+        return set(), m.group(1).strip()
+    out = set()
+    for d in _DECLARES.finditer(body):
+        for part in d.group(1).replace('\t', ' ').split(','):
+            part = part.strip()
+            if part and part != 'none':
+                out.add(part)
+    return out, None
+
+
+UNDECLARED = []
+
+
 def tests_naming(names):
-    """resource -> [(test file, grade, why)]. A test NAMES a resource when the
-    string appears in it at all -- deliberately loose, because the question
-    here is 'is there anything to build on', and a false 'yes' is corrected by
-    the grade beside it."""
+    """resource -> [(test file, grade, why)].
+
+    ── THE FILE-LEVEL GRADE IS NOT A PER-RESOURCE GRADE, and conflating them
+    was a false GENUINE on two Tier A resources. api/dnt-bi.test.js earns
+    GENUINE at the file level -- it has a real cross-tenant arm about
+    sairndental_bi_tokens -- and it was crediting dnt_charges and dnt_patients
+    purely because their names appear somewhere in it. The scanner REPORTS and
+    PLANS in resources, so the unit it uses has to be the unit it checks.
+
+    A GENUINE file now credits a resource only when the resource is NAMED NEAR
+    a tenant-isolation signal. A resource named far from every such signal is
+    downgraded to WEAK for that resource, with the reason said out loud -- not
+    dropped, because the file may well be the right place to add the arm.
+    """
     hits = {n: [] for n in names}
+    del UNDECLARED[:]
     for rel in all_files(('.js', '.py')):
         if not is_test(rel):
+            continue
+        if rel in SELF_EXCLUDED:
             continue
         try:
             body = read(rel)
         except CouldNotTell:
             continue
         g, why = grade(body)
+        declared, none_reason = declared_coverage(body)
+        if declared and g != 'GENUINE':
+            UNDECLARED.append((rel, 'DECLARES coverage but grades ' + g, sorted(declared)))
+        if g == 'GENUINE' and not declared and none_reason is None:
+            UNDECLARED.append((rel, 'grades GENUINE but DECLARES nothing', []))
         for n in names:
-            if n in body:
+            # WORD BOUNDARIES, not `in`. `'invoices' in body` is true of any
+            # file naming `law_invoices` or `sdn_invoices`, so the bare Tier A
+            # resources `invoices` and `quotes` were credited by every file
+            # mentioning a prefixed sibling -- a coverage claim manufactured by
+            # a substring. Same trap the platform records for the `sd` vs `sd_`
+            # storage prefix, in a different tool.
+            if not re.search(r'(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])' % re.escape(n), body):
+                continue
+            if g == 'GENUINE' and n in declared:
+                hits[n].append((rel, 'GENUINE', why + '; DECLARED'))
+            elif g == 'GENUINE':
+                hits[n].append((rel, 'WEAK',
+                                'the FILE has a genuine cross-tenant arm but does not '
+                                'DECLARE %s -- add it to the file\'s '
+                                'CROSS-TENANT-ISOLATION: line if an arm really covers it'
+                                % n))
+            else:
                 hits[n].append((rel, g, why))
     return hits
 
@@ -476,20 +639,29 @@ def build():
 
 
 def self_check(rows):
-    """The grader must still recognise its own reference case. A criteria set
-    that stops matching the one instance it was derived FROM has drifted, and
-    nothing else on this platform would announce that -- see the eighth
-    cross-domain discipline."""
-    body = read(REFERENCE_TEST)
-    g, why = grade(body)
-    if g != 'GENUINE':
+    """EVERY reference case must still grade GENUINE, not just the first one.
+
+    A criteria set that stops matching an instance it was derived FROM has
+    drifted, and nothing else on this platform would announce that -- the
+    eighth cross-domain discipline. Anchored on REFERENCE_TESTS rather than a
+    single file because a guard anchored on one file checks one file: the
+    reference implementation added on 2026-09-21 graded WEAK for a full
+    session while this function reported the criteria as still matching.
+    """
+    bad = []
+    for ref in REFERENCE_TESTS:
+        g, why = grade(read(ref))
+        if g != 'GENUINE':
+            bad.append((ref, g, why))
+    if bad:
         raise CouldNotTell(
-            'THE GRADER NO LONGER RECOGNISES ITS OWN REFERENCE CASE.\n'
-            '  %s graded %s (%s)\n'
-            'The criteria were derived from that file. If it does not grade '
-            'GENUINE, every other verdict in this run is untrustworthy and '
-            'none of them are printed.' % (REFERENCE_TEST, g, why))
-    return g
+            'THE GRADER NO LONGER RECOGNISES %d OF ITS %d REFERENCE CASES.\n%s\n'
+            'The criteria were derived from these files. If one does not grade '
+            'GENUINE, every other verdict in this run is untrustworthy and none '
+            'of them are printed.'
+            % (len(bad), len(REFERENCE_TESTS),
+               '\n'.join('  %s graded %s (%s)' % b for b in bad)))
+    return 'GENUINE'
 
 
 def main(argv):
@@ -514,8 +686,12 @@ def main(argv):
     unlocated = [r for r in rows if not r['sites']]
 
     print('CROSS-TENANT ISOLATION COVERAGE -- Tier A, criteria %s' % CRITERIA_VERSION)
-    print('reference case %s grades GENUINE, so the criteria still match what '
-          'they were derived from' % REFERENCE_TEST)
+    print('all %d reference cases grade GENUINE, so the criteria still match what '
+          'they were derived from:' % len(REFERENCE_TESTS))
+    for ref in REFERENCE_TESTS:
+        print('  ' + ref)
+    print('%d file(s) EXCLUDED as the grader\'s own subject, not platform coverage: %s'
+          % (len(SELF_EXCLUDED), ', '.join(SELF_EXCLUDED)))
     print('')
     print('  Tier A resources        %3d' % len(rows))
     print('  GENUINE isolation test  %3d' % len(genuine))
@@ -524,6 +700,14 @@ def main(argv):
     print('  NONE                    %3d' % len(none))
     print('  serving code UNLOCATED  %3d   <- a THIRD state, in neither column above'
           % len(unlocated))
+    if UNDECLARED:
+        print('')
+        print('  DISCLOSED -- %d file(s) whose declaration and grade disagree. Coverage'
+              % len(UNDECLARED))
+        print('  the number below CANNOT see, named rather than silently absorbed:')
+        for rel, what, res in UNDECLARED:
+            print('    %-50s %s%s' % (rel[:50], what,
+                                      (' [' + ', '.join(res) + ']') if res else ''))
     print('')
 
     if '--json' in argv:
@@ -636,6 +820,12 @@ def print_plan(rows):
     print('own branches (one test file). Rank is the highest-risk MEMBER\'s rank --')
     print('the rest come along at no extra cost, which is the whole argument for')
     print('doing the dispatchers first.')
+    print('')
+    print('** THE BAND IS AN UNMEASURED JUDGEMENT. ** `rank` and `reach` are derived')
+    print('from the tier register and the source; WHICH BAND a unit falls in is an')
+    print('ordinal a person chose, and nothing measures whether it is the right one.')
+    print('Labelled here the way this platform labels a rule citation `arguable`')
+    print('rather than `clean`, so a reader does not take the whole table as measured.')
 
     bands = [
         ('PHASE 1 -- money or a person, and a shared dispatcher (best ratio on the board)',

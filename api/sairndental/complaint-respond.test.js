@@ -1,4 +1,5 @@
 // api/sairndental/complaint-respond.test.js
+// CROSS-TENANT-ISOLATION: none (this file's isolation arm covers dnt_complaints, which is Tier B; it credits no Tier A resource and is correct not to)
 // Plain node:assert tests. Run: node api/sairndental/complaint-respond.test.js
 
 const assert = require('assert');

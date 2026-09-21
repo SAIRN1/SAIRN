@@ -1,4 +1,5 @@
 // api/dnt-bi.test.js
+// CROSS-TENANT-ISOLATION: none (the cross-practice arm here covers sairndental_bi_tokens, not a Tier A resource; dnt_charges and dnt_patients are named by arms about unreadable and empty datasets, which is a different question)
 // REQUIREMENT: the dental BI endpoint authenticates before it answers and scopes every
 //   row to the requesting practice, because it authorises a bulk pull out of
 //   a PHI-bearing app

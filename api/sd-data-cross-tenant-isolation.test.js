@@ -3,6 +3,17 @@
 // REQUIREMENT: a valid, fully authenticated session for tenant A cannot read,
 //   overwrite or enumerate tenant B's rows on any Tier A resource.
 //
+// CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts
+//
+// That line is machine-read by tools/cross_tenant_isolation_scope.py and is the
+// ONLY thing that credits a resource with coverage. It is cross-checked, never
+// trusted: a file declaring coverage that does not also GRADE genuine credits
+// nothing and is reported. Two heuristics were tried before this and both
+// scored the better-structured test worse -- a parameterised suite declares its
+// resources in a table and drives them in a loop, so no proximity rule can
+// attribute an arm to a name. Extend this line when you extend LAW_TIER_A, and
+// not before.
+//
 // Run:  node api/sd-data-cross-tenant-isolation.test.js
 //
 // ── WHY THIS FILE EXISTS ───────────────────────────────────────────────────
