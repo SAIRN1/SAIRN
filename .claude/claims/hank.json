@@ -2305,6 +2305,16 @@
       "claimed_at_epoch": 1789978132.5136046,
       "status": "released",
       "released_at": "2026-09-21T12:06:01Z"
+    },
+    {
+      "id": "hank-1789993427",
+      "session": "hank",
+      "subject": "cross-tenant-isolation",
+      "task": "phase 1 2 generic dispatcher isolation tests sd-data",
+      "claimed_at": "2026-09-21T12:23:47Z",
+      "claimed_at_epoch": 1789993427.8886836,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
