@@ -38,7 +38,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairndental-book` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndental-complaint` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndesign` | 18 | ✅ | 1 | 1 | 1 | — |
-| `sairnfreedom` | 35 | ✅ | 3 | 2 | 2 | — |
+| `sairnfreedom` | 35 | ✅ | 4 | 3 | 2 | — |
 | `sairngrounds` | 30 | ✅ | 2 | 2 | 2 | — |
 | `sairnlaw` | 20 | ✅ | 30 | 24 | 6 | — |
 | `sairnlegacy` | 36 | ✅ | 4 | 4 | 2 | — |
