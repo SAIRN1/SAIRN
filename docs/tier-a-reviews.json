@@ -991,6 +991,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T12:38:30Z",
+      "resources": [
+        "alf_claim_routes"
+      ],
+      "files": [
+        "sairncare.html",
+        "tests/faults/alf_rule_read_faults.js"
+      ],
+      "what": "COMMENT AND TEST-HARNESS ONLY -- NO PRODUCT BEHAVIOUR CHANGED, and the obligation exists because the gate's known false-positive half fired on my own change. Two files name alf_claim_routes on a changed line and both mentions are PROSE: (1) a block comment above alfPostRaw() in sairncare.html recording two known-unfixed defect shapes and saying why they are not being fixed in that change, which adds no statement and alters no path -- verified by checkblocks 3/3 and by the diff being entirely inside a comment; (2) a one-line no-op stub, function prRenderRecorded(){}, added to the vm sandbox in tests/faults/alf_rule_read_faults.js, whose comment names the resource. THE SECOND ONE IS THE ONLY THING WITH ANY SUBSTANCE and it is a test repair: that suite had been RED since 2026-09-18 with 'prRenderRecorded is not defined' on six of thirteen arms, because rPayerRouting() gained a real call to a real function and the sandbox builds its context one named global at a time. PRESS ON, and it is short because there is little to press on: (1) confirm by reading the diff that the sairncare.html hunk is entirely comment -- if any executable line slipped in, this record understates what happened and that is the failure mode it should be checked for; (2) the stub gives up this suite's ability to notice rPayerRouting no longer calling prRenderRecorded at all -- check my claim that the property is covered instead by tests/sairncare_route_record.js section 8 and mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py, because a stub with a pointer to coverage that does not exist is worse than no stub; (3) the alfPostRaw comment asserts that NEITHER caller persists -- alfEvaluate via cqRenderResult and alfCredRead via crRefresh, two call sites, neither writing -- and that claim is what justifies leaving the defects unfixed, so it is the one worth re-deriving rather than reading.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

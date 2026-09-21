@@ -126,6 +126,31 @@ function ctxFor(mode) {
   K.vm.runInContext(line('var _cqReadFailed=false;'), ctx);
   K.vm.runInContext('var ALF_FACILITY_CLASSES={OH:[["rcf","RCF"]]};', ctx);
   K.vm.runInContext('function cqPopulateSelectors(){} function cqPopulateClasses(){}', ctx);
+  // ── STUBBED, AND THE STUB IS THE FIX RATHER THAN THE PROBLEM ────────────
+  // This suite went RED on 2026-09-18 with `prRenderRecorded is not defined`
+  // on six of its thirteen arms, and stayed red for three days. NOT A PRODUCT
+  // REGRESSION: rPayerRouting() gained a real call to a real function that
+  // exists in sairncare.html, and this sandbox -- which builds its context one
+  // named global at a time -- simply did not gain it. Every arm that touches
+  // the payer panel died on a ReferenceError before reaching its assertion, so
+  // six requirements about failed rule reads were being reported as failures
+  // of the product when nothing about the product had changed.
+  //
+  // A NO-OP RATHER THAN THE REAL FUNCTION, deliberately. prRenderRecorded()
+  // reads alf_claim_routes and needs alfIsManagement(), residents(), H() and a
+  // #pr-recorded element; pulling all of that in would make a suite about RULE
+  // READ FAILURE STATES also a suite about the billing trail, with two subjects
+  // to keep in step and a bigger surface for exactly this to happen again.
+  //
+  // WHAT THE STUB GIVES UP, AND WHERE IT IS COVERED INSTEAD: this suite can no
+  // longer notice if rPayerRouting stops calling prRenderRecorded at all. That
+  // property -- the trail is read INDEPENDENTLY of the rules beside it, so an
+  // unreadable rule set cannot hide recorded determinations -- is asserted in
+  // tests/sairncare_route_record.js section 8 and planted as mutation 10 of
+  // tests/run_sairncare_route_record_sabotage_probe.py, which is a negative
+  // control rather than an assertion. Stated here because a stub with no
+  // pointer is a hole nobody knows the size of.
+  K.vm.runInContext('function prRenderRecorded(){}', ctx);
   K.vm.runInContext(grab('function rPayerRouting('), ctx);
   K.vm.runInContext(grab('function prRefresh('), ctx);
   K.vm.runInContext(grab('function rJurisdiction('), ctx);

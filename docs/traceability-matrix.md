@@ -190,8 +190,10 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; A negative-control arm was DISARMED BY AN UNRELATED COMMIT IN ANOTHER APP&rsquo;S SWEEP, and nothing announced it &mdash; arm 5 of the append-only probe went silent for three days** | **FIXED 2026-09-21 (Cody)** &mdash; the assertion is now scoped to the function body, the way the two beside it already were; `tests/alf_append_only_probe.py` back to 11/11 with all 7 mutations refuse | `api/alf-append-only-fail-closed.test.js`, `tests/alf_append_only_probe.py` |
 | **&#128308; The `json-catch-null` sweep was NOT a sweep &mdash; 4 more sites in the file it swept have the identical defect, and one serves SEVEN Tier A resources** | **FOUND 2026-09-21 (Hank)**, reviewing cc&rsquo;s `92be209a`. Driven in `tests/sd_data_unconfirmed_write_review_probe.js`, report-only, exit 0. **NOT FIXED &mdash; I hold a review claim, not the file* | `tests/sd_data_unconfirmed_write_review_probe.js` |
-| **&#128308; TOOL-BUGS BUCKET &mdash; FOUR measured, unfixed defects in the tools sessions rely on to tell them the truth about their own state. Each one answers CONFIDENTLY on a question it got wrong** | **MEASURED, NOT FIXED.** Items 1-2 2026-09-21 (Cody); items 3-4 2026-09-21 (Fourth). **Michael&rsquo;s direction: one bucket, cleaned up on a Sunday or whenever there is room** &mdash; none of the fou | `tests/sairnscape_outbound_queue_review_probe.js`, `tests/sairnscape_send_button_and_licence.js` |
+| **`tier_a_review_gate.touched_tier_a()` is commit-dependent in BOTH directions &mdash; silent on the handler that changes, loud on a file that only names the resource in a comment. THREE confirmed instances in one day** | **MEASURED 2026-09-21 (Cody), NOT FIXED** &mdash; cc recorded the false-negative half by hand when it opened the obligation; this confirms it **by running the gate** and finds the mirror image | `tests/faults/alf_rule_read_faults.js`, `tests/sairnscape_send_button_and_licence.js` |
+| **&#128308; `tier_a_review_gate.py` desynchronises on a JS REGEX LITERAL, and then answers confidently for the rest of the file &mdash; it can wrongly DEMAND an obligation or wrongly WAIVE one** | **FOUND AND REPRODUCED 2026-09-21 (Fourth), NOT FIXED** &mdash; flagged rather than repaired on Michael&rsquo;s direction; same bucket as the row above | `tests/sairnscape_outbound_queue_review_probe.js` |
 | **Findings #276/#278 &mdash; all 84 Tier A resources filter by `license_hash` and ZERO of them assert it** | **SCOPED 2026-09-21 (Hank)** &mdash; `docs/2026-09-21-cross-tenant-isolation-build-plan.md`, `tools/cross_tenant_isolation_scope.py`, `tests/run_cross_tenant_scope_probe.py`, and **one REFERENCE IMPLE | `api/sairndental/complaint-respond.test.js`, `api/sd-data-cross-tenant-isolation.test.js`, `tests/app_session_isolation.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128994; SERVER-WINS is the hydration rule now &mdash; and the additive shape it replaces is in NINE apps, not the three the decision named** | **DECIDED 2026-09-21 (Michael). 3 of 9 apps CONVERTED (cc): `sairnlaw`, `sairnlegacy`, `sairndesign` &mdash; the whole brief. 6 apps / 18 sites STILL ADDITIVE, all BEYOND the brief** &mdash; `tests/se | `tests/run_server_wins_hydration_sabotage_probe.py`, `tests/sairnlaw_hydrate.js`, `tests/server_wins_hydration.js` |
 | **&#9989; The deployed product has no build provenance and cannot be given any by adding a step &mdash; so a SOURCE MANIFEST is attested instead, and it is NOT called SLSA** | **BUILT AND EXERCISED 2026-09-18 (Fourth)** &mdash; `tools/source_manifest.py`, `.github/workflows/source-manifest.yml`, `tests/source_manifest_probe.py` 11 arms. Run `35355044141`, head `29a0b6c3`, c | `tests/source_manifest_probe.py` |
@@ -405,6 +407,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; `tests/faults/alf_rule_read_faults.js` had been RED since 2026-09-18 &mdash; six of thirteen arms dying on `prRenderRecorded is not defined`, reported as product failures** | **FIXED 2026-09-21 (Cody)** &mdash; a no-op stub in the vm sandbox; suite 13/13, `tests/sairncare_fault_probe.py` back to 0 failures | `tests/faults/alf_rule_read_faults.js`, `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_fault_probe.py`, `tests/sairncare_route_record.js` |
 | **&#9989; A routing result the ENGINE NEVER JUDGED was still offered a &ldquo;Record this determination&rdquo; button, and one of the four shapes wrote a permanent append-only Tier A billing row** | **FIXED 2026-09-21 (Cody)** &mdash; `deea8c55`. Closed at the PRODUCER (`alfRoute()` stamps `HTTP_<status>` on every non-200 &mdash; the engine judges on 200 and only on 200) and again at the CONSUMER | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
 | **Gate 4 on the vertical with the most suites and no probe &mdash; 18 green suites, none ever observed red** | **BUILT 2026-09-15 (Fourth)** &mdash; `tests/sairncare_fault_probe.py`, 14 mutation arms + 6 controls, green after two real findings were closed. MASTER-PLAN `sairncare` fault 0 &rarr; 1 | `api/alf-append-only-fail-closed.test.js`, `tests/sairncare_fault_probe.py` |
 | **A failed rule read rendered as an authoritative EMPTY RULE SET on the compliance and billing panels &mdash; and told the operator to re-run the seed.** The guard against it was already written and could not fire | **CLOSED 2026-09-11 (Cody)** &mdash; 13 fault arms in `tests/faults/alf_rule_read_faults.js`, 6 mutation controls bite, file restored byte-identical; the first suite on this platform aimed at the READ | `tests/faults/alf_rule_read_faults.js` |
@@ -460,7 +463,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#9989; A BILLABLE hour that bills NOTHING and says nothing &mdash; NEITHER factor of `hours x rate` was validated at the server, so a blank rate or zero hours added $0.00 to the invoice while showing as ordinary billable work** | **BOTH FACTORS FIXED 2026-09-21 (cc)** &mdash; `rate` first, then `hours` on Michael's direction. `api/_lib/law-timeentry.js` refuses a BILLABLE entry whose `rate` or `hours` is not a finite number ab | `tests/run_sairnlaw_billable_rate_sabotage_probe.py`, `tests/sairnlaw_billable_rate.js` |
 | **&#128308; There is NO LEDES export, and three files plus a user-facing refusal were justifying themselves on it** | **OPEN &mdash; the false claims removed 2026-09-21 (cc), the FEATURE is not built** | `api/_lib/law-timeentry.test.js`, `tests/sairnlaw_billing_codes.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
 | **&#9989; The hours were billed on one browser and the server never heard &mdash; `invoiced:true` went to localStorage and stopped, so a fresh device offers them again as unbilled** | **FIXED 2026-09-21 (cc)** &mdash; `saveInvoice()` in `sairnlaw.html` now writes each touched entry back to `law_timeentries`, whole, and NAMES a write that did not land; `tests/sairnlaw_invoiced_sync. | `tests/sairnlaw_invoiced_sync.js` |
-| **&#128308; THE INVOICED-FLAG FIX AND SERVER-WINS HYDRATION CONTRADICT EACH OTHER IN THE SEAM: a locally-issued invoice flag is silently OVERWRITTEN BACK TO FALSE on the attorney&rsquo;s own machine, and the billing picker then re-offers the hours it just billed** | **FOUND 2026-09-21 (Fourth), NOT FIXED** &mdash; from the Tier A review of cc&rsquo;s `invoices`/`law_invoices` obligation (2026-09-21T07:10:15Z). Reproduced by driving the shipped `lawHydrateAll()` i | `tests/sairnlaw_invoiced_sync.js`, `tests/sairnlaw_invoiced_sync_review_probe.js`, `tests/server_wins_hydration.js` |
 | **&#9989; A billable hour could reach the server with NO UTBMS code &mdash; refused by nothing at either end, on the record Tier A invoices are built from** | **FIXED 2026-09-18 (Fourth)** &mdash; `api/_lib/law-timeentry.js` (NEW) wired into the `law_timeentries` write branch of `api/sd-data.js`; `api/_lib/law-timeentry.test.js` 15 arms, 6 sabotages all cau | `api/_lib/law-timeentry.test.js` |
 | 🚨 **The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ATTORNEY TRUST MONEY, and in two other places** | **SWEPT AND GUARDED 2026-09-15 (Hank)** &mdash; `law_check_and_insert_disbursement`, `law_check_and_void_deposit`, `cl_rate_limit_consume`. New `tools/advisory_lock_isolation_check.py` (report-only, r | `tests/run_advisory_lock_isolation_probe.py` |
 | **`law_trusttx` had NO SESSION GATE AT ALL &mdash; attorney IOLTA trust money on a licence key alone** | **FIXED 2026-09-16 (Fourth)** &mdash; `api/sd-data.js` SD_SESSION_GATED + SD_GATE_APP, `api/sd-data-law-trusttx-session.test.js` 10 arms, `tests/law_trusttx_session_probe.py` 7 mutations / 11 arms all | `api/sd-data-law-trusttx-session.test.js`, `tests/law_trusttx_session_probe.py` |
@@ -567,17 +569,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 545 of 602 traced, 90.5%.
+For context and not as the headline: 543 of 600 traced, 90.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 545 citations come from
+### Where the 543 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 281 |
-| `declared` | 233 |
-| `declared+index` | 23 |
+| `index` | 280 |
+| `declared` | 231 |
+| `declared+index` | 24 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -669,8 +671,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 602   tests/**, api/** (both walked)
-  open-work rows citing a test       290   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 600   tests/**, api/** (both walked)
+  open-work rows citing a test       292   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

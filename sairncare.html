@@ -1442,6 +1442,39 @@ function alfEvaluate(payload){
 function alfCredRead(){
   return alfPostRaw({action:'read',resource:'alf_staff_credentials',app_id:APP_ID,payload:{}});
 }
+// ── KNOWN, RECORDED, NOT FIXED -- READ THIS BEFORE EDITING alfPostRaw ─────
+// (found 2026-09-21 by LIVE-VERIFYING the alfRoute fix against the deployed
+// bytes, not by reading the diff. The post-push check asserted the old
+// `!r.ok && !d.error` was gone and came back count=1 -- and the surviving hit
+// was not the comment quoting it, it was the line below.)
+//
+// THIS FUNCTION CARRIES BOTH SHAPES THAT WERE FIXED IN alfRoute AND alfData:
+//
+//   (a) `!r.ok && !d.error` means the normalisation below only fires when the
+//       server sent NO error body, so every api/sd-data.js refusal that DOES
+//       carry one passes through wearing the server's own code. The result is
+//       a transport refusal rendered where the COMPLIANCE ENGINE's refusal
+//       codes belong -- NO_SESSION shown in the place NO_RULE_FOR_STATE goes.
+//       alfRoute() now stamps HTTP_<status> on every non-200; this does not.
+//
+//   (b) crRefresh() reads `(r && Array.isArray(r.data)) ? r.data : []`, and an
+//       error body has no `data` array -- so a REFUSED credential read renders
+//       as "No credential or training entries recorded yet". A training and
+//       credential ledger showing empty when it was refused.
+//
+// WHY IT IS NOT FIXED HERE, checked rather than assumed: NEITHER CALLER
+// PERSISTS. alfEvaluate() feeds cqRenderResult(), which renders; alfCredRead()
+// feeds crRefresh(), which fills local state. Two call sites between them and
+// neither writes, so unlike the alf_claim_routes defect there is no permanent
+// row in an append-only table at the end of it. Different blast radius, its
+// own change, and folding it into a fix for three named findings would have
+// made one change do two things.
+//
+// TRACKED IN docs/SAIRN-OPEN-WORK-INDEX.md -- search the SAIRNcare rows for
+// "alfPostRaw". It is NOT in docs/tier-a-reviews.json and that is deliberate:
+// that register records a Tier A CHANGE that owes a review, and opening a row
+// there for a defect nobody has changed would assert work that did not happen.
+// The row and this comment are the two places somebody arrives from.
 function alfPostRaw(body){
   var lic=alfLicenseKey();
   if(!lic)return Promise.resolve(null);

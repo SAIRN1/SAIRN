@@ -65,8 +65,23 @@ MUTATIONS = [
      "async function appendOnlyExisting(res, r, what) {\n  if (!r.ok) {",
      "async function appendOnlyExisting(res, r, what) {\n  if (false) {"),
 
-    ("5. a non-array body stops refusing -- an HTML error page parses to "
-     "something that is not a list and the write proceeds",
+    # ── THE SCENARIO IN THIS NAME WAS WRONG, corrected 2026-09-21 ──────────
+    # It said "an HTML error page parses to something that is not a list". An
+    # HTML page does not parse as JSON at all -- it throws, the
+    # `.catch(() => null)` yields null, and every call site's
+    # `if (!existingRows) return;` refuses it even with this guard removed. So
+    # the stated trigger could not have driven the arm.
+    #
+    # The reachable one is a body that parses to a TRUTHY non-array: a JSON
+    # OBJECT, which is the shape PostgREST returns for an error
+    # ({"message": ...}), or a bare string or number. That value is truthy, so
+    # the caller's falsy check passes it through, `existingRows.length > 0` is
+    # undefined-guarded away, and the write proceeds. Corrected because a
+    # control whose own description names an impossible trigger invites the
+    # next reader to decide the arm is theoretical.
+    ("5. a non-array body stops refusing -- a JSON OBJECT (PostgREST's error "
+     "shape) is truthy, so it survives the caller's falsy check and the write "
+     "proceeds",
      API,
      "  if (!Array.isArray(rows)) {\n    console.error('sd-data: append-only "
      "check returned a non-array (' + what + ')');",

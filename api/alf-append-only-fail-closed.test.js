@@ -93,7 +93,6 @@ function main() {
     assert.match(SRC, /async function appendOnlyExisting\(res, r, what\)/);
     assert.match(SRC, /so nothing was written/,
       'the message must say nothing was written -- a caller that retries blindly is the risk');
-    assert.match(SRC, /if \(!Array\.isArray\(rows\)\)/);
     assert.match(SRC, /append-only check failed \(' \+ what \+ '\), HTTP/,
       'the log must name WHICH check died -- there are six of them');
 
@@ -114,6 +113,30 @@ function main() {
       'the helper must TEST r.ok -- matching the message or the signature '
       + 'leaves the branch itself unasserted, which is how it can be disabled '
       + 'with this suite green');
+
+    // ── AND THE SAME FIX, THREE DAYS LATE, ON THE ASSERTION NEXT TO IT ─────
+    // Moved here from a whole-file `assert.match(SRC, ...)` on 2026-09-21.
+    // THE 2026-09-15 PASS FIXED TWO OF THE THREE ASSERTIONS IN THIS TEST AND
+    // LEFT THIS ONE, and it went on biting for three days because there was
+    // exactly one `if (!Array.isArray(rows))` in api/sd-data.js -- so the
+    // whole-file match happened to be equivalent to a scoped one.
+    //
+    // ON 2026-09-18 AT 19:15, COMMIT 92be209a ADDED A SECOND ONE, thirty
+    // lines above this function, inside wroteRow(). Nothing about this suite
+    // or this guard changed. From that moment arm 5 of
+    // tests/alf_append_only_probe.py ("a non-array body stops refusing") was
+    // SILENT: the mutation removes the guard here and the assertion is
+    // satisfied by the copy in wroteRow(). Demonstrated rather than inferred
+    // -- planting the mutation and testing both forms, the whole-file regex
+    // passes and the function-scoped one fails.
+    //
+    // That is the eighth standing discipline exactly: nothing announces the
+    // day a check stops testing anything, and here the announcement would
+    // have had to come from an unrelated commit in a different app's sweep.
+    assert.match(FN, /if \(!Array\.isArray\(rows\)\)/,
+      'the helper must TEST the shape of the parsed body, IN ITS OWN BODY -- '
+      + 'a whole-file match for this condition is satisfied by wroteRow() '
+      + 'thirty lines above, so the guard can be removed with this suite green');
 
     // And the code is asserted INSIDE the function too. `INTEGRITY_CHECK_FAILED`
     // appears twice there; a whole-file match is satisfied by whichever one was

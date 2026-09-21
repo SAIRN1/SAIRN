@@ -9055,61 +9055,128 @@
       "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
-      "commit": "b73fb28af0dc",
+      "commit": "1a56a7d9e5e0",
       "date": "2026-09-21",
-      "subject": "fix(sairnlaw): the hours were billed here and the server never heard -- invoiced:true went to localStorage and stopped",
+      "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
       "files": [
-        "sairnlaw.html",
-        "tests/sairnlaw_invoiced_sync.js"
+        "api/alf-append-only-fail-closed.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "tests/alf_append_only_probe.py",
+        "tests/faults/alf_rule_read_faults.js"
       ],
-      "lines_added": 301,
-      "lines_removed": 2,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "sairnlaw.html saveInvoice() marked every time entry on a new invoice invoiced=true and wrote the list back with st('law_timeentries', teList) -- localStorage -- while making exactly ONE network write, the invoice itself. The flag that says these hours have been billed never reached the server, so its copy of every billed row still read invoiced:false. Because lawHydrateAll() merges additively and never overwrites a locally-held id, a workstation with no copy yet hydrates those hours FRESH as unbilled, rInvoiceEntryPicker() filters on billable && !invoiced and offers them again, and nothing says they were already sent to the client: the same hours can be invoiced twice. Fixed by writing each touched entry back whole (sd-data.js upserts data:payload wholesale, so a patch would lose hours, rate and billing_code) and by NAMING a write that did not land -- a legacy row with no billing_code is refused by api/_lib/law-timeentry.js, so this can genuinely fail on real data. NOT closed: a device that already holds the entries keeps its stale invoiced:false.",
+      "lines_added": 124,
+      "lines_removed": 8,
+      "app": "sairncare",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "tests/faults/alf_rule_read_faults.js had been RED on main since 2026-09-18, six of thirteen arms dying on 'prRenderRecorded is not defined'. NOT A PRODUCT REGRESSION: rPayerRouting() gained a real call to a real function that exists in sairncare.html, and the suite builds its vm context one named global at a time, so every arm touching the payer panel died on a ReferenceError before reaching its assertion. Six requirements about failed rule reads were reported as failures of the product for three days. Fixed with a no-op stub rather than by extracting the real function, because prRenderRecorded() reads alf_claim_routes and needs alfIsManagement(), residents(), H() and a #pr-recorded element -- pulling that in would make a suite about rule-read failure states also a suite about the billing trail. What the stub gives up is named in the file with a pointer: that rPayerRouting calls it at all is asserted in tests/sairncare_route_record.js section 8 and planted as mutation 10 of tests/run_sairncare_route_record_sabotage_probe.py.",
       "rules": [
-        "1.5"
+        "1.1"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/sairncare_fault_probe.py",
       "injection": {
-        "commit": "4c9f3c3a141f",
-        "date": "2026-08-07",
-        "subject": "feat: SAIRNlaw Phase 1 scaffold -- legal practice management, ground-up build",
-        "lag_days": 45
+        "commit": "3c28b9eac4c2",
+        "date": "2026-09-18",
+        "subject": "feat(sairncare): the billing determination is recorded now -- and two of the four \"unreachable\" resources turned out to have real answers",
+        "lag_days": 3
       },
-      "citation_note": "1.5 is the closest standing rule and the fit is arguable, which is why it is noted rather than cited clean. 1.5 is about a success line printed after a failure was RETURNED; here the failing call was never MADE, so there was no return value to ignore -- the toast said 'Invoice created' over a server record that was simply never updated. The second half of the fix is squarely 1.5 (the new write's failure is read and reported rather than swallowed). Part 1 has no rule for 'a local state change with no paired propagation', which may be worth adding.",
+      "citation_note": "A check that stopped checking: the suite still ran, still printed arm names, and every arm that touched the payer panel died on a ReferenceError before reaching its assertion -- so six requirements were reported as FAILURES OF THE PRODUCT while nothing about the product had changed. The failure was loud in the sense that it printed FAIL, and silent in the sense that what it named was not what was wrong.",
       "contributing_factors": [
         {
-          "factor": "saveInvoice() changed a record's state locally and paired no network write with it, while every other mutation in the file pairs st() with sdnData('write',...)",
+          "factor": "the vm sandbox in tests/faults/alf_rule_read_faults.js builds its context ONE NAMED GLOBAL AT A TIME, so a function under test growing a new call to an existing sibling breaks it",
           "kind": "technical",
           "action_status": "done",
-          "action": "the touched entries are now written back whole, and a write that did not land is named in the toast"
+          "action": "a no-op stub for prRenderRecorded(), with a comment naming what the stub gives up and where that property is covered instead"
         },
         {
-          "factor": "the sync layer was retrofitted onto a file written offline-first: law_timeentries was not even REGISTERED until 2026-09-04, so for months there was no server copy for this flag to be wrong on, and the review that added registration checked that each resource COULD be written, not that every state change on it WAS",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "the remaining law_ write paths need the same st()-without-a-paired-write sweep; none is done here"
-        },
-        {
-          "factor": "nothing looks for a local mutation with no paired sync -- tests/sairnlaw_hydrate.js checks 20+ paired WRITE PATHS but pairs them by resource, not by mutation site, so a second st() on an already-paired resource is invisible to it",
+          "factor": "grab() fails loudly when a SIGNATURE it extracts disappears (\"this arm is testing nothing\") and has nothing at all for a newly REFERENCED global -- the direction a growing function actually breaks it",
           "kind": "detection",
-          "action_status": "planned",
-          "action": "a checker for st(<key>) calls not followed by a write of <key> in the same function would have found this and would find the rest"
+          "action_status": "not-actionable",
+          "note": "catching it would mean statically resolving every free identifier in every extracted body against the sandbox; recorded as the shape rather than fixed, because the cheaper answer is that a red suite gets triaged the same day"
         },
         {
-          "factor": "lawHydrateAll() merges additively and never overwrites a locally-held id, so a stale local flag can never be corrected from the server even once the server is right -- a standing condition that turns any missed sync on this platform into a permanent divergence rather than a temporary one",
-          "kind": "latent-condition",
+          "factor": "the suite was red on main for three days and nothing escalated it -- the report-only sweep reports rather than blocks, deliberately",
+          "kind": "process",
           "action_status": "declined",
-          "note": "changing it is a conflict-resolution decision across all twenty law_ resources and is not this diff's to make; named in the code, the suite and the open-work row instead"
+          "note": "making a fault suite blocking is its own decision about a gate and is not made here"
+        },
+        {
+          "factor": "the Tier A wiring that added the call (3c28b9ea) was itself reviewed, and the review read the diff rather than running the dependent suites",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "run the app fault probes as part of a Tier A review of that app, not only the suites the obligation names"
         }
       ],
-      "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
+      "recurrence_open": "Nothing prevents the next function added to a panel render path from breaking a different hand-built sandbox the same way; only this one instance is fixed."
+    },
+    {
+      "commit": "1a56a7d9e5e0",
+      "date": "2026-09-21",
+      "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
+      "files": [
+        "api/alf-append-only-fail-closed.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "tests/alf_append_only_probe.py",
+        "tests/faults/alf_rule_read_faults.js"
+      ],
+      "lines_added": 124,
+      "lines_removed": 8,
+      "app": "platform",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "probe-control",
+      "summary": "Arm 5 of tests/alf_append_only_probe.py ('a non-array body stops refusing') had been SILENT since 2026-09-18 19:15. api/alf-append-only-fail-closed.test.js asserted the guard with a whole-file assert.match(SRC, /if \\(!Array\\.isArray\\(rows\\)\\)/) against api/sd-data.js. It bit correctly from 2026-09-04 because there was exactly ONE such line, so the whole-file match happened to be equivalent to a scoped one. Commit 92be209a -- the stonedesk soft-delete half of the json-catch-null sweep -- added a second one thirty lines above inside wroteRow(), and from that moment the mutation could remove the real fail-closed guard in appendOnlyExisting() with the suite green. That guard protects six append-only Tier A integrity checks, three of which write with merge-duplicates and would silently overwrite the record they protect. The same test documents fixing this exact defect on its two neighbouring assertions on 2026-09-15 and left the third; it is now scoped to the function body the same way.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/alf_append_only_probe.py",
+      "injection": {
+        "commit": "92be209aadda",
+        "date": "2026-09-18",
+        "subject": "fix(stonedesk): a soft-delete the data store never confirmed was reported as done",
+        "lag_days": 3
+      },
+      "citation_note": "An anchor that still matches is not an anchor that still points at the right thing. The assertion was a WHOLE-FILE regex; it went on matching after the line it was written about was removed, because an unrelated commit had added a second copy of the same condition thirty lines away. Demonstrated rather than inferred: plant the mutation, and the whole-file form passes while the function-scoped form fails.",
+      "contributing_factors": [
+        {
+          "factor": "api/alf-append-only-fail-closed.test.js asserted the non-array guard with a whole-file assert.match(SRC, ...) instead of scoping it to the function body",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scoped to the appendOnlyExisting() body, exactly as the r.ok and refusal-code assertions beside it already were"
+        },
+        {
+          "factor": "the 2026-09-15 hardening pass fixed TWO of the three source-text assertions in this one test and left the third -- and wrote down the principle it was applying while leaving an instance of it in place",
+          "kind": "process",
+          "action_status": "done",
+          "action": "audited all five source-text patterns in that test rather than only the one that failed; only this one had a decoy outside the function"
+        },
+        {
+          "factor": "a whole-file source-text assertion is silently coupled to every other file that could ever contain the same line, so an unrelated app sweep can disarm it with nothing to notice",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "the general form -- a checker that flags whole-file assert.match over a large source in a suite that also computes a function slice -- is not built; recorded so the next instance is recognised rather than rediscovered"
+        },
+        {
+          "factor": "the arm defended the guard with a scenario that cannot occur (an HTML error page), so a reader checking whether the arm mattered would have concluded it was theoretical",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "corrected to the reachable trigger, a JSON object, which is truthy and survives the caller falsy check"
+        }
+      ],
+      "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
       "commit": "b09674f65e9d",
@@ -9224,6 +9291,63 @@
         }
       ],
       "recurrence_open": "Nothing on this platform detects a shared static element whose handler is reassigned by one code path and restored by none. There are other inline-onclick controls reassigned at runtime in these apps and they have not been swept."
+    },
+    {
+      "commit": "b73fb28af0dc",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlaw): the hours were billed here and the server never heard -- invoiced:true went to localStorage and stopped",
+      "files": [
+        "sairnlaw.html",
+        "tests/sairnlaw_invoiced_sync.js"
+      ],
+      "lines_added": 301,
+      "lines_removed": 2,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnlaw.html saveInvoice() marked every time entry on a new invoice invoiced=true and wrote the list back with st('law_timeentries', teList) -- localStorage -- while making exactly ONE network write, the invoice itself. The flag that says these hours have been billed never reached the server, so its copy of every billed row still read invoiced:false. Because lawHydrateAll() merges additively and never overwrites a locally-held id, a workstation with no copy yet hydrates those hours FRESH as unbilled, rInvoiceEntryPicker() filters on billable && !invoiced and offers them again, and nothing says they were already sent to the client: the same hours can be invoiced twice. Fixed by writing each touched entry back whole (sd-data.js upserts data:payload wholesale, so a patch would lose hours, rate and billing_code) and by NAMING a write that did not land -- a legacy row with no billing_code is refused by api/_lib/law-timeentry.js, so this can genuinely fail on real data. NOT closed: a device that already holds the entries keeps its stale invoiced:false.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4c9f3c3a141f",
+        "date": "2026-08-07",
+        "subject": "feat: SAIRNlaw Phase 1 scaffold -- legal practice management, ground-up build",
+        "lag_days": 45
+      },
+      "citation_note": "1.5 is the closest standing rule and the fit is arguable, which is why it is noted rather than cited clean. 1.5 is about a success line printed after a failure was RETURNED; here the failing call was never MADE, so there was no return value to ignore -- the toast said 'Invoice created' over a server record that was simply never updated. The second half of the fix is squarely 1.5 (the new write's failure is read and reported rather than swallowed). Part 1 has no rule for 'a local state change with no paired propagation', which may be worth adding.",
+      "contributing_factors": [
+        {
+          "factor": "saveInvoice() changed a record's state locally and paired no network write with it, while every other mutation in the file pairs st() with sdnData('write',...)",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the touched entries are now written back whole, and a write that did not land is named in the toast"
+        },
+        {
+          "factor": "the sync layer was retrofitted onto a file written offline-first: law_timeentries was not even REGISTERED until 2026-09-04, so for months there was no server copy for this flag to be wrong on, and the review that added registration checked that each resource COULD be written, not that every state change on it WAS",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the remaining law_ write paths need the same st()-without-a-paired-write sweep; none is done here"
+        },
+        {
+          "factor": "nothing looks for a local mutation with no paired sync -- tests/sairnlaw_hydrate.js checks 20+ paired WRITE PATHS but pairs them by resource, not by mutation site, so a second st() on an already-paired resource is invisible to it",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "a checker for st(<key>) calls not followed by a write of <key> in the same function would have found this and would find the rest"
+        },
+        {
+          "factor": "lawHydrateAll() merges additively and never overwrites a locally-held id, so a stale local flag can never be corrected from the server even once the server is right -- a standing condition that turns any missed sync on this platform into a permanent divergence rather than a temporary one",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "changing it is a conflict-resolution decision across all twenty law_ resources and is not this diff's to make; named in the code, the suite and the open-work row instead"
+        }
+      ],
+      "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
     },
     {
       "commit": "e4fc9aaad205",
