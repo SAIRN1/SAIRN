@@ -164,7 +164,20 @@ const POSTURE = {
   sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on the six Tier A billing resources require admin or biller (SC_TIER_A_WRITE_ROLES in api/sd-data.js, driven by tests/sairncode_gates.js). This column measures READS only, which is why it still says NONE' },
   sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
   sairnscape:      { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/scp-auth.js exists; scp_quotes and invoices are Tier A' },
-  sairnlegacy:     { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/leg-auth.js exists; leg_preneed is Tier A' },
+  // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in
+  // 760a34a9 and was live-verified in 30a9f179, taking sairnlegacy from measured
+  // NONE to measured ALL -- and this suite FAILED until this row was updated,
+  // which is the table working rather than the table being wrong.
+  //
+  // WHAT THE OLD VALUE ACTUALLY RECORDED, worth keeping rather than overwriting
+  // silently: it said NOT DOCUMENTED for as long as the gap existed, and it was
+  // right to -- 36 leg_* resources were authorised by the licence key alone,
+  // including leg_custodylog, the chain-of-custody record for human remains. This
+  // table never claimed the posture was SAFE, only that nobody had decided it.
+  // THE GAP WAS FOUND BY THE HOVER AUDITOR, NOT BY THIS TABLE, and that is the
+  // honest division: the column says whether a decision was written down, and an
+  // undocumented posture is the signal to go and look, not the finding itself.
+  sairnlegacy:     { gate: 'ALL',  auth: true,  why: 'DECIDED AND FIXED 2026-09-21 (CC): every leg_* resource requires a SAIRNlegacy session. Found by the hover auditor as a CRITICAL gap -- 36 resources including leg_custodylog (chain of custody for human remains) and leg_preneed (Tier A) were licence-only. Gate 760a34a9, obligation b9f1779a, live-verified 30a9f179' },
   shared:          { gate: 'NONE', auth: false, why: 'the cross-app resources. NONE of the seven answers 401 to a no-session read -- five answer something else entirely (they are not plain read/write resources), and render_usage and shared_knowledge are licence-only. Recorded rather than gated: `shared` is not an app and has no session to bind to' },
   sairncash:       { gate: 'NONE', auth: false, why: 'registers no resources on this endpoint at all' },
 };
