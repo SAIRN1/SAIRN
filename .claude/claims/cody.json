@@ -1602,8 +1602,8 @@
       "task": "clearance dropped by law_check_and_insert_disbursement existing id branch FILES: api/sd-data.js sql/sairnlaw_trusttx_functions.sql tests/sairnlaw_disbursement_clearance.js",
       "claimed_at": "2026-09-21T14:31:03Z",
       "claimed_at_epoch": 1790001063.600967,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T15:00:25Z"
     }
   ]
 }
