@@ -2355,6 +2355,16 @@
       "claimed_at_epoch": 1789998609.1062615,
       "status": "released",
       "released_at": "2026-09-21T14:08:31Z"
+    },
+    {
+      "id": "hank-1790000034",
+      "session": "hank",
+      "subject": "sairnfreedom-employee-auth",
+      "task": "build the employee auth chain schema roles endpoint client header and the resource gate",
+      "claimed_at": "2026-09-21T14:13:54Z",
+      "claimed_at_epoch": 1790000034.2610545,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
