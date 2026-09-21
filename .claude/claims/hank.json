@@ -2405,6 +2405,16 @@
       "claimed_at_epoch": 1790026218.678133,
       "status": "released",
       "released_at": "2026-09-21T22:49:56Z"
+    },
+    {
+      "id": "hank-1790031286",
+      "session": "hank",
+      "subject": "tooling",
+      "task": "capa control fixture head dependence and inventory render truncation",
+      "claimed_at": "2026-09-21T22:54:46Z",
+      "claimed_at_epoch": 1790031286.9036338,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
