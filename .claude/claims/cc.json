@@ -2014,6 +2014,16 @@
       "claimed_at_epoch": 1790000513.9190152,
       "status": "released",
       "released_at": "2026-09-21T14:51:36Z"
+    },
+    {
+      "id": "cc-1790003400",
+      "session": "cc",
+      "subject": "sd-data-leg-session-gate",
+      "task": "FILES: api/sd-data.js -- LEG_RESOURCES session gate",
+      "claimed_at": "2026-09-21T15:10:00Z",
+      "claimed_at_epoch": 1790003400.3785098,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
