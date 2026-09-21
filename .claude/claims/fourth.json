@@ -1853,8 +1853,8 @@
       "task": "FILES: tests/collection_delete_reaches_the_server.js -- complete the HYDRATE extract after sdSyncedBootstrap landed, and strengthen two arms a control proves vacuous. No app file changes.",
       "claimed_at": "2026-09-21T21:33:26Z",
       "claimed_at_epoch": 1790026406.222117,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T22:25:46Z"
     }
   ]
 }
