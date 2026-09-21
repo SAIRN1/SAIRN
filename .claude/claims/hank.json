@@ -2275,6 +2275,16 @@
       "claimed_at_epoch": 1789774634.9049585,
       "status": "released",
       "released_at": "2026-09-18T23:55:12Z"
+    },
+    {
+      "id": "hank-1789974456",
+      "session": "hank",
+      "subject": "hank",
+      "task": "tier a cross tenant isolation test scoping 276 278",
+      "claimed_at": "2026-09-21T07:07:36Z",
+      "claimed_at_epoch": 1789974456.3626919,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
