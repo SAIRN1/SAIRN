@@ -2315,6 +2315,16 @@
       "claimed_at_epoch": 1789993427.8886836,
       "status": "released",
       "released_at": "2026-09-21T12:44:49Z"
+    },
+    {
+      "id": "hank-1789994876",
+      "session": "hank",
+      "subject": "sd-data-unconfirmed-writes",
+      "task": "sweep remaining json catch null representation patch sites sd-data",
+      "claimed_at": "2026-09-21T12:47:56Z",
+      "claimed_at_epoch": 1789994876.9245362,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
