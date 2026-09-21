@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -9111,6 +9111,71 @@
       "recurrence_open": "the predicate still only runs over api/sd-data.js -- 159 handler files were measured with it and returned zero, but a handler added tomorrow under api/ is not watched. And 60 PATCH sites exist across the handlers WITHOUT a representation preference; those cannot distinguish matched-zero either, and the predicate excludes them by construction."
     },
     {
+      "commit": "0d0d66c04cbb",
+      "date": "2026-09-21",
+      "subject": "fix(hydration): a full store silently switched server-wins OFF for good -- in all seven apps, because the flag write's return was discarded one line below a map write whose return is read",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnbiz.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnsenior.html",
+        "stonedesk.html",
+        "tests/run_server_wins_hydration_sabotage_probe.py",
+        "tests/server_wins_hydration.js"
+      ],
+      "lines_added": 509,
+      "lines_removed": 9,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "SyncedBootstrap() in all SEVEN server-wins apps read st()'s return for the synced-map write -- with a comment saying 'the flag must NOT outlive a failed map write' -- and DISCARDED it for the bootstrap-flag write one line below. Driven in a harness taught to refuse a write: on a full store the map lands, the flag does not, BootstrappedNow is set, and because the flag is what says the bootstrap has happened, every later load bootstraps again and suppresses overwriting again. ServerWinsMerge()'s overwrite branch is skipped every time, so the device never takes a single correction from the server for the life of the profile -- the defect the whole feature exists to fix, reappearing as its own failure mode, on a device whose only symptom is that nothing ever updates. Fixed by making the two writes atomic: prevRaw captured raw and before the map write, restored exactly on a failed flag write, with removeItem rather than an empty object for the absent case because {} parses and reads as 'seeded nothing'. If the undo also fails the load goes inert and returns 'stuck' rather than 'ran'.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "5c6624110a29",
+        "date": "2026-09-21",
+        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
+        "lag_days": 0
+      },
+      "citation_note": "The confident line printed after the error. st() logs a failed write and returns false; the caller read that return for the map and discarded it for the flag one line below, then returned 'ran'. The function reported success over a half-applied change, and the app that followed behaved exactly like one where server-wins was working and there was simply nothing to correct.",
+      "contributing_factors": [
+        {
+          "factor": "SyncedBootstrap() read st()s return for the SYNCED-MAP write and discarded it for the BOOTSTRAP-FLAG write one line below, so a full store left the map written and the flag absent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both writes succeed or neither does: prevRaw captured RAW before the map write, and a failed flag write puts those exact bytes back so the next load retries cleanly"
+        },
+        {
+          "factor": "the FLAG is what says the bootstrap happened, so the half-applied state is self-perpetuating -- every later load re-bootstraps and re-suppresses, and ServerWinsMerges overwrite branch never runs again",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the unrepairable case (undo also fails) now returns stuck rather than ran and says so, so inert is reported rather than inferred"
+        },
+        {
+          "factor": "the test harnesss localStorage.setItem could not fail, so the entire storage-failure class was unreachable from a 143-arm suite and a 13-mutation control, both green",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "failWrite, failRemove and a real removeItem in the harness, five new arms per app, and five new mutations"
+        },
+        {
+          "factor": "the rule is deliberately seven identical copies across seven apps, so one discarded return was seven",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the all seven copies are the SAME rule arm already compares the four functions as normalised code across every app and is what carried the fix to all seven; the duplication is the declared design"
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for other callers on this platform that read one st() return and discard the next. The harness fix is in one suite; every other test stub whose localStorage cannot fail has the same blind spot and none has been audited."
+    },
+    {
       "commit": "0dd84d944306",
       "date": "2026-09-21",
       "subject": "fix(sd-data): the json-catch-null sweep finishes -- four more sites, one serving seven Tier A resources and one moving money",
@@ -9291,69 +9356,66 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
-      "commit": "0d0d66c04cbb",
+      "commit": "6b777f006d18",
       "date": "2026-09-21",
-      "subject": "fix(hydration): a full store silently switched server-wins OFF for good -- in all seven apps, because the flag write's return was discarded one line below a map write whose return is read",
+      "subject": "fix(sairnlaw): marking a CHEQUE cleared came back ok:true over a write the database never performed -- refused now, and the refusal retires itself",
       "files": [
+        "api/sd-data-law-trusttx-clearance.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnbiz.html",
-        "sairndesign.html",
-        "sairnfreedom.html",
-        "sairnlaw.html",
-        "sairnlegacy.html",
-        "sairnsenior.html",
-        "stonedesk.html",
-        "tests/run_server_wins_hydration_sabotage_probe.py",
-        "tests/server_wins_hydration.js"
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/run_law_trusttx_clearance_sabotage_probe.py"
       ],
-      "lines_added": 509,
-      "lines_removed": 9,
-      "app": "PLATFORM",
+      "lines_added": 426,
+      "lines_removed": 12,
+      "app": "sairnlaw",
       "layer": "product",
-      "severity": "high",
+      "severity": "critical",
       "detection_method": "independent-review",
-      "summary": "SyncedBootstrap() in all SEVEN server-wins apps read st()'s return for the synced-map write -- with a comment saying 'the flag must NOT outlive a failed map write' -- and DISCARDED it for the bootstrap-flag write one line below. Driven in a harness taught to refuse a write: on a full store the map lands, the flag does not, BootstrappedNow is set, and because the flag is what says the bootstrap has happened, every later load bootstraps again and suppresses overwriting again. ServerWinsMerge()'s overwrite branch is skipped every time, so the device never takes a single correction from the server for the life of the profile -- the defect the whole feature exists to fix, reappearing as its own failure mode, on a device whose only symptom is that nothing ever updates. Fixed by making the two writes atomic: prevRaw captured raw and before the map write, restored exactly on a failed flag write, with removeItem rather than an empty object for the absent case because {} parses and reads as 'seeded nothing'. If the undo also fails the load goes inert and returns 'stuck' rather than 'ran'.",
+      "summary": "sairnlaw.html lawSetClearance() reported Marked cleared over a write the database never performed, for every DISBURSEMENT. api/sd-data.js routes a non-voided Disbursement write to rpc/law_check_and_insert_disbursement; that RPC takes nine named parameters, none of them a clearance field, builds data with jsonb_build_object over ten fixed keys, and on an existing id takes its retry-idempotency branch and returns the stored row HAVING WRITTEN NOTHING. The handler answered 200 ok:true carrying that row, sdnData returned a truthy value, and the client toasted success. An uncleared CHEQUE is a Disbursement -- the commonest outstanding item in a trust reconciliation and the exact case the 2026-09-18 outstanding-item work was built for -- while DEPOSITS take the plain upsert and store the same field, so the feature appeared to work. With hydration now server-wins the local optimistic copy is erased at the next load, so the firm loses the record and the bank leg silently returns to disagreeing on correct books. Driven against the real handler before the change: the request carries no clearance parameter, and the caller is told it was saved. Fixed as a REFUSAL rather than a store -- the handler compares asked-for against came-back and answers 409 CLEARANCE_NOT_STORED -- which also retires itself if the RPC is ever taught to carry the fields. Making a cheque clearable needs an RPC signature change and a migration and is recorded as open.",
       "rules": [
         "1.5"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "coding",
+      "injection_phase": "design",
       "phase_confidence": "stated",
       "found_by_tool": null,
       "injection": {
-        "commit": "5c6624110a29",
-        "date": "2026-09-21",
-        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
-        "lag_days": 0
+        "commit": "5e0b531f2776",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+        "lag_days": 3
       },
-      "citation_note": "The confident line printed after the error. st() logs a failed write and returns false; the caller read that return for the map and discarded it for the flag one line below, then returned 'ran'. The function reported success over a half-applied change, and the app that followed behaved exactly like one where server-wins was working and there was simply nothing to correct.",
+      "citation_note": "The confident line printed after the error, in its purest form: there was no error to print it after. The RPC answered 200 with the stored row, the handler answered ok:true, and the client said Marked cleared -- three honest-looking layers over a write the database never performed, on attorney client trust money.",
       "contributing_factors": [
         {
-          "factor": "SyncedBootstrap() read st()s return for the SYNCED-MAP write and discarded it for the BOOTSTRAP-FLAG write one line below, so a full store left the map written and the flag absent",
+          "factor": "api/sd-data.js routes every non-voided Disbursement write to rpc/law_check_and_insert_disbursement, whose nine parameters carry no clearance field and whose existing-id branch returns the stored row without writing -- so a re-send is a confirmed no-op",
           "kind": "technical",
           "action_status": "done",
-          "action": "both writes succeed or neither does: prevRaw captured RAW before the map write, and a failed flag write puts those exact bytes back so the next load retries cleanly"
+          "action": "the handler compares the clearance fields the caller sent against the row that came back and answers 409 CLEARANCE_NOT_STORED with a fields array when they differ"
         },
         {
-          "factor": "the FLAG is what says the bootstrap happened, so the half-applied state is self-perpetuating -- every later load re-bootstraps and re-suppresses, and ServerWinsMerges overwrite branch never runs again",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the unrepairable case (undo also fails) now returns stuck rather than ran and says so, so inert is reported rather than inferred"
+          "factor": "the outstanding-item feature was designed and reviewed against the CLIENT and the reconciliation engine; nothing in either change crossed the seam into the write path that the primary case -- a cheque -- actually takes",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the RPC still cannot carry the fields, so recording a cheque as cleared remains impossible; the migration shape and its deploy-ordering hazard are written into the open-work index rather than half-applied here"
         },
         {
-          "factor": "the test harnesss localStorage.setItem could not fail, so the entire storage-failure class was unreachable from a 143-arm suite and a 13-mutation control, both green",
+          "factor": "deposits take the plain upsert and store the identical field, so every manual test that happened to use a deposit would have shown the feature working",
           "kind": "detection",
           "action_status": "done",
-          "action": "failWrite, failRemove and a real removeItem in the harness, five new arms per app, and five new mutations"
+          "action": "a suite that drives the real handler for both types, with the contrast asserted as its own arm so the seam cannot be mistaken for a rule"
         },
         {
-          "factor": "the rule is deliberately seven identical copies across seven apps, so one discarded return was seven",
+          "factor": "SERVER-WINS hydration landed the same day, which turns a lost write into an erased local record at the next load rather than a stale one that survives",
           "kind": "latent-condition",
           "action_status": "not-actionable",
-          "note": "the all seven copies are the SAME rule arm already compares the four functions as normalised code across every app and is what carried the fix to all seven; the duplication is the declared design"
+          "note": "server-wins is the intended platform rule and is correct; it is named here because it changes the blast radius of every un-stored write, not because it should be reversed"
         }
       ],
-      "recurrence_open": "Nothing sweeps for other callers on this platform that read one st() return and discard the next. The harness fix is in one suite; every other test stub whose localStorage cannot fail has the same blind spot and none has been audited."
+      "recurrence_open": "Only the clearance fields are compared. Any other field a caller sends that this RPC path cannot carry is still confirmed silently, and nothing enumerates what the nine parameters do and do not cover."
     },
     {
       "commit": "2ee9c8191261",
