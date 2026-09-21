@@ -1642,8 +1642,8 @@
       "task": "review hank write class gaps and the sairnfreedom session gate decision obligation 14:06:04Z owned by me FILES: docs/tier-a-reviews.json -- review-only, reads api/sd-data-cross-tenant-ownbranch.test.js and tests/sf_resources_session_gate_probe.py",
       "claimed_at": "2026-09-21T19:24:58Z",
       "claimed_at_epoch": 1790018698.7731802,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T19:31:16Z"
     }
   ]
 }
