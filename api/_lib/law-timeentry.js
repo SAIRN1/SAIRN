@@ -211,8 +211,50 @@ function timeEntryProblem(record) {
   return null;
 }
 
+// ── THE VALUE JUDGED MUST BE THE VALUE STORED (2026-09-21) ─────────────────
+// FINDING 1 of the independent review of this module. The header above already
+// named the shape in the rate section -- "the validate-one-thing/store-another
+// seam this module was criticised for in FINDING 1 of the same review" -- while
+// leaving it open on the field it was found on.
+//
+// timeEntryProblem() judges `billing_code.trim()`. api/sd-data.js then wrote
+// `data: payload`, the UNTRIMMED string. So '  L100  ' was accepted on the
+// merits of 'L100' and stored as '  L100  ', and the invoice column prints the
+// stored one.
+//
+// THE LENGTH BOUND IS WHERE IT STOPS BEING COSMETIC. MAX_BILLING_CODE_CHARS is
+// checked against the trimmed value, so 30 spaces followed by 'L100' is 34
+// characters, judged as 4, accepted -- and 34 characters then land in a column
+// whose gate would have refused them. The gate was answering a question about a
+// value nobody stored.
+//
+// TRIM RATHER THAN REFUSE, because the decision above it has been right since
+// it was written: a firm should not have a billable hour rejected over a
+// trailing space. That decision is completed here, not reversed.
+//
+// SCOPED TO billing_code AND NOTHING ELSE. `description` keeps whatever
+// whitespace the user typed: nothing validates description, so normalising it
+// here would be this module deciding a field's shape with no gate behind the
+// decision -- the mirror of the membership check it already refuses to do.
+function normalizedTimeEntry(record) {
+  const r = record || {};
+  if (typeof r.billing_code !== 'string') {
+    // NOT a second refusal. timeEntryProblem() has already rejected a
+    // non-string code by the time this runs; coercing one here would hide the
+    // day that stops being true.
+    return record;
+  }
+  const code = r.billing_code.trim();
+  // Returned unchanged when there is nothing to change, so law_timeentries is
+  // not the one law_ resource whose stored row is a reconstruction of the
+  // caller's payload rather than the payload itself.
+  if (code === r.billing_code) { return record; }
+  return Object.assign({}, r, { billing_code: code });
+}
+
 module.exports = {
   timeEntryProblem,
+  normalizedTimeEntry,
   MAX_BILLING_CODE_CHARS,
   NO_CODE_MESSAGE,
   NO_RATE_MESSAGE,

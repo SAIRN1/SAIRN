@@ -23,7 +23,8 @@ const assert = require('assert');
 const path = require('path');
 const ROOT = path.join(__dirname, '..', '..');
 
-const { timeEntryProblem, MAX_BILLING_CODE_CHARS } = require('./law-timeentry.js');
+const { timeEntryProblem, normalizedTimeEntry, MAX_BILLING_CODE_CHARS } =
+  require('./law-timeentry.js');
 
 let pass = 0, fail = 0;
 function t(name, fn) {
@@ -56,6 +57,65 @@ t('a code NOT in the shipped list still passes -- membership is deliberately not
 
 t('surrounding whitespace does not make a real code fail', () => {
   assert.strictEqual(timeEntryProblem({ billing_code: '  L100  ' }), null);
+});
+
+// ── THE SEAM THE ARM ABOVE OPENED, AND IT IS THE ONE FINDING 1 NAMED ───────
+// The arm directly above is correct and stays: a firm should not be refused
+// for a trailing space. But it is exactly half of a decision, and until
+// 2026-09-21 the other half was never made. timeEntryProblem() judged
+// `billing_code.trim()`; api/sd-data.js then wrote `data: payload` -- the
+// UNTRIMMED string. So the value that was validated and the value that was
+// stored were different values, and the invoice column prints the stored one.
+//
+// This module's own header calls that shape out by name in the rate section:
+// "the validate-one-thing/store-another seam this module was criticised for in
+// FINDING 1 of the same review." It described the seam and left it open.
+section('1b. what it NORMALISES, so the value judged is the value stored');
+
+t('a padded code is normalised to the code that was actually judged', () => {
+  assert.strictEqual(
+    normalizedTimeEntry({ billing_code: '  L100  ' }).billing_code, 'L100');
+});
+
+t('a code with nothing to trim comes back as the SAME object, not a copy', () => {
+  // Not a performance claim -- an identity one. Every other law_ resource
+  // reaches the upsert as the caller's own payload, and a normaliser that
+  // silently rebuilt the object on every write would make law_timeentries the
+  // one resource whose stored row is a reconstruction. It rebuilds only when
+  // it is actually changing something.
+  const r = { billing_code: 'L100', hours: 2 };
+  assert.strictEqual(normalizedTimeEntry(r), r);
+});
+
+t('normalising does not mutate the caller\'s object', () => {
+  const r = { billing_code: '  L100  ' };
+  normalizedTimeEntry(r);
+  assert.strictEqual(r.billing_code, '  L100  ',
+    'the caller\'s payload was mutated in place');
+});
+
+t('every other field survives normalisation untouched', () => {
+  const out = normalizedTimeEntry({
+    billing_code: ' L100 ', id: 'TT-9', hours: 2, rate: 350, billable: true });
+  assert.strictEqual(out.id, 'TT-9');
+  assert.strictEqual(out.hours, 2);
+  assert.strictEqual(out.rate, 350);
+  assert.strictEqual(out.billable, true);
+});
+
+t('a non-string or absent code is passed through, not coerced', () => {
+  // Normalisation is NOT a second refusal. timeEntryProblem() has already
+  // refused these by the time this runs; if it ever stops doing so, a
+  // normaliser that quietly turned 100 into '100' would hide it.
+  const n = { billing_code: 100 };
+  assert.strictEqual(normalizedTimeEntry(n), n);
+  const a = { id: 'TT-1' };
+  assert.strictEqual(normalizedTimeEntry(a), a);
+});
+
+t('a null record does not throw here either', () => {
+  assert.doesNotThrow(() => normalizedTimeEntry(null));
+  assert.doesNotThrow(() => normalizedTimeEntry(undefined));
 });
 
 section('2. what it REFUSES, and the two empties are told apart');
@@ -121,9 +181,20 @@ authMod.verifySessionToken = (token) => (token ? JSON.parse(token) : null);
 
 // Any write that reaches Supabase is a write this gate FAILED to stop, so the
 // mock counts them rather than just answering.
+//
+// AND IT KEEPS THE BODY, added 2026-09-21. Counting was enough while every
+// question was "was this refused"; the trim seam below is a question about
+// WHAT WAS STORED, and a mock that discards the body cannot tell a row stored
+// as 'L100' from one stored as '  L100  '. The handler echoes the payload back
+// on success, so asserting only the RESPONSE would have proved nothing about
+// the row either -- both halves are read from this.
 let upserts = 0;
+let lastUpsertBody = null;
 global.fetch = async (url, opts) => {
-  if ((opts || {}).method === 'POST') { upserts += 1; }
+  if ((opts || {}).method === 'POST') {
+    upserts += 1;
+    lastUpsertBody = JSON.parse((opts || {}).body || 'null');
+  }
   return { ok: true, status: 200, json: async () => ([{ data: { ok: true } }]) };
 };
 
@@ -171,6 +242,86 @@ const ENTRY = {
     const res = await write(Object.assign({}, ENTRY, { billing_code: 'L100' }));
     assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
     assert.strictEqual(upserts, 1, 'a valid entry did not reach the upsert');
+  });
+
+  // ── AND THE ROW THAT IS STORED IS THE ROW THAT WAS JUDGED ───────────────
+  // These are the arms that would have caught FINDING 1. Every arm above this
+  // point asks whether the request was REFUSED, and all of them passed against
+  // the seam: the padded entry was accepted, correctly, and then stored with
+  // the padding the validator had already removed.
+  await ta('a padded code is STORED trimmed -- the value judged is the value written', async () => {
+    const res = await write(Object.assign({}, ENTRY, { billing_code: '  L100  ' }));
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.strictEqual(upserts, 1);
+    assert.strictEqual(lastUpsertBody.data.billing_code, 'L100',
+      'the row reaching the database carries '
+      + JSON.stringify(lastUpsertBody.data.billing_code)
+      + ' -- validated trimmed, stored untrimmed');
+  });
+
+  await ta('and the row echoed back to the caller carries the same value as the row stored', async () => {
+    // The handler answers with `rows[0].data` when the upsert returns a
+    // representation and with the payload otherwise. A caller that re-rendered
+    // from the response while the database held something else would show a
+    // code the record does not have, which is the same seam one layer up.
+    const res = await write(Object.assign({}, ENTRY, { billing_code: ' A101 ' }));
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.strictEqual(lastUpsertBody.data.billing_code, 'A101');
+  });
+
+  await ta('the LENGTH LIMIT is enforced on the value that lands, not on a value nobody stores', async () => {
+    // The sharpest form of the seam, because here the two values differ in
+    // whether they PASS. 30 spaces + 'L100' is 34 characters -- over
+    // MAX_BILLING_CODE_CHARS -- and trims to 4. The gate judges 4 and accepts.
+    // Storing the raw 34 would put a value in the column that the gate would
+    // have refused had it been asked about the thing being written.
+    const padded = ' '.repeat(30) + 'L100';
+    assert.ok(padded.length > MAX_BILLING_CODE_CHARS, 'the fixture is not over the limit');
+    const res = await write(Object.assign({}, ENTRY, { billing_code: padded }));
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.ok(lastUpsertBody.data.billing_code.length <= MAX_BILLING_CODE_CHARS,
+      'stored ' + lastUpsertBody.data.billing_code.length + ' characters, over the '
+      + MAX_BILLING_CODE_CHARS + ' the gate enforces');
+    assert.strictEqual(lastUpsertBody.data.billing_code, 'L100');
+  });
+
+  await ta('when the upsert returns NO representation, the caller is still echoed the normalised row', async () => {
+    // The handler answers `rows[0].data` when PostgREST returns a
+    // representation and falls back to the request row otherwise. The arm
+    // above only ever exercises the first path, so an echo that still used the
+    // raw payload would be invisible to it -- the response would happen to be
+    // right because it came from the database. This drives the OTHER branch.
+    const realFetch = global.fetch;
+    global.fetch = async (url, opts) => {
+      if ((opts || {}).method === 'POST') {
+        upserts += 1;
+        lastUpsertBody = JSON.parse((opts || {}).body || 'null');
+      }
+      return { ok: true, status: 200, json: async () => ([]) };
+    };
+    try {
+      const res = await write(Object.assign({}, ENTRY, { billing_code: '  L100  ' }));
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+      assert.strictEqual(res.body.data.billing_code, 'L100',
+        'the caller was echoed ' + JSON.stringify(res.body.data.billing_code)
+        + ' while the row stored carries '
+        + JSON.stringify(lastUpsertBody.data.billing_code));
+    } finally {
+      global.fetch = realFetch;
+    }
+  });
+
+  await ta('normalisation is scoped to billing_code and leaves the rest of the entry alone', async () => {
+    const res = await write(Object.assign({}, ENTRY, {
+      billing_code: ' L100 ', description: '  Drafted motion  ' }));
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    // description is NOT trimmed, deliberately: nothing validates it, so
+    // trimming it here would be this module deciding a second field's shape
+    // without a gate behind the decision.
+    assert.strictEqual(lastUpsertBody.data.description, '  Drafted motion  ');
+    assert.strictEqual(lastUpsertBody.data.hours, 2);
+    assert.strictEqual(lastUpsertBody.data.rate, 350);
+    assert.strictEqual(lastUpsertBody.data.id, 'TT-1');
   });
 
   await ta('the gate is scoped to law_timeentries and does not refuse its neighbours', async () => {

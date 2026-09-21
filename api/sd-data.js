@@ -10470,19 +10470,31 @@ module.exports = async (req, res) => {
       // billable hour. A NO-CHARGE entry is left alone -- that is what
       // no-charge means. tests/sairnlaw_billable_rate.js, with
       // tests/run_sairnlaw_billable_rate_sabotage_probe.py as its control.
+      // AND THE ROW THAT LANDS IS THE ROW THAT WAS JUDGED (2026-09-21).
+      // FINDING 1 of the independent review: timeEntryProblem() judges
+      // `billing_code.trim()` and this line wrote `data: payload`, the
+      // UNTRIMMED string, so the value validated and the value stored were
+      // different values. At the length bound they differ in whether they
+      // PASS -- 30 spaces + 'L100' is 34 characters, judged as 4, accepted,
+      // and 34 would have landed in a column whose gate refuses 33.
+      let lawRow = payload;
       if (resource === 'law_timeentries') {
         const tep = lawTimeEntry.timeEntryProblem(payload);
         if (tep) { res.status(400).json({ error: { code: 'INVALID_TIME_ENTRY', message: tep } }); return; }
+        lawRow = lawTimeEntry.normalizedTimeEntry(payload);
       }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + lawIdCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', [lawIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', [lawIdCol]: String(payload.id), data: lawRow, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw extended data tables are not set up yet — run sql/sairnlaw_data_extended_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      // `lawRow`, not `payload`, on the fallback for the same reason: a caller
+      // that re-renders from the response would otherwise show a code the
+      // stored record does not carry -- the same seam one layer up.
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : lawRow });
       return;
     }
 
