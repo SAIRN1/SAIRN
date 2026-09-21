@@ -1924,6 +1924,16 @@
       "claimed_at_epoch": 1789974340.3357174,
       "status": "released",
       "released_at": "2026-09-21T07:20:59Z"
+    },
+    {
+      "id": "cc-1789975400",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "rate validation billable zero LEDES header additive hydration tracking",
+      "claimed_at": "2026-09-21T07:23:20Z",
+      "claimed_at_epoch": 1789975400.0891812,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
