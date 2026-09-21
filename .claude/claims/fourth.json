@@ -1813,8 +1813,8 @@
       "task": "FILES: tools/tier_a_review_gate.py docs/tier-a-reviews.json tests/run_tier_a_review_gate_sabotage_probe.py -- stamp a reviewing OWNER at --open time so two sessions cannot both discharge one obligation. Michael's direction after FOUR duplicates today.",
       "claimed_at": "2026-09-21T14:00:02Z",
       "claimed_at_epoch": 1789999202.89981,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T14:34:13Z"
     }
   ]
 }
