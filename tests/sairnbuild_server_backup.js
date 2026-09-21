@@ -62,7 +62,22 @@ function slice(startMark, endMark) {
 
 const stSrc = slice('function st(k,v){', 'function ld(');
 const syncSrc = slice('var BLD_SYNCED = [', '// -- HYDRATION');
-const hydrateSrc = slice('function bldHydrateAll()', '\n}\n') + '\n}\n';
+// THE HYDRATE NO LONGER CARRIES ITS OWN MERGE (2026-09-21). It calls the
+// shared bldServerWinsMerge() -- one copy of the conflict rule for both
+// hydrates, which is the point of the conversion -- so the merge, the two
+// seams, the pending reader and the trust gate are lifted with it. All from
+// the shipped file; none of it retyped.
+const hydrateSrc = [
+  "var BLD_TRUST_KEY = 'bld_pending_trusted';",
+  slice('function bldPendingRead()', '\n}\n') + '\n}\n',
+  slice('function bldPendingTrusted()', '\n}\n') + '\n}\n',
+  slice('function bldMarkPendingTrusted()', '\n}\n') + '\n}\n',
+  slice('function bldWhileSeeding(fn)', '\n}\n') + '\n}\n',
+  slice('function bldHydrateLoad(key)', '\n'),
+  slice('function bldHydrateStore(key,value)', '\n'),
+  slice('function bldServerWinsMerge(key,serverRows)', '\n}\n') + '\n}\n',
+  slice('function bldHydrateAll()', '\n}\n') + '\n}\n',
+].join('\n');
 
 function harness(opts) {
   opts = opts || {};
@@ -316,7 +331,18 @@ test('server records absent locally are appended', async () => {
   assert.deepStrictEqual(JSON.parse(c.__store['bld_jobs']).map((j) => j.id), ['J-1', 'J-2']);
 });
 
-test('a locally present id is NEVER overwritten by the server copy', async () => {
+// ── THIS ARM USED TO ASSERT THE OPPOSITE, AND THAT IS THE RECORD ──────────
+// It read "a locally present id is NEVER overwritten by the server copy" and
+// pinned the additive merge deliberately. Michael's platform rule replaced it
+// with SERVER-WINS on 2026-09-21, so the arm is INVERTED rather than deleted:
+// a pin quietly dropped when it becomes inconvenient is worse than no pin.
+//
+// AND IT WOULD HAVE KEPT PASSING FOR THE WRONG REASON, which is the part worth
+// writing down. This harness has no bld_pending_trusted, so the merge is
+// UNTRUSTED and falls back to additive -- the old assertion stays green while
+// asserting nothing about the rule. The two arms below drive both states
+// explicitly, which is the only way to tell them apart.
+test('an UNTRUSTED device does not overwrite -- the pending list is not proved yet', async () => {
   const local = { id: 'J-1', client: 'EDITED LOCALLY' };
   const c = harness({
     store: { bld_jobs: JSON.stringify([local]) },
@@ -326,7 +352,39 @@ test('a locally present id is NEVER overwritten by the server copy', async () =>
   await c.bldHydrateAll();
   const rows = JSON.parse(c.__store['bld_jobs']);
   assert.strictEqual(rows.length, 1);
-  assert.strictEqual(rows[0].client, 'EDITED LOCALLY', 'the server clobbered a local edit');
+  assert.strictEqual(rows[0].client, 'EDITED LOCALLY',
+    'a device that has never completed a clean retry overwrote a record anyway');
+});
+
+test('...and a TRUSTED one with nothing pending DOES take the server copy', async () => {
+  const local = { id: 'J-1', client: 'EDITED LOCALLY' };
+  const c = harness({
+    store: { bld_jobs: JSON.stringify([local]),
+             bld_pending_trusted: '1',
+             bld_sync_pending: JSON.stringify({}) },
+    serverRows: { bld_jobs: [JOB_A] }
+  });
+  vm.runInContext(hydrateSrc, c);
+  await c.bldHydrateAll();
+  const rows = JSON.parse(c.__store['bld_jobs']);
+  assert.strictEqual(rows.length, 1);
+  assert.notStrictEqual(rows[0].client, 'EDITED LOCALLY',
+    'the local copy survived on a trusted device with nothing pending -- '
+    + 'this is the additive behaviour server-wins replaces');
+});
+
+test('...unless that id has an UNPUSHED CHANGE, which is the carve-out', async () => {
+  const local = { id: 'J-1', client: 'EDITED LOCALLY' };
+  const c = harness({
+    store: { bld_jobs: JSON.stringify([local]),
+             bld_pending_trusted: '1',
+             bld_sync_pending: JSON.stringify({ bld_jobs: ['J-1'] }) },
+    serverRows: { bld_jobs: [JOB_A] }
+  });
+  vm.runInContext(hydrateSrc, c);
+  await c.bldHydrateAll();
+  assert.strictEqual(JSON.parse(c.__store['bld_jobs'])[0].client, 'EDITED LOCALLY',
+    'a record holding a change that never reached the server was overwritten');
 });
 
 test('hydration does NOT echo the merged rows straight back to the server', async () => {

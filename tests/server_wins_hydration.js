@@ -132,19 +132,32 @@ const PENDING = [
        + 'administration record. "The server copy wins" there is a '
        + 'clinical-documentation decision about whose entry survives a '
        + 'disagreement, not a mechanical sync one, and it is not this session\'s to make.' },
-  { file: 'sairnbuild.html', sites: 2, fns: ['bldHydrateAll', 'bldHydrateBids'],
-    why: 'HELD DELIBERATELY, and the reason for holding it was CORRECTED once '
-       + 'somebody read the file: bldHydrateBids does not need to suppress, '
-       + 'because bld_bids is not in BLD_SYNCED and so is not hooked to st() at '
-       + 'all -- it reaches the server through two explicit session-gated '
-       + 'writes instead. The real blockers are different and larger: this app '
-       + 'already has bld_sync_pending, which knows about ANY unpushed change '
-       + 'rather than only a first push, so its carve-out should be built from '
-       + 'that and not from a synced-id map -- which conflicts with the '
-       + 'same-rule arm below and has to be settled deliberately. Plus a '
-       + 'missing try/finally around bldSeeding, an __overflow flag that must '
-       + 'make the carve-out fail closed, and bld_bids sitting outside every '
-       + 'mechanism. Full reading: docs/2026-09-21-sairnbuild-server-wins-conversion-plan.md' },
+];
+
+// ── DECLARED VARIANTS: converted, but NOT byte-identical, and named as such ─
+// The same-rule arm below demands the seven APPS carry identical helpers. An
+// app whose carve-out is built from a different source cannot satisfy that and
+// MUST NOT be admitted by relaxing it -- the way a variant is admitted here is
+// the way this platform admits any exception: a written justification and its
+// own arms.
+//
+// SAIRNbuild's carve-out comes from `bld_sync_pending` -- ids whose push
+// FAILED, cleared when it succeeds -- rather than from a synced-id map of ids
+// that HAVE landed. That is STRONGER: it knows about any unpushed change, not
+// only a first push, which is the gap recorded against SAIRNlaw where a
+// locally-issued invoiced:true on a long-synced id was reverted by the next
+// hydrate. It is not in APPS because it cannot be, and it is not in PENDING
+// because it is converted.
+const VARIANTS = [
+  { file: 'sairnbuild.html', suite: 'tests/sairnbuild_server_wins.js',
+    hydrates: ['bldHydrateAll', 'bldHydrateBids'],
+    merge: 'bldServerWinsMerge',
+    why: 'the carve-out is taken from bld_sync_pending (ids whose push FAILED, '
+       + 'cleared on success) rather than from a synced-id map, because this app '
+       + 'already had that list and it answers the stronger question -- does this '
+       + 'id have an unpushed CHANGE right now, not has it ever landed. Plus a '
+       + 'trust gate standing in for the bootstrap: nothing is overwritten until '
+       + 'one sign-in leaves the pending list empty against a provisioned server.' },
 ];
 
 let pass = 0, fail = 0;
@@ -685,6 +698,24 @@ test('NOBODY hydrates with an UNGUARDED overwrite -- the other wrong rule', () =
   });
   assert.deepStrictEqual(bad, [],
     'hydrates overwriting local records outside the shared merge: ' + bad.join(', '));
+});
+
+test('every declared VARIANT really is converted, and really has its own suite', () => {
+  VARIANTS.forEach((v) => {
+    assert.ok(v.why && v.why.length > 80, v.file + ': a variant needs a written justification');
+    assert.deepStrictEqual(additiveSites(read(v.file)), [],
+      v.file + ' is declared a variant but still merges additively');
+    const src = read(v.file);
+    v.hydrates.forEach((h) => {
+      assert.ok(liftFn(src, h).indexOf(v.merge + '(') !== -1,
+        v.file + '.' + h + ' does not call ' + v.merge);
+    });
+    assert.ok(fs.existsSync(path.join(ROOT, v.suite)),
+      v.file + ': its suite ' + v.suite + ' does not exist -- a variant admitted with no arms of its own');
+    // And the suite must actually name the merge it claims to drive.
+    assert.ok(read(v.suite).indexOf(v.merge) !== -1,
+      v.suite + ' does not mention ' + v.merge + ', so it is not driving this variant');
+  });
 });
 
 test('every PENDING entry carries a real reason', () => {

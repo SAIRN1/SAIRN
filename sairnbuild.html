@@ -2333,10 +2333,43 @@ var BLD_SYNCED = [
 ];
 var _bldSyncOn = {};
 BLD_SYNCED.forEach(function(k){_bldSyncOn[k]=true;});
+// ── bld_bids IS TRACKED FOR PENDING, THOUGH IT IS NOT SYNC-HOOKED ────────
+// Decided 2026-09-21 rather than inherited. bld_bids is deliberately NOT in
+// BLD_SYNCED: it does not go through st()'s backup hook, it is pushed by two
+// explicit session-gated bldData('write','bld_bids',rec,true) calls, because
+// api/sd-data.js's bld_bids branch is one of two that require a real employee
+// session. That is why the sync hook cannot carry it.
+//
+// IT STILL NEEDS THE CARVE-OUT. Server-wins asks "has this id's change
+// reached the server?", and for bld_bids the answer lives at those two call
+// sites and nowhere else. Leaving it out would mean converting a hydrate with
+// no protection at all -- exactly the silent inheritance the plan refused.
+// So it is tracked here, marked and cleared at both write sites, and retried
+// alongside the thirty.
+var BLD_PENDING_TRACKED = Object.assign({}, _bldSyncOn);
+BLD_PENDING_TRACKED['bld_bids'] = true;
 // Set while seed() runs. Seeding writes ~30 arrays of demo rows in one pass;
 // pushing several hundred records to the server on first paint would be a
 // self-inflicted burst, and demo data is not the customer's business record.
 var bldSeeding = false;
+// ── THE finally THIS APP NEVER HAD (2026-09-21) ──────────────────────────
+// bldHydrateAll set bldSeeding = true, called st(), and cleared it on the NEXT
+// LINE. A throw inside st() skipped that line and left the flag true for the
+// REST OF THE SESSION -- every later save silently un-backed-up, with nothing
+// shown to anybody. And neither bldHydrateAll() nor its caller had a .catch,
+// so the same throw also skipped bldRetryPending(), stranding the queue of
+// records that had already failed to reach the server.
+//
+// One throw, three consequences, no error. sairnfreedom's own comment records
+// this being fixed in sairnvet twice and in stonedesk once; SAIRNbuild and
+// SAIRNbiz were the copies nobody looked at. Named helper, same shape as
+// stonedesk's sdWhileSuppressed(), and restore-to-PREVIOUS rather than
+// `= false` so a caller already seeding is not un-seeded by this one.
+function bldWhileSeeding(fn){
+  var was = bldSeeding;
+  bldSeeding = true;
+  try { return fn(); } finally { bldSeeding = was; }
+}
 
 function bldSyncCollection(key, next, prev) {
   if (!_bldSyncOn[key] || bldSeeding) return;
@@ -2403,8 +2436,34 @@ function bldSyncCollection(key, next, prev) {
 // rather than a stale copy captured at failure time.
 var BLD_PENDING_KEY='bld_sync_pending';
 var BLD_PENDING_MAX=500;
+// ── THREE ANSWERS, NOT TWO (2026-09-21) ──────────────────────────────────
+// This returned `{}` for "never written" AND for "would not parse", which was
+// harmless while the list was only ever REPORTED. It stops being harmless the
+// moment server-wins asks it a question whose answer decides an overwrite:
+// "nothing is pending" is permission, and a corrupt file must never be read as
+// permission. Same three-state discipline as the synced-id map in the seven
+// apps converted before this one, and as PR 1.11.
+//
+// bldPendingAll() keeps its old signature and its old callers -- they count
+// and report, and `{}` is the right answer for them on a bad read. The merge
+// uses bldPendingRead() and refuses to overwrite anything when it says so.
+function bldPendingRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(BLD_PENDING_KEY);}catch(e){
+    try{console.error('SAIRNbuild: could not read "'+BLD_PENDING_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('SAIRNbuild: "'+BLD_PENDING_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing being pending.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
 function bldPendingAll(){
-  try{var o=JSON.parse(localStorage.getItem(BLD_PENDING_KEY)||'{}');return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}catch(e){return {};}
+  var r=bldPendingRead();
+  return r.state==='ok'?r.map:{};
 }
 function bldPendingWrite(o){
   // Deliberately NOT through st(): this key is not a synced collection, and
@@ -2441,7 +2500,7 @@ function bldRetryPending(){
   if(_bldBackup.provisioned===false)return Promise.resolve(0);
   var o=bldPendingAll();var jobs=[];
   Object.keys(o).forEach(function(key){
-    if(!_bldSyncOn[key]||!Array.isArray(o[key]))return;
+    if(!BLD_PENDING_TRACKED[key]||!Array.isArray(o[key]))return;
     var local=ld(key,[]);if(!Array.isArray(local))return;
     var byId={};
     local.forEach(function(r){if(r&&r.id!=null)byId[String(r.id)]=r;});
@@ -2450,7 +2509,9 @@ function bldRetryPending(){
       // Deleted locally since it failed. There is nothing left to push and
       // nothing to recover, so drop it rather than retrying it forever.
       if(!rec){bldPendingClear(key,id);return;}
-      jobs.push(bldData('write',key,rec).then(function(saved){
+      // bld_bids needs the employee session its branch demands; the other
+      // thirty are licence-authorised. One expression rather than a second loop.
+      jobs.push(bldData('write',key,rec,key==='bld_bids').then(function(saved){
         if(saved===null)return 0;
         bldPendingClear(key,id);return 1;
       }));
@@ -2484,29 +2545,98 @@ function bldBackupNotice(pushed){
 // provisioned:false (the schema has not been run) comes back as null from
 // bldData(), which is why a failed read leaves local data untouched rather
 // than emptying anything.
+
+// ── SERVER-WINS, BUILT FROM bld_sync_pending (2026-09-21) ────────────────
+// Michael's platform rule: once a record's id exists on BOTH sides, the
+// server's copy wins, with a carve-out for a record whose own change has not
+// reached the server. Seven apps got that carve-out from a `<app>_synced_ids`
+// map recording ids that HAVE landed. THIS APP DOES NOT GET ONE, and the
+// reason is that it already has something better.
+//
+// bld_sync_pending records the COMPLEMENT: ids whose push FAILED, marked on
+// failure, cleared on success, capped, and retried once per sign-in. A
+// synced-id map answers "has this id ever reached the server?"; the pending
+// set answers "does this id have an unpushed CHANGE right now?" -- which is
+// the question the rule actually needs. The seven apps' carve-out protects a
+// record whose FIRST push never landed and cannot protect an edit to a record
+// that synced months ago; that gap is a recorded finding on SAIRNlaw, where a
+// locally-issued invoiced:true was reverted by the next hydrate. Here it does
+// not exist.
+//
+// ── AND IT IS NOT TRUSTED UNTIL THE DEVICE HAS PROVED IT ────────────────
+// bld_sync_pending only began being written on 2026-09-04, and this file
+// records that EVERY push this feature ever attempted had failed before that
+// date, because sql/sairnbuild_data_schema.sql had never been run. So on a
+// device that has not signed in since, "absent from pending" means "never
+// pushed", not "safe to overwrite" -- the exact inversion the carve-out
+// exists to prevent.
+//
+// THE ATTESTATION IS THE BOOTSTRAP. Nothing is overwritten until this device
+// has completed one sign-in where the retry ran and left the pending list
+// EMPTY against a provisioned server. At that moment the list is known to
+// describe reality and bld_pending_trusted is set. Before it, the merge is
+// additive -- the old behaviour, which is the safe one. It needs no migration
+// pass and no guess about what was pushed.
+var BLD_TRUST_KEY = 'bld_pending_trusted';
+function bldPendingTrusted(){
+  try{ return localStorage.getItem(BLD_TRUST_KEY) !== null; }catch(e){ return false; }
+}
+function bldMarkPendingTrusted(){
+  try{ localStorage.setItem(BLD_TRUST_KEY,'1'); }catch(e){}
+}
+// The two seams. st() in this app pushes to the server through
+// bldSyncCollection(), so a bare st() in the merge would echo the server's own
+// rows straight back to it -- hence the store seam goes through
+// bldWhileSeeding(), which is the one with the finally.
+function bldHydrateLoad(key){return ld(key,[]);}
+function bldHydrateStore(key,value){return bldWhileSeeding(function(){return st(key,value);});}
+// Returns the number of records CHANGED, or null when there was nothing to
+// merge. One function called from both hydrates, so the rule cannot drift
+// between them.
+function bldServerWinsMerge(key,serverRows){
+  if(!Array.isArray(serverRows))return null;
+  var local=bldHydrateLoad(key);
+  if(!Array.isArray(local))return null;
+  var pend=bldPendingRead();
+  // THREE REASONS NOT TO OVERWRITE, and each of them is a third state rather
+  // than a false:
+  //   * the pending file could not be READ -- "nothing is pending" would be
+  //     permission, and a failed read must never be read as permission;
+  //   * the list OVERFLOWED -- past BLD_PENDING_MAX it stops recording, so
+  //     every id beyond the cap looks un-pending during exactly the long
+  //     outage that filled it;
+  //   * this device has not yet proved its pending list describes reality.
+  var mayOverwrite = pend.state==='ok' && !pend.map.__overflow && bldPendingTrusted();
+  var pendingHere={};
+  if(Array.isArray(pend.map[key]))pend.map[key].forEach(function(id){pendingHere[String(id)]=true;});
+  var idx={};
+  local.forEach(function(r,n){if(r&&r.id!==undefined&&r.id!==null)idx[String(r.id)]=n;});
+  var changed=0;
+  serverRows.forEach(function(r){
+    if(!r||r.id===undefined||r.id===null)return;
+    var id=String(r.id),at=idx[id];
+    if(at===undefined){local.push(r);idx[id]=local.length-1;changed++;return;}
+    // HELD ON BOTH SIDES. Server wins -- unless this id has a change of its
+    // own that has not reached the server, in which case overwriting would
+    // destroy the only copy of it.
+    if(mayOverwrite&&!pendingHere[id]){
+      if(JSON.stringify(local[at])!==JSON.stringify(r)){local[at]=r;changed++;}
+    }
+  });
+  if(changed)bldHydrateStore(key,local);
+  return changed;
+}
+
 function bldHydrateAll() {
   if (!bldLicenseKey()) return Promise.resolve(0);
   var merged = 0;
   return Promise.all(BLD_SYNCED.map(function (key) {
     return bldData('read', key, null).then(function (rows) {
-      if (!rows || !Array.isArray(rows) || !rows.length) return;
-      var local = ld(key, []);
-      if (!Array.isArray(local)) return;
-      var have = {};
-      local.forEach(function (r) { if (r && r.id != null) have[String(r.id)] = true; });
-      var added = 0;
-      rows.forEach(function (r) {
-        if (r && r.id != null && !have[String(r.id)]) { local.push(r); added++; }
-      });
-      if (added) {
-        merged += added;
-        // Written through st(), which would normally push straight back to the
-        // server. Suppressed for the duration: every one of these rows CAME
-        // from the server, so echoing them back is pure noise.
-        bldSeeding = true;
-        st(key, local);
-        bldSeeding = false;
-      }
+      // The empty-read shortcut is gone: `!rows.length` used to return before
+      // anything happened, which is harmless for an additive merge and wrong
+      // for a rule that has to look at what is held on both sides.
+      var changed = bldServerWinsMerge(key, rows);
+      if (changed) merged += changed;
     });
   })).then(function () { return merged; });
 }
@@ -2525,15 +2655,11 @@ function bldHydrateBids(){
   if(!bldLicenseKey())return Promise.resolve(false);
   return bldData('read','bld_bids',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false; // read failed, no session, or not provisioned
-    var local=bldBids();
-    var localIds={};
-    local.forEach(function(b){if(b&&b.id)localIds[b.id]=true;});
-    var added=false;
-    serverRows.forEach(function(b){
-      if(b&&b.id&&!localIds[b.id]){local.push(b);localIds[b.id]=true;added=true;}
-    });
-    if(added)st('bld_bids',local);
-    return added;
+    // Through the SAME merge as the other thirty. bld_bids is not sync-hooked
+    // -- see BLD_PENDING_TRACKED -- so its carve-out comes from the pending
+    // marks at its two explicit write sites rather than from st().
+    var changed=bldServerWinsMerge('bld_bids',serverRows);
+    return !!changed;
   });
 }
 
@@ -2816,7 +2942,23 @@ function bldEnterApp(d){
     // previously is retried here; whatever is still stranded is then said
     // out loud rather than left in console.warn.
     return bldRetryPending();
-  }).then(function(pushed){bldBackupNotice(pushed);});
+  }).then(function(pushed){
+    // ── THE ATTESTATION (2026-09-21) ──────────────────────────────────────
+    // The retry has just run. If it left NOTHING stranded against a server
+    // that is actually provisioned, then bld_sync_pending now describes
+    // reality on this device -- everything it held has landed -- and from the
+    // next load the merge may trust it and overwrite. Recorded once, never
+    // cleared: what it attests is that a complete push happened, which does
+    // not stop being true later.
+    if(_bldBackup.provisioned!==false&&bldPendingCount()===0)bldMarkPendingTrusted();
+    bldBackupNotice(pushed);
+  }).catch(function(e){
+    // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD ──────────────────────────
+    // Without it a throw anywhere above skipped bldRetryPending() and the
+    // notice, so a session could lose its backup retry and be told nothing.
+    try{console.error('SAIRNbuild: the backup pull/push chain threw -- '+((e&&e.message)||e));}catch(_e){}
+    try{toast('The server backup check did not finish. Your records are saved on this device; reload to try again.',9000);}catch(_e){}
+  });
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -4534,6 +4676,9 @@ async function saveBid(){
   var saved=st('bld_bids',bids);
   closeBidModal();rBids();
   var syncResult=await bldData('write','bld_bids',rec,true);
+  // Tracked like the thirty: a failed push is remembered so the retry can
+  // take it, and so hydration knows not to overwrite it meanwhile.
+  if(syncResult)bldPendingClear('bld_bids',String(rec.id));else bldPendingMark('bld_bids',String(rec.id));
   toast(syncResult?('Saved - '+rec.client):(saved?'Saved on this device only -- server sync failed, try again with a connection':'Could not save -- storage may be full or unavailable, try again'));
 }
 // Reassignment from the Bids table -- management-only UI (the select this
@@ -4550,6 +4695,7 @@ async function bldReassignBid(id,newEmployeeId){
   b.assigned_employee_id=newEmployeeId||'';
   st('bld_bids',bids);rBidsTbl();
   var syncResult=await bldData('write','bld_bids',b,true);
+  if(syncResult)bldPendingClear('bld_bids',String(b.id));else bldPendingMark('bld_bids',String(b.id));
   toast(syncResult?(b.client+' reassigned to '+bldEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
 }
 

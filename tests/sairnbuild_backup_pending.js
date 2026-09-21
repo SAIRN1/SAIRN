@@ -119,6 +119,11 @@ function build(store, bldData, toasts) {
     'localStorage', 'console', 'bldData', 'bldLicenseKey', 'toast',
     decl('BLD_SYNCED') + '\n' +
     'var _bldSyncOn = {}; BLD_SYNCED.forEach(function (k) { _bldSyncOn[k] = true; });\n' +
+    // bld_bids joined the pending mechanism 2026-09-21. It is NOT in
+    // BLD_SYNCED -- its two writes are explicit and session-gated, because
+    // api/sd-data.js's bld_bids branch demands a real employee session -- so
+    // the retry filters on BLD_PENDING_TRACKED rather than on _bldSyncOn.
+    'var BLD_PENDING_TRACKED = Object.assign({}, _bldSyncOn); BLD_PENDING_TRACKED.bld_bids = true;\n' +
     'var bldSeeding = false;\n' +
     decl('_bldBackup') + '\n' +
     decl('BLD_PENDING_KEY') + '\n' +
@@ -126,6 +131,12 @@ function build(store, bldData, toasts) {
     fn('function ld(k,d)') + '\n' +
     fn('function st(k,v)') + '\n' +
     fn('function bldSyncCollection(key, next, prev)') + '\n' +
+    // bldPendingRead() added 2026-09-21: bldPendingAll() delegates to it now,
+    // because a pending file that will not PARSE and one that was never
+    // written are different facts once the merge asks which of them it is
+    // looking at. bldPendingAll keeps its signature and its old answer of {}
+    // for the counting and reporting callers, which is right for them.
+    fn('function bldPendingRead()') + '\n' +
     fn('function bldPendingAll()') + '\n' +
     fn('function bldPendingWrite(o)') + '\n' +
     fn('function bldPendingMark(key,id)') + '\n' +
