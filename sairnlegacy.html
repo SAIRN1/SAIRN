@@ -1532,7 +1532,26 @@ function sdnData(action,resource,payload,withSession){
   // not yet enabled" -- and this one has an action attached to it.
   if(!lic){legLastErr[resource]={code:'NO_LICENSE',message:''};return Promise.resolve(null);}
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
-  if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
+  // ── THE TOKEN GOES ON EVERY CALL NOW (2026-09-21) ───────────────────────
+  // It used to go only when a caller passed `withSession`, and MEASURED: 56 of
+  // this file's 58 sdnData() call sites did not -- every leg_* read and write
+  // in the app. That was survivable only because api/sd-data.js's
+  // LEG_RESOURCES branches did not check for one: 36 tables, including
+  // leg_deathrecords and leg_custodylog, were authorised by the licence key
+  // alone. The key is a bearer credential.
+  //
+  // CHANGED HERE RATHER THAN AT 56 CALL SITES, deliberately. Threading a
+  // fourth argument through 56 places is 56 chances to miss one, and a missed
+  // one fails at the server the moment the gate lands -- which is how a gate
+  // gets reverted instead of a call site fixed. Sending a header a branch does
+  // not read costs nothing; shared_knowledge has been sending it on this exact
+  // transport since it was written.
+  //
+  // `withSession` stays in the signature because two call sites pass it and
+  // removing it would be an unrelated edit to their lines; it is now a no-op
+  // for this transport. legAuth() below keeps its own conditional, because
+  // there the token is the thing being established.
+  if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
   return fetch(DATA_API,{
     signal: legFetchTimeoutSignal(),
     method:'POST',

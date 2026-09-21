@@ -72,6 +72,15 @@ function ok(cond, label) { assert.ok(cond, label); n++; console.log('  ok   ' + 
 function section(s) { console.log('\n' + s); }
 
 const LICENSE_KEY = 'k';
+// Signed AFTER the secret above is set, which is why it lives here and not
+// beside the other constants.
+const LEG_TOKEN = require(path.join(ROOT, 'api/_lib/auth')).signSessionToken({
+  app: 'sairnlegacy', employee_id: 'emp-1', role: 'director',
+  // The hash the HANDLER derives -- sha256 of the licence key -- not a
+  // literal. A token signed against anything else verifies fine on its own
+  // and is refused here with an indistinguishable 401, which would have
+  // read as "the gate works" while testing nothing.
+  license_hash: crypto.createHash('sha256').update(LICENSE_KEY).digest('hex') });
 const LIC_HASH = crypto.createHash('sha256').update(LICENSE_KEY).digest('hex');
 
 function loadHandler() {
@@ -110,7 +119,18 @@ async function call(handler, opts) {
   };
   try {
     await handler({ method: 'POST',
-                    headers: { authorization: 'Bearer ' + LICENSE_KEY },
+                    // ── A SESSION, NOT JUST THE KEY (2026-09-21) ────────────────────────
+                    // LEG_RESOURCES is gated now: every read and write requires a
+                    // verified SAIRNlegacy employee session, because until today a
+                    // bare licence key could read a funeral home's death records
+                    // and append to its chain-of-custody log. This suite was
+                    // written against the ungated endpoint and answered 401 the
+                    // moment the gate landed. The FIXTURE was wrong, not the gate
+                    // -- a reservation is made by a signed-in member of staff --
+                    // so it now signs a real token rather than the assertion being
+                    // relaxed to accept a 401.
+                    headers: { authorization: 'Bearer ' + LICENSE_KEY,
+                               'x-sd-auth': LEG_TOKEN },
                     body: { action: opts.action, resource: opts.resource,
                             app_id: opts.app_id === undefined ? 'sairnlegacy' : opts.app_id,
                             payload: opts.payload === undefined ? {} : opts.payload } }, res);

@@ -10433,6 +10433,49 @@ module.exports = async (req, res) => {
       leg_petcases: 'petcase_id', leg_plots: 'plot_id', leg_preneed: 'preneed_id',
       leg_processions: 'procession_id', leg_tributes: 'tribute_id', leg_vehicles: 'vehicle_id'
     };
+    // ── SAIRNLEGACY: A SESSION, NOT THE LICENCE KEY ALONE (2026-09-21) ────
+    // Until today both branches below went straight from the licence hash the
+    // handler derived to the PostgREST query. Neither named
+    // verifySessionToken. REPRODUCED against the shipped file before this
+    // landed, with a valid key and NO X-SD-Auth header at all:
+    //
+    //     leg_deathrecords read  -> 200 ok:true, rows returned
+    //     leg_custodylog   write -> 200 ok:true, the row upserted
+    //
+    // The licence key is a BEARER CREDENTIAL. Anyone holding it could read a
+    // funeral home's death records and APPEND TO ITS CHAIN-OF-CUSTODY LOG --
+    // the document that says which human remains were in whose hands, and
+    // when. 36 tables were open, not two.
+    //
+    // THE THIRD TIME THIS EXACT SHAPE HAS SHIPPED. Fixed as an emergency for
+    // the dnt_* tables on 2026-08-27, and found again in SF_RESOURCES on
+    // 2026-09-21. Written here as a COPY of the LAW_RESOURCES gate above
+    // rather than a fourth spelling: one gate before the dispatch, so neither
+    // branch can be reached without it, and scoped to 'sairnlegacy' by
+    // verifySessionToken's third argument -- which is what stops a valid
+    // session from another app passing, the collision Check 28 exists for.
+    //
+    // THE CLIENT HALF SHIPPED WITH IT, IN THE SAME COMMIT, AND IT HAD TO.
+    // Measured before the gate was written: 56 of sairnlegacy.html's 58
+    // sdnData() call sites sent no token, because the transport only attached
+    // one when a caller passed `withSession`. Landing this gate alone would
+    // have refused every read and write in that app. The transport now
+    // attaches the token whenever a session is held. Vercel deploys the page
+    // and the endpoint together, which is why there is no window with the new
+    // endpoint and the old page -- the same reasoning the SAIRNlaw gate above
+    // records for its own rollout.
+    //
+    // THE RESIDUAL, STATED RATHER THAN DISCOVERED: a staff member with the app
+    // ALREADY OPEN on the old page, or a cached copy, starts getting 401 until
+    // they reload. For an authentication hole on chain-of-custody records that
+    // is the right trade, and the refusal below tells them exactly what to do.
+    if (LEG_RESOURCES[resource]) {
+      const legSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlegacy');
+      if (!legSess) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
+        return;
+      }
+    }
     if (LEG_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
