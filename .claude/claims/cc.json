@@ -1952,8 +1952,8 @@
       "task": "FILES: sairnlegacy.html sairndesign.html tests/server_wins_hydration.js -- server-wins hydration rule, sdnHydrateAll in BOTH apps plus the synced-id first-push carve-out. NOTE: my first attempt at this string BLOCKED on a false positive because it described the OTHER session's claim in order to disclose non-overlap; those words are now in my status-registry note instead, where they belong. Nothing about my actual task was reworded.",
       "claimed_at": "2026-09-21T07:48:15Z",
       "claimed_at_epoch": 1789976895.952058,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T11:59:36Z"
     }
   ]
 }
