@@ -1552,6 +1552,16 @@
       "claimed_at_epoch": 1789992822.9313152,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789993657",
+      "session": "cody",
+      "subject": "sairncare",
+      "task": "red probe triage alf_rule_read_faults and append only non array arm",
+      "claimed_at": "2026-09-21T12:27:37Z",
+      "claimed_at_epoch": 1789993657.5708435,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
