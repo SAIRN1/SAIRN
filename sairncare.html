@@ -1483,7 +1483,30 @@ function alfPostRaw(body){
   return fetch(DATA_API,{method:'POST',headers:h,body:JSON.stringify(body)}).then(function(r){
     return r.json().then(function(d){
       if(!d)return null;
-      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,message:'The server refused this request.'}};
+      // ── `&& !d.error` WAS HERE TOO, AND IT WAS THE SAME HOLE (2026-09-21) ──
+      // deea8c55 removed this clause from alfRoute() and alfData() and left it
+      // standing here, deliberately and on the record: neither caller PERSISTS,
+      // so the blast radius was different and folding it in would have made one
+      // change do two things. This is that change.
+      //
+      // With the clause, the normalisation fired only when the server sent NO
+      // error body -- so every api/sd-data.js refusal that DOES carry one passed
+      // through wearing the server's own code, into a renderer whose `code`
+      // field is where the COMPLIANCE ENGINE's refusals go. NO_SESSION shown in
+      // the place NO_RULE_FOR_STATE belongs. And `upstream()`'s 502 is
+      // `{error:{message}}` with NO CODE AT ALL, so cqRenderResult() printed its
+      // `e.code||'Not available'` fallback over a data service that was down.
+      //
+      // THE ENGINE JUDGES ON 200 AND ONLY ON 200 -- every compliance answer,
+      // refusal included, is res.status(200). So stamping every non-200 keeps
+      // the engine's vocabulary closed by construction rather than by a list.
+      //
+      // THE SERVER'S MESSAGE IS KEPT, same as alfRoute: it is the actionable
+      // half ("run sql/sairncare_compliance_rules_schema.sql"), and losing it to
+      // make room for the code trades a sentence the operator can act on for a
+      // number they cannot.
+      if(!r.ok)return {ok:false,error:{code:'HTTP_'+r.status,
+        message:(d.error&&d.error.message)||'The server refused this request.'}};
       return d;
     }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response.'}};});
   }).catch(function(e){return {ok:false,error:{code:'NETWORK',message:'Network error. '+e.message}};});
@@ -3856,10 +3879,30 @@ async function runStaffingCheck(){
 }
 
 // ── CREDENTIALS & TRAINING LEDGER (Phase 2, product rule 9) ──────────────
-var _crRecords=null,_crScopedToSelf=false;
+var _crRecords=null,_crScopedToSelf=false,_crRefusal=null;
 function crRefresh(){
   return alfCredRead().then(function(r){
-    _crRecords=(r&&Array.isArray(r.data))?r.data:[];
+    // ── A REFUSED READ IS NOT AN EMPTY LEDGER (2026-09-21) ────────────────
+    // This read `(r&&Array.isArray(r.data))?r.data:[]`. An error envelope has
+    // no `data` array, so every refusal -- 401, 403, 503, a 502 from the data
+    // service -- became `[]`, and rCredentials() rendered "No credential or
+    // training entries recorded yet" over an append-only ledger nobody had
+    // been allowed to read.
+    //
+    // AND THE GUARD THAT CATCHES THIS ALREADY EXISTED AND WAS UNREACHABLE.
+    // ALF_EXPORTS.credentials.rows() returns null when `_crRecords===null`,
+    // under a comment saying never-loaded and genuinely-empty are two
+    // different facts. It was correct the whole time and could not fire,
+    // because nothing ever set null on a refusal -- so a refused read was
+    // exportable as a CSV whose own preamble says ROWS IN THIS FILE: 0 about a
+    // credential ledger. That is the file somebody hands to an inspector.
+    //
+    // NULL is the state that already means "not loaded". Empty stays empty, so
+    // the two remain distinguishable rather than both collapsing to one.
+    var _crOk=!!(r&&Array.isArray(r.data)&&!r.error&&r.ok!==false);
+    _crRecords=_crOk?r.data:null;
+    _crRefusal=_crOk?null:((r&&r.error&&(r.error.message||r.error.code))||
+      'The credential ledger could not be read, so nothing is being shown. It is not empty — it was not loaded.');
     _crScopedToSelf=!!(r&&r.scoped_to_self);
     rCredentials();
     return _crRecords;
@@ -3873,7 +3916,15 @@ function rCredentials(){
     note.style.display=_crScopedToSelf?'block':'none';
     note.textContent='You are seeing only your own training and credential records.';
   }
-  if(_crRecords===null){box.innerHTML='<span style="color:var(--muted)">Click Refresh to load the credential ledger.</span>';return;}
+  // Two ways to be null and they are not the same sentence: never asked, and
+  // asked and refused. Printing "Click Refresh" over a refusal would send
+  // somebody to press the button that just failed.
+  if(_crRecords===null){
+    box.innerHTML=_crRefusal
+      ?('<span style="color:var(--danger,#dc2626)">'+H(_crRefusal)+'</span>')
+      :'<span style="color:var(--muted)">Click Refresh to load the credential ledger.</span>';
+    return;
+  }
   if(!_crRecords.length){box.innerHTML='<span style="color:var(--muted)">No credential or training entries recorded yet.</span>';return;}
   var sorted=_crRecords.slice().sort(function(a,b){return (b.created_at||'')<(a.created_at||'')?-1:1;});
   box.innerHTML='<div class="tw"><table><thead><tr><th>Staff</th><th>Type</th><th>Detail</th><th>Hours</th><th>Date</th><th>Expires</th><th>Recorded By</th></tr></thead><tbody>'+
