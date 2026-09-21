@@ -9111,6 +9111,63 @@
       "recurrence_open": "the predicate still only runs over api/sd-data.js -- 159 handler files were measured with it and returned zero, but a handler added tomorrow under api/ is not watched. And 60 PATCH sites exist across the handlers WITHOUT a representation preference; those cannot distinguish matched-zero either, and the predicate excludes them by construction."
     },
     {
+      "commit": "0945af0990c8",
+      "date": "2026-09-21",
+      "subject": "fix(stonedesk): the private CEO/CFO/CTO channel was readable, writable and deletable by anyone holding the shop's licence key",
+      "files": [
+        "api/_resources/stonedesk.js",
+        "api/sd-data.js",
+        "tests/run_exec_msgs_gate_sabotage_probe.py",
+        "tests/stonedesk_exec_msgs_gate.js"
+      ],
+      "lines_added": 407,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js served sd_exec_msgs -- StoneDesk's private CEO/CFO/CTO channel -- through SD_LOCAL_RESOURCES, a dispatcher that deliberately has NO session gate because its other twenty members are the shared shop record (quote history, inventory, drawings, remakes) that every role in a fabrication shop reads. That justification was never true of the executive channel. The licence key is a BEARER credential held by the whole shop, so any employee, or anyone who obtained the key, could read, write and soft_delete every private executive message. Reproduced with a valid key and NO X-SD-Auth header: 200 ok:true, the private message returned verbatim. stonedesk.html's own comment above the exec Delete button already recorded it in prose -- 'this is a UI courtesy, not an authorisation boundary' -- and sdExecRole came from localStorage, never checked against a session, so the courtesy was spoofable too. Fixed with a gate on all three verbs enforcing the boundary the client already had: a real stonedesk session with role owner or admin.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "93d37aa570cc",
+        "date": "2026-09-08",
+        "subject": "feat(stonedesk): the local-only record reaches a server -- 21 collections, and the count was wrong",
+        "lag_days": 13
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a resource inheriting a GROUP's justification that was never true of that member. 1.1 is about a check going stale and there was never a check here; 1.11 is about failing closed when a tool is absent, which is cc's LEG citation and does not describe this. The gap is real and is stated rather than papered over with the nearest-looking id.",
+      "contributing_factors": [
+        {
+          "factor": "The resource was placed in a no-gate dispatcher whose classifying comment justified the absence of a gate for the group, and no member was re-checked against that justification individually",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sd_exec_msgs gated on read, write and soft_delete -- every branch SD_LOCAL_RESOURCES has, confirmed against api/_resources/stonedesk.js verb table"
+        },
+        {
+          "factor": "The gap was known and written down in the CLIENT as prose for months (the UI-courtesy comment) with nothing turning that sentence into a check",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both standing comments that carried the now-false group rule -- SD_LOCAL_RESOURCES header in api/sd-data.js and the duplicate paragraph in api/_resources/stonedesk.js -- corrected in the same commit to name the exception"
+        },
+        {
+          "factor": "No suite asserted any gate on this resource, and the same-hour suite written with the fix could not see WHERE the gate sat",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_exec_msgs_gate_sabotage_probe.py (NEW) plants six defects; the gate-moved-behind-the-query arm went SILENT against the original 11 arms, verified by removing the new assertion and re-running, so a twelfth arm asserting zero queries on all three verbs was added"
+        },
+        {
+          "factor": "docs/CRITICALITY-TIERS.md rates sd_exec_msgs Tier B with the consequence An internal message lost -- a durability reading of a confidentiality resource",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not changed inside a security fix: gates key off the tier, so re-tiering is a governance decision. Flagged in the commit message and in recurrence_open instead of quietly edited."
+        }
+      ],
+      "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
+    },
+    {
       "commit": "0d0d66c04cbb",
       "date": "2026-09-21",
       "subject": "fix(hydration): a full store silently switched server-wins OFF for good -- in all seven apps, because the flag write's return was discarded one line below a map write whose return is read",
