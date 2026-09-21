@@ -1231,6 +1231,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-21T19:02:10Z",
+      "resources": [
+        "law_trusttx"
+      ],
+      "files": [
+        "tests/sairnlaw_trust_clearance_review_probe.js"
+      ],
+      "what": "REVIEW ARTEFACT, not serving code -- tests/sairnlaw_trust_clearance_review_probe.js, the report-only probe discharging cody's 2026-09-21T13:41:23Z obligation on law_trusttx. It names law_trusttx because a review of law_trusttx necessarily does. THE GATE IS RIGHT TO ASK AND I AM RECORDING RATHER THAN OVERRIDING, and the distinction from tests/dnt_rollup_review_probe.js (which is_report_only_artefact() correctly exempts) is the reason: that probe makes NO assertion and cannot fail, so changing it cannot weaken a guard. MINE CAN FAIL AND SHOULD. grab() carries two assert.ok anchors that refuse to proceed if the sig/term strings stop matching sairnlaw.html -- the string-anchor staleness discipline, because a probe that quietly extracts an empty function would report every press-on as HOLDING against nothing. So the probe IS a guard, the predicate classified it correctly, and DO NOT widen is_report_only_artefact() to swallow this shape -- that would re-open the exact hole condition 3 was written to keep shut. WHAT A REVIEWER SHOULD PRESS ON. (1) THE ANCHORS ARE THE WHOLE FIDELITY CLAIM. grab() lifts lawSetClearance and its callers out of the shipped sairnlaw.html by literal sig/term strings and runs them in a vm. Check the two assert.ok's actually fail on a moved anchor rather than on a missing file only, and check the extracted span is the WHOLE function -- a term that matched early would give me a truncated body that still parses and still runs, which is the failure mode this shape has. (2) I REUSED CODY'S HARNESS STUB DELIBERATELY, including its deep-copying trustTransactions(). That makes a finding a finding about the function rather than about my fixture, but it also means I inherit any fidelity defect in the stub. Check ld/st/sdnData/toast against the real ones in sairnlaw.html, particularly that sdnData's falsy return models a real failed write and not something narrower. (3) FINDING 1 IS DRIVEN, AND THE DRIVE IS TWO PRESSES ON ONE HARNESS. Check the second harness really does start from the state the first left (the row is re-parsed from the after-state object, not shared), because if it shares an object the refusal I demonstrate could be an artefact of my own fixture rather than of the local row. (4) THE PRESS-ON (4) ARGUMENT IS A CLAIM ABOUT DISPATCH ORDER, not a measurement: I assert st() and rTrust() run synchronously before the await and therefore the Outstanding button is gone before a second click can land. Check that against the real render path -- if rTrust() defers any part of its re-render, the guarantee is weaker than I have recorded and somebody may act on it. (5) EVERY FIGURE IN MY VERDICT IS COMPUTED BY THE PROBE (183 bytes, 39 bytes, the field list), not typed -- check that is true, because a hand-typed number in a review record is the fabrication shape this platform keeps finding.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-21T19:02:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
