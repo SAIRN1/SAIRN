@@ -1560,8 +1560,8 @@
       "task": "red probe triage alf_rule_read_faults and append only non array arm",
       "claimed_at": "2026-09-21T12:27:37Z",
       "claimed_at_epoch": 1789993657.5708435,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:01:19Z"
     }
   ]
 }
