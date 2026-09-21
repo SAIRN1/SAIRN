@@ -113,6 +113,27 @@ MUTATIONS = [
      ROW_LOOP,
      row_loop_with("    row.querySelectorAll('th,td').forEach(function(cell){ "
                    "rowData.push('\"' + String(cell.textContent) + '\"'); });")),
+
+    # ── 6 AND 7 GUARD THE DISCLOSURE ITSELF, added 2026-09-21 ────────────
+    # Both keep the file syntactically valid and the guard itself running.
+    # That is the point: the defect being planted is not "the apostrophe
+    # stopped happening", it is "the apostrophe still happens and the file
+    # stopped saying so", which is the state this export was in until today
+    # and which no reader could detect from the file.
+    ("6. THE DISCLOSURE STOPS NAMING THE APOSTROPHE -- the guard still runs, "
+     "the preamble still has a line about it, and the one word a downstream "
+     "parser would search for is gone",
+     VET,
+     "       + 'plain number is prefixed with an apostrophe, so a spreadsheet cannot '",
+     "       + 'plain number is prefixed with a marker, so a spreadsheet cannot '"),
+
+    ("7. THE DISCLOSURE SAYS IT HAPPENS AND STOPS SAYING WHAT TO DO -- a "
+     "reader learns a transformation exists and not that they must strip it "
+     "before parsing, which is the half that changes anybody's code",
+     VET,
+     "       + 'on screen; software reading this file does not, and must strip a '\n"
+     "       + 'leading apostrophe before parsing a value.')],",
+     "       + 'on screen; software reading this file does not.')],"),
 ]
 
 if __name__ == '__main__':
@@ -121,4 +142,10 @@ if __name__ == '__main__':
         title='SAIRNvet controlled-substance export -- the suite must refuse '
               'an export that has quietly stopped carrying the quantity, the '
               'disclosures, or the guard',
-        stage=(SUITE,)))
+        # sairnvet.html IS STAGED TOO, added 2026-09-21. The worktree is at
+        # HEAD, so an uncommitted change to the EXPORTER is not in it -- and
+        # the disclosure arms this suite gained assert on preamble text that
+        # lives in the exporter. Without this the baseline went red for a
+        # reason that has nothing to do with any mutation, which is exactly
+        # the case the harness's `stage` argument documents.
+        stage=(SUITE, VET)))

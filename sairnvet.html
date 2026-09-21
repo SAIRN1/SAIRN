@@ -9182,6 +9182,35 @@ function svExportControlled(){
     [q('ON HAND IS PER-DRUG, IN THAT DRUG’S OWN UNIT. Do not sum the column: '
        + 'the units differ between rows and a total across them is not a quantity '
        + 'of anything.')],
+    // ── THE ONE TRANSFORMATION THIS FILE APPLIES TO ITS OWN CELLS, DECLARED
+    // (2026-09-21). Every other line above tells a reader what this file IS
+    // and IS NOT. This one tells them what was DONE to it, and it was the only
+    // machine-affecting change the preamble did not mention.
+    //
+    // svCsvCell() prefixes an apostrophe to any cell starting with = + - @ tab
+    // or CR that does not parse as a number, so a spreadsheet cannot execute
+    // it as a formula. MEASURED on the real rule: `-50.00` passes untouched,
+    // `-3mg` becomes `'-3mg` because the unit suffix stops it being a number,
+    // and `-1+1` -- indistinguishable from `-3mg` by its first character --
+    // is the formula the guard exists for.
+    //
+    // EXCEL AND CALC STRIP IT ON DISPLAY. A PARSER DOES NOT. A human reading
+    // this file never learns the apostrophe is there; a downstream reporting
+    // tool reads it as part of the value and a numeric parse fails. There is
+    // no such tool in this repo -- nothing imports this file -- so whoever
+    // owns that path is outside it, and the only way they could have learned
+    // this was by hitting it. Now they can read it.
+    //
+    // THE GUARD IS NOT RELAXED FOR UNIT-SUFFIXED QUANTITIES and should not be:
+    // weakening a formula-injection control on a DEA record to make a value
+    // parse more conveniently is the wrong side of that trade.
+    [q('ONE CELL TRANSFORMATION IS APPLIED TO THIS FILE, AND A PARSER WILL SEE '
+       + 'IT. Any cell beginning = + - @ tab or carriage-return that is not a '
+       + 'plain number is prefixed with an apostrophe, so a spreadsheet cannot '
+       + 'run it as a formula. A quantity like -3mg therefore appears as \'-3mg '
+       + 'while -50.00 is unchanged. Excel and LibreOffice hide the apostrophe '
+       + 'on screen; software reading this file does not, and must strip a '
+       + 'leading apostrophe before parsing a value.')],
     [q('')]
   ];
   var csv = lines.map(function(r){ return r.join(','); }).join('\n') + '\n';

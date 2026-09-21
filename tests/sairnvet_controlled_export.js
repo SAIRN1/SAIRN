@@ -272,7 +272,25 @@ const PREAMBLE = [
    /NOT APPEND-ONLY AND IS NOT TAMPER-EVIDENT/],
   ['...and that a corrected balance leaves no trace of what it replaced',
    /leaves no trace of the value[\s\S]*it replaced/],
-  ['REFUSES THE SUM: the units differ between rows', /Do not sum the column/]
+  ['REFUSES THE SUM: the units differ between rows', /Do not sum the column/],
+  // ── ADDED 2026-09-21: the one thing DONE to the file, not just what it IS ──
+  // The arm above this section's own note used to say "six refusals"; there
+  // were already eight regexes and now there are ten, which is why the count
+  // lives in the anchors and not in a number. This pair is a different KIND of
+  // line from the seven above it: those say what the file is and is not, this
+  // says what was done to its cells.
+  //
+  // WHY IT BELONGS ON A DEA RECORD. svCsvCell() prefixes an apostrophe to any
+  // cell starting = + - @ tab or CR that is not a plain number, so `-3mg`
+  // becomes `'-3mg` while `-50.00` is untouched. Excel and Calc strip it on
+  // display; a parser does not, and a numeric parse of the quantity then
+  // fails. Nothing in this repo imports this file, so the owner of any
+  // downstream reporting path is outside it and had no way to learn the quirk
+  // except by hitting it.
+  ['DECLARES the apostrophe guard, because a parser sees it and a human does not',
+   /apostrophe[\s\S]*cannot[\s\S]*formula/i],
+  ['...and says what to DO about it rather than only that it happens',
+   /strip a[\s\S]*leading apostrophe before parsing/i]
 ];
 PREAMBLE.forEach(([name, re]) => {
   test(name, () => {
