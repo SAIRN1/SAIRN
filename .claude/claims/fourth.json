@@ -1775,6 +1775,16 @@
       "claimed_at_epoch": 1789976805.3011901,
       "status": "released",
       "released_at": "2026-09-21T12:21:39Z"
+    },
+    {
+      "id": "fourth-1789993558",
+      "session": "fourth",
+      "subject": "tier-a-review-cc-invoiced-flag",
+      "task": "FILES: docs/tier-a-reviews.json -- review-only, reads sairnlaw.html saveInvoice/lawHydrateAll and tests/sairnlaw_invoiced_sync.js. Discharge cc obligation 2026-09-21T07:10:15Z on invoices law_invoices. Not editing sairnlaw.html.",
+      "claimed_at": "2026-09-21T12:25:58Z",
+      "claimed_at_epoch": 1789993558.4948506,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
