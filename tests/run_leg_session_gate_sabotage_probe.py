@@ -85,8 +85,20 @@ MUTATIONS = [
      "outage on all 56 call sites that pass no flag, which is how a security "
      "fix gets reverted instead of a call site fixed",
      APP,
-     "  if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;",
-     "  if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;"),
+     # ── WIDENED 2026-09-21, AND THE REASON MATTERS MORE THAN THE FIX ──────
+     # This anchored on the token line alone. A SECOND call site then had to
+     # attach the token explicitly -- confirmReserve(), the one write in this
+     # file that bypasses sdnData() -- and its line is the same text at a
+     # deeper indent, so the two-space anchor became a SUBSTRING of it and the
+     # probe reported ANCHOR-2 and refused. That refusal is the probe working:
+     # a mutation that lands in whichever of two places came first is asserting
+     # something about a line nobody chose. Anchored on the transport's own
+     # `return fetch` now, which is what makes it sdnData's copy and not the
+     # other one.
+     "  if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;\n"
+     "  return fetch(DATA_API,{",
+     "  if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;\n"
+     "  return fetch(DATA_API,{"),
 ]
 
 sys.exit(run_probe(

@@ -2645,8 +2645,32 @@ async function confirmReserve(){
   var lic=legLicenseKey();
   if(!lic){legLastErr['leg_merch_units']={code:'NO_LICENSE',message:''};
     toast(legWriteFailText('leg_merch_units','Reserved on this device only -- it did not reach the server, so no other computer can see it'),5500);return;}
+  // ── ONE ROLLBACK, TWO CALLERS (2026-09-21) ──────────────────────────
+  // The 409 path below and the refusal path under it must roll back the
+  // SAME way, and both properties the 2026-09-02 fix established are easy
+  // to lose in a second copy: re-read rather than write back the pre-await
+  // snapshot, and only touch the unit if the reservation is still OURS.
+  function undoLocalReservation(){
+    var fresh = merchUnits();
+    var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });
+    if(fu && fu.status === 'Reserved' && fu.reserved_for_case_id === caseId){
+      fu.status='Available'; fu.reserved_for_case_id=''; fu.reserved_at='';
+      st('leg_merch_units', fresh);
+    }
+  }
   try{
-    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    // ── THE SESSION TOKEN, SENT EXPLICITLY (2026-09-21) ───────────────
+    // leg_merch_units is behind the LEG_RESOURCES session gate, and the
+    // client half of that gate attached X-SD-Auth inside sdnData(). THIS
+    // CALL DELIBERATELY DOES NOT USE sdnData() -- see the comment above --
+    // so it never inherited the change and answered 401 NO_SESSION in
+    // production from the moment the gate landed: reservation was broken
+    // for every real user, and the unit was left showing Reserved on the
+    // device that asked. Reproduced against the deployed page and endpoint
+    // before this line was written, not inferred from the diff.
+    var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+    if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
+    var r=await fetch(DATA_API,{method:'POST',headers:h,
       body:JSON.stringify({action:'write',resource:'leg_merch_units',app_id:APP_ID,payload:u})});
     var d=await r.json().catch(function(){return null;});
     if(r.status===409&&d&&d.error&&d.error.code==='ALREADY_RESERVED'){
@@ -2667,14 +2691,29 @@ async function confirmReserve(){
       // changed this unit during the await, that newer state is more correct
       // than the one being rolled back to, and clobbering it would be the
       // same bug in the other direction.
-      var fresh = merchUnits();
-      var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });
-      if(fu && fu.status === 'Reserved' && fu.reserved_for_case_id === caseId){
-        fu.status='Available'; fu.reserved_for_case_id=''; fu.reserved_at='';
-        st('leg_merch_units', fresh);
-      }
+      undoLocalReservation();
       rMerch();
       toast(d.error.message,6000);
+      return;
+    }
+    // ── AN EXPLICIT REFUSAL IS ROLLED BACK; A COULD-NOT-TELL IS NOT ────
+    // A 4xx is the server, reached and answering, saying this device does
+    // not hold the unit -- 401 because the session is gone, 403 because
+    // the role may not, 409 handled above. Keeping a local `Reserved`
+    // after that is the device claiming a lock it was refused, which is
+    // the two-families-one-casket state this whole path exists to stop.
+    //
+    // 5xx AND A THROWN REQUEST ARE DELIBERATELY NOT ROLLED BACK, and that
+    // is not an oversight: those mean WE COULD NOT TELL. The write may
+    // well have landed, and showing Available for a reservation the server
+    // holds is the same bug pointing the other way. That case keeps the
+    // existing device-only wording, which tests/sairnlegacy_reservation_
+    // lock.js section 6 (f) asserts on purpose.
+    if(r.status>=400&&r.status<500){
+      legLastErr['leg_merch_units']={code:(d&&d.error&&(d.error.code||''))||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+      undoLocalReservation();
+      rMerch();
+      toast((d&&d.error&&d.error.message)||('The server refused this reservation (HTTP '+r.status+'), so the unit was NOT reserved -- nothing was saved anywhere.'),6000);
       return;
     }
     // This path reads the response itself, so it records the reason the same

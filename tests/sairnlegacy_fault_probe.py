@@ -29,6 +29,14 @@ defect somebody could plausibly write, and most of them make the code SIMPLER:
   * the optimistic write is kept on a 409, leaving a device showing a
     reservation the server never holds
   * a non-409 failure is rolled back too, losing a reservation that is real
+  * the SESSION TOKEN stops being sent -- the defect this path actually shipped
+    with on 2026-09-21, when the LEG_RESOURCES gate landed and this one write
+    did not inherit the client half because it deliberately bypasses sdnData()
+  * an explicit REFUSAL stops rolling back, so a 401 or 403 leaves the device
+    showing a reservation the server denied
+  * ...and the same rollback widens to EVERY failure, which releases a unit
+    whose reservation may well have landed -- both directions, because a suite
+    that caught only one would be half a guard
 
 EVERY ARM MUTATES A COPY IN A THROWAWAY WORKTREE, never this clone. This repo
 established on 2026-09-10 that a probe which edits tracked files is
@@ -112,26 +120,35 @@ MUTATIONS = [
      "      });\n"
      "      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlegacy data tables"),
 
+    # ── 9, 10 AND 11 RE-AIMED 2026-09-21, AND THE RE-AIMING IS THE POINT ──
+    # All three anchored on the rollback as it was written INLINE inside the
+    # 409 branch. The 2026-09-21 repair extracted it into
+    # undoLocalReservation() so the 409 path and the new refusal path could
+    # not drift apart, and all three anchors went to ANCHOR-0 -- which this
+    # probe reports as a FAILURE rather than a skip, and which is exactly how
+    # a mutation suite quietly stops testing anything. The properties are
+    # unchanged and now live in ONE place, so the anchors follow them there
+    # and each of these now reaches BOTH rollback paths with one edit.
     ("9. THE REAL 2026-09-02 DEFECT, RESTORED: the rollback writes back its "
      "PRE-AWAIT snapshot and silently undoes a concurrent release",
      APP,
-     "      var fresh = merchUnits();\n"
-     "      var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });",
-     "      var fresh = list;\n"
-     "      var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });"),
+     "    var fresh = merchUnits();\n"
+     "    var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });",
+     "    var fresh = list;\n"
+     "    var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });"),
 
     ("10. the rollback stops checking the reservation is still OURS, clobbering "
      "newer state",
      APP,
-     "      if(fu && fu.status === 'Reserved' && fu.reserved_for_case_id === caseId){",
-     "      if(fu){"),
+     "    if(fu && fu.status === 'Reserved' && fu.reserved_for_case_id === caseId){",
+     "    if(fu){"),
 
     ("11. the optimistic write is KEPT on a 409 -- the device shows a "
      "reservation the server never holds",
      APP,
-     "        fu.status='Available'; fu.reserved_for_case_id=''; fu.reserved_at='';\n"
-     "        st('leg_merch_units', fresh);",
-     "        /* rollback removed */"),
+     "      fu.status='Available'; fu.reserved_for_case_id=''; fu.reserved_at='';\n"
+     "      st('leg_merch_units', fresh);",
+     "      /* rollback removed */"),
 
     ("12. every failure rolls back, so a NOT_PROVISIONED answer loses a "
      "reservation that is real on this device",
@@ -155,6 +172,34 @@ MUTATIONS = [
      APP,
      "    legLastErr['leg_merch_units']={code:'NETWORK',message:e.message};",
      "    /* swallowed */"),
+
+    # ── THE 2026-09-21 HALF: THE SESSION TOKEN AND THE REFUSAL ROLLBACK ────
+    # confirmReserve() is the one write in sairnlegacy.html that does NOT go
+    # through sdnData(), so it did not inherit the unconditional X-SD-Auth that
+    # shipped with the LEG_RESOURCES gate, and answered 401 in production from
+    # the moment that gate landed. These four plant the ways the repair can be
+    # undone -- including the two DIRECTIONS of the rollback split, because a
+    # rollback that fires too often is a different defect from one that never
+    # fires and a suite that only caught one would be half a guard.
+    ("16. the session token stops being sent -- the exact production defect, "
+     "restored: a gated resource answers 401 and no reservation reaches the "
+     "server at all",
+     APP,
+     "    if(legSession&&legSession.token)h['X-SD-Auth']=legSession.token;\n",
+     ""),
+
+    ("17. an explicit REFUSAL stops rolling back, so a 401 or 403 leaves the "
+     "device showing a reservation the server denied -- the two-families state, "
+     "reached by being told no and ignoring it",
+     APP,
+     "    if(r.status>=400&&r.status<500){",
+     "    if(false){"),
+
+    ("18. ...and the other direction: the rollback widens to EVERY failure, so "
+     "a 503 or a timeout releases a unit whose reservation may well have landed",
+     APP,
+     "    if(r.status>=400&&r.status<500){",
+     "    if(!(r.ok&&d&&d.ok)){"),
 ]
 
 fails = []
@@ -222,8 +267,20 @@ def main():
     # -- and "red" is the verdict this probe reads. Copying the ONE file under
     # test keeps the probe usable before the commit and after it, and keeps every
     # other file in the worktree at HEAD where it belongs.
+    #
+    # ── AND THE APP FILE TOO, AS OF 2026-09-21 ────────────────────────────
+    # Staging only the suite was right while every subject was committed. It
+    # stopped being right the moment a defect in sairnlegacy.html was found and
+    # fixed in one session: the worktree's copy is HEAD's, so the baseline went
+    # red against the UNFIXED page and no mutation below would have meant
+    # anything. A control that can only run after its own fix is pushed is the
+    # wrong order -- the control is what says the suite bites, and a suite that
+    # has never refused anything is exactly what a same-hour fix ships with.
+    # Both staged files are restored and hash-checked at the end like every
+    # mutation target.
     try:
-        shutil.copy(os.path.join(REPO, SUITE), os.path.join(wt, SUITE))
+        for rel in (SUITE, APP):
+            shutil.copy(os.path.join(REPO, rel), os.path.join(wt, rel))
     except OSError as e:
         print('SKIPPED: could not stage the suite into the worktree -- NOTHING '
               'WAS VERIFIED. %s' % e)

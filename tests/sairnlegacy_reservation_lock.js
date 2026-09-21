@@ -357,6 +357,14 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
         mcReserveUnit: opts.unit || 'MU-2',
         APP_ID: 'sairnlegacy',
         DATA_API: 'https://stub.invalid/api/sd-data',
+        // The session this page holds. Added 2026-09-21: confirmReserve() has
+        // to send it explicitly, because it is the one write in this file that
+        // does not go through sdnData() and therefore did not inherit the
+        // unconditional-token change that shipped with the LEG_RESOURCES gate.
+        // `opts.session === null` is a signed-out page, which is a different
+        // fixture from a page that has one.
+        legSession: opts.session === undefined ? { token: 'TOK-1' } : opts.session,
+        sent: [],
         legLastErr: {},
         localStorage: {
           getItem: (k) => (k in store ? store[k] : null),
@@ -370,7 +378,8 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
         toast: function (m) { ctx.toasts.push(String(m)); },
         $: (id) => ({ value: opts.caseId === undefined ? 'CS-1' : opts.caseId,
                       textContent: '' }),
-        fetch: async () => {
+        fetch: async (url, init) => {
+          ctx.sent.push({ url: String(url), headers: (init && init.headers) || {} });
           if (opts.duringAwait) opts.duringAwait(ctx);
           if (opts.throwIt) throw new Error('network down');
           return { ok: opts.status === 200, status: opts.status,
@@ -523,6 +532,125 @@ console.log('SAIRNlegacy: the reservation lock, both halves, and the posture of 
       ok(ctx.toasts.length === 1,
          '...and says so exactly once');
     }
+
+  // Section 7 lives INSIDE section 6's block on purpose: it reuses ctxFor(),
+  // which is the harness that lifts confirmReserve() out of the page. A second
+  // copy of that harness is a second thing to drift.
+  section('7. confirmReserve() sends the session token, and an explicit REFUSAL '
+          + 'is rolled back (2026-09-21)');
+  {
+    // ── WHY THIS SECTION EXISTS ────────────────────────────────────────────
+    // The LEG_RESOURCES session gate (760a34a9) put leg_merch_units behind a
+    // real session. Its client half attached X-SD-Auth inside sdnData() --
+    // and confirmReserve() is the ONE write in this file that deliberately
+    // does not use sdnData(), because it needs the real 409 status that
+    // sdnData() collapses to null. So it kept sending the licence key alone
+    // and has answered 401 NO_SESSION in production ever since. Found
+    // reviewing cc's leg_invoices obligation; reproduced against the DEPLOYED
+    // page and endpoint before anything was changed.
+    //
+    // ── AND THE ROLLBACK SPLIT, WHICH IS A DECISION AND NOT A BUG FIX ──────
+    // Section 6 arm (f) asserts that a non-409 failure KEEPS the local write,
+    // with a stated reason: the reservation is real on this device and the
+    // toast says so. That reasoning holds for a failure that means WE COULD
+    // NOT TELL -- a network throw, a 502/503/504. It does not hold for a
+    // refusal the server actually issued: 401 and 403 are the server saying
+    // "you do not hold this", and keeping a local Reserved after an explicit
+    // refusal is the device claiming a lock it was denied. That is the
+    // two-families-one-casket state the lock exists to prevent.
+    //
+    // So the split is by WHAT THE ANSWER MEANS, not by status number: an
+    // explicit 4xx refusal rolls back, a could-not-tell keeps local state and
+    // says device-only. Arm (f)'s 503 case is UNCHANGED and still green --
+    // checked rather than assumed, because quietly re-writing another
+    // session's asserted decision to match my change is the thing this file
+    // is here to stop.
+    function ctx7(units, opts) { return ctxFor(units, opts); }
+    const U7 = (over) => Object.assign({ id: 'MU-2', merch_id: 'MC-1',
+                                         unit_serial: 'S-2', status: 'Available',
+                                         reserved_for_case_id: '', reserved_at: '',
+                                         sold_at: '' }, over || {});
+    const unit7 = (c, id) => JSON.parse(c.store.leg_merch_units).find((u) => u.id === id);
+
+    {
+      const ctx = ctx7([U7()], { status: 200, payload: { ok: true } });
+      await ctx.confirmReserve();
+      ok(ctx.sent.length === 1, 'exactly one request is made');
+      ok(ctx.sent[0].headers['X-SD-Auth'] === 'TOK-1',
+         'the request carries the session token -- without it the gated resource '
+         + 'answers 401 and the reservation cannot reach the server at all');
+      ok(/Bearer LIC-1/.test(ctx.sent[0].headers.Authorization || ''),
+         '...and still carries the licence, which is a separate credential and '
+         + 'not a substitute for the session');
+    }
+
+    {
+      // A signed-out page must not invent a header. It should still attempt
+      // the write and report the server's refusal, the same as any other
+      // refusal -- silently skipping the request would be a different lie.
+      const ctx = ctx7([U7()], { session: null, status: 401,
+                                 payload: { error: { code: 'NO_SESSION', message: 'Sign in first' } } });
+      await ctx.confirmReserve();
+      ok(!('X-SD-Auth' in ctx.sent[0].headers),
+         'a page with no session sends no token header rather than an empty one');
+      ok(unit7(ctx, 'MU-2').status === 'Available',
+         '...and the 401 rolls the optimistic write back, so the unit is not left '
+         + 'Reserved on a device the server refused');
+    }
+
+    {
+      const ctx = ctx7([U7()], { status: 403,
+                                 payload: { error: { code: 'FORBIDDEN', message: 'not your branch' } } });
+      await ctx.confirmReserve();
+      ok(unit7(ctx, 'MU-2').status === 'Available'
+         && !unit7(ctx, 'MU-2').reserved_for_case_id,
+         'a 403 rolls back too -- an explicit refusal is an explicit refusal '
+         + 'whatever its code');
+      ok(ctx.toasts.some((t) => /not your branch/.test(t)),
+         '...and shows the server\'s own sentence');
+    }
+
+    {
+      // THE OTHER DIRECTION, and it is the half that keeps arm (f) honest.
+      const ctx = ctx7([U7()], { status: 503,
+                                 payload: { error: { code: 'NOT_PROVISIONED', message: 'tables not set up' } } });
+      await ctx.confirmReserve();
+      ok(unit7(ctx, 'MU-2').status === 'Reserved',
+         'a 503 does NOT roll back -- "we could not tell" is not a refusal, and '
+         + 'section 6 arm (f)\'s decision is preserved rather than overwritten');
+    }
+
+    {
+      const ctx = ctx7([U7()], { throwIt: true, status: 200, payload: null });
+      await ctx.confirmReserve();
+      ok(unit7(ctx, 'MU-2').status === 'Reserved',
+         'a network throw does not roll back either, for the same reason: the '
+         + 'write may well have landed, and showing Available for a reservation '
+         + 'the server holds is the same bug pointing the other way');
+    }
+
+    {
+      // The rollback must keep the 2026-09-02 property that section 6 (d)
+      // established for the 409 path: re-read, do not write back the pre-await
+      // snapshot. A second rollback path is a second chance to lose that.
+      const ctx = ctx7([U7(), U7({ id: 'MU-3', status: 'Reserved', reserved_for_case_id: 'CS-7' })], {
+        status: 401,
+        payload: { error: { code: 'NO_SESSION', message: 'Sign in first' } },
+        duringAwait: (c) => {
+          const fresh = JSON.parse(c.store.leg_merch_units);
+          const other = fresh.find((x) => x.id === 'MU-3');
+          other.status = 'Available'; other.reserved_for_case_id = '';
+          c.store.leg_merch_units = JSON.stringify(fresh);
+        },
+      });
+      await ctx.confirmReserve();
+      ok(unit7(ctx, 'MU-2').status === 'Available', 'the refused unit is released');
+      ok(unit7(ctx, 'MU-3').status === 'Available'
+         && unit7(ctx, 'MU-3').reserved_for_case_id === '',
+         'AND a concurrent change to another unit survives the NEW rollback path '
+         + 'too -- it re-reads rather than writing back its pre-await snapshot');
+    }
+  }
   }
 
   console.log('\nALL ' + n + ' ASSERTIONS PASS');
