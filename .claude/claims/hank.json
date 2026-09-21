@@ -2303,8 +2303,8 @@
       "task": "review cc json catch null soft delete sweep obligation 2026-09-18T23:19:37Z",
       "claimed_at": "2026-09-21T08:08:52Z",
       "claimed_at_epoch": 1789978132.5136046,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T12:06:01Z"
     }
   ]
 }
