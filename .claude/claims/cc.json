@@ -2032,8 +2032,8 @@
       "task": "FILES: api/_lib/law-timeentry.js tools/cross_tenant_isolation_scope.py tools/defect_register.py -- billing_code trim/store mismatch, SELF_EXCLUDED regression arm, hover-audit METHODS value",
       "claimed_at": "2026-09-21T19:55:37Z",
       "claimed_at_epoch": 1790020537.0884035,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T20:48:06Z"
     }
   ]
 }
