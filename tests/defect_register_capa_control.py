@@ -60,18 +60,57 @@ def head_sha():
     return D.git('rev-parse', 'HEAD').strip()
 
 
-def add(extra):
-    """Run --add against an in-memory register. Returns (exit code, records)."""
+# ── THE FIXTURE MUST NOT DEPEND ON WHAT HAPPENS TO BE AT HEAD ──────────────
+# It did, and the control was green or red according to who pushed last.
+#
+# `add()` passed `--commit head_sha()`. `cmd_add` then calls `derive(sha)` and
+# refuses any commit whose files are all bookkeeping or generated -- the
+# `--commit $(git rev-parse HEAD)` trap, a real guard that belongs there. So
+# whenever the tip happened to be a `chore(claims):` or `chore(generated):`
+# commit -- which in a five-clone repo is most of the time -- the three
+# MUST-ACCEPT arms failed for a reason that has nothing to do with CAPA
+# validation, which is this control's actual subject.
+# THAT IS WORSE THAN A FLAKY SUITE. This control's own stated purpose is that
+# it must not be "satisfied by an --add that refuses everything" -- and a
+# refusal arriving from an unrelated guard is exactly that, arriving by
+# accident. A red run was being read as a finding about CAPA and a green run as
+# a clearance, and which one you got depended on the repo's tip.
+#
+# SO `derive` IS MOCKED to a fixed synthetic commit. It is the same decision
+# already made for `load`, `save` and `fmea_loop` above: everything that is not
+# this control's subject is held still.
+#
+# THE GUARD IS NOT MOCKED AWAY, it is driven deliberately -- see the
+# bookkeeping arms in main(), which call add(..., files=BOOKKEEPING_FILES) and
+# assert the refusal still happens. Removing a guard's only exercise while
+# silencing it is how a mock becomes a blind spot.
+FIX_FILES = ['api/_lib/some-engine.js', 'api/some-endpoint.js']
+BOOKKEEPING_FILES = ['.claude/claims/hank.json', 'docs/MASTER-PLAN.md']
+SYNTHETIC = {'commit': '0123456789ab', 'date': '2026-09-21',
+             'subject': 'CONTROL FIXTURE -- a synthetic commit, not a real one',
+             'lines_added': 12, 'lines_removed': 3}
+
+
+def add(extra, files=None):
+    """Run --add against an in-memory register. Returns (exit code, records).
+
+    `files` is what the mocked `derive` reports the cited commit touched --
+    a real fix by default, so the bookkeeping guard stays quiet and the arms
+    below test what they say they test.
+    """
     saved = {}
     base = {'started': '2026-09-09', 'note': 'fixture', 'records': []}
     real_load, real_save, real_fmea = D.load, D.save, D.fmea_loop
+    real_derive = D.derive
     D.load = lambda: json.loads(json.dumps(base))
     D.save = lambda d: saved.update(d)
     D.fmea_loop = lambda rec: None          # not this control's subject
+    rec = dict(SYNTHETIC, files=list(FIX_FILES if files is None else files))
+    D.derive = lambda sha: dict(rec)        # nor is the repo's current tip
     out, real_stdout = io.StringIO(), sys.stdout
     sys.stdout = out
     try:
-        argv = ['--add', '--commit', head_sha(), '--app', 'sairnbiz',
+        argv = ['--add', '--commit', SYNTHETIC['commit'], '--app', 'sairnbiz',
                 '--layer', 'tooling', '--severity', 'moderate',
                 '--method', 'code-review',
                 '--summary', 'CONTROL FIXTURE -- never saved to disk',
@@ -84,6 +123,7 @@ def add(extra):
     finally:
         sys.stdout = real_stdout
         D.load, D.save, D.fmea_loop = real_load, real_save, real_fmea
+        D.derive = real_derive
     return rc, saved.get('records', []), out.getvalue()
 
 
@@ -185,6 +225,35 @@ def main():
     arm('a record carrying `root_cause` is still refused by --check',
         'root_cause' in io.open(os.path.join(REPO, 'tools', 'defect_register.py'),
                                 encoding='utf-8').read())
+
+    # -- THE GUARD THAT WAS BREAKING THIS SUITE IS NOW DRIVEN ON PURPOSE ----
+    # Mocking `derive` stops the repo's tip deciding this control's verdict. It
+    # would ALSO stop the bookkeeping guard ever being exercised, and a mock
+    # that silences a guard's only exercise is how a mock becomes a blind spot.
+    # So the guard is driven here, in both directions, from synthetic file
+    # lists rather than from whatever happens to be at HEAD.
+    ok_args = ['--factors', json.dumps(GOOD), '--recurrence-open', RECUR]
+
+    rc, recs, out = add(ok_args, files=BOOKKEEPING_FILES)
+    arm('a BOOKKEEPING-only commit is still refused -- the guard survives the '
+        'mock', rc == 2 and not recs and 'bookkeeping' in out.lower(),
+        (rc, len(recs), out[:160]))
+
+    rc, recs, _ = add(ok_args + ['--commit-is-bookkeeping',
+                                 'the fix really does live in a generated file'],
+                      files=BOOKKEEPING_FILES)
+    arm('...and its override still works when a real sentence is given',
+        rc == 0 and len(recs) == 1, (rc, len(recs)))
+
+    # THE ARM THAT PROVES THE FIX. Same input; the only difference is what the
+    # cited commit TOUCHED. A real fix is accepted, bookkeeping is not. Before
+    # 2026-09-21 that distinction was made by the repo's tip instead, so this
+    # suite's verdict depended on who pushed last.
+    rc_fix, recs_fix, _ = add(ok_args)
+    arm('the SAME well-formed record is ACCEPTED when the commit is a real fix '
+        '-- the verdict follows the input, not the repo tip',
+        rc_fix == 0 and len(recs_fix) == 1, (rc_fix, len(recs_fix)))
+
 
     print('\n%d failure(s)' % len(FAILS))
     return 1 if FAILS else 0
