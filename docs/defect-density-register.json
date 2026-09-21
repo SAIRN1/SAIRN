@@ -9111,63 +9111,6 @@
       "recurrence_open": "the predicate still only runs over api/sd-data.js -- 159 handler files were measured with it and returned zero, but a handler added tomorrow under api/ is not watched. And 60 PATCH sites exist across the handlers WITHOUT a representation preference; those cannot distinguish matched-zero either, and the predicate excludes them by construction."
     },
     {
-      "commit": "fcd622dfd47d",
-      "date": "2026-09-21",
-      "subject": "fix(stonedesk): the private CEO/CFO/CTO channel was readable, writable and deletable by anyone holding the shop's licence key",
-      "files": [
-        "api/_resources/stonedesk.js",
-        "api/sd-data.js",
-        "tests/run_exec_msgs_gate_sabotage_probe.py",
-        "tests/stonedesk_exec_msgs_gate.js"
-      ],
-      "lines_added": 407,
-      "lines_removed": 0,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "api/sd-data.js served sd_exec_msgs -- StoneDesk's private CEO/CFO/CTO channel -- through SD_LOCAL_RESOURCES, a dispatcher that deliberately has NO session gate because its other twenty members are the shared shop record (quote history, inventory, drawings, remakes) that every role in a fabrication shop reads. That justification was never true of the executive channel. The licence key is a BEARER credential held by the whole shop, so any employee, or anyone who obtained the key, could read, write and soft_delete every private executive message. Reproduced with a valid key and NO X-SD-Auth header: 200 ok:true, the private message returned verbatim. stonedesk.html's own comment above the exec Delete button already recorded it in prose -- 'this is a UI courtesy, not an authorisation boundary' -- and sdExecRole came from localStorage, never checked against a session, so the courtesy was spoofable too. Fixed with a gate on all three verbs enforcing the boundary the client already had: a real stonedesk session with role owner or admin.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "93d37aa570cc",
-        "date": "2026-09-08",
-        "subject": "feat(stonedesk): the local-only record reaches a server -- 21 collections, and the count was wrong",
-        "lag_days": 13
-      },
-      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a resource inheriting a GROUP's justification that was never true of that member. 1.1 is about a check going stale and there was never a check here; 1.11 is about failing closed when a tool is absent, which is cc's LEG citation and does not describe this. The gap is real and is stated rather than papered over with the nearest-looking id.",
-      "contributing_factors": [
-        {
-          "factor": "The resource was placed in a no-gate dispatcher whose classifying comment justified the absence of a gate for the group, and no member was re-checked against that justification individually",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sd_exec_msgs gated on read, write and soft_delete -- every branch SD_LOCAL_RESOURCES has, confirmed against api/_resources/stonedesk.js verb table"
-        },
-        {
-          "factor": "The gap was known and written down in the CLIENT as prose for months (the UI-courtesy comment) with nothing turning that sentence into a check",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Both standing comments that carried the now-false group rule -- SD_LOCAL_RESOURCES header in api/sd-data.js and the duplicate paragraph in api/_resources/stonedesk.js -- corrected in the same commit to name the exception"
-        },
-        {
-          "factor": "No suite asserted any gate on this resource, and the same-hour suite written with the fix could not see WHERE the gate sat",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/run_exec_msgs_gate_sabotage_probe.py (NEW) plants six defects; the gate-moved-behind-the-query arm went SILENT against the original 11 arms, verified by removing the new assertion and re-running, so a twelfth arm asserting zero queries on all three verbs was added"
-        },
-        {
-          "factor": "docs/CRITICALITY-TIERS.md rates sd_exec_msgs Tier B with the consequence An internal message lost -- a durability reading of a confidentiality resource",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "Not changed inside a security fix: gates key off the tier, so re-tiering is a governance decision. Flagged in the commit message and in recurrence_open instead of quietly edited."
-        }
-      ],
-      "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
-    },
-    {
       "commit": "0d0d66c04cbb",
       "date": "2026-09-21",
       "subject": "fix(hydration): a full store silently switched server-wins OFF for good -- in all seven apps, because the flag write's return was discarded one line below a map write whose return is read",
@@ -9584,6 +9527,50 @@
       "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
     },
     {
+      "commit": "4f4afc8a113f",
+      "date": "2026-09-21",
+      "subject": "fix(monitoring): the trapdoor detector shared the blind spot it exists to catch, and watched 6 of 16 apps",
+      "files": [
+        ".claude/skills/sairn-code-scrubber/SKILL.md",
+        "api/alf-auth.js",
+        "api/bld-auth.js",
+        "api/grd-auth.js",
+        "api/law-auth.js",
+        "api/leg-auth.js",
+        "api/provisioner-health-sole-role.test.js",
+        "api/provisioner-health.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sv-auth.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_provisioner_health_sole_role_sabotage_probe.py",
+        "tools/licence_recoverability_check.py"
+      ],
+      "lines_added": 832,
+      "lines_removed": 27,
+      "app": "stonedesk",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/provisioner-health.js counted active holders of ANY provisioning role, so a licence with an active admin and no owner row at all reported HEALTHY though no route back to an owner exists; and tools/licence_recoverability_check.py keyed its verdict on state=='TRAPDOOR' alone, so the new unrecoverable state would have printed and exited 0. The detector shared the blind spot of the guard it exists to monitor, and watched 6 of the 16 apps that can reach the state.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "No single commit: the map and its counting rule were correct for every app registered at the time, and diverged app by app as second provisioning roles and new auth endpoints were added over months."
+      },
+      "citation_note": "The verdict half is a direct instance: tools/licence_recoverability_check.py RAN, recognised nothing, and returned 0. An unrecoverable licence with a zero exit code is 'could not tell' folded into 'passed'.",
+      "phase_note": "The detector was designed when its apps had one provisioning role each, so counting PROVISIONING_ROLES and counting the must-not-reach-zero role were the same operation. A second provisioning role was added to five apps without anything re-asking which count the detector needed.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is one count over the wrong set, but the coverage half (6 of 16 watched) has a different cause -- a comment asserting the remaining apps could not reach the state, which was true when written and never re-derived."
+    },
+    {
       "commit": "591531ce6fd6",
       "date": "2026-09-21",
       "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
@@ -9828,6 +9815,64 @@
       "citation_note": "Same family rather than a tool-absence skip: the guard ran, never fired, and its silence was recorded IN THE FILE as proof it was not needed. 'Could not fire' was folded into 'did not need to'.",
       "phase_note": "The guard was written when StoneDesk had one provisioning role; 'admin' was added later and nothing re-asked which of the two the licence could not lose. The quarantine comment was then copied from SAIRNcode, a single-provisioning-role app where the same reasoning is sound.",
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The code is one wrong set in one predicate, but the reason it survived review is a separate question about copied justifications: the quarantine argument was correct at its source and was never re-qualified for a file with two provisioning roles."
+    },
+    {
+      "commit": "ad6a6b9d9cee",
+      "date": "2026-09-21",
+      "subject": "fix(sairncare): a refused credential read was an EMPTY LEDGER, and the export already had the guard for it",
+      "files": [
+        "sairncare.html",
+        "tests/run_sairncare_transport_refusal_sabotage_probe.py",
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "lines_added": 417,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairncare.html alfPostRaw() carried 'if(!r.ok && !d.error)', the last copy of the clause deea8c55 removed from alfRoute() and alfData() the same day. The HTTP_<status> normalisation therefore fired only when the server sent NO error body, so every api/sd-data.js refusal carrying one passed through wearing the server's own code into a renderer whose code field is reserved for the COMPLIANCE ENGINE's refusals -- driven against the shipped functions: 401 -> NO_SESSION, 403 -> FORBIDDEN, 503 -> NOT_PROVISIONED, and upstream()'s 502 with NO code at all. THE HALF WITH A FILE AT THE END OF IT: crRefresh() read (r && Array.isArray(r.data)) ? r.data : [], so all four refusals set _crRecords=[] and rCredentials() rendered 'No credential or training entries recorded yet' over an append-only credential ledger nobody had been allowed to read. ALF_EXPORTS.credentials.rows() already refused on _crRecords===null under a comment saying never-loaded and genuinely-empty are different facts -- correct, and unreachable, because nothing ever produced null on a refusal, so a refused read was exportable as a CSV whose preamble prints ROWS IN THIS FILE: 0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "d2c3a58d5da7",
+        "date": "2026-08-22",
+        "subject": "feat: SAIRNcare Phase 2 -- compliance-rules engine (OH/IN/MI/PA) + staff credentialing",
+        "lag_days": 30
+      },
+      "citation_note": "ARGUABLE, and the same family as the alfRoute half it completes. 1.11 is about a check that could not run being folded into a pass; here a read that was REFUSED is folded into a successful read returning zero rows. 'Could not tell' becoming 'nothing there' rather than becoming 'passed' -- the same premise applied to data instead of to a verdict, one layer out from the rule's own wording about tool availability.",
+      "contributing_factors": [
+        {
+          "factor": "The renderer and the CSV export both derive their meaning from _crRecords, and the falsy branch of an Array.isArray() test maps every non-array outcome -- refused, unreadable, no licence -- onto the same empty array that a genuinely empty ledger produces.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "crRefresh() sets null on a refusal, which is the state the export guard was already written for, and keeps [] for a real 200 with no rows"
+        },
+        {
+          "factor": "deea8c55 fixed this shape in two of the three transports in this file and recorded the third as deliberately out of scope. A defect described in a comment is not a defect closed, and the comment was the only thing carrying it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the comment now sits on the fix, and a six-mutation probe refuses every way of reopening it including putting the clause back"
+        },
+        {
+          "factor": "No arm asserted what a REFUSED read does to the ledger. The existing suites drive successful reads and the export, so a refusal producing an empty file was invisible at every level.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives fake fetch -> alfPostRaw -> alfCredRead -> crRefresh end to end on all four refusal shapes, and asserts empty and refused stay distinguishable in BOTH directions"
+        },
+        {
+          "factor": "The export guard was correct and had been unreachable since it was written, so its existence gave false assurance to anybody who read it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "an arm asserts the guard is still present exactly once, so removing it from the other side now goes red"
+        }
+      ],
+      "recurrence_open": "Only the credential ledger was audited for this shape. alfEvaluate()'s consumer cqRenderResult() handles an error envelope correctly, but no sweep was run over the other readers in sairncare.html that derive a list from a response field, and a falsy-branch-to-empty-array is a shape a grep can find. The sairnvet and sairnlaw equivalents were not examined at all."
     },
     {
       "commit": "b09674f65e9d",
@@ -10236,6 +10281,63 @@
       "recurrence_open": "`hours` is unchecked at the SERVER and hours 0 produces the identical $0.00 line -- asserted as still-open by section 5 of tests/sairnlaw_billable_rate.js so the index row cannot go stale, but NOT fixed. The `Number(x)||0`-into-an-arithmetic-total checker does not exist, so the same shape in the other billing apps is unmeasured. And the LEDES export named in the summary is still not built."
     },
     {
+      "commit": "4b5260f5e3a5",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlegacy): merchandise reservation has been refused 401 in production since the session gate landed, and a refused reservation was left showing Reserved",
+      "files": [
+        "sairnlegacy.html",
+        "tests/run_leg_session_gate_sabotage_probe.py",
+        "tests/sairnlegacy_fault_probe.py",
+        "tests/sairnlegacy_reservation_lock.js"
+      ],
+      "lines_added": 256,
+      "lines_removed": 20,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "sairnlegacy.html confirmReserve() writes leg_merch_units through a direct fetch rather than sdnData(), deliberately, because it needs the real 409 ALREADY_RESERVED status that sdnData() collapses to null. The LEG_RESOURCES session gate shipped its client half by attaching X-SD-Auth inside sdnData(), so this one call site never got it and posted the licence key alone to a resource that now requires a session: 401 NO_SESSION for every user since the gate landed, i.e. merchandise reservation was broken in production. Reproduced against the DEPLOYED page and endpoint, and in the suite before the fix existed. SECOND HALF: on failure the function left its optimistic local write in place, so the device showed Reserved with nothing on the server -- the two-devices-one-casket state the reservation lock exists to prevent, reached by being refused and ignoring it. Fixed by sending the token at that call site and by rolling back on an explicit 4xx refusal while deliberately NOT rolling back on 5xx or a thrown request, which mean we could not tell.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "760a34a9b014",
+        "date": "2026-09-21",
+        "subject": "fix(sd-data): 36 SAIRNlegacy tables, including the chain-of-custody log for human remains, were authorised by the licence key alone",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest section is 1.11, a check that depends on another tool must fail CLOSED when that tool is absent -- and it does not fit: nothing here was absent and nothing reported a pass it never performed. The shape is a shared TRANSPORT being fixed while a deliberate bypass of that transport was not, which the process rules do not state. Same gap the sd_exec_msgs record named from the other direction: a member that does not inherit its group's property.",
+      "contributing_factors": [
+        {
+          "factor": "A security fix changed a shared transport and the one call site that bypasses that transport on purpose was not checked against it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The token is attached explicitly at that call site, and tests/sairnlegacy_fault_probe.py mutation 16 plants its removal"
+        },
+        {
+          "factor": "The reservation path treated every failure as recoverable-local, so an explicit refusal left the device asserting a lock the server had denied",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rollback on 4xx only, sharing one undoLocalReservation() with the 409 path so the two cannot drift; both directions planted as mutations 17 and 18"
+        },
+        {
+          "factor": "No suite drove the headers that call site actually sends -- the existing 47 assertions exercised its rollback logic thoroughly and never looked at the request",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section 7 of tests/sairnlegacy_reservation_lock.js asserts the request carries the session token, written and observed RED against the shipped page before the fix"
+        },
+        {
+          "factor": "The gate author ran a live probe that verified refusals and a real session reading, which cannot see a client call site that was never exercised",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Stated rather than actioned: no live probe of an endpoint can enumerate the callers of that endpoint inside a 315KB page. It was found by a reviewer reading every call site, which is what the independent-review obligation is for, and it worked."
+        }
+      ],
+      "recurrence_open": "Every app has a shared sdnData()-style transport and an unknown number of deliberate bypasses of it. Nothing enumerates those bypasses, and the next gate that changes a transport will have the same blind spot. sairnlegacy is now known to have exactly two data-endpoint call sites; no other app has been counted."
+    },
+    {
       "commit": "eea7606e2159",
       "date": "2026-09-21",
       "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
@@ -10292,106 +10394,61 @@
       "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
     },
     {
-      "commit": "4f4afc8a113f",
+      "commit": "fcd622dfd47d",
       "date": "2026-09-21",
-      "subject": "fix(monitoring): the trapdoor detector shared the blind spot it exists to catch, and watched 6 of 16 apps",
+      "subject": "fix(stonedesk): the private CEO/CFO/CTO channel was readable, writable and deletable by anyone holding the shop's licence key",
       "files": [
-        ".claude/skills/sairn-code-scrubber/SKILL.md",
-        "api/alf-auth.js",
-        "api/bld-auth.js",
-        "api/grd-auth.js",
-        "api/law-auth.js",
-        "api/leg-auth.js",
-        "api/provisioner-health-sole-role.test.js",
-        "api/provisioner-health.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-auth.js",
-        "api/sdn-auth.js",
-        "api/sen-auth.js",
-        "api/sv-auth.test.js",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "tests/run_provisioner_health_sole_role_sabotage_probe.py",
-        "tools/licence_recoverability_check.py"
+        "api/_resources/stonedesk.js",
+        "api/sd-data.js",
+        "tests/run_exec_msgs_gate_sabotage_probe.py",
+        "tests/stonedesk_exec_msgs_gate.js"
       ],
-      "lines_added": 832,
-      "lines_removed": 27,
+      "lines_added": 407,
+      "lines_removed": 0,
       "app": "stonedesk",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/provisioner-health.js counted active holders of ANY provisioning role, so a licence with an active admin and no owner row at all reported HEALTHY though no route back to an owner exists; and tools/licence_recoverability_check.py keyed its verdict on state=='TRAPDOOR' alone, so the new unrecoverable state would have printed and exited 0. The detector shared the blind spot of the guard it exists to monitor, and watched 6 of the 16 apps that can reach the state.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "No single commit: the map and its counting rule were correct for every app registered at the time, and diverged app by app as second provisioning roles and new auth endpoints were added over months."
-      },
-      "citation_note": "The verdict half is a direct instance: tools/licence_recoverability_check.py RAN, recognised nothing, and returned 0. An unrecoverable licence with a zero exit code is 'could not tell' folded into 'passed'.",
-      "phase_note": "The detector was designed when its apps had one provisioning role each, so counting PROVISIONING_ROLES and counting the must-not-reach-zero role were the same operation. A second provisioning role was added to five apps without anything re-asking which count the detector needed.",
-      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is one count over the wrong set, but the coverage half (6 of 16 watched) has a different cause -- a comment asserting the remaining apps could not reach the state, which was true when written and never re-derived."
-    },
-    {
-      "commit": "ad6a6b9d9cee",
-      "date": "2026-09-21",
-      "subject": "fix(sairncare): a refused credential read was an EMPTY LEDGER, and the export already had the guard for it",
-      "files": [
-        "sairncare.html",
-        "tests/run_sairncare_transport_refusal_sabotage_probe.py",
-        "tests/sairncare_transport_refusal.js"
-      ],
-      "lines_added": 417,
-      "lines_removed": 4,
-      "app": "sairncare",
       "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairncare.html alfPostRaw() carried 'if(!r.ok && !d.error)', the last copy of the clause deea8c55 removed from alfRoute() and alfData() the same day. The HTTP_<status> normalisation therefore fired only when the server sent NO error body, so every api/sd-data.js refusal carrying one passed through wearing the server's own code into a renderer whose code field is reserved for the COMPLIANCE ENGINE's refusals -- driven against the shipped functions: 401 -> NO_SESSION, 403 -> FORBIDDEN, 503 -> NOT_PROVISIONED, and upstream()'s 502 with NO code at all. THE HALF WITH A FILE AT THE END OF IT: crRefresh() read (r && Array.isArray(r.data)) ? r.data : [], so all four refusals set _crRecords=[] and rCredentials() rendered 'No credential or training entries recorded yet' over an append-only credential ledger nobody had been allowed to read. ALF_EXPORTS.credentials.rows() already refused on _crRecords===null under a comment saying never-loaded and genuinely-empty are different facts -- correct, and unreachable, because nothing ever produced null on a refusal, so a refused read was exportable as a CSV whose preamble prints ROWS IN THIS FILE: 0.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js served sd_exec_msgs -- StoneDesk's private CEO/CFO/CTO channel -- through SD_LOCAL_RESOURCES, a dispatcher that deliberately has NO session gate because its other twenty members are the shared shop record (quote history, inventory, drawings, remakes) that every role in a fabrication shop reads. That justification was never true of the executive channel. The licence key is a BEARER credential held by the whole shop, so any employee, or anyone who obtained the key, could read, write and soft_delete every private executive message. Reproduced with a valid key and NO X-SD-Auth header: 200 ok:true, the private message returned verbatim. stonedesk.html's own comment above the exec Delete button already recorded it in prose -- 'this is a UI courtesy, not an authorisation boundary' -- and sdExecRole came from localStorage, never checked against a session, so the courtesy was spoofable too. Fixed with a gate on all three verbs enforcing the boundary the client already had: a real stonedesk session with role owner or admin.",
+      "rules": [],
+      "citation_confidence": "not-citable",
       "injection_phase": "design",
       "phase_confidence": "stated",
       "found_by_tool": null,
       "injection": {
-        "commit": "d2c3a58d5da7",
-        "date": "2026-08-22",
-        "subject": "feat: SAIRNcare Phase 2 -- compliance-rules engine (OH/IN/MI/PA) + staff credentialing",
-        "lag_days": 30
+        "commit": "93d37aa570cc",
+        "date": "2026-09-08",
+        "subject": "feat(stonedesk): the local-only record reaches a server -- 21 collections, and the count was wrong",
+        "lag_days": 13
       },
-      "citation_note": "ARGUABLE, and the same family as the alfRoute half it completes. 1.11 is about a check that could not run being folded into a pass; here a read that was REFUSED is folded into a successful read returning zero rows. 'Could not tell' becoming 'nothing there' rather than becoming 'passed' -- the same premise applied to data instead of to a verdict, one layer out from the rule's own wording about tool availability.",
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a resource inheriting a GROUP's justification that was never true of that member. 1.1 is about a check going stale and there was never a check here; 1.11 is about failing closed when a tool is absent, which is cc's LEG citation and does not describe this. The gap is real and is stated rather than papered over with the nearest-looking id.",
       "contributing_factors": [
         {
-          "factor": "The renderer and the CSV export both derive their meaning from _crRecords, and the falsy branch of an Array.isArray() test maps every non-array outcome -- refused, unreadable, no licence -- onto the same empty array that a genuinely empty ledger produces.",
+          "factor": "The resource was placed in a no-gate dispatcher whose classifying comment justified the absence of a gate for the group, and no member was re-checked against that justification individually",
           "kind": "technical",
           "action_status": "done",
-          "action": "crRefresh() sets null on a refusal, which is the state the export guard was already written for, and keeps [] for a real 200 with no rows"
+          "action": "sd_exec_msgs gated on read, write and soft_delete -- every branch SD_LOCAL_RESOURCES has, confirmed against api/_resources/stonedesk.js verb table"
         },
         {
-          "factor": "deea8c55 fixed this shape in two of the three transports in this file and recorded the third as deliberately out of scope. A defect described in a comment is not a defect closed, and the comment was the only thing carrying it.",
+          "factor": "The gap was known and written down in the CLIENT as prose for months (the UI-courtesy comment) with nothing turning that sentence into a check",
           "kind": "process",
           "action_status": "done",
-          "action": "the comment now sits on the fix, and a six-mutation probe refuses every way of reopening it including putting the clause back"
+          "action": "Both standing comments that carried the now-false group rule -- SD_LOCAL_RESOURCES header in api/sd-data.js and the duplicate paragraph in api/_resources/stonedesk.js -- corrected in the same commit to name the exception"
         },
         {
-          "factor": "No arm asserted what a REFUSED read does to the ledger. The existing suites drive successful reads and the export, so a refusal producing an empty file was invisible at every level.",
+          "factor": "No suite asserted any gate on this resource, and the same-hour suite written with the fix could not see WHERE the gate sat",
           "kind": "detection",
           "action_status": "done",
-          "action": "the new suite drives fake fetch -> alfPostRaw -> alfCredRead -> crRefresh end to end on all four refusal shapes, and asserts empty and refused stay distinguishable in BOTH directions"
+          "action": "tests/run_exec_msgs_gate_sabotage_probe.py (NEW) plants six defects; the gate-moved-behind-the-query arm went SILENT against the original 11 arms, verified by removing the new assertion and re-running, so a twelfth arm asserting zero queries on all three verbs was added"
         },
         {
-          "factor": "The export guard was correct and had been unreachable since it was written, so its existence gave false assurance to anybody who read it.",
+          "factor": "docs/CRITICALITY-TIERS.md rates sd_exec_msgs Tier B with the consequence An internal message lost -- a durability reading of a confidentiality resource",
           "kind": "latent-condition",
-          "action_status": "done",
-          "action": "an arm asserts the guard is still present exactly once, so removing it from the other side now goes red"
+          "action_status": "declined",
+          "note": "Not changed inside a security fix: gates key off the tier, so re-tiering is a governance decision. Flagged in the commit message and in recurrence_open instead of quietly edited."
         }
       ],
-      "recurrence_open": "Only the credential ledger was audited for this shape. alfEvaluate()'s consumer cqRenderResult() handles an error envelope correctly, but no sweep was run over the other readers in sairncare.html that derive a list from a response field, and a falsy-branch-to-empty-array is a shape a grep can find. The sairnvet and sairnlaw equivalents were not examined at all."
+      "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     }
   ],
   "started": "2026-09-09",
