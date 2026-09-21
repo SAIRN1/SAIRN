@@ -10334,6 +10334,64 @@
       "citation_note": "The verdict half is a direct instance: tools/licence_recoverability_check.py RAN, recognised nothing, and returned 0. An unrecoverable licence with a zero exit code is 'could not tell' folded into 'passed'.",
       "phase_note": "The detector was designed when its apps had one provisioning role each, so counting PROVISIONING_ROLES and counting the must-not-reach-zero role were the same operation. A second provisioning role was added to five apps without anything re-asking which count the detector needed.",
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is one count over the wrong set, but the coverage half (6 of 16 watched) has a different cause -- a comment asserting the remaining apps could not reach the state, which was true when written and never re-derived."
+    },
+    {
+      "commit": "a8812740afae",
+      "date": "2026-09-21",
+      "subject": "fix(sairncare): a refused credential read was an EMPTY LEDGER, and the export already had the guard for it",
+      "files": [
+        "sairncare.html",
+        "tests/run_sairncare_transport_refusal_sabotage_probe.py",
+        "tests/sairncare_transport_refusal.js"
+      ],
+      "lines_added": 417,
+      "lines_removed": 4,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairncare.html alfPostRaw() carried 'if(!r.ok && !d.error)', the last copy of the clause deea8c55 removed from alfRoute() and alfData() the same day. The HTTP_<status> normalisation therefore fired only when the server sent NO error body, so every api/sd-data.js refusal carrying one passed through wearing the server's own code into a renderer whose code field is reserved for the COMPLIANCE ENGINE's refusals -- driven against the shipped functions: 401 -> NO_SESSION, 403 -> FORBIDDEN, 503 -> NOT_PROVISIONED, and upstream()'s 502 with NO code at all. THE HALF WITH A FILE AT THE END OF IT: crRefresh() read (r && Array.isArray(r.data)) ? r.data : [], so all four refusals set _crRecords=[] and rCredentials() rendered 'No credential or training entries recorded yet' over an append-only credential ledger nobody had been allowed to read. ALF_EXPORTS.credentials.rows() already refused on _crRecords===null under a comment saying never-loaded and genuinely-empty are different facts -- correct, and unreachable, because nothing ever produced null on a refusal, so a refused read was exportable as a CSV whose preamble prints ROWS IN THIS FILE: 0.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "d2c3a58d5da7",
+        "date": "2026-08-22",
+        "subject": "feat: SAIRNcare Phase 2 -- compliance-rules engine (OH/IN/MI/PA) + staff credentialing",
+        "lag_days": 30
+      },
+      "citation_note": "ARGUABLE, and the same family as the alfRoute half it completes. 1.11 is about a check that could not run being folded into a pass; here a read that was REFUSED is folded into a successful read returning zero rows. 'Could not tell' becoming 'nothing there' rather than becoming 'passed' -- the same premise applied to data instead of to a verdict, one layer out from the rule's own wording about tool availability.",
+      "contributing_factors": [
+        {
+          "factor": "The renderer and the CSV export both derive their meaning from _crRecords, and the falsy branch of an Array.isArray() test maps every non-array outcome -- refused, unreadable, no licence -- onto the same empty array that a genuinely empty ledger produces.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "crRefresh() sets null on a refusal, which is the state the export guard was already written for, and keeps [] for a real 200 with no rows"
+        },
+        {
+          "factor": "deea8c55 fixed this shape in two of the three transports in this file and recorded the third as deliberately out of scope. A defect described in a comment is not a defect closed, and the comment was the only thing carrying it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the comment now sits on the fix, and a six-mutation probe refuses every way of reopening it including putting the clause back"
+        },
+        {
+          "factor": "No arm asserted what a REFUSED read does to the ledger. The existing suites drive successful reads and the export, so a refusal producing an empty file was invisible at every level.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite drives fake fetch -> alfPostRaw -> alfCredRead -> crRefresh end to end on all four refusal shapes, and asserts empty and refused stay distinguishable in BOTH directions"
+        },
+        {
+          "factor": "The export guard was correct and had been unreachable since it was written, so its existence gave false assurance to anybody who read it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "an arm asserts the guard is still present exactly once, so removing it from the other side now goes red"
+        }
+      ],
+      "recurrence_open": "Only the credential ledger was audited for this shape. alfEvaluate()'s consumer cqRenderResult() handles an error envelope correctly, but no sweep was run over the other readers in sairncare.html that derive a list from a response field, and a falsy-branch-to-empty-array is a shape a grep can find. The sairnvet and sairnlaw equivalents were not examined at all."
     }
   ],
   "started": "2026-09-09",
