@@ -9232,65 +9232,6 @@
       "recurrence_open": "The predicate runs over api/sd-data.js ONLY. api/sc-credentials.js is where this shape was first found and is fixed, but nothing checks api/dnt-bi.js, api/alf-alerts.js or any other handler for it. The guard points where this fix happened to look."
     },
     {
-      "commit": "200fe08686cd",
-      "date": "2026-09-21",
-      "subject": "fix(sairnbuild): the trust flag could be earned with zero pushes -- a never-written pending list and an emptied one are the same count",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "sairnbuild.html",
-        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
-        "tests/sairnbuild_server_wins.js"
-      ],
-      "lines_added": 198,
-      "lines_removed": 6,
-      "app": "sairnbuild",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "sairnbuild.html granted bld_pending_trusted on a device that had pushed nothing. The attestation required provisioned!==false and bldPendingCount()===0, and that count is zero both for a list the retry emptied and for one that was NEVER WRITTEN -- the pre-2026-09-04 install the design is explicitly reasoned about. Driven end to end: trust granted on the first load with zero pushes; the merge still refuses on that load because mayOverwrite separately requires pend.state to be ok, which is there for an unreadable map; then any later failed write calls bldPendingMark, the key appears, the state becomes ok, and the already-granted flag turns into permission to overwrite edits the pending list has no record of because the mechanism postdates them. A local record went from EDITED HERE, never pushed to the server copy in three steps. The flag is never cleared, so the wrong grant is permanent. Fixed with one term. The suite now RUNS the attestation statement instead of reading it for substrings, which is what let a present-but-wrong condition pass every arm.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "df1af73ef464",
-        "date": "2026-09-21",
-        "subject": "feat(sairnbuild): server-wins built from bld_sync_pending -- the stronger carve-out, and the three blockers fixed first",
-        "lag_days": 0
-      },
-      "citation_note": "A check that stopped checking, one level up: the attestation WAS running and its condition WAS present -- every source-text arm confirmed bldPendingCount()===0 was in the line -- and it answered a different question from the one it was written for, because an empty list and a never-written list have the same count. A condition that is read rather than run cannot be caught this way.",
-      "contributing_factors": [
-        {
-          "factor": "bldPendingCount()===0 is true both for a list the retry emptied and for one that was never written, and the attestation treated them as the same evidence",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the attestation now also requires bldPendingRead().state to be ok, so the list must EXIST and be empty rather than be empty by being absent"
-        },
-        {
-          "factor": "the consequence was delayed by mayOverwrites separate state ok test, which is there for an UNREADABLE map -- so load 1 looked correct and the loss only arrived after some later failed write created the key",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the two uses of the three-state read now protect different properties and agree by construction; coupling them into one predicate was considered and left to the author, and is recorded as a press-on rather than changed by the reviewer"
-        },
-        {
-          "factor": "every existing arm checked the boot line for SUBSTRINGS, so a condition that was present and wrong passed all of them",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the suite lifts the attestation statement out of the file and evaluates it, with seven driven arms and a refusal if the call is ever duplicated"
-        },
-        {
-          "factor": "two unrelated arms sliced a FIXED 2200 characters of the boot chain, so adding a comment made one fail against code that was correct",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "both bounded by the enclosing functions closing brace, and a mutation added that removes the catch so the re-bounded arm is proved to bite"
-        }
-      ],
-      "recurrence_open": "Only this attestation was fixed. Nothing sweeps for other conditions on this platform that treat an absent record and an empty one as the same evidence, and the suites that assert over source text rather than running it are unaudited."
-    },
-    {
       "commit": "1884f8148112",
       "date": "2026-09-21",
       "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
@@ -9415,6 +9356,65 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
+      "commit": "200fe08686cd",
+      "date": "2026-09-21",
+      "subject": "fix(sairnbuild): the trust flag could be earned with zero pushes -- a never-written pending list and an emptied one are the same count",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnbuild.html",
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ],
+      "lines_added": 198,
+      "lines_removed": 6,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnbuild.html granted bld_pending_trusted on a device that had pushed nothing. The attestation required provisioned!==false and bldPendingCount()===0, and that count is zero both for a list the retry emptied and for one that was NEVER WRITTEN -- the pre-2026-09-04 install the design is explicitly reasoned about. Driven end to end: trust granted on the first load with zero pushes; the merge still refuses on that load because mayOverwrite separately requires pend.state to be ok, which is there for an unreadable map; then any later failed write calls bldPendingMark, the key appears, the state becomes ok, and the already-granted flag turns into permission to overwrite edits the pending list has no record of because the mechanism postdates them. A local record went from EDITED HERE, never pushed to the server copy in three steps. The flag is never cleared, so the wrong grant is permanent. Fixed with one term. The suite now RUNS the attestation statement instead of reading it for substrings, which is what let a present-but-wrong condition pass every arm.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "df1af73ef464",
+        "date": "2026-09-21",
+        "subject": "feat(sairnbuild): server-wins built from bld_sync_pending -- the stronger carve-out, and the three blockers fixed first",
+        "lag_days": 0
+      },
+      "citation_note": "A check that stopped checking, one level up: the attestation WAS running and its condition WAS present -- every source-text arm confirmed bldPendingCount()===0 was in the line -- and it answered a different question from the one it was written for, because an empty list and a never-written list have the same count. A condition that is read rather than run cannot be caught this way.",
+      "contributing_factors": [
+        {
+          "factor": "bldPendingCount()===0 is true both for a list the retry emptied and for one that was never written, and the attestation treated them as the same evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the attestation now also requires bldPendingRead().state to be ok, so the list must EXIST and be empty rather than be empty by being absent"
+        },
+        {
+          "factor": "the consequence was delayed by mayOverwrites separate state ok test, which is there for an UNREADABLE map -- so load 1 looked correct and the loss only arrived after some later failed write created the key",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the two uses of the three-state read now protect different properties and agree by construction; coupling them into one predicate was considered and left to the author, and is recorded as a press-on rather than changed by the reviewer"
+        },
+        {
+          "factor": "every existing arm checked the boot line for SUBSTRINGS, so a condition that was present and wrong passed all of them",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the suite lifts the attestation statement out of the file and evaluates it, with seven driven arms and a refusal if the call is ever duplicated"
+        },
+        {
+          "factor": "two unrelated arms sliced a FIXED 2200 characters of the boot chain, so adding a comment made one fail against code that was correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both bounded by the enclosing functions closing brace, and a mutation added that removes the catch so the re-bounded arm is proved to bite"
+        }
+      ],
+      "recurrence_open": "Only this attestation was fixed. Nothing sweeps for other conditions on this platform that treat an absent record and an empty one as the same evidence, and the suites that assert over source text rather than running it are unaudited."
+    },
+    {
       "commit": "2ee9c8191261",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): the clearance rollback could ERASE another device's clearance and write away a whole hydration -- and on a cheque the server never stored it in the first place",
@@ -9535,6 +9535,66 @@
         }
       ],
       "recurrence_open": "Only the clearance fields are compared. Any other field a caller sends that this RPC path cannot carry is still confirmed silently, and nothing enumerates what the nine parameters do and do not cover."
+    },
+    {
+      "commit": "760a34a9b014",
+      "date": "2026-09-21",
+      "subject": "fix(sd-data): 36 SAIRNlegacy tables, including the chain-of-custody log for human remains, were authorised by the licence key alone",
+      "files": [
+        "api/sd-data-leg-session-gate.test.js",
+        "api/sd-data.js",
+        "sairnlegacy.html",
+        "tests/run_leg_session_gate_sabotage_probe.py",
+        "tests/sairnlegacy_reservation_lock.js"
+      ],
+      "lines_added": 398,
+      "lines_removed": 2,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js: both LEG_RESOURCES branches went from the derived licence hash straight to the PostgREST query with no verifySessionToken anywhere, so all 36 SAIRNlegacy tables -- including leg_deathrecords and leg_custodylog, the chain-of-custody record for human remains -- were readable AND writable by anything holding the licence key. The licence key is a BEARER credential handed to the browser, so the caller needed no employee session at all. Reproduced against the shipped file with a valid key and NO X-SD-Auth header: leg_deathrecords read 200 with rows, leg_custodylog write 200 having upserted. Fixed as one gate BEFORE the read/write dispatch so neither branch is reachable without it, scoped to 'sairnlegacy' via verifySessionToken's third argument (Check 28). The client half shipped in the same commit because 56 of sairnlegacy.html's 58 sdnData() call sites sent no token and the gate alone would have been an app-wide outage.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "406042d38e3a",
+        "date": "2026-08-07",
+        "subject": "fix: SAIRNlegacy server sync -- 36 leg_ resources, read-side hydration, demo license seed",
+        "lag_days": 45
+      },
+      "citation_note": "ARGUABLE, and the same citation c98b5d674c76 took for law_trusttx three days earlier for the identical shape. 1.11 is written about a check that CANNOT RUN reporting a pass; this is a check that DOES NOT EXIST reporting nothing at all. Same premise one layer out -- an absent control is indistinguishable from a present one at every call site, and 'no gate' and 'gate passed' produce byte-identical responses -- but the rule's own wording is about tool availability, so it is not a clean instantiation.",
+      "contributing_factors": [
+        {
+          "factor": "The 36 leg_ resources were registered in sd-data.js as a resource MAP, and the dispatch reads the map to decide read-vs-write. Nothing in that structure has a place to put an authorisation question, so adding a resource is a one-line map edit that silently grants it licence-key-only access.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "one gate keyed on LEG_RESOURCES placed BEFORE the read/write dispatch, so a new map entry inherits the gate instead of bypassing it"
+        },
+        {
+          "factor": "This is the THIRD app to ship the identical shape -- dnt_* fixed as an emergency 2026-08-27, SF_RESOURCES found 2026-09-21, LEG_RESOURCES the same day. Each was fixed where it was found rather than swept for across the file.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "sweep every resource map in api/sd-data.js for a branch that reaches a query without verifySessionToken, rather than waiting for the fourth to be noticed by hand"
+        },
+        {
+          "factor": "No test asserted that a request WITHOUT a session is refused; the existing SAIRNlegacy suites all supplied a valid caller, so an endpoint with no gate and an endpoint with a working gate were green in exactly the same way.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-leg-session-gate.test.js asserts 401 with ZERO fetch calls on both verbs, and covers the whole 36-entry map rather than the four resources it names"
+        },
+        {
+          "factor": "The transport attached X-SD-Auth only when a caller passed withSession, so the client was already not sending a token on 56 of 58 call sites -- which means landing the gate alone would have looked like a broken app and invited a revert of the security fix rather than a fix of the call sites.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sdnData() now attaches the token whenever a session is held; changed in the transport rather than at 56 call sites"
+        }
+      ],
+      "recurrence_open": "The sweep for the same shape across the OTHER resource maps in api/sd-data.js has not been run -- three instances found one at a time is not evidence that the fourth does not exist. And the gate is verified against the handler in-process; a deployment where verifySessionToken's secret is unset in the environment would be a different failure this record does not cover."
     },
     {
       "commit": "b09674f65e9d",

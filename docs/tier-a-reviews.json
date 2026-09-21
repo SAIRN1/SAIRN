@@ -1299,6 +1299,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-21T19:47:07Z",
+      "resources": [
+        "leg_invoices"
+      ],
+      "files": [
+        "api/sd-data-leg-session-gate.test.js"
+      ],
+      "what": "SAIRNlegacy LEG_RESOURCES session gate: all 36 leg_* tables (incl leg_deathrecords, leg_custodylog, leg_invoices) were authorised by the licence key alone -- no verifySessionToken on either the read or the write branch of api/sd-data.js. Added one gate BEFORE the read/write dispatch, scoped to 'sairnlegacy' via verifySessionToken's third arg (Check 28 cross-app collision). Client half in the same commit: sairnlegacy.html's transport now attaches X-SD-Auth unconditionally, because 56 of 58 sdnData() call sites passed no session flag and the gate alone would have been an outage. REVIEW FOCUS: (1) the gate is BEFORE the query, not after -- a 401 issued post-fetch passes every status assertion and leaks anyway; (2) the app-scoping third argument is present; (3) both verbs covered, not just write; (4) the unconditional client token does not leak a token to a non-SAIRNlegacy endpoint. Evidence: api/sd-data-leg-session-gate.test.js 20/20, tests/run_leg_session_gate_sabotage_probe.py 6/6 mutations refused.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-21T19:47:07Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
