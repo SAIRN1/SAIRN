@@ -1542,6 +1542,16 @@
       "status": "released",
       "note": "OVERRIDE, stated out loud. sairn_claim.py exited 1 on shared phrase \"2026 obligation\" against hank's live tier-a-reviews claim. Verified rather than assumed, and it is a DIFFERENT OBLIGATION: hank holds 2026-09-18T23:19:37Z (cc's json-catch-null sweep, files api/sd-data.js + api/dnt-bi.test.js + api/sd-data-unconfirmed-write.test.js); I am taking 2026-09-21T07:56:40Z (hank's own scp_quotes fix, files sairnscape.html + tests/sairnscape_*). No shared file, no shared resource, no shared app. The colliding tokens are a YEAR and the word for the thing both of us are doing, which every reviewer claim on this platform will contain by construction -- the same shape I disclosed earlier today on the literal token \"tier-a\". AND hank CANNOT review this one: hank authored it, and the gate refuses a self-signed closure at both the command and the write. I DELIBERATELY DID NOT TAKE hank's: that block is REAL -- same obligation, same timestamp, 3.9h and still inside the 4h window -- and it is left alone. Task string not reworded; the reason is attached here.",
       "released_at": "2026-09-21T12:09:15Z"
+    },
+    {
+      "id": "cody-1789992822",
+      "session": "cody",
+      "subject": "sairncode",
+      "task": "negative controls for the sc-credentials unknown write guards",
+      "claimed_at": "2026-09-21T12:13:42Z",
+      "claimed_at_epoch": 1789992822.9313152,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
