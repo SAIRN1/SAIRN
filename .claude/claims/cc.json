@@ -2002,8 +2002,8 @@
       "task": "FILES: api/sd-data.js api/sd-data-unconfirmed-write-sweep.test.js -- the four representation-PATCH sites the new guard cannot see (8064 rf_schedule, 7500 invoice issue, 7536 reconcile_claim, 2634), repaired to the row-count model already in the file at 2181, and the guard's predicate widened by dropping the .json().catch() condition that was the symptom rather than the defect.",
       "claimed_at": "2026-09-21T13:57:23Z",
       "claimed_at_epoch": 1789999043.1067617,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T14:21:24Z"
     }
   ]
 }
