@@ -2950,7 +2950,40 @@ function bldEnterApp(d){
     // next load the merge may trust it and overwrite. Recorded once, never
     // cleared: what it attests is that a complete push happened, which does
     // not stop being true later.
-    if(_bldBackup.provisioned!==false&&bldPendingCount()===0)bldMarkPendingTrusted();
+    //
+    // ── AND `state==='ok'` IS THE HALF THAT WAS MISSING (2026-09-21) ──────
+    // Found by the independent review of this change. The condition was
+    // `provisioned!==false && bldPendingCount()===0`, and bldPendingCount() is
+    // ZERO IN TWO SITUATIONS THIS CANNOT TELL APART: a list the retry emptied,
+    // and a list that WAS NEVER WRITTEN. The second is exactly the device this
+    // whole design is reasoned about -- the comment above bldPendingRead's
+    // callers says it in as many words, "on an old device 'absent from
+    // pending' means 'never pushed'" -- so the attestation was granting itself
+    // on a pre-2026-09-04 install, on the first load, with zero pushes.
+    //
+    // THE CONSEQUENCE WAS DELAYED BY A CONDITION NOBODY DESIGNED FOR IT, which
+    // is why it looked fine. bldServerWinsMerge's `mayOverwrite` also requires
+    // `pend.state==='ok'`, and that term is there to handle an UNREADABLE map.
+    // On the first load the state is 'absent', so nothing is overwritten and
+    // the device looks correct -- and then ANY later failed write calls
+    // bldPendingMark(), the key appears, the state becomes 'ok', and the
+    // already-granted flag turns into permission to overwrite edits the
+    // pending list has no record of because the mechanism postdates them.
+    // Driven end to end before this line changed: a local edit went from
+    // "EDITED HERE, never pushed" to the server's copy in three steps.
+    //
+    // SO THE LIST MUST EXIST AND BE EMPTY, not be empty by being absent.
+    // bldPendingRead() already tells absent, unreadable and ok apart -- the
+    // same three-way read the merge relies on -- and asking it here is a
+    // POSITIVE signal that the pending mechanism has been live on this device,
+    // which is what the attestation is trying to assert in the first place.
+    //
+    // THE FLAG IS STILL PERMANENT AND THAT IS NOW DEFENSIBLE. With this
+    // condition it attests a complete push that happened WHILE THE MECHANISM
+    // WAS RECORDING, which does not stop being true. Without it no expiry
+    // policy would have helped: the flag would simply have been re-earned
+    // wrongly on the next load.
+    if(_bldBackup.provisioned!==false&&bldPendingRead().state==='ok'&&bldPendingCount()===0)bldMarkPendingTrusted();
     bldBackupNotice(pushed);
   }).catch(function(e){
     // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD ──────────────────────────

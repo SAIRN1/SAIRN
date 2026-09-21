@@ -115,13 +115,57 @@ function harness(opts) {
     'var _bldSyncOn={bld_jobs:true,bld_bids:false};',
     fn('bldPendingRead'), fn('bldPendingAll'),
     fn('bldWhileSeeding'),
-    fn('bldPendingTrusted'), fn('bldMarkPendingTrusted'),
+    fn('bldPendingTrusted'), fn('bldMarkPendingTrusted'), fn('bldPendingCount'),
     fn('bldHydrateLoad'), fn('bldHydrateStore'),
     fn('bldServerWinsMerge'),
   ].join('\n'), ctx);
   ctx.local = (k) => JSON.parse(raw[k] || 'null');
+  // ── THE ATTESTATION, RUN RATHER THAN READ (2026-09-21) ──────────────────
+  // The arms below checked the boot line for substrings, which is how a
+  // condition can be present and still be wrong: the line did contain
+  // `bldPendingCount()===0`, and that is TRUE on a device whose pending list
+  // was never written -- so the check passed and the flag was granted with
+  // zero pushes. Reading a condition cannot tell you what it answers. The
+  // statement itself is lifted out of the file and evaluated here.
+  ctx.attest = (provisioned) => {
+    ctx._bldBackup = { provisioned: provisioned };
+    vm.runInContext(attestLine(), ctx);
+  };
   return ctx;
 }
+
+// The one statement that grants trust. Found by its call rather than by a line
+// number, and it FAILS LOUDLY if that call moves or is duplicated -- a second
+// attestation elsewhere is a thing this suite would otherwise never see, and
+// it would drive only the first.
+function attestLine() {
+  const at = html.indexOf('bldMarkPendingTrusted();');
+  assert.ok(at > 0, 'no call to bldMarkPendingTrusted() -- nothing attests anything');
+  assert.strictEqual(html.indexOf('bldMarkPendingTrusted();', at + 1), -1,
+    'bldMarkPendingTrusted() is called in more than one place; this suite drives ONE line '
+    + 'and would silently test only that one');
+  const NL = String.fromCharCode(10);
+  return html.slice(html.lastIndexOf(NL, at) + 1, html.indexOf(NL, at));
+}
+// ── THE BOOT CHAIN, BOUNDED BY ITS OWN SHAPE (2026-09-21) ────────────────
+// Both arms below used to slice a FIXED 2200 CHARACTERS from the start of the
+// chain. That is a window, not a boundary, and it did exactly what a window
+// does: a 40-line comment was added above the attestation and `.catch(` fell
+// off the end, so "the pull/push chain has no catch" failed against a chain
+// that still had one. The arm was right about nothing and loud about it.
+//
+// Bounded now by the enclosing function's own closing brace -- a newline
+// followed by `}` in column zero -- and it FAILS rather than returning a short
+// slice if it cannot find one.
+function bootChain() {
+  const NL = String.fromCharCode(10);
+  const a = html.indexOf('bldHydrateAll().then(');
+  assert.ok(a > 0, 'the boot chain is gone -- nothing hydrates on load');
+  const end = html.indexOf(NL + '}', a);
+  assert.ok(end > a, 'could not find the end of the function holding the boot chain');
+  return html.slice(a, end);
+}
+
 const K = 'bld_jobs';
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -254,7 +298,7 @@ test('both hydrates go through the ONE merge, and neither keeps a private copy',
 test('the seeding suppression has a finally, and the boot chain has a catch', () => {
   assert.match(fn('bldWhileSeeding'), /finally/,
     'a throw inside st() would leave the whole app un-backed-up for the session');
-  const boot = html.slice(html.indexOf('bldHydrateAll().then('), html.indexOf('bldHydrateAll().then(') + 2200);
+  const boot = bootChain();
   assert.ok(boot.indexOf('.catch(function(e)') !== -1,
     'the pull/push chain has no catch -- a throw strands the pending retry silently');
   assert.ok(boot.indexOf('bldMarkPendingTrusted()') !== -1,
@@ -267,7 +311,7 @@ test('the attestation is EARNED, not merely made', () => {
   // attestation makes the carve-out permanently unearned on that device while
   // everything keeps looking correct -- which is worse than bypassing the gate,
   // because it is silent and it is durable.
-  const boot = html.slice(html.indexOf('bldHydrateAll().then('), html.indexOf('bldHydrateAll().then(') + 2200);
+  const boot = bootChain();
   const at = boot.indexOf('bldMarkPendingTrusted()');
   const NL = String.fromCharCode(10);
   const line = boot.slice(boot.lastIndexOf(NL, at) + 1, at);
@@ -278,6 +322,84 @@ test('the attestation is EARNED, not merely made', () => {
   assert.ok(line.indexOf('bldPendingCount()===0') !== -1,
     'the attestation does not require the retry to have left the list EMPTY, which '
     + 'is the whole thing it is attesting');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('5. the attestation, DRIVEN -- what it grants and what it refuses');
+// Every arm above reads the attestation as TEXT. These run it. The finding
+// that made them necessary: the line contained `bldPendingCount()===0`, every
+// source-text arm passed, and the flag was still granted on a device that had
+// pushed nothing -- because an EMPTY pending list and a list that was NEVER
+// WRITTEN are the same count.
+
+test('THE FINDING: a NEVER-WRITTEN pending list does not earn trust', () => {
+  // The pre-2026-09-04 device this whole design is reasoned about. Its
+  // bld_sync_pending key does not exist, so the retry pushes nothing and the
+  // count is zero -- and zero here means "no record of anything", not
+  // "everything landed".
+  const c = harness({ local: { [K]: [{ id: 'J-1', note: 'EDITED HERE, never pushed' }] } });
+  assert.strictEqual(c.bldPendingRead().state, 'absent', 'the fixture is not the case being tested');
+  c.attest(true);
+  assert.strictEqual(c.bldPendingTrusted(), false,
+    'trust was granted on a device that has pushed NOTHING -- and the flag is never '
+    + 'cleared, so from the first later failed write onward the merge overwrites edits '
+    + 'the pending list has no record of because the mechanism postdates them');
+});
+
+test('...and the merge still refuses, which is why this was invisible', () => {
+  // The delay that made it look fine. mayOverwrite also requires state==='ok',
+  // a term that is there for an UNREADABLE map -- so on the first load nothing
+  // is overwritten whether or not the flag was granted. That is the arm that
+  // explains why a source-text check was not enough.
+  const c = harness({ local: { [K]: [{ id: 'J-1', note: 'never pushed' }] } });
+  c.attest(true);
+  c.bldServerWinsMerge(K, [{ id: 'J-1', note: 'the server copy' }]);
+  assert.strictEqual(c.local(K)[0].note, 'never pushed');
+});
+
+test('THE SEQUENCE: trust granted wrongly + the key appearing later = the edit is gone', () => {
+  // Three steps, nothing unusual, and it is what this fix prevents. Driven
+  // with the flag PRE-SET, which is the state the old code reached on load 1.
+  const c = harness({
+    local: { [K]: [{ id: 'J-1', note: 'EDITED HERE, never pushed' }] },
+    pending: {},            // the key now exists -- any later failed write does this
+    trusted: true,          // ...and the flag was already granted on load 1
+  });
+  c.bldServerWinsMerge(K, [{ id: 'J-1', note: 'the server copy' }]);
+  assert.strictEqual(c.local(K)[0].note, 'the server copy',
+    'this arm is meant to SHOW the loss, so if it stops it is the fixture that changed');
+});
+
+test('a list the retry really emptied DOES earn trust', () => {
+  // The fix must not make the gate unearnable. An existing, empty list is the
+  // honest attestation and it still works.
+  const c = harness({ local: { [K]: [{ id: 'J-1' }] }, pending: {} });
+  assert.strictEqual(c.bldPendingRead().state, 'ok');
+  c.attest(true);
+  assert.strictEqual(c.bldPendingTrusted(), true,
+    'the gate is now unearnable -- a device that has pushed everything can never overwrite');
+});
+
+test('a list with something still stranded does NOT earn trust', () => {
+  const c = harness({ local: { [K]: [{ id: 'J-1' }] }, pending: { [K]: ['J-1'] } });
+  c.attest(true);
+  assert.strictEqual(c.bldPendingTrusted(), false);
+});
+
+test('an UNPROVISIONED server does not earn trust, however empty the list', () => {
+  const c = harness({ local: { [K]: [{ id: 'J-1' }] }, pending: {} });
+  c.attest(false);
+  assert.strictEqual(c.bldPendingTrusted(), false,
+    'nothing was even attempted, so an empty list attests nothing');
+});
+
+test('a CORRUPT pending list does not earn trust either', () => {
+  // state is 'unreadable', not 'ok'. Its count is zero for the same reason the
+  // absent case's is, and it must fail closed for the same reason.
+  const c = harness({ local: { [K]: [{ id: 'J-1' }] }, pending: 'corrupt' });
+  assert.strictEqual(c.bldPendingRead().state, 'unreadable');
+  c.attest(true);
+  assert.strictEqual(c.bldPendingTrusted(), false);
 });
 
 test('bld_bids is tracked for pending at BOTH of its explicit write sites', () => {

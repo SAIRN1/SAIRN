@@ -102,8 +102,44 @@ MUTATIONS = [
      "never cleared, so one wrong attestation makes the carve-out "
      "permanently unearned while everything looks correct",
      APP,
-     "    if(_bldBackup.provisioned!==false&&bldPendingCount()===0)bldMarkPendingTrusted();",
+     "    if(_bldBackup.provisioned!==false&&bldPendingRead().state==='ok'&&bldPendingCount()===0)bldMarkPendingTrusted();",
      "    bldMarkPendingTrusted();"),
+
+    # ── THE HALF THAT WAS MISSING, ADDED 2026-09-21 ────────────────────────
+    # Mutation 10 above removes the whole condition, which every source-text
+    # arm catches. These two leave it LOOKING right: the line still has
+    # `bldPendingCount()===0` and still has the provisioned test, and the
+    # arms that read it as text still pass. Only the arms that RUN it can
+    # see that a never-written list now earns trust with zero pushes.
+
+    ("11. THE ORIGINAL DEFECT, RESTORED: the attestation stops requiring the "
+     "pending list to EXIST, so a device whose key was never written -- the "
+     "pre-2026-09-04 install this design is reasoned about -- earns trust on "
+     "its first load having pushed nothing",
+     APP,
+     "    if(_bldBackup.provisioned!==false&&bldPendingRead().state==='ok'&&bldPendingCount()===0)bldMarkPendingTrusted();",
+     "    if(_bldBackup.provisioned!==false&&bldPendingCount()===0)bldMarkPendingTrusted();"),
+
+    ("12. THE ONE THAT READS AS CORRECT: `state==='ok'` becomes "
+     "`state!=='unreadable'`, which looks like the same fail-closed intent and "
+     "still admits ABSENT -- the only state that matters here",
+     APP,
+     "bldPendingRead().state==='ok'&&bldPendingCount()===0",
+     "bldPendingRead().state!=='unreadable'&&bldPendingCount()===0"),
+
+    ("13. the boot chain loses its catch, so a throw anywhere above strands "
+     "the pending retry in silence. Included because the arm guarding it was "
+     "reading a FIXED 2200-character window and had just failed against a "
+     "chain that still had one -- this proves the re-bounded arm bites",
+     APP,
+     # ANCHOR WIDENED before this arm was ever green: the bare `}).catch(` line
+     # matches FOUR times in sairnbuild.html, and the harness reported ANCHOR-4
+     # and refused rather than planting in whichever came first. Carried down to
+     # the comment that names this one.
+     "  }).catch(function(e){\n"
+     "    // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD",
+     "  }).then(function(e){\n"
+     "    // ── AND A CATCH, WHICH THIS CHAIN NEVER HAD"),
 ]
 
 sys.exit(run_probe(
