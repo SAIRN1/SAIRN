@@ -5341,8 +5341,54 @@ function sbSyncedBootstrap(resources){
     }
     map[key]=arr;
   }
+  // Captured RAW and BEFORE the map write, so the flag-write failure below
+  // can put back the exact bytes that were there rather than a re-rendering
+  // of them. A read that throws is recorded rather than treated as absent.
+  var prevRaw=null,prevRead=true;
+  try{prevRaw=localStorage.getItem(SB_SYNCED_KEY);}catch(e){prevRead=false;}
   if(!st(SB_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write
-  st(SB_BOOTSTRAP_KEY,1);
+  // ── AND THE MAP MUST NOT OUTLIVE A FAILED FLAG WRITE (2026-09-21) ──────
+  // The line above has read st()'s return since it was written, with a comment
+  // saying exactly why. The write below did not, and the two are one line
+  // apart. Found in the independent Tier A review of this change.
+  //
+  // WHAT A DISCARDED RETURN COST HERE, DRIVEN RATHER THAN REASONED: the map
+  // lands, the flag does not, and `BootstrappedNow` is set -- so THIS load is
+  // safe. But the flag is what says the bootstrap has happened, so the NEXT
+  // load bootstraps again and sets it again, and every load after that, and
+  // the overwrite branch in ServerWinsMerge() is skipped every single time.
+  // The device never takes one correction from the server for the life of the
+  // profile -- which is the defect this whole feature exists to fix,
+  // reappearing as its own failure mode, on a device whose only symptom is
+  // that nothing ever updates. Storage-full is the realistic trigger and
+  // st()'s own comment is about quota.
+  //
+  // BOTH WRITES NOW SUCCEED OR NEITHER DOES. On a failed flag write the map is
+  // put back exactly as it was found, so the device is in the state it was in
+  // before this ran and the next load retries cleanly. `prevRaw` is captured
+  // BEFORE the map write and RAW, for the same reason SyncedRead() reads raw:
+  // a parsed-and-restringified map is not the bytes that were there.
+  //
+  // AND IF THE UNDO FAILS TOO, INERT IS THE SAFE DIRECTION AND SILENCE IS NOT.
+  // A map saying "everything is seeded" with no flag beside it is the
+  // destructive first run waiting for the next load, so that case suppresses
+  // overwriting for this load, says so, and returns its own answer rather
+  // than reporting 'ran'.
+  if(!st(SB_BOOTSTRAP_KEY,1)){
+    var undone=false;
+    if(prevRead){try{
+      if(prevRaw===null)localStorage.removeItem(SB_SYNCED_KEY);
+      else localStorage.setItem(SB_SYNCED_KEY,prevRaw);
+      undone=true;
+    }catch(e){}}
+    if(undone){
+      try{console.error('SAIRNbiz: the one-time hydration bootstrap could not be completed -- nothing was seeded, and it will be retried on the next load.');}catch(_e){}
+      return 'incomplete';
+    }
+    sbBootstrappedNow=true;
+      try{console.error('SAIRNbiz: the one-time hydration bootstrap could not be completed AND could not be undone. The server copy will NOT overwrite anything on this device until storage frees up. Clear space and reload.');}catch(_e){}
+    return 'stuck';
+  }
   sbBootstrappedNow=true;
   return 'ran';
 }

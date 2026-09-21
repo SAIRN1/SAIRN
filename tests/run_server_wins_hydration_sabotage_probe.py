@@ -154,6 +154,61 @@ MUTATIONS += [
      "}"),
 ]
 
+# ── THE FLAG-WRITE HALF, ADDED 2026-09-21 ──────────────────────────────────
+# All thirteen mutations above are about the MERGE and the carve-out. None of
+# them touches the bootstrap's two WRITES, and the defect the independent
+# review found lived exactly there: the map write's return was read and the
+# flag write's, one line below, was discarded. It could not have been planted
+# before, because the harness's localStorage could not refuse a write -- so
+# the whole storage-failure class was unreachable from the suite and therefore
+# from here.
+#
+# Planted on ONE app, sairnlaw, for the same reason mutations 8-13 are: the
+# "all seven copies are the SAME rule" arm is what carries a single-app
+# mutation to the other six, and planting each of these seven times would be
+# six more anchors to keep in step for no extra signal.
+LAW = 'sairnlaw.html'
+
+MUTATIONS += [
+    ("14. [sairnlaw] THE ORIGINAL DEFECT, RESTORED: the flag write's return is "
+     "discarded again, so a full store leaves the map written and the flag "
+     "absent -- and every later load re-bootstraps and suppresses overwriting, "
+     "for the life of the profile",
+     LAW,
+     "  if(!st(LAW_BOOTSTRAP_KEY,1)){",
+     "  st(LAW_BOOTSTRAP_KEY,1);\n  if(false){"),
+
+    ("15. [sairnlaw] THE UNDO IS SKIPPED, so a failed flag write leaves a map "
+     "saying EVERYTHING IS SEEDED with no flag beside it -- the destructive "
+     "first run, waiting for the next load",
+     LAW,
+     "    if(prevRead){try{",
+     "    if(false){try{"),
+
+    ("16. [sairnlaw] THE ONE THAT READS AS TIDIER: the undo writes an EMPTY "
+     "MAP instead of removing the key, so 'never seeded' becomes 'seeded "
+     "nothing' -- which parses, reads as ok, and is a different answer",
+     LAW,
+     "      if(prevRaw===null)localStorage.removeItem(LAW_SYNCED_KEY);",
+     "      if(prevRaw===null)localStorage.setItem(LAW_SYNCED_KEY,'{}');"),
+
+    ("17. [sairnlaw] THE UNDO PUTS BACK THE NEW MAP RATHER THAN THE OLD ONE, "
+     "so a device that had already seeded some ids silently gains the rest",
+     LAW,
+     "      else localStorage.setItem(LAW_SYNCED_KEY,prevRaw);",
+     "      else localStorage.setItem(LAW_SYNCED_KEY,JSON.stringify(map));"),
+
+    ("18. [sairnlaw] THE UNREPAIRABLE CASE STOPS SUPPRESSING: the map says "
+     "everything is seeded, the flag is absent, the undo failed, and this load "
+     "now overwrites -- the destructive first run reached through a storage "
+     "failure",
+     LAW,
+     "    lawBootstrappedNow=true;\n"
+     "      try{console.error('SAIRNlaw: the one-time hydration bootstrap could not be completed AND",
+     "    try{console.error('SAIRNlaw: the one-time hydration bootstrap could not be completed AND"),
+]
+
+
 sys.exit(run_probe(
     SUITE, MUTATIONS,
     title='server-wins hydration, its first-push carve-out and its one-time '

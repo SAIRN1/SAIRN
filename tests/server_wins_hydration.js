@@ -97,12 +97,22 @@ const APPS = [
       'function sdWhileSuppressed(fn){var w=sdSyncSuppressed;sdSyncSuppressed=true;try{return fn();}finally{sdSyncSuppressed=w;}}',
       'function sdBackupHookFailed(){}',
       'var SD_SYNCED_ON={};',
+      // ── ONLY REACHABLE SINCE THE STORE COULD REFUSE (2026-09-21) ────────
+      // StoneDesk's st() records a failed write in a module-level flag. Every
+      // arm before section 3b wrote successfully, so that line never ran and
+      // the global never had to exist here. The first arm that made setItem
+      // throw died on `sdStorageFailed is not defined` -- a harness gap, not a
+      // product one, and one that would have hidden every storage-failure arm
+      // behind a ReferenceError.
+      'function sdStorageFailed(key,e){}',
       'function ld(k,d){return sdLoad(k,d);}',
     ].join('\n') },
   { app: 'sairnbiz',     file: 'sairnbiz.html',     prefix: 'sb',  up: 'SB',
     listVar: 'SB_SYNCED', sample: 'sb_invs',
     hydrates: ['sbHydrateAll'], transport: 'sbMarkSynced',
-    stubs: 'var sbSyncPaused=false;' },
+    // `_sbSaveFailed` is SAIRNbiz's equivalent of StoneDesk's sdStorageFailed,
+    // and was unreachable here for the same reason.
+    stubs: 'var sbSyncPaused=false; var _sbSaveFailed=false;' },
   { app: 'sairnfreedom', file: 'sairnfreedom.html', prefix: 'sf',  up: 'SF',
     listVar: 'SF_SYNCED', sample: 'sf_members',
     hydrates: ['sfHydrateAll'], transport: 'sfMarkSynced',
@@ -179,6 +189,8 @@ function liftVar(src, name) {
 // opts.local   {resource: [records]}
 // opts.synced  {resource:[ids]} | 'corrupt' | undefined
 // opts.booted  true to pretend the bootstrap already ran on an earlier load
+// opts.failWrite  key whose setItem throws (a full store)
+// opts.failRemove true to make removeItem throw as well
 function harness(A, opts) {
   opts = opts || {};
   const src = read(A.file);
@@ -190,9 +202,28 @@ function harness(A, opts) {
   else if (opts.synced !== undefined) store[syncedKey] = JSON.stringify(opts.synced);
   if (opts.booted) store[bootKey] = '1';
 
+  // ── A STORE THAT CAN FAIL, ADDED 2026-09-21 ──────────────────────────────
+  // `opts.failWrite` names the key whose writes throw, and `opts.failRemove`
+  // makes removeItem throw. Without a store that can refuse, the whole
+  // quota-full class is unreachable from here -- and that is not hypothetical:
+  // lawSyncedBootstrap's flag write had its return discarded from the day it
+  // was written, one line below a map write whose return is read, and no arm
+  // could see it because setItem always succeeded.
+  //
+  // removeItem exists because the UNDO of a first-run bootstrap is a REMOVE:
+  // the synced map was absent before it ran, and putting back "absent" is not
+  // the same as writing an empty object, which reads as a valid seeded-nothing
+  // map.
   const localStorage = {
     getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
-    setItem: (k, v) => { store[k] = String(v); },
+    setItem: (k, v) => {
+      if (opts.failWrite && k === opts.failWrite) throw new Error('QuotaExceededError');
+      store[k] = String(v);
+    },
+    removeItem: (k) => {
+      if (opts.failRemove) throw new Error('QuotaExceededError');
+      delete store[k];
+    },
   };
   const ctx = {
     JSON, Object, Array, String, Number, Math, Promise, Date,
@@ -399,6 +430,96 @@ each('it refuses to run on an UNREADABLE map, and does not claim it did', (A) =>
   assert.strictEqual(c.__store[c.__bootKey], undefined,
     'the done-flag was set over a map that could not be read, so the bootstrap can never run');
   assert.strictEqual(c.__store[c.__syncedKey], '{not json');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('3b. a FULL STORE: the map and the done-flag succeed or fail together');
+// Found in the independent Tier A review of the bootstrap. The map write's
+// return was read from the day it was written, with a comment saying why. The
+// flag write's return, one line below, was discarded -- so on a full store the
+// map landed, the flag did not, and because the FLAG is what says the
+// bootstrap has happened, every later load bootstrapped again and suppressed
+// overwriting again. The device never took one correction from the server for
+// the life of the profile: the defect the whole feature exists to fix,
+// reappearing as its own failure mode, on a device whose only symptom is that
+// nothing ever updates.
+//
+// None of this was reachable from here until the harness gained a store that
+// can refuse a write.
+
+each('a failed FLAG write is UNDONE, not left half-applied', (A) => {
+  const c = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1', note: 'local' }] },
+    failWrite: A.prefix + '_synced_bootstrap',
+  });
+  assert.strictEqual(c.bootstrap([A.sample]), 'incomplete',
+    'a half-applied bootstrap reported success');
+  assert.strictEqual(c.__store[c.__syncedKey], undefined,
+    'the map was left saying EVERYTHING IS SEEDED with no flag beside it -- that is '
+    + 'the destructive first run waiting for the next load');
+  assert.strictEqual(c.__store[c.__bootKey], undefined);
+  assert.strictEqual(c.bootedNow(), false,
+    'nothing was seeded, so nothing needs suppressing');
+});
+
+each('...and it puts back the EXACT bytes when a map already existed', (A) => {
+  const c = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1' }, { id: 'R-2' }] },
+    synced: { [A.sample]: ['R-1'] },
+    failWrite: A.prefix + '_synced_bootstrap',
+  });
+  assert.strictEqual(c.bootstrap([A.sample]), 'incomplete');
+  assert.deepStrictEqual(c.synced(), { [A.sample]: ['R-1'] },
+    'R-2 stayed marked seeded from a bootstrap that did not complete');
+});
+
+each('THE RETRY IS THE POINT: the next load bootstraps cleanly and server-wins works', (A) => {
+  // The failure must be transient, not a state the device is stuck in. This is
+  // the arm that says the undo left something that can succeed later.
+  const c = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1', note: 'local' }] },
+    failWrite: A.prefix + '_synced_bootstrap',
+  });
+  assert.strictEqual(c.bootstrap([A.sample]), 'incomplete');
+  const c2 = harness(A, { local: { [A.sample]: [{ id: 'R-1', note: 'local' }] } });
+  assert.strictEqual(c2.bootstrap([A.sample]), 'ran');
+  const c3 = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1', note: 'local' }] },
+    synced: { [A.sample]: ['R-1'] }, booted: true,
+  });
+  c3.merge(A.sample, [{ id: 'R-1', note: 'server truth' }]);
+  assert.strictEqual(c3.local(A.sample).find((r) => r.id === 'R-1').note, 'server truth',
+    'server-wins never resumed after a storage failure had passed');
+});
+
+each('if the UNDO fails too it goes INERT and SAYS SO, rather than silently', (A) => {
+  // The one case that cannot be repaired in-place. A map saying "everything is
+  // seeded" with no flag is the destructive first run, so this load must not
+  // overwrite -- and it must not report 'ran' either, because that is the
+  // silence the original defect was made of.
+  const c = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1', note: 'local' }] },
+    failWrite: A.prefix + '_synced_bootstrap', failRemove: true,
+  });
+  assert.strictEqual(c.bootstrap([A.sample]), 'stuck');
+  assert.strictEqual(c.bootedNow(), true,
+    'the map says everything is seeded and nothing suppressed this load -- the '
+    + 'destructive first run, arrived at through a storage failure');
+  c.merge(A.sample, [{ id: 'R-1', note: 'server truth' }]);
+  assert.strictEqual(c.local(A.sample).find((r) => r.id === 'R-1').note, 'local',
+    'a record was overwritten on a load whose bootstrap could not be completed');
+});
+
+each('a failed MAP write still returns unreadable and sets no flag', (A) => {
+  // The half that was already right, pinned so the fix above cannot be
+  // "simplified" into removing it.
+  const c = harness(A, {
+    local: { [A.sample]: [{ id: 'R-1' }] },
+    failWrite: A.prefix + '_synced_ids',
+  });
+  assert.strictEqual(c.bootstrap([A.sample]), 'unreadable');
+  assert.strictEqual(c.__store[c.__bootKey], undefined,
+    'the flag outlived a failed map write');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
