@@ -446,6 +446,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; THREE TIER A RESOURCES ARE AUTHORISED BY THE LICENCE KEY ALONE &mdash; `SF_RESOURCES` has no session gate, and `sairnfreedom` is not in `ROLES_BY_APP`** | **OPEN. Found by hank while building the dispatcher isolation suite, disclosed rather than fixed; given its own row 2026-09-21 (cc) because three mentions inside test files is not a queue anybody read | `tests/sf_resources_session_gate_probe.py` |
 | **&#128308; `SF_RESOURCES` has NO employee session check at all &mdash; the general ledger, the chart of accounts and vendor pricing are authorised by the LICENCE KEY ALONE** | **FOUND AND MEASURED 2026-09-21 (Hank)**, while building the cross-tenant isolation arms. `tests/sf_resources_session_gate_probe.py`, report-only, exit 0. **NOT FIXED &mdash; the scope is Michael&rsqu | `api/sd-data-cross-tenant-dispatchers.test.js`, `tests/sf_resources_session_gate_probe.py` |
 | ~~No dedicated test suite at all, and no fault probe -- 35 registered resources reaching a server with nothing named for them~~ | **CLOSED 2026-09-10 (Fourth), `4cc3831d`** -- `tests/sairnfreedom_server_backup.js` (14 assertions) and `tests/sairnfreedom_fault_probe.py` (8 arms) | `tests/sairnfreedom_fault_probe.py`, `tests/sairnfreedom_server_backup.js` |
 
@@ -675,7 +676,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 606   tests/**, api/** (both walked)
-  open-work rows citing a test       295   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       296   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
