@@ -9232,6 +9232,65 @@
       "recurrence_open": "The predicate runs over api/sd-data.js ONLY. api/sc-credentials.js is where this shape was first found and is fixed, but nothing checks api/dnt-bi.js, api/alf-alerts.js or any other handler for it. The guard points where this fix happened to look."
     },
     {
+      "commit": "200fe08686cd",
+      "date": "2026-09-21",
+      "subject": "fix(sairnbuild): the trust flag could be earned with zero pushes -- a never-written pending list and an emptied one are the same count",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnbuild.html",
+        "tests/run_sairnbuild_server_wins_sabotage_probe.py",
+        "tests/sairnbuild_server_wins.js"
+      ],
+      "lines_added": 198,
+      "lines_removed": 6,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnbuild.html granted bld_pending_trusted on a device that had pushed nothing. The attestation required provisioned!==false and bldPendingCount()===0, and that count is zero both for a list the retry emptied and for one that was NEVER WRITTEN -- the pre-2026-09-04 install the design is explicitly reasoned about. Driven end to end: trust granted on the first load with zero pushes; the merge still refuses on that load because mayOverwrite separately requires pend.state to be ok, which is there for an unreadable map; then any later failed write calls bldPendingMark, the key appears, the state becomes ok, and the already-granted flag turns into permission to overwrite edits the pending list has no record of because the mechanism postdates them. A local record went from EDITED HERE, never pushed to the server copy in three steps. The flag is never cleared, so the wrong grant is permanent. Fixed with one term. The suite now RUNS the attestation statement instead of reading it for substrings, which is what let a present-but-wrong condition pass every arm.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "df1af73ef464",
+        "date": "2026-09-21",
+        "subject": "feat(sairnbuild): server-wins built from bld_sync_pending -- the stronger carve-out, and the three blockers fixed first",
+        "lag_days": 0
+      },
+      "citation_note": "A check that stopped checking, one level up: the attestation WAS running and its condition WAS present -- every source-text arm confirmed bldPendingCount()===0 was in the line -- and it answered a different question from the one it was written for, because an empty list and a never-written list have the same count. A condition that is read rather than run cannot be caught this way.",
+      "contributing_factors": [
+        {
+          "factor": "bldPendingCount()===0 is true both for a list the retry emptied and for one that was never written, and the attestation treated them as the same evidence",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the attestation now also requires bldPendingRead().state to be ok, so the list must EXIST and be empty rather than be empty by being absent"
+        },
+        {
+          "factor": "the consequence was delayed by mayOverwrites separate state ok test, which is there for an UNREADABLE map -- so load 1 looked correct and the loss only arrived after some later failed write created the key",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the two uses of the three-state read now protect different properties and agree by construction; coupling them into one predicate was considered and left to the author, and is recorded as a press-on rather than changed by the reviewer"
+        },
+        {
+          "factor": "every existing arm checked the boot line for SUBSTRINGS, so a condition that was present and wrong passed all of them",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the suite lifts the attestation statement out of the file and evaluates it, with seven driven arms and a refusal if the call is ever duplicated"
+        },
+        {
+          "factor": "two unrelated arms sliced a FIXED 2200 characters of the boot chain, so adding a comment made one fail against code that was correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "both bounded by the enclosing functions closing brace, and a mutation added that removes the catch so the re-bounded arm is proved to bite"
+        }
+      ],
+      "recurrence_open": "Only this attestation was fixed. Nothing sweeps for other conditions on this platform that treat an absent record and an empty one as the same evidence, and the suites that assert over source text rather than running it are unaudited."
+    },
+    {
       "commit": "1884f8148112",
       "date": "2026-09-21",
       "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
@@ -9356,6 +9415,66 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
+      "commit": "2ee9c8191261",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlaw): the clearance rollback could ERASE another device's clearance and write away a whole hydration -- and on a cheque the server never stored it in the first place",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js",
+        "tests/sairnlaw_trust_clearance_probe.py"
+      ],
+      "lines_added": 304,
+      "lines_removed": 15,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnlaw.html lawSetClearance() captured the trust ledger array and the record's previous clearance values BEFORE awaiting the server, then wrote both back if the write failed. trustTransactions() is ld(), which JSON.parses localStorage on every call, so the captured array was genuinely stale: a failed single-row write erased everything that landed during the round trip -- a hydration, another save -- not the row but the whole array. And the previous values were restored unconditionally, so a clearance another device recorded mid-flight was overwritten by this device's pre-action value, putting an item the bank HAS taken back into the outstanding set and moving the expected bank balance by its amount. law_trusttx is attorney client trust money. confirmVoid() thirty lines above does all three things this did not -- re-read after the await, stamp its own change, refuse an already-in-target-state press -- and says in its own comment that re-reading is necessary and not sufficient. Found in the independent Tier A review of the 2026-09-18 outstanding-item work; the author's own negative control was green because every fixture had one device in play.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "5e0b531f2776",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+        "lag_days": 3
+      },
+      "citation_note": "A computed answer is only as current as its oldest input. The rollback's inputs -- the whole ledger array and the record's previous clearance values -- were all captured BEFORE the await, so by the time it ran, its answer was as current as a snapshot from before the round trip. It then wrote that answer back over storage that had moved on.",
+      "contributing_factors": [
+        {
+          "factor": "lawSetClearance() held `list` and `t` across the await and wrote the pre-round-trip array back in the revert, while trustTransactions() is ld() and parses localStorage fresh on every call -- so a failed SINGLE-ROW write erased the whole ledger as it stood mid-flight",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the revert re-reads with trustTransactions() and writes back the re-read array, the way confirmVoid() thirty lines above has since 2026-09-02"
+        },
+        {
+          "factor": "the revert restored the previous values unconditionally, with no way to tell its own change from one another device made during the round trip",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a cleared_at stamp captured before the write; the revert fires only if the record still carries it, and says so and leaves the record alone when it does not"
+        },
+        {
+          "factor": "confirmVoid() in the same file was hardened against this exact class on 2026-09-02 -- its commit says it was found by driving the function OVERLAPPED -- and the hardening was not carried across to the function written beside it six weeks later",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "no mechanism proposes the sibling: the general form is a check that finds two optimistic-write-then-revert functions in one file where only one re-reads after its await. Not built"
+        },
+        {
+          "factor": "the negative control was green and could not see any of it: all four of its mutations drove ONE device, and the stub trustTransactions() returned the store BY REFERENCE, which makes the entire stale-snapshot class unplantable",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a duringWrite hook that runs while the caller awaits, a deep-copying stub, an arm pinning that fidelity, and six new mutations -- 4 to 10, all refused"
+        }
+      ],
+      "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
+    },
+    {
       "commit": "6b777f006d18",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): marking a CHEQUE cleared came back ok:true over a write the database never performed -- refused now, and the refusal retires itself",
@@ -9416,66 +9535,6 @@
         }
       ],
       "recurrence_open": "Only the clearance fields are compared. Any other field a caller sends that this RPC path cannot carry is still confirmed silently, and nothing enumerates what the nine parameters do and do not cover."
-    },
-    {
-      "commit": "2ee9c8191261",
-      "date": "2026-09-21",
-      "subject": "fix(sairnlaw): the clearance rollback could ERASE another device's clearance and write away a whole hydration -- and on a cheque the server never stored it in the first place",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/tier-a-reviews.json",
-        "sairnlaw.html",
-        "tests/sairnlaw_trust_clearance.js",
-        "tests/sairnlaw_trust_clearance_probe.py"
-      ],
-      "lines_added": 304,
-      "lines_removed": 15,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "sairnlaw.html lawSetClearance() captured the trust ledger array and the record's previous clearance values BEFORE awaiting the server, then wrote both back if the write failed. trustTransactions() is ld(), which JSON.parses localStorage on every call, so the captured array was genuinely stale: a failed single-row write erased everything that landed during the round trip -- a hydration, another save -- not the row but the whole array. And the previous values were restored unconditionally, so a clearance another device recorded mid-flight was overwritten by this device's pre-action value, putting an item the bank HAS taken back into the outstanding set and moving the expected bank balance by its amount. law_trusttx is attorney client trust money. confirmVoid() thirty lines above does all three things this did not -- re-read after the await, stamp its own change, refuse an already-in-target-state press -- and says in its own comment that re-reading is necessary and not sufficient. Found in the independent Tier A review of the 2026-09-18 outstanding-item work; the author's own negative control was green because every fixture had one device in play.",
-      "rules": [
-        "1.10"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "5e0b531f2776",
-        "date": "2026-09-18",
-        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
-        "lag_days": 3
-      },
-      "citation_note": "A computed answer is only as current as its oldest input. The rollback's inputs -- the whole ledger array and the record's previous clearance values -- were all captured BEFORE the await, so by the time it ran, its answer was as current as a snapshot from before the round trip. It then wrote that answer back over storage that had moved on.",
-      "contributing_factors": [
-        {
-          "factor": "lawSetClearance() held `list` and `t` across the await and wrote the pre-round-trip array back in the revert, while trustTransactions() is ld() and parses localStorage fresh on every call -- so a failed SINGLE-ROW write erased the whole ledger as it stood mid-flight",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "the revert re-reads with trustTransactions() and writes back the re-read array, the way confirmVoid() thirty lines above has since 2026-09-02"
-        },
-        {
-          "factor": "the revert restored the previous values unconditionally, with no way to tell its own change from one another device made during the round trip",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a cleared_at stamp captured before the write; the revert fires only if the record still carries it, and says so and leaves the record alone when it does not"
-        },
-        {
-          "factor": "confirmVoid() in the same file was hardened against this exact class on 2026-09-02 -- its commit says it was found by driving the function OVERLAPPED -- and the hardening was not carried across to the function written beside it six weeks later",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "no mechanism proposes the sibling: the general form is a check that finds two optimistic-write-then-revert functions in one file where only one re-reads after its await. Not built"
-        },
-        {
-          "factor": "the negative control was green and could not see any of it: all four of its mutations drove ONE device, and the stub trustTransactions() returned the store BY REFERENCE, which makes the entire stale-snapshot class unplantable",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "a duringWrite hook that runs while the caller awaits, a deep-copying stub, an arm pinning that fidelity, and six new mutations -- 4 to 10, all refused"
-        }
-      ],
-      "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
     },
     {
       "commit": "b09674f65e9d",
