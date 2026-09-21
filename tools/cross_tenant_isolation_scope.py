@@ -509,7 +509,30 @@ def declared_coverage(body):
         return set(), m.group(1).strip()
     out = set()
     for d in _DECLARES.finditer(body):
-        for part in d.group(1).replace('\t', ' ').split(','):
+        # ── THE DECLARATION MAY WRAP, and the first version could not read a
+        # wrapped one. A 46-resource declaration does not fit on one line, so
+        # the dispatcher suite declared 46 and the tool read 4 -- an
+        # UNDER-count, which is the safe direction and was still wrong.
+        # Continuation lines are comment lines carrying nothing but resource
+        # names and commas; the first line that is anything else ends it.
+        text = d.group(1)
+        rest_of = body[d.end():].split('\n')
+        # the first fragment is the tail of the line the match ended on, which
+        # is empty -- dropping it is what lets the loop see the NEXT line
+        if rest_of and not rest_of[0].strip():
+            rest_of = rest_of[1:]
+        if text.rstrip().endswith(','):
+            for line in rest_of:
+                s = line.strip()
+                if not s.startswith('//') and not s.startswith('#'):
+                    break
+                s = s.lstrip('/#').strip()
+                if not s or not re.match(r'^[a-z0-9_]+(\s*,\s*[a-z0-9_]+)*,?$', s):
+                    break
+                text += ' ' + s
+                if not s.rstrip().endswith(','):
+                    break
+        for part in text.replace('\t', ' ').split(','):
             part = part.strip()
             if part and part != 'none':
                 out.add(part)

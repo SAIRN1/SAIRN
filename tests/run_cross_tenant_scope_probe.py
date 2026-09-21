@@ -262,6 +262,45 @@ def main():
     if not ok3:
         FAILED.append('absent-vs-none')
 
+    # ── A WRAPPED DECLARATION MUST PARSE WHOLE ───────────────────────────
+    # The first version's regex stopped at the newline, so a 46-resource
+    # declaration was read as 4. An UNDER-count is the safe direction and was
+    # still wrong, and nothing would have announced it.
+    wrapped = ('// CROSS-TENANT-ISOLATION: a_one, a_two,\n'
+               '//   b_one, b_two,\n'
+               '//   c_one\n'
+               '// and now some prose that is not a resource list at all\n')
+    got_w, _ = S.declared_coverage(wrapped)
+    okw = got_w == {'a_one', 'a_two', 'b_one', 'b_two', 'c_one'}
+    print('  %-4s %-58s %s' % ('ok' if okw else 'FAIL',
+                               'a WRAPPED declaration parses whole and stops at prose',
+                               ','.join(sorted(got_w))))
+    if not okw:
+        FAILED.append('wrapped-declaration')
+
+    # ── EVERY DECLARED RESOURCE MUST ACTUALLY BE DRIVEN ──────────────────
+    # The declaration is a claim somebody signs, and a signature is only worth
+    # more than a guess if something checks it. The dispatcher suite declared
+    # sd_quote_requests -- which has its own named branch and is not a member
+    # of any dispatcher map -- and no arm drove it. Caught here, not in review.
+    import re as _re
+    src = io.open(os.path.join(REPO, 'api/sd-data-cross-tenant-dispatchers.test.js'),
+                  encoding='utf-8').read()
+    units = _re.search(r'const UNITS = \[(.*?)\n\];', src, _re.S)
+    driven = set(_re.findall(r"\['([a-z0-9_]+)',\s*'[a-z0-9_]+'", units.group(1)))
+    declared, _n = S.declared_coverage(src)
+    extra = sorted(declared - driven)
+    missing = sorted(driven - declared)
+    okd = not extra and not missing
+    print('  %-4s %-58s %d driven, %d declared'
+          % ('ok' if okd else 'FAIL',
+             'the dispatcher suite declares EXACTLY what it drives',
+             len(driven), len(declared)))
+    if not okd:
+        print('        declared but NOT driven: %s' % (extra or '-'))
+        print('        driven but NOT declared: %s' % (missing or '-'))
+        FAILED.append('declaration-vs-driven')
+
     print('')
     if FAILED:
         print('%d arm(s) FAILED: %s' % (len(FAILED), ', '.join(FAILED)))

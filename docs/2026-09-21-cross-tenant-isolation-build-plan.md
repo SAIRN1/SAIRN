@@ -221,3 +221,83 @@ The locator has been wrong three times in the other direction and that is
 recorded too: UNLOCATED read 57, then 22, then 8, then 0, as four distinct
 serving shapes were added. **A 0 in that column means "no fifth shape has been
 introduced yet", not "the parser is finished."**
+
+---
+
+## RESULT — phases 1 and 2 are built (2026-09-21, Hank)
+
+**49 of 84 Tier A resources now have a genuine cross-tenant isolation test**, up
+from 0 when this was scoped. `api/sd-data-cross-tenant-dispatchers.test.js`,
+112 assertions, **18 of 18 sabotages caught** across every dispatcher, with
+`api/sd-data.js` restored byte-identical after each. Re-measure with
+`python tools/cross_tenant_isolation_scope.py --plan`; do not quote the figure
+from here.
+
+**Read this before starting phase 3**, because three things below contradict
+what is written above them.
+
+### The grader had to be fixed first, and that was not optional
+
+CC's review of the reference implementation found that the scanner **graded the
+reference WEAK** — `_REFUSAL` matched a status code and a bare length check and
+had no expression for a content assertion, which is the shape a *list* read
+must use. Every phase-1 and phase-2 unit, done correctly, would have landed as
+WEAK and this plan's own progress measure would have read zero while the work
+was being done properly. Three more findings came with it: the self-check was
+anchored on the old reference only, the grader's own control file was counted
+as platform coverage, and a file-level GENUINE was crediting resources its
+genuine arm never touched. All four are fixed; see the commit.
+
+### Per-resource coverage is now DECLARED, not inferred
+
+A file says what its arms cover:
+
+```
+// CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts
+```
+
+Cross-checked, never trusted: a file that declares and does not grade GENUINE
+credits nothing; a file that grades GENUINE and declares nothing credits
+nothing and is disclosed. **Two proximity heuristics were tried first and both
+scored the better-structured test worse** — a parameterised suite declares its
+resources in a table and drives them in a loop, so no line-window can attribute
+an arm to a name. `none (<reason>)` is a declaration too, for a genuine test
+whose subject is not Tier A.
+
+**The control now checks the signature**: every declared resource must appear in
+the suite's own `UNITS` table. That arm immediately caught `sd_quote_requests`
+declared and never driven — it has its own named branch and belongs to phase 3.
+
+### One file, not ten — a deliberate departure from the phasing above
+
+The plan said one unit per claim, one file each. Driving the dispatchers showed
+they differ only in the owning app, the session role and the id column. **The
+mock is the test**, and ten near-identical files would be ten places for it to
+drift. One harness, one mock, ten configurations keeps the load-bearing property
+where a single sabotage arm reaches it for all of them.
+
+### Three things found while building, none of them fixed here
+
+1. **`SF_RESOURCES` has no session gate at all.** `sf_accounts`, `sf_ledger` and
+   `sf_vendor_prices` — money — are authorised by the **licence alone**;
+   `sairnfreedom` is not even in `api/_lib/auth.js`'s `ROLES_BY_APP`, so no
+   session token can be signed for it. Same shape the defect register already
+   carries for `law_trusttx`. Isolation is asserted; *who may call* is a
+   separate question and a separate finding.
+2. **`sv_controlled` WRITE is not covered**, and says so in the file. The
+   controlled-substance register needs a witness co-signature from
+   `api/sv-witness.js`; forging one in a test would be forging the control.
+   READ isolation is covered.
+3. **Six write arms could not reach the conflict key on the first run** — a
+   coverage rule needs a payer, a denial needs a stage, a timesheet needs a real
+   Monday. Each is now given the minimum its validator demands. **An arm that
+   still cannot get through is reported `UNREACHED`, never passed**: a write arm
+   that silently never ran is indistinguishable from one that ran and found
+   nothing.
+
+### What remains
+
+35 resources, all phase 3–5, all **own-branch** — no dispatcher leverage left.
+The 11-unit ratio that justified doing dispatchers first is spent: the tail is
+roughly one unit per resource. Re-derive the case for it against a fresh number
+rather than against the one at the top of this document.
