@@ -52,6 +52,27 @@ const TABLE = 'sb_employee_auth';
 const PROVISIONING_ROLES = ['owner', 'hr'];
 const PROVISIONING_LABEL = 'Owner or HR';
 
+// ── THE ROLE THE LICENCE CANNOT LOSE (2026-09-21) ───────────────────────────
+// `owner` and `hr` BOTH provision, so counting the last-admin guard
+// over PROVISIONING_ROLES let a hr deactivate the last owner: two
+// active provisioners, the guard never fires, the licence reaches ZERO owners.
+//
+// NOT A TIDINESS POINT -- THERE IS NO WAY BACK. Three facts in THIS file make
+// it terminal, and all three were checked here rather than assumed from
+// SAIRNfreedom: `bootstrap` creates role 'owner'; its existence check is
+// `select=id&limit=1` with NO `active` filter, so it answers 409 even when
+// every credential is inactive; and `setup` refuses `role === 'owner' &&
+// caller.role !== 'owner'`, so the surviving hr cannot mint a
+// replacement. Zero active owners is a licence dead through the API,
+// recoverable only by direct database access -- exactly how SD-AUDIT-2026 was
+// lost.
+//
+// Passed to api/_lib/employee-lifecycle.js setActive() as `soleRole`, the
+// opt-in added for SAIRNfreedom. Driven both ways before and after: with it
+// absent the deactivation answers 200 AND SENDS THE PATCH; with it set the
+// same call answers 409 LAST_ADMIN and sends nothing.
+const SOLE_ROLE = 'owner';
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -279,17 +300,7 @@ module.exports = async (req, res) => {
       const out = await lifecycle.setActive({
         caller: caller, body: body, licHash: licHash, table: TABLE,
         provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
-        // `soleRole: null` -- STATED, and it is NOT obviously right here.
-        // This app has TWO provisioning roles (owner, hr), so "who may
-        // provision" and "who must not reach zero" can come apart exactly as
-        // they do in SAIRNfreedom: the holder of the second role can
-        // deactivate the last holder of the first, see two active
-        // provisioners, and the guard does not fire. null preserves TODAY'S
-        // behaviour byte for byte and changes nothing; naming a sole role
-        // would change who can be deactivated, which is a product decision
-        // about this app's role model and is not mine to make in passing.
-        // Recorded in docs/SAIRN-OPEN-WORK-INDEX.md rather than decided here.
-        soleRole: null,
+        soleRole: SOLE_ROLE,
         rest: rest, headers: headers
         // No `audit`: this app has no audit-log table (api/_lib/audit.js's
         // allow-list is sairnlaw / sairncode / stonedesk only).
