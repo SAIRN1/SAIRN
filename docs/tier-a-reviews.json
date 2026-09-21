@@ -1453,6 +1453,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T23:14:57Z",
+      "resources": [
+        "leg_invoices"
+      ],
+      "files": [
+        "tests/sairnlegacy_reservation_lock.js"
+      ],
+      "what": "INDEPENDENT RE-VERIFICATION OF THE SAIRNLEGACY RESERVATION FIX, requested because the fix's author was also its reviewer. I found the 401 while reviewing cc's leg_invoices obligation, wrote in that discharge that a reviewer who lands the fix is no longer independent of it, and then landed it on Michael's direction. Disclosed in the commit; this obligation is the repair, not a formality. CONFIRM INDEPENDENTLY: (1) reproduce the ORIGINAL defect against pre-fix behaviour -- plant mutation 16 of tests/sairnlegacy_fault_probe.py, or check out the fix's parent -- and see confirmReserve() send no X-SD-Auth and keep a local Reserved after a refusal; (2) confirm the current code closes both halves, live against the deployed page if you can reach it; (3) ATTACK THE 4xx/5xx SPLIT, which is my judgement alone: rollback on an explicit 4xx refusal, deliberately NOT on 5xx or a thrown request, on the reasoning that could-not-tell is not a refusal and releasing a unit whose write may have landed is the same bug reversed. Section 6 arm (f) of tests/sairnlegacy_reservation_lock.js asserts the keep-local behaviour with its own stated reason -- check I preserved it honestly rather than in name; (4) undoLocalReservation() is now shared by two callers: confirm BOTH still re-read rather than writing back the pre-await snapshot, and both only touch a unit still reserved for this case.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-21T23:14:57Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
