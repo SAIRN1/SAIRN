@@ -1745,6 +1745,16 @@
       "claimed_at_epoch": 1789973783.9213614,
       "status": "released",
       "released_at": "2026-09-21T07:27:46Z"
+    },
+    {
+      "id": "fourth-1789976184",
+      "session": "fourth",
+      "subject": "sairnlaw-deadline-engine-maine",
+      "task": "FILES: api/_lib/deadline-engine.js api/_lib/deadline-maine.test.js sql/sairnlaw_deadline_seed_maine.json docs/sairnlaw-maine-deadline-seed-gate.md -- Maine computation standard me_rcp_6a, holiday calendar, forward rows only. OVERRIDES cc's sairnlaw block on Michael's explicit direction: disjoint file sets, deadlines subsystem not billing.",
+      "claimed_at": "2026-09-21T07:36:24Z",
+      "claimed_at_epoch": 1789976184.8115966,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
