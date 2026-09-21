@@ -1622,8 +1622,8 @@
       "task": "trust flag earned with zero pushes never written pending list FILES: sairnbuild.html tests/sairnbuild_server_wins.js tests/run_sairnbuild_server_wins_sabotage_probe.py",
       "claimed_at": "2026-09-21T15:14:58Z",
       "claimed_at_epoch": 1790003698.490787,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T19:15:10Z"
     }
   ]
 }
