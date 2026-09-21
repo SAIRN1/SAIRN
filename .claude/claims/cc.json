@@ -2012,8 +2012,8 @@
       "task": "server-wins hydration conversion built from bld_sync_pending, plus the three blockers the plan names: try/finally around bldSeeding, __overflow failing closed, and bld_bids decided explicitly rather than inheriting the shape",
       "claimed_at": "2026-09-21T14:21:53Z",
       "claimed_at_epoch": 1790000513.9190152,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T14:51:36Z"
     }
   ]
 }
