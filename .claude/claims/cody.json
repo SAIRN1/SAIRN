@@ -1479,6 +1479,16 @@
       "claimed_at_epoch": 1789774671.6498878,
       "status": "released",
       "released_at": "2026-09-19T00:05:36Z"
+    },
+    {
+      "id": "cody-1789973789",
+      "session": "cody",
+      "subject": "cody",
+      "task": "tier A review discharge scp_quotes send button",
+      "claimed_at": "2026-09-21T06:56:29Z",
+      "claimed_at_epoch": 1789973789.212363,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
