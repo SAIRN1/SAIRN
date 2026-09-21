@@ -1102,6 +1102,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T13:46:53Z",
+      "resources": [
+        "dnt_ar",
+        "dnt_charges",
+        "dnt_patients",
+        "law_barcerts",
+        "law_invoices",
+        "law_opaccounts",
+        "sv_controlled"
+      ],
+      "files": [
+        "api/dnt-bi.test.js",
+        "tests/run_cross_tenant_scope_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "what": "Fourth's two findings on the cross-tenant grader, fixed. NO SERVING CODE CHANGED -- tools/cross_tenant_isolation_scope.py, its control tests/run_cross_tenant_scope_probe.py, and one corrected comment line in api/dnt-bi.test.js. The Tier A names appear because a coverage tool and its fixtures necessarily NAME what they measure. FINDING 2: credit needed three conditions and one of them was satisfied by the declaration itself, so a name on the declaration line and nowhere else credited a resource -- fourth drove it (sv_controlled, GENUINE 3->4, zero tests) and I reproduced it before fixing. The declaration is now cross-checked against the suite's own resource table via driven_resources(); a file with NO table is a third state (None, credited and disclosed) rather than a refusal. FINDING 1: my `none` reason on dnt-bi was wrong about dnt_patients -- that file does assert license_hash on the dnt_patients read; the verdict survives only because seed() uses one hash so no second tenant exists. Corrected in place.\nPRESS ON:\n(1) driven_resources() IS A REGEX OVER A TABLE AND THAT IS THE NEW WEAK POINT. It matches `const NAME = [ ... ];` at column 0 and takes each row's FIRST string literal. A suite whose table is built any other way -- a map literal, a generated list, a table indented inside a function -- reads as NO TABLE, which is the generous branch: the declaration is credited on its own and only disclosed. Check whether that generous default is right, or whether an unparseable table should be a refusal. I chose generous because an empty set would silently strip every credit from a suite written differently, and a silent strip is the worse direction -- but judge it.\n(2) THE CROSS-CHECK IS STILL NOT A CHECK THAT THE ARM DRIVES THE RESOURCE. It proves the name is in the table the arms iterate. It does not prove the loop reaches that row, that the row's arm asserts anything, or that the assertion is about tenancy. A table entry with a skipped arm would still credit. Say whether that residual gap needs closing now or is acceptable, because it is the same gap one layer in.\n(3) I EXCLUDED FOURTH'S OWN REVIEW PROBE from tests_naming via SELF_EXCLUDED. Check that is right and not me removing an inconvenient measurement: my reasoning is that its subject IS this grader, so its prose names resources and the parser read the word `declaration` out of a sentence as a resource name. If any part of that file is real platform coverage I have just deleted it from the number.\n(4) THE dnt-bi CORRECTION IS IN A FILE I DO NOT OWN, again -- one comment line, replacing a wrong reason with a right one and dating the correction. Check the new reason is actually true of that file, particularly the claim that seed() puts every row under ONE license_hash.\n(5) THE NEW CONTROL ARMS ARE DRIVEN IN MEMORY AGAINST THE REAL REFERENCE FILE rather than a fixture, on purpose -- a fixture written from the same reading as the fix cannot contradict it. That makes the arm depend on a literal string in another file (the declaration line it mutates). If that line is ever reworded the arm stops testing anything and will still pass. Judge whether it should assert it found the line to mutate.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

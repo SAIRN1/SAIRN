@@ -62,7 +62,7 @@ import sys
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 
-CRITERIA_VERSION = '2026-09-21.3'
+CRITERIA_VERSION = '2026-09-21.4'
 
 # The one known-good instance, named rather than described, so --check can
 # assert the grader still recognises it. A grader that stops recognising its
@@ -456,7 +456,14 @@ def grade(body):
 #
 # NAMED AND DISCLOSED rather than silently dropped, because an exclusion nobody
 # can see is how a coverage number starts lying in the other direction.
-SELF_EXCLUDED = ('tests/run_cross_tenant_scope_probe.py',)
+SELF_EXCLUDED = (
+    'tests/run_cross_tenant_scope_probe.py',
+    # Fourth's review of this grader. Same reason: its subject IS this tool, so
+    # the prose in it discusses declarations and resource names, and the parser
+    # read the word `declaration` out of a sentence as a resource. A file whose
+    # subject is the measurer is not a measurement.
+    'tests/cross_tenant_scope_grader_review_probe.py',
+)
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
 # A file-level grade is not a per-resource grade, and this tool REPORTS and
@@ -498,6 +505,50 @@ SELF_EXCLUDED = ('tests/run_cross_tenant_scope_probe.py',)
 # register made for `--rule not-citable`: an escape hatch, with a sentence.
 _DECLARES = re.compile(r'CROSS-TENANT-ISOLATION\s*:\s*([a-z0-9_, \t]+)')
 _DECLARES_NONE = re.compile(r'CROSS-TENANT-ISOLATION\s*:\s*none\s*\(([^)\n]{10,})\)', re.I)
+
+
+# ── WHAT A SUITE ACTUALLY DRIVES, READ FROM ITS OWN TABLE ───────────────────
+# Fourth's review of the declaration mechanism, and it is finding 4 surviving in
+# a new form. The three conditions for credit were: the name appears in the file
+# as a whole word, the file grades GENUINE, and the name is in the declaration.
+# CONDITION 1 IS SATISFIED BY THE DECLARATION ITSELF, because the declaration is
+# a line in the file -- so the word-boundary check added to close finding 4 was
+# a restatement of condition 3, not independent corroboration of it. Driven by
+# fourth and reproduced here: adding `sv_controlled` to the reference file's
+# declaration line and NOTHING ELSE takes GENUINE from 3 to 4, with no test
+# behind it, and every arm of the control stays green.
+#
+# The declaration replaced a GUESSED distribution of a file-level grade with an
+# ASSERTED one. That is better -- a person can be held to a declaration and a
+# regex cannot -- but it is still not a CHECK, and the number the whole plan is
+# read from moved on one comment line.
+#
+# SO THE DECLARATION IS NOW CHECKED AGAINST THE SUITE'S OWN DRIVING TABLE. The
+# structure that defeats every proximity heuristic -- a table of resources plus
+# a loop that iterates it -- is exactly the structure that makes the declaration
+# verifiable, because the table is machine-readable and IS what the arms drive.
+# A declared resource absent from it is credited to nothing and reported.
+_TABLE = re.compile(
+    r'^const\s+(?:[A-Z][A-Z0-9_]*)\s*=\s*\[(.*?)^\];', re.M | re.S)
+# A row's FIRST string literal is the resource: ['law_invoices', 'invoice_id'],
+# { map: ..., members: [['dnt_ar', 'ar_id'], ...] } -- both yield the name.
+_ROW_NAME = re.compile(r"\[\s*'([a-z][a-z0-9_]*)'")
+
+
+def driven_resources(body):
+    """Resource names the file's own table(s) carry, or None when it has none.
+
+    None and empty are different: a suite with no table cannot be cross-checked
+    and says so, rather than having every declaration silently rejected.
+    """
+    found = set()
+    tables = 0
+    for m in _TABLE.finditer(body):
+        rows = _ROW_NAME.findall(m.group(1))
+        if rows:
+            tables += 1
+            found.update(rows)
+    return found if tables else None
 
 
 def declared_coverage(body):
@@ -574,6 +625,25 @@ def tests_naming(names):
             UNDECLARED.append((rel, 'DECLARES coverage but grades ' + g, sorted(declared)))
         if g == 'GENUINE' and not declared and none_reason is None:
             UNDECLARED.append((rel, 'grades GENUINE but DECLARES nothing', []))
+        # ── THE DECLARATION IS CHECKED AGAINST THE TABLE THE ARMS DRIVE ─────
+        # A name in the declaration and nowhere else credits nothing. Reported
+        # rather than dropped: a declaration that outruns the table is either a
+        # test somebody meant to write or a claim somebody should withdraw, and
+        # both need saying.
+        driven = driven_resources(body)
+        if declared and driven is not None:
+            undriven = declared - driven
+            if undriven:
+                UNDECLARED.append((rel, 'DECLARES what its own table does not drive',
+                                   sorted(undriven)))
+                declared = declared & driven
+        elif declared and driven is None:
+            # No table to check against. NOT silently trusted and NOT silently
+            # refused -- the third state, said out loud, because a suite written
+            # without a table would otherwise lose every credit it has earned.
+            UNDECLARED.append((rel, 'DECLARES coverage and carries no table to '
+                               'cross-check it against -- credited on the '
+                               'declaration alone', sorted(declared)))
         for n in names:
             # WORD BOUNDARIES, not `in`. `'invoices' in body` is true of any
             # file naming `law_invoices` or `sdn_invoices`, so the bare Tier A

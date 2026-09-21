@@ -1,5 +1,5 @@
 // api/dnt-bi.test.js
-// CROSS-TENANT-ISOLATION: none (the cross-practice arm here covers sairndental_bi_tokens, not a Tier A resource; dnt_charges and dnt_patients are named by arms about unreadable and empty datasets, which is a different question)
+// CROSS-TENANT-ISOLATION: none (the cross-practice arm here covers sairndental_bi_tokens, which has no row in CRITICALITY-TIERS.md, so this file credits no Tier A resource. CORRECTED 2026-09-21 after fourth's review: the first version of this line said dnt_charges AND dnt_patients are named only by arms about unreadable and empty datasets. True of dnt_charges. NOT true of dnt_patients -- the deactivated-licence polling arm asserts rows.length===2, filters REQUESTS for the dnt_patients read and asserts license_hash=eq.LIC-HASH-1 on its url. That arm is ONE FIXTURE ROW short of real coverage: seed() puts every row under a single license_hash, so there is no second tenant and the refusal is never driven -- the url assertion proves the filter is BUILT, not that a foreign row is excluded. `none` is still right, for a different reason, and the cheap arm is worth somebody's time)
 // REQUIREMENT: the dental BI endpoint authenticates before it answers and scopes every
 //   row to the requesting practice, because it authorises a bulk pull out of
 //   a PHI-bearing app

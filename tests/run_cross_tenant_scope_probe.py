@@ -176,6 +176,11 @@ assert.deepStrictEqual(owners, ['A']);
 """
 
 
+# A file that DECLARES and carries no table at all. Built by join so the
+# fixture cannot be broken by an escape in a literal.
+NO_TABLE = chr(10).join(['// CROSS-TENANT-ISOLATION: a_one', 'console.log(1)'])
+
+
 def main():
     print('GRADER CONTROL -- criteria %s' % S.CRITERIA_VERSION)
     print('')
@@ -277,6 +282,60 @@ def main():
                                ','.join(sorted(got_w))))
     if not okw:
         FAILED.append('wrapped-declaration')
+
+    # ── THE ARM FOURTH'S REVIEW FOUND MISSING ────────────────────────────
+    # Three declaration arms existed and NONE of them asked the one question
+    # that matters: does a name on the declaration line, and nowhere else,
+    # credit a resource? It did. Fourth drove it -- `sv_controlled` added to
+    # the reference file's declaration and nothing else took GENUINE 3 -> 4,
+    # with no test behind it and every arm here green.
+    #
+    # Driven IN MEMORY against the real reference file, not a fixture, because
+    # a fixture written from the same reading as the fix cannot contradict it
+    # -- which is the lesson the REAL-FILE arms above already carry.
+    real = io.open(os.path.join(REPO, 'api/sd-data-cross-tenant-isolation.test.js'),
+                   encoding='utf-8').read()
+    injected = real.replace(
+        '// CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts',
+        '// CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts, sv_controlled')
+    # ASSERT THE MUTATION LANDED. The arm depends on a literal string in
+    # another file; if that declaration line is ever reworded, `injected`
+    # equals `real`, nothing is tested, and without this the arm still passes.
+    # That is the shape this whole tool keeps recording -- a check that stops
+    # checking and says nothing.
+    if injected == real:
+        print('  FAIL %-58s %s' % ('the injection arm could not find its target line',
+                                   'the declaration line was reworded'))
+        FAILED.append('injection-target-missing')
+    okinj = injected != real
+    decl_i, _ri = S.declared_coverage(injected)
+    driven_i = S.driven_resources(injected)
+    okinj = okinj and 'sv_controlled' in decl_i and driven_i is not None         and 'sv_controlled' not in driven_i
+    print('  %-4s %-58s %s' % ('ok' if okinj else 'FAIL',
+                               'a name on the DECLARATION LINE alone is not driven',
+                               'declared=%d driven=%d' % (len(decl_i), len(driven_i or []))))
+    if not okinj:
+        FAILED.append('declaration-line-only')
+
+    # And the table reader itself must not be vacuous: it has to FIND the
+    # reference file's table, or the cross-check above passes by matching
+    # nothing, which is how a guard stops guarding.
+    driven_real = S.driven_resources(real)
+    okt = driven_real is not None and {'law_invoices', 'law_opaccounts',
+                                       'law_barcerts'} <= driven_real
+    print('  %-4s %-58s %s' % ('ok' if okt else 'FAIL',
+                               "the table reader finds the reference suite table",
+                               ','.join(sorted(driven_real or [])) or '(none)'))
+    if not okt:
+        FAILED.append('table-reader')
+
+    # A file with NO table is a THIRD state, not a refusal: it must return None
+    # so its declarations are credited and DISCLOSED rather than silently lost.
+    okn = S.driven_resources(NO_TABLE) is None
+    print('  %-4s %-58s' % ('ok' if okn else 'FAIL',
+                            'a file with no table reads as None, not as an empty set'))
+    if not okn:
+        FAILED.append('no-table-third-state')
 
     # ── EVERY DECLARED RESOURCE MUST ACTUALLY BE DRIVEN ──────────────────
     # The declaration is a claim somebody signs, and a signature is only worth
