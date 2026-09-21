@@ -1162,6 +1162,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-21T14:13:05Z",
+      "resources": [
+        "rf_invoices",
+        "sd_quote_requests"
+      ],
+      "files": [
+        "api/sd-data-unconfirmed-write-sweep.test.js"
+      ],
+      "what": "FOUR MORE representation-PATCH sites in api/sd-data.js repaired, and the guard that was supposed to prevent a fifth copy widened so it can actually see them. Names rf_invoices and sd_quote_requests because the new driver fixtures in the guard suite name those Tier A resources; the SERVING changes are four branches in api/sd-data.js.\n\nWHAT CHANGED. :2634 sd_quote_requests promote/decline read the PATCH body into `wrows` and never consulted it. :7500 rf_invoices issue, :7536 add_payment and :8064 rf_schedule set_status all used `saved ? X : fallback`, so a PATCH that matched ZERO rows answered 200 -- and :8064's fallback was the status the CALLER sent. All four now go through the existing wroteRow()/refuseUnconfirmedWrite() vocabulary and answer 409 with a named race code on MISSED.\n\nWHAT A REVIEWER SHOULD PRESS ON, hardest first, and the first two are judgement calls I made alone.\n\n(1) 409 RATHER THAN 404, AND I CHOSE IT AGAINST THE PRECEDENT IN THE SAME FILE. The four sites hank repaired on 2026-09-21 answer 404 on a MISSED. Mine answer 409. My reasoning: each of these four READS the row moments before the PATCH (curData, found.row, prior, entry), so a zero-row match is the row moving between read and write -- a race -- and 404 tells the caller a story their own read contradicts. :2181 in this file reached the same conclusion independently and answers 409 RESERVATION_RACE. BUT THE FILE NOW ANSWERS TWO DIFFERENT CODES FOR WHAT LOOKS LIKE ONE CONDITION, and a client writing error handling sees an inconsistency I introduced. Say whether to unify -- and if so, which way. I think hank's four should move to 409 for the same reason, but that is their file's decision and I did not take it.\n\n(2) THE INVOICE-NUMBER SENTENCE IS A CLAIM ABOUT STATE I DID NOT DRIVE. :7500's refusal says \"Invoice number N was already allocated and is now unused -- expect a gap in the numbering.\" I read that from the branch: the allocator RPC runs before the PATCH and the branch immediately above refuses 502 if it returns nothing, so by the time the PATCH misses, a number has been consumed. I did NOT verify that the allocator has no compensating release, and if it does, the sentence sends a user looking for a gap that will not appear. Check sql/ for the allocator's definition.\n\n(3) THE PREDICATE NOW WALKS THE PATCH LINE, which is a wider net than before. Check it cannot now fire on a legitimate branch -- in particular one that PATCHes and then deliberately answers 200 without consulting rows because the answer genuinely does not matter. I found none, but the widening is mine and the cost of a false positive is somebody weakening the guard to shut it up.\n\n(4) THE POST EXCLUSION MOVED from a twelve-line lookback to the same fetch() options block. That is narrower and I believe strictly safer, but it means an upsert written across more lines than my window could now be reported. Check the window is wide enough for the widest real options block in the file.\n\n(5) I REPAIRED A FIXTURE IN A SUITE I DO NOT OWN. api/sd-data-sairnlaw-resources.test.js had been RED SINCE 2026-09-18 -- its law_timeentries payload sends no billing_code and the gate that landed that day refuses it. I judged the fixture wrong and the gate right, and added hours/rate/billable/billing_code. Check that judgement: if the dispatcher test is SUPPOSED to drive a minimal payload, the right repair is different.\n\nVERIFIED: 34 arms, all eight sites driven through WROTE / MISSED / UNKNOWN. tests/run_unconfirmed_write_sweep_sabotage_probe.py (NEW) 10 mutations ALL REFUSED with both files restored byte-identical -- including the mutation that SURVIVED the original run (wroteRow's non-array branch) and both ways of narrowing the predicate back. The non-vacuity arm now drives the REAL predicate against five fixtures in both directions, because it used to be a retyped copy of the old one and went on passing after the widening while testing logic that no longer existed. All 29 api/sd-data-*.test.js suites pass; node --check clean.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
