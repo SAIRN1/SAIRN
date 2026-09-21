@@ -9741,7 +9741,7 @@
       "recurrence_open": "Only billing_code is normalised. Every other field on a time entry -- description, attorney, matter_id -- reaches the store exactly as typed, which is correct today because nothing validates them; the day one of them gains a validator the same seam is available again, and nothing checks for it generically. And matter_id is still unvalidated at the server, which this record does not close."
     },
     {
-      "commit": "a799c774b83a",
+      "commit": "9efc6d0a8aec",
       "date": "2026-09-21",
       "subject": "fix(stonedesk): an admin could deactivate the last owner -- the fourth instance, and the comment that called it safe is corrected too",
       "files": [
