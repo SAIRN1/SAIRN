@@ -483,6 +483,17 @@ function hydrateBodies(src) {
   }
   return out;
 }
+// The UNGUARDED-OVERWRITE detector. The RHS must be the SAME variable whose
+// .id is the key -- `byId[c.id]=c`. Without the backreference it also matches
+// `have[String(r.id)]=true`, which is a seen-set and not an overwrite at all.
+//
+// AND IT SHIPPED FOR ONE COMMIT AS A REGEX THAT COULD NEVER MATCH. The `\1`
+// was written through a shell heredoc that turned it into a raw 0x01 byte, so
+// the pattern read `= <control-byte>` and this arm passed on every file --
+// vacuously. The push gate's control-byte check caught it, which is exactly
+// the case its own message describes. Hence the two-direction fixture below:
+// a detector that silently stops matching reports a clean platform.
+const UNGUARDED = new RegExp('\\[\\s*(?:String\\()?(\\w+)\\.id\\)?\\s*\\]\\s*=\\s*\\1\\s*;');
 const additiveSites = (src) =>
   hydrateBodies(src).filter(([, b]) => ADDITIVE.test(b)).map(([n]) => n);
 const APP_FILES = () => fs.readdirSync(ROOT).filter((f) => /^sairn\w*\.html$|^stonedesk\.html$/.test(f));
@@ -515,6 +526,17 @@ test('every app still hydrating additively is in PENDING, with the right functio
   });
 });
 
+test('the UNGUARDED detector is not vacuous either -- both directions', () => {
+  // It shipped for one commit as a pattern that could never match, so this
+  // fixture is not ceremony. The positive is sairnsenior's real old shape.
+  const real = 'byId[c.id]=c;';
+  const seenSet = 'have[String(r.id)]=true;';
+  assert.ok(UNGUARDED.test(real),
+    'the detector no longer recognises an unguarded overwrite');
+  assert.ok(!UNGUARDED.test(seenSet),
+    'the detector fires on a seen-set, so it would flag every additive hydrate');
+});
+
 test('NOBODY hydrates with an UNGUARDED overwrite -- the other wrong rule', () => {
   // sairnsenior shipped FOUR hydrates that already overwrote any local record
   // whose id the server held, with no carve-out at all, while SEVEN others in
@@ -529,7 +551,7 @@ test('NOBODY hydrates with an UNGUARDED overwrite -- the other wrong rule', () =
       // Without that it also matches `have[String(r.id)]=true`, which is a
       // seen-set and not an overwrite at all, and the arm fires on every
       // additive hydrate instead of the shape it exists to find.
-      const overwrites = /\[\s*(?:String\()?(\w+)\.id\)?\s*\]\s*=\s*\s*;/.test(body);
+      const overwrites = UNGUARDED.test(body);
       if (overwrites && !/ServerWinsMerge\(/.test(body)) bad.push(f + ':' + name);
     });
   });
