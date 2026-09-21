@@ -471,7 +471,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **&#9888; `grab()` in the sairnlaw review probe asserts the anchor and the terminator and NOTHING about what lies between &mdash; and a brace-balance check provably does not close it** | **FOUND AND DRIVEN 2026-09-21 (Hank), NOT FIXED** &mdash; the finding from my Tier A review of fourth&rsquo;s `2026-09-21T19:02:10Z` obligation | `tests/sairnlaw_trust_clearance_review_probe.js` |
 | **Independent review of the `law_trusttx` 409 `CLEARANCE_NOT_STORED` refusal (Cody) &mdash; the handler cannot tell a first insert from a retry, and the refusal asserts it is the retry** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/sairnlaw_clearance_refusal_review_probe.js`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/sairnlaw_clearance_refusal_review_probe.js` |
-| **&#9888; `law_trusttx`: a cheque that was JUST POSTED to the trust ledger is reported as &ldquo;Nothing was saved&rdquo; &mdash; and the wording invites a biller to enter it twice** | **OPEN 2026-09-21, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s Tier A review of cody&rsquo;s `2026-09-21T14:53:05Z` obligation. Driven with two genuinely different RPC branches: `tests/sairnlaw_cl | `tests/sairnlaw_clearance_refusal_review_probe.js` |
+| **&#9888; `law_trusttx`: a cheque that was JUST POSTED to the trust ledger is reported as &ldquo;Nothing was saved&rdquo; &mdash; and the wording invites a biller to enter it twice** | **OPEN 2026-09-21, NOT FIXED &mdash; SPEC SETTLED, READY TO LAND** &mdash; Finding 1 of Fourth&rsquo;s Tier A review of cody&rsquo;s `2026-09-21T14:53:05Z` obligation. Driven with two genuinely differ | `api/sd-data-law-trusttx-clearance.test.js`, `tests/sairnlaw_clearance_refusal_review_probe.js` |
 | **Independent review of `law_trusttx` `lawSetClearance()` (Cody) &mdash; the client&rsquo;s already-cleared refusal blocks the one retry the disbursement gap makes necessary** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/sairnlaw_trust_clearance_review_probe.js`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/sairnlaw_trust_clearance_review_probe.js` |
 | **&#9888; `law_trusttx`: a cheque the server never stored CANNOT BE RE-SENT &mdash; the already-cleared refusal reads the LOCAL row, which is the one thing in the system that is wrong** | **OPEN 2026-09-21, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s Tier A review of cody&rsquo;s `2026-09-21T13:41:23Z` obligation. Driven, not argued: `tests/sairnlaw_trust_clearance_review_probe.js` | `tests/sairnlaw_trust_clearance_review_probe.js` |
 | **The IOLTA clearance revert never re-reads the ledger and never stamps its own change &mdash; so it can ERASE another device's clearance and write away a whole concurrent hydration, and the bank leg claims an adjustment it did not make** | **FOUND 2026-09-21 (Cody), NOT FIXED** &mdash; three findings from the Tier A review of cc's `law_trusttx` obligation (opened 2026-09-18T14:15:06Z, discharged 2026-09-21 with the full verdict in `docs | `tests/sairnlaw_trust_clearance_probe.py` |
@@ -595,8 +595,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 286 |
-| `declared` | 238 |
-| `declared+index` | 29 |
+| `declared` | 237 |
+| `declared+index` | 30 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
