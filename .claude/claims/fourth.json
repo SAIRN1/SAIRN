@@ -1773,8 +1773,8 @@
       "task": "FILES: api/_lib/deadline-engine.js api/_lib/deadline-maine.test.js api/legal-deadlines.js sql/sairnlaw_deadline_seed_maine.json sql/sairnlaw_deadline_calendars_maine.json docs/sairnlaw-maine-deadline-seed-gate.md -- Maine computation standard, service extension, holiday calendar 2026-2027, rule rows, forward only. Deadlines subsystem, NOT billing/LEDES. No override: check came back CLEAR.",
       "claimed_at": "2026-09-21T07:46:45Z",
       "claimed_at_epoch": 1789976805.3011901,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T12:21:39Z"
     }
   ]
 }
