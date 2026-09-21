@@ -1743,8 +1743,8 @@
       "task": "tier-a review of cc scp_quotes outbound queue obligation",
       "claimed_at": "2026-09-21T06:56:23Z",
       "claimed_at_epoch": 1789973783.9213614,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T07:27:46Z"
     }
   ]
 }
