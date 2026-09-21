@@ -1359,6 +1359,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-21T21:11:17Z",
+      "resources": [
+        "dnt_patients",
+        "law_barcerts",
+        "law_invoices",
+        "law_opaccounts"
+      ],
+      "files": [
+        "tests/cross_tenant_grader_declaration_review_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "what": "REVIEW ARTEFACT, not serving code -- tests/cross_tenant_grader_declaration_review_probe.py, the report-only probe discharging hank's 2026-09-21T13:46:53Z obligation on the cross-tenant grader. dnt_patients is named because press-on (4) of that obligation is a question ABOUT api/dnt-bi.test.js's dnt_patients arm, and answering it required quoting the resource. Nothing in this file writes, reads or serves anything. IT IS STILL A GUARD AND CAN STILL FAIL, which is why I am recording rather than overriding: five of its arms assert their mutation LANDED before judging anything (the loop line in the dispatcher suite, the declaration line in the reference suite, seed() in dnt-bi, hank's two-entry SELF_EXCLUDED list), and each of those returns COULD NOT DRIVE and exit 1 rather than reporting agreement it never checked. A probe that quietly extracted nothing and printed a verdict is the shape this platform keeps finding. WHAT A REVIEWER SHOULD PRESS ON. (1) THE ANCHORS ARE THE WHOLE FIDELITY CLAIM. press_on_2 mutates the literal '  for (const unit of UNITS) {' and press_on_5 the literal '// CROSS-TENANT-ISOLATION: law_invoices, law_opaccounts, law_barcerts'. Check both really do refuse on a moved anchor rather than only on a missing file, and check press_on_2's replacement is the WHOLE loop head -- a short anchor matching early would neuter something other than what I claim. (2) MY PRESS-ON (3) VERDICT IS NOT INDEPENDENT AND I SAY SO IN THE FILE AND IN THE DISCHARGE, but somebody should decide whether a disclosure is sufficient or whether that one press-on needs re-reviewing by a session that has never edited tools/cross_tenant_isolation_scope.py. I changed that tuple earlier today (b7621dec) and again in this commit. (3) THE 'AT THE MOMENT HANK SHIPPED IT' RECONSTRUCTION in press_on_1 rebuilds his two-entry list by REMOVING one known entry from today's four. That is a reconstruction, not a checkout, so it is only right while the two older entries are unchanged. Check whether it should read the tuple out of d538f1e8 instead. (4) EVERY FIGURE IN MY VERDICTS IS COMPUTED BY THE PROBE -- the 84/84 tally, the 1 distinct license_hash across 15 rows, the nine table shapes, the exit 1 from the reworded declaration -- not typed. Check that is true, because a hand-typed number in a review record is the fabrication shape this platform keeps finding. (5) SELF_EXCLUDED GAINED A FOURTH ENTRY IN THIS COMMIT and it is this probe. Check that is right and not me excluding my own inconvenient measurement: my reasoning is that press_on_5 must carry the reference suite's declaration line as a literal in order to mutate it, and the parser read that literal as a declaration -- crediting this probe with law_invoices, law_opaccounts and law_barcerts on its first run.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-21T21:11:17Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
