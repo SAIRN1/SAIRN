@@ -1763,8 +1763,8 @@
       "task": "FILES: api/_lib/deadline-engine.js api/_lib/deadline-maine.test.js sql/sairnlaw_deadline_seed_maine.json docs/sairnlaw-maine-deadline-seed-gate.md -- Maine computation standard, holiday calendar, forward rows only. NO OVERRIDE USED: cc released sairnlaw before this claim and check came back CLEAR on its own.",
       "claimed_at": "2026-09-21T07:37:30Z",
       "claimed_at_epoch": 1789976250.397913,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T07:46:21Z"
     }
   ]
 }
