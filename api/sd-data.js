@@ -9827,6 +9827,13 @@ module.exports = async (req, res) => {
     // reads them. StoneDesk's personnel and financial data already sits behind
     // session gates elsewhere (sd_hr_employees, sd_hr_certs, employees,
     // sd_approvals), which is where that boundary belongs.
+    //
+    // ONE EXCEPTION AS OF 2026-09-21, and it is an exception to this paragraph
+    // rather than a change of mind about it: `sd_exec_msgs` is not a shared
+    // shop record, it is the private CEO/CFO/CTO channel, and it was never a
+    // "every role in a fabrication shop reads them" resource. It is gated
+    // below. The other twenty are unchanged. Stated here because this
+    // paragraph is what the next reader will take the rule from.
     const SD_LOCAL_RESOURCES = {
       sd_invoices: 'invoice_id', sd_drawings: 'drawing_id', sd_remakes: 'remake_id',
       sd_fin_jobs: 'fin_job_id', sd_pricing_rules: 'pricing_rule_id',
@@ -9838,7 +9845,54 @@ module.exports = async (req, res) => {
       sd_veinmatch: 'veinmatch_id', sd_seamai: 'seamai_id', sd_photos: 'photo_id',
       sd_templates: 'template_id', sd_email_threats: 'threat_id'
     };
+    // ── sd_exec_msgs: THE ONE SD_LOCAL_RESOURCES MEMBER THAT IS NOT A SHARED
+    // SHOP RECORD (2026-09-21) ─────────────────────────────────────────────
+    // SD_LOCAL_RESOURCES' own header above justifies its no-session-gate
+    // design as "the shared shop record -- quote history, inventory,
+    // drawings, remakes -- and every role in a fabrication shop reads them."
+    // sd_exec_msgs does not fit that: it is StoneDesk's private CEO/CFO/CTO
+    // channel (stonedesk.html's own empty-state text: "Private executive
+    // channel. Messages visible only to CEO, CFO, CTO"), and bundling it into
+    // the no-gate tier contradicted the classifying comment's own reasoning.
+    //
+    // REPRODUCED BEFORE THIS LANDED, with a valid licence key and NO
+    // X-SD-Auth header at all: 200 ok:true, the private message returned
+    // verbatim. The client's own comment already admitted this (stonedesk.
+    // html, above renderExecChat's Delete button): "The server-side gate is
+    // that sd_exec_msgs reaches api/sd-data.js through the generic branch
+    // like every other collection -- this is a UI courtesy, not an
+    // authorisation boundary." sdExecRole itself is also unverified --
+    // localStorage.getItem('sd_exec_role'), never checked against a session
+    // -- so even that UI courtesy was spoofable client-side, on top of the
+    // server having no check at all.
+    //
+    // THE BOUNDARY THIS GATE ENFORCES IS THE ONE THE CLIENT ALREADY HAS.
+    // sdExecPrivileged() (stonedesk.html) is the real, existing check for
+    // who may touch the Exec Suite at all: a server-verified session
+    // (sessionStorage 'sd_session_role', written only by api/sd-auth.js)
+    // with role owner or admin. 'ceo'/'cfo'/'cto' are not real employee
+    // roles in this platform's role model -- they are a label an
+    // owner/admin may wear, chosen through a picker sdExecPrivileged()
+    // already gates -- so the server cannot check for a role called 'ceo'
+    // and must not invent one; it enforces the same owner/admin boundary
+    // the client already established as the real one.
+    // 401 AND 403 ARE KEPT DISTINCT, same discipline the SAIRNDENTAL SESSION
+    // GATE comment below states directly: "you are not signed in" and "your
+    // role may not do this" are different problems with different fixes.
+    const sdExecGate = (response) => {
+      const s = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!s) {
+        response.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+        return null;
+      }
+      if (s.role !== 'owner' && s.role !== 'admin') {
+        response.status(403).json({ error: { code: 'FORBIDDEN', message: 'The executive channel is not available to your role' } });
+        return null;
+      }
+      return s;
+    };
     if (SD_LOCAL_RESOURCES[resource] && action === 'read') {
+      if (resource === 'sd_exec_msgs' && !sdExecGate(res)) return;
       // SOFT-DELETED ROWS ARE NOT RETURNED. The marker lives inside `data`, so
       // the filter is on the jsonb field rather than a column. A row that has
       // never been soft-deleted has no `_deleted_at` key at all and `->>`
@@ -9856,6 +9910,7 @@ module.exports = async (req, res) => {
       return;
     }
     if (SD_LOCAL_RESOURCES[resource] && action === 'write') {
+      if (resource === 'sd_exec_msgs' && !sdExecGate(res)) return;
       const idCol = SD_LOCAL_RESOURCES[resource];
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
@@ -10092,6 +10147,7 @@ module.exports = async (req, res) => {
     // that did not happen -- the false-success shape this platform keeps
     // recording.
     if (SD_LOCAL_RESOURCES[resource] && action === 'soft_delete') {
+      if (resource === 'sd_exec_msgs' && !sdExecGate(res)) return;
       const idCol = SD_LOCAL_RESOURCES[resource];
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });

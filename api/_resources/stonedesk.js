@@ -149,6 +149,17 @@ module.exports = {
   // (`sd_hr_employees`, `sd_hr_certs`, `employees`, `sd_approvals`), which is
   // where that boundary belongs. If a future per-role rule is wanted on one of
   // these it needs its own bespoke branch, not a gate bolted onto the loop.
+  //
+  // AND ONE OF THEM TURNED OUT NOT TO BELONG HERE (2026-09-21). `sd_exec_msgs`
+  // is StoneDesk's private CEO/CFO/CTO channel, not a shared shop record, and
+  // the paragraph above was the reasoning that kept it ungated: anyone holding
+  // the shop's licence key could read, write and delete every executive
+  // message, reproduced live before it was fixed. api/sd-data.js now gates
+  // that one resource -- a real session for THIS app with role owner or admin,
+  // the same boundary stonedesk.html's own sdExecPrivileged() already used --
+  // on all three of its verbs. The other twenty are deliberately unchanged.
+  // Recorded here as well as at the gate because this list is where somebody
+  // deciding whether a new resource needs a gate will read the rule.
     'sd_invoices',
     'sd_drawings',
     'sd_remakes',
