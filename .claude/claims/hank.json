@@ -2323,8 +2323,8 @@
       "task": "sweep remaining json catch null representation patch sites sd-data",
       "claimed_at": "2026-09-21T12:47:56Z",
       "claimed_at_epoch": 1789994876.9245362,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:12:03Z"
     }
   ]
 }
