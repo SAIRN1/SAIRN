@@ -1487,8 +1487,8 @@
       "task": "tier A review discharge scp_quotes send button",
       "claimed_at": "2026-09-21T06:56:29Z",
       "claimed_at_epoch": 1789973789.212363,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T06:57:02Z"
     }
   ]
 }
