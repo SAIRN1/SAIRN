@@ -9235,7 +9235,7 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
-      "commit": "733506717d29",
+      "commit": "eea7606e2159",
       "date": "2026-09-21",
       "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
       "files": [
