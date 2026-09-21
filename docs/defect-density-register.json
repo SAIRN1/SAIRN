@@ -9291,6 +9291,71 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
+      "commit": "0d0d66c04cbb",
+      "date": "2026-09-21",
+      "subject": "fix(hydration): a full store silently switched server-wins OFF for good -- in all seven apps, because the flag write's return was discarded one line below a map write whose return is read",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "sairnbiz.html",
+        "sairndesign.html",
+        "sairnfreedom.html",
+        "sairnlaw.html",
+        "sairnlegacy.html",
+        "sairnsenior.html",
+        "stonedesk.html",
+        "tests/run_server_wins_hydration_sabotage_probe.py",
+        "tests/server_wins_hydration.js"
+      ],
+      "lines_added": 509,
+      "lines_removed": 9,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "SyncedBootstrap() in all SEVEN server-wins apps read st()'s return for the synced-map write -- with a comment saying 'the flag must NOT outlive a failed map write' -- and DISCARDED it for the bootstrap-flag write one line below. Driven in a harness taught to refuse a write: on a full store the map lands, the flag does not, BootstrappedNow is set, and because the flag is what says the bootstrap has happened, every later load bootstraps again and suppresses overwriting again. ServerWinsMerge()'s overwrite branch is skipped every time, so the device never takes a single correction from the server for the life of the profile -- the defect the whole feature exists to fix, reappearing as its own failure mode, on a device whose only symptom is that nothing ever updates. Fixed by making the two writes atomic: prevRaw captured raw and before the map write, restored exactly on a failed flag write, with removeItem rather than an empty object for the absent case because {} parses and reads as 'seeded nothing'. If the undo also fails the load goes inert and returns 'stuck' rather than 'ran'.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "5c6624110a29",
+        "date": "2026-09-21",
+        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
+        "lag_days": 0
+      },
+      "citation_note": "The confident line printed after the error. st() logs a failed write and returns false; the caller read that return for the map and discarded it for the flag one line below, then returned 'ran'. The function reported success over a half-applied change, and the app that followed behaved exactly like one where server-wins was working and there was simply nothing to correct.",
+      "contributing_factors": [
+        {
+          "factor": "SyncedBootstrap() read st()s return for the SYNCED-MAP write and discarded it for the BOOTSTRAP-FLAG write one line below, so a full store left the map written and the flag absent",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both writes succeed or neither does: prevRaw captured RAW before the map write, and a failed flag write puts those exact bytes back so the next load retries cleanly"
+        },
+        {
+          "factor": "the FLAG is what says the bootstrap happened, so the half-applied state is self-perpetuating -- every later load re-bootstraps and re-suppresses, and ServerWinsMerges overwrite branch never runs again",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the unrepairable case (undo also fails) now returns stuck rather than ran and says so, so inert is reported rather than inferred"
+        },
+        {
+          "factor": "the test harnesss localStorage.setItem could not fail, so the entire storage-failure class was unreachable from a 143-arm suite and a 13-mutation control, both green",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "failWrite, failRemove and a real removeItem in the harness, five new arms per app, and five new mutations"
+        },
+        {
+          "factor": "the rule is deliberately seven identical copies across seven apps, so one discarded return was seven",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the all seven copies are the SAME rule arm already compares the four functions as normalised code across every app and is what carried the fix to all seven; the duplication is the declared design"
+        }
+      ],
+      "recurrence_open": "Nothing sweeps for other callers on this platform that read one st() return and discard the next. The harness fix is in one suite; every other test stub whose localStorage cannot fail has the same blind spot and none has been audited."
+    },
+    {
       "commit": "2ee9c8191261",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): the clearance rollback could ERASE another device's clearance and write away a whole hydration -- and on a cheque the server never stored it in the first place",
