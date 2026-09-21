@@ -9475,6 +9475,39 @@
       "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
     },
     {
+      "commit": "56c692653d41",
+      "date": "2026-09-21",
+      "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
+      "files": [
+        "api/_lib/last-admin-sole-role.test.js",
+        "api/grd-auth.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_last_admin_sole_role_sabotage_probe.py"
+      ],
+      "lines_added": 576,
+      "lines_removed": 33,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "static-checker",
+      "summary": "A deputy provisioning role (superintendent/hr/crew_lead) could deactivate the last active owner in SAIRNgrounds, SAIRNbiz and SAIRNscape: the last-admin guard counted over BOTH provisioning roles, so it never fired, the licence reached zero owners, and bootstrap's unfiltered existence check plus the non-owner-cannot-create-an-owner rule left no route back through the API.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/sairn_seam_check.py",
+      "injection": {
+        "unknown_reason": "The second provisioning role predates the soleRole parameter in every one of the three apps, so there is no single commit that introduced the divergence -- the defect began when a second role was added to an app whose guard contract assumed one, and the contract had no way to express the difference until this week."
+      },
+      "citation_note": "Not a tool-absence skip, but the same family: the guard ran, reported nothing, and its silence was read as a pass. api/sd-auth.js's comment calls the equivalent guard 'unreachable by construction' -- non-firing recorded as proof of safety.",
+      "phase_note": "The helper's soleRole parameter did not exist until 2026-09-21; before that the single-provisioning-role assumption was baked into setActive's contract, and these three apps were given a second provisioning role without anything asking which of the two the licence could not lose.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure; the immediate cause is one missing argument at three call sites, but the reason nobody noticed across three apps is a separate question about how role models get reviewed when they change."
+    },
+    {
       "commit": "6b777f006d18",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): marking a CHEQUE cleared came back ok:true over a write the database never performed -- refused now, and the refusal retires itself",
