@@ -591,11 +591,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 62 test files are traced to no stated requirement
+### 63 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 575 of 637 traced, 90.3%.
+For context and not as the headline: 575 of 638 traced, 90.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -617,7 +617,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 49 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 50 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -649,6 +649,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/failsafe/witness_mint.js`
 - `tests/fixtures/harness_multiedit_src.js`
 - `tests/fixtures/harness_multiedit_suite.js`
+- `tests/grader_exclusion_parser_review_probe.py`
 - `tests/hover_process_pass_freshness_probe.py`
 - `tests/install_git_hooks_check_probe.py`
 - `tests/intake_link_no_credential_probe.py`
@@ -702,7 +703,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 637   tests/**, api/** (both walked)
+  test files on disk                 638   tests/**, api/** (both walked)
   open-work rows citing a test       318   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
