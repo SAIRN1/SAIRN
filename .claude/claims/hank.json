@@ -2383,8 +2383,8 @@
       "task": "soleRole last-admin guard three apps",
       "claimed_at": "2026-09-21T20:02:24Z",
       "claimed_at_epoch": 1790020944.2304835,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T20:38:51Z"
     }
   ]
 }
