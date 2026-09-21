@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**205 files in `tools/`.** By what actually invokes them:
+**206 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 35 | nothing runs these at all |
+| **UNWIRED** | 36 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 143 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
-| LIVE | 18 |
+| LIVE | 19 |
 | REPORTER | 1 |
 
 **69 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -69,7 +69,7 @@ The 12, by name, so this is actionable rather than a statistic:
 | `sairn_self_state.py` | UNWIRED | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name |
 | `stale_row_sweep.py` | SUITE-ONLY | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file |
 
-**Separately, 4 tool(s) make a LIVE network or database request.** Those are
+**Separately, 5 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -329,7 +329,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (35)
+## UNWIRED (36)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -361,6 +361,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
+| `leg_session_gate_live_probe.py` | LIVE | a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
@@ -401,7 +402,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      205   git ls-files tools/
+  tools on disk                      206   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY

@@ -588,6 +588,7 @@ PURPOSES = {
     'reclassification_sweep.py': ('LIVE', 'a statutory rule whose source has been reclassified'),
     'rf_claim_gate_live_probe.py': ('LIVE', "SAIRNroofing's claim gate, against the deployed endpoint"),
     'sc_tier_a_write_gate_live_probe.py': ('LIVE', 'a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass'),
+    'leg_session_gate_live_probe.py': ('LIVE', "a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass"),
     'rf_roundtrip_probe.py': ('LIVE', 'a SAIRNroofing write read back through the real API'),
     'probe_public_book_guardian.py': ('LIVE', "the public booking endpoint's guards, live"),
     'source_manifest.py': ('GENERATOR',
