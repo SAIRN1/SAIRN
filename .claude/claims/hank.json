@@ -2283,8 +2283,8 @@
       "task": "tier a cross tenant isolation test scoping 276 278",
       "claimed_at": "2026-09-21T07:07:36Z",
       "claimed_at_epoch": 1789974456.3626919,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T07:40:48Z"
     }
   ]
 }
