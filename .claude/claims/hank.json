@@ -2325,6 +2325,16 @@
       "claimed_at_epoch": 1789994876.9245362,
       "status": "released",
       "released_at": "2026-09-21T13:12:03Z"
+    },
+    {
+      "id": "hank-1789996494",
+      "session": "hank",
+      "subject": "sd-data-phase3",
+      "task": "own branch coverage for the remaining thirty five resources",
+      "claimed_at": "2026-09-21T13:14:54Z",
+      "claimed_at_epoch": 1789996494.1410336,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
