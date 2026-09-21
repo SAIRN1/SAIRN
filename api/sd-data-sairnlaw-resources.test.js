@@ -198,7 +198,12 @@ async function main() {
       return { ok: true, status: 200, json: async () => [{ data: { id: 'TT-1' } }] };
     });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'law_timeentries', payload: { id: 'TT-1', matter_id: 'M-1', hours: 2.5 } }), res);
+    // billing_code, rate and billable added 2026-09-21. This arm went RED on
+    // 2026-09-18 when api/_lib/law-timeentry.js started refusing a billable
+    // hour with no UTBMS code, and stayed red for three days because nothing
+    // re-ran it -- the fixture, not the gate, was wrong. The gate is correct
+    // and the payload now carries what a real time entry carries.
+    await handler(mockReq({ action: 'write', resource: 'law_timeentries', payload: { id: 'TT-1', matter_id: 'M-1', hours: 2.5, rate: 300, billable: true, billing_code: 'L110' } }), res);
     assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
     assert.strictEqual(sent.body.timeentry_id, 'TT-1');
     assert.strictEqual(sent.body.app_id, 'sairnlaw');
@@ -251,7 +256,12 @@ async function main() {
       assert.strictEqual(rr.statusCode, 200, r + ' read -> ' + rr.statusCode + ' ' + JSON.stringify(rr.body));
       const wh = loadHandler(async () => ({ ok: true, status: 200, json: async () => [{ data: { id: 'X' } }] }));
       const wr = mockRes();
-      await wh(mockReq({ action: 'write', resource: r, payload: { id: 'X' } }), wr);
+      // law_timeentries validates more than an id, so the generic payload has
+      // to carry what that resource needs or this loop tests its validator
+      // rather than the dispatcher. Same reason, same date as above.
+      const extra = r === 'law_timeentries'
+        ? { hours: 1, rate: 250, billable: true, billing_code: 'L110' } : {};
+      await wh(mockReq({ action: 'write', resource: r, payload: Object.assign({ id: 'X' }, extra) }), wr);
       assert.strictEqual(wr.statusCode, 200, r + ' write -> ' + wr.statusCode + ' ' + JSON.stringify(wr.body));
     }
   });

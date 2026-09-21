@@ -2635,8 +2635,27 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({ status: qrStatus, data: merged, updated_at: nowISO() })
       });
-      const wrows = await w.json();
+      // ── THE BODY WAS READ AND NEVER CONSULTED (2026-09-21) ───────────────
+      // `wrows` was assigned and then used for nothing but the !ok check. Under
+      // `Prefer: return=representation` a PATCH that matched ZERO rows answers
+      // 200 with `[]`, so this branch reported the promotion or decline as done
+      // and handed back `merged` -- an object it assembled locally from a read
+      // taken moments earlier. The 200 was never evidence of anything.
+      //
+      // 409 AND NOT 404, matching the slab reservation at the top of this file
+      // rather than the four sites repaired on 2026-09-21. `curData` was read
+      // just above, so a zero-row PATCH is not "it was never there", it is the
+      // request moving between the read and the write -- a race the caller can
+      // resolve by reloading, which is what the code should tell them.
+      const wrows = await w.json().catch(() => null);
       if (!w.ok) return upstream(res, wrows);
+      const qrSays = wroteRow(wrows);
+      if (qrSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'this quote request'); return; }
+      if (qrSays === 'MISSED') {
+        res.status(409).json({ error: { code: 'QUOTE_REQUEST_RACE',
+          message: 'Someone else changed this quote request while you were working on it, so nothing was saved. Reload the list and try again.' } });
+        return;
+      }
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, status: qrStatus }, merged) });
       return;
     }
@@ -7500,10 +7519,32 @@ module.exports = async (req, res) => {
           method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
           body: JSON.stringify({ status: 'issued', invoice_number: got.invoice_number, invoice_seq: got.invoice_seq, issue_date: issueDate, updated_at: nowISO() })
         });
-        const rows = await r.json();
+        // ── A MISSED PATCH HERE CONSUMES AN INVOICE NUMBER (2026-09-21) ────
+        // `saved ? shape(saved) : null` treated a zero-row PATCH as a success
+        // with no data: the response still carried invoice_number, invoice_seq
+        // and issue_date, so an invoice was reported ISSUED on the strength of
+        // a 200 that means "matched nothing".
+        //
+        // AND THIS ONE IS WORSE THAN THE OTHER THREE, which is why the message
+        // says so. The number was already allocated by the RPC above -- the
+        // allocator is sequential and the branch immediately before this one
+        // refuses with 502 if it returns nothing. So a missed PATCH leaves a
+        // number SPENT and attached to no invoice: a gap in a billing series,
+        // which is exactly what an auditor asks about. Saying "nothing was
+        // saved" without saying that would be true and useless.
+        const rows = await r.json().catch(() => null);
         if (!r.ok) return upstream(res, rows);
-        const saved = Array.isArray(rows) && rows[0];
-        res.status(200).json({ ok: true, invoice_number: got.invoice_number, invoice_seq: got.invoice_seq, issue_date: issueDate, data: saved ? shape(saved) : null });
+        const issSays = wroteRow(rows);
+        if (issSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'this invoice'); return; }
+        if (issSays === 'MISSED') {
+          res.status(409).json({ error: { code: 'INVOICE_ISSUE_RACE',
+            message: 'This invoice changed while it was being issued, so it was NOT issued and nothing was saved. '
+              + 'Invoice number ' + String(got.invoice_number) + ' was already allocated and is now unused -- expect a '
+              + 'gap in the numbering. Reload the invoice and issue it again.' } });
+          return;
+        }
+        const saved = rows[0];
+        res.status(200).json({ ok: true, invoice_number: got.invoice_number, invoice_seq: got.invoice_seq, issue_date: issueDate, data: shape(saved) });
         return;
       }
 
@@ -7536,11 +7577,24 @@ module.exports = async (req, res) => {
           method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
           body: JSON.stringify({ payments: next, updated_at: nowISO() })
         });
-        const rows = await r.json();
+        // ── AN APPENDED PAYMENT THAT MAY NOT HAVE BEEN APPENDED (2026-09-21)
+        // `saved ? ... : null` answered ok:true with data null and summary null
+        // on a PATCH that matched zero rows -- a payment recorded against an
+        // invoice that did not take it. The append is built from `prior`, read
+        // moments earlier, so a miss means the invoice moved under the write
+        // and the whole payments array this branch computed is stale.
+        const rows = await r.json().catch(() => null);
         if (!r.ok) return upstream(res, rows);
-        const saved = Array.isArray(rows) && rows[0];
-        const inv = saved ? shape(saved) : null;
-        res.status(200).json({ ok: true, data: inv, summary: inv ? roofingBilling.summarizeInvoice(inv) : null });
+        const paySays = wroteRow(rows);
+        if (paySays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'this payment'); return; }
+        if (paySays === 'MISSED') {
+          res.status(409).json({ error: { code: 'INVOICE_PAYMENT_RACE',
+            message: 'This invoice changed while the payment was being recorded, so the payment was NOT saved. '
+              + 'Reload the invoice, check whether the payment is already on it, and record it again only if it is not.' } });
+          return;
+        }
+        const inv = shape(rows[0]);
+        res.status(200).json({ ok: true, data: inv, summary: roofingBilling.summarizeInvoice(inv) });
         return;
       }
 
@@ -8065,10 +8119,26 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
         body: JSON.stringify({ status: status, updated_at: nowISO() })
       });
-      const rows = await r.json();
+      // ── IT ECHOED BACK THE STATUS THE CALLER ASKED FOR (2026-09-21) ──────
+      // `saved ? saved.status : status` is the worst spelling of this defect in
+      // the file: on a PATCH that matched ZERO rows it answered 200 with the
+      // status the REQUEST carried, so the crew's screen showed the change and
+      // the row never took it. Nothing about the response distinguished a write
+      // that landed from one that hit nothing.
+      //
+      // `entry` was read above to run the canSeeSchedule gate, so a miss is a
+      // race rather than an absence -- 409, the same call the slab reservation
+      // makes at the top of this file.
+      const rows = await r.json().catch(() => null);
       if (!r.ok) return upstream(res, rows);
-      const saved = Array.isArray(rows) && rows[0];
-      res.status(200).json({ ok: true, schedule_id: schedId, status: saved ? saved.status : status });
+      const schedSays = wroteRow(rows);
+      if (schedSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'this schedule entry'); return; }
+      if (schedSays === 'MISSED') {
+        res.status(409).json({ error: { code: 'SCHEDULE_RACE',
+          message: 'This schedule entry changed while you were updating it, so the status was NOT saved. Reload the day and try again.' } });
+        return;
+      }
+      res.status(200).json({ ok: true, schedule_id: schedId, status: rows[0].status });
       return;
     }
 
