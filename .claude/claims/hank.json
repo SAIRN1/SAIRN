@@ -2285,6 +2285,16 @@
       "claimed_at_epoch": 1789974456.3626919,
       "status": "released",
       "released_at": "2026-09-21T07:40:48Z"
+    },
+    {
+      "id": "hank-1789976748",
+      "session": "hank",
+      "subject": "sairnscape",
+      "task": "scp_quotes no licence lastErr stale and send button onclick rebind",
+      "claimed_at": "2026-09-21T07:45:48Z",
+      "claimed_at_epoch": 1789976748.8875105,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
