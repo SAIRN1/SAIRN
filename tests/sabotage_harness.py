@@ -187,12 +187,43 @@ def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
 
         for name, rel, old, new in mutations:
             src = originals[rel]
-            hits = src.count(old.encode('utf-8'))
-            if hits != 1:
-                check(name, False, 'ANCHOR-%d in %s' % (hits, rel))
+            # ── A MUTATION MAY NOW BE SEVERAL EDITS APPLIED TOGETHER ────────
+            # (2026-09-21) Some properties are held by TWO guards that are
+            # mutually redundant, and removing either one alone is SILENT by
+            # construction -- the other catches it. A harness that can only
+            # plant one edit cannot express "both of these must go", so the
+            # only committed control for such a property was no control at
+            # all: each single mutation reads as an unpinned guard and the
+            # conjunction nobody can plant reads as untested.
+            #
+            # Found in api/sc-credentials.js, where the first-path UNKNOWN
+            # check and the final gate are exactly that pair.
+            #
+            # A PLAIN STRING STILL BEHAVES EXACTLY AS BEFORE, byte for byte --
+            # it is normalised to a one-element list and every existing
+            # control takes the same path it always did. ANCHOR-0 and ANCHOR-2
+            # are still failures, now PER EDIT, because a pair mutation with
+            # one stale anchor is a mutation that plants half a defect and
+            # reports on it as if it planted the whole one.
+            olds = [old] if isinstance(old, str) else list(old)
+            news = [new] if isinstance(new, str) else list(new)
+            if len(olds) != len(news):
+                check(name, False, 'MALFORMED: %d old text(s) and %d new'
+                      % (len(olds), len(news)))
                 continue
-            _write(wt, rel, src.replace(old.encode('utf-8'),
-                                        new.encode('utf-8'), 1))
+            cur, bad = src, None
+            for i, (o, n) in enumerate(zip(olds, news)):
+                hits = cur.count(o.encode('utf-8'))
+                if hits != 1:
+                    bad = 'ANCHOR-%d in %s%s' % (
+                        hits, rel, '' if len(olds) == 1 else ' (edit %d of %d)'
+                        % (i + 1, len(olds)))
+                    break
+                cur = cur.replace(o.encode('utf-8'), n.encode('utf-8'), 1)
+            if bad:
+                check(name, False, bad)
+                continue
+            _write(wt, rel, cur)
             rc, out = _run_suite(wt, suite)
             check(name, rc != 0,
                   'SILENT -- the suite passed with this defect planted')

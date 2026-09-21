@@ -32,9 +32,24 @@ wipes the blob in the retry copy and the suite stayed GREEN. An arm now drives
 arm that silently takes the non-retry path proves nothing the existing one does
 not already prove.
 
-The SIX mutations, which are exactly the six driven below -- no more, because a
-list of properties longer than the list of mutations is a coverage claim nobody
-made:
+THE 2026-09-18 THREE-STATE WRITE RESULT SHIPPED WITH NO MUTATION AT ALL, and
+mutations 6-8 are it, added 2026-09-21 from the independent review of that
+change. Everything numbered 1-5 guards the 2026-09-04 concurrency fix and the
+auth checks; the only 09-18 edit to this file was RE-AIMING a stale anchor,
+which is a repair and not coverage. The author's own obligation reports
+mutations run BY HAND -- the measurement existed and the tree could not
+reproduce it, which is the state a control exists to end.
+
+AND ONE OF THE THREE HAD TO BE A PAIR, WHICH IS WHY THE SHARED HARNESS GREW A
+MULTI-EDIT MUTATION. The first-path UNKNOWN check and the final gate are
+MUTUALLY REDUNDANT: driven individually, removing either alone is SILENT,
+because the survivor answers with the identical 502. That is not an unpinned
+guard, it is a property that only exists as a conjunction -- and a harness that
+can plant one edit at a time cannot state it. `old` and `new` may now be lists.
+
+THE NINE mutations, which are exactly the nine driven below -- no more, because
+a list of properties longer than the list of mutations is a coverage claim
+nobody made:
 
   1. the updated_at precondition is dropped, so the PATCH is unconditional
      again and a concurrent write is overwritten -- the original defect;
@@ -45,7 +60,25 @@ made:
   3b. and on the RETRY path, which is the one that had no arm;
   4. the admin role check goes;
   5. the session check goes, and the suite asserts the refusal happens BEFORE
-     the table is touched rather than merely that a refusal happens.
+     the table is touched rather than merely that a refusal happens;
+  6. BOTH the first-path UNKNOWN check and the final gate go together, so an
+     unreadable body is reported as a saved credential again;
+  7. the RETRY path's own UNKNOWN check goes -- it bites alone, because that
+     path returns before the final gate;
+  8. representationSays() calls an unreadable body WROTE, so all three guards
+     stay and every one of them asks a function that answers wrongly.
+
+AND ONE THING MEASURED WHILE WRITING MUTATION 6, RECORDED BECAUSE IT CHANGES
+WHAT THE FINAL GATE IS. Its comment calls it "the last gate, and it covers the
+INSERT path too". It does not, and it cannot refuse anything: the insert path
+enters the SAME `if (writeR.ok || writeR.status === 409)` block, so the
+first-path check has already classified it. Instrumented in a throwaway
+worktree -- the gate is evaluated THREE times across the whole suite and says
+WROTE every one of them, and the control flow says why: an UNKNOWN returns at
+the check above, a MISSED returns from the retry path, and a non-ok response
+returns at `upstream()` one line earlier. It is belt-and-braces, which is a
+fine thing to keep; it is not a second gate on a path the first one misses,
+and mutation 6 is a pair rather than two singles for exactly that reason.
 """
 import os
 import sys
@@ -106,6 +139,46 @@ MUTATIONS = [
      SRC,
      "  if (!caller) {",
      "  if (false) {"),
+
+    # ── THE 2026-09-18 THREE-STATE WRITE RESULT, WHICH SHIPPED WITH NONE ────
+    # Added 2026-09-21 by cody, from the independent review of that change.
+    # Everything above guards the 2026-09-04 concurrency fix and the auth
+    # checks; the only 09-18 edit to this file was RE-AIMING a stale anchor,
+    # which is a repair and not coverage. The author's own record reports
+    # mutations run BY HAND -- so the measurement existed and the tree could
+    # not reproduce it, which is the state a control exists to end.
+
+    ("6. THE PAIR, AND IT HAS TO BE A PAIR. The first-path UNKNOWN check and "
+     "the final gate BOTH go, so an unreadable body on the first PATCH is "
+     "reported as a saved credential -- the original defect, restored through "
+     "the two guards that replaced it",
+     SRC,
+     # NEITHER ONE ALONE IS OBSERVABLE AND THAT IS NOT A GAP IN THE SUITE.
+     # Driven, each alone, before this was written: removing the first-path
+     # check alone leaves `writeRows` null, the `if (writeRows === null)`
+     # re-read of an already-consumed body yields null again, and the final
+     # gate refuses with the same 502 -- externally identical. Removing the
+     # final gate alone changes nothing at all, for the reason in mutation 7.
+     # So the property a control can pin is the CONJUNCTION, and a harness
+     # that could only plant one edit could not state it.
+     ["      if (firstSays === UNKNOWN) { refuseUnconfirmed(res); return; }",
+      "    if (representationSays(writeRows) !== WROTE) { refuseUnconfirmed(res); return; }"],
+     ["      if (false) { refuseUnconfirmed(res); return; }",
+      "    if (false) { refuseUnconfirmed(res); return; }"]),
+
+    ("7. THE RETRY PATH'S OWN UNKNOWN CHECK, which bites ALONE because that "
+     "path RETURNS before the final gate and nothing downstream can cover for "
+     "it -- the half the author recorded as untested",
+     SRC,
+     "        if (secondSays === UNKNOWN) { refuseUnconfirmed(res); return; }",
+     "        if (false) { refuseUnconfirmed(res); return; }"),
+
+    ("8. THE CLASSIFIER ITSELF: an unreadable body is WROTE again, so all "
+     "three guards stay in place and every one of them asks a function that "
+     "now answers wrongly -- the defect one level below the guards",
+     SRC,
+     "      if (rows === null || rows === undefined) return UNKNOWN;  // body unreadable",
+     "      if (rows === null || rows === undefined) return WROTE;  // body unreadable"),
 ]
 
 if __name__ == '__main__':
