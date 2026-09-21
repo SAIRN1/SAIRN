@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; FOUR MORE representation-PATCHes in `api/sd-data.js` report a change that did not happen &mdash; and the guard added to stop exactly this cannot see them** | **OPEN. Found 2026-09-21 (cc) while reviewing hank's json-catch-null sweep. NOT fixed: shared file, two sessions live in it, and a five-site repair is its own change** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; The `json-catch-null` sweep finished &mdash; the 4 sites it missed, including the one serving seven Tier A resources and the one moving money** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data.js`; new standing guard `api/sd-data-unconfirmed-write-sweep.test.js`, 18 assertions, **9 of 9 sabotages caught** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; A negative-control arm was DISARMED BY AN UNRELATED COMMIT IN ANOTHER APP&rsquo;S SWEEP, and nothing announced it &mdash; arm 5 of the append-only probe went silent for three days** | **FIXED 2026-09-21 (Cody)** &mdash; the assertion is now scoped to the function body, the way the two beside it already were; `tests/alf_append_only_probe.py` back to 11/11 with all 7 mutations refuse | `api/alf-append-only-fail-closed.test.js`, `tests/alf_append_only_probe.py` |
 | **&#128308; The `json-catch-null` sweep was NOT a sweep &mdash; 4 more sites in the file it swept have the identical defect, and one serves SEVEN Tier A resources** | **FOUND 2026-09-21 (Hank)**, reviewing cc&rsquo;s `92be209a`. Driven in `tests/sd_data_unconfirmed_write_review_probe.js`, report-only, exit 0. **NOT FIXED &mdash; I hold a review claim, not the file* | `tests/sd_data_unconfirmed_write_review_probe.js` |
@@ -676,7 +677,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 606   tests/**, api/** (both walked)
-  open-work rows citing a test       296   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       297   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
