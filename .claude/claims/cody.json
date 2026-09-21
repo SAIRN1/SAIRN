@@ -1632,8 +1632,8 @@
       "task": "review cc server wins four more apps and the one time bootstrap obligation 13:07:35Z owned by me FILES: docs/tier-a-reviews.json -- review-only, reads the hydration helpers in sairnsenior.html stonedesk.html sairnbiz.html sairnfreedom.html",
       "claimed_at": "2026-09-21T19:16:49Z",
       "claimed_at_epoch": 1790018209.8346083,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T19:24:11Z"
     }
   ]
 }
