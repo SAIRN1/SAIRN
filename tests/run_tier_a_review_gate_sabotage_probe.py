@@ -75,6 +75,58 @@ MUTATIONS = [
      GATE,
      "    for name in uncovered:\n        lines.append('  %-22s %s'",
      "    for name in sorted(hits):\n        lines.append('  %-22s %s'"),
+
+    # ── OWNERSHIP, ADDED 2026-09-21 WITH THE STAMP ITSELF ─────────────────
+    # Four obligations were double-reviewed in one day. Section 6 of the
+    # suite proves the stamp closes that; these prove the arms would NOTICE
+    # the stamp coming undone. Every mutation is a plausible tidy-up --
+    # a check disabled, a filter dropped, a sort simplified -- rather than
+    # nonsense, because a mutation nobody would ever make tests nothing.
+
+    ('5. THE OWNER CHECK IS REMOVED AND THE SELF-REVIEW CHECK IS LEFT -- which is exactly what the file looked like yesterday, so it reads as the original rather than as damage',
+     GATE,
+     "    owner = rec.get('reviewer_owner')\n    if (owner and reviewer and reviewer != owner",
+     "    owner = rec.get('reviewer_owner')\n    if (False and owner and reviewer and reviewer != owner"),
+
+    ('6. THE STAMP STOPS BEING APPLIED AT --open -- every new obligation is born UNOWNED, so the queue silently returns to first-come while every existing owned record still looks right',
+     GATE,
+     '    owner, owner_note = assign_owner(author, data)',
+     "    owner, owner_note = None, 'assignment disabled'"),
+
+    ('7. AN AUTHOR CAN BE ASSIGNED ITS OWN OBLIGATION -- the exclusion in assign_owner goes, so the stamp still happens and still looks like one, and the record becomes unreviewable by the only session holding it',
+     GATE,
+     '    candidates = [n for n in roster if n != author]',
+     '    candidates = list(roster)'),
+
+    ('8. THE ROSTER STOPS FAILING CLOSED -- an unreadable .claude/claims/ returns an empty list instead of None, so assign_owner sees a roster with nobody on it and every record is quietly born unowned',
+     GATE,
+     '    except OSError:\n        return None',
+     '    except OSError:\n        return []'),
+
+    ("9. THE HOVER AUDITOR BECOMES ELIGIBLE -- one filter removed, and the audit role starts receiving the build agents' review queue",
+     GATE,
+     '    names = [n for n in names if n != HOVER_SESSION]',
+     '    names = list(names)'),
+
+    ('10. TAKEOVER LOSES ITS TIME GATE -- anybody may take any owned obligation immediately, which is the original race with a flag on it, and it still RECORDS a handover so the record looks MORE honest than it is',
+     GATE,
+     '        if age <= OWNER_STALE_HOURS:',
+     '        if False:'),
+
+    ('11. THE TAKEOVER STOPS NAMING WHO -- the handover still happens and the verdict still lands, so nothing downstream looks wrong; only the evidence that an assignment failed disappears',
+     GATE,
+     "            'from': owner, 'by': session,",
+     "            'from': None, 'by': None,"),
+
+    ('12. ASSIGNMENT STOPS BEING LEAST-LOADED and becomes alphabetical -- it looks like a simplification, keeps every other property (deterministic, never the author) and quietly piles the whole queue on whoever sorts first',
+     GATE,
+     '    best = min(candidates, key=lambda n: (load[n], n))',
+     '    best = min(candidates)'),
+
+    ('13. THE ATOMIC SAVE GOES BACK TO A DIRECT WRITE -- the mode that produced two concatenated JSON documents and failed every push on the platform closed until somebody repaired the file by hand',
+     GATE,
+     '        os.replace(tmp, REVIEWS)',
+     '        pass  # os.replace removed'),
 ]
 
 if __name__ == '__main__':

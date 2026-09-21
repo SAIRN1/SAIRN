@@ -80,6 +80,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -225,8 +226,51 @@ def load_reviews():
 
 
 def save_reviews(data):
-    io.open(REVIEWS, 'w', encoding='utf-8', newline='\n').write(
-        json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+    """Write the register ATOMICALLY -- temp file, then os.replace.
+
+    ── WHY, AND IT IS NOT HYPOTHETICAL (2026-09-21) ────────────────────────
+    This used to open REVIEWS for writing directly. Two sessions saving at once
+    therefore interleaved inside one file, and the result was not a lost record
+    -- it was a CORRUPT one. Driven before the change, two threads appending and
+    saving:
+
+        json.decoder.JSONDecodeError: Extra data: line 1162 column 1
+
+    The shorter write left the tail of the longer one behind, so the file held
+    two JSON documents concatenated. load_reviews() reads that as CouldNotTell,
+    which the push-gate hook maps to "COULD NOT TELL -- this is NOT a pass", so
+    it fails CLOSED and blocks every push on this platform until somebody
+    repairs the JSON by hand. Failing closed is right; needing a hand repair to
+    get moving again is not.
+
+    os.replace is atomic on the same filesystem on both POSIX and Windows, so a
+    reader sees the old file or the new one and never a half-written one. This
+    does NOT make the read-modify-write safe -- two concurrent --open calls can
+    still LOSE one record, because both read before either writes -- and that is
+    a separate defect, disclosed rather than quietly assumed away. What this
+    removes is the mode that stops the whole platform.
+    """
+    # THE TEMP NAME MUST BE UNIQUE PER WRITER, NOT PER PROCESS, and the first
+    # version of this was `REVIEWS + '.tmp-%d' % os.getpid()`. Two THREADS share
+    # a pid, so both wrote the same temp file, interleaved inside it, and then
+    # both replaced REVIEWS with it -- the corruption simply moved one file
+    # along and the arm written to catch it caught it. mkstemp in the same
+    # directory gives a name nothing else can hold, and same-directory keeps
+    # os.replace atomic (a cross-filesystem replace is not).
+    d = os.path.dirname(os.path.abspath(REVIEWS)) or '.'
+    fd, tmp = tempfile.mkstemp(prefix=os.path.basename(REVIEWS) + '.tmp-', dir=d)
+    try:
+        with io.open(fd, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(json.dumps(data, indent=2, ensure_ascii=False) + '\n')
+        os.replace(tmp, REVIEWS)
+    except BaseException:
+        # A temp file left behind is picked up by nothing and sits in docs/ for
+        # ever, so it goes even when the write fails.
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
 
 
 def git(*args):
@@ -667,6 +711,125 @@ OVERDUE_HOURS = 24
 DENY_ON_OWN_OVERDUE = False      # flip with Michael, once the seven are cleared
 
 
+# ── OWNERSHIP: AN OBLIGATION IS ASSIGNED WHEN IT IS OPENED (2026-09-21) ──────
+# Michael's direction, after FOUR duplicate reviews in one day. Two sessions
+# discharged the same obligation within minutes on four separate records, and
+# every time the collision was invisible until a git rebase surfaced it.
+#
+# THE RACE NEEDED NO CONCURRENCY, which is why detecting it was never going to
+# work. Driven against a throwaway copy of the register before this change:
+# `fourth` discharged a record, then `cody` discharged the same record, and the
+# second write replaced the first's reviewer_session AND its verdict outright --
+# `fourth verdict survives: False`. Nothing in the gate keyed on who the
+# obligation belonged to, so the LATER writer always won regardless of timing.
+# The four collisions today were saved only because both sessions committed and
+# one hit a conflict; a session that discharged, committed and pushed while the
+# other was still writing would have destroyed a verdict with nothing to notice.
+#
+# THREE WEAKER FIXES WERE TRIED FIRST AND ALL THREE FAILED, which is the case
+# for doing it here rather than around it:
+#   * sairn_claim.py -- compares WORDS, and an obligation has no name, so two
+#     correct descriptions of one record share none. It answered CLEAR every
+#     time.
+#   * oldest-first by convention -- both sessions followed it, so both picked
+#     the same record.
+#   * announcing the specific record in the live status registry before starting
+#     -- tried on the fourth collision; the other session took it 2.5 minutes
+#     later anyway. An announcement only helps if the other session re-reads
+#     after choosing its next item, and there is no reason it would.
+#
+# SO THE STAMP GOES ON AT CREATION, NOT AT CLAIM TIME. An obligation carries a
+# reviewer_owner from the moment --open writes it, and --discharge refuses
+# anybody else. That is an IDENTITY CHECK rather than a lock, so it has no
+# window: the second session is refused whether it arrives a second later or a
+# day later.
+#
+# WHO IS ELIGIBLE IS DERIVED, NEVER HARDCODED. CLAUDE.md is explicit that the
+# clone list has been wrong in this repository before -- it named four clones
+# for weeks after a fifth existed -- so the roster is read from the claim files
+# that exist on disk, one per clone, which is the registry that document points
+# at. It FAILS CLOSED: fewer than two names is COULD NOT TELL, and a record
+# opened then is left UNOWNED with the reason in it rather than assigned to a
+# guess.
+#
+# THE HOVER AUDITOR IS EXCLUDED BY NAME AND THAT IS STRUCTURAL, not tidying.
+# `hover` does not build; it adversarially checks what the four build agents
+# built, on its own rotation, and docs/2026-09-15-hover-auditor-separation-
+# enforcement.md plus two gates exist to keep that boundary. Handing it a build
+# agent's review queue would erase the separation from the other side.
+HOVER_SESSION = 'hover'
+CLAIMS_DIR = os.path.join(REPO, '.claude', 'claims')
+# How long an owner may sit on an obligation before anybody else may TAKE IT
+# OVER. Deliberately longer than OVERDUE_HOURS: overdue means "somebody should
+# be told", takeover means "the assignment itself has failed", and collapsing
+# the two would let a busy owner lose an obligation to a race again.
+OWNER_STALE_HOURS = 48
+
+
+class NotOwner(Exception):
+    """The caller is not this obligation's assigned reviewer."""
+
+
+def eligible_reviewers():
+    """Sessions that may be assigned a review, from the claim files on disk.
+
+    Returns a sorted list, or None for COULD NOT TELL -- never a guess and never
+    a hardcoded roster.
+    """
+    try:
+        names = sorted(
+            f[:-5] for f in os.listdir(CLAIMS_DIR)
+            if f.endswith('.json') and re.match(r'^[a-z][a-z0-9_-]{1,31}\.json$', f))
+    except OSError:
+        return None
+    names = [n for n in names if n != HOVER_SESSION]
+    # One name cannot review anything: the only candidate would be the author.
+    return names if len(names) >= 2 else None
+
+
+def assign_owner(author, data, roster=None):
+    """Which session should review an obligation this author is opening.
+
+    LEAST-LOADED, TIE-BROKEN ALPHABETICALLY. Deterministic on purpose -- this
+    file may not use randomness (a random assignment cannot be re-derived when
+    somebody asks why a record went where it did) and least-loaded self-levels
+    as the queue moves, where round-robin on a counter would need state nobody
+    would keep in sync.
+
+    Returns (owner, note). `owner` is None when no assignment can be made, and
+    then `note` says why in words a reader can act on.
+    """
+    roster = eligible_reviewers() if roster is None else roster
+    if roster is None:
+        return None, ('the eligible-reviewer roster could not be read from '
+                      '.claude/claims/, so no owner was assigned and this record '
+                      'is first-come. Fix the roster and re-assign by hand.')
+    candidates = [n for n in roster if n != author]
+    if not candidates:
+        return None, ('%s is the only eligible session on this roster, so there '
+                      'is nobody to assign -- an author may never review its own '
+                      'obligation. This record is UNOWNED and first-come.' % author)
+    load = dict((n, 0) for n in candidates)
+    for r in data.get('records', []):
+        if r.get('status') != 'open':
+            continue
+        o = r.get('reviewer_owner')
+        if o in load:
+            load[o] += 1
+    best = min(candidates, key=lambda n: (load[n], n))
+    return best, None
+
+
+def owner_age_hours(rec):
+    """Hours since the owner was assigned, or None if unusable -- the third
+    state, and never counted as fresh."""
+    try:
+        t = time.strptime(rec.get('owner_assigned_at') or '', '%Y-%m-%dT%H:%M:%SZ')
+    except (ValueError, TypeError):
+        return None
+    return (time.time() - calendar.timegm(t)) / 3600.0
+
+
 def _age_hours(rec):
     """Hours since the obligation was opened, or None if the stamp is unusable.
 
@@ -863,21 +1026,37 @@ def cmd_open(why, rng=None):
                          'cannot be discharged by anybody.\n')
         return 1
     data = load_reviews()
+    author = session_name()
+    owner, owner_note = assign_owner(author, data)
     rec = {
-        'author_session': session_name(),
+        'author_session': author,
         'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'resources': sorted(hits),
         'files': sorted(set(f for fs in hits.values() for f in fs)),
         'what': why,
         'status': 'open',
+        # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────
+        # This is the whole point: first-come is what produced four duplicate
+        # reviews in a day. See the OWNERSHIP block above OVERDUE_HOURS.
+        'reviewer_owner': owner,
+        'owner_assigned_at': (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                              if owner else None),
         'reviewer_session': None,
         'reviewed_at': None,
         'verdict': None,
     }
+    if owner_note:
+        rec['owner_note'] = owner_note
     data['records'].append(rec)
     save_reviews(data)
     print('RECORDED -- %s owes an independent review on: %s'
           % (rec['author_session'], ', '.join(rec['resources'])))
+    if owner:
+        print('ASSIGNED TO %s, now, rather than left first-come. Only %s can '
+              'discharge it (or anybody after %dh, with --takeover).'
+              % (owner, owner, OWNER_STALE_HOURS))
+    else:
+        print('UNOWNED and first-come: %s' % owner_note)
     print('Commit docs/tier-a-reviews.json with the change it covers.')
     return 0
 
@@ -902,6 +1081,24 @@ def cmd_list():
                     else '   ** OVERDUE %.0fh **' % age)
         print('  %-8s %s  %s%s' % (r.get('author_session'), r.get('opened_at'),
                                    ', '.join(r.get('resources') or []), mark))
+        # ── WHOSE IT IS, ON THE LINE PEOPLE ACTUALLY READ ──────────────────
+        # --list is where a session decides what to pick up. Printing the owner
+        # anywhere else would leave that decision on first-come, which is the
+        # thing this stamp exists to remove.
+        owner = r.get('reviewer_owner')
+        if owner:
+            held = owner_age_hours(r)
+            print('           ASSIGNED TO %s%s' % (
+                owner,
+                ('  (held %.0fh -- past %dh, anybody may --takeover)'
+                 % (held, OWNER_STALE_HOURS)) if held is not None and held > OWNER_STALE_HOURS
+                else ('  (held %.0fh)' % held) if held is not None
+                else '  (assignment time UNREADABLE -- no takeover possible)'))
+        else:
+            print('           UNOWNED -- first-come. %s'
+                  % (r.get('owner_note')
+                     or 'opened before ownership was stamped; whoever reviews it '
+                        'should say so in the live status registry first.'))
         print('           %s' % (r.get('what') or '')[:110])
     if late:
         print('')
@@ -1127,13 +1324,44 @@ def _discharge(rec, reviewer, verdict, status):
     if not (verdict or '').strip():
         raise SelfSigned('a closure with no verdict sentence is a tick, not a '
                          'review.')
+    # ── AND THE OWNER CHECK, AT THE WRITE, FOR THE SAME REASON ─────────────
+    # The self-review refusal lives here rather than only in cmd_discharge
+    # because a future third path cannot skip a guard at the write. Ownership
+    # gets the same treatment: an obligation stamped for somebody else is
+    # refused HERE, against the record's own stored owner, not against a string
+    # somebody typed.
+    #
+    # THREE EXEMPTIONS, EACH NARROW AND EACH FOR A STATED REASON:
+    #   * an UNOWNED record (reviewer_owner absent or None) -- every obligation
+    #     opened before this shipped is in that state, and refusing them all
+    #     would freeze the existing queue rather than protect it. Those stay
+    #     first-come, and --list says so out loud.
+    #   * the AUTO path, whose reviewer names a MECHANISM rather than a session
+    #     (`by-defect-register`). Ownership is about two humans colliding; a
+    #     record-backed close is neither of them, and blocking it would break a
+    #     mechanism Michael turned on deliberately.
+    #   * a recorded TAKEOVER, which cmd_discharge sets only when the owner has
+    #     sat past OWNER_STALE_HOURS and the caller asked for it explicitly.
+    owner = rec.get('reviewer_owner')
+    if (owner and reviewer and reviewer != owner
+            and not str(reviewer).startswith('by-')
+            and not rec.get('owner_takeover')):
+        raise NotOwner(
+            'this obligation is assigned to %s, not %s. It was stamped at open '
+            'time (%s) precisely so two sessions cannot both review it -- four '
+            'obligations were double-reviewed on 2026-09-21 before that existed. '
+            'If %s is not going to do it, wait until the assignment is %dh old '
+            'and re-run with --takeover, which RECORDS the handover instead of '
+            'overwriting a verdict.'
+            % (owner, reviewer, rec.get('owner_assigned_at') or 'unstamped',
+               owner, OWNER_STALE_HOURS))
     rec['status'] = status
     rec['reviewer_session'] = reviewer
     rec['reviewed_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
     rec['verdict'] = verdict.strip()
 
 
-def cmd_discharge(author, verdict, opened_at=None):
+def cmd_discharge(author, verdict, opened_at=None, takeover=False):
     """Close somebody ELSE'S obligation.
 
     ── IT DID NOT EXIST FOR THE FIRST TWO HOURS, AND THAT WAS A REAL DEFECT ────
@@ -1182,15 +1410,59 @@ def cmd_discharge(author, verdict, opened_at=None):
                              % (r.get('opened_at'), ', '.join(r.get('resources') or [])))
         sys.stderr.write('Pass the opened_at as the second argument to pick one.\n')
         return 1
+    rec = hit[0]
+    # ── TAKEOVER: AN OWNER THAT NEVER RUNS AGAIN MUST NOT BLOCK FOR EVER ───
+    # This is the failure the owner stamp CREATES, and it has to be answered in
+    # the same change or the fix is worse than the race: an obligation assigned
+    # to a session that dies is an obligation nobody can close, and this
+    # platform already has that shape recorded for expired claims. So a takeover
+    # exists -- and it is EXPLICIT, TIME-GATED and RECORDED, never silent.
+    if takeover:
+        owner = rec.get('reviewer_owner')
+        if not owner:
+            sys.stderr.write('REFUSED: that obligation is UNOWNED, so there is '
+                             'nothing to take over -- just discharge it.\n')
+            return 1
+        if owner == session:
+            sys.stderr.write('REFUSED: %s already owns that obligation. '
+                             'Discharge it without --takeover.\n' % session)
+            return 1
+        age = owner_age_hours(rec)
+        if age is None:
+            sys.stderr.write(
+                'COULD NOT TELL: owner_assigned_at is missing or unreadable on '
+                'that record (%r), so how long %s has held it is unknown. A '
+                'takeover on an unknown age is a takeover on a guess. Fix the '
+                'stamp, or discharge as the owner.\n'
+                % (rec.get('owner_assigned_at'), owner))
+            return 2
+        if age <= OWNER_STALE_HOURS:
+            sys.stderr.write(
+                'REFUSED: %s has held that obligation for %.1fh and the takeover '
+                'threshold is %dh. Taking it now is the race this stamp removed, '
+                'wearing a flag.\n' % (owner, age, OWNER_STALE_HOURS))
+            return 1
+        rec['owner_takeover'] = {
+            'from': owner, 'by': session,
+            'at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+            'owner_held_hours': round(age, 1),
+            'why': ('assigned owner did not discharge within %dh'
+                    % OWNER_STALE_HOURS),
+        }
     try:
-        _discharge(hit[0], session, verdict, 'reviewed')
-    except SelfSigned as e:
+        _discharge(rec, session, verdict, 'reviewed')
+    except (SelfSigned, NotOwner) as e:
+        rec.pop('owner_takeover', None)      # do not leave a half-done handover
         sys.stderr.write('REFUSED: %s\n' % e)
         return 1
     save_reviews(data)
     print('DISCHARGED -- %s reviewed the obligation %s opened %s, on %s'
-          % (session, author, hit[0].get('opened_at'),
-             ', '.join(hit[0].get('resources') or [])))
+          % (session, author, rec.get('opened_at'),
+             ', '.join(rec.get('resources') or [])))
+    if rec.get('owner_takeover'):
+        print('TAKEOVER RECORDED -- was assigned to %s, held %.1fh'
+              % (rec['owner_takeover']['from'],
+                 rec['owner_takeover']['owner_held_hours']))
     return 0
 
 
@@ -1216,13 +1488,20 @@ def main(argv):
             sys.stderr.write('COULD NOT TELL: %s\n' % e)
             return 2
     if '--discharge' in argv:
+        # --takeover is stripped BEFORE the positional parse so it can be given
+        # anywhere, and so it can never be swallowed into a verdict sentence --
+        # a flag that silently became part of the prose would be a handover
+        # nobody could find.
+        takeover = '--takeover' in argv
+        argv = [a for a in argv if a != '--takeover']
         rest = argv[argv.index('--discharge') + 1:]
         if len(rest) >= 3 and re.match(r'^\d{4}-\d{2}-\d{2}T', rest[1]):
-            return cmd_discharge(rest[0], ' '.join(rest[2:]), opened_at=rest[1])
+            return cmd_discharge(rest[0], ' '.join(rest[2:]), opened_at=rest[1],
+                                 takeover=takeover)
         if len(rest) >= 2:
-            return cmd_discharge(rest[0], ' '.join(rest[1:]))
+            return cmd_discharge(rest[0], ' '.join(rest[1:]), takeover=takeover)
         sys.stderr.write('--discharge <author-session> [opened_at] <verdict '
-                         'sentence>\n')
+                         'sentence>   [--takeover]\n')
         return 1
     if '--list' in argv:
         return cmd_list()

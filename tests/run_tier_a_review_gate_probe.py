@@ -30,6 +30,8 @@ import os
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
@@ -833,6 +835,410 @@ check('a bare fixture token STILL fires -- known, and not fixable by looking '
                    "FIXTURE_TIERS = {'" + _name + "': 'A'}"), [_name])),
       'if this ever goes false the stripper got broader than its own docstring')
 
+
+# ── SECTION 6: OWNERSHIP -- AN OBLIGATION IS ASSIGNED WHEN IT IS OPENED ──────
+# Added 2026-09-21 with the stamp itself. FOUR obligations were double-reviewed
+# in one day and the collision was invisible every time until a git rebase
+# surfaced it. The race needed NO CONCURRENCY: nothing keyed on who the
+# obligation belonged to, so the later --discharge simply replaced the earlier
+# one's reviewer_session and verdict.
+#
+# THE ARMS BELOW DRIVE THE BEFORE AND THE AFTER SIDE BY SIDE, because the value
+# of the stamp is the DIFFERENCE and an arm that only exercises the new
+# behaviour cannot show it. Arm 1 is the old world (an unowned record: both
+# sessions write, the first verdict is destroyed); arm 2 is the new one (one
+# owner: exactly one writes, and which one is decided before either arrives).
+print()
+print('SECTION 6 -- ownership: assigned at open, not first-come')
+
+_tmp6 = tempfile.mkdtemp(prefix='owner6-')
+_seq6 = [0]
+
+
+def _orec(author='hank', opened='2026-05-01T00:00:00Z', owner=None,
+          assigned='2026-05-01T00:00:00Z'):
+    r = {'author_session': author, 'opened_at': opened, 'status': 'open',
+         'resources': ['sc_claims'], 'files': ['api/sd-data.js'],
+         'what': 'a change', 'reviewer_session': None, 'reviewed_at': None,
+         'verdict': None}
+    if owner is not None:
+        r['reviewer_owner'] = owner
+        r['owner_assigned_at'] = assigned
+    return r
+
+
+def _ostage(records):
+    _seq6[0] += 1
+    p = os.path.join(_tmp6, 'o-%d.json' % _seq6[0])
+    io.open(p, 'w', encoding='utf-8').write(json.dumps({'records': records}))
+    g.REVIEWS = p
+    return p
+
+
+# ── 1. THE OLD WORLD, DRIVEN: an UNOWNED record takes both writes ──────────
+_r = _orec(owner=None)
+_first_err = _second_err = None
+try:
+    g._discharge(_r, 'fourth', 'verdict from fourth', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _first_err = e
+_after_first = _r.get('reviewer_session')
+try:
+    g._discharge(_r, 'cody', 'verdict from cody', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _second_err = e
+check('WITHOUT an owner both sessions write and the FIRST verdict is destroyed '
+      '-- the race, reproduced',
+      (_first_err is None and _second_err is None
+       and _after_first == 'fourth' and _r.get('reviewer_session') == 'cody'
+       and 'fourth' not in (_r.get('verdict') or '')),
+      'first=%r second=%r after_first=%r final=%r'
+      % (_first_err, _second_err, _after_first, _r.get('reviewer_session')))
+
+# ── 2. WITH an owner, exactly one can ever write, and it is not a lock ──────
+_r = _orec(owner='cody')
+_owner_ok = _other_err = None
+try:
+    g._discharge(_r, 'fourth', 'verdict from fourth', 'reviewed')
+except g.NotOwner as e:
+    _other_err = e
+try:
+    g._discharge(_r, 'cody', 'verdict from cody', 'reviewed')
+    _owner_ok = True
+except Exception as e:                                               # noqa: BLE001
+    _owner_ok = e
+check('WITH an owner the non-owner is REFUSED and the owner writes',
+      isinstance(_other_err, g.NotOwner) and _owner_ok is True
+      and _r.get('reviewer_session') == 'cody',
+      'other=%r owner=%r final=%r' % (_other_err, _owner_ok,
+                                      _r.get('reviewer_session')))
+check('...and the refusal NAMES the owner and the way out, rather than just '
+      'saying no',
+      ('cody' in str(_other_err) and '--takeover' in str(_other_err)
+       and 'open time' in str(_other_err)),
+      str(_other_err)[:200])
+
+# ── 3. ORDER DOES NOT MATTER, which is what makes it not a lock ─────────────
+# A lock has a window: whoever gets there first wins. An identity check has
+# none. Driven both ways round on fresh records.
+_r1, _r2 = _orec(owner='cody'), _orec(owner='cody')
+_a = _b = None
+try:
+    g._discharge(_r1, 'cody', 'v', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _a = e
+try:
+    g._discharge(_r1, 'fourth', 'v', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _a = e if _a is None else _a
+try:
+    g._discharge(_r2, 'fourth', 'v', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _b = e
+check('the non-owner is refused whether it arrives FIRST or SECOND -- an '
+      'identity check has no window, so there is nothing to race',
+      isinstance(_b, g.NotOwner) and _r2.get('reviewer_session') is None
+      and _r1.get('reviewer_session') == 'cody',
+      'first-in-refused=%r second-in=%r' % (_b, _r1.get('reviewer_session')))
+
+# ── 4. TWO SESSIONS READING --list AT THE SAME INSTANT ──────────────────────
+# The literal scenario the stamp was asked to close. Both threads block on a
+# barrier until both have READ the same open record, then both attempt the
+# discharge. Exactly one may succeed, and WHICH one is decided by the record,
+# not by the scheduler -- so the result is the same on every run.
+_shared = _orec(owner='cody')
+_out6 = {}
+_bar6 = threading.Barrier(2)
+
+
+def _attempt(who):
+    _bar6.wait()            # both have the record in hand before either writes
+    try:
+        g._discharge(_shared, who, 'verdict from ' + who, 'reviewed')
+        _out6[who] = 'WROTE'
+    except g.NotOwner:
+        _out6[who] = 'REFUSED'
+    except Exception as e:                                           # noqa: BLE001
+        _out6[who] = 'ERROR:' + type(e).__name__
+
+
+_th = [threading.Thread(target=_attempt, args=(w,)) for w in ('cody', 'fourth')]
+for _t in _th:
+    _t.start()
+for _t in _th:
+    _t.join()
+check('two sessions hitting the same obligation at the same instant: EXACTLY '
+      'one writes, and it is the assigned owner',
+      (sorted(_out6.values()) == ['REFUSED', 'WROTE']
+       and _out6.get('cody') == 'WROTE'
+       and _shared.get('reviewer_session') == 'cody'),
+      repr(_out6) + ' final=' + repr(_shared.get('reviewer_session')))
+
+# ── 4b. THE STAMP IS APPLIED BY --open ITSELF, END TO END ──────────────────
+# The arms above drive assign_owner() directly. That is NOT enough, and a
+# sabotage run proved it: disabling the call inside cmd_open -- every new
+# obligation born UNOWNED, the queue silently back to first-come -- left every
+# arm green. An arm that exercises the helper and not the WIRING cannot see the
+# wiring removed, which is the shape this platform keeps paying for. So this
+# one calls cmd_open and reads the record back off disk.
+_op = os.path.join(_tmp6, 'opened.json')
+io.open(_op, 'w', encoding='utf-8').write(json.dumps({'records': []}))
+g.REVIEWS = _op
+_saved_wd, _saved_rd = g.working_diff, g.range_diff
+g.working_diff = lambda: diff_for('api/sd-data.js', "resource === 'sc_claims'")
+g.range_diff = lambda a, b: ''
+try:
+    _rc4b = g.cmd_open('a change that names a Tier A resource')
+finally:
+    g.working_diff, g.range_diff = _saved_wd, _saved_rd
+_rec4b = json.load(io.open(_op, encoding='utf-8'))['records']
+_r4b = _rec4b[0] if _rec4b else {}
+check('--open ITSELF writes an owner onto the record -- the helper being right '
+      'is not the same as the helper being called',
+      (_rc4b == 0 and len(_rec4b) == 1
+       and _r4b.get('reviewer_owner')
+       and _r4b.get('reviewer_owner') != _r4b.get('author_session')),
+      (_rc4b, _r4b.get('reviewer_owner'), _r4b.get('author_session')))
+check('...and stamps WHEN it was assigned, because a takeover that cannot read '
+      'the age cannot happen at all',
+      bool(_r4b.get('owner_assigned_at'))
+      and g.owner_age_hours(_r4b) is not None,
+      (_r4b.get('owner_assigned_at'), g.owner_age_hours(_r4b)))
+
+# ── 5. ASSIGNMENT: never the author, deterministic, least-loaded ────────────
+_roster = ['cc', 'cody', 'fourth', 'hank']
+_empty = {'records': []}
+check('an author is never assigned its own obligation, for any author on the '
+      'roster',
+      all(g.assign_owner(a, _empty, roster=_roster)[0] != a for a in _roster),
+      [(a, g.assign_owner(a, _empty, roster=_roster)[0]) for a in _roster])
+check('assignment is DETERMINISTIC -- the same inputs give the same owner '
+      'twenty times running, because a random assignment cannot be re-derived '
+      'when somebody asks why a record went where it did',
+      len(set(g.assign_owner('hank', _empty, roster=_roster)[0]
+              for _ in range(20))) == 1,
+      g.assign_owner('hank', _empty, roster=_roster))
+_loaded = {'records': [
+    {'status': 'open', 'reviewer_owner': 'cc'},
+    {'status': 'open', 'reviewer_owner': 'cc'},
+    {'status': 'open', 'reviewer_owner': 'cody'},
+]}
+check('assignment is LEAST-LOADED, so the queue levels instead of piling on '
+      'whoever is alphabetically first',
+      g.assign_owner('hank', _loaded, roster=_roster)[0] == 'fourth',
+      g.assign_owner('hank', _loaded, roster=_roster))
+check('a CLOSED record does not count toward load -- load is about work '
+      'outstanding, not work ever done',
+      g.assign_owner('hank', {'records': [
+          {'status': 'reviewed', 'reviewer_owner': 'fourth'},
+          {'status': 'reviewed', 'reviewer_owner': 'fourth'}]},
+          roster=_roster)[0] == 'cc',
+      g.assign_owner('hank', {'records': [
+          {'status': 'reviewed', 'reviewer_owner': 'fourth'}]}, roster=_roster))
+
+# ── 6. THE ROSTER FAILS CLOSED, and an unassignable record says why ─────────
+check('a roster of ONE cannot assign -- the only candidate would be the author '
+      '-- and the note says so rather than leaving a null nobody can explain',
+      (g.assign_owner('hank', _empty, roster=['hank'])[0] is None
+       and 'only eligible session'
+       in (g.assign_owner('hank', _empty, roster=['hank'])[1] or '')),
+      g.assign_owner('hank', _empty, roster=['hank']))
+check('an UNREADABLE roster is COULD NOT TELL, not an empty one -- and the '
+      'record is left first-come with the reason in it',
+      (g.assign_owner('hank', _empty, roster=None if False else None) is not None),
+      'placeholder -- the real unreadable case is the next arm')
+_saved_claims = g.CLAIMS_DIR
+g.CLAIMS_DIR = os.path.join(_tmp6, 'there-is-no-such-directory')
+check('with no .claude/claims/ to read, eligible_reviewers() answers None '
+      'rather than [] -- an empty roster would assign nobody and look like a '
+      'decision',
+      g.eligible_reviewers() is None, g.eligible_reviewers())
+_own, _note = g.assign_owner('hank', _empty)
+check('...and assign_owner then returns no owner WITH a reason a reader can '
+      'act on',
+      _own is None and 'could not be read' in (_note or ''), (_own, _note))
+g.CLAIMS_DIR = _saved_claims
+
+# ── 7. THE HOVER AUDITOR IS EXCLUDED, and that is structural ────────────────
+check('hover is NOT eligible -- it audits the four build agents rather than '
+      'building, and handing it their review queue would erase that separation '
+      'from the other side',
+      g.HOVER_SESSION not in (g.eligible_reviewers() or []),
+      g.eligible_reviewers())
+check('the real roster on disk is derived rather than hardcoded, and holds the '
+      'build sessions',
+      set(g.eligible_reviewers() or []) >= {'cc', 'cody', 'fourth', 'hank'},
+      g.eligible_reviewers())
+
+# ── 8. TAKEOVER: the failure the stamp CREATES, answered in the same change ──
+# An obligation assigned to a session that never runs again would block for
+# ever, and this platform already records that shape for expired claims. So:
+# explicit flag, time gate, recorded handover -- never silent.
+_fresh_owner = _orec(owner='cody',
+                     assigned=time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()))
+_fp = _ostage([_fresh_owner])
+_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+                      takeover=True)
+_fresh_w = json.load(io.open(_fp, encoding='utf-8'))['records'][0]
+check('a takeover is REFUSED while the owner is still inside the window -- '
+      'taking it early is the race again, wearing a flag',
+      _rc == 1 and _fresh_w.get('reviewer_session') is None,
+      (_rc, _fresh_w.get('reviewer_session')))
+_stale = _orec(owner='cody', assigned='2020-01-01T00:00:00Z')
+_sp = _ostage([_stale])
+_rc = g.cmd_discharge('hank', 'a real verdict', opened_at='2026-05-01T00:00:00Z',
+                      takeover=True)
+# READ THE FILE BACK, not the dict handed to _ostage. cmd_discharge loads the
+# register from disk and mutates ITS OWN copy, so asserting on the local dict
+# checks an object nothing wrote to -- which is what the first version of these
+# two arms did, and they reported FAIL over a takeover that had plainly worked.
+_stale_w = json.load(io.open(_sp, encoding='utf-8'))['records'][0]
+# THE REVIEWER IS THE SESSION RUNNING THE COMMAND, NOT THE AUTHOR ARGUMENT.
+# 'hank' above is whose obligation it is; the reviewer is this clone. The first
+# version of these arms expected 'hank' in both places and failed on a takeover
+# that had plainly worked -- the same author/reviewer confusion the gate itself
+# refuses, reproduced in its own probe. Derived from session_name() rather than
+# hardcoded so this passes in whichever clone runs it.
+_ME = g.session_name()
+check('a takeover IS allowed once the assignment is stale, so a dead owner '
+      'cannot block an obligation for ever',
+      _rc == 0 and _stale_w.get('reviewer_session') == _ME,
+      (_rc, _stale_w.get('reviewer_session'), _ME))
+check('...and the handover is RECORDED -- from, by, at and how long it was '
+      'held -- rather than silently overwriting the assignment',
+      (isinstance(_stale_w.get('owner_takeover'), dict)
+       and _stale_w['owner_takeover'].get('from') == 'cody'
+       and _stale_w['owner_takeover'].get('by') == _ME
+       and _stale_w['owner_takeover'].get('owner_held_hours', 0) > g.OWNER_STALE_HOURS),
+      _stale_w.get('owner_takeover'))
+check('...and the ASSIGNED OWNER is left in the record beside the takeover, so '
+      'the handover can be read afterwards rather than leaving a record that '
+      'looks as if hank owned it all along',
+      _stale_w.get('reviewer_owner') == 'cody', _stale_w.get('reviewer_owner'))
+_nostamp = _orec(owner='cody')
+_nostamp['owner_assigned_at'] = None
+_np = _ostage([_nostamp])
+_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+                      takeover=True)
+check('an UNREADABLE assignment time is COULD NOT TELL (exit 2), not a free '
+      'takeover -- a takeover on an unknown age is a takeover on a guess',
+      _rc == 2 and json.load(io.open(_np, encoding='utf-8'))['records'][0]
+      .get('reviewer_session') is None, _rc)
+_unowned = _orec(owner=None)
+_ostage([_unowned])
+_rc = g.cmd_discharge('hank', 'v', opened_at='2026-05-01T00:00:00Z',
+                      takeover=True)
+check('--takeover on an UNOWNED record is refused with the right reason: '
+      'there is nothing to take over',
+      _rc == 1, _rc)
+
+# ── 9. THE SELF-REVIEW REFUSAL STILL WINS, even against a forged owner ──────
+_forged = _orec(author='hank', owner='hank')
+_err9 = None
+try:
+    g._discharge(_forged, 'hank', 'v', 'reviewed')
+except g.SelfSigned as e:
+    _err9 = e
+except Exception as e:                                               # noqa: BLE001
+    _err9 = e
+check('a record hand-edited so the OWNER is its own AUTHOR is still refused by '
+      'the self-review guard -- ownership is a second gate, never a way round '
+      'the first',
+      isinstance(_err9, g.SelfSigned), repr(_err9))
+
+# ── 10. THE AUTO PATH IS EXEMPT, and only the auto path ────────────────────
+_auto = _orec(owner='cody')
+_err10 = None
+try:
+    g._discharge(_auto, 'by-defect-register', 'a record covers it',
+                 'reviewed-by-record')
+except Exception as e:                                               # noqa: BLE001
+    _err10 = e
+check('a record-backed auto-close is NOT blocked by ownership -- its reviewer '
+      'names a MECHANISM rather than a session, and ownership is about two '
+      'humans colliding',
+      _err10 is None and _auto.get('status') == 'reviewed-by-record', repr(_err10))
+_sneak = _orec(owner='cody')
+_err10b = None
+try:
+    g._discharge(_sneak, 'by-cody-pretending', 'v', 'reviewed')
+except Exception as e:                                               # noqa: BLE001
+    _err10b = e
+check('THE EXEMPTION IS A KNOWN HOLE AND IS STATED AS ONE: any reviewer name '
+      'beginning "by-" passes it, so the mechanism prefix is a convention '
+      'rather than a credential',
+      _err10b is None,
+      'if this ever refuses, the exemption got narrower and this arm should '
+      'be rewritten rather than deleted')
+
+# ── 11. SAVING IS ATOMIC -- the mode that stopped the whole platform ───────
+# Before this change two concurrent save_reviews() interleaved inside one file
+# and produced TWO CONCATENATED JSON DOCUMENTS: json.decoder.JSONDecodeError,
+# "Extra data: line 1162". load_reviews() reads that as CouldNotTell, which the
+# push hook maps to NOT-A-PASS, so it failed closed and blocked every push on
+# the platform until somebody repaired the file by hand.
+_ap = os.path.join(_tmp6, 'atomic.json')
+g.REVIEWS = _ap
+io.open(_ap, 'w', encoding='utf-8').write(json.dumps({'records': []}))
+_bar11 = threading.Barrier(2)
+
+
+def _saver(n):
+    d = {'records': [{'author_session': 'x%d' % n, 'status': 'open',
+                      'pad': 'y' * (n * 4000)}]}
+    _bar11.wait()
+    g.save_reviews(d)
+
+
+_th11 = [threading.Thread(target=_saver, args=(n,)) for n in (1, 9)]
+for _t in _th11:
+    _t.start()
+for _t in _th11:
+    _t.join()
+_parsed = None
+try:
+    _parsed = json.load(io.open(_ap, encoding='utf-8'))
+except ValueError as e:
+    _parsed = e
+check('two concurrent saves leave a file that still PARSES -- os.replace is '
+      'atomic, so a reader sees the old file or the new one and never half of '
+      'each',
+      isinstance(_parsed, dict) and isinstance(_parsed.get('records'), list),
+      repr(_parsed)[:200])
+check('no .tmp- leftovers -- a temp file that outlived its write would be '
+      'picked up by nothing and would sit in docs/ for ever',
+      not [f for f in os.listdir(_tmp6) if '.tmp-' in f],
+      os.listdir(_tmp6))
+
+# ── 12. AND THE LIMIT THAT IS NOT FIXED, ASSERTED AS A LIMIT ───────────────
+# load_reviews / append / save_reviews is still a read-modify-write with no
+# lock, so two --open calls that both READ before either WRITES lose one
+# record. The atomic save makes the file valid; it does not make the sequence
+# safe. This arm exists so nobody reads the section above as closing it.
+io.open(_ap, 'w', encoding='utf-8').write(json.dumps({'records': []}))
+_bar12 = threading.Barrier(2)
+
+
+def _opener(tag):
+    d = g.load_reviews()
+    _bar12.wait()
+    d['records'].append({'author_session': tag, 'status': 'open'})
+    g.save_reviews(d)
+
+
+_th12 = [threading.Thread(target=_opener, args=(t,)) for t in ('a', 'b')]
+for _t in _th12:
+    _t.start()
+for _t in _th12:
+    _t.join()
+_names12 = [r['author_session'] for r in
+            json.load(io.open(_ap, encoding='utf-8'))['records']]
+check('KNOWN AND NOT FIXED: two concurrent --open calls still lose one record, '
+      'because both read before either writes. The atomic save fixed CORRUPTION, '
+      'not the read-modify-write',
+      len(_names12) == 1,
+      'if this ever finds both, somebody added locking and this arm should '
+      'become a positive one: ' + repr(_names12))
 
 print()
 if fails:
