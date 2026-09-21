@@ -163,6 +163,12 @@ CHECKPOINTS = ('human-read', 'automated-checker', 'monitoring', 'unknown')
 CHECKPOINT_OF = {
     'code-review': 'human-read',
     'independent-review': 'human-read',
+    # A read, adversarially, of somebody else's diff -- the same CHECKPOINT
+    # kind as the two above even though it is a different POPULATION. The two
+    # axes are deliberately separate: `detection_method` says which channel
+    # found it, `checkpoint_of` says whether a person or a program did, and
+    # this role is a person-shaped check run by a different agent.
+    'hover-audit': 'human-read',
     'static-checker': 'automated-checker',
     'mutation-testing': 'automated-checker',
     'fault-injection': 'automated-checker',
@@ -196,6 +202,21 @@ METHODS = (
     'code-review', 'mutation-testing', 'fault-injection', 'static-checker',
     'live-verification', 'independent-review', 'traceability-matrix',
     'probe-control', 'user-report',
+    # ── THE FIFTH AGENT'S OWN CHANNEL (added 2026-09-21) ──────────────────
+    # The hover auditor is not one of the four build agents and its findings
+    # are not `independent-review`: that value is the build agents' PEER
+    # channel, four sessions reviewing each other's diffs, and folding a
+    # structurally separate third data source into it would make the coverage
+    # matrix say there is one reviewing population where there are two.
+    #
+    # ADDED BY A BUILD AGENT, WHICH IS THE POINT. .claude/skills/
+    # sairn-hover-auditor/SKILL.md has said since 2026-09-14 that this enum
+    # has no hover-audit value, that adding one is "a code edit this role does
+    # not make itself", and that findings needing the tag should be HELD and
+    # the fix routed here. So the absence of this string was holding real
+    # findings out of the register -- and a finding sitting in chat because a
+    # tuple is one entry short is the quietest kind of missing data there is.
+    'hover-audit',
 )
 
 # ── THE STANDING-RULE CITATION, added 2026-09-13 ───────────────────────────

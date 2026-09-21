@@ -592,6 +592,47 @@ try:
           'fire on real data without --check saying so',
           [m for m in dr.METHODS if dr.checkpoint_of(m) == 'unknown'], [])
 
+    # -- Q10-Q13. THE FIFTH AGENT'S CHANNEL (2026-09-21) --------------------
+    # The hover auditor is a structurally separate third data source, not one
+    # of the four build agents. Its skill has said since 2026-09-14 that this
+    # enum had no value for it, that adding one was "a code edit this role
+    # does not make itself", and that findings needing the tag should be HELD
+    # -- so the absence of one string was keeping real findings out of the
+    # register entirely.
+    check('Q10 the hover auditor has a method value at all, so its findings '
+          'have somewhere to go', 'hover-audit' in dr.METHODS, True)
+    check('Q11 ...and it is DISTINCT from independent-review, which is the '
+          'four build agents\' peer channel -- one value for two populations '
+          'would make the matrix report one reviewing population',
+          'independent-review' in dr.METHODS and 'hover-audit' in dr.METHODS
+          and 'hover-audit' != 'independent-review', True)
+    check('Q12 ...and it is a human-read checkpoint, so --add does not demand '
+          'a --found-by-tool from a role whose method is reading a diff',
+          (dr.checkpoint_of('hover-audit'), dr.tool_required('hover-audit')),
+          ('human-read', False))
+    # ── AND THE TAG IS READ FROM THE SKILL, NOT TYPED TWICE ──────────────
+    # The enum and the role that uses it live in different files, which is the
+    # two-copies shape this platform keeps recording. If the skill renames its
+    # tag, this arm goes red rather than the two drifting apart in silence --
+    # and a hover finding tagged with a value the register does not know is
+    # refused at the moment somebody is trying to record a real defect.
+    _skill = os.path.join(REPO, '.claude', 'skills', 'sairn-hover-auditor',
+                          'SKILL.md')
+    try:
+        _sb = io.open(_skill, encoding='utf-8').read()
+    except (OSError, IOError):
+        _sb = None
+    if _sb is None:
+        # NOT folded into a pass. The arm could not run and says which file it
+        # could not read, rather than reporting agreement it never checked.
+        check('Q13 COULD NOT RUN -- the hover skill is not readable at ' + _skill,
+              False, True)
+    else:
+        _tags = set(re.findall(r'detection_method\s+([a-z][a-z0-9-]+)', _sb))
+        check('Q13 every detection_method the hover skill names is in the '
+              'vocabulary -- tags found: ' + (','.join(sorted(_tags)) or '(none)'),
+              bool(_tags) and _tags <= set(dr.METHODS), True)
+
 
     # -- R. which TOOL found it (2026-09-14) --------------------------------
     check('R1 a tool name is REQUIRED when a checker found it', dr.tool_required('static-checker'), True)
