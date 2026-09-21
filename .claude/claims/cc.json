@@ -1942,8 +1942,8 @@
       "task": "server-wins hydration sdnHydrateAll overwrite local records",
       "claimed_at": "2026-09-21T07:42:24Z",
       "claimed_at_epoch": 1789976544.5871718,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T07:45:24Z"
     }
   ]
 }
