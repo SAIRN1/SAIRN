@@ -450,6 +450,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; A BILLABLE hour at rate zero bills nothing and says nothing &mdash; `rate` was validated in NEITHER layer, so a blank rate became `0` and the hour added $0.00 to the invoice while showing as ordinary billable work** | **FIXED 2026-09-21 (cc)** &mdash; `api/_lib/law-timeentry.js` refuses a billable entry whose `rate` is not a finite number above zero; `saveTime()` in `sairnlaw.html` refuses it in the browser first.  | `tests/run_sairnlaw_billable_rate_sabotage_probe.py`, `tests/sairnlaw_billable_rate.js` |
+| **&#128308; There is NO LEDES export, and three files plus a user-facing refusal were justifying themselves on it** | **OPEN &mdash; the false claims removed 2026-09-21 (cc), the FEATURE is not built** | `api/_lib/law-timeentry.test.js`, `tests/sairnlaw_billing_codes.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
+| **&#128308; Additive hydration means a device holding a STALE record is never corrected by the server &mdash; a fix that makes the server right does not make the twenty `law_` resources right** | **OPEN &mdash; named, deliberately not fixed 2026-09-21 (cc)** | `tests/sairnlaw_hydrate.js` |
 | **&#9989; The hours were billed on one browser and the server never heard &mdash; `invoiced:true` went to localStorage and stopped, so a fresh device offers them again as unbilled** | **FIXED 2026-09-21 (cc)** &mdash; `saveInvoice()` in `sairnlaw.html` now writes each touched entry back to `law_timeentries`, whole, and NAMES a write that did not land; `tests/sairnlaw_invoiced_sync. | `tests/sairnlaw_invoiced_sync.js` |
 | **&#9989; A billable hour could reach the server with NO UTBMS code &mdash; refused by nothing at either end, on the record Tier A invoices are built from** | **FIXED 2026-09-18 (Fourth)** &mdash; `api/_lib/law-timeentry.js` (NEW) wired into the `law_timeentries` write branch of `api/sd-data.js`; `api/_lib/law-timeentry.test.js` 15 arms, 6 sabotages all cau | `api/_lib/law-timeentry.test.js` |
 | 🚨 **The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ATTORNEY TRUST MONEY, and in two other places** | **SWEPT AND GUARDED 2026-09-15 (Hank)** &mdash; `law_check_and_insert_disbursement`, `law_check_and_void_deposit`, `cl_rate_limit_consume`. New `tools/advisory_lock_isolation_check.py` (report-only, r | `tests/run_advisory_lock_isolation_probe.py` |
@@ -554,17 +557,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 528 of 586 traced, 90.1%.
+For context and not as the headline: 530 of 588 traced, 90.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 528 citations come from
+### Where the 530 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 271 |
+| `index` | 272 |
 | `declared` | 233 |
-| `declared+index` | 16 |
+| `declared+index` | 17 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -657,8 +660,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 586   tests/**, api/** (both walked)
-  open-work rows citing a test       277   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 588   tests/**, api/** (both walked)
+  open-work rows citing a test       280   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
