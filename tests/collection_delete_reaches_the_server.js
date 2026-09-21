@@ -111,8 +111,17 @@ function build(opts) {
   const ctx = {
     console: { warn: m => warns.push(String(m)), error: () => {}, log: () => {} },
     localStorage: {
-      getItem: k => (k in store ? store[k] : null),
-      setItem: (k, v) => { if (opts.storageFails) throw new Error('quota'); store[k] = v; }
+      // readFails EXISTS BECAUSE A MUTATION WENT UNNOTICED. The object-hydration
+      // path's fail-closed branch is `try{ ... }catch(e){ return; }` around a
+      // getItem, and nothing here could drive it -- storageFails only throws on
+      // setItem -- so turning that `return` into a no-op was invisible.
+      getItem: k => {
+        if (opts.readFails) throw new Error('unreadable');
+        return (k in store ? store[k] : null);
+      },
+      setItem: (k, v) => { if (opts.storageFails) throw new Error('quota'); store[k] = v; },
+      // The bootstrap's undo path calls removeItem when a flag write fails.
+      removeItem: k => { delete store[k]; }
     },
     sdStorageFailed: () => {},
     sdBackupHookFailed: (k, e) => warns.push('HOOK THREW ' + k + ' ' + (e && e.message)),
@@ -510,11 +519,31 @@ function seeded(key, prev, opts) {
   const HYDRATE = [
     grabAt('function sdLoad(k,def){', ''),
     grabAt('function sdWhileSuppressed(fn){', ''),
+    // ADDED 2026-09-21, AND THE WHOLE DEPENDENCY CLOSURE RATHER THAN THE ONE
+    // NAME IN THE ERROR. sdHydrateAll() gained `sdSyncedBootstrap(SD_SYNCED);`
+    // as its first line when the one-time bootstrap landed, and this extract
+    // did not, so the four object-hydration arms threw ReferenceError inside
+    // the vm. sdSyncedBootstrap() needs SD_SYNCED_KEY, sdSyncedRead(),
+    // SD_BOOTSTRAP_KEY, sdBootstrappedNow and sdHydrateLoad() -- taken from
+    // the file, not restated here, for the same reason the comment above gives
+    // about SD_SYNCED_OBJECT.
+    //
+    // IT FAILED LOUDLY ONLY BECAUSE THE NEW CALL IS SYNCHRONOUS. sdHydrateAll's
+    // own `.catch(function(){})` swallows a ReferenceError raised inside the
+    // promise chain -- the comment below already warns about that -- so the
+    // quiet version of this break is still possible for anything added after
+    // the first await.
+    grabLine("var SD_SYNCED_KEY='sd_synced_ids';"),
+    grabAt('function sdSyncedRead(){', ''),
+    grabLine("var SD_BOOTSTRAP_KEY='sd_synced_bootstrap';"),
+    grabLine('var sdBootstrappedNow=false;'),
+    grabAt('function sdSyncedBootstrap(resources){', ''),
+    grabLine('function sdHydrateLoad(key){'),
     grabAt('function sdHydrateAll(){', '')
   ].join('\n\n');
 
-  function hydrateWith(store, rowsByKey) {
-    const b = build({ store, answer: () => null });
+  function hydrateWith(store, rowsByKey, extra) {
+    const b = build(Object.assign({ store, answer: () => null }, extra || {}));
     b.ctx.sdData = (action, key) => {
       b.calls.push({ action, key });
       return Promise.resolve(action === 'read' ? (rowsByKey[key] || null) : {});
@@ -547,8 +576,29 @@ function seeded(key, prev, opts) {
   atest('a malformed server row is left alone rather than adopted', async () => {
     const b = hydrateWith({}, { sd_negotiated_prices: [{ id: 'all' }] });
     await b.ctx.sdHydrateAll();
-    assert.strictEqual(b.store.sd_negotiated_prices, undefined);
+    // NOT `=== undefined`, WHICH IS WHAT THIS ASSERTED AND WHY IT WAS VACUOUS.
+    // Dropping the blob guard makes the path call st(key, undefined), whose
+    // JSON.stringify IS undefined, so the key gets written and reads back
+    // undefined -- satisfying the old assertion exactly while the row was in
+    // fact adopted. The question is whether the key was TOUCHED, so ask that.
+    assert.ok(!('sd_negotiated_prices' in b.store),
+      'a server row with no blob was adopted -- the key was written as '
+      + JSON.stringify(b.store.sd_negotiated_prices));
   });
+
+  atest('and an UNREADABLE local store refuses to adopt, rather than adopting blind',
+    async () => {
+      // The fail-closed half of the same guard, which nothing drove before. The
+      // adopt-only-if-absent test is a getItem inside a try, and on a throw the
+      // only safe answer is to leave the key alone: a device whose storage is
+      // unreadable must not take a second browser's blob over its own.
+      const b = hydrateWith({}, { sd_negotiated_prices: [{ id: 'all', blob: { 'SKU-9': 5 } }] },
+        { readFails: true });
+      const before = JSON.stringify(b.store);
+      await b.ctx.sdHydrateAll();
+      assert.strictEqual(JSON.stringify(b.store), before,
+        'an unreadable local store adopted the server copy instead of leaving it alone');
+    });
 
   // ══ 4. coverage: the twenty-second cannot be added without a verb ════════
   section('every synced collection can actually be deleted from');
