@@ -9630,7 +9630,7 @@
       "recurrence_open": "The sweep for the same shape across the OTHER resource maps in api/sd-data.js has not been run -- three instances found one at a time is not evidence that the fourth does not exist. And the gate is verified against the handler in-process; a deployment where verifySessionToken's secret is unset in the environment would be a different failure this record does not cover."
     },
     {
-      "commit": "807efcdb0ce3",
+      "commit": "39195bee350e",
       "date": "2026-09-21",
       "subject": "fix(register): the hover auditor had no detection-method value, so its findings were being HELD in chat instead of recorded",
       "files": [
@@ -9682,7 +9682,7 @@
       "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
     },
     {
-      "commit": "a51a666fad1c",
+      "commit": "8ed8b14d46c8",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): a billing code was VALIDATED trimmed and STORED untrimmed, and at the length bound the two differ in whether they pass",
       "files": [
@@ -10028,7 +10028,7 @@
       "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
     },
     {
-      "commit": "e262f32f38f7",
+      "commit": "b7621dec9e27",
       "date": "2026-09-21",
       "subject": "fix(cross-tenant-scope): the grader's self-exclusion list had no guard, and the first guard found a third file it was missing",
       "files": [
