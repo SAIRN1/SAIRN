@@ -2345,6 +2345,16 @@
       "claimed_at_epoch": 1789997781.355271,
       "status": "released",
       "released_at": "2026-09-21T13:49:37Z"
+    },
+    {
+      "id": "hank-1789998609",
+      "session": "hank",
+      "subject": "sairnfreedom-session-gate",
+      "task": "investigate whether the client sends a session token before wiring a gate",
+      "claimed_at": "2026-09-21T13:50:09Z",
+      "claimed_at_epoch": 1789998609.1062615,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
