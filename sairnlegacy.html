@@ -4584,6 +4584,125 @@ function legMarkSynced(resource,id){
   r.map[resource]=arr;
   st(LEG_SYNCED_KEY,r.map);
 }
+// ── THE ONE-TIME READ-ONLY BOOTSTRAP (2026-09-21, Michael's decision) ─────
+// An install that predates server-wins has no synced map, and the question
+// "may this record be overwritten?" has no recorded answer for anything in it.
+// The FIRST version of this code answered it by treating an absent map as
+// permission: any id present on both sides got overwritten on the first
+// hydrate. That made the rule effective immediately and it silently discarded
+// whatever local edit was sitting there at the moment of upgrade.
+//
+// THIS IS THE OTHER ANSWER AND IT IS THE ONE THAT SHIPPED. One pass, LOCAL
+// ONLY -- no network, no record written, nothing compared against the server
+// -- marks every id the device currently holds as seeded. Nothing is
+// overwritten while it runs, and nothing is overwritten for the rest of that
+// page load (`legBootstrappedNow`). From the next load on, the map is the
+// authority and ABSENT means genuinely never pushed, which is the carve-out.
+//
+// THE COST IS BOUNDED AND IT IS STATED RATHER THAN HIDDEN: a correction made
+// on the server BEFORE a given device runs its bootstrap does not reach that
+// device until the load AFTER the bootstrap. One extra hydrate of staleness,
+// once per device, in exchange for never discarding an unpushed edit at the
+// moment of upgrade.
+//
+// AND IT IS NOT A GUESS ABOUT WHAT WAS PUSHED. It cannot be: nothing recorded
+// that before today. What it does is make the answer WRONG IN THE SAFE
+// DIRECTION exactly once -- a record that was never pushed is marked seeded
+// and becomes overwritable, which is the pre-existing-data cost the decision
+// accepted. Every record created AFTER the bootstrap gets the real carve-out,
+// because its id enters the map only when a write actually lands.
+var LEG_BOOTSTRAP_KEY='leg_synced_bootstrap';
+var legBootstrappedNow=false;
+function legSyncedBootstrap(resources){
+  var done=null;
+  try{done=localStorage.getItem(LEG_BOOTSTRAP_KEY);}catch(e){return 'unreadable';}
+  if(done!==null)return 'already';
+  var r=legSyncedRead();
+  if(r.state==='unreadable')return 'unreadable';   // never bootstrap over a map we could not read
+  var map=r.map;
+  for(var i=0;i<resources.length;i++){
+    var key=resources[i],local=legHydrateLoad(key);
+    if(!Array.isArray(local))continue;
+    var arr=Array.isArray(map[key])?map[key]:[];
+    for(var j=0;j<local.length;j++){
+      var rec=local[j];
+      if(!rec||rec.id===undefined||rec.id===null)continue;
+      var id=String(rec.id);
+      if(arr.indexOf(id)===-1)arr.push(id);
+    }
+    map[key]=arr;
+  }
+  if(!st(LEG_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write
+  st(LEG_BOOTSTRAP_KEY,1);
+  legBootstrappedNow=true;
+  return 'ran';
+}
+// ── THE TWO SEAMS, AND WHY THEY ARE NAMED RATHER THAN INLINED ────────────
+// The merge below is meant to be the SAME CODE in every app, and it nearly
+// can be -- except that these apps do not all read and write local storage
+// the same way, and the difference is load-bearing rather than cosmetic:
+//
+//   * FOUR of the seven apps push to the server from inside st() itself
+//     (sairnbiz's _sbSyncOn/sbSyncCollection, sairnfreedom's, stonedesk's
+//     sdSyncCollection, and sairnbuild's bldSyncCollection). Writing hydrated
+//     rows through a bare st() there would echo the server's own rows
+//     straight back to the server. Each of those apps already has a
+//     suppression flag for exactly this, and the hydrate is the caller that
+//     must use it.
+//   * stonedesk reads through sdLoad(), not ld().
+//
+// So the merge calls these two and nothing else, and the per-app difference
+// lives in two one-liners with a name on them instead of being smuggled into
+// a copy of the merge. In THIS app both are plain.
+//
+// THE SUPPRESSION WRAPPERS USE try/finally EVERYWHERE, including where the
+// app's own hydrate did not. sairnbiz's set `sbSyncPaused=true`, called st(),
+// then set it back -- with no finally, so a throw out of st() left the whole
+// app's backup suppressed for the rest of the session, invisibly. That is the
+// shape sairnfreedom's own comment records being fixed in sairnvet twice and
+// in stonedesk once; sairnbiz was the copy nobody looked at.
+function legHydrateLoad(key){return ld(key,[]);}
+function legHydrateStore(key,value){return st(key,value);}
+// ── THE MERGE, ONCE PER APP AND CALLED FROM EVERY HYDRATE ────────────────
+// Returns the number of records CHANGED, or null if there was nothing to
+// merge (a failed read, or a local store that is not a list). One function
+// rather than one copy per hydrate: sairnsenior has ELEVEN hydrates and
+// eleven copies of a conflict rule is eleven chances for one of them to drift
+// while every suite stays green.
+function legServerWinsMerge(key,serverRows){
+  if(!Array.isArray(serverRows))return null;
+  var local=legHydrateLoad(key);
+  if(!Array.isArray(local))return null;
+  var r=legSyncedRead();
+  var map=r.map,usable=r.state!=='unreadable';
+  var seeded={};
+  if(usable&&Array.isArray(map[key]))map[key].forEach(function(id){seeded[String(id)]=true;});
+  var idx={};
+  local.forEach(function(rec,n){if(rec&&rec.id!==undefined&&rec.id!==null)idx[String(rec.id)]=n;});
+  var changed=0,landed=[];
+  serverRows.forEach(function(row){
+    if(!row||row.id===undefined||row.id===null)return;
+    var id=String(row.id),at=idx[id];
+    if(at===undefined){local.push(row);idx[id]=local.length-1;changed++;landed.push(id);return;}
+    // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+    // never landed, in which case the server's row belongs to somebody else;
+    // and never during the page load that ran the bootstrap.
+    if(!legBootstrappedNow&&usable&&seeded[id]){
+      if(JSON.stringify(local[at])!==JSON.stringify(row)){local[at]=row;changed++;}
+      landed.push(id);
+    }
+    // else: pending first push, or the bootstrap load. Keep local, and do NOT
+    // record it as synced -- recording it here would hand the next hydrate
+    // permission to overwrite the very record this branch exists to protect.
+  });
+  if(changed)legHydrateStore(key,local);
+  if(usable&&landed.length){
+    var arr=Array.isArray(map[key])?map[key]:[],added=false;
+    landed.forEach(function(id){if(arr.indexOf(id)===-1){arr.push(id);added=true;}});
+    if(added){map[key]=arr;st(LEG_SYNCED_KEY,map);}
+  }
+  return changed;
+}
 var LEG_SYNC_RESOURCES=['leg_aftercare','leg_bookings','leg_cases','leg_catererorders','leg_caterers','leg_certs',
   'leg_clergy','leg_clergybookings','leg_cremations','leg_custodylog','leg_deathrecords','leg_dispatches',
   'leg_documents','leg_facilities','leg_floristorders','leg_florists','leg_gplservices','leg_guestbook',
@@ -4592,54 +4711,18 @@ var LEG_SYNC_RESOURCES=['leg_aftercare','leg_bookings','leg_cases','leg_caterero
   'leg_petcases','leg_plots','leg_preneed','leg_processions','leg_tributes','leg_vehicles'];
 async function sdnHydrateAll(){
   if(!legLicenseKey())return;
+  // BEFORE the reads. It touches no network and no record; it only answers
+  // "which ids does this device already hold" while that is still the honest
+  // question to ask.
+  legSyncedBootstrap(LEG_SYNC_RESOURCES);
   var results=await Promise.all(LEG_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
   var anyMerged=false;
-  var syncedRead=legSyncedRead();
-  var syncedMap=syncedRead.map,mapUsable=syncedRead.state!=='unreadable';
-  var mapDirty=false;
   for(var i=0;i<LEG_SYNC_RESOURCES.length;i++){
-    var key=LEG_SYNC_RESOURCES[i],serverRows=results[i];
-    if(!serverRows||!Array.isArray(serverRows))continue; // read failed, no license, or not provisioned -- leave local data as-is
-    var local=ld(key,[]);
-    if(!Array.isArray(local))continue;
-    // NEVER SEEDED means this resource has never completed a hydrate that
-    // could record what the server already held -- every id present on both
-    // sides at that moment was demonstrably pushed by somebody, so server-wins
-    // applies and they are seeded. It is deliberately per RESOURCE: a first
-    // hydrate where 10 of 36 reads succeed must not exempt the other 26
-    // forever. Unreadable map => never true, so nothing is overwritten.
-    var seeded=mapUsable&&Array.isArray(syncedMap[key])?syncedMap[key]:null;
-    var neverSeeded=mapUsable&&seeded===null;
-    var syncedHere={};
-    if(seeded)seeded.forEach(function(id){syncedHere[String(id)]=true;});
-    var idx={};
-    local.forEach(function(r,n){if(r&&r.id!==undefined&&r.id!==null)idx[String(r.id)]=n;});
-    var changedHere=false,landed=[];
-    serverRows.forEach(function(r){
-      if(!r||r.id===undefined||r.id===null)return;
-      var id=String(r.id),at=idx[id];
-      if(at===undefined){local.push(r);idx[id]=local.length-1;changedHere=true;landed.push(id);return;}
-      // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
-      // never landed, in which case the server's row belongs to somebody else.
-      if(neverSeeded||syncedHere[id]){
-        if(JSON.stringify(local[at])!==JSON.stringify(r)){local[at]=r;changedHere=true;}
-        landed.push(id);
-      }
-      // else: pending first push. Keep local, and do NOT record it as synced --
-      // recording it here would hand the next hydrate permission to overwrite
-      // the very record this branch exists to protect.
-    });
-    if(changedHere){st(key,local);anyMerged=true;}
-    if(mapUsable){
-      var arr=Array.isArray(syncedMap[key])?syncedMap[key]:[];
-      landed.forEach(function(id){if(arr.indexOf(id)===-1)arr.push(id);});
-      // Written even when `landed` is empty: the presence of the key is what
-      // says this resource HAS been seeded, and without it every later hydrate
-      // would re-enter the never-seeded branch and overwrite unconditionally.
-      syncedMap[key]=arr;mapDirty=true;
-    }
+    // null means the read failed, there was no licence, or the table is not
+    // provisioned -- leave local data as-is, and do NOT seed the resource.
+    var changed=legServerWinsMerge(LEG_SYNC_RESOURCES[i],results[i]);
+    if(changed)anyMerged=true;
   }
-  if(mapDirty)st(LEG_SYNCED_KEY,syncedMap);
   return anyMerged;
 }
 // ================================================================

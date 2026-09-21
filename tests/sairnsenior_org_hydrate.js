@@ -46,24 +46,50 @@ function fnBody(name) {
   throw new Error('unbalanced braces');
 }
 
+// ── THE HARNESS GREW 2026-09-21, AND THE REASON IS THE POINT ─────────────
+// senHydrateOrg() used to carry its own merge inline. It now calls the SHARED
+// senServerWinsMerge(), which is one copy of a rule seven apps hold, and runs
+// senSyncedBootstrap() first -- so both have to be lifted here too, along with
+// the raw-localStorage read the synced map needs. Lifted out of the shipped
+// file, never retyped.
 function harness(opts) {
   opts = opts || {};
   const stored = {};
+  const raw = Object.assign({}, opts.raw || {});
   const reads = [];
   const ctx = {
-    JSON, Object, Array, Promise,
+    JSON, Object, Array, String, Promise,
+    console: { warn: () => {}, error: () => {} },
     senLicenseKey: () => (opts.noLicense ? '' : 'SEN-PINNACLE-2026'),
+    senIsQuotaError: () => false,
     ld: (k, d) => (opts.local && opts.local[k] ? JSON.parse(JSON.stringify(opts.local[k])) : d),
-    st: (k, v) => { stored[k] = v; return true; },
+    st: (k, v) => { stored[k] = v; raw[k] = JSON.stringify(v); return true; },
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(raw, k) ? raw[k] : null),
+      setItem: (k, v) => { raw[k] = String(v); },
+    },
     senData: (action, resource) => {
       reads.push(resource);
       const r = (opts.server || {})[resource];
       return Promise.resolve(r === undefined ? [] : r);
     },
-    __stored: stored, __reads: reads,
+    __stored: stored, __reads: reads, __raw: raw,
   };
   vm.createContext(ctx);
-  vm.runInContext(fnBody('function senHydrateOrg()'), ctx);
+  const HTML = html;
+  vm.runInContext([
+    HTML.slice(HTML.indexOf("var SEN_SYNCED="), HTML.indexOf('];', HTML.indexOf("var SEN_SYNCED=")) + 2),
+    HTML.slice(HTML.indexOf("var SEN_SYNCED_KEY='"), HTML.indexOf(';', HTML.indexOf("var SEN_SYNCED_KEY='")) + 1),
+    HTML.slice(HTML.indexOf("var SEN_BOOTSTRAP_KEY='"), HTML.indexOf(';', HTML.indexOf("var SEN_BOOTSTRAP_KEY='")) + 1),
+    'var senBootstrappedNow=false;',
+    fnBody('function senSyncedRead()'),
+    fnBody('function senMarkSynced('),
+    fnBody('function senSyncedBootstrap('),
+    fnBody('function senHydrateLoad('),
+    fnBody('function senHydrateStore('),
+    fnBody('function senServerWinsMerge('),
+    fnBody('function senHydrateOrg()'),
+  ].join('\n'), ctx);
   return ctx;
 }
 
@@ -80,9 +106,18 @@ test('server records not held locally are merged in', async () => {
   assert.strictEqual(c.__stored.sen_branches.map((x) => x.id).join(','), 'B-1,B-2');
 });
 
-test('a locally present id is NEVER overwritten', async () => {
-  // The checker cannot see this. A hydrate that reads both resources and then
-  // clobbers a local edit passes it and loses work.
+// ── THIS ARM USED TO ASSERT THE OPPOSITE, AND THAT IS THE RECORD ──────────
+// It read "a locally present id is NEVER overwritten" and pinned the additive
+// merge deliberately, with the note that the checker could not see it.
+// Michael's decision on 2026-09-21 replaced that rule with SERVER-WINS, so the
+// arm is INVERTED rather than deleted -- a pin quietly dropped when it becomes
+// inconvenient is worse than no pin.
+//
+// AND THIS FILE IS WHERE THE INCONSISTENCY SHOWED. sairnsenior shipped ELEVEN
+// hydrates: seven additive-only like this one, and FOUR that already
+// overwrote unconditionally with no carve-out at all. One file, two opposite
+// conflict rules, neither disclosed. All eleven now call one merge.
+test('the BOOTSTRAP load overwrites nothing -- the upgrade discards no local edit', async () => {
   const c = harness({
     local: { sen_branches: [{ id: 'B-1', name: 'RENAMED HERE' }] },
     server: { sen_branches: [{ id: 'B-1', name: 'server copy' }, { id: 'B-2' }] },
@@ -90,7 +125,31 @@ test('a locally present id is NEVER overwritten', async () => {
   await c.senHydrateOrg();
   const rows = c.__stored.sen_branches;
   assert.strictEqual(rows.length, 2, 'the merge duplicated or dropped a row');
-  assert.strictEqual(rows.find((x) => x.id === 'B-1').name, 'RENAMED HERE');
+  assert.strictEqual(rows.find((x) => x.id === 'B-1').name, 'RENAMED HERE',
+    'the bootstrap load overwrote a local edit -- the whole point of it is that it does not');
+});
+
+test('and on the NEXT load the server copy DOES win', async () => {
+  const c = harness({
+    local: { sen_branches: [{ id: 'B-1', name: 'RENAMED HERE' }] },
+    server: { sen_branches: [{ id: 'B-1', name: 'server copy' }, { id: 'B-2' }] },
+  });
+  await c.senHydrateOrg();                      // the bootstrap load
+  c.senBootstrappedNow = false;                 // a fresh page load; the map persists
+  await c.senHydrateOrg();
+  assert.strictEqual(c.__stored.sen_branches.find((x) => x.id === 'B-1').name, 'server copy',
+    'the local copy survived a second hydrate -- this is the additive behaviour server-wins replaced');
+});
+
+test('but a record whose FIRST push never landed still keeps its local value', async () => {
+  const c = harness({
+    raw: { sen_synced_bootstrap: '1', sen_synced_ids: JSON.stringify({ sen_branches: [] }) },
+    local: { sen_branches: [{ id: 'B-1', name: 'NEVER PUSHED' }] },
+    server: { sen_branches: [{ id: 'B-1', name: 'somebody else' }] },
+  });
+  await c.senHydrateOrg();
+  assert.ok(!c.__stored.sen_branches || c.__stored.sen_branches.find((x) => x.id === 'B-1').name === 'NEVER PUSHED',
+    'a record whose own push never landed was overwritten by a stranger');
 });
 
 test('a FAILED read leaves that resource alone', async () => {
@@ -109,11 +168,23 @@ test('one resource failing does not stop the other merging', async () => {
   assert.strictEqual(c.__stored.sen_branches, undefined);
 });
 
-test('nothing new means nothing written -- a no-op boot costs no storage write', async () => {
-  const c = harness({ local: { sen_branches: [{ id: 'B-1' }] }, server: { sen_branches: [{ id: 'B-1' }] } });
+test('nothing new means no RECORD written -- a no-op boot costs no data write', async () => {
+  // NARROWED 2026-09-21, not loosened. This asserted that NOTHING was written.
+  // Server-wins writes one more thing: the synced-id map, which is what makes
+  // "has this id ever reached the server?" answerable at all -- and the
+  // one-time bootstrap writes it on a boot where no record changed, which is
+  // exactly the case this arm drives. So it now excludes those two keys and
+  // still holds the property that matters: a boot that changed no record does
+  // not rewrite a record store.
+  const c = harness({
+    raw: { sen_synced_bootstrap: '1', sen_synced_ids: JSON.stringify({ sen_branches: ['B-1'] }) },
+    local: { sen_branches: [{ id: 'B-1' }] }, server: { sen_branches: [{ id: 'B-1' }] },
+  });
   const merged = await c.senHydrateOrg();
   assert.strictEqual(merged, false);
-  assert.deepStrictEqual(Object.keys(c.__stored), []);
+  assert.deepStrictEqual(
+    Object.keys(c.__stored).filter((k) => k !== 'sen_synced_ids' && k !== 'sen_synced_bootstrap'), [],
+    'a hydrate that changed no record still wrote to a record store');
 });
 
 test('no licence key means no reads at all', async () => {

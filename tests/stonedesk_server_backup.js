@@ -217,11 +217,30 @@ test('sdHydrateAll exists and is wired to sign-in', () => {
     'hydration is never called -- the backup is write-only and a second device sees nothing');
 });
 
-test('hydration is additive: it never overwrites a local id', () => {
+// ── THIS ARM USED TO ASSERT THE OPPOSITE, AND THAT IS THE RECORD ──────────
+// It read "hydration is additive: it never overwrites a local id". That was a
+// deliberate pin on the additive merge, not an accident of how it was written.
+// Michael's decision on 2026-09-21 replaced that rule with SERVER-WINS across
+// seven apps, so the arm is INVERTED rather than deleted -- a pin quietly
+// dropped when it becomes inconvenient is worse than no pin.
+//
+// The merge itself moved into sdServerWinsMerge(), shared with six other
+// apps and driven by tests/server_wins_hydration.js. What stays HERE is what
+// is specific to StoneDesk: that the hydrate routes through that one merge
+// rather than growing a private copy, that the single-OBJECT resources are
+// still adopt-or-leave, and that every write is still suppressed.
+test('hydration is SERVER-WINS, through the one shared merge', () => {
   const at = html.indexOf('function sdHydrateAll(){');
   const src = html.slice(at, html.indexOf('window.sdHydrateAll', at));
-  assert.match(src, /!have\[String\(r\.id\)\]/,
-    'the merge no longer checks whether the id is already local');
+  assert.ok(src.indexOf('sdServerWinsMerge(') !== -1,
+    'the hydrate no longer calls the shared merge -- a private copy of the rule has grown back');
+  assert.ok(!/!have\[String\(r\.id\)\]/.test(src),
+    'the additive never-overwrite merge is back');
+  assert.ok(src.indexOf('sdSyncedBootstrap(') !== -1,
+    'the one-time read-only bootstrap no longer runs before the merge');
+  assert.ok(src.indexOf('SD_SYNCED_OBJECT[key]') !== -1,
+    'the single-OBJECT resources were swept into server-wins -- they have no ids '
+    + 'to match on and no carve-out to apply, and their adopt-or-leave rule is deliberate');
   // ── THE ANCHOR MOVED, 2026-09-14 (item 34) ──────────────────────────────
   // This asserted the literal `sdSyncSuppressed=true` inside sdHydrateAll.
   // Both hydration writes now go through sdWhileSuppressed() so a throw in
@@ -230,12 +249,17 @@ test('hydration is additive: it never overwrites a local id', () => {
   // change. That is the failure mode where an assertion gets loosened or
   // deleted instead of re-aimed. It is re-aimed: the PROPERTY is that every
   // write in the merge is wrapped, and a new unwrapped one fails this.
+  // THE WRITES MOVED WITH THE MERGE, and the property moved with them. The
+  // array write is now inside sdHydrateStore(); the only st() left in this
+  // slice is the single-OBJECT adopt, and it is still wrapped.
   const sts = src.match(/st\(key\s*,/g) || [];
   const wrapped = src.match(/sdWhileSuppressed\(function\(\)\{\s*st\(key\s*,/g) || [];
-  assert.ok(sts.length > 0, 'the merge no longer writes anything');
   assert.strictEqual(wrapped.length, sts.length,
     'a hydration write is not suppressed -- those rows echo straight back '
     + 'to the server (' + wrapped.length + ' wrapped of ' + sts.length + ')');
+  const seam = html.slice(html.indexOf('function sdHydrateStore('), html.indexOf('function sdHydrateStore(') + 200);
+  assert.ok(seam.indexOf('sdWhileSuppressed') !== -1,
+    'the store seam does not suppress -- every hydrated row echoes back to the server');
 });
 
 test('a throw inside a hydration write does not leave suppression stuck ON', () => {

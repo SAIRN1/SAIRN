@@ -2283,22 +2283,169 @@ function sdWhileSuppressed(fn){
   finally{ sdSyncSuppressed=was; }
 }
 window.sdWhileSuppressed=sdWhileSuppressed;
+var SD_SYNCED_KEY='sd_synced_ids';
+function sdSyncedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(SD_SYNCED_KEY);}catch(e){
+    try{console.error('StoneDesk: could not read "'+SD_SYNCED_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('StoneDesk: "'+SD_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
+function sdMarkSynced(resource,id){
+  if(!resource||id===undefined||id===null)return;
+  var r=sdSyncedRead();
+  if(r.state==='unreadable')return;      // do not overwrite a map we could not read
+  var arr=r.map[resource];
+  if(!Array.isArray(arr))arr=[];
+  if(arr.indexOf(String(id))===-1)arr.push(String(id));
+  r.map[resource]=arr;
+  st(SD_SYNCED_KEY,r.map);
+}
+// ── THE ONE-TIME READ-ONLY BOOTSTRAP (2026-09-21, Michael's decision) ─────
+// An install that predates server-wins has no synced map, and the question
+// "may this record be overwritten?" has no recorded answer for anything in it.
+// The FIRST version of this code answered it by treating an absent map as
+// permission: any id present on both sides got overwritten on the first
+// hydrate. That made the rule effective immediately and it silently discarded
+// whatever local edit was sitting there at the moment of upgrade.
+//
+// THIS IS THE OTHER ANSWER AND IT IS THE ONE THAT SHIPPED. One pass, LOCAL
+// ONLY -- no network, no record written, nothing compared against the server
+// -- marks every id the device currently holds as seeded. Nothing is
+// overwritten while it runs, and nothing is overwritten for the rest of that
+// page load (`sdBootstrappedNow`). From the next load on, the map is the
+// authority and ABSENT means genuinely never pushed, which is the carve-out.
+//
+// THE COST IS BOUNDED AND IT IS STATED RATHER THAN HIDDEN: a correction made
+// on the server BEFORE a given device runs its bootstrap does not reach that
+// device until the load AFTER the bootstrap. One extra hydrate of staleness,
+// once per device, in exchange for never discarding an unpushed edit at the
+// moment of upgrade.
+//
+// AND IT IS NOT A GUESS ABOUT WHAT WAS PUSHED. It cannot be: nothing recorded
+// that before today. What it does is make the answer WRONG IN THE SAFE
+// DIRECTION exactly once -- a record that was never pushed is marked seeded
+// and becomes overwritable, which is the pre-existing-data cost the decision
+// accepted. Every record created AFTER the bootstrap gets the real carve-out,
+// because its id enters the map only when a write actually lands.
+var SD_BOOTSTRAP_KEY='sd_synced_bootstrap';
+var sdBootstrappedNow=false;
+function sdSyncedBootstrap(resources){
+  var done=null;
+  try{done=localStorage.getItem(SD_BOOTSTRAP_KEY);}catch(e){return 'unreadable';}
+  if(done!==null)return 'already';
+  var r=sdSyncedRead();
+  if(r.state==='unreadable')return 'unreadable';   // never bootstrap over a map we could not read
+  var map=r.map;
+  for(var i=0;i<resources.length;i++){
+    var key=resources[i],local=sdHydrateLoad(key);
+    if(!Array.isArray(local))continue;
+    var arr=Array.isArray(map[key])?map[key]:[];
+    for(var j=0;j<local.length;j++){
+      var rec=local[j];
+      if(!rec||rec.id===undefined||rec.id===null)continue;
+      var id=String(rec.id);
+      if(arr.indexOf(id)===-1)arr.push(id);
+    }
+    map[key]=arr;
+  }
+  if(!st(SD_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write
+  st(SD_BOOTSTRAP_KEY,1);
+  sdBootstrappedNow=true;
+  return 'ran';
+}
+// ── THE TWO SEAMS, AND WHY THEY ARE NAMED RATHER THAN INLINED ────────────
+// The merge below is meant to be the SAME CODE in every app, and it nearly
+// can be -- except that these apps do not all read and write local storage
+// the same way, and the difference is load-bearing rather than cosmetic:
+//
+//   * FOUR of the seven apps push to the server from inside st() itself
+//     (sairnbiz's _sbSyncOn/sbSyncCollection, sairnfreedom's, stonedesk's
+//     sdSyncCollection, and sairnbuild's bldSyncCollection). Writing hydrated
+//     rows through a bare st() there would echo the server's own rows
+//     straight back to the server. Each of those apps already has a
+//     suppression flag for exactly this, and the hydrate is the caller that
+//     must use it.
+//   * stonedesk reads through sdLoad(), not ld().
+//
+// So the merge calls these two and nothing else, and the per-app difference
+// lives in two one-liners with a name on them instead of being smuggled into
+// a copy of the merge. In THIS app the loader is sdLoad(), not ld(), and st()
+// pushes to the server through sdSyncCollection() -- so the store seam goes
+// through the app's own sdWhileSuppressed(), which already has the finally.
+//
+// THE SUPPRESSION WRAPPERS USE try/finally EVERYWHERE, including where the
+// app's own hydrate did not. sairnbiz's set `sbSyncPaused=true`, called st(),
+// then set it back -- with no finally, so a throw out of st() left the whole
+// app's backup suppressed for the rest of the session, invisibly. That is the
+// shape sairnfreedom's own comment records being fixed in sairnvet twice and
+// in stonedesk once; sairnbiz was the copy nobody looked at.
+function sdHydrateLoad(key){return sdLoad(key,[]);}
+function sdHydrateStore(key,value){return sdWhileSuppressed(function(){return st(key,value);});}
+// ── THE MERGE, ONCE PER APP AND CALLED FROM EVERY HYDRATE ────────────────
+// Returns the number of records CHANGED, or null if there was nothing to
+// merge (a failed read, or a local store that is not a list). One function
+// rather than one copy per hydrate: sairnsenior has ELEVEN hydrates and
+// eleven copies of a conflict rule is eleven chances for one of them to drift
+// while every suite stays green.
+function sdServerWinsMerge(key,serverRows){
+  if(!Array.isArray(serverRows))return null;
+  var local=sdHydrateLoad(key);
+  if(!Array.isArray(local))return null;
+  var r=sdSyncedRead();
+  var map=r.map,usable=r.state!=='unreadable';
+  var seeded={};
+  if(usable&&Array.isArray(map[key]))map[key].forEach(function(id){seeded[String(id)]=true;});
+  var idx={};
+  local.forEach(function(rec,n){if(rec&&rec.id!==undefined&&rec.id!==null)idx[String(rec.id)]=n;});
+  var changed=0,landed=[];
+  serverRows.forEach(function(row){
+    if(!row||row.id===undefined||row.id===null)return;
+    var id=String(row.id),at=idx[id];
+    if(at===undefined){local.push(row);idx[id]=local.length-1;changed++;landed.push(id);return;}
+    // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+    // never landed, in which case the server's row belongs to somebody else;
+    // and never during the page load that ran the bootstrap.
+    if(!sdBootstrappedNow&&usable&&seeded[id]){
+      if(JSON.stringify(local[at])!==JSON.stringify(row)){local[at]=row;changed++;}
+      landed.push(id);
+    }
+    // else: pending first push, or the bootstrap load. Keep local, and do NOT
+    // record it as synced -- recording it here would hand the next hydrate
+    // permission to overwrite the very record this branch exists to protect.
+  });
+  if(changed)sdHydrateStore(key,local);
+  if(usable&&landed.length){
+    var arr=Array.isArray(map[key])?map[key]:[],added=false;
+    landed.forEach(function(id){if(arr.indexOf(id)===-1){arr.push(id);added=true;}});
+    if(added){map[key]=arr;st(SD_SYNCED_KEY,map);}
+  }
+  return changed;
+}
 function sdHydrateAll(){
   if(typeof sdData!=='function') return Promise.resolve(0);
   if(typeof sdLicenseKey!=='function'||!sdLicenseKey()) return Promise.resolve(0);
+  // BEFORE the reads. No network, no record written.
+  sdSyncedBootstrap(SD_SYNCED);
   var merged=0;
   return Promise.all(SD_SYNCED.map(function(key){
     return sdData('read',key,null).then(function(rows){
       if(!rows||!Array.isArray(rows)||!rows.length) return;
-      // ── THE SINGLE-OBJECT PAIR (2026-09-13) ────────────────────────────
-      // ADOPTED ONLY ON A DEVICE THAT HAS NONE. The array path's rule is
-      // "a locally present id is NEVER overwritten"; the object equivalent is
-      // that a device already holding a rule set keeps it. There is no id to
-      // merge on, so the choice is adopt-or-leave, and overwriting a shop's
-      // live discount rules from a second browser would be the clobber that
-      // rule exists to prevent. `getItem(key)!==null` rather than a
-      // default-value comparison: only "this device has never written one" is
-      // a fact; "it looks like the default" is a guess.
+      // ── THE SINGLE-OBJECT PAIR IS NOT PART OF SERVER-WINS, DELIBERATELY ─
+      // Server-wins is a rule about a RECORD ID held on both sides. These
+      // entries are one blob with no ids in it, so there is nothing to match
+      // on and no first-push carve-out to apply -- the choice is adopt-or-
+      // leave, and the existing rule (adopt ONLY on a device that has none,
+      // because overwriting a shop's live discount rules from a second
+      // browser is the clobber that rule exists to prevent) is unchanged and
+      // deliberately not swept into this change.
       if(SD_SYNCED_OBJECT[key]){
         try{ if(localStorage.getItem(key)!==null) return; }catch(e){ return; }
         var blob=rows[0]&&rows[0].blob;
@@ -2307,16 +2454,8 @@ function sdHydrateAll(){
         sdWhileSuppressed(function(){ st(key,blob); });
         return;
       }
-      var local=sdLoad(key,[]);
-      if(!Array.isArray(local)) return;
-      var have={};
-      local.forEach(function(r){ if(r&&r.id!=null) have[String(r.id)]=true; });
-      var added=0;
-      rows.forEach(function(r){ if(r&&r.id!=null&&!have[String(r.id)]){ local.push(r); added++; } });
-      if(added){
-        merged+=added;
-        sdWhileSuppressed(function(){ st(key,local); });
-      }
+      var changed=sdServerWinsMerge(key,rows);
+      if(changed)merged+=changed;
     }).catch(function(){});
   })).then(function(){ return merged; });
 }
@@ -24399,18 +24538,27 @@ function saveSD3Data() {
 // cannot overwrite a colleague's newer edit just by starting up.
 async function sdHydrateCustomers() {
   if (typeof sdData !== 'function') return false;
+  sdSyncedBootstrap(SD_SYNCED.concat(['sd_customers']));
   var rows = null;
   try { rows = await sdData('read', 'sd_customers', {}); } catch (e) { return false; }
   if (!Array.isArray(rows)) return false;
   // Local is read INSIDE this function AFTER the await completes -- the
   // post-await re-read this platform standardised on after confirmReserve.
-  var local = Array.isArray(sdCustomers) ? sdCustomers : [];
-  var seen = {};
-  local.forEach(function (c) { if (c && c.id) seen[c.id] = true; });
-  var added = false;
-  rows.forEach(function (c) { if (c && c.id && !seen[c.id]) { local.push(c); seen[c.id] = true; added = true; } });
-  if (added) { sdCustomers = local; st('sd_customers', sdCustomers); }
-  return added;
+  // ── THE ONE RESOURCE WHOSE LOCAL COPY IS A GLOBAL, NOT THE STORE ────────
+  // Every other hydrate on this platform merges against what sdLoad()/ld()
+  // returns. This one merged against the in-memory `sdCustomers`, which is
+  // the right thing to do -- it is the copy the UI is actually showing -- and
+  // it is NOT what sdServerWinsMerge() reads.
+  //
+  // So the global is written through to the store FIRST (suppressed, because
+  // those rows are not news to the server), the shared merge runs against the
+  // store exactly as it does in the other six apps, and the global is
+  // refreshed from the result. Net effect is a merge against the global, with
+  // ONE copy of the conflict rule rather than a seventh spelling of it.
+  if (Array.isArray(sdCustomers)) sdHydrateStore('sd_customers', sdCustomers);
+  var changed = sdServerWinsMerge('sd_customers', rows);
+  if (changed) { sdCustomers = sdLoad('sd_customers', []); }
+  return !!changed;
 }
 window.sdHydrateCustomers = sdHydrateCustomers;
 
@@ -29023,6 +29171,12 @@ async function sdData(action, resource, payload) {
       return null;
     }
     _sdReadFailed[resource] = false;
+    // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guards above is
+    // a write the server accepted, and the server-wins carve-out needs to know
+    // which ids those are.
+    if (action === 'write' && payload && payload.id !== undefined && payload.id !== null) {
+      try { sdMarkSynced(resource, payload.id); } catch (_e) {}
+    }
     return j.data;
   } catch (e) {
     // A network throw left the previous state in place, so a read that failed

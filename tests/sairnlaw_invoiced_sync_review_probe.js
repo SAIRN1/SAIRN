@@ -51,10 +51,23 @@ function grab(sig, term) {
 
 // The real hydration, sliced out of the shipped file. Only storage and the
 // transport are stubbed.
+// RE-AIMED 2026-09-21, hours after this probe was written, and NOT loosened.
+// lawHydrateAll() now calls the shared lawServerWinsMerge() and runs the
+// one-time lawSyncedBootstrap() first, so both have to be lifted or the probe
+// dies with a ReferenceError -- which is what it did, loudly, rather than
+// quietly reporting no finding. FINDING 1 below is driven against the CURRENT
+// code and still reproduces; `law_synced_bootstrap` is seeded in that
+// scenario's store because the device there is not upgrading, it is running.
 const HYDRATE_SRC = [
   grab('var LAW_SYNCED_KEY=', '\n'),
+  grab('var LAW_BOOTSTRAP_KEY=', '\n'),
+  'var lawBootstrappedNow=false;',
   grab('function lawSyncedRead(){', '\n}\n'),
   grab('function lawMarkSynced(resource,id){', '\n}\n'),
+  grab('function lawSyncedBootstrap(resources){', '\n}\n'),
+  grab('function lawHydrateLoad(key){', '\n'),
+  grab('function lawHydrateStore(key,value){', '\n'),
+  grab('function lawServerWinsMerge(key,serverRows){', '\n}\n'),
   grab('async function lawHydrateAll(){', '\n}\n'),
 ].join('\n');
 
@@ -66,6 +79,7 @@ function harness(opts) {
     JSON: JSON,
     localStorage: {
       getItem(k) { return Object.prototype.hasOwnProperty.call(STORE, k) ? STORE[k] : null; },
+      setItem(k, v) { STORE[k] = String(v); },
     },
     ld(k, d) { return STORE[k] === undefined ? d : JSON.parse(STORE[k]); },
     st(k, v) { STORE[k] = JSON.stringify(v); return true; },
@@ -133,6 +147,7 @@ function answered(n, t) { console.log('\n=== PRESS-ON (' + n + '): ' + t + '\n')
       store: {
         law_timeentries: JSON.stringify([entry('TE-1', true)]),
         law_synced_ids: JSON.stringify({ law_timeentries: ['TE-1'] }),
+        law_synced_bootstrap: '1',
       },
       server: { law_timeentries: [entry('TE-1', false)] },
     });
@@ -213,6 +228,7 @@ function answered(n, t) { console.log('\n=== PRESS-ON (' + n + '): ' + t + '\n')
       store: {
         law_timeentries: JSON.stringify([entry('TE-1', false)]),
         law_synced_ids: JSON.stringify({ law_timeentries: ['TE-1'] }),
+        law_synced_bootstrap: '1',
       },
       server: { law_timeentries: [entry('TE-1', true)] },
     });

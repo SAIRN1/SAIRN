@@ -1435,6 +1435,10 @@ function senData(action,resource,payload,withSession){
   }).then(function(r){
     return r.json().then(function(d){
       if(!r.ok||!d||!d.ok){console.warn('senData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guard above is
+      // a write the server accepted, and the server-wins carve-out needs to know
+      // which ids those are.
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)senMarkSynced(resource,payload.id);
       return d.data;
     });
   }).catch(function(e){console.warn('senData network error:',e.message);return null;});
@@ -1943,19 +1947,169 @@ function rCrew(){
 
 // ── CLIENTS (HIPAA minimum-necessary privacy gate) ──────────────────────
 function clients(){return ld('sen_clients',[]);}
+// ── THE FIFTEEN RESOURCES THIS APP HYDRATES, IN ONE PLACE (2026-09-21) ───
+// There was no list: eleven hydrate functions each named their own resources
+// inline, which is why nothing could say whether a resource had a hydrate at
+// all until a tool went looking. The bootstrap needs the whole set, and a set
+// assembled by hand from eleven functions is a set that goes stale -- so
+// tests/server_wins_hydration.js asserts this list is EXACTLY the resources
+// the senHydrate* functions read.
+var SEN_SYNCED=['sen_clients','sen_caregivers','sen_visits','sen_referral_sources',
+  'sen_referrals','sen_branches','sen_applicants','sen_training_rules',
+  'sen_training_records','sen_claims','sen_payer_contracts',
+  'sen_franchise_agreements','sen_pay_rates','sen_authorizations'];
+var SEN_SYNCED_KEY='sen_synced_ids';
+function senSyncedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(SEN_SYNCED_KEY);}catch(e){
+    try{console.error('SAIRNsenior: could not read "'+SEN_SYNCED_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('SAIRNsenior: "'+SEN_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
+function senMarkSynced(resource,id){
+  if(!resource||id===undefined||id===null)return;
+  var r=senSyncedRead();
+  if(r.state==='unreadable')return;      // do not overwrite a map we could not read
+  var arr=r.map[resource];
+  if(!Array.isArray(arr))arr=[];
+  if(arr.indexOf(String(id))===-1)arr.push(String(id));
+  r.map[resource]=arr;
+  st(SEN_SYNCED_KEY,r.map);
+}
+// ── THE ONE-TIME READ-ONLY BOOTSTRAP (2026-09-21, Michael's decision) ─────
+// An install that predates server-wins has no synced map, and the question
+// "may this record be overwritten?" has no recorded answer for anything in it.
+// The FIRST version of this code answered it by treating an absent map as
+// permission: any id present on both sides got overwritten on the first
+// hydrate. That made the rule effective immediately and it silently discarded
+// whatever local edit was sitting there at the moment of upgrade.
+//
+// THIS IS THE OTHER ANSWER AND IT IS THE ONE THAT SHIPPED. One pass, LOCAL
+// ONLY -- no network, no record written, nothing compared against the server
+// -- marks every id the device currently holds as seeded. Nothing is
+// overwritten while it runs, and nothing is overwritten for the rest of that
+// page load (`senBootstrappedNow`). From the next load on, the map is the
+// authority and ABSENT means genuinely never pushed, which is the carve-out.
+//
+// THE COST IS BOUNDED AND IT IS STATED RATHER THAN HIDDEN: a correction made
+// on the server BEFORE a given device runs its bootstrap does not reach that
+// device until the load AFTER the bootstrap. One extra hydrate of staleness,
+// once per device, in exchange for never discarding an unpushed edit at the
+// moment of upgrade.
+//
+// AND IT IS NOT A GUESS ABOUT WHAT WAS PUSHED. It cannot be: nothing recorded
+// that before today. What it does is make the answer WRONG IN THE SAFE
+// DIRECTION exactly once -- a record that was never pushed is marked seeded
+// and becomes overwritable, which is the pre-existing-data cost the decision
+// accepted. Every record created AFTER the bootstrap gets the real carve-out,
+// because its id enters the map only when a write actually lands.
+var SEN_BOOTSTRAP_KEY='sen_synced_bootstrap';
+var senBootstrappedNow=false;
+function senSyncedBootstrap(resources){
+  var done=null;
+  try{done=localStorage.getItem(SEN_BOOTSTRAP_KEY);}catch(e){return 'unreadable';}
+  if(done!==null)return 'already';
+  var r=senSyncedRead();
+  if(r.state==='unreadable')return 'unreadable';   // never bootstrap over a map we could not read
+  var map=r.map;
+  for(var i=0;i<resources.length;i++){
+    var key=resources[i],local=senHydrateLoad(key);
+    if(!Array.isArray(local))continue;
+    var arr=Array.isArray(map[key])?map[key]:[];
+    for(var j=0;j<local.length;j++){
+      var rec=local[j];
+      if(!rec||rec.id===undefined||rec.id===null)continue;
+      var id=String(rec.id);
+      if(arr.indexOf(id)===-1)arr.push(id);
+    }
+    map[key]=arr;
+  }
+  if(!st(SEN_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write
+  st(SEN_BOOTSTRAP_KEY,1);
+  senBootstrappedNow=true;
+  return 'ran';
+}
+// ── THE TWO SEAMS, AND WHY THEY ARE NAMED RATHER THAN INLINED ────────────
+// The merge below is meant to be the SAME CODE in every app, and it nearly
+// can be -- except that these apps do not all read and write local storage
+// the same way, and the difference is load-bearing rather than cosmetic:
+//
+//   * FOUR of the seven apps push to the server from inside st() itself
+//     (sairnbiz's _sbSyncOn/sbSyncCollection, sairnfreedom's, stonedesk's
+//     sdSyncCollection, and sairnbuild's bldSyncCollection). Writing hydrated
+//     rows through a bare st() there would echo the server's own rows
+//     straight back to the server. Each of those apps already has a
+//     suppression flag for exactly this, and the hydrate is the caller that
+//     must use it.
+//   * stonedesk reads through sdLoad(), not ld().
+//
+// So the merge calls these two and nothing else, and the per-app difference
+// lives in two one-liners with a name on them instead of being smuggled into
+// a copy of the merge. In THIS app both are plain.
+//
+// THE SUPPRESSION WRAPPERS USE try/finally EVERYWHERE, including where the
+// app's own hydrate did not. sairnbiz's set `sbSyncPaused=true`, called st(),
+// then set it back -- with no finally, so a throw out of st() left the whole
+// app's backup suppressed for the rest of the session, invisibly. That is the
+// shape sairnfreedom's own comment records being fixed in sairnvet twice and
+// in stonedesk once; sairnbiz was the copy nobody looked at.
+function senHydrateLoad(key){return ld(key,[]);}
+function senHydrateStore(key,value){return st(key,value);}
+// ── THE MERGE, ONCE PER APP AND CALLED FROM EVERY HYDRATE ────────────────
+// Returns the number of records CHANGED, or null if there was nothing to
+// merge (a failed read, or a local store that is not a list). One function
+// rather than one copy per hydrate: sairnsenior has ELEVEN hydrates and
+// eleven copies of a conflict rule is eleven chances for one of them to drift
+// while every suite stays green.
+function senServerWinsMerge(key,serverRows){
+  if(!Array.isArray(serverRows))return null;
+  var local=senHydrateLoad(key);
+  if(!Array.isArray(local))return null;
+  var r=senSyncedRead();
+  var map=r.map,usable=r.state!=='unreadable';
+  var seeded={};
+  if(usable&&Array.isArray(map[key]))map[key].forEach(function(id){seeded[String(id)]=true;});
+  var idx={};
+  local.forEach(function(rec,n){if(rec&&rec.id!==undefined&&rec.id!==null)idx[String(rec.id)]=n;});
+  var changed=0,landed=[];
+  serverRows.forEach(function(row){
+    if(!row||row.id===undefined||row.id===null)return;
+    var id=String(row.id),at=idx[id];
+    if(at===undefined){local.push(row);idx[id]=local.length-1;changed++;landed.push(id);return;}
+    // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+    // never landed, in which case the server's row belongs to somebody else;
+    // and never during the page load that ran the bootstrap.
+    if(!senBootstrappedNow&&usable&&seeded[id]){
+      if(JSON.stringify(local[at])!==JSON.stringify(row)){local[at]=row;changed++;}
+      landed.push(id);
+    }
+    // else: pending first push, or the bootstrap load. Keep local, and do NOT
+    // record it as synced -- recording it here would hand the next hydrate
+    // permission to overwrite the very record this branch exists to protect.
+  });
+  if(changed)senHydrateStore(key,local);
+  if(usable&&landed.length){
+    var arr=Array.isArray(map[key])?map[key]:[],added=false;
+    landed.forEach(function(id){if(arr.indexOf(id)===-1){arr.push(id);added=true;}});
+    if(added){map[key]=arr;st(SEN_SYNCED_KEY,map);}
+  }
+  return changed;
+}
 function senHydrateClients(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_clients',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var local=clients();
-    var localIds={};
-    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
-    var added=false;
-    serverRows.forEach(function(c){
-      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
-    });
-    if(added)st('sen_clients',local);
-    return added;
+    var changed=senServerWinsMerge('sen_clients',serverRows);
+
+    return !!changed;
   });
 }
 var careTaskDraft=[];
@@ -2280,17 +2434,12 @@ function caregivers(){return ld('sen_caregivers',[]);}
 // hydration this session.
 function senHydrateCaregivers(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_caregivers',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var local=caregivers();
-    var localIds={};
-    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
-    var added=false;
-    serverRows.forEach(function(c){
-      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
-    });
-    if(added)st('sen_caregivers',local);
-    return added;
+    var changed=senServerWinsMerge('sen_caregivers',serverRows);
+
+    return !!changed;
   });
 }
 function openCaregiverModal(){
@@ -2350,17 +2499,12 @@ function visits(){return ld('sen_visits',[]);}
 function senIsScheduler(){return senIsBroadRead();} // same three roles as sen_clients' broad-read tier, plus management
 function senHydrateVisits(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_visits',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var local=visits();
-    var localIds={};
-    local.forEach(function(v){if(v&&v.id)localIds[v.id]=true;});
-    var added=false;
-    serverRows.forEach(function(v){
-      if(v&&v.id&&!localIds[v.id]){local.push(v);localIds[v.id]=true;added=true;}
-    });
-    if(added)st('sen_visits',local);
-    return added;
+    var changed=senServerWinsMerge('sen_visits',serverRows);
+
+    return !!changed;
   });
 }
 var _vsTab='schedule';
@@ -2728,6 +2872,7 @@ function rfReferrals(){return ld('sen_referrals',[]);}
 
 function senHydrateReferrals(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return Promise.all([
     senData('read','sen_referral_sources',null,true),
     senData('read','sen_referrals',null,true)
@@ -2738,11 +2883,8 @@ function senHydrateReferrals(){
       if(!rows||!Array.isArray(rows))return;
       // Local read INSIDE the .then, after the network completes -- the
       // post-await re-read this platform standardised on after confirmReserve.
-      var local=ld(key,[]);
-      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
-      var added=false;
-      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
-      if(added){st(key,local);merged=true;}
+      var changed=senServerWinsMerge(key,rows);
+      if(changed)merged=true;
     });
     return merged;
   });
@@ -2767,6 +2909,7 @@ function senHydrateReferrals(){
 // re-read this platform standardised on after confirmReserve.
 function senHydrateOrg(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return Promise.all([
     senData('read','sen_branches',null,true),
     senData('read','sen_applicants',null,true)
@@ -2775,11 +2918,8 @@ function senHydrateOrg(){
     [['sen_branches',res[0]],['sen_applicants',res[1]]].forEach(function(pair){
       var key=pair[0],rows=pair[1];
       if(!rows||!Array.isArray(rows))return;
-      var local=ld(key,[]);
-      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
-      var added=false;
-      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
-      if(added){st(key,local);merged=true;}
+      var changed=senServerWinsMerge(key,rows);
+      if(changed)merged=true;
     });
     return merged;
   });
@@ -3126,6 +3266,7 @@ function trSeedRules(){
 
 function senHydrateTraining(){
   if(!senLicenseKey())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return Promise.all([
     senData('read','sen_training_rules',null,true),
     senData('read','sen_training_records',null,true)
@@ -3136,11 +3277,8 @@ function senHydrateTraining(){
       if(!rows||!Array.isArray(rows))return;
       // Read local INSIDE the .then, after the network completes -- the
       // post-await re-read this platform standardised on after confirmReserve.
-      var local=ld(key,[]);
-      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
-      var added=false;
-      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
-      if(added){st(key,local);merged=true;}
+      var changed=senServerWinsMerge(key,rows);
+      if(changed)merged=true;
     });
     return merged;
   });
@@ -3394,17 +3532,12 @@ function trRender(){
 function claims(){return ld('sen_claims',[]);}
 function senHydrateClaims(){
   if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_claims',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var local=claims();
-    var localIds={};
-    local.forEach(function(c){if(c&&c.id)localIds[c.id]=true;});
-    var added=false;
-    serverRows.forEach(function(c){
-      if(c&&c.id&&!localIds[c.id]){local.push(c);localIds[c.id]=true;added=true;}
-    });
-    if(added)st('sen_claims',local);
-    return added;
+    var changed=senServerWinsMerge('sen_claims',serverRows);
+
+    return !!changed;
   });
 }
 function blRender(){
@@ -3719,17 +3852,19 @@ function payerContracts(){return ld('sen_payer_contracts',[]);}
 // same id, and local-only rows (written offline, not yet synced) are kept.
 function senHydratePayerContracts(){
   if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_payer_contracts',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var byId={};
-    payerContracts().forEach(function(c){if(c&&c.id)byId[c.id]=c;});
-    var changed=false;
-    serverRows.forEach(function(c){
-      if(!c||!c.id)return;
-      if(JSON.stringify(byId[c.id])!==JSON.stringify(c)){byId[c.id]=c;changed=true;}
-    });
-    if(changed)st('sen_payer_contracts',Object.keys(byId).map(function(k){return byId[k];}));
-    return changed;
+    // WAS UNCONDITIONAL SERVER-WINS WITH NO CARVE-OUT (until 2026-09-21).
+    // This hydrate already overwrote any local record whose id the server also
+    // held -- the rule the platform has now adopted, minus its protection: a
+    // record created here and never successfully pushed was overwritable by a
+    // stranger's row carrying the same id. FOUR of this app's eleven hydrates
+    // did this while the other SEVEN were additive-only, so ONE FILE SHIPPED
+    // TWO OPPOSITE CONFLICT RULES and disclosed neither. Both are the one rule
+    // now, and this one GAINS the carve-out it never had.
+    var changed=senServerWinsMerge('sen_payer_contracts',serverRows);
+    return !!changed;
   }).catch(function(){return false;});
 }
 
@@ -3887,17 +4022,19 @@ function franchiseAgreements(){return ld('sen_franchise_agreements',[]);}
 
 function senHydrateFranchise(){
   if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_franchise_agreements',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var byId={};
-    franchiseAgreements().forEach(function(a){if(a&&a.id)byId[a.id]=a;});
-    var changed=false;
-    serverRows.forEach(function(a){
-      if(!a||!a.id)return;
-      if(JSON.stringify(byId[a.id])!==JSON.stringify(a)){byId[a.id]=a;changed=true;}
-    });
-    if(changed)st('sen_franchise_agreements',Object.keys(byId).map(function(k){return byId[k];}));
-    return changed;
+    // WAS UNCONDITIONAL SERVER-WINS WITH NO CARVE-OUT (until 2026-09-21).
+    // This hydrate already overwrote any local record whose id the server also
+    // held -- the rule the platform has now adopted, minus its protection: a
+    // record created here and never successfully pushed was overwritable by a
+    // stranger's row carrying the same id. FOUR of this app's eleven hydrates
+    // did this while the other SEVEN were additive-only, so ONE FILE SHIPPED
+    // TWO OPPOSITE CONFLICT RULES and disclosed neither. Both are the one rule
+    // now, and this one GAINS the carve-out it never had.
+    var changed=senServerWinsMerge('sen_franchise_agreements',serverRows);
+    return !!changed;
   }).catch(function(){return false;});
 }
 
@@ -4063,17 +4200,19 @@ function payRates(){return ld('sen_pay_rates',[]);}
 
 function senHydratePayRates(){
   if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_pay_rates',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var byId={};
-    payRates().forEach(function(r){if(r&&r.id)byId[r.id]=r;});
-    var changed=false;
-    serverRows.forEach(function(r){
-      if(!r||!r.id)return;
-      if(JSON.stringify(byId[r.id])!==JSON.stringify(r)){byId[r.id]=r;changed=true;}
-    });
-    if(changed)st('sen_pay_rates',Object.keys(byId).map(function(k){return byId[k];}));
-    return changed;
+    // WAS UNCONDITIONAL SERVER-WINS WITH NO CARVE-OUT (until 2026-09-21).
+    // This hydrate already overwrote any local record whose id the server also
+    // held -- the rule the platform has now adopted, minus its protection: a
+    // record created here and never successfully pushed was overwritable by a
+    // stranger's row carrying the same id. FOUR of this app's eleven hydrates
+    // did this while the other SEVEN were additive-only, so ONE FILE SHIPPED
+    // TWO OPPOSITE CONFLICT RULES and disclosed neither. Both are the one rule
+    // now, and this one GAINS the carve-out it never had.
+    var changed=senServerWinsMerge('sen_pay_rates',serverRows);
+    return !!changed;
   }).catch(function(){return false;});
 }
 
@@ -4385,17 +4524,19 @@ function senHydrateAuthorizations(){
   // Broad-read, not management: a scheduler needs remaining units before
   // booking, which is the whole point of a burn-down.
   if(!senLicenseKey()||!senIsBroadRead())return Promise.resolve(false);
+  senSyncedBootstrap(SEN_SYNCED);
   return senData('read','sen_authorizations',null,true).then(function(serverRows){
     if(!serverRows||!Array.isArray(serverRows))return false;
-    var byId={};
-    authorizations().forEach(function(a){if(a&&a.id)byId[a.id]=a;});
-    var changed=false;
-    serverRows.forEach(function(a){
-      if(!a||!a.id)return;
-      if(JSON.stringify(byId[a.id])!==JSON.stringify(a)){byId[a.id]=a;changed=true;}
-    });
-    if(changed)st('sen_authorizations',Object.keys(byId).map(function(k){return byId[k];}));
-    return changed;
+    // WAS UNCONDITIONAL SERVER-WINS WITH NO CARVE-OUT (until 2026-09-21).
+    // This hydrate already overwrote any local record whose id the server also
+    // held -- the rule the platform has now adopted, minus its protection: a
+    // record created here and never successfully pushed was overwritable by a
+    // stranger's row carrying the same id. FOUR of this app's eleven hydrates
+    // did this while the other SEVEN were additive-only, so ONE FILE SHIPPED
+    // TWO OPPOSITE CONFLICT RULES and disclosed neither. Both are the one rule
+    // now, and this one GAINS the carve-out it never had.
+    var changed=senServerWinsMerge('sen_authorizations',serverRows);
+    return !!changed;
   }).catch(function(){return false;});
 }
 

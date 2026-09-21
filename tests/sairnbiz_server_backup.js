@@ -465,13 +465,38 @@ test('server records not held locally are appended', async () => {
   assert.deepStrictEqual(JSON.parse(c.__store.sb_invs).map((x) => x.id), ['INV-2601', 'INV-2602']);
 });
 
-test('a locally present id is never overwritten by the server copy', async () => {
+// ── THIS ARM USED TO ASSERT THE OPPOSITE, AND THAT IS THE RECORD ──────────
+// It read "a locally present id is never overwritten by the server copy" and
+// it pinned the ADDITIVE merge deliberately. Michael's decision on 2026-09-21
+// replaced that rule with server-wins across seven apps, so the arm is
+// INVERTED rather than deleted -- a pin quietly dropped when it becomes
+// inconvenient is worse than no pin.
+//
+// AND IT WOULD HAVE KEPT PASSING FOR THE WRONG REASON, which is the part
+// worth writing down. A fresh harness has no synced map, so the first call
+// runs the one-time BOOTSTRAP, which suppresses overwriting for the rest of
+// that load. The old assertion would still have been green -- while asserting
+// nothing about the merge at all. The arms below therefore run the hydrate
+// TWICE: once to let the bootstrap happen, and again to see the real rule.
+test('the BOOTSTRAP load overwrites nothing -- the upgrade discards no local edit', async () => {
   const localEdit = Object.assign({}, INV_A, { cust: 'EDITED LOCALLY' });
   const c = harness({ store: { sb_invs: JSON.stringify([localEdit]) }, serverRows: { sb_invs: [INV_A, INV_B] } });
-  const r = await c.sbHydrateAll();
-  assert.strictEqual(r.merged, 1, 'only the unseen record should merge');
+  await c.sbHydrateAll();
   const rows = JSON.parse(c.__store.sb_invs);
-  assert.strictEqual(rows.find((x) => x.id === 'INV-2601').cust, 'EDITED LOCALLY');
+  assert.strictEqual(rows.find((x) => x.id === 'INV-2601').cust, 'EDITED LOCALLY',
+    'the bootstrap load overwrote a local edit -- the whole point of it is that it does not');
+  assert.ok(rows.some((x) => x.id === 'INV-2602'), 'an unseen server record was not appended');
+});
+
+test('and on the NEXT load the server copy DOES win', async () => {
+  const localEdit = Object.assign({}, INV_A, { cust: 'EDITED LOCALLY' });
+  const c = harness({ store: { sb_invs: JSON.stringify([localEdit]) }, serverRows: { sb_invs: [INV_A, INV_B] } });
+  await c.sbHydrateAll();                      // the bootstrap load
+  c.sbBootstrappedNow = false;                 // a fresh page load; the map persists
+  await c.sbHydrateAll();
+  const rows = JSON.parse(c.__store.sb_invs);
+  assert.strictEqual(rows.find((x) => x.id === 'INV-2601').cust, INV_A.cust,
+    'the local edit survived a second hydrate -- this is the additive behaviour server-wins replaced');
 });
 
 test('hydrated rows are NOT echoed straight back to the server', async () => {
@@ -620,16 +645,25 @@ const probes = [
       const r = await c.sbHydrateAll();
       assert.strictEqual(r.failed, SYNCED_COUNT);
     }],
-  ['hydration overwrites local edits instead of merging additively',
-    (s) => s.replace('if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);added++;}', 'if(r&&r.id!=null){local.push(r);added++;}'),
+  // RE-ANCHORED 2026-09-21: the additive line this used to mutate no longer
+  // exists. What it protects now is the carve-out -- an id whose own first
+  // push never landed must keep its local value.
+  ['the first-push carve-out is removed -> a stranger\'s row overwrites an unpushed record',
+    (s) => s.replace('if(!sbBootstrappedNow&&usable&&seeded[id]){', 'if(true){'),
     async () => {
-      const localEdit = Object.assign({}, INV_A, { cust: 'EDITED LOCALLY' });
-      const c = harness({ store: { sb_invs: JSON.stringify([localEdit]) }, serverRows: { sb_invs: [INV_A, INV_B] } }, probeSrc);
-      const r = await c.sbHydrateAll();
-      assert.strictEqual(r.merged, 1);
+      const localEdit = Object.assign({}, INV_A, { cust: 'NEVER PUSHED' });
+      const c = harness({ store: { sb_invs: JSON.stringify([localEdit]),
+                                   sb_synced_bootstrap: '1',
+                                   sb_synced_ids: JSON.stringify({ sb_invs: [] }) },
+                          serverRows: { sb_invs: [INV_A] } }, probeSrc);
+      await c.sbHydrateAll();
+      assert.strictEqual(JSON.parse(c.__store.sb_invs)[0].cust, 'NEVER PUSHED');
     }],
+  // RE-ANCHORED 2026-09-21: the inline pause moved into the named store seam
+  // sbHydrateStore(), and GAINED a finally it never had -- a throw out of st()
+  // used to leave the whole app's backup paused for the rest of the session.
   ['hydrated rows echoed back to the server',
-    (s) => s.replace('sbSyncPaused=true;\n        st(key,local);\n        sbSyncPaused=false;', 'st(key,local);'),
+    (s) => s.replace('  var was=sbSyncPaused;\n  sbSyncPaused=true;\n  try{ return st(key,value); } finally { sbSyncPaused=was; }', '  return st(key,value);'),
     async () => {
       const c = harness({ serverRows: { sb_invs: [INV_A] } }, probeSrc);
       await c.sbHydrateAll();

@@ -5147,6 +5147,10 @@ function sbBackupFetch(action,resource,payload){
     return r.json().catch(function(){return null;}).then(function(d){
       if(r.status===503&&d&&d.error&&d.error.code==='NOT_PROVISIONED')return{ok:false,reason:'not_provisioned'};
       if(!r.ok||!d||!d.ok)return{ok:false,reason:'error',status:r.status,message:(d&&d.error&&(d.error.code||d.error.message))||('HTTP '+r.status)};
+      // ONE LINE IN THE TRANSPORT (2026-09-21): a write past the guards above
+      // is a write the server accepted, and the server-wins carve-out needs to
+      // know which ids those are.
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)sbMarkSynced(resource,payload.id);
       return{ok:true,provisioned:d.provisioned!==false,data:d.data};
     });
   }).catch(function(e){return{ok:false,reason:'network',message:e&&e.message};});
@@ -5264,8 +5268,163 @@ function sbSyncCollection(key,next,prev){
 // A failed read leaves local data completely untouched. It does NOT empty
 // anything and is NOT reported as an empty backup: the caller distinguishes
 // merged / not-provisioned / failed and says which.
+var SB_SYNCED_KEY='sb_synced_ids';
+function sbSyncedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(SB_SYNCED_KEY);}catch(e){
+    try{console.error('SAIRNbiz: could not read "'+SB_SYNCED_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('SAIRNbiz: "'+SB_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
+function sbMarkSynced(resource,id){
+  if(!resource||id===undefined||id===null)return;
+  var r=sbSyncedRead();
+  if(r.state==='unreadable')return;      // do not overwrite a map we could not read
+  var arr=r.map[resource];
+  if(!Array.isArray(arr))arr=[];
+  if(arr.indexOf(String(id))===-1)arr.push(String(id));
+  r.map[resource]=arr;
+  st(SB_SYNCED_KEY,r.map);
+}
+// ── THE ONE-TIME READ-ONLY BOOTSTRAP (2026-09-21, Michael's decision) ─────
+// An install that predates server-wins has no synced map, and the question
+// "may this record be overwritten?" has no recorded answer for anything in it.
+// The FIRST version of this code answered it by treating an absent map as
+// permission: any id present on both sides got overwritten on the first
+// hydrate. That made the rule effective immediately and it silently discarded
+// whatever local edit was sitting there at the moment of upgrade.
+//
+// THIS IS THE OTHER ANSWER AND IT IS THE ONE THAT SHIPPED. One pass, LOCAL
+// ONLY -- no network, no record written, nothing compared against the server
+// -- marks every id the device currently holds as seeded. Nothing is
+// overwritten while it runs, and nothing is overwritten for the rest of that
+// page load (`sbBootstrappedNow`). From the next load on, the map is the
+// authority and ABSENT means genuinely never pushed, which is the carve-out.
+//
+// THE COST IS BOUNDED AND IT IS STATED RATHER THAN HIDDEN: a correction made
+// on the server BEFORE a given device runs its bootstrap does not reach that
+// device until the load AFTER the bootstrap. One extra hydrate of staleness,
+// once per device, in exchange for never discarding an unpushed edit at the
+// moment of upgrade.
+//
+// AND IT IS NOT A GUESS ABOUT WHAT WAS PUSHED. It cannot be: nothing recorded
+// that before today. What it does is make the answer WRONG IN THE SAFE
+// DIRECTION exactly once -- a record that was never pushed is marked seeded
+// and becomes overwritable, which is the pre-existing-data cost the decision
+// accepted. Every record created AFTER the bootstrap gets the real carve-out,
+// because its id enters the map only when a write actually lands.
+var SB_BOOTSTRAP_KEY='sb_synced_bootstrap';
+var sbBootstrappedNow=false;
+function sbSyncedBootstrap(resources){
+  var done=null;
+  try{done=localStorage.getItem(SB_BOOTSTRAP_KEY);}catch(e){return 'unreadable';}
+  if(done!==null)return 'already';
+  var r=sbSyncedRead();
+  if(r.state==='unreadable')return 'unreadable';   // never bootstrap over a map we could not read
+  var map=r.map;
+  for(var i=0;i<resources.length;i++){
+    var key=resources[i],local=sbHydrateLoad(key);
+    if(!Array.isArray(local))continue;
+    var arr=Array.isArray(map[key])?map[key]:[];
+    for(var j=0;j<local.length;j++){
+      var rec=local[j];
+      if(!rec||rec.id===undefined||rec.id===null)continue;
+      var id=String(rec.id);
+      if(arr.indexOf(id)===-1)arr.push(id);
+    }
+    map[key]=arr;
+  }
+  if(!st(SB_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write
+  st(SB_BOOTSTRAP_KEY,1);
+  sbBootstrappedNow=true;
+  return 'ran';
+}
+// ── THE TWO SEAMS, AND WHY THEY ARE NAMED RATHER THAN INLINED ────────────
+// The merge below is meant to be the SAME CODE in every app, and it nearly
+// can be -- except that these apps do not all read and write local storage
+// the same way, and the difference is load-bearing rather than cosmetic:
+//
+//   * FOUR of the seven apps push to the server from inside st() itself
+//     (sairnbiz's _sbSyncOn/sbSyncCollection, sairnfreedom's, stonedesk's
+//     sdSyncCollection, and sairnbuild's bldSyncCollection). Writing hydrated
+//     rows through a bare st() there would echo the server's own rows
+//     straight back to the server. Each of those apps already has a
+//     suppression flag for exactly this, and the hydrate is the caller that
+//     must use it.
+//   * stonedesk reads through sdLoad(), not ld().
+//
+// So the merge calls these two and nothing else, and the per-app difference
+// lives in two one-liners with a name on them instead of being smuggled into
+// a copy of the merge. In THIS app st() pushes to the server through
+// sbSyncCollection(), so the store seam pauses it. The old hydrate did that
+// inline WITHOUT a finally, so a throw out of st() left the whole app's
+// backup paused for the rest of the session, invisibly -- the exact shape
+// sairnfreedom's own comment records being fixed in sairnvet twice and in
+// stonedesk once. sairnbiz was the copy nobody looked at.
+//
+// THE SUPPRESSION WRAPPERS USE try/finally EVERYWHERE, including where the
+// app's own hydrate did not. sairnbiz's set `sbSyncPaused=true`, called st(),
+// then set it back -- with no finally, so a throw out of st() left the whole
+// app's backup suppressed for the rest of the session, invisibly. That is the
+// shape sairnfreedom's own comment records being fixed in sairnvet twice and
+// in stonedesk once; sairnbiz was the copy nobody looked at.
+function sbHydrateLoad(key){return ld(key,[]);}
+function sbHydrateStore(key,value){
+  var was=sbSyncPaused;
+  sbSyncPaused=true;
+  try{ return st(key,value); } finally { sbSyncPaused=was; }
+}
+// ── THE MERGE, ONCE PER APP AND CALLED FROM EVERY HYDRATE ────────────────
+// Returns the number of records CHANGED, or null if there was nothing to
+// merge (a failed read, or a local store that is not a list). One function
+// rather than one copy per hydrate: sairnsenior has ELEVEN hydrates and
+// eleven copies of a conflict rule is eleven chances for one of them to drift
+// while every suite stays green.
+function sbServerWinsMerge(key,serverRows){
+  if(!Array.isArray(serverRows))return null;
+  var local=sbHydrateLoad(key);
+  if(!Array.isArray(local))return null;
+  var r=sbSyncedRead();
+  var map=r.map,usable=r.state!=='unreadable';
+  var seeded={};
+  if(usable&&Array.isArray(map[key]))map[key].forEach(function(id){seeded[String(id)]=true;});
+  var idx={};
+  local.forEach(function(rec,n){if(rec&&rec.id!==undefined&&rec.id!==null)idx[String(rec.id)]=n;});
+  var changed=0,landed=[];
+  serverRows.forEach(function(row){
+    if(!row||row.id===undefined||row.id===null)return;
+    var id=String(row.id),at=idx[id];
+    if(at===undefined){local.push(row);idx[id]=local.length-1;changed++;landed.push(id);return;}
+    // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+    // never landed, in which case the server's row belongs to somebody else;
+    // and never during the page load that ran the bootstrap.
+    if(!sbBootstrappedNow&&usable&&seeded[id]){
+      if(JSON.stringify(local[at])!==JSON.stringify(row)){local[at]=row;changed++;}
+      landed.push(id);
+    }
+    // else: pending first push, or the bootstrap load. Keep local, and do NOT
+    // record it as synced -- recording it here would hand the next hydrate
+    // permission to overwrite the very record this branch exists to protect.
+  });
+  if(changed)sbHydrateStore(key,local);
+  if(usable&&landed.length){
+    var arr=Array.isArray(map[key])?map[key]:[],added=false;
+    landed.forEach(function(id){if(arr.indexOf(id)===-1){arr.push(id);added=true;}});
+    if(added){map[key]=arr;st(SB_SYNCED_KEY,map);}
+  }
+  return changed;
+}
 function sbHydrateAll(){
   if(!ld('sb_lic',null))return Promise.resolve({merged:0,failed:0,notProvisioned:0});
+  // BEFORE the reads. No network, no record written.
+  sbSyncedBootstrap(SB_SYNCED);
   var merged=0,failed=0,notProvisioned=0;
   return Promise.all(SB_SYNCED.map(function(key){
     return sbBackupFetch('read',key,null).then(function(res){
@@ -5274,20 +5433,8 @@ function sbHydrateAll(){
         return;
       }
       if(res.provisioned===false){notProvisioned++;return;}
-      var rows=res.data;
-      if(!Array.isArray(rows)||!rows.length)return;
-      var local=ld(key,[]);
-      if(!Array.isArray(local))return;
-      var have={};
-      local.forEach(function(r){if(r&&r.id!=null)have[String(r.id)]=true;});
-      var added=0;
-      rows.forEach(function(r){if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);added++;}});
-      if(added){
-        merged+=added;
-        sbSyncPaused=true;
-        st(key,local);
-        sbSyncPaused=false;
-      }
+      var changed=sbServerWinsMerge(key,res.data);
+      if(changed)merged+=changed;
     });
   })).then(function(){return{merged:merged,failed:failed,notProvisioned:notProvisioned};});
 }

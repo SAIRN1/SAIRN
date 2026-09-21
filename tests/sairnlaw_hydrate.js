@@ -101,12 +101,24 @@ function harness(opts) {
   // harness hardcoded the four-name list, so when the list grew to nineteen
   // the suite would have tested a list the app no longer has -- the fixture
   // drifting from the code it exists to check.
+  // THE MERGE MOVED OUT OF THE HYDRATE, 2026-09-21. lawHydrateAll() now calls
+  // the shared lawServerWinsMerge() -- one copy of a rule seven apps hold,
+  // driven across all of them by tests/server_wins_hydration.js -- and runs
+  // the one-time lawSyncedBootstrap() first. All of it is lifted out of the
+  // shipped file rather than retyped.
+  const onelineVar = (name) =>
+    html.slice(html.indexOf('var ' + name + "='"), html.indexOf(';', html.indexOf('var ' + name + "='")) + 1);
   vm.runInContext([
     syncListSrc(),
-    html.slice(html.indexOf("var LAW_SYNCED_KEY='"),
-               html.indexOf(';', html.indexOf("var LAW_SYNCED_KEY='")) + 1),
+    onelineVar('LAW_SYNCED_KEY'),
+    onelineVar('LAW_BOOTSTRAP_KEY'),
+    'var lawBootstrappedNow=false;',
     fnBody('function lawSyncedRead()'),
     fnBody('function lawMarkSynced('),
+    fnBody('function lawSyncedBootstrap('),
+    fnBody('function lawHydrateLoad('),
+    fnBody('function lawHydrateStore('),
+    fnBody('function lawServerWinsMerge('),
     fnBody('async function lawHydrateAll()'),
   ].join('\n'), ctx);
   return ctx;
@@ -145,7 +157,11 @@ test('a locally present id IS overwritten by the server copy, once it is known t
   const c = harness({
     local: { law_matters: [{ id: 'M-1', note: 'EDITED HERE' }] },
     server: { law_matters: [{ id: 'M-1', note: 'server version' }, { id: 'M-2' }] },
-    raw: { law_synced_ids: JSON.stringify({ law_matters: ['M-1'] }) },
+    // law_synced_bootstrap set: this is a device whose one-time bootstrap
+    // happened on an earlier load. Without it the bootstrap would run HERE and
+    // suppress overwriting for the whole call, and the arm would pass while
+    // asserting nothing about the merge.
+    raw: { law_synced_bootstrap: '1', law_synced_ids: JSON.stringify({ law_matters: ['M-1'] }) },
   });
   const r = await c.lawHydrateAll();
   assert.strictEqual(c.__stored.law_matters.find((x) => x.id === 'M-1').note, 'server version',
@@ -162,25 +178,47 @@ test('but a record whose FIRST push never landed keeps its local value', async (
   const c = harness({
     local: { law_matters: [{ id: 'M-1', note: 'never pushed' }] },
     server: { law_matters: [{ id: 'M-1', note: 'somebody else' }] },
-    raw: { law_synced_ids: JSON.stringify({ law_matters: [] }) },
+    raw: { law_synced_bootstrap: '1', law_synced_ids: JSON.stringify({ law_matters: [] }) },
   });
   await c.lawHydrateAll();
   assert.strictEqual(c.__stored.law_matters, undefined,
     'a record whose own push never landed was overwritten by a stranger');
 });
 
-test('a FIRST run seeds what the server already had, so the rule is not inert on existing data', async () => {
-  // No synced map at all -- every existing install. Any id present on both
-  // sides was demonstrably pushed by somebody, so server-wins applies and the
-  // ids are recorded. Without this the rule would never apply to data that
-  // existed before it shipped, which is the situation it was chosen to fix.
+// ── AND THIS ARM WAS INVERTED TOO, HOURS AFTER IT WAS WRITTEN ────────────
+// It read "a FIRST run seeds what the server already had" and asserted the
+// first hydrate OVERWRITES on an id match -- which is what the first version
+// of server-wins did, and which silently discarded whatever local edit was
+// sitting there at the moment of upgrade. Michael's second decision replaced
+// that with a read-only bootstrap: it RECORDS what the device holds and
+// overwrites nothing, and the server's copy arrives one load later. The arm
+// is inverted rather than deleted, and the two halves of the bounded cost are
+// asserted separately below.
+test('a FIRST run RECORDS what the device holds and overwrites NOTHING', async () => {
   const c = harness({
     local: { law_matters: [{ id: 'M-1', note: 'stale' }] },
     server: { law_matters: [{ id: 'M-1', note: 'server version' }] },
   });
   await c.lawHydrateAll();
-  assert.strictEqual(c.__stored.law_matters[0].note, 'server version');
-  assert.ok(JSON.parse(c.__raw.law_synced_ids).law_matters.indexOf('M-1') !== -1);
+  assert.ok(!c.__stored.law_matters || c.__stored.law_matters[0].note === 'stale',
+    'the bootstrap load overwrote a local record -- the whole point of it is that it does not');
+  assert.ok(JSON.parse(c.__raw.law_synced_ids).law_matters.indexOf('M-1') !== -1,
+    'the id was not recorded, so the NEXT load would treat it as never-pushed');
+});
+
+test('and the load AFTER the bootstrap takes the server copy -- the cost is ONE hydrate', async () => {
+  const first = harness({
+    local: { law_matters: [{ id: 'M-1', note: 'stale' }] },
+    server: { law_matters: [{ id: 'M-1', note: 'server version' }] },
+  });
+  await first.lawHydrateAll();
+  const second = harness({
+    local: { law_matters: [{ id: 'M-1', note: 'stale' }] },
+    server: { law_matters: [{ id: 'M-1', note: 'server version' }] },
+    raw: { law_synced_bootstrap: '1', law_synced_ids: first.__raw.law_synced_ids },
+  });
+  await second.lawHydrateAll();
+  assert.strictEqual(second.__stored.law_matters[0].note, 'server version');
 });
 
 // ── NOT EVERY REGISTERED RESOURCE IS A TABLE (2026-09-18) ────────────────────
@@ -284,7 +322,8 @@ test('no RESOURCE is written when nothing changed -- a no-op boot costs no data 
     raw: { law_synced_ids: JSON.stringify({ law_matters: ['M-1'] }) },
   });
   await c.lawHydrateAll();
-  assert.deepStrictEqual(Object.keys(c.__stored).filter((k) => k !== 'law_synced_ids'), [],
+  assert.deepStrictEqual(
+    Object.keys(c.__stored).filter((k) => k !== 'law_synced_ids' && k !== 'law_synced_bootstrap'), [],
     'a hydrate that changed no record still wrote to a record store');
 });
 

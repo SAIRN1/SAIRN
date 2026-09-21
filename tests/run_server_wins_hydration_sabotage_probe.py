@@ -3,43 +3,61 @@
 Run: python tests/run_server_wins_hydration_sabotage_probe.py
 
 # REQUIREMENT: the suite guarding server-wins hydration must go RED when any
-#   app reverts to the additive/never-overwrite merge, when the
-#   pending-first-push carve-out is removed or quietly neutered, when an
-#   unreadable synced map stops failing closed, or when the transport stops
-#   recording which pushes really landed -- because every one of those failures
-#   is SILENT at runtime, and the suite is the only thing that would notice
+#   of the SEVEN apps reverts to the additive/never-overwrite merge, when the
+#   pending-first-push carve-out is removed or quietly neutered, when the
+#   one-time bootstrap fails to record what a device already holds or records
+#   something it does not, when it overwrites during its own pass, when an
+#   unreadable map stops failing closed, or when an auto-push app's store seam
+#   stops suppressing -- because every one of those failures is SILENT at
+#   runtime and this suite is the only thing that would notice
 
-WHY EACH ARM IS PLANTED IN A REAL APP FILE, PER APP. The rule now exists as
-one copy in each of two single-file apps with no shared module. A control that
-only sabotaged one of them would prove nothing about the other, and "the same
-lines in a second file" is exactly the assumption CLAUDE.md's Ariane 5 note
-refuses -- a second copy is not a second opinion.
+WHY THE MERGE IS SABOTAGED IN ALL SEVEN APPS. The rule exists as one copy per
+single-file app. A control that sabotaged one and inferred the rest is the
+assumption CLAUDE.md's Ariane 5 note refuses: a second copy is not a second
+opinion. The BOOTSTRAP mutations are planted in one app each, because the
+suite's same-rule arm independently proves the other six are byte-identical
+once names are normalised -- that is a different argument from inference, and
+it is the argument being relied on.
 
 ── WHAT IS PLANTED ────────────────────────────────────────────────────────
-  1/2. THE OLD BEHAVIOUR, RESTORED, in each app: a locally-held id is never
-       overwritten. This is the state of both files up to 2026-09-21 and the
-       state any revert produces.
-  3/4. THE CARVE-OUT REMOVED, in each app: every id the server has is
-       overwritten, including one whose own first push has never landed. This
-       is what "just use whether the server has the id" looks like, and it is
-       the reading the carve-out exists to refuse.
-  5.   AN UNREADABLE MAP STOPS FAILING CLOSED: a corrupt synced map reads as
-       "nothing has ever been seeded", which is permission to overwrite
-       everything. The destructive direction, and the one PR 1.11 is about.
-  6.   A KEPT RECORD IS MARKED SYNCED ANYWAY: the subtle one. The carve-out
-       still appears to work -- the record survives THIS hydrate -- and is
-       overwritten on the next one, because being kept recorded it as landed.
-       A suite that only ran one hydrate would call this green.
-  7.   SEEDING SKIPPED ON AN EMPTY READ: the resource is never marked seeded,
-       so every later hydrate re-enters the never-seeded branch and overwrites
-       unconditionally -- the carve-out silently never applies again.
-  8/9. THE TRANSPORT STOPS RECORDING LANDED PUSHES, in each app: nothing is
-       ever synced, so after the first seeding pass no record is ever
-       overwritable again. Server-wins becomes inert without a single error.
+  1-7.  THE OLD BEHAVIOUR, RESTORED, in each of the seven apps: a locally-held
+        id is never overwritten. This is the state of every one of these files
+        before 2026-09-21 and the state any revert produces.
+  8.    THE CARVE-OUT REMOVED: every id the server has is overwritten,
+        including one whose own first push has never landed. This is what
+        "just use whether the server has the id" looks like.
+  9.    A KEPT RECORD IS MARKED SYNCED ANYWAY. The subtle one: the carve-out
+        appears to work -- the record survives THIS merge -- and it is
+        overwritten by the next, because being kept recorded it as landed.
+  10.   THE BOOTSTRAP SKIPS MARKING A PRE-EXISTING ID. The first of the two
+        the decision specifically asked to be controlled. Its consequence is
+        NOT an overwrite: an unmarked id is ABSENT from the map, and after the
+        bootstrap absent means PROTECTED -- so a pre-existing record becomes
+        permanently unreachable by a server correction. That is the additive
+        defect returning silently, for exactly the data the bootstrap exists
+        to bring under the rule.
+  11.   THE BOOTSTRAP MARKS AN ID THAT IS NOT THERE, by dropping the guard on
+        records with no id -- which marks the string 'undefined' as seeded.
+        The second one asked for, and its consequence IS an overwrite: the
+        first real record that arrives without an id is overwritable by a
+        stranger's row. Nothing at runtime would ever report it.
+  12.   THE BOOTSTRAP OVERWRITES DURING ITS OWN PASS, by not setting the
+        this-load flag. The whole point of the read-only bootstrap is that the
+        upgrade itself discards nothing; this is the version that does.
+  13.   THE BOOTSTRAP RUNS OVER AN UNREADABLE MAP, seeding from a map it could
+        not read and then writing the done-flag -- so the real map is lost and
+        the bootstrap can never run again.
+  14.   THE DONE-FLAG SURVIVES A FAILED MAP WRITE: the bootstrap is recorded
+        as complete when nothing was recorded, and it will never run again.
+  15.   AN UNREADABLE MAP STOPS FAILING CLOSED in the merge -- a corrupt map
+        read as permission to overwrite everything. PR 1.11.
+  16.   AN AUTO-PUSH APP'S STORE SEAM STOPS SUPPRESSING, so every hydrated row
+        is echoed straight back to the server. Silent, and only visible under
+        load.
 
-The suite and BOTH app files are staged into the worktree rather than taken
-from HEAD, because none of them is committed when this first runs -- and a
-baseline that is red for that reason is a baseline that proves nothing.
+All seven app files and the suite are staged into the worktree rather than
+taken from HEAD, because none of them is committed when this first runs -- and
+a baseline that is red for that reason is a baseline that proves nothing.
 """
 import os
 import sys
@@ -48,86 +66,98 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sabotage_harness import run_probe                           # noqa: E402
 
 SUITE = os.path.join('tests', 'server_wins_hydration.js')
+
+APPS = [
+    ('sairnlegacy',  'sairnlegacy.html',  'leg'),
+    ('sairndesign',  'sairndesign.html',  'sdn'),
+    ('sairnlaw',     'sairnlaw.html',     'law'),
+    ('sairnsenior',  'sairnsenior.html',  'sen'),
+    ('stonedesk',    'stonedesk.html',    'sd'),
+    ('sairnbiz',     'sairnbiz.html',     'sb'),
+    ('sairnfreedom', 'sairnfreedom.html', 'sf'),
+]
+FILES = tuple(f for _, f, _ in APPS)
+
+WINS = "    if(!%sBootstrappedNow&&usable&&seeded[id]){"
 LEG = 'sairnlegacy.html'
-DSN = 'sairndesign.html'
-LAW = 'sairnlaw.html'
 
-WINS = "      if(neverSeeded||syncedHere[id]){"
-KEPT_COMMENT = ("      // else: pending first push. Keep local, and do NOT record it as synced --")
-MAP_USABLE = "  var syncedMap=syncedRead.map,mapUsable=syncedRead.state!=='unreadable';"
-SEED_WRITE = "      syncedMap[key]=arr;mapDirty=true;"
+MUTATIONS = []
 
-MUTATIONS = [
-    ("1. [sairnlegacy] THE OLD BEHAVIOUR RESTORED -- a locally-held id is "
-     "never overwritten, which is the state of this file up to 2026-09-21",
-     LEG, WINS, "      if(false){"),
+for i, (app, f, p) in enumerate(APPS, start=1):
+    MUTATIONS.append((
+        "%d. [%s] THE OLD BEHAVIOUR RESTORED -- a locally-held id is never "
+        "overwritten, which is the state of this file before 2026-09-21" % (i, app),
+        f, WINS % p, "    if(false){"))
 
-    ("2. [sairndesign] THE OLD BEHAVIOUR RESTORED -- same revert, in the "
-     "second copy of the rule, because a second file is not a second opinion",
-     DSN, WINS, "      if(false){"),
-
-    ("3. [sairnlegacy] THE CARVE-OUT REMOVED -- every id the server has is "
+MUTATIONS += [
+    ("8. [sairnlegacy] THE CARVE-OUT REMOVED -- every id the server has is "
      "overwritten, including one whose first push never landed",
-     LEG, WINS, "      if(true){"),
+     LEG, WINS % 'leg', "    if(true){"),
 
-    ("4. [sairndesign] THE CARVE-OUT REMOVED -- the same wrong reading, in "
-     "the second app",
-     DSN, WINS, "      if(true){"),
-
-    ("5. [sairnlegacy] AN UNREADABLE MAP STOPS FAILING CLOSED -- a corrupt "
-     "map reads as never-seeded, which is permission to overwrite everything",
-     LEG, MAP_USABLE,
-     "  var syncedMap=syncedRead.map,mapUsable=true;"),
-
-    ("6. [sairnlegacy] A KEPT RECORD IS MARKED SYNCED ANYWAY -- it survives "
-     "THIS hydrate and is overwritten by the next, which a one-hydrate arm "
-     "would call green",
-     LEG, KEPT_COMMENT,
-     "      landed.push(id);\n" + KEPT_COMMENT),
-
-    ("7. [sairndesign] SEEDING SKIPPED ON AN EMPTY READ -- the resource is "
-     "never marked seeded, so every later hydrate overwrites unconditionally",
-     DSN, SEED_WRITE,
-     "      if(landed.length){syncedMap[key]=arr;mapDirty=true;}"),
-
-    ("8. [sairnlegacy] THE TRANSPORT STOPS RECORDING LANDED PUSHES -- nothing "
-     "is ever synced, so server-wins goes inert with no error anywhere",
+    ("9. [sairnlegacy] A KEPT RECORD IS MARKED SYNCED ANYWAY -- it survives "
+     "THIS merge and is overwritten by the next, which a one-merge arm would "
+     "call green",
      LEG,
-     "      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)legMarkSynced(resource,payload.id);",
-     "      if(false)legMarkSynced(resource,payload.id);"),
+     "    // else: pending first push, or the bootstrap load. Keep local, and do NOT",
+     "    landed.push(id);\n"
+     "    // else: pending first push, or the bootstrap load. Keep local, and do NOT"),
 
-    ("9. [sairndesign] THE TRANSPORT STOPS RECORDING LANDED PUSHES -- the "
-     "same silent inertness, in the second app",
-     DSN,
-     "      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)sdnMarkSynced(resource,payload.id);",
-     "      if(false)sdnMarkSynced(resource,payload.id);"),
+    ("10. [sairnlegacy] THE BOOTSTRAP SKIPS MARKING A PRE-EXISTING ID -- the "
+     "id stays ABSENT, absent means protected, and a pre-existing record is "
+     "permanently unreachable by a server correction",
+     LEG,
+     "      if(arr.indexOf(id)===-1)arr.push(id);\n    }\n    map[key]=arr;",
+     "      if(false)arr.push(id);\n    }\n    map[key]=arr;"),
 
-    # ── THE THIRD APP, converted one claim later ──────────────────────────
-    ("10. [sairnlaw] THE OLD BEHAVIOUR RESTORED -- the third copy of the rule, "
-     "and the app the decision was actually taken about",
-     LAW, WINS, "      if(false){"),
+    ("11. [sairnlegacy] THE BOOTSTRAP MARKS AN ID THAT IS NOT THERE -- the "
+     "no-id guard is dropped, 'undefined' is seeded, and the first real "
+     "record without an id becomes overwritable by a stranger",
+     LEG,
+     "      if(!rec||rec.id===undefined||rec.id===null)continue;",
+     "      if(!rec)continue;"),
 
-    ("11. [sairnlaw] THE CARVE-OUT REMOVED -- every id the server has is "
-     "overwritten, including one whose first push never landed",
-     LAW, WINS, "      if(true){"),
+    ("12. [sairnlegacy] THE BOOTSTRAP OVERWRITES DURING ITS OWN PASS -- the "
+     "upgrade discards whatever local edit was sitting there, which is the "
+     "exact cost the read-only bootstrap was chosen to avoid",
+     LEG, "  legBootstrappedNow=true;\n  return 'ran';",
+     "  legBootstrappedNow=false;\n  return 'ran';"),
 
-    ("12. [sairnlaw] THE TRANSPORT STOPS RECORDING LANDED PUSHES",
-     LAW,
-     "      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)lawMarkSynced(resource,payload.id);",
-     "      if(false)lawMarkSynced(resource,payload.id);"),
+    ("13. [sairnlegacy] THE BOOTSTRAP RUNS OVER AN UNREADABLE MAP -- it seeds "
+     "from a map it could not read and writes the done-flag, so the real map "
+     "is lost and it can never run again",
+     LEG,
+     "  if(r.state==='unreadable')return 'unreadable';   // never bootstrap over a map we could not read",
+     "  // guard removed"),
 
-    ("13. [sairnlaw] THE EMPTY-READ SHORTCUT COMES BACK -- `if(!rows.length)"
-     "continue;` was removed because under this rule it leaves the resource "
-     "un-seeded forever, so every later hydrate overwrites unconditionally. "
-     "It is the line a reader would most plausibly restore as an optimisation",
-     LAW,
-     "    if(!Array.isArray(rows)){failed++;continue;}\n    var local=ld(key,[]);",
-     "    if(!Array.isArray(rows)){failed++;continue;}\n    if(!rows.length)continue;\n    var local=ld(key,[]);"),
+    ("14. [sairnlegacy] THE DONE-FLAG SURVIVES A FAILED MAP WRITE -- the "
+     "bootstrap is recorded complete when nothing was recorded",
+     LEG,
+     "  if(!st(LEG_SYNCED_KEY,map))return 'unreadable';  // the flag must NOT outlive a failed map write",
+     "  st(LEG_SYNCED_KEY,map);"),
+
+    ("15. [sairndesign] AN UNREADABLE MAP STOPS FAILING CLOSED -- a corrupt "
+     "map reads as permission to overwrite everything",
+     'sairndesign.html',
+     "  var map=r.map,usable=r.state!=='unreadable';\n  var seeded={};",
+     "  var map=r.map,usable=true;\n  var seeded={};"),
+
+    ("16. [sairnfreedom] THE STORE SEAM STOPS SUPPRESSING -- every hydrated "
+     "row is echoed straight back to the server, silently",
+     'sairnfreedom.html',
+     "function sfHydrateStore(key,value){\n"
+     "  var was=sfSyncSuppressed;\n"
+     "  sfSyncSuppressed=true;\n"
+     "  try{ return st(key,value); } finally { sfSyncSuppressed=was; }\n"
+     "}",
+     "function sfHydrateStore(key,value){\n"
+     "  return st(key,value);\n"
+     "}"),
 ]
 
 sys.exit(run_probe(
     SUITE, MUTATIONS,
-    title='server-wins hydration, and the first-push carve-out, must be '
-          'REFUSABLE -- in every app that carries the rule',
-    stage=(LEG, DSN, LAW),
+    title='server-wins hydration, its first-push carve-out and its one-time '
+          'read-only bootstrap must all be REFUSABLE -- in every app that '
+          'carries the rule',
+    stage=FILES,
 ))

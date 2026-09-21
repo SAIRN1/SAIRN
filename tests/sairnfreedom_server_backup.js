@@ -208,9 +208,19 @@ test('the release restores the PREVIOUS value, not a bare false', () => {
   // `=false` in a nested call un-suppresses its caller. sairnvet's svSeedStore
   // uses a bare false and is correct there because nothing nests inside it;
   // this site is inside a per-key promise map, so it saves and restores.
-  assert.ok(/var wasSuppressed=sfSyncSuppressed;/.test(HTML),
+  //
+  // RE-ANCHORED 2026-09-21. The suppression used to be written INLINE inside
+  // sfHydrateAll(), as `var wasSuppressed=...` around a bare st(). Server-wins
+  // moved the merge into the shared sfServerWinsMerge(), so the suppression
+  // moved with it into the named seam sfHydrateStore() -- which is the whole
+  // point of that seam existing. The PROPERTY is unchanged and is still
+  // asserted; only the place it lives moved, and the anchor moved with it
+  // rather than the arm being deleted for going red.
+  assert.ok(/function sfHydrateStore\(key,value\)\{/.test(HTML),
+    'the store seam is gone -- the suppression has no home');
+  assert.ok(/var was=sfSyncSuppressed;/.test(HTML),
     'the previous value is no longer captured');
-  assert.ok(/finally\{ sfSyncSuppressed=wasSuppressed; \}/.test(HTML),
+  assert.ok(/finally \{ sfSyncSuppressed=was; \}/.test(HTML),
     'the release no longer restores the captured value');
 });
 
