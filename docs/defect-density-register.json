@@ -9112,6 +9112,120 @@
       "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
     },
     {
+      "commit": "db3cd8396269",
+      "date": "2026-09-21",
+      "subject": "fix(sairnscape): a call nobody answered wore an earlier refusal, and the retry button outlived the design it belonged to",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js",
+        "tests/sairnscape_outbound_queue_review_probe.js",
+        "tests/sairnscape_send_button_and_licence.js"
+      ],
+      "lines_added": 512,
+      "lines_removed": 36,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnscape.html scpData: the no-licence guard at :2077 returned null WITHOUT touching scpLastErr, so after any real 4xx on the same resource a later call with no licence INHERITED that status and scpWriteRefused() answered true for a call the server never saw. scpSendDesignToQuote branches on exactly that predicate, so the row was NOT QUEUED -- the whole retry path skipped -- the toast quoted an unrelated earlier row's reason as a server judgement, and a row already in the queue was marked 'refused' and never retried again. Three triggers, none contrived: scpLicenceGuard()'s wipe clears scp_lic, localStorage.getItem can throw and scpLd returns the default null, and a corrupt scp_lic fails JSON.parse. The code's own comment above scpWriteRefused names 'no licence' as a case that must NOT be a refusal.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4f674484544d",
+        "date": "2026-09-18",
+        "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
+        "lag_days": 3
+      },
+      "citation_note": "PR 1.11 is about a check that cannot run reporting a pass. This is the same shape one level down and inside a PREDICATE rather than a gate: scpWriteRefused answers a question it has no information to answer -- the licence guard returned before anything was recorded, so 'was this refused' was answered from a previous call's data. 'Nobody looked' is the third state and it was folded into 'refused'. Cited as arguable because 1.11 is written about tools and gates, not about an in-app error predicate.",
+      "contributing_factors": [
+        {
+          "factor": "the no-licence guard predates the per-resource error recording added beneath it, and adding the recording did not revisit the exits that already existed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the guard now records {code:NO_LICENCE} with no status, the same shape the catch uses; sabotage arm A1 restores the original line and 3 arms fail"
+        },
+        {
+          "factor": "the author asked a reviewer to check for exactly this (press-on 2: can a stale 4xx be left behind) and the review that answered it ran 66h after the obligation was opened",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "the overdue-obligation queue is a standing platform item with its own row; nothing in THIS fix changes it, and claiming an action here would be the CAPA box this field replaces"
+        },
+        {
+          "factor": "the suite for this feature stubs scpData wholesale, so the only line at fault is never executed by it -- 20 green assertions over a defect in the transport they replace",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnscape_send_button_and_licence.js drives the REAL scpData across two calls, so the licence guard runs"
+        }
+      ],
+      "recurrence_open": "Nothing checks that every EXIT of a function which records per-resource state actually records it. scpData has four exits and three were careful; the fourth was found by a human reading it. The same shape exists in sdnData, grdData and dntData next door and none has been audited for it."
+    },
+    {
+      "commit": "db3cd8396269",
+      "date": "2026-09-21",
+      "subject": "fix(sairnscape): a call nobody answered wore an earlier refusal, and the retry button outlived the design it belonged to",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "sairnscape.html",
+        "tests/sairnscape_outbound_queue.js",
+        "tests/sairnscape_outbound_queue_review_probe.js",
+        "tests/sairnscape_send_button_and_licence.js"
+      ],
+      "lines_added": 512,
+      "lines_removed": 36,
+      "app": "sairnscape",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnscape.html: #scp-dw-send-quote-btn is ONE static element (:1530) with an inline onclick, shared by every design walk and never recreated, so assigning .onclick replaces that handler for the lifetime of the page. The failed-send branch rebound it to scpFlushAndReport and nothing ever put it back, while scpOpenDesignModal restored only .disabled and .textContent and scpApproveDesign re-enabled it with a bare .disabled=false. After ANY failed send, every later approved-and-unsent design therefore opened with the correct label 'Send Approved Design to Quoting', correctly enabled, and pressing it ran the QUEUE FLUSH: no quote minted for that design, no error shown, and a toast reporting on a different record entirely. Same control-contradicts-its-label class as the defect 4f674484 was written to remove, one call further out and SILENT rather than contradictory. Invisible to an inspector too -- after el.onclick=g the markup and getAttribute('onclick') both still read the original call.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4f674484544d",
+        "date": "2026-09-18",
+        "subject": "fix(sairnscape): the button contradicted the toast beside it, and there was no retry path for it to point at",
+        "lag_days": 3
+      },
+      "citation_note": "Arguable. Not a check reporting an unperformed pass, but the same untruthfulness at the UI layer: a control asserted a capability it did not have. Cited because this platform files the control-contradicts-its-own-text class here, and the 2026-09-18 commit that created this defect cites the same section for the button's previous version.",
+      "contributing_factors": [
+        {
+          "factor": "label, enabled state and handler are three properties that must agree, and they were written in three separate places; one place set two of them",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "scpSetSendBtn is now the only writer of all three, called from all three sites; sabotage arm B4 removes the handler from one mode and 2 arms fail"
+        },
+        {
+          "factor": "the commit that created this was itself closing a control-contradicts-its-text defect, and repaired the BRANCH it was looking at rather than the element lifetime around it -- a fix scoped to the symptom it was shown",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the setter makes the element lifetime the unit rather than the branch, so the same narrow reading cannot reintroduce it"
+        },
+        {
+          "factor": "the feature suite asserts section 4 with regexes over the source of ONE function, and the defect is a property of a DOM node ACROSS two functions, so no assertion in it could have expressed this",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new suite presses the button and checks which design gets a quote; cc section 4 re-aimed at the setter and given an arm requiring every mode that sets disabled to also set onclick"
+        }
+      ],
+      "recurrence_open": "Nothing on this platform detects a shared static element whose handler is reassigned by one code path and restored by none. There are other inline-onclick controls reassigned at runtime in these apps and they have not been swept."
+    },
+    {
       "commit": "e4fc9aaad205",
       "date": "2026-09-21",
       "subject": "fix(sairnlaw): a BILLABLE hour at rate zero bills nothing and says nothing -- refused now at both ends",
