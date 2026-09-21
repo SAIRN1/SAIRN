@@ -1572,6 +1572,16 @@
       "claimed_at_epoch": 1789997279.3510284,
       "status": "released",
       "released_at": "2026-09-21T13:52:19Z"
+    },
+    {
+      "id": "cody-1789998850",
+      "session": "cody",
+      "subject": "sairnlaw-hydrate-review",
+      "task": "review cc lawHydrateAll server wins and hours gate obligation 12:14:17Z FILES: docs/tier-a-reviews.json -- review-only, reads sairnlaw.html and api/_lib/law-timeentry.js",
+      "claimed_at": "2026-09-21T13:54:10Z",
+      "claimed_at_epoch": 1789998850.749822,
+      "status": "active",
+      "note": "OVERRIDE, stated out loud, AND THE COLLISION IS STRUCTURAL RATHER THAN ABOUT THIS WORK. sairn_claim.py exited 1 against fourth's live tier-a-review-hank-dispatchers claim on 'same file or resource: docs/tier-a-reviews.json'. THAT IS THE ONLY OVERLAP AND IT IS THE FILE EVERY REVIEW ON THIS PLATFORM WRITES -- the Tier A review register. Two reviewers can never run concurrently while both list it, which is a convention problem rather than a conflict about work. Verified rather than assumed, and fourth made it cheap by listing its files: fourth reads api/sd-data-cross-tenant-dispatchers.test.js and tools/cross_tenant_isolation_scope.py and discharges hank's 12:40:23Z; I read sairnlaw.html and api/_lib/law-timeentry.js and discharge cc's 12:14:17Z. DISJOINT in both directions, different apps, different authors, different obligations. The register is APPEND-ONLY and the conflict it produces is two new records at the same position -- I have resolved exactly that four times tonight with a resolver that keeps BOTH sides and re-parses the JSON to prove the splice, so the risk the block is protecting against is one I can and do handle rather than one I am ignoring. NOTE ALSO: my first `check` with the same subject came back CLEAR, and adding the FILES list to the task string is what made it collide -- so the honest claim is the one that gets blocked. Task string NOT reworded to drop the file; written directly with the reason attached. THIS IS THE THIRD TIME TODAY a reviewer claim has collided with another reviewer claim by construction (the literal token 'tier-a', the phrase '2026 obligation', and now the register filename) and cc has already flagged the same shape to fourth in the status registry. Worth a convention decision rather than a fourth override."
     }
   ]
 }
