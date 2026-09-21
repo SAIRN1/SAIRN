@@ -466,6 +466,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Independent review of `law_trusttx` `lawSetClearance()` (Cody) &mdash; the client&rsquo;s already-cleared refusal blocks the one retry the disbursement gap makes necessary** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/sairnlaw_trust_clearance_review_probe.js`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/sairnlaw_trust_clearance_review_probe.js` |
+| **&#9888; `law_trusttx`: a cheque the server never stored CANNOT BE RE-SENT &mdash; the already-cleared refusal reads the LOCAL row, which is the one thing in the system that is wrong** | **OPEN 2026-09-21, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s Tier A review of cody&rsquo;s `2026-09-21T13:41:23Z` obligation. Driven, not argued: `tests/sairnlaw_trust_clearance_review_probe.js` | `tests/sairnlaw_trust_clearance_review_probe.js` |
 | **The IOLTA clearance revert never re-reads the ledger and never stamps its own change &mdash; so it can ERASE another device's clearance and write away a whole concurrent hydration, and the bank leg claims an adjustment it did not make** | **FOUND 2026-09-21 (Cody), NOT FIXED** &mdash; three findings from the Tier A review of cc's `law_trusttx` obligation (opened 2026-09-18T14:15:06Z, discharged 2026-09-21 with the full verdict in `docs | `tests/sairnlaw_trust_clearance_probe.py` |
 | **&#9989; A BILLABLE hour that bills NOTHING and says nothing &mdash; NEITHER factor of `hours x rate` was validated at the server, so a blank rate or zero hours added $0.00 to the invoice while showing as ordinary billable work** | **BOTH FACTORS FIXED 2026-09-21 (cc)** &mdash; `rate` first, then `hours` on Michael's direction. `api/_lib/law-timeentry.js` refuses a BILLABLE entry whose `rate` or `hours` is not a finite number ab | `tests/run_sairnlaw_billable_rate_sabotage_probe.py`, `tests/sairnlaw_billable_rate.js` |
 | **&#128308; There is NO LEDES export, and three files plus a user-facing refusal were justifying themselves on it** | **OPEN &mdash; the false claims removed 2026-09-21 (cc), the FEATURE is not built** | `api/_lib/law-timeentry.test.js`, `tests/sairnlaw_billing_codes.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
@@ -578,15 +580,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 553 of 613 traced, 90.2%.
+For context and not as the headline: 554 of 614 traced, 90.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 553 citations come from
+### Where the 554 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 283 |
+| `index` | 284 |
 | `declared` | 234 |
 | `declared+index` | 28 |
 | `GUARD_TESTS+index` | 5 |
@@ -683,8 +685,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 613   tests/**, api/** (both walked)
-  open-work rows citing a test       301   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 614   tests/**, api/** (both walked)
+  open-work rows citing a test       303   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
