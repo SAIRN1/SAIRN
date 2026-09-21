@@ -124,24 +124,24 @@ function mock(opts) {
 
 // The four repaired sites. `read` is what the branch's READ leg must find for
 // the PATCH to be attempted at all; `body` is the request.
+//
+// ── bld_draws retainage release REMOVED FROM THIS LIST (2026-09-21) ───────
+// It no longer sends a representation-PATCH at all -- hover_log #315 found a
+// genuine lost-update race in the raw read-then-PATCH (two concurrent
+// releases on the same draw could each read the same starting `data`, and
+// whichever PATCH landed second silently won), and the fix routes the write
+// through public.bld_release_retainage_atomic() (sql/sairnbuild_data_
+// schema.sql), an RPC that CANNOT produce PostgREST's "matched zero rows,
+// answer [] with 200" shape this harness's `missIs`/mock model -- the SQL
+// function either finds and updates the row or RAISES (NO_SUCH_DRAW /
+// RETAINAGE_RELEASE_CONFLICT), which PostgREST always surfaces as a non-2xx.
+// This site's write-confirmation coverage now lives in
+// tests/sairnbuild_retainage_race.js, including the scenario this harness's
+// `missIs: 404` case existed to catch (the row gone by write time) and the
+// concurrent-write race this generic harness was never shaped to model.
+// The static predicate below still covers this file either way: it scans
+// for `method: 'PATCH'`, and this site no longer has one.
 const SITES = [
-  { name: 'bld_draws retainage release (:4135, MONEY)',
-    app: 'sairnbuild', role: 'owner',
-    // The seeded draw has to SUMMARISE cleanly before and after the release,
-    // or the branch answers 409 RELEASE_REFUSED at the WIP engine and the PATCH
-    // is never sent. retainage_pct is what "what remains held" is worked out
-    // from -- the engine refuses a release it cannot reconcile, which is
-    // correct and is a gate in front of the line under test, not part of it.
-    read: [{ draw_id: 'D-1', data: { draw_id: 'D-1', amount: 1000,
-                                     retainage_pct: 10, retainage_held: 100,
-                                     retainage_released: 0, status: 'approved' } }],
-    // `today` is REQUIRED by this branch -- "this engine will not assume a
-    // clock" -- and omitting it answers 400 NO_TODAY before the PATCH is ever
-    // sent, which would have scored three arms as failures of the wrong thing.
-    body: { action: 'release_retainage', resource: 'bld_draws',
-            payload: { draw_id: 'D-1', amount: 50, released_at: '2026-09-21',
-                       today: '2026-09-21' } },
-    missIs: 404, unknownIs: 502 },
   { name: 'SAIRNcode soft-delete (:12422, 7 Tier A resources)',
     app: 'sairncode', role: 'admin',
     read: [{ data: { id: 'CLM-1', payer: 'Acme', amount: 1200 } }],

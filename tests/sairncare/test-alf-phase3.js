@@ -47,11 +47,6 @@ global.fetch = async (url, opts) => {
     const rid = decodeURIComponent(url.match(/resident_id=eq\.([^&]+)/)[1]);
     return { ok: true, status: 200, json: async () => MAR.filter((m) => m.resident_id === rid) };
   }
-  const marDup = url.match(/alf_mar\?license_hash=eq\.[^&]+&entry_id=eq\.([^&]+)&select=id/);
-  if (method === 'GET' && marDup) {
-    const id = decodeURIComponent(marDup[1]);
-    return { ok: true, status: 200, json: async () => (MAR.some((m) => m.entry_id === id) ? [{ id: '1' }] : []) };
-  }
   const cliOne = url.match(/alf_clients\?license_hash=eq\.[^&]+&client_id=eq\.([^&]+)&select=assigned_employee_id/);
   if (method === 'GET' && cliOne) {
     const id = decodeURIComponent(cliOne[1]);
@@ -73,11 +68,26 @@ global.fetch = async (url, opts) => {
     const id = decodeURIComponent(billOne[1]);
     return { ok: true, status: 200, json: async () => BILLING.filter((b) => b.entry_id === id) };
   }
-  if (method === 'POST' && /alf_mar\?on_conflict=/.test(url)) {
+  // alf_mar atomic check-and-insert RPC (2026-09-21, hover_log #314 fix).
+  // See tests/sairncare/test-alf-mar.js for the fuller comment; this mock is
+  // the same shape, kept local because this file's MAR fixture is stored
+  // body-shaped rather than row-shaped.
+  if (method === 'POST' && /\/rpc\/alf_check_and_insert_mar_entry$/.test(url)) {
     const body = JSON.parse(opts.body);
-    const i = MAR.findIndex((m) => m.entry_id === body.entry_id);
-    if (i === -1) MAR.push(body); else MAR[i] = Object.assign({}, MAR[i], body);
-    return { ok: true, status: 200, json: async () => [body] };
+    const entryId = body.p_entry_id;
+    const i = MAR.findIndex((m) => m.entry_id === entryId);
+    if (i !== -1 && body.p_entry_type !== 'medication_order') {
+      return {
+        ok: false, status: 400,
+        text: async () => JSON.stringify({ message: 'ALREADY_RECORDED: entry ' + entryId + ' has already been recorded and cannot be overwritten' })
+      };
+    }
+    const row = {
+      entry_id: entryId, resident_id: body.p_resident_id,
+      assigned_employee_id: body.p_assigned_employee_id, entry_type: body.p_entry_type, data: body.p_data
+    };
+    if (i === -1) MAR.push(row); else MAR[i] = row;
+    return { ok: true, status: 200, json: async () => [row] };
   }
   throw new Error('Unmocked fetch: ' + method + ' ' + url);
 };

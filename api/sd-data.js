@@ -4200,33 +4200,74 @@ module.exports = async (req, res) => {
         retainage_released_at: relOn,
         retainage_release_log: trail
       });
-      const w = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) + '&draw_id=eq.' + enc(drawId)), {
-        method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ data: nextData, updated_at: new Date().toISOString() })
+      // ── ATOMIC WRITE, OPTIMISTIC CAS (2026-09-21) ──────────────────────
+      // Was a plain read-then-PATCH with no version predicate: two
+      // concurrent release_retainage calls on the SAME draw_id could each
+      // read the same `curData`, and whichever PATCH landed second would
+      // silently WIN, overwriting the first release's write -- including
+      // its retainage_release_log entry -- with no error (hover_log #315).
+      // Routes through public.bld_release_retainage_atomic() instead: same
+      // pg_advisory_xact_lock-scoped-to-the-row pattern as
+      // law_check_and_insert_disbursement/alf_check_and_insert_mar_entry,
+      // but the "check" is optimistic-CAS (compare the row's current
+      // retainage_released against `already`, the value this branch already
+      // read above and fed into bwip.summariseDraw()) rather than embedded
+      // business logic -- see sql/sairnbuild_data_schema.sql for the
+      // function and the reasoning for that split.
+      const w = await fetch(rest('rpc/bld_release_retainage_atomic'), {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          p_license_hash: licHash, p_draw_id: drawId,
+          p_expected_prior_released: already, p_next_data: nextData
+        })
       });
-      const wrote = await w.json().catch(() => null);
-      if (!w.ok) return upstream(res, wrote);
+      if (w.status === 404) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Draw requests are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } });
+        return;
+      }
+      if (w.status === 400) {
+        const bodyText = await w.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && bodyJson.message) || bodyText || '';
+        if (/relation .* does not exist|function .* does not exist/i.test(msg)) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Draw requests are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (/NO_SUCH_DRAW/.test(msg)) {
+          // Not the delete wording: nothing was deleted and saying so would
+          // send somebody to look for a missing draw. The draw was READ
+          // moments ago, so this means it moved or went away in between.
+          res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Draw ' + drawId
+            + ' was no longer there when the release was applied, so NOTHING WAS RELEASED '
+            + 'and no release was recorded. Re-open the draw and check its current '
+            + 'retainage before trying again.' } });
+          return;
+        }
+        if (/RETAINAGE_RELEASE_CONFLICT/.test(msg)) {
+          res.status(409).json({ error: { code: 'RETAINAGE_RELEASE_CONFLICT', message: 'Another release was recorded on this draw between your read and this write. Re-open the draw, check its current retainage, and try again.' } });
+          return;
+        }
+        if (/RETAINAGE_RELEASE_NOT_WRITTEN/.test(msg)) {
+          res.status(502).json({ error: { code: 'RETAINAGE_RELEASE_NOT_WRITTEN', message: 'The release was NOT recorded. Nothing was written -- check the draw before retrying.' } });
+          return;
+        }
+        console.error('bld_release_retainage_atomic error (status 400):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      if (!w.ok) { const rows = await w.json().catch(() => null); return upstream(res, rows); }
+      const rpcResult = await w.json();
+      const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
       // ── A RELEASE THE STORE NEVER CONFIRMED IS NOT A RELEASE (2026-09-21) ─
-      // Swept after the review of the 2026-09-18 json-catch-null pass found
-      // this site and three others still carrying the shape that pass removed
-      // from two. THIS ONE IS NOT A DELETE, IT IS MONEY: under `Prefer:
-      // return=representation` a PATCH that matched ZERO rows returns `[]` with
-      // status 200, so `w.ok` was true, the catch's null was never looked at,
-      // and the response said ok:true AND HANDED BACK `release_log: trail` --
-      // the audit entry describing a release that may never have been written.
-      // A retainage release the draw does not carry is a payment the job
-      // history cannot account for, and the trail beside it made it look
-      // accounted for.
-      const relSays = wroteRow(wrote);
-      if (relSays === 'UNKNOWN') { refuseUnconfirmedWrite(res, 'the retainage release on ' + drawId); return; }
-      if (relSays === 'MISSED') {
-        // Not the delete wording: nothing was deleted and saying so would send
-        // somebody to look for a missing draw. The draw was READ moments ago,
-        // so a zero-row match means it moved or went away in between.
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Draw ' + drawId
-          + ' was no longer there when the release was applied, so NOTHING WAS RELEASED '
-          + 'and no release was recorded. Re-open the draw and check its current '
-          + 'retainage before trying again.' } });
+      // THIS ONE IS NOT A DELETE, IT IS MONEY: a missing row is a REFUSAL,
+      // never the caller's own trail reflected back as though it were the
+      // stored row -- same discipline as the disbursement RPC's own
+      // phantom-write fix and this branch's own pre-existing wroteRow()
+      // guard, now against the RPC's response shape instead of a raw PATCH.
+      if (!row || !row.data) {
+        console.error('bld_release_retainage_atomic returned no row for', drawId);
+        res.status(502).json({ error: { code: 'RETAINAGE_RELEASE_NOT_WRITTEN', message: 'The release was NOT recorded -- the server returned no stored row. Nothing was written; check the draw before retrying.' } });
         return;
       }
       res.status(200).json({ ok: true, provisioned: true, summary: after, release_log: trail });
@@ -8507,19 +8548,6 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This resident is not assigned to you' } });
         return;
       }
-      // Append-only integrity for the real event-log types: reject reusing
-      // an id already recorded as this entry_type, rather than silently
-      // overwriting a past administration/count record. medication_order
-      // is deliberately excluded -- it's a real mutable-in-place order
-      // (edit/discontinue), same upsert shape as alf_clients itself.
-      if (payload.entry_type !== 'medication_order') {
-        const existingR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
-        const existingRows = await appendOnlyExisting(res, existingR, 'alf_mar'); if (!existingRows) return;
-        if (Array.isArray(existingRows) && existingRows.length > 0) {
-          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });
-          return;
-        }
-      }
       const marData = Object.assign({}, payload);
       delete marData.id; delete marData.resident_id; delete marData.entry_type; delete marData.assigned_employee_id;
       // ── PHARMACY-ORDER REVIEW GATE (2026-08-22, Phase 3 item 1) ────────────────────────
@@ -8547,21 +8575,60 @@ module.exports = async (req, res) => {
           marData.reviewed_at = nowISO();
         }
       }
-      const r = await fetch(rest('alf_mar?on_conflict=license_hash,entry_id'), {
+      // ── ATOMIC CHECK-AND-INSERT (2026-09-21) ──────────────────────────
+      // Was a plain SELECT-for-409-then-POST-with-merge-duplicates, which had
+      // a real TOCTOU gap: two callers racing the SAME entry_id could each
+      // pass the SELECT before either POST landed, and the second POST's
+      // merge-duplicates resolution would silently overwrite the first row
+      // rather than hitting the 409 path (hover_log #314). Routes through
+      // public.alf_check_and_insert_mar_entry() instead -- same
+      // pg_advisory_xact_lock-scoped-to-the-row pattern as
+      // law_check_and_insert_disbursement, see sql/sairncare_mar_schema.sql
+      // for the function and its own reasoning.
+      const r = await fetch(rest('rpc/alf_check_and_insert_mar_entry'), {
         method: 'POST',
-        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        headers,
         body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairncare', entry_id: String(payload.id), resident_id: String(payload.resident_id),
-          assigned_employee_id: residentAssignee, entry_type: payload.entry_type, data: marData, updated_at: nowISO()
+          p_license_hash: licHash, p_entry_id: String(payload.id), p_resident_id: String(payload.resident_id),
+          p_assigned_employee_id: residentAssignee, p_entry_type: payload.entry_type, p_data: marData
         })
       });
-      if (r.status === 404 || r.status === 400) {
+      if (r.status === 404) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'MAR tracking is not set up yet — run sql/sairncare_mar_schema.sql in Supabase first.' } });
         return;
       }
-      const rows = await r.json();
-      if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, resident_id: payload.resident_id, entry_type: payload.entry_type, assigned_employee_id: residentAssignee || '' }, marData) });
+      if (r.status === 400) {
+        const bodyText = await r.text();
+        let bodyJson = null; try { bodyJson = JSON.parse(bodyText); } catch (e) {}
+        const msg = (bodyJson && bodyJson.message) || bodyText || '';
+        if (/relation .* does not exist|function .* does not exist/i.test(msg)) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'MAR tracking is not set up yet — run sql/sairncare_mar_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (/ALREADY_RECORDED/.test(msg)) {
+          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });
+          return;
+        }
+        if (/MAR_ENTRY_NOT_WRITTEN/.test(msg)) {
+          res.status(502).json({ error: { code: 'MAR_ENTRY_NOT_WRITTEN', message: 'The entry was NOT recorded. Nothing was written -- check the MAR before retrying.' } });
+          return;
+        }
+        console.error('alf_check_and_insert_mar_entry error (status 400):', msg);
+        res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
+        return;
+      }
+      if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
+      const rpcResult = await r.json();
+      const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
+      // A missing row is a REFUSAL, never the caller's payload reflected back
+      // as though it were the stored row -- same discipline as the
+      // disbursement RPC's own phantom-write fix.
+      if (!row || !row.data) {
+        console.error('alf_check_and_insert_mar_entry returned no row for', String(payload.id));
+        res.status(502).json({ error: { code: 'MAR_ENTRY_NOT_WRITTEN', message: 'The entry was NOT recorded -- the server returned no stored row. Nothing was written; check the MAR before retrying.' } });
+        return;
+      }
+      res.status(200).json({ ok: true, data: Object.assign({ id: row.entry_id, resident_id: row.resident_id, entry_type: row.entry_type, assigned_employee_id: row.assigned_employee_id || '' }, row.data) });
       return;
     }
 

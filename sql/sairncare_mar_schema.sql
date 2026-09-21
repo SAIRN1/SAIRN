@@ -83,5 +83,105 @@ create index if not exists idx_alfmar_assignee on public.alf_mar(license_hash, a
 grant select, insert, update on public.alf_mar to service_role;
 revoke all on public.alf_mar from anon, authenticated;
 
+-- ── ATOMIC CHECK-AND-INSERT (2026-09-21) ───────────────────────────────────
+-- Closes a real TOCTOU race in api/sd-data.js's alf_mar write branch
+-- (hover_log #314): the handler SELECTed for an existing entry_id, returned
+-- 409 ALREADY_RECORDED if found, and otherwise POSTed with
+-- on_conflict=license_hash,entry_id and Prefer: resolution=merge-duplicates.
+-- Two callers racing the SAME entry_id could both pass the SELECT before
+-- either INSERT landed; the second INSERT's merge-duplicates resolution then
+-- silently OVERWRITES the first row rather than hitting the 409 path --
+-- exactly the "never silently overwritten" guarantee this table's append-only
+-- entry types (administration, count, reconciliation, assessment_refusal)
+-- exist to hold. Modelled directly on
+-- public.law_check_and_insert_disbursement() (sql/sairnlaw_trusttx_
+-- functions.sql:104-254), the platform's own proven pattern for exactly this
+-- shape: pg_advisory_xact_lock scoped to the row's real unique key, held
+-- across the check-then-write inside one transaction, with the same
+-- READ-COMMITTED precondition asserted rather than assumed -- see that
+-- function's own header comment for the full reasoning on why the isolation
+-- level matters even though the lock is held correctly either way.
+create or replace function public.alf_check_and_insert_mar_entry(
+  p_license_hash text, p_entry_id text, p_resident_id text,
+  p_assigned_employee_id text, p_entry_type text, p_data jsonb
+) returns public.alf_mar
+language plpgsql
+as $$
+declare
+  v_row public.alf_mar;
+  v_iso text;
+begin
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'alf_check_and_insert_mar_entry requires READ COMMITTED; this '
+      'transaction is %. The advisory lock serialises acquisition, not the '
+      'snapshot, so under % a waiting caller''s existence check can still see '
+      'a pre-lock snapshot and reach the insert believing no row exists, '
+      'with the lock held correctly the whole time.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
+  end if;
+
+  -- Scoped to (license_hash, entry_id) -- the exact pair the real unique
+  -- constraint covers (unique (license_hash, entry_id), above) -- so two
+  -- callers racing the SAME entry_id serialise here and two callers on
+  -- different entry_ids never contend with each other.
+  perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_entry_id));
+
+  if p_entry_type <> 'medication_order' then
+    -- APPEND-ONLY TYPES: administration, count, reconciliation,
+    -- assessment_refusal. Genuinely atomic now that the lock is held across
+    -- both statements -- a second caller for the same entry_id blocks on the
+    -- lock, and by the time it acquires it the first caller's row is already
+    -- committed and visible (READ COMMITTED, asserted above), so this INSERT
+    -- correctly finds the conflict and refuses rather than merging over it.
+    insert into public.alf_mar
+      (license_hash, app_id, entry_id, resident_id, assigned_employee_id, entry_type, data, updated_at)
+    values
+      (p_license_hash, 'sairncare', p_entry_id, p_resident_id, p_assigned_employee_id, p_entry_type, p_data, now())
+    on conflict (license_hash, entry_id) do nothing
+    returning * into v_row;
+
+    if v_row.id is null then
+      raise exception
+        'ALREADY_RECORDED: entry % has already been recorded and cannot be overwritten',
+        p_entry_id
+        using errcode = 'P0001';
+    end if;
+  else
+    -- medication_order is the one mutable-in-place type (edit/discontinue an
+    -- order) -- same upsert shape alf_clients itself uses, safe to merge
+    -- because it is not an append-only event log.
+    insert into public.alf_mar
+      (license_hash, app_id, entry_id, resident_id, assigned_employee_id, entry_type, data, updated_at)
+    values
+      (p_license_hash, 'sairncare', p_entry_id, p_resident_id, p_assigned_employee_id, p_entry_type, p_data, now())
+    on conflict (license_hash, entry_id) do update set
+      resident_id = excluded.resident_id,
+      assigned_employee_id = excluded.assigned_employee_id,
+      data = excluded.data,
+      updated_at = excluded.updated_at
+    returning * into v_row;
+  end if;
+
+  -- NO PATH ABOVE CAN RETURN NULL. Asserted rather than assumed, same
+  -- discipline as law_check_and_insert_disbursement's own closing guard: if a
+  -- future edit reintroduces a null path, this raises instead of handing the
+  -- caller a success it did not earn.
+  if v_row.id is null then
+    raise exception
+      'MAR_ENTRY_NOT_WRITTEN: no alf_mar row was produced for % -- nothing was recorded',
+      p_entry_id
+      using errcode = 'P0001';
+  end if;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.alf_check_and_insert_mar_entry from public;
+grant execute on function public.alf_check_and_insert_mar_entry to service_role;
+
 -- Verify after running (expect 0 rows, no error):
 --   select count(*) from alf_mar;

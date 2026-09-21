@@ -130,6 +130,30 @@ const FETCH = function (url, opts) {
   opts = opts || {};
   const u = String(url), method = opts.method || 'GET';
   requests.push({ url: u, method: method, body: opts.body ? JSON.parse(opts.body) : null });
+
+  // bld_release_retainage_atomic RPC (2026-09-21 fix for hover_log #315).
+  // Simulates the real Postgres function's optimistic-CAS behaviour: refuse
+  // with RETAINAGE_RELEASE_CONFLICT if the row's current retainage_released
+  // no longer matches what the caller read before computing its write (the
+  // exact race this fix closes), refuse with NO_SUCH_DRAW if the row is
+  // gone, else replace `data` wholesale -- same effect as the real
+  // `set data = p_next_data` the function performs under its lock.
+  if (u.indexOf('rpc/bld_release_retainage_atomic') !== -1) {
+    if (!provisioned) return jsonRes(400, { message: 'relation "public.bld_draws" does not exist' });
+    const body = JSON.parse(opts.body);
+    const r = row(body.p_draw_id, body.p_license_hash);
+    if (!r) return jsonRes(400, { message: 'NO_SUCH_DRAW: ' + body.p_draw_id + ' is not on file' });
+    const current = Number(r.data && r.data.retainage_released) || 0;
+    const expected = Number(body.p_expected_prior_released) || 0;
+    if (current !== expected) {
+      return jsonRes(400, { message: 'RETAINAGE_RELEASE_CONFLICT: draw ' + body.p_draw_id
+        + ' was updated by another release between read and write (expected prior '
+        + expected + ', found ' + current + ') -- re-fetch and retry' });
+    }
+    r.data = body.p_next_data;
+    return jsonRes(200, [{ id: 'row-' + r.draw_id, license_hash: r.license_hash, draw_id: r.draw_id, data: r.data }]);
+  }
+
   if (u.indexOf('bld_draws') === -1) return jsonRes(404, { message: 'unexpected table: ' + u });
   // An unprovisioned table is what PostgREST actually answers with.
   if (!provisioned) return jsonRes(404, { message: 'relation "public.bld_draws" does not exist' });
@@ -456,10 +480,13 @@ async function main() {
     await release({ draw_id: 'DR-01', amount: 4500, released_at: '2026-09-10' });
     assert.strictEqual(row('DR-02').data.retainage_released, undefined);
     assert.strictEqual(row('DR-03').data.retainage_released, undefined);
-    const patches = requests.filter((r) => r.method === 'PATCH');
-    assert.strictEqual(patches.length, 1, 'got ' + patches.length + ' PATCHes for one release');
-    assert.match(patches[0].url, /draw_id=eq\.DR-01/, 'the PATCH is not scoped to one draw');
-    assert.match(patches[0].url, /license_hash=eq\./, 'the PATCH is not scoped to one tenant');
+    // A raw PATCH became a single scoped RPC call (2026-09-21, hover_log
+    // #315 fix) -- the scoping now lives in the POST body's p_draw_id /
+    // p_license_hash rather than a query string.
+    const rpcCalls = requests.filter((r) => r.url.indexOf('rpc/bld_release_retainage_atomic') !== -1);
+    assert.strictEqual(rpcCalls.length, 1, 'got ' + rpcCalls.length + ' retainage-release RPC calls for one release');
+    assert.strictEqual(rpcCalls[0].body.p_draw_id, 'DR-01', 'the RPC call is not scoped to one draw');
+    assert.ok(rpcCalls[0].body.p_license_hash, 'the RPC call is not scoped to one tenant');
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

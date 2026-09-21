@@ -32,8 +32,14 @@ it is to break the shared file and run everything that claims to cover it.
   * APPEND-ONLY INTEGRITY. A re-used administration id must be a 409, never a
     silent overwrite: overwriting says a dose was refused when the record said
     given. `api/alf-append-only-fail-closed.test.js` exists because this exact
-    check once failed OPEN, which is why the arms below break it in both the
-    "stop checking" and the "check but mis-compare" directions.
+    check once failed OPEN. Since the 2026-09-21 TOCTOU fix the refusal itself
+    is raised inside `public.alf_check_and_insert_mar_entry()` rather than in
+    api/sd-data.js, so what this file can still break is the two ends the
+    CALLER owns -- which entry_type it labels the row with (that is what picks
+    the RPC's append-only branch over its upsert-in-place branch) and whether
+    it reports the RPC's refusal as a refusal. Arms 8 and 9 break one each.
+    The SQL half is not reachable from these node suites and is not claimed
+    here.
 
 ── EVERY ARM IS A DEFECT THIS PLATFORM REALLY HAD ──────────────────────────
 Role-table widening (SAIRNsenior, api/rf-auth.js header), a trusted
@@ -206,23 +212,36 @@ try:
         [(DATA, '      const residentAssignee = residentRow.assigned_employee_id || null;',
           '      const residentAssignee = payload.assigned_employee_id || residentRow.assigned_employee_id || null;')])
 
-    # ── 8. APPEND-ONLY STOPS CHECKING ──────────────────────────────────────
-    # The re-used-id check is skipped entirely: a second write to the same
-    # administration id overwrites the first. "Given" becomes "refused" and
-    # nothing records that it ever said otherwise.
-    arm('the append-only check being skipped is caught', MAR,
-        [(DATA, "      if (payload.entry_type !== 'medication_order') {",
-          '      if (false) {')])
+    # ── 8. AN APPEND-ONLY ENTRY IS ROUTED INTO THE MUTABLE BRANCH ──────────
+    # Until 2026-09-21 this arm broke a SELECT-then-409 that lived here, and
+    # its anchor (`if (payload.entry_type !== 'medication_order') {`) went to
+    # zero matches when the TOCTOU fix moved the refusal into the RPC. The
+    # check did not disappear -- the CALLER-side lever did. The RPC picks its
+    # branch from the entry_type this handler sends: everything except
+    # medication_order is insert-or-raise, medication_order alone is
+    # upsert-in-place (sql/sairncare_mar_schema.sql line ~132). So labelling
+    # an administration as an order routes an append-only event into the
+    # mutable branch and the second write to the same id overwrites the first.
+    # "Given" becomes "refused" and nothing records that it ever said
+    # otherwise -- the same end state the old anchor produced. Checked rather
+    # than assumed: this mutation turns the append-only assertion red (409
+    # became 200), and also the facility-wide entry_type read, because the
+    # label is what was damaged. Arm 9 trips the append-only assertion alone.
+    arm('an append-only entry routed into the mutable-in-place branch is caught', MAR,
+        [(DATA, 'p_assigned_employee_id: residentAssignee, p_entry_type: payload.entry_type, p_data: marData',
+          "p_assigned_employee_id: residentAssignee, p_entry_type: 'medication_order', p_data: marData")])
 
-    # ── 9. ...OR CHECKS AND MIS-COMPARES ───────────────────────────────────
-    # A different failure from arm 8 and the more realistic one: the query
-    # still runs, the rows still come back, and the comparison is off by one.
-    # This is the shape alf-append-only-fail-closed.test.js exists for.
-    arm('an off-by-one append-only comparison is caught', MAR,
-        [(DATA, '        if (Array.isArray(existingRows) && existingRows.length > 0) {\n'
+    # ── 9. ...OR THE REFUSAL COMES BACK AND IS REPORTED AS SUCCESS ─────────
+    # A different failure from arm 8 and the one alf-append-only-fail-closed
+    # .test.js exists for by name: the RPC really does raise ALREADY_RECORDED,
+    # the 400 really does come back, and the handler turns it into a 200. The
+    # row was never written and the caller is told that it was, which is worse
+    # than the overwrite -- there is no second record to reconcile against.
+    arm('an ALREADY_RECORDED refusal reported as success is caught', MAR,
+        [(DATA, '        if (/ALREADY_RECORDED/.test(msg)) {\n'
                 "          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });",
-          '        if (Array.isArray(existingRows) && existingRows.length > 1) {\n'
-          "          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });")])
+          '        if (/ALREADY_RECORDED/.test(msg)) {\n'
+          "          res.status(200).json({ ok: true, data: Object.assign({ id: String(payload.id) }, marData) });")])
 
     # ── 10. THE INCIDENT LOG OPENS TO THE FLOOR ────────────────────────────
     # Deliberately asymmetric: anyone may FILE, only management/nursing/

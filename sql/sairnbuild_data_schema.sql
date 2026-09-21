@@ -102,6 +102,107 @@ create index if not exists idx_bld_draws_license on public.bld_draws(license_has
 alter table public.bld_draws enable row level security;
 revoke all on public.bld_draws from service_role;
 grant select, insert, update on public.bld_draws to service_role;
+
+-- ── ATOMIC RETAINAGE-RELEASE WRITE (2026-09-21) ────────────────────────────
+-- Closes a real lost-update race in api/sd-data.js's release_retainage branch
+-- (hover_log #315): the handler read bld_draws' jsonb `data`, computed a new
+-- retainage_released figure and appended one entry to
+-- retainage_release_log CLIENT-SIDE, then PATCHed the whole `data` blob back
+-- with only license_hash+draw_id in the WHERE clause -- no version/CAS
+-- predicate. Two concurrent release_retainage calls on the SAME draw_id each
+-- read the same starting `data`, and whichever PATCH lands second silently
+-- WINS, overwriting the first PATCH's write -- including its audit-trail
+-- entry -- with no error.
+--
+-- NOT modelled on law_check_and_insert_disbursement()'s exact shape: that
+-- function embeds its own business rule (the balance check) IN the SQL. The
+-- release-legality rule here is bwip.summariseDraw() in
+-- api/_lib/wip-accounting.js, real JS logic the platform's own convergence
+-- doctrine says must not be duplicated into a second language -- two
+-- independently-maintained copies of the same rule are free to drift, the
+-- exact class of defect item 92/94's own material warns against.
+--
+-- So this keeps the SAME underlying mechanism (pg_advisory_xact_lock scoped
+-- to the row, held across a check-then-write inside one transaction, same
+-- READ-COMMITTED precondition) but the "check" is a plain optimistic-CAS
+-- comparison rather than embedded business logic: the caller reads the
+-- current retainage_released, runs bwip.summariseDraw() in JS exactly as
+-- before, and passes what it read back in as p_expected_prior_released. If
+-- another release landed between the caller's read and this call, the
+-- comparison fails and the caller is told to re-fetch and retry rather than
+-- overwriting blind.
+create or replace function public.bld_release_retainage_atomic(
+  p_license_hash text, p_draw_id text, p_expected_prior_released numeric, p_next_data jsonb
+) returns public.bld_draws
+language plpgsql
+as $$
+declare
+  v_row public.bld_draws;
+  v_current numeric;
+  v_iso text;
+begin
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'bld_release_retainage_atomic requires READ COMMITTED; this '
+      'transaction is %. The advisory lock serialises acquisition, not the '
+      'snapshot, so under % a waiting caller''s CAS re-read can still see a '
+      'pre-lock value and pass a comparison it should have failed, with the '
+      'lock held correctly the whole time.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
+  end if;
+
+  -- Scoped to (license_hash, draw_id) -- the exact pair the real unique
+  -- constraint covers (unique (license_hash, draw_id), above) -- so two
+  -- callers racing the SAME draw serialise here and different draws never
+  -- contend with each other.
+  perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_draw_id));
+
+  -- Re-read the LATEST committed value under the lock (READ COMMITTED,
+  -- asserted above, is what makes this a fresh read rather than the waiting
+  -- caller's own stale transaction snapshot).
+  select (data->>'retainage_released')::numeric into v_current
+    from public.bld_draws
+    where license_hash = p_license_hash and draw_id = p_draw_id;
+
+  if not found then
+    raise exception
+      'NO_SUCH_DRAW: % is not on file', p_draw_id
+      using errcode = 'P0001';
+  end if;
+
+  if coalesce(v_current, 0) <> coalesce(p_expected_prior_released, 0) then
+    raise exception
+      'RETAINAGE_RELEASE_CONFLICT: draw % was updated by another release '
+      'between read and write (expected prior %, found %) -- re-fetch and retry',
+      p_draw_id, p_expected_prior_released, v_current
+      using errcode = 'P0001';
+  end if;
+
+  update public.bld_draws
+    set data = p_next_data, updated_at = now()
+    where license_hash = p_license_hash and draw_id = p_draw_id
+  returning * into v_row;
+
+  -- NO PATH ABOVE CAN RETURN NULL. Asserted rather than assumed, same
+  -- discipline as law_check_and_insert_disbursement's own closing guard: the
+  -- row was just confirmed to exist and matched under the SAME held lock, so
+  -- a null here means a future edit broke that invariant, not a real race.
+  if v_row.id is null then
+    raise exception
+      'RETAINAGE_RELEASE_NOT_WRITTEN: no bld_draws row was produced for % -- nothing was recorded',
+      p_draw_id
+      using errcode = 'P0001';
+  end if;
+
+  return v_row;
+end;
+$$;
+
+revoke all on function public.bld_release_retainage_atomic from public;
+grant execute on function public.bld_release_retainage_atomic to service_role;
+
 -- Legal instruments. A lost waiver is a real financial exposure.
 create table if not exists public.bld_lien_waivers (
   id uuid primary key default gen_random_uuid(),

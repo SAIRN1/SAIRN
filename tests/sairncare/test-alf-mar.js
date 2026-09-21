@@ -52,21 +52,29 @@ global.fetch = async (url, opts) => {
     return { ok: true, status: 200, json: async () => MAR_ROWS.map((r) => ({ entry_id: r.entry_id, resident_id: r.resident_id, assigned_employee_id: r.assigned_employee_id, entry_type: r.entry_type, data: r.data })) };
   }
 
-  // alf_mar existing-entry-id check (append-only integrity)
-  const existingMatch = url.match(/alf_mar\?license_hash=eq\.[^&]+&entry_id=eq\.([^&]+)&select=id/);
-  if (method === 'GET' && existingMatch) {
-    const id = decodeURIComponent(existingMatch[1]);
-    const found = MAR_ROWS.find((r) => r.entry_id === id);
-    return { ok: true, status: 200, json: async () => (found ? [{ id: 'x' }] : []) };
-  }
-
-  // alf_mar write
-  if (method === 'POST' && /alf_mar\?on_conflict=/.test(url)) {
+  // alf_mar atomic check-and-insert RPC (2026-09-21 fix for hover_log #314).
+  // Simulates public.alf_check_and_insert_mar_entry()'s real behaviour: an
+  // append-only entry_type reusing an existing entry_id raises
+  // ALREADY_RECORDED (surfaced by PostgREST as a 400 carrying that string in
+  // the message, same as every other raised plpgsql exception on this
+  // platform -- see how the disbursement RPC's 400 body is parsed);
+  // medication_order upserts in place.
+  if (method === 'POST' && /\/rpc\/alf_check_and_insert_mar_entry$/.test(url)) {
     const body = JSON.parse(opts.body);
-    const idx = MAR_ROWS.findIndex((r) => r.entry_id === body.entry_id);
-    const row = { entry_id: body.entry_id, resident_id: body.resident_id, assigned_employee_id: body.assigned_employee_id, entry_type: body.entry_type, data: body.data };
+    const entryId = body.p_entry_id;
+    const idx = MAR_ROWS.findIndex((r) => r.entry_id === entryId);
+    if (idx !== -1 && body.p_entry_type !== 'medication_order') {
+      return {
+        ok: false, status: 400,
+        text: async () => JSON.stringify({ message: 'ALREADY_RECORDED: entry ' + entryId + ' has already been recorded and cannot be overwritten' })
+      };
+    }
+    const row = {
+      id: 'mar-row-' + entryId, entry_id: entryId, resident_id: body.p_resident_id,
+      assigned_employee_id: body.p_assigned_employee_id, entry_type: body.p_entry_type, data: body.p_data
+    };
     if (idx === -1) MAR_ROWS.push(row); else MAR_ROWS[idx] = row;
-    return { ok: true, status: 200, json: async () => [body] };
+    return { ok: true, status: 200, json: async () => [row] };
   }
 
   throw new Error('Unmocked fetch: ' + method + ' ' + url);

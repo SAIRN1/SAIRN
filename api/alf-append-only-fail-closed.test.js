@@ -23,10 +23,10 @@
 // Checked against the six write sites and four schema files rather than
 // assumed from the shared shape:
 //
-//   * alf_mar, alf_incidents and alf_op_audits write with
-//     `on_conflict=...merge-duplicates`. On a failed check the prior record is
-//     SILENTLY OVERWRITTEN. For those three, the append-only guarantee is
-//     enforced by this application check ALONE.
+//   * alf_incidents and alf_op_audits write with `on_conflict=...
+//     merge-duplicates`. On a failed check the prior record is SILENTLY
+//     OVERWRITTEN. For those two, the append-only guarantee is enforced by
+//     this application check ALONE.
 //
 //   * alf_signals, alf_claim_routes and alf_staff_credentials use a plain
 //     INSERT, and all six tables carry `unique (license_hash, entry_id)`. The
@@ -35,7 +35,17 @@
 //     corrupting.
 //
 // That distinction is asserted separately below. Flattening it would overstate
-// three of the six and understate the other three.
+// the remaining two and understate the other three.
+//
+// alf_mar WAS in the first group and is no longer in either (2026-09-21,
+// hover_log #314). appendOnlyExisting + merge-duplicates was itself a real
+// TOCTOU on this table -- two callers could each pass the SELECT before
+// either POST landed, and the second POST's merge-duplicates resolution
+// would silently overwrite the first row. It now routes through
+// public.alf_check_and_insert_mar_entry(), a pg_advisory_xact_lock-scoped
+// Postgres function (same pattern as law_check_and_insert_disbursement) that
+// holds the check-then-write atomically inside one transaction -- strictly
+// stronger than either group below, asserted in its own dedicated test.
 
 'use strict';
 const assert = require('assert');
@@ -56,7 +66,20 @@ const CODE = SRC.split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('
 
 const TABLES = ['alf_mar', 'alf_incidents', 'alf_signals',
                 'alf_claim_routes', 'alf_staff_credentials', 'alf_op_audits'];
-const OVERWRITES = ['alf_mar', 'alf_incidents', 'alf_op_audits'];
+const OVERWRITES = ['alf_incidents', 'alf_op_audits'];
+// alf_mar moved OFF the appendOnlyExisting + merge-duplicates pattern
+// entirely on 2026-09-21 (hover_log #314): that pattern was a genuine TOCTOU
+// -- two callers could each pass the SELECT before either POST landed, and
+// the second POST's merge-duplicates resolution would silently overwrite the
+// first row rather than hitting the 409 path this suite was written to
+// guard. It now routes through public.alf_check_and_insert_mar_entry(), a
+// pg_advisory_xact_lock-scoped Postgres function (same pattern as
+// law_check_and_insert_disbursement) that holds the check-then-write
+// atomically inside one transaction -- a STRICTER guarantee than the
+// application-level check this file otherwise tests, not a weaker one, so it
+// is asserted separately below rather than folded into either list.
+const APPEND_ONLY_EXISTING_TABLES = ['alf_incidents', 'alf_signals',
+                'alf_claim_routes', 'alf_staff_credentials', 'alf_op_audits'];
 
 function main() {
   console.log('SAIRNcare append-only checks: a check that could not run is not a clean bill');
@@ -67,13 +90,22 @@ function main() {
       'still ' + hits.length + ' append-only check(s) treating a failed read as "no existing record"');
   });
 
-  test('all six sites go through the checked reader', () => {
-    TABLES.forEach((t) => {
+  test('the remaining five sites go through the checked reader', () => {
+    APPEND_ONLY_EXISTING_TABLES.forEach((t) => {
       assert.ok(CODE.includes("appendOnlyExisting(res, existingR, '" + t + "')"),
         t + ' does not use appendOnlyExisting');
     });
     const uses = (CODE.match(/await appendOnlyExisting\(/g) || []).length;
-    assert.strictEqual(uses, 6, 'expected exactly 6 checked reads, found ' + uses);
+    assert.strictEqual(uses, 5, 'expected exactly 5 checked reads (alf_mar moved to the atomic RPC), found ' + uses);
+  });
+
+  test('alf_mar routes through the atomic RPC instead of appendOnlyExisting + merge-duplicates', () => {
+    assert.ok(!CODE.includes("appendOnlyExisting(res, existingR, 'alf_mar')"),
+      'alf_mar still uses appendOnlyExisting -- the TOCTOU-vulnerable pattern was supposed to be replaced, not kept alongside the RPC');
+    assert.ok(CODE.includes("rest('rpc/alf_check_and_insert_mar_entry')"),
+      'alf_mar write does not call the atomic RPC');
+    assert.ok(!CODE.includes("rest('alf_mar?on_conflict=license_hash,entry_id')"),
+      'alf_mar still has the old direct upsert alongside the RPC -- the TOCTOU window is still open if both paths exist');
   });
 
   test('every call site returns immediately when the check could not run', () => {
@@ -82,7 +114,7 @@ function main() {
     // throw AFTER a 502 was already sent. The `if (!existingRows) return;` is
     // what makes the refusal actually refuse.
     const sites = CODE.match(/await appendOnlyExisting\(res, existingR, '[a-z_]+'\);[^\n]*/g) || [];
-    assert.strictEqual(sites.length, 6);
+    assert.strictEqual(sites.length, 5, 'expected 5 (alf_mar moved to the atomic RPC), found ' + sites.length);
     sites.forEach((line) => {
       assert.match(line, /if \(!existingRows\) return;/,
         'a call site does not bail out: ' + line.trim());
@@ -162,7 +194,7 @@ function main() {
   });
 
   // ── the severity split, asserted rather than flattened ───────────────────
-  test('the three OVERWRITING tables really do write with merge-duplicates', () => {
+  test('the two remaining OVERWRITING tables really do write with merge-duplicates', () => {
     // This is what makes those three integrity failures rather than bad UX.
     // If a future change moved any of them to a plain insert, the comment
     // above would become wrong and this catches it.

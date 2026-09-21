@@ -38,12 +38,33 @@ SUITE = os.path.join('api', 'alf-append-only-fail-closed.test.js')
 API = os.path.join('api', 'sd-data.js')
 
 MUTATIONS = [
-    ("1. ONE of the six sites goes back to fail-open -- the smallest possible "
-     "diff, and it silently overwrites a past medication administration",
+    # ── RE-AIMED 2026-09-21, AND THE REASON IS THE WHOLE POINT ────────────
+    # This anchored on alf_mar's appendOnlyExisting call, and alf_mar no longer
+    # has one: it moved to the atomic RPC because the read-then-write it used
+    # was a TOCTOU window, not merely a fail-open one. The harness reported
+    # ANCHOR-0 and refused, which is the right outcome -- a mutation aimed at
+    # code that no longer exists proves nothing and must not be scored.
+    #
+    # RE-AIMED RATHER THAN DELETED: the requirement is "ONE of the sites goes
+    # back to fail-open", and five sites still carry it. alf_claim_routes is
+    # the one chosen because mutations 2 and 3 already own alf_incidents and
+    # alf_op_audits, so this keeps three distinct sites under mutation.
+    ("1. ONE of the five remaining sites goes back to fail-open -- the "
+     "smallest possible diff, and it silently overwrites a recorded billing "
+     "determination",
      API,
-     "        const existingRows = await appendOnlyExisting(res, existingR, "
-     "'alf_mar'); if (!existingRows) return;",
-     "        const existingRows = existingR.ok ? await existingR.json() : [];"),
+     "      const existingRows = await appendOnlyExisting(res, existingR, "
+     "'alf_claim_routes'); if (!existingRows) return;",
+     "      const existingRows = existingR.ok ? await existingR.json() : [];"),
+
+    # ── AND THE NEW PROPERTY THAT REPLACED IT, WHICH NEEDS ITS OWN ARM ────
+    ("1b. alf_mar goes BACK to the read-then-write it was moved off -- the "
+     "TOCTOU window reopens, the suite's five-site count becomes six, and a "
+     "medication administration can be overwritten by two writers racing",
+     API,
+     "      const r = await fetch(rest('rpc/alf_check_and_insert_mar_entry'), {",
+     "      const existingRows = await appendOnlyExisting(res, existingR, 'alf_mar'); if (!existingRows) return;\n"
+     "      const r = await fetch(rest('rpc/alf_check_and_insert_mar_entry'), {"),
 
     ("2. an incident report's site goes back to fail-open",
      API,
@@ -114,4 +135,14 @@ if __name__ == '__main__':
     sys.exit(run_probe(
         SUITE, MUTATIONS,
         title='SAIRNcare append-only -- the suite must refuse a fail-open '
-              'integrity check on four Tier A tables'))
+              'integrity check on four Tier A tables',
+        # ── api/sd-data.js IS STAGED SINCE 2026-09-21 ───────────────────────
+        # The worktree is created at HEAD and the SUITE is always copied in
+        # from this clone, so an uncommitted change to the SUBJECT left the
+        # two describing different code. It went red the moment alf_mar moved
+        # to the atomic RPC: the staged suite expected five appendOnlyExisting
+        # call sites and the HEAD copy of api/sd-data.js still had six. The
+        # baseline arm said so plainly rather than letting a mutation be
+        # scored against a subject nobody had changed, which is the whole
+        # reason that arm exists.
+        stage=(API,)))
