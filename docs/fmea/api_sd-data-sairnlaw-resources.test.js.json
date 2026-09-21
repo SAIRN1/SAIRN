@@ -1,0 +1,56 @@
+{
+ "app_matched": "platform",
+ "considered": {
+  "defect_records": 199,
+  "detectors_fired": [
+   "1.3"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 2
+ },
+ "drafted_on": "2026-09-21",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0c26bcd13eda",
+   "date": "2026-09-16",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "api/sd-data-sairnlaw-resources.test.js reported law_trust_reconcile as \"registered with no handler\" -- a FALSE FINDING about a resource with a real branch -- because its BESPOKE skip-list was a hardcoded four and a fifth bespoke branch shipped; and its PHASE 1 arm, which carries its own instruction to be INVERTED when a resource is gated, was not inverted when law_trusttx was, so the suite ran 18/20 on origin/main with both red arms being the suite's own fault",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "0268ae985a27",
+   "date": "2026-09-21",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "Four representation-PATCH sites in api/sd-data.js reported writes that did not happen. Under Prefer: return=representation PostgREST answers a PATCH matching one row and one matching ZERO identically -- 200, with [row] or []. :2634 sd_quote_requests read the body into `wrows` and never consulted it; :7500 rf_invoices issue answered ok:true with invoice_number, invoice_seq and issue_date echoed AFTER the sequential allocator had already spent that number, leaving a gap in a billing series attached to no invoice; :7536 add_payment reported a payment the invoice did not take; :8064 rf_schedule set_status answered 200 with the status the CALLER sent. All four were invisible to the guard added three days earlier for exactly this shape, because its first condition matched the spelling of the read rather than the defect. Fixed to the wroteRow() vocabulary with 409 and a named race code, matching the slab reservation at :2181 which had already reached that conclusion in the same file.",
+   "rules": [
+    "1.1"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  }
+ ],
+ "target": "api/sd-data-sairnlaw-resources.test.js"
+}

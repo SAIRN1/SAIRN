@@ -9055,6 +9055,62 @@
       "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
+      "commit": "0268ae985a27",
+      "date": "2026-09-21",
+      "subject": "fix(sd-data): four more representation-PATCHes reported writes that did not happen -- and the guard could not see any of them",
+      "files": [
+        "api/sd-data-sairnlaw-resources.test.js",
+        "api/sd-data-unconfirmed-write-sweep.test.js",
+        "api/sd-data.js",
+        "tests/run_unconfirmed_write_sweep_sabotage_probe.py"
+      ],
+      "lines_added": 373,
+      "lines_removed": 52,
+      "app": "platform",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "Four representation-PATCH sites in api/sd-data.js reported writes that did not happen. Under Prefer: return=representation PostgREST answers a PATCH matching one row and one matching ZERO identically -- 200, with [row] or []. :2634 sd_quote_requests read the body into `wrows` and never consulted it; :7500 rf_invoices issue answered ok:true with invoice_number, invoice_seq and issue_date echoed AFTER the sequential allocator had already spent that number, leaving a gap in a billing series attached to no invoice; :7536 add_payment reported a payment the invoice did not take; :8064 rf_schedule set_status answered 200 with the status the CALLER sent. All four were invisible to the guard added three days earlier for exactly this shape, because its first condition matched the spelling of the read rather than the defect. Fixed to the wroteRow() vocabulary with 409 and a named race code, matching the slab reservation at :2181 which had already reached that conclusion in the same file.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "the four predate the 2026-09-18 sweep and were not introduced by a single identifiable commit; each was written with its own branch"
+      },
+      "citation_note": "1.1 fits and the fit is sharper than usual: the guard did not stop checking over time, it never checked this half -- its predicate was derived from four instances' authoring style rather than from the property, so it was blind from the commit that introduced it. Cited with a note rather than clean because 1.1's examples are all checks that decayed.",
+      "contributing_factors": [
+        {
+          "factor": "four branches used `saved ? X : fallback` on a representation-PATCH result, so a zero-row match fell through to the success response -- and one of them made the fallback the value the CALLER sent, which is indistinguishable from a write that landed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "all four route through the existing wroteRow()/refuseUnconfirmedWrite() vocabulary and answer 409 with a named race code on MISSED"
+        },
+        {
+          "factor": "the guard built three days earlier to stop a fifth copy keyed its first condition on `.json().catch(` -- how the first four happened to be WRITTEN rather than what made them wrong -- so it reported the file clean while four live instances sat in it",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the predicate now walks the PATCH line and tests for a row-count check of any spelling; the POST exclusion anchors on the same fetch() options block instead of scanning twelve lines backwards"
+        },
+        {
+          "factor": "the guard's own non-vacuity arm was a RETYPED COPY of its predicate, so widening the predicate left the arm testing logic that no longer existed -- passing, and proving nothing about the code it guards",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the predicate takes its source as an argument and the arm drives the REAL one against five fixtures in both directions, including the bare-json shape that had been missed"
+        },
+        {
+          "factor": "the original sweep's '9 of 9 sabotages caught' were run ad hoc and never committed, so nothing in the repository could tell anyone whether either generation of fixes was refusable",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/run_unconfirmed_write_sweep_sabotage_probe.py, 10 mutations, covering both generations and both ways of narrowing the predicate back"
+        }
+      ],
+      "recurrence_open": "the predicate still only runs over api/sd-data.js -- 159 handler files were measured with it and returned zero, but a handler added tomorrow under api/ is not watched. And 60 PATCH sites exist across the handlers WITHOUT a representation preference; those cannot distinguish matched-zero either, and the predicate excludes them by construction."
+    },
+    {
       "commit": "0dd84d944306",
       "date": "2026-09-21",
       "subject": "fix(sd-data): the json-catch-null sweep finishes -- four more sites, one serving seven Tier A resources and one moving money",
