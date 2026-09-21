@@ -9112,7 +9112,7 @@
       "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
     },
     {
-      "commit": "374b91985048",
+      "commit": "b09674f65e9d",
       "date": "2026-09-21",
       "subject": "fix(sairnscape): a call nobody answered wore an earlier refusal, and the retry button outlived the design it belonged to",
       "files": [
@@ -9169,7 +9169,7 @@
       "recurrence_open": "Nothing checks that every EXIT of a function which records per-resource state actually records it. scpData has four exits and three were careful; the fourth was found by a human reading it. The same shape exists in sdnData, grdData and dntData next door and none has been audited for it."
     },
     {
-      "commit": "374b91985048",
+      "commit": "b09674f65e9d",
       "date": "2026-09-21",
       "subject": "fix(sairnscape): a call nobody answered wore an earlier refusal, and the retry button outlived the design it belonged to",
       "files": [
