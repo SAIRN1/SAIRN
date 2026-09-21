@@ -9630,6 +9630,117 @@
       "recurrence_open": "The sweep for the same shape across the OTHER resource maps in api/sd-data.js has not been run -- three instances found one at a time is not evidence that the fourth does not exist. And the gate is verified against the handler in-process; a deployment where verifySessionToken's secret is unset in the environment would be a different failure this record does not cover."
     },
     {
+      "commit": "807efcdb0ce3",
+      "date": "2026-09-21",
+      "subject": "fix(register): the hover auditor had no detection-method value, so its findings were being HELD in chat instead of recorded",
+      "files": [
+        "tests/run_defect_register_probe.py",
+        "tests/run_hover_audit_method_sabotage_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 140,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/defect_register.py's METHODS vocabulary had no value for the hover auditor, the platform's fifth and structurally separate agent role. .claude/skills/sairn-hover-auditor/SKILL.md recorded the gap on 2026-09-14, stated that adding one is 'a code edit this role does not make itself', and instructed the role to HOLD findings needing the tag and route the enum fix to a build agent rather than force an existing mismatched value. It did. The result is a register that was internally consistent, passed --check, and was missing real findings that existed only in chat -- a gap no check could report, because every record present was valid. Added 'hover-audit' with a CHECKPOINT_OF row of human-read: tool_required() is derived from the checkpoint, so classing a diff-reading role as an automated-checker would have made --add refuse every hover finding for want of a --found-by-tool that does not exist.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "1818e05f52ed",
+        "date": "2026-09-10",
+        "subject": "feat(docs,tools): the defect register -- and the number is not the signal",
+        "lag_days": 11
+      },
+      "citation_note": "ARGUABLE. 1.1 is a check that stopped checking. This is a check that could not START -- a vocabulary with no term for a real data source, so the source's findings never entered the corpus at all. Same consequence as a vacuous check (the register reports on a population it is not measuring) reached from the opposite direction, and the rule's own wording is about a check going silently vacuous rather than about a missing category.",
+      "contributing_factors": [
+        {
+          "factor": "METHODS was written when four build agents were the only reviewing population, and the fifth role was created later. The enum was a closed vocabulary with no signal that it had fallen behind the org it describes.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "an arm asserts every detection_method the hover skill NAMES is in the vocabulary, read out of the skill rather than typed twice, so the next role added the same way fails loudly"
+        },
+        {
+          "factor": "The role behaved correctly and the correct behaviour produced silence: it held the findings, said so in its own skill, and reported in chat. A hold with no ticket is indistinguishable from nothing to report.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the holding instruction in the skill should point at an open-work row rather than at chat; not changed here because a build agent editing the hover clone is the boundary problem running the other way"
+        },
+        {
+          "factor": "Nothing connected the enum to the role that consumes it. The two live in different files and the only link was prose in the skill.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Q13 reads the tag from the SKILL and fails -- naming the path -- if the skill is unreadable, rather than reporting agreement it never checked"
+        }
+      ],
+      "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
+    },
+    {
+      "commit": "a51a666fad1c",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlaw): a billing code was VALIDATED trimmed and STORED untrimmed, and at the length bound the two differ in whether they pass",
+      "files": [
+        "api/_lib/law-timeentry.js",
+        "api/_lib/law-timeentry.test.js",
+        "api/sd-data.js",
+        "tests/run_law_timeentry_trim_sabotage_probe.py"
+      ],
+      "lines_added": 335,
+      "lines_removed": 4,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/law-timeentry.js validated a time entry's UTBMS billing_code as billing_code.trim() while api/sd-data.js stored the UNTRIMMED string via data: payload, so the value judged and the value written were different values. '  L100  ' was accepted on the merits of 'L100' and stored with its padding, and the invoice column prints the stored one. IT IS NOT ONLY COSMETIC: MAX_BILLING_CODE_CHARS is checked against the trimmed value, so 30 spaces followed by 'L100' is 34 characters, judged as 4, accepted, and 34 characters then landed in a column whose gate refuses 33 -- the gate was answering a question about a value nobody stored. The handler's success echo had the same seam on its fallback branch (rows[0].data when PostgREST returns a representation, the request row otherwise), so a caller re-rendering from the response could show a code the record does not carry. Fixed by normalizedTimeEntry(), scoped to billing_code alone and returning the record unchanged when there is nothing to trim.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "f090879a88bb",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): a billable hour could reach the server with no UTBMS code -- refused by nothing at either end",
+        "lag_days": 3
+      },
+      "citation_note": "ARGUABLE. 1.3 is 'an anchor that still matches is not an anchor that still points at the right thing' -- written about string anchors in checks. This is the same premise about a VALIDATOR: timeEntryProblem() kept matching and kept returning null, correctly, about a string that was not the one being written. The check never stopped working; it stopped being about the stored value. Recorded as arguable because the rule's own wording is about anchors in probes, not about a validator and a writer disagreeing on their subject.",
+      "contributing_factors": [
+        {
+          "factor": "The validator and the writer live in different files -- api/_lib/law-timeentry.js decides, api/sd-data.js stores -- and nothing carried the decided value from one to the other. The trim existed only as a local inside the judging function.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "normalizedTimeEntry() exported from the same module and called on the write path, so the trim is a value the writer receives rather than a step the validator performed privately"
+        },
+        {
+          "factor": "The length bound is enforced on the trimmed value, which means the two strings differ in whether they PASS and not merely in how they print. That makes this a gate defect rather than a formatting one, and it was invisible for the same reason the rest was.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "an arm drives 30 spaces + L100 and asserts the STORED length is within MAX_BILLING_CODE_CHARS"
+        },
+        {
+          "factor": "Every existing arm asked whether a request was REFUSED. All of them passed against the seam: the padded entry was correctly accepted, and no arm read what reached the database -- the fetch mock counted POSTs and discarded the body.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the mock keeps the last upsert body, and three endpoint arms assert the stored row rather than the status code"
+        },
+        {
+          "factor": "The module HAD NAMED THIS SHAPE ALREADY, in its own rate section, as the thing it was criticised for in FINDING 1 -- and named it while leaving it open on the field it was found on. A defect described in a comment is not a defect closed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the comment now sits on the fix rather than on the description of the problem, and tests/run_law_timeentry_trim_sabotage_probe.py refuses seven ways of reopening it"
+        }
+      ],
+      "recurrence_open": "Only billing_code is normalised. Every other field on a time entry -- description, attorney, matter_id -- reaches the store exactly as typed, which is correct today because nothing validates them; the day one of them gains a validator the same seam is available again, and nothing checks for it generically. And matter_id is still unvalidated at the server, which this record does not close."
+    },
+    {
       "commit": "b09674f65e9d",
       "date": "2026-09-21",
       "subject": "fix(sairnscape): a call nobody answered wore an earlier refusal, and the retry button outlived the design it belonged to",
@@ -9915,6 +10026,64 @@
         }
       ],
       "recurrence_open": "the sweep for other st()-without-a-paired-write sites across sairnlaw.html and the other offline-first apps is NOT done, and the checker that would find them does not exist. And the additive-hydration condition is untouched, so this fix corrects only FRESH devices -- a machine that already holds a billed entry keeps showing it as unbilled and can still invoice it again."
+    },
+    {
+      "commit": "e262f32f38f7",
+      "date": "2026-09-21",
+      "subject": "fix(cross-tenant-scope): the grader's self-exclusion list had no guard, and the first guard found a third file it was missing",
+      "files": [
+        "tests/run_cross_tenant_scope_probe.py",
+        "tests/run_self_exclusion_guard_sabotage_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 187,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "probe-control",
+      "summary": "tools/cross_tenant_isolation_scope.py's SELF_EXCLUDED tuple -- the fix for a real false GENUINE, in which the grader counted its own fixture bodies as platform coverage -- was two string literals naming other files with NOTHING guarding them. Rename either file and the exclusion silently excludes nothing while the report keeps PRINTING both names as excluded. Separately the list was INCOMPLETE: tests/cross_tenant_dispatchers_review_probe.py imports the grader, quotes the reference suite's CROSS-TENANT-ISOLATION line in its prose, and was credited with law_invoices, law_opaccounts and law_barcerts -- the tool's own report disclosed it as 'credited on the declaration alone'. It graded WEAK so the headline 84 was not inflated; it was one fixture edit from GENUINE and was already putting two lines of noise into the disclosure list attributed to a file whose subject IS the measurer.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_cross_tenant_scope_probe.py",
+      "injection": {
+        "commit": "c44c5bf2e677",
+        "date": "2026-09-21",
+        "subject": "fix(scope): the grader scored the reference implementation WEAK, counted itself as coverage, and credited resources off a substring",
+        "lag_days": 0
+      },
+      "citation_note": "CLEAN. 1.3 is exactly this: an anchor that still matches is not an anchor that still points at the right thing -- here an anchor that no longer matches at all, in a list whose REPORT still prints the names as excluded. The exclusion's failure mode is indistinguishable from its success from every direction except the one nothing was looking from.",
+      "contributing_factors": [
+        {
+          "factor": "The exclusion is a tuple of path literals in one file naming files in another, with no mechanism tying the two together. A rename, a move out of api/ or tests/, or a spelling all_files() does not emit each silently empties it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "an arm asserts every entry is a member of the SCANNED set rather than merely present on disk, so a backslash or ./ spelling fails instead of reading as healthy"
+        },
+        {
+          "factor": "Whether the list is COMPLETE is a question the literals cannot answer about themselves, and the original fix closed it by hand for the two files that had been noticed.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "an arm asserts every test file that IMPORTS the grader is listed -- no heuristic, and it named the third file on its first run"
+        },
+        {
+          "factor": "Nothing checked that the list was CONSULTED. The tuple could be perfect while a deleted continue put the false GENUINE back, and both list-shape arms would stay green.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an arm drives tests_naming() and asserts an excluded file is not cited, plus a second asserting the citation list is non-empty so a skip that swallowed everything is refused"
+        },
+        {
+          "factor": "An exclusion can also go DECORATIVE -- if an excluded file stops grading or declaring anything, the guard stops preventing something and nobody notices, which is how the next reader concludes the list can be trimmed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "an arm asserts each excluded file would still have been credited had it not been excluded"
+        }
+      ],
+      "recurrence_open": "The importer arm catches a PYTHON test importing the module. A future grader-subject file that quotes this tool without importing it -- a markdown review, a JS fixture -- is outside what the arm can see, and no mechanical rule was found for that shape. The report still discloses api/sf-auth.test.js as grading GENUINE while declaring nothing; that is a separate open line and is not closed here."
     },
     {
       "commit": "e4fc9aaad205",
