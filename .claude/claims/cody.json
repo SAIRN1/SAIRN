@@ -1662,8 +1662,8 @@
       "task": "review cc leg_invoices session gate obligation 19:47:07Z",
       "claimed_at": "2026-09-21T22:27:58Z",
       "claimed_at_epoch": 1790029678.8872426,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T22:46:53Z"
     }
   ]
 }
