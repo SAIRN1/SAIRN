@@ -10336,7 +10336,7 @@
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is one count over the wrong set, but the coverage half (6 of 16 watched) has a different cause -- a comment asserting the remaining apps could not reach the state, which was true when written and never re-derived."
     },
     {
-      "commit": "a8812740afae",
+      "commit": "ad6a6b9d9cee",
       "date": "2026-09-21",
       "subject": "fix(sairncare): a refused credential read was an EMPTY LEDGER, and the export already had the guard for it",
       "files": [
