@@ -486,6 +486,31 @@ SELF_EXCLUDED = (
     # time; the importer arm in tests/run_cross_tenant_scope_probe.py would
     # have refused the push had this been left out.
     'tests/cross_tenant_grader_declaration_review_probe.py',
+    # THE FIFTH, AND THE PATTERN IS NOW THE FINDING (2026-09-21, Fourth's review
+    # of the fourth). Same mechanism a fifth time: this file imports the grader
+    # to drive the corpus both ways, and it quotes the reference suite's
+    # `CROSS-TENANT-ISOLATION:` line as a literal in order to report on the arm
+    # that mutates it -- so the parser credited it with law_invoices,
+    # law_opaccounts and law_barcerts on its first run. Measured, not assumed:
+    # unexcluded it lands in the GENEROUS branch (declares 3, no table parses).
+    #
+    # I AM ADDING MY OWN FILE HERE AND THAT IS EXACTLY WHAT PRESS-ON (5) ASKED
+    # A REVIEWER TO SCRUTINISE, so the test applies to me too: does the
+    # exclusion remove a FINDING or a FALSE CREDIT? A false credit. It makes the
+    # corpus smaller and the tool's claim weaker, which is the opposite
+    # direction from flattering, and the importer arm in
+    # tests/run_cross_tenant_scope_probe.py refuses the push without it.
+    #
+    # BUT FIVE HAND-WRITTEN ENTRIES, ONE PER REVIEW, IS A LIST THAT GROWS BY ONE
+    # EVERY TIME SOMEBODY REVIEWS THIS TOOL -- which is the shape this file's own
+    # neighbours warn about ("a growing exclusion list is how a gate stops
+    # covering anything"). The predicate is already computable: the importer arm
+    # knows how to find every test file that imports this module, so the
+    # exclusion could BE that computation instead of a literal somebody has to
+    # remember. Recorded as an open-work row rather than changed here, because
+    # narrowing this tuple to a rule is a change to the measurer and belongs in
+    # its own commit with its own control.
+    'tests/grader_declaration_reconstruction_review_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
