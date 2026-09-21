@@ -1835,6 +1835,16 @@
       "claimed_at_epoch": 1790025561.2205172,
       "status": "released",
       "released_at": "2026-09-21T21:30:27Z"
+    },
+    {
+      "id": "fourth-1790026395",
+      "session": "fourth",
+      "subject": "tier-a-grader-declaration-review",
+      "task": "review cc obligation 2026-09-21T21:11:17Z. FILES: docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-fourth.md tests/grader_declaration_reconstruction_review_probe.py AND tools/cross_tenant_isolation_scope.py -- the last one only to add my own probe to SELF_EXCLUDED, which the guard arm in run_cross_tenant_scope_probe.py REQUIRES of any file importing the grader. No other line of that tool changes.",
+      "claimed_at": "2026-09-21T21:33:15Z",
+      "claimed_at_epoch": 1790026395.2395573,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
