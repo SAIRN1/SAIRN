@@ -1664,6 +1664,16 @@
       "claimed_at_epoch": 1790029678.8872426,
       "status": "released",
       "released_at": "2026-09-21T22:46:53Z"
+    },
+    {
+      "id": "cody-1790032600",
+      "session": "cody",
+      "subject": "sairnlaw",
+      "task": "review cc law timeentry billing code scope probe hover audit obligation 20:42:06Z",
+      "claimed_at": "2026-09-21T23:16:40Z",
+      "claimed_at_epoch": 1790032600.195567,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
