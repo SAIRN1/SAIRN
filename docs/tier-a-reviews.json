@@ -1214,6 +1214,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T14:53:05Z",
+      "resources": [
+        "law_trusttx"
+      ],
+      "files": [
+        "api/sd-data-law-trusttx-clearance.test.js"
+      ],
+      "what": "SAIRNlaw law_trusttx SERVER SIDE, and it is a SECOND change to the same resource -- my 13:41:23Z record is the CLIENT half (lawSetClearance's rollback) and does not describe this one. api/sd-data.js routes every law_trusttx write with type Disbursement and status not Voided to rpc/law_check_and_insert_disbursement, whose NINE named parameters carry no clearance field and whose body builds data with jsonb_build_object over ten fixed keys -- and whose existing-id branch (sql/sairnlaw_trusttx_functions.sql, 'if v_existing_found then v_row := v_existing;') RETURNS THE STORED ROW HAVING WRITTEN NOTHING. So every re-send of an existing cheque came back 200 ok:true carrying the old row, and lawSetClearance() read a truthy result and said 'Marked cleared' over a no-op. An uncleared CHEQUE is a Disbursement, which is the commonest outstanding item in a trust reconciliation and the exact case the 2026-09-18 outstanding-item feature was built for; deposits take the plain upsert and are unaffected. With hydration now SERVER-WINS the local optimistic copy is then erased at the next load. THE FIX IS A REFUSAL, NOT A STORE: the handler compares the clearance fields the caller sent against the row that came back and answers 409 CLEARANCE_NOT_STORED with a `fields` array when they differ. It does NOT make clearance work on a cheque -- that needs the RPC to carry the fields, which is a signature change and a migration on the function that gates trust balances, and it is recorded as its own open-work row. PRESS ON, and the first is the one I would attack. (1) 409 IS ARGUABLE and I argued it in the comment: nothing failed in the store and its answer was readable, so 502 overstates it, and this endpoint already spends 409 on ALREADY_VOIDED, WRITE_CONFLICT and TRUSTTX_ID_COLLISION. Say whether a refusal that means 'this path structurally cannot do what you asked' belongs in that family at all, or wants 422/501. (2) THE GUARD IS A COMPARISON SO THAT IT RETIRES ITSELF when the RPC learns to carry the fields -- check that property really holds, i.e. that a stored row matching the request produces no refusal, and that nothing else in the response path would still drop the fields. (3) CLEARANCE_KEYS IS A THREE-NAME LIST IN api/sd-data.js and the client writes exactly those three; check they cannot drift, and that a FOURTH clearance-ish field added later is not silently confirmed. (4) `cleared:false` IS THE OUTSTANDING CASE and it is falsy -- the asked-for test is `!== undefined` for that reason; mutation 3 of the control plants the truthiness form and it was SILENT until the refusal gained a machine-readable `fields` array, because my arm had matched the word 'cleared' in the message's own prose. Check no other arm in that suite asserts over the message where it means to assert over the list. (5) A VOIDED disbursement and a DEPOSIT both bypass this; check neither can reach the RPC path by another route. NOTE ON THIS RECORD ITSELF: four backtick spans in the text passed to --open were executed as SHELL COMMAND SUBSTITUTIONS and arrived as empty strings; the sentences above are the repaired originals, edited in place minutes later by their own author with status, owner, reviewer and timestamps untouched. Worth knowing because a --open body is prose that goes through a shell, and a backtick in it is not inert.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-21T14:53:05Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

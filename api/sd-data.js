@@ -12292,6 +12292,62 @@ module.exports = async (req, res) => {
           res.status(502).json({ error: { code: 'DISBURSEMENT_NOT_WRITTEN', message: 'The disbursement was NOT posted -- the server returned no stored row. Nothing was written; check the trust ledger before retrying.' } });
           return;
         }
+        // ── A CLEARANCE THIS PATH CANNOT CARRY IS REFUSED, NOT CONFIRMED ──
+        // (2026-09-21, found by an independent review of the outstanding-item
+        // work and DRIVEN before it was changed.)
+        //
+        // law_check_and_insert_disbursement takes NINE named parameters and
+        // none of them is a clearance field, and its body builds `data` with
+        // jsonb_build_object over ten fixed keys. When the id already exists
+        // for the same client it takes the retry-idempotency branch --
+        // `if v_existing_found then v_row := v_existing;` -- and returns the
+        // STORED ROW HAVING WRITTEN NOTHING. That is correct for what the
+        // function is for; it is a balance guard on an INSERT.
+        //
+        // What was not correct is the answer. Every re-send of an existing
+        // disbursement came back 200 {ok:true} carrying the old row, so
+        // sairnlaw.html's lawSetClearance() read a truthy result and said
+        // "Marked cleared" over a write that never happened. AN UNCLEARED
+        // CHEQUE IS A DISBURSEMENT -- the commonest outstanding item in a trust
+        // reconciliation and the exact case the feature was built for -- and
+        // with hydration now SERVER-WINS the local optimistic copy is erased at
+        // the next load, so the firm loses the record AND the reconciliation
+        // silently goes back to disagreeing.
+        //
+        // THIS COMPARES WHAT WAS ASKED FOR AGAINST WHAT CAME BACK, rather than
+        // hard-coding "the RPC cannot do clearances". Two reasons, and the
+        // second is the one that matters: a rule written here would be a second
+        // copy of the SQL's behaviour, kept in step by nobody; and a comparison
+        // RETIRES ITSELF -- the day the RPC is taught to carry these fields,
+        // the values match, the refusal stops firing, and there is nothing to
+        // remember to remove.
+        //
+        // 409 RATHER THAN 502, and it is arguable. Nothing failed in the store
+        // and its answer was perfectly readable, so 502 overstates it. This is
+        // the stored row's state not being what the request asked for and the
+        // caller having to act, which is the family this endpoint already
+        // spends 409 on: ALREADY_VOIDED, WRITE_CONFLICT, TRUSTTX_ID_COLLISION.
+        const CLEARANCE_KEYS = ['cleared_on', 'cleared', 'cleared_at'];
+        const askedFor = CLEARANCE_KEYS.filter((k) => payload[k] !== undefined);
+        const notStored = askedFor.filter(
+          (k) => JSON.stringify(row.data[k]) !== JSON.stringify(payload[k]));
+        if (notStored.length) {
+          // `fields` IS THE MACHINE-READABLE HALF, and it exists because of a
+          // miss in this change's own control. The arm for the outstanding
+          // case asserted the MESSAGE named the fields -- and the message ends
+          // "whether a cheque has cleared the bank", so `/\bcleared\b/` matched
+          // that prose and the arm stayed green while a planted defect dropped
+          // `cleared` from the list. An assertion over a sentence cannot tell
+          // the sentence's subject from its wording.
+          res.status(409).json({ error: { code: 'CLEARANCE_NOT_STORED',
+            fields: notStored,
+            message: 'Nothing was saved. This disbursement already exists, and the write path that '
+              + 'guards the trust balance cannot carry ' + notStored.join(', ') + ' -- so the '
+              + 'clearing status was NOT recorded and the stored row is unchanged. Recording '
+              + 'whether a cheque has cleared the bank is not available for disbursements yet; '
+              + 'deposits are unaffected.' } });
+          return;
+        }
         res.status(200).json({ ok: true, data: row.data });
         return;
       }
