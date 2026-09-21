@@ -285,6 +285,67 @@ ok('a margin within the band exits 0', _d.returncode in (0, 1),
 ok('...and it says so -- being behind is not the same as being WRONG',
    'It may still MATCH' in _out or 'within the band' in _out, _out[:200])
 
+
+# -- J. THE PROBE COLUMN PRINTS EVERY PROBE, NOT THE FIRST TWO --------------
+# The render hard-sliced `suite.get(t, [])[:2]` with no ellipsis and no count,
+# so a row showing two probes was indistinguishable from a tool that HAS two --
+# and two of the three tables had no probe column at all. Measured before the
+# fix: the slice cut 22 rows and withheld 79 references, and 157 more were
+# never rendered in the BLOCKING and REPORT-ONLY-hooks tables, including
+# sairn_push_gate_hook.py, which has NINETEEN probes and showed ZERO. The one
+# tool every session pushes through looked like the least-covered in the repo.
+#
+# These arms read the SHIPPED DOCUMENT rather than the generator, because the
+# defect was in what a reader sees, not in what the code meant.
+print('\nJ. no row silently drops a probe reference')
+
+_doc = io.open(os.path.join(REPO, 'docs', 'TOOLING-INVENTORY.md'),
+               encoding='utf-8', errors='replace').read()
+_tools = ti.tool_files()
+_suite = ti.suite_refs(_tools)
+
+_shown = {}
+for _line in _doc.split('\n'):
+    if _line.startswith('| `') and _line.count('|') == 5:
+        _cells = _line.split('|')
+        _shown[_cells[1].strip().strip('`')] = _cells[4].count('`') // 2
+
+_short = dict((t, (len(_suite[t]), _shown[t])) for t in _suite
+              if _suite[t] and t in _shown and _shown[t] < len(_suite[t]))
+ok('every rendered row shows ALL of its probes', not _short,
+   'rows still truncated (real, shown): %s' % sorted(_short.items())[:4])
+
+# THE NAMED WORST CASE, pinned by name, because a general arm goes quietly
+# vacuous if the row disappears -- and disappearing is exactly what the push
+# gate's probes did.
+_pg = 'sairn_push_gate_hook.py'
+ok('the push gate itself lists all %d of its probes' % len(_suite.get(_pg, [])),
+   _pg in _shown and _shown[_pg] == len(_suite.get(_pg, [])) and _shown[_pg] > 2,
+   'shown=%s real=%s' % (_shown.get(_pg), len(_suite.get(_pg, []))))
+
+# AND THE TABLES THAT CARRY THE COLUMN MUST KEEP IT. Without this arm,
+# deleting the column again makes the first arm VACUOUSLY TRUE: a row that is
+# never rendered cannot be found truncated.
+#
+# PINNED AS A COUNT, and narrowed after a first draft got this wrong. That
+# draft asserted no tool with probes sits in a probe-less table, and failed on
+# 60-odd tools -- because two further tables ("Why not promoted", "Promoted")
+# answer a DIFFERENT question and have no business carrying probes. An arm
+# that demands a column everywhere is not stricter, it is wrong.
+#
+# THE NUMBER IS MEASURED, NOT GUESSED -- and the first draft guessed 3 and was
+# wrong, which is why it says so here. The classified loop renders one table
+# per class, and BLOCKING and REPORT-ONLY-hooks add one each: FIVE today.
+_EXPECTED_TABLES = 5
+_hdr = _doc.count('| Tool | Kind | What it catches | Probe under tests/ |')
+ok('all %d tool tables still carry the probe column' % _EXPECTED_TABLES,
+   _hdr == _EXPECTED_TABLES,
+   'tables with the probe header: %d, expected %d. FEWER means a column was '
+   'deleted and the truncation arm above has gone vacuous; MORE means a new '
+   'table was added and this count needs deciding rather than raising.'
+   % (_hdr, _EXPECTED_TABLES))
+
+
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:
     print('  - ' + f)

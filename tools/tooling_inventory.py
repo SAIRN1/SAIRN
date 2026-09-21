@@ -927,6 +927,34 @@ def suite_refs(tools):
     return {k: sorted(v) for k, v in refs.items()}
 
 
+def probe_cell(suite, t):
+    """Every probe for `t`, or an em-dash. NEVER a truncated list.
+
+    ── WHY A HELPER RATHER THAN THREE CALL SITES (2026-09-21) ─────────────────
+    There were three tables and only ONE of them printed probes at all, and that
+    one hard-sliced to the first two with no ellipsis and no count -- so a row
+    showing two probes was indistinguishable from a tool that has exactly two.
+    MEASURED BEFORE CHANGING ANYTHING:
+
+      * the `[:2]` slice cut 22 rows and withheld 79 probe references
+      * the BLOCKING table has NO probe column, hiding 52 more across 13 tools
+      * the REPORT-ONLY-hooks table likewise, hiding 105 across 63 tools
+
+    THE WORST CASE WAS THE PUSH GATE ITSELF. `sairn_push_gate_hook.py` has
+    NINETEEN probes under tests/ and appeared in the BLOCKING table, which has
+    no probe column -- so the one tool every session pushes through showed
+    ZERO. Anyone reading this document to find a coverage gap would have
+    started at the best-covered tool in the repo.
+
+    SHOWING ALL OF THEM RATHER THAN A COUNT, because the column heading is
+    "Probe under tests/" and a reader is using it to go and open one. "+17
+    more" makes the truncation visible and still withholds the names, which is
+    a smaller version of the same problem. Sorted, so the render is stable and
+    `--check` cannot disagree with itself between runs.
+    """
+    return ', '.join('`%s`' % f for f in sorted(suite.get(t, []))) or '&mdash;'
+
+
 def classify():
     tools = tool_files()
     hk = hooked()
@@ -1155,11 +1183,11 @@ def build():
     A('around it. The second exists because the first missed exactly that on')
     A('2026-09-01. Per clone, once: `python tools/install_git_hooks.py`.')
     A('')
-    A('| Tool | Kind | What it catches |')
-    A('|---|---|---|')
+    A('| Tool | Kind | What it catches | Probe under tests/ |')
+    A('|---|---|---|---|')
     for t in sorted(t for t in tools if cls[t] == 'BLOCKING'):
         k, c = purpose(t, reg)
-        A('| `%s` | %s | %s |' % (t, k, c))
+        A('| `%s` | %s | %s | %s |' % (t, k, c, probe_cell(suite, t)))
     A('')
     A('### The push gate\'s own numbered checks')
     A('')
@@ -1192,11 +1220,11 @@ def build():
     A('And %d that are PostToolUse hooks in their own right, not registry entries:'
       % len(_ro_hooks))
     A('')
-    A('| Tool | Kind | What it catches |')
-    A('|---|---|---|')
+    A('| Tool | Kind | What it catches | Probe under tests/ |')
+    A('|---|---|---|---|')
     for t in _ro_hooks:
         k, c = purpose(t, reg)
-        A('| `%s` | %s | %s |' % (t, k, c))
+        A('| `%s` | %s | %s | %s |' % (t, k, c, probe_cell(suite, t)))
     A('')
     A('---')
     A('')
@@ -1234,7 +1262,7 @@ def build():
         A('|---|---|---|---|')
         for t in sorted(t for t in tools if cls[t] == k):
             kind, c = purpose(t, reg)
-            pr = ', '.join('`%s`' % f for f in suite.get(t, [])[:2]) or '&mdash;'
+            pr = probe_cell(suite, t)
             A('| `%s` | %s | %s | %s |' % (t, kind, c, pr))
         A('')
         A('---')
