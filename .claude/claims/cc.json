@@ -1912,8 +1912,8 @@
       "task": "platform sweep for unparseable server responses swallowed into null instead of a refusal",
       "claimed_at": "2026-09-18T22:58:25Z",
       "claimed_at_epoch": 1789772305.1318734,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T19:55:02Z"
     },
     {
       "id": "cc-1789974340",
