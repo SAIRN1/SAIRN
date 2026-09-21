@@ -2075,7 +2075,33 @@ function scpFetchTimeoutSignal(){
 }
 async function scpData(action, resource, payload, appId) {
   var licKey = scpLd('scp_lic', null);
-  if (!licKey) return null;
+  // ── NO LICENCE IS NOT A REFUSAL, AND THIS RETURN USED TO LET IT BE ONE ────
+  // (fixed 2026-09-21, hank; found in the independent review of this queue and
+  // reproduced by two sessions independently.) This guard predates the
+  // per-resource error recording below and returned null WITHOUT touching
+  // scpLastErr -- so after any real 4xx on the same resource, a later call with
+  // no licence left the old status standing and scpWriteRefused() answered TRUE
+  // for a call the server never saw.
+  //
+  // The consequence was not cosmetic. scpSendDesignToQuote branches on exactly
+  // that predicate: `quoteQueued = !quoteSynced && !scpWriteRefused(...)`. So
+  // the row was NOT QUEUED -- the whole retry path skipped -- the toast quoted
+  // an unrelated earlier row's reason as a server judgement, and a row already
+  // in the queue was marked 'refused' and never retried again.
+  //
+  // THREE TRIGGERS, none contrived: scpLicenceGuard()'s wipe removes every key
+  // scpIsOwnKey() matches, and `scp_lic` is one of them (it is named in
+  // SCP_SCOPE_OK's own assertion); localStorage.getItem can throw and
+  // scpLd catches it and returns the DEFAULT, which is null; and a corrupted
+  // scp_lic fails JSON.parse and returns the default too.
+  //
+  // A CODE WITH NO `status`, DELIBERATELY, rather than `delete`. Same shape the
+  // catch below uses, and for the same reason the comment above scpWriteRefused
+  // gives: no status means nobody looked. `delete` would also fix the refusal,
+  // but it would erase the REASON, and scpPendingAdd reads scpLastErrCode() to
+  // label the queued row -- so a no-licence failure would be filed as NETWORK,
+  // which is a different thing to tell somebody.
+  if (!licKey) { scpLastErr[resource] = { code: 'NO_LICENCE', message: '' }; return null; }
   try {
     var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
     try { var tok = sessionStorage.getItem(SCP_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
@@ -2924,6 +2950,47 @@ function scpUpdateApprovalUI(rec){
     statusEl.style.display='none';formEl.style.display='flex';
   }
 }
+// ── ONE SETTER FOR THE SEND BUTTON: LABEL, ENABLED AND HANDLER TOGETHER ───
+// (2026-09-21, hank. Found in the independent review of the outbound queue and
+// reproduced by two sessions independently, from opposite directions.)
+//
+// #scp-dw-send-quote-btn is a SINGLE STATIC ELEMENT (:1530) shared by every
+// design walk, with an inline onclick. It is never destroyed and recreated, so
+// assigning `.onclick` replaces that inline handler FOR THE LIFETIME OF THE
+// PAGE. The failure branch of scpSendDesignToQuote rebound it to the queue
+// flush and nothing ever put it back, while scpOpenDesignModal restored only
+// `.disabled` and `.textContent`. So after ANY failed send, every later
+// approved-and-unsent design opened with the correct label, correctly enabled,
+// and pressing it ran the flush: no quote minted for THAT design, no error, and
+// a toast reporting on a different record entirely. The same
+// control-contradicts-its-label defect the queue was built to remove, one call
+// further out and silent rather than contradictory.
+//
+// THE FIX IS A SETTER RATHER THAN A THIRD ASSIGNMENT AT EACH SITE, and that is
+// the whole point: the defect is that three properties which must agree were
+// set in three places and one place forgot one. Adding the missing line at each
+// site fixes today's instance and leaves the shape. Here there is one place to
+// change and nothing to forget. An inspector cannot see this class either --
+// after `el.onclick = g` the markup and getAttribute('onclick') both still read
+// the original call while the live handler is g.
+function scpSetSendBtn(mode, qid){
+  var b=scp$('scp-dw-send-quote-btn');
+  if(!b)return;
+  if(mode==='sent'){
+    b.disabled=true;b.textContent='Sent to Quoting ('+qid+')';
+    b.onclick=function(){scpSendDesignToQuote();};
+  }else if(mode==='retry'){
+    // STILL PRESSABLE, and labelled for what pressing it now does. The guard at
+    // the top of scpSendDesignToQuote returns early on rec.quote_id, so a second
+    // press cannot mint a second quote -- it routes to the queue instead.
+    b.disabled=false;b.textContent='Retry upload ('+qid+')';
+    b.onclick=function(){scpFlushAndReport();};
+  }else{
+    b.disabled=(mode==='send-disabled');
+    b.textContent='Send Approved Design to Quoting';
+    b.onclick=function(){scpSendDesignToQuote();};
+  }
+}
 function scpOpenDesignModal(id){
   scpDwid=id||null;scpFillCustomerSelects();
   var d=id?scpDesigns().find(function(x){return x.id===id;}):null;
@@ -2932,9 +2999,10 @@ function scpOpenDesignModal(id){
   scp$('scp-dwapprover').value=d?d.approved_by||'':'';
   scpRenderDesignElemTable(d?d.elements:[]);
   scpUpdateApprovalUI(d);
-  var sendBtn=scp$('scp-dw-send-quote-btn');
-  sendBtn.disabled=!(d&&d.approved&&!d.quote_id);
-  sendBtn.textContent=(d&&d.quote_id)?('Sent to Quoting ('+d.quote_id+')'):'Send Approved Design to Quoting';
+  // Every path through here goes via the one setter, so the handler can never
+  // again be left pointing at the previous design's retry.
+  if(d&&d.quote_id)scpSetSendBtn('sent',d.quote_id);
+  else scpSetSendBtn((d&&d.approved)?'send':'send-disabled');
   if(typeof installScpDesignARZone==='function')installScpDesignARZone();
   scp$('scp-designmodal').classList.add('on');
 }
@@ -2971,7 +3039,10 @@ async function scpApproveDesign(){
   rec.approved=true;rec.approved_by=name;rec.approved_at=scpLocalToday();
   var syncResult=await scpSaveDesignRecord(rec);
   scpUpdateApprovalUI(rec);
-  scp$('scp-dw-send-quote-btn').disabled=false;
+  // Through the setter, not a bare `.disabled=false`. This was the SECOND route
+  // to the stale handler: approving a design after a failed send re-enabled the
+  // button without touching the handler the failure branch had rebound.
+  scpSetSendBtn('send');
   scpToast(syncResult?('Design approved by '+name):('Design approved by '+name+' on this device only -- server sync failed, try again with a connection'),syncResult?3000:7000);
 }
 // ── THE OUTBOUND QUEUE (2026-09-18) ───────────────────────────────────────
@@ -3185,17 +3256,13 @@ async function scpSendDesignToQuote(){
   // corrected on 2026-09-15 and the affordance was not; this is the other
   // half. A control that contradicts the text beside it is worse than either
   // one alone, because the user believes the control.
-  var sendBtn=scp$('scp-dw-send-quote-btn');
+  //
+  // ROUTED THROUGH scpSetSendBtn SINCE 2026-09-21. This branch set label,
+  // enabled state and -- in the failure case only -- the handler, and nothing
+  // put the handler back, so it leaked into every later design. See the setter
+  // for the full account.
   var landed=quoteSynced&&syncResult;
-  if(landed){
-    sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
-  }else{
-    // STILL PRESSABLE, and labelled for what pressing it now does. The guard
-    // at the top of this function returns early on rec.quote_id, so a second
-    // press cannot mint a second quote -- it routes to the queue instead.
-    sendBtn.disabled=false;sendBtn.textContent='Retry upload ('+qrec.id+')';
-    sendBtn.onclick=function(){scpFlushAndReport();};
-  }
+  scpSetSendBtn(landed?'sent':'retry',qrec.id);
 
   // NAMED PER WRITE rather than one sentence for both. "Both reached the
   // server", "the quote did not", and "the design did not" are three different

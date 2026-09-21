@@ -242,20 +242,46 @@ await test('a re-entrant flush does not double-send', async () => {
 
 section('4. THE BUTTON FOLLOWS THE OUTCOME');
 
+// ── RE-AIMED 2026-09-21, NOT DELETED, AND THE REASON IS THE POINT ─────────
+// These four assertions were regexes over the source of scpSendDesignToQuote
+// demanding literal `sendBtn.disabled=true` / `sendBtn.disabled=false` inside
+// its two branches. A REVIEW FINDING made those lines move: the button's
+// label, enabled state and handler were set in three separate places and one
+// of them forgot the handler, so a failed send left a stale flush handler on
+// a shared static element and every later design opened with the right label
+// wired to the wrong action. The fix routes all three through one setter,
+// scpSetSendBtn -- which is strictly better and made every arm here RED
+// without a single behaviour regressing.
+//
+// THAT IS THE COST OF ASSERTING OVER SOURCE TEXT: a correct refactor reads as
+// a failure, and the pressure is to weaken the arm. So the requirement is
+// re-aimed at the setter rather than dropped, and the BEHAVIOURAL version of
+// the same requirement -- press the button and check which design gets a
+// quote -- now lives in tests/sairnscape_send_button_and_licence.js, which
+// caught all nine sabotages including the three these regexes cannot see.
 await test('success disables it; every failure leaves it PRESSABLE', () => {
   const src = grab('async function scpSendDesignToQuote(){', '\n}\n');
+  const setter = grab('function scpSetSendBtn(mode, qid){', '\n}\n');
   assert.ok(/var landed=quoteSynced&&syncResult;/.test(src),
     'nothing computes whether BOTH writes landed');
-  assert.ok(/if\(landed\)\{[\s\S]{0,200}sendBtn\.disabled=true/.test(src),
+  assert.ok(/scpSetSendBtn\(landed\?'sent':'retry'/.test(src),
+    'the outcome no longer drives the button state');
+  assert.ok(/mode==='sent'[\s\S]{0,120}b\.disabled=true/.test(setter),
     'the button is not disabled on the success path');
-  assert.ok(/\}else\{[\s\S]{0,400}sendBtn\.disabled=false/.test(src),
+  assert.ok(/mode==='retry'[\s\S]{0,400}b\.disabled=false/.test(setter),
     'a failed send still disables the button, so the toast tells the user to '
     + 'retry with no control that can');
-  assert.ok(/Retry upload/.test(src), 'the failed state is not labelled for retry');
+  assert.ok(/Retry upload/.test(setter), 'the failed state is not labelled for retry');
   // The original defect exactly: an unconditional disable before the branch.
   const beforeBranch = src.slice(0, src.indexOf('var landed='));
-  assert.ok(!/sendBtn\.disabled=true/.test(beforeBranch),
+  assert.ok(!/sendBtn\.disabled=true|scpSetSendBtn\('sent'/.test(beforeBranch),
     'the button is disabled BEFORE the outcome is known -- the original defect');
+  // AND THE ONE THE ORIGINAL FOUR COULD NOT EXPRESS: every mode sets the
+  // handler, so the three properties cannot drift apart again.
+  const modes = setter.split('b.disabled=').length - 1;
+  assert.strictEqual(setter.split('b.onclick=').length - 1, modes,
+    'a mode sets the enabled state without setting the handler -- the exact '
+    + 'shape that let a failed send leak its retry handler into every later design');
 });
 
 await test('a failed send queues, and the message says which state it is in', () => {

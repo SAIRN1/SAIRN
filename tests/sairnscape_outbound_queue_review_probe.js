@@ -105,6 +105,14 @@ const QUEUE_SRC = [
 
 const UI_SRC = [
   grab('function scpUpdateApprovalUI(rec){', '\n}\n'),
+  // ADDED 2026-09-21 by hank, when FINDING 1 below was FIXED. scpOpenDesignModal
+  // now routes the button through one setter that assigns label, enabled state
+  // and handler together, so extracting the modal without the setter throws
+  // ReferenceError and this report-only probe stops exiting 0. Added rather
+  // than the probe deleted: it is the only runnable reproduction of four
+  // findings, two of which are still open, and it now correctly reports
+  // FINDING 1 as closed instead of reproducing it.
+  grab('function scpSetSendBtn(mode, qid){', '\n}\n'),
   grab('function scpOpenDesignModal(id){', '\n}\n'),
   grab('function scpCloseDesignModal(){', '\n'),
   grab('async function scpSendDesignToQuote(){', '\n}\n'),

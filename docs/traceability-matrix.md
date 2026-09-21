@@ -501,6 +501,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; A no-licence write wore an earlier 4xx&rsquo;s refusal, and the send button&rsquo;s retry handler outlived the design it belonged to** | **FIXED 2026-09-21 (Hank)** &mdash; `sairnscape.html`; new standing guard `tests/sairnscape_send_button_and_licence.js`, 10 assertions, **9 of 9 valid sabotages caught** | `tests/sairnscape_send_button_and_licence.js` |
+| **&#128308; Two HIGH findings in the same queue are UNOWNED: a row the queue ACCEPTED is erased by an in-flight flush, and every retryable 5xx is filed as a PERMANENT refusal** | **OPEN** &mdash; found by Fourth (`d3d8c5b2`), reproduced in `tests/sairnscape_outbound_queue_review_probe.js`, report-only | `tests/sairnscape_outbound_queue_review_probe.js` |
 | **Independent review of the `scp_quotes` outbound queue (CC) &mdash; a no-licence failure wears an earlier 4xx, and the retry handler outlives the design it was bound to** | **REVIEWED 2026-09-21 (Hank)** &mdash; `e491bcfa`, `tests/scp_quotes_review_probe.js`, report-only, exit 0. **2 HIGH findings, neither fixed by me** | `tests/scp_quotes_review_probe.js` |
 | **Gate 4 on the thinnest column &mdash; and TWELVE apps&rsquo; licence-wipe decision was executed by nothing** | **BUILT 2026-09-15 (Hank)** &mdash; `239565a0`. `tests/sairnscape_fault_probe.py`, 9 mutation arms + 3 controls, green after three real coverage gaps were closed. MASTER-PLAN `sairnscape` fault 0 &rar | `tests/licence_rekey_isolation.js`, `tests/sairnscape_fault_probe.py` |
 
@@ -556,21 +558,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 57 test files are traced to no stated requirement
+### 56 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 537 of 594 traced, 90.4%.
+For context and not as the headline: 539 of 595 traced, 90.6%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 537 citations come from
+### Where the 539 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 276 |
+| `index` | 277 |
 | `declared` | 232 |
-| `declared+index` | 21 |
+| `declared+index` | 22 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -582,7 +584,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 44 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 43 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -632,7 +634,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnfreedom_server_backup_probe.py`
 - `tests/sairnlaw_citation_rule_probe.py`
 - `tests/sairnlaw_trust_clearance.js`
-- `tests/sairnscape_outbound_queue_review_probe.js`
 - `tests/sc_credentials_probe.py`
 - `tests/sd_agent_budget_probe.py`
 - `tests/sd_data_dental_provider_scope_probe.py`
@@ -662,8 +663,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 594   tests/**, api/** (both walked)
-  open-work rows citing a test       283   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 595   tests/**, api/** (both walked)
+  open-work rows citing a test       285   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

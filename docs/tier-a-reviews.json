@@ -871,6 +871,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-21T07:56:40Z",
+      "resources": [
+        "quotes",
+        "scp_quotes"
+      ],
+      "files": [
+        "tests/sairnscape_send_button_and_licence.js"
+      ],
+      "what": "sairnscape scp_quotes: fixed findings 1 and 4 of the outbound-queue review, found independently by hank and fourth from opposite directions. (A) scpData's no-licence guard now records {code:'NO_LICENCE'} with NO status instead of returning null untouched, so a call the server never saw stops inheriting an earlier 4xx and stops being classified as a refusal by scpSendDesignToQuote's queue condition. (B) the send button's label, enabled state and handler now go through ONE setter, scpSetSendBtn, called from all three sites, so the retry handler no longer outlives the design it was bound to. New standing guard tests/sairnscape_send_button_and_licence.js: 10 driven assertions, 9 of 9 valid sabotages caught, and both of fourth's probe arms now report CLOSED. PRESS ON, and the first is where the rule is weakest: (1) I AM NOT INDEPENDENT OF THIS. I wrote the review that found both defects and then landed the fix, on Michael's explicit instruction. That is the exact property the review rule exists to protect and it is absent here by design, so do NOT treat my having reviewed the original as evidence about the fix. (2) NO_LICENCE vs delete: I record a code with no status rather than deleting the entry, because scpPendingAdd labels a queued row from scpLastErrCode() and delete would file a no-licence failure as NETWORK. Check no other reader of scpLastErr is confused by a NO_LICENCE code appearing where none did before. (3) THE SETTER IS A REFACTOR, not a one-liner, and it turned four of cc's own suite arms red because they were regexes over source text. I re-aimed them rather than weakening them and added one they could not express -- but diff section 4 of tests/sairnscape_outbound_queue.js against its previous version and check no assertion was lost in the move. (4) scpSetSendBtn's 'send-disabled' mode is vocabulary I invented; check all three call sites pass the mode I think they pass, particularly the unapproved and already-sent branches. (5) I EDITED FOURTH'S REVIEW PROBE (tests/sairnscape_outbound_queue_review_probe.js) so it does not ReferenceError on the new setter. It is their artefact; check the edit only extends the extraction list and changes none of their findings or text. (6) FOURTH'S FINDINGS 2 AND 3 ARE STILL OPEN and deliberately unfixed -- the flush race that erases an accepted row, and every 5xx/429 filed as a permanent refusal. Finding 3 lives in scpWriteRefused, the SAME predicate fix A interacts with, so that function is now half-corrected against its own comment. Judge whether leaving it that way was right. (7) THE GATE NAMED ONLY THE TEST FILE, not sairnscape.html -- my production hunks do not mention scp_quotes on a changed line. Correct at hunk granularity and worth knowing: the fix itself would have raised no obligation without the test beside it.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
