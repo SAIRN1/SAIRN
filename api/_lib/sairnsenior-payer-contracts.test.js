@@ -281,9 +281,31 @@ check('something on screen actually opens the modal -- the resolver is unreachab
   /onclick="openPcModal\(\)"/.test(src), true);
 
 // ── hydration: the server copy of a rate wins over a stale local one ─────
-check('contracts hydrate from the server, replacing the local row rather than only adding unseen ones',
-  /function senHydratePayerContracts\(\)/.test(src) &&
-  /JSON\.stringify\(byId\[c\.id\]\)!==JSON\.stringify\(c\)/.test(src), true);
+// RE-AIMED 2026-09-21. This arm pinned the INLINE merge expression
+// `JSON.stringify(byId[x.id])!==JSON.stringify(x)`, which the server-wins
+// conversion refactored into the shared senServerWinsMerge(). The old anchor
+// went missing and the arm went red while the BEHAVIOUR IT DESCRIBES WAS STILL
+// CORRECT -- the classic stale-anchor failure, and the third instance of it in
+// this app's suites on one day.
+//
+// AND THE SENTENCE WAS RE-WRITTEN, NOT JUST THE REGEX, because the rule
+// changed shape when it moved: the merge is server-wins WITH A FIRST-PUSH
+// CARVE-OUT -- a record created on this device and never successfully pushed is
+// NOT overwritten by a stranger's row carrying the same id. The old wording
+// ("replaces the local row", full stop) now describes a rule the code
+// deliberately no longer follows exactly, and leaving it would have this suite
+// documenting the wrong contract.
+//
+// ASSERTED ON THE EXTRACTED FUNCTION BODY, NOT ON THE FILE. `senServerWinsMerge`
+// appears eight times in sairnsenior.html, so a file-wide regex would pass for
+// this hydrate while this hydrate did nothing of the kind.
+//
+// THE MERGE'S OWN CORRECTNESS IS NOT RE-TESTED HERE -- tests/server_wins_hydration.js
+// pins it across all seven converted apps and asserts the seven copies are one
+// rule. This arm pins DELEGATION, which is the thing that would break if
+// somebody rewrote this one hydrate back to additive-only.
+check('contracts hydrate through the shared server-wins merge -- server replaces a local row EXCEPT one this device created and never pushed',
+  /senServerWinsMerge\('sen_payer_contracts',\s*serverRows\)/.test(fn('senHydratePayerContracts')), true);
 // Asserted on the ELEMENT, not on the exact array literal: the A3 build added a
 // third hydrator to this same call and the literal match broke while the
 // property it was checking was untouched. An assertion that has to be edited

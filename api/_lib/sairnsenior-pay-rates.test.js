@@ -316,9 +316,31 @@ check('the modal picks the caregiver from the auth roster rather than free text'
   /var roster=_senRoster\|\|\[\];/.test(src) && /<select id="pr-employee">/.test(src), true);
 
 // ── sync discipline, same as the two builds before it ───────────────────
-check('hydration replaces the local row rather than only adding unseen ones',
-  /function senHydratePayRates\(\)/.test(src) &&
-  /JSON\.stringify\(byId\[r\.id\]\)!==JSON\.stringify\(r\)/.test(src), true);
+// RE-AIMED 2026-09-21. This arm pinned the INLINE merge expression
+// `JSON.stringify(byId[x.id])!==JSON.stringify(x)`, which the server-wins
+// conversion refactored into the shared senServerWinsMerge(). The old anchor
+// went missing and the arm went red while the BEHAVIOUR IT DESCRIBES WAS STILL
+// CORRECT -- the classic stale-anchor failure, and the third instance of it in
+// this app's suites on one day.
+//
+// AND THE SENTENCE WAS RE-WRITTEN, NOT JUST THE REGEX, because the rule
+// changed shape when it moved: the merge is server-wins WITH A FIRST-PUSH
+// CARVE-OUT -- a record created on this device and never successfully pushed is
+// NOT overwritten by a stranger's row carrying the same id. The old wording
+// ("replaces the local row", full stop) now describes a rule the code
+// deliberately no longer follows exactly, and leaving it would have this suite
+// documenting the wrong contract.
+//
+// ASSERTED ON THE EXTRACTED FUNCTION BODY, NOT ON THE FILE. `senServerWinsMerge`
+// appears eight times in sairnsenior.html, so a file-wide regex would pass for
+// this hydrate while this hydrate did nothing of the kind.
+//
+// THE MERGE'S OWN CORRECTNESS IS NOT RE-TESTED HERE -- tests/server_wins_hydration.js
+// pins it across all seven converted apps and asserts the seven copies are one
+// rule. This arm pins DELEGATION, which is the thing that would break if
+// somebody rewrote this one hydrate back to additive-only.
+check('hydration goes through the shared server-wins merge -- server replaces a local row EXCEPT one this device created and never pushed',
+  /senServerWinsMerge\('sen_pay_rates',\s*serverRows\)/.test(fn('senHydratePayRates')), true);
 check('Branches hydrates pay rates before drawing a margin, so a fresh device does not read margin equal to revenue',
   /if\(isMgmt\)senHydratePayRates\(\)\.then\(function\(changed\)\{if\(changed\)brPaint\(\);\}\);/.test(src), true);
 check('saving repaints without hydrating -- a hydrate racing the write would undo the edit',

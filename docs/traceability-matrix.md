@@ -540,6 +540,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation &mdash; rewriting one back to additive-only would break nothing** | **MEASURED 2026-09-21 (Fourth), NOT FIXED** &mdash; found while re-aiming the three arms that WERE pinned; the other five were never checked by anybody | `tests/server_wins_hydration.js` |
 | **&#9888; Three suites RED on `main` &mdash; hydration replaces the local row instead of only adding unseen ones** | **FLAGGED 2026-09-21 (Hank), NOT MINE AND NOT FIXED** &mdash; confirmed pre-existing by stashing my own changes and re-running on a clean tree | `api/_lib/sairnsenior-authorizations.test.js` |
 | **Gate 4 on federally-mandated EVV &mdash; and the probe found TWO concurrency guards nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnsenior_fault_probe.py`, 8 mutation arms + 4 controls; `api/_lib/sairnsenior-offline-evv.test.js` gained a concurrency section (4 arms, 26 &rarr; 30). MA | `api/_lib/sairnsenior-offline-evv.test.js`, `tests/sairnsenior_fault_probe.py` |
 
@@ -704,7 +705,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 638   tests/**, api/** (both walked)
-  open-work rows citing a test       318   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       319   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
