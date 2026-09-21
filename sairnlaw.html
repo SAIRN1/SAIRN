@@ -3455,14 +3455,69 @@ async function explainReconciliation(){
 // discipline the void path beside it keeps: a clearance that did not reach the
 // server is a clearance no other computer can see, and on a reconciliation
 // that is the difference between an explained item and an unexplained one.
+// ── THE THREE THINGS confirmVoid() DOES AND THIS DID NOT (2026-09-21) ────
+// Found in the independent review of the 2026-09-18 outstanding-item work.
+// confirmVoid() sits thirty lines above and was hardened against this exact
+// class on 2026-09-02 -- "found by driving this function overlapped, not by
+// reading it" -- and the hardening was never carried across:
+//
+//   1. IT RE-READS THE LEDGER AFTER THE AWAIT. This held `list` and `t` from
+//      BEFORE the round trip and called st('law_trusttx', list) in the revert,
+//      so anything that landed during the await -- a hydration, another save --
+//      was written away WHOLESALE. Not one row: the entire array.
+//   2. IT STAMPS ITS OWN CHANGE so the rollback can tell ITS change from
+//      somebody else's. This restored prevOn/prevFlag unconditionally, so a
+//      clearance another device recorded mid-flight was overwritten by this
+//      device's pre-action value. The review asked whether the revert could
+//      RESURRECT another device's clearance; it cannot -- it could ERASE one.
+//   3. IT REFUSES UP FRONT when the record is already in the target state.
+//
+// confirmVoid's own comment is the standard: re-reading "is necessary and is
+// not sufficient".
+//
+// THE STAMP IS A NEW FIELD IN THE jsonb BLOB and needs no migration, the same
+// reasoning `cleared_on` was added under. api/_lib/law-trust-reconcile.js
+// reads `cleared_on`, `cleared`, `date`, `amount`, `type` and isVoided() and
+// ignores everything else -- checked, not assumed -- so `cleared_at` changes
+// no reconciliation figure.
+//
+// ── AND A LIMIT THAT IS NOT MINE TO FIX HERE, STATED SO THIS FIX IS NOT
+// ── MISTAKEN FOR MAKING CLEARANCE WORK ──────────────────────────────────
+// ON A DISBURSEMENT, THE SERVER SILENTLY DOES NOT STORE THE CLEARANCE AT ALL.
+// api/sd-data.js routes every non-voided Disbursement write to
+// rpc/law_check_and_insert_disbursement, whose parameter list has no clearance
+// fields and whose body is `jsonb_build_object` over ten named keys; when the
+// id already exists for the same client it returns the STORED row untouched
+// ("retry-idempotency, client-scoped") without writing. So the response is
+// ok:true carrying the old row, this function reads a truthy result and says
+// "Marked cleared", and nothing was stored. An uncleared CHEQUE is a
+// Disbursement, which is the commonest outstanding item and the case the whole
+// feature exists for. Deposits take the plain upsert and are fine.
+// Recorded in docs/SAIRN-OPEN-WORK-INDEX.md and in the defect register; it is
+// a server + SQL change on trust money and belongs in its own claim.
 async function lawSetClearance(id, clearedOn, outstanding){
   var list=trustTransactions();
   var t=list.find(function(x){return x.id===id;});
   if(!t){toast('That transaction is no longer in this device ledger -- refresh.');return;}
   if(t.status==='Voided'){toast('A voided transaction cannot clear the bank.');return;}
-  var prevOn=t.cleared_on, prevFlag=t.cleared;
+  // ALREADY IN THE TARGET STATE IS NOT A NO-OP, IT IS A ROUND TRIP THAT CAN
+  // ONLY LOSE. It re-sends the record, risks a failure whose revert has
+  // nothing to revert, and toasts a change nobody made. SCOPED SO "Re-date"
+  // STILL WORKS: marking cleared with a DIFFERENT date is a real edit and the
+  // button is labelled for it, so only the identical date is refused.
+  if(outstanding ? (t.cleared===false&&t.cleared_on===undefined)
+                 : (t.cleared===true&&t.cleared_on===clearedOn)){
+    toast(outstanding?'This transaction is already marked outstanding.'
+                     :('This transaction is already marked cleared '+fdate(clearedOn)+'.'));
+    return;
+  }
+  var prevOn=t.cleared_on, prevFlag=t.cleared, prevAt=t.cleared_at;
+  // Captured so the rollback can tell ITS OWN change from someone else's.
+  // See the revert below.
+  var myClearedAt=new Date().toISOString();
   if(outstanding){ t.cleared=false; delete t.cleared_on; }
   else { t.cleared_on=clearedOn; t.cleared=true; }
+  t.cleared_at=myClearedAt;
   st('law_trusttx',list);
   rTrust();
   var syncResult=await sdnData('write','law_trusttx',t);
@@ -3470,11 +3525,31 @@ async function lawSetClearance(id, clearedOn, outstanding){
     // REVERTED, not left looking saved. An unsynced clearance would make THIS
     // device's reconciliation adjust for an item no other device knows about,
     // which is a reconciliation two people cannot both be right about.
-    if(prevOn===undefined)delete t.cleared_on; else t.cleared_on=prevOn;
-    if(prevFlag===undefined)delete t.cleared; else t.cleared=prevFlag;
-    st('law_trusttx',list);
-    rTrust();
-    toast(lawWriteFailText('law_trusttx','The clearing status did NOT reach the server, so it was not applied here either — the reconciliation must agree across devices'),7000);
+    //
+    // RE-READ, AND REVERT ONLY WHAT THIS CALL DID. The record can have been
+    // changed by another device DURING the round trip, and restoring this
+    // device's pre-action value over it would erase a clearance that is
+    // genuinely on the server -- putting an item back into the outstanding set
+    // that the bank has actually taken, which moves the expected bank balance
+    // by the amount of that item. So the revert fires only if the record still
+    // carries THIS call's stamp. And it writes back the RE-READ array, so a
+    // hydration that landed mid-flight is not written away with it.
+    var revertList=trustTransactions();
+    var revertT=revertList.find(function(x){return x.id===id;});
+    if(revertT&&revertT.cleared_at===myClearedAt){
+      if(prevOn===undefined)delete revertT.cleared_on; else revertT.cleared_on=prevOn;
+      if(prevFlag===undefined)delete revertT.cleared; else revertT.cleared=prevFlag;
+      if(prevAt===undefined)delete revertT.cleared_at; else revertT.cleared_at=prevAt;
+      st('law_trusttx',revertList);
+      rTrust();
+      toast(lawWriteFailText('law_trusttx','The clearing status did NOT reach the server, so it was not applied here either — the reconciliation must agree across devices'),7000);
+    }else{
+      // Somebody else changed this record while the request was in flight. Do
+      // not touch it; say so, because silently leaving it as it now stands
+      // after a failed write would look like this change succeeded.
+      rTrust();
+      toast('The clearing status did NOT reach the server, and this transaction was changed on another device while the request was in flight — its current state has been left alone. Refresh to see the current ledger.',9000);
+    }
     return;
   }
   toast(outstanding?'Marked outstanding':'Marked cleared '+fdate(clearedOn));

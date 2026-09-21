@@ -1125,6 +1125,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T13:41:23Z",
+      "resources": [
+        "law_trusttx"
+      ],
+      "files": [
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js",
+        "tests/sairnlaw_trust_clearance_probe.py"
+      ],
+      "what": "SAIRNlaw law_trusttx: lawSetClearance() gets the three things confirmVoid() thirty lines above has had since 2026-09-02 and this never received -- (1) it RE-READS the ledger after the await, because trustTransactions() is ld() and parses localStorage fresh every call, so the array captured before the round trip was genuinely stale and a failed single-row write wrote back the whole of it, erasing anything that landed mid-flight; (2) it STAMPS its own change as cleared_at and reverts only if the record still carries that stamp, because the old unconditional restore could overwrite a clearance another device recorded during the round trip -- putting an item the bank HAS taken back into the outstanding set and moving the expected bank balance by its amount; (3) it REFUSES an already-in-target-state press, scoped so Re-date still works. The suite grew a second device: a duringWrite hook that runs while the caller awaits, plus a fidelity fix to the stub trustTransactions(), which returned the store BY REFERENCE and therefore made the entire stale-snapshot class unplantable. 5 -> 10 arms; the control 4 -> 10 mutations, 14 arms, all refused. PRESS ON, five things. (1) THE REVERT'S else BRANCH LEAVES THE RECORD ALONE AND ONLY TOASTS -- check that leaving another device's value standing after MY write failed is right in every case, particularly where my change was 'outstanding' and theirs was 'cleared', since the two disagree about money and the user is told only to refresh. (2) cleared_at IS A NEW FIELD IN THE jsonb BLOB -- I drove the reconciliation engine with and without it and the output is byte-identical, but check nothing else reads law_trusttx records field-wise, and that adding it cannot push a row over alfcr-style size limits or a LEDES/export shape. (3) THE ALREADY-IN-TARGET-STATE REFUSAL compares cleared_on by === against the prompt string; check a row whose cleared_on was stored by an older path in a different shape cannot make Re-date silently refuse, and check the outstanding half (cleared===false && cleared_on===undefined) against a row where cleared_on was left as null rather than deleted. (4) THE STAMP IS A TIMESTAMP, NOT A NONCE. Two presses inside the same millisecond on one device would collide; I judged that impossible through a prompt() and a disabled-free button path, but it is an assumption and the void path beside it made the same one. (5) AND THE ONE THAT MATTERS MOST, WHICH THIS CHANGE DOES NOT FIX AND MUST NOT BE READ AS FIXING: on a DISBURSEMENT the server silently stores no clearance at all -- api/sd-data.js routes it to rpc/law_check_and_insert_disbursement, whose nine parameters carry no clearance field and whose existing-id branch returns the stored row without writing, so the response is ok:true and this function reports success over a no-op. An uncleared cheque IS a disbursement. Recorded as its own open-work row; check my reading of the SQL before anybody relies on clearance working.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
