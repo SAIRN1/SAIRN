@@ -9055,7 +9055,7 @@
       "recurrence_open": "matter_id and hours are validated in the browser and by nothing on the server -- the same shape on the same write, named and not fixed. And this closes one field on one resource: the other law_ resources still reach the upsert on an id check alone."
     },
     {
-      "commit": "1a56a7d9e5e0",
+      "commit": "1884f8148112",
       "date": "2026-09-21",
       "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
       "files": [
@@ -9117,7 +9117,7 @@
       "recurrence_open": "Nothing prevents the next function added to a panel render path from breaking a different hand-built sandbox the same way; only this one instance is fixed."
     },
     {
-      "commit": "1a56a7d9e5e0",
+      "commit": "1884f8148112",
       "date": "2026-09-21",
       "subject": "fix(tests): both red probes triaged -- one a stale fixture, and the other a control an unrelated commit disarmed three days ago without anybody noticing",
       "files": [
@@ -9131,7 +9131,7 @@
       ],
       "lines_added": 124,
       "lines_removed": 8,
-      "app": "platform",
+      "app": "PLATFORM",
       "layer": "test",
       "severity": "high",
       "detection_method": "probe-control",
