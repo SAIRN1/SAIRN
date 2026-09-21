@@ -191,6 +191,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **Findings #276/#278 &mdash; all 84 Tier A resources filter by `license_hash` and ZERO of them assert it** | **SCOPED 2026-09-21 (Hank)** &mdash; `docs/2026-09-21-cross-tenant-isolation-build-plan.md`, `tools/cross_tenant_isolation_scope.py`, `tests/run_cross_tenant_scope_probe.py`, and **one REFERENCE IMPLE | `api/sairndental/complaint-respond.test.js`, `api/sd-data-cross-tenant-isolation.test.js`, `tests/app_session_isolation.js`, `tests/run_cross_tenant_scope_probe.py` |
+| **&#128994; SERVER-WINS is the hydration rule now &mdash; and the additive shape it replaces is in NINE apps, not the three the decision named** | **DECIDED 2026-09-21 (Michael). 2 of 9 apps CONVERTED (cc): `sairnlegacy`, `sairndesign`. 7 apps / 19 sites STILL ADDITIVE** &mdash; `tests/server_wins_hydration.js` 34 arms drives both converted apps | `tests/run_server_wins_hydration_sabotage_probe.py`, `tests/server_wins_hydration.js` |
 | **&#9989; The deployed product has no build provenance and cannot be given any by adding a step &mdash; so a SOURCE MANIFEST is attested instead, and it is NOT called SLSA** | **BUILT AND EXERCISED 2026-09-18 (Fourth)** &mdash; `tools/source_manifest.py`, `.github/workflows/source-manifest.yml`, `tests/source_manifest_probe.py` 11 arms. Run `35355044141`, head `29a0b6c3`, c | `tests/source_manifest_probe.py` |
 | **&#9989; ~~THREE negative controls assert "and it fails on the right arm" against the WHOLE RUN~~ &mdash; it was TEN, and the fix found a control that had been crediting a PASSING arm for its whole life** | **FIXED 2026-09-18 (Fourth)** &mdash; Cody's published anchoring applied to all 10, patterns NARROWED on 3 more, cross-matrix 104 &rarr; 10 false matches. Original status follows unchanged &mdash; **M | `tests/sairnbiz_three_way_match_mutation_control.js`, `tests/sairndental_coverage_edit_mutation_control.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
 | **&#9888; TEN OF ELEVEN third-party fetches have NO timeout at all &mdash; and the most exposed one had no size limit either, on an endpoint anyone can call** | **AUDITED AND HIGHEST-RISK HARDENED 2026-09-17 (Hank)** &mdash; `api/bridge.js` `proxy_get` now bounded in time, size and concurrency; 18 arms in `api/bridge-push-auth.test.js`, 4 mutations killed. ** | `api/bridge-push-auth.test.js` |
@@ -455,7 +456,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The IOLTA clearance revert never re-reads the ledger and never stamps its own change &mdash; so it can ERASE another device's clearance and write away a whole concurrent hydration, and the bank leg claims an adjustment it did not make** | **FOUND 2026-09-21 (Cody), NOT FIXED** &mdash; three findings from the Tier A review of cc's `law_trusttx` obligation (opened 2026-09-18T14:15:06Z, discharged 2026-09-21 with the full verdict in `docs | `tests/sairnlaw_trust_clearance_probe.py` |
 | **&#9989; A BILLABLE hour at rate zero bills nothing and says nothing &mdash; `rate` was validated in NEITHER layer, so a blank rate became `0` and the hour added $0.00 to the invoice while showing as ordinary billable work** | **FIXED 2026-09-21 (cc)** &mdash; `api/_lib/law-timeentry.js` refuses a billable entry whose `rate` is not a finite number above zero; `saveTime()` in `sairnlaw.html` refuses it in the browser first.  | `tests/run_sairnlaw_billable_rate_sabotage_probe.py`, `tests/sairnlaw_billable_rate.js` |
 | **&#128308; There is NO LEDES export, and three files plus a user-facing refusal were justifying themselves on it** | **OPEN &mdash; the false claims removed 2026-09-21 (cc), the FEATURE is not built** | `api/_lib/law-timeentry.test.js`, `tests/sairnlaw_billing_codes.js`, `tests/sairnlaw_billing_codes_mutation_control.js` |
-| **&#128308; Additive hydration means a device holding a STALE record is never corrected by the server &mdash; a fix that makes the server right does not make the twenty `law_` resources right** | **OPEN &mdash; named, deliberately not fixed 2026-09-21 (cc)** | `tests/sairnlaw_hydrate.js` |
 | **&#9989; The hours were billed on one browser and the server never heard &mdash; `invoiced:true` went to localStorage and stopped, so a fresh device offers them again as unbilled** | **FIXED 2026-09-21 (cc)** &mdash; `saveInvoice()` in `sairnlaw.html` now writes each touched entry back to `law_timeentries`, whole, and NAMES a write that did not land; `tests/sairnlaw_invoiced_sync. | `tests/sairnlaw_invoiced_sync.js` |
 | **&#9989; A billable hour could reach the server with NO UTBMS code &mdash; refused by nothing at either end, on the record Tier A invoices are built from** | **FIXED 2026-09-18 (Fourth)** &mdash; `api/_lib/law-timeentry.js` (NEW) wired into the `law_timeentries` write branch of `api/sd-data.js`; `api/_lib/law-timeentry.test.js` 15 arms, 6 sabotages all cau | `api/_lib/law-timeentry.test.js` |
 | 🚨 **The advisory lock was doing NOTHING under REPEATABLE READ &mdash; on ATTORNEY TRUST MONEY, and in two other places** | **SWEPT AND GUARDED 2026-09-15 (Hank)** &mdash; `law_check_and_insert_disbursement`, `law_check_and_void_deposit`, `cl_rate_limit_consume`. New `tools/advisory_lock_isolation_check.py` (report-only, r | `tests/run_advisory_lock_isolation_probe.py` |
@@ -560,17 +560,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 535 of 592 traced, 90.4%.
+For context and not as the headline: 537 of 594 traced, 90.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 535 citations come from
+### Where the 537 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 275 |
+| `index` | 276 |
 | `declared` | 232 |
-| `declared+index` | 20 |
+| `declared+index` | 21 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -662,7 +662,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 592   tests/**, api/** (both walked)
+  test files on disk                 594   tests/**, api/** (both walked)
   open-work rows citing a test       283   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
