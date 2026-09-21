@@ -191,6 +191,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **&#128308; The `json-catch-null` sweep was NOT a sweep &mdash; 4 more sites in the file it swept have the identical defect, and one serves SEVEN Tier A resources** | **FOUND 2026-09-21 (Hank)**, reviewing cc&rsquo;s `92be209a`. Driven in `tests/sd_data_unconfirmed_write_review_probe.js`, report-only, exit 0. **NOT FIXED &mdash; I hold a review claim, not the file* | `tests/sd_data_unconfirmed_write_review_probe.js` |
+| **A Tier A change's obligation depends on which UNRELATED file is in the commit with it &mdash; TWO independent instances in one day, by two different mechanisms** | **MEASURED 2026-09-21 (Cody), NOT FIXED** &mdash; cc recorded the false-negative half by hand when it opened the obligation; this confirms it **by running the gate** and finds the mirror image | `tests/sairnscape_send_button_and_licence.js` |
 | **Findings #276/#278 &mdash; all 84 Tier A resources filter by `license_hash` and ZERO of them assert it** | **SCOPED 2026-09-21 (Hank)** &mdash; `docs/2026-09-21-cross-tenant-isolation-build-plan.md`, `tools/cross_tenant_isolation_scope.py`, `tests/run_cross_tenant_scope_probe.py`, and **one REFERENCE IMPLE | `api/sairndental/complaint-respond.test.js`, `api/sd-data-cross-tenant-isolation.test.js`, `tests/app_session_isolation.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128994; SERVER-WINS is the hydration rule now &mdash; and the additive shape it replaces is in NINE apps, not the three the decision named** | **DECIDED 2026-09-21 (Michael). 2 of 9 apps CONVERTED (cc): `sairnlegacy`, `sairndesign`. 7 apps / 19 sites STILL ADDITIVE** &mdash; `tests/server_wins_hydration.js` 34 arms drives both converted apps | `tests/run_server_wins_hydration_sabotage_probe.py`, `tests/server_wins_hydration.js` |
 | **&#9989; The deployed product has no build provenance and cannot be given any by adding a step &mdash; so a SOURCE MANIFEST is attested instead, and it is NOT called SLSA** | **BUILT AND EXERCISED 2026-09-18 (Fourth)** &mdash; `tools/source_manifest.py`, `.github/workflows/source-manifest.yml`, `tests/source_manifest_probe.py` 11 arms. Run `35355044141`, head `29a0b6c3`, c | `tests/source_manifest_probe.py` |
@@ -665,7 +666,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 596   tests/**, api/** (both walked)
-  open-work rows citing a test       287   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       288   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
