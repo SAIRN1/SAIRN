@@ -192,7 +192,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **Independent review of the cross-tenant grader DECLARATION probe (CC) &mdash; the &ldquo;at the moment hank shipped it&rdquo; reconstruction is not hank&rsquo;s list, and its guard cannot tell** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/grader_declaration_reconstruction_review_probe.py`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/grader_declaration_reconstruction_review_probe.py` |
 | **&#9888; `press_on_1` prints a THREE-entry exclusion list under a heading that says two, and the guard passes &mdash; a reconstruction that is wrong TODAY, not merely fragile later** | **OPEN 2026-09-21, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s review of cc&rsquo;s `2026-09-21T21:11:17Z` obligation. Driven both ways on the real 627-file corpus: `tests/grader_declaration_recon | `tests/cross_tenant_grader_declaration_review_probe.py`, `tests/grader_declaration_reconstruction_review_probe.py` |
-| **`SELF_EXCLUDED` press-on (3) needs a reviewer who has never edited that tuple &mdash; two sessions have now judged their own edits to it** | **OPEN 2026-09-21** &mdash; raised by Fourth while discharging cc&rsquo;s `21:11:17Z` obligation; **cannot be closed by cc or by Fourth** | `tests/run_cross_tenant_scope_probe.py` |
+| **`SELF_EXCLUDED` press-on (3) needs a reviewer who has never edited that tuple &mdash; two sessions have now judged their own edits to it** | **OPEN 2026-09-21** &mdash; raised by Fourth while discharging cc&rsquo;s `21:11:17Z` obligation; **cannot be closed by cc or by Fourth** | `tests/cross_tenant_dispatchers_review_probe.py`, `tests/cross_tenant_grader_declaration_review_probe.py`, `tests/cross_tenant_scope_grader_review_probe.py`, `tests/grader_declaration_reconstruction_review_probe.py`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#9989; The trapdoor detector shared the blind spot the guard had &mdash; and watched 6 of 16 apps. Both closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/provisioner-health.js` and `tools/licence_recoverability_check.py`; new `api/provisioner-health-sole-role.test.js` **10 arms**, new `tests/run_provisioner_heal | `api/provisioner-health-sole-role.test.js`, `tests/run_provisioner_health_sole_role_sabotage_probe.py` |
 | **&#9989; A deputy provisioning role could deactivate the last `owner` in SAIRNgrounds, SAIRNbiz and SAIRNscape &mdash; the SD-AUDIT-2026 loss shape, through the API** | **FIXED 2026-09-21 (Hank)** &mdash; `SOLE_ROLE = 'owner'` wired into `setActive()` in all three; new suite `api/_lib/last-admin-sole-role.test.js` **24 arms**, new probe `tests/run_last_admin_sole_rol | `api/_lib/last-admin-sole-role.test.js`, `tests/run_last_admin_sole_role_sabotage_probe.py` |
 | **&#9989; The six write-class cross-tenant gaps Phase 3 disclosed by line are closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data-cross-tenant-ownbranch.test.js`, 73 &rarr; 76 assertions, **6 of 6 sabotages caught individually**, and a full re-sweep of all 37 filtered queries leav | `api/sd-data-cross-tenant-ownbranch.test.js` |
@@ -589,19 +589,19 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 63 test files are traced to no stated requirement
+### 62 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 572 of 635 traced, 90.1%.
+For context and not as the headline: 573 of 635 traced, 90.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 572 citations come from
+### Where the 573 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 292 |
+| `index` | 293 |
 | `declared` | 240 |
 | `declared+index` | 32 |
 | `GUARD_TESTS+index` | 5 |
@@ -615,7 +615,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 50 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 49 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -638,7 +638,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/app_session_isolation_probe.py`
 - `tests/approval_persistence_probe.py`
 - `tests/audit_checkpoint_probe.py`
-- `tests/cross_tenant_dispatchers_review_probe.py`
 - `tests/demo_seed_licence_scope_probe.py`
 - `tests/dnt_bi_scope_probe.py`
 - `tests/duplicate_review_merge_sweep.py`
