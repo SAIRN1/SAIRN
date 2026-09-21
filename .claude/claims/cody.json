@@ -1550,8 +1550,8 @@
       "task": "negative controls for the sc-credentials unknown write guards",
       "claimed_at": "2026-09-21T12:13:42Z",
       "claimed_at_epoch": 1789992822.9313152,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:00:58Z"
     },
     {
       "id": "cody-1789993657",
