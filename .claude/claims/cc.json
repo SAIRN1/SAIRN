@@ -1934,6 +1934,16 @@
       "claimed_at_epoch": 1789975400.0891812,
       "status": "released",
       "released_at": "2026-09-21T07:36:00Z"
+    },
+    {
+      "id": "cc-1789976544",
+      "session": "cc",
+      "subject": "sairnlegacy",
+      "task": "server-wins hydration sdnHydrateAll overwrite local records",
+      "claimed_at": "2026-09-21T07:42:24Z",
+      "claimed_at_epoch": 1789976544.5871718,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
