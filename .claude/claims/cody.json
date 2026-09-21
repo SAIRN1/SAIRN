@@ -1489,6 +1489,16 @@
       "claimed_at_epoch": 1789973789.212363,
       "status": "released",
       "released_at": "2026-09-21T06:57:02Z"
+    },
+    {
+      "id": "cody-1789973996",
+      "session": "cody",
+      "subject": "sairncare",
+      "task": "tier-a review of cc alf_claim_routes dnt_rollup rf_contingency_rules obligation opened 2026-09-18T13:48:51Z",
+      "claimed_at": "2026-09-21T06:59:56Z",
+      "claimed_at_epoch": 1789973996.1703494,
+      "status": "active",
+      "note": "OVERRIDE, stated out loud. sairn_claim.py claim exited 1 against fourth's live claim \"sairnscape -- tier-a review of cc scp_quotes outbound queue obligation\" (0.0h old, real, not dead). The tool's own reason is \"same file or resource: tier-a\", plus the generic tokens obligation/review/tier. \"tier-a\" is not a file or a resource -- it is the name of the review PROCESS both of us are running, so every honest reviewer claim will collide with every other one by construction. Verified rather than assumed: fourth's obligation names resources [scp_quotes] and files sairnscape.html + tests/sairnscape_outbound_queue.js; mine names [alf_claim_routes, dnt_rollup, rf_contingency_rules] and files sairncare.html + tools/resource_reachability_check.py. Zero file or resource overlap. I took the SECOND-most-overdue obligation precisely because fourth holds the first. Task string NOT reworded to slip the matcher -- written directly with the reason attached, per PR 4.3."
     }
   ]
 }
