@@ -1418,6 +1418,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-21T22:26:28Z",
+      "resources": [
+        "sd_exec_msgs"
+      ],
+      "files": [
+        "tests/run_exec_msgs_gate_sabotage_probe.py",
+        "tests/stonedesk_exec_msgs_gate.js"
+      ],
+      "what": "sd_exec_msgs re-tiered B -> A (Michael's decision) and the tier itself wired into a gate. The register row moved on the third A criterion -- a documented failure, the licence-key-only exposure fixed in fcd622df -- so tools/tier_a_review_gate.py now demands a review on every later change to this resource; this push being refused until this record existed is that consequence firing on its own author. REVIEW HARDEST: (1) whether Tier A is right on the incident clause rather than a confidentiality clause the register does not have, given sd_customers stays B on PII -- if the real answer is that the A criteria need a confidentiality limb, this row is a workaround and should be said so; (2) tests/stonedesk_exec_msgs_gate.js arm 13 now asserts the register's own cell, so a test file is enforcing a governance document -- check that is not circular; (3) the B-tier count in the closing note was already stale by one before I touched it and I corrected it to 297 without auditing which earlier row move left it wrong.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-21T22:26:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
