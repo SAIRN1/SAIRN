@@ -72,26 +72,43 @@ function syncNames() {
 function harness(opts) {
   opts = opts || {};
   const stored = {};
+  const raw = Object.assign({}, opts.raw || {});
   const reads = [];
   const ctx = {
     JSON, Object, Array, String, Promise,
-    console: { warn: () => {} },
+    console: { warn: () => {}, error: () => {} },
     lawLicenseKey: () => (opts.noLicense ? '' : 'LAW-PINNACLE-2026'),
     ld: (k, d) => (opts.local && opts.local[k] ? JSON.parse(JSON.stringify(opts.local[k])) : d),
-    st: (k, v) => { stored[k] = v; return true; },
+    st: (k, v) => { stored[k] = v; raw[k] = JSON.stringify(v); return true; },
+    // The synced-id map is read RAW (localStorage.getItem) rather than through
+    // ld(), because "absent" and "corrupt" must be told apart -- see the
+    // server-wins comment above lawHydrateAll(). So the harness needs a real
+    // enough localStorage for that read to work, and `opts.raw` is how an arm
+    // seeds or corrupts it.
+    localStorage: {
+      getItem: (k) => (Object.prototype.hasOwnProperty.call(raw, k) ? raw[k] : null),
+      setItem: (k, v) => { raw[k] = String(v); },
+    },
     sdnData: (action, resource) => {
       reads.push(resource);
       const r = (opts.server || {})[resource];
       return Promise.resolve(r === undefined ? [] : r);
     },
-    __stored: stored, __reads: reads,
+    __stored: stored, __reads: reads, __raw: raw,
   };
   vm.createContext(ctx);
   // The REAL declaration is lifted, not retyped. An earlier version of this
   // harness hardcoded the four-name list, so when the list grew to nineteen
   // the suite would have tested a list the app no longer has -- the fixture
   // drifting from the code it exists to check.
-  vm.runInContext(syncListSrc() + '\n' + fnBody('async function lawHydrateAll()'), ctx);
+  vm.runInContext([
+    syncListSrc(),
+    html.slice(html.indexOf("var LAW_SYNCED_KEY='"),
+               html.indexOf(';', html.indexOf("var LAW_SYNCED_KEY='")) + 1),
+    fnBody('function lawSyncedRead()'),
+    fnBody('function lawMarkSynced('),
+    fnBody('async function lawHydrateAll()'),
+  ].join('\n'), ctx);
   return ctx;
 }
 
@@ -107,15 +124,63 @@ test('server records not held locally are merged in', async () => {
   assert.strictEqual(c.__stored.law_matters.map((x) => x.id).join(','), 'M-1,M-2');
 });
 
-test('a locally present id is NEVER overwritten by the server copy', async () => {
-  const localEdit = { id: 'M-1', note: 'EDITED HERE' };
+// ── THIS ARM USED TO ASSERT THE OPPOSITE, AND THAT IS THE RECORD ──────────
+// It read "a locally present id is NEVER overwritten by the server copy" and
+// it pinned the additive merge deliberately -- the behaviour was a DESIGN, and
+// the arm was here so nobody could change it by accident.
+//
+// Michael's decision on 2026-09-21 changed the design: server-wins. The arm is
+// INVERTED rather than deleted, because a pin that is quietly dropped when it
+// becomes inconvenient is worse than no pin. What it guards now is the new
+// rule and its carve-out, with the same intent.
+//
+// WHY THE OLD DESIGN'S DISCLOSURE UNDERSTATED THE COST: it framed the gap as
+// two devices editing the SAME record between hydrations. It was never only
+// about concurrent edits -- ANY field corrected on the server was invisible
+// FOREVER to a device that already held that id, with nothing racing. The case
+// that found it: saveInvoice() marks time entries invoiced:true, the server
+// now says so, and a workstation that hydrated them last week still offers the
+// same hours as unbilled.
+test('a locally present id IS overwritten by the server copy, once it is known to be synced', async () => {
   const c = harness({
-    local: { law_matters: [localEdit] },
+    local: { law_matters: [{ id: 'M-1', note: 'EDITED HERE' }] },
     server: { law_matters: [{ id: 'M-1', note: 'server version' }, { id: 'M-2' }] },
+    raw: { law_synced_ids: JSON.stringify({ law_matters: ['M-1'] }) },
   });
   const r = await c.lawHydrateAll();
-  assert.strictEqual(r.merged, 1, 'only the unseen record should merge');
-  assert.strictEqual(c.__stored.law_matters.find((x) => x.id === 'M-1').note, 'EDITED HERE');
+  assert.strictEqual(c.__stored.law_matters.find((x) => x.id === 'M-1').note, 'server version',
+    'the local copy survived -- this is the additive behaviour server-wins replaced');
+  assert.strictEqual(r.merged, 2, 'an overwrite counts as merged, the same as an append');
+});
+
+test('but a record whose FIRST push never landed keeps its local value', async () => {
+  // The carve-out. The server's row for an id this device has never
+  // successfully pushed belongs to somebody else -- newId() is prefix +
+  // Date.now() + a 0-999 draw, so a same-millisecond collision is possible.
+  // `law_matters` is SEEDED here (the key exists) and M-1 is not in it, which
+  // is what makes this the pending-first-push case rather than a first run.
+  const c = harness({
+    local: { law_matters: [{ id: 'M-1', note: 'never pushed' }] },
+    server: { law_matters: [{ id: 'M-1', note: 'somebody else' }] },
+    raw: { law_synced_ids: JSON.stringify({ law_matters: [] }) },
+  });
+  await c.lawHydrateAll();
+  assert.strictEqual(c.__stored.law_matters, undefined,
+    'a record whose own push never landed was overwritten by a stranger');
+});
+
+test('a FIRST run seeds what the server already had, so the rule is not inert on existing data', async () => {
+  // No synced map at all -- every existing install. Any id present on both
+  // sides was demonstrably pushed by somebody, so server-wins applies and the
+  // ids are recorded. Without this the rule would never apply to data that
+  // existed before it shipped, which is the situation it was chosen to fix.
+  const c = harness({
+    local: { law_matters: [{ id: 'M-1', note: 'stale' }] },
+    server: { law_matters: [{ id: 'M-1', note: 'server version' }] },
+  });
+  await c.lawHydrateAll();
+  assert.strictEqual(c.__stored.law_matters[0].note, 'server version');
+  assert.ok(JSON.parse(c.__raw.law_synced_ids).law_matters.indexOf('M-1') !== -1);
 });
 
 // ── NOT EVERY REGISTERED RESOURCE IS A TABLE (2026-09-18) ────────────────────
@@ -202,10 +267,25 @@ test('no licence key means no reads at all', async () => {
   assert.strictEqual(r.merged, 0);
 });
 
-test('nothing is written when nothing merged -- a no-op boot costs no storage write', async () => {
-  const c = harness({ local: { law_matters: [{ id: 'M-1' }] }, server: { law_matters: [{ id: 'M-1' }] } });
+test('no RESOURCE is written when nothing changed -- a no-op boot costs no data write', async () => {
+  // NARROWED 2026-09-21 and the narrowing is the point. This used to assert
+  // that NOTHING was written at all. Server-wins writes one more thing: the
+  // synced-id map, which records that these resources have now been seeded --
+  // and it has to be written even on a no-op, because the PRESENCE of a
+  // resource's key is what says it was seeded. Without that write every later
+  // hydrate re-enters the never-seeded branch and overwrites unconditionally.
+  //
+  // So the arm still holds the property that matters -- a boot that changed no
+  // record does not rewrite the record store -- and stops claiming the one
+  // that is no longer true.
+  const c = harness({
+    local: { law_matters: [{ id: 'M-1' }] },
+    server: { law_matters: [{ id: 'M-1' }] },
+    raw: { law_synced_ids: JSON.stringify({ law_matters: ['M-1'] }) },
+  });
   await c.lawHydrateAll();
-  assert.deepStrictEqual(Object.keys(c.__stored), []);
+  assert.deepStrictEqual(Object.keys(c.__stored).filter((k) => k !== 'law_synced_ids'), [],
+    'a hydrate that changed no record still wrote to a record store');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

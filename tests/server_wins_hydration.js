@@ -64,7 +64,23 @@ const APPS = [
     licenseFn: 'sdnLicenseKey', quotaStub: 'dsnIsQuotaError',
     errBag: null, timeoutFn: 'sdnFetchTimeoutSignal', sessionVar: 'sdnSession',
   },
+  {
+    // Converted 2026-09-21, one claim later than the other two. Its hydrate
+    // has a DIFFERENT NAME and returns {merged,failed} rather than a boolean,
+    // because it also reports failed reads in a boot toast -- so the arms
+    // below address it through `hydrateFn`, and the same-rule arm compares the
+    // load-bearing LINES rather than whole function bodies. A suite that
+    // demanded three byte-identical functions would have forced this app to
+    // drop a feature to satisfy a test.
+    app: 'sairnlaw', file: 'sairnlaw.html', prefix: 'law',
+    storageKey: 'law_synced_ids', keyVar: 'LAW_SYNCED_KEY',
+    listVar: 'LAW_SYNC_RESOURCES', sample: 'law_timeentries',
+    licenseFn: 'lawLicenseKey', quotaStub: 'lawIsQuotaError',
+    errBag: 'lawLastErr', timeoutFn: 'lawFetchTimeoutSignal', sessionVar: 'lawSession',
+    hydrateFn: 'lawHydrateAll', sessionTokenFn: 'lawSessionToken',
+  },
 ];
+const HYDRATE = (A) => A.hydrateFn || 'sdnHydrateAll';
 
 // ── NOT YET CONVERTED, NAMED RATHER THAN OMITTED ──────────────────────────
 // THE BRIEF SAID THREE APPS AND THE SHAPE IS IN NINE. That was found by this
@@ -81,10 +97,6 @@ const APPS = [
 // what the detector finds -- an app converted and left here FAILS, and an app
 // that is neither converted nor listed FAILS.
 const PENDING = [
-  { file: 'sairnlaw.html', sites: 1, fns: ['lawHydrateAll'],
-    why: 'IN THE BRIEF and not done in this pass: another session held the '
-       + 'app-wide sairnlaw claim (deadline engine) throughout. The file sets '
-       + 'are disjoint and the block was NOT overridden. Convert it next.' },
   { file: 'sairncare.html', sites: 6, fns: ['alfHydrateResidents', 'alfHydrateMar', 'alfHydrateStaff', 'alfHydrateBilling', 'alfHydrateIncidents', 'alfHydrateActivities'],
     why: 'NOT IN THE BRIEF. Six separate per-resource hydrates rather than one '
        + 'loop, and one of them is the MAR -- a medication administration '
@@ -162,6 +174,7 @@ function harness(A, opts) {
     [A.quotaStub]: () => false,
     [A.timeoutFn]: () => undefined,
     [A.sessionVar]: null,
+    [A.sessionTokenFn || '__noSessionTokenFn']: () => null,
     // The hydrate calls sdnData('read', ...). The sdnData ARMS install the
     // real one over this; everywhere else the read is what is under test, not
     // the transport.
@@ -181,7 +194,7 @@ function harness(A, opts) {
     lift(src, 'function ' + A.prefix + 'SyncedRead()', 'SyncedRead'),
     lift(src, 'function ' + A.prefix + 'MarkSynced(', 'MarkSynced'),
     liftList(src, A.listVar),
-    lift(src, 'async function sdnHydrateAll()', 'sdnHydrateAll'),
+    lift(src, 'async function ' + HYDRATE(A) + '()', HYDRATE(A)),
   ].join('\n'), ctx);
   ctx.__local = (k) => JSON.parse(store[k] || 'null');
   ctx.__synced = () => { try { return JSON.parse(store[A.storageKey]); } catch (e) { return store[A.storageKey]; } };
@@ -196,7 +209,10 @@ function harness(A, opts) {
                                        : { ok: false, error: { code: 'NOPE', message: 'no' } }),
       });
     };
-    vm.runInContext(lift(src, 'function sdnData(action,resource,payload,withSession){', 'sdnData'), ctx);
+    const sig = src.indexOf('function sdnData(action,resource,payload,withSession){') > 0
+      ? 'function sdnData(action,resource,payload,withSession){'
+      : 'function sdnData(action,resource,payload){';
+    vm.runInContext(lift(src, sig, 'sdnData'), ctx);
   };
   return ctx;
 }
@@ -212,7 +228,7 @@ forEachApp('a synced id is REPLACED by the server copy, field for field', async 
     server: { [A.sample]: [{ id: 'R-1', status: 'Closed', note: 'server truth' }] },
     synced: { [A.sample]: ['R-1'] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   const row = c.__local(A.sample).find((r) => r.id === 'R-1');
   assert.strictEqual(row.status, 'Closed', 'the local copy survived -- this is the old additive behaviour');
   assert.strictEqual(row.note, 'server truth');
@@ -224,7 +240,7 @@ forEachApp('a field the server DROPPED is gone locally -- replace, not merge', a
     server: { [A.sample]: [{ id: 'R-1', status: 'Closed' }] },
     synced: { [A.sample]: ['R-1'] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   const row = c.__local(A.sample).find((r) => r.id === 'R-1');
   assert.ok(!('localOnly' in row),
     'a local-only field survived -- that is a field MERGE, and the rule is the server copy wins');
@@ -236,7 +252,7 @@ forEachApp('a server record not held locally is still appended, and marked synce
     server: { [A.sample]: [{ id: 'R-1' }, { id: 'R-2', from: 'other device' }] },
     synced: { [A.sample]: ['R-1'] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.deepStrictEqual(c.__local(A.sample).map((r) => r.id).sort(), ['R-1', 'R-2']);
   assert.ok(c.__synced()[A.sample].indexOf('R-2') !== -1,
     'a record that came FROM the server was not recorded as being on it');
@@ -248,7 +264,7 @@ forEachApp('a purely local record the server has never seen is untouched', async
     server: { [A.sample]: [] },
     synced: { [A.sample]: [] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample).find((r) => r.id === 'R-9').note, 'mine, offline');
 });
 
@@ -266,7 +282,7 @@ forEachApp('an UNSYNCED id is NOT overwritten, even though the server has that i
     server: { [A.sample]: [{ id: 'R-1', note: 'somebody else' }] },
     synced: { [A.sample]: [] },                 // seeded, and R-1 is not in it
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample).find((r) => r.id === 'R-1').note, 'never pushed',
     'a record whose own push has never landed was overwritten by a stranger');
 });
@@ -277,10 +293,10 @@ forEachApp('and it is NOT recorded as synced by being kept -- the next hydrate m
     server: { [A.sample]: [{ id: 'R-1', note: 'somebody else' }] },
     synced: { [A.sample]: [] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.ok((c.__synced()[A.sample] || []).indexOf('R-1') === -1,
     'keeping the record also marked it synced, which hands the NEXT hydrate permission to overwrite it');
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample).find((r) => r.id === 'R-1').note, 'never pushed',
     'it survived one hydrate and not two');
 });
@@ -291,10 +307,10 @@ forEachApp('once its push DOES land, the same record becomes overwritable', asyn
     server: { [A.sample]: [{ id: 'R-1', note: 'server truth' }] },
     synced: { [A.sample]: [] },
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample)[0].note, 'pending');
   vm.runInContext('(' + A.prefix + 'MarkSynced)("' + A.sample + '","R-1")', c);
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample)[0].note, 'server truth',
     'the carve-out outlived the push that was supposed to end it');
 });
@@ -312,7 +328,7 @@ forEachApp('a NEVER-SEEDED resource overwrites on an id match, and records it', 
     server: { [A.sample]: [{ id: 'R-1', note: 'server truth' }] },
     synced: undefined,
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample)[0].note, 'server truth');
   assert.ok(c.__synced()[A.sample].indexOf('R-1') !== -1);
 });
@@ -323,7 +339,7 @@ forEachApp('seeding is per RESOURCE -- a resource whose read FAILED is not marke
   // happened to answer and to no others, forever.
   const other = APPS.find((x) => x.app === A.app).listVar;
   const c = harness(A, { local: {}, server: { [A.sample]: null }, synced: undefined });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   const m = c.__synced();
   assert.ok(!m || !(A.sample in m),
     A.sample + ' was marked seeded on a read that failed (' + other + ')');
@@ -331,7 +347,7 @@ forEachApp('seeding is per RESOURCE -- a resource whose read FAILED is not marke
 
 forEachApp('a resource that read EMPTY is marked seeded, so it is not re-seeded forever', async (A) => {
   const c = harness(A, { local: {}, server: { [A.sample]: [] }, synced: undefined });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.ok(Array.isArray(c.__synced()[A.sample]),
     'an empty but SUCCESSFUL read left the resource un-seeded, so the next hydrate '
     + 'would re-enter the never-seeded branch and overwrite unconditionally');
@@ -349,7 +365,7 @@ forEachApp('a CORRUPT synced map overwrites NOTHING', async (A) => {
     server: { [A.sample]: [{ id: 'R-1', note: 'server' }] },
     synced: 'corrupt',
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__local(A.sample)[0].note, 'local',
     'a map that could not be read was treated as permission to overwrite');
 });
@@ -360,7 +376,7 @@ forEachApp('a corrupt map is not silently replaced, and nothing is seeded throug
     server: { [A.sample]: [{ id: 'R-1' }, { id: 'R-2' }] },
     synced: 'corrupt',
   });
-  await c.sdnHydrateAll();
+  await c[HYDRATE(A)]();
   assert.strictEqual(c.__store[A.storageKey], '{not json',
     'the unreadable map was overwritten -- whatever it held is now unrecoverable');
   // The merge still degrades to the old additive behaviour rather than doing
@@ -468,21 +484,49 @@ test('every PENDING entry carries a real reason', () => {
   });
 });
 
-test('the converted apps carry the SAME rule, not two readings of it', () => {
-  // Compared by behaviour above; compared here by the CODE, with comments
-  // stripped -- a per-app note (SAIRNdesign's sdn_clients session caveat) is a
-  // legitimate difference in prose, and an arm that failed on it would be
-  // retrained to ignore real divergence too.
-  const strip = (s) => s.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
-  const shapes = APPS.map((A) => strip(lift(read(A.file), 'async function sdnHydrateAll()'))
-    .replace(new RegExp(A.keyVar, 'g'), 'SYNCED_KEY')
-    .replace(new RegExp(A.prefix + 'SyncedRead', 'g'), 'SyncedRead')
-    .replace(new RegExp(A.listVar, 'g'), 'SYNC_RESOURCES')
-    .replace(new RegExp(A.licenseFn, 'g'), 'LicenseKey')
-    .replace(/sdnData\('read',key[^)]*\)/g, "sdnData('read',key)")
-    .replace(/\s+/g, ' ').trim());
-  assert.strictEqual(shapes[0], shapes[1],
-    'the two hydrates differ once names and comments are normalised -- one rule has become two');
+test('every converted app carries the SAME rule, not three readings of it', () => {
+  // Compared by BEHAVIOUR above, and here by the load-bearing LINES rather
+  // than by whole function bodies.
+  //
+  // WHOLE-BODY COMPARISON WAS TRIED FIRST AND IS WRONG, which is worth
+  // recording because it looks stricter. sairnlaw's hydrate counts failed
+  // reads and returns {merged,failed} for a boot toast the other two do not
+  // have; sairndesign's read passes a session flag for sdn_clients. A suite
+  // demanding three byte-identical functions would force an app to drop a
+  // real feature to satisfy a test, and the first thing anybody would do is
+  // relax the arm until it stopped complaining -- at which point it stops
+  // catching genuine divergence too. So it pins the DECISION, exactly.
+  const LOAD_BEARING = [
+    'var seeded=mapUsable&&Array.isArray(syncedMap[key])?syncedMap[key]:null;',
+    'var neverSeeded=mapUsable&&seeded===null;',
+    'if(neverSeeded||syncedHere[id]){',
+    'if(JSON.stringify(local[at])!==JSON.stringify(r)){local[at]=r;',
+    'syncedMap[key]=arr;mapDirty=true;',
+  ];
+  APPS.forEach((A) => {
+    const body = lift(read(A.file), 'async function ' + HYDRATE(A) + '()');
+    LOAD_BEARING.forEach((line) => {
+      assert.ok(body.indexOf(line) !== -1,
+        A.app + ': the rule diverges -- missing `' + line + '`');
+    });
+    assert.ok(body.indexOf('if(mapDirty)st(' + A.keyVar + ',syncedMap);') !== -1,
+      A.app + ': the seeded map is not written back under its own key');
+  });
+  // And the helpers are the same rule too, modulo their prefix.
+  APPS.forEach((A) => {
+    const norm = (s) => s.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n')
+      .replace(new RegExp(A.prefix + 'SyncedRead', 'g'), 'SyncedRead')
+      .replace(new RegExp(A.prefix + 'MarkSynced', 'g'), 'MarkSynced')
+      .replace(new RegExp(A.keyVar, 'g'), 'SYNCED_KEY')
+      .replace(new RegExp('//[^' + String.fromCharCode(10) + ']*', 'g'), '')
+      .replace(/SAIRN\w+:/g, 'APP:')
+      .replace(/\s+/g, ' ').trim();
+    A.__mark = norm(lift(read(A.file), 'function ' + A.prefix + 'MarkSynced('));
+  });
+  APPS.slice(1).forEach((A) => {
+    assert.strictEqual(A.__mark, APPS[0].__mark,
+      A.app + ': MarkSynced differs from ' + APPS[0].app + "'s once names are normalised");
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

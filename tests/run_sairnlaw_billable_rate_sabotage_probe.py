@@ -88,6 +88,32 @@ MUTATIONS = [
      MODULE,
      "    if (r.rate <= 0) {",
      "    if (r.rate < 0) {"),
+
+    # ── THE OTHER FACTOR OF THE SAME $0.00 LINE, added 2026-09-21 ──────────
+    # hours 0 and rate 0 produce the IDENTICAL invoice line. The arms that
+    # cover it were an INVERSION of an arm that used to pin the gap as open,
+    # so these three matter more than usual: a pin that is flipped and then
+    # left uncontrolled is how a closed gap quietly reopens.
+    ("6. THE HOURS CHECK IS REMOVED -- the state of this file between the rate "
+     "fix and today, and the state any 'simplify the validator' edit produces",
+     MODULE,
+     "    if (typeof r.hours !== 'number' || !isFinite(r.hours)) {",
+     "    if (false) {"),
+
+    ("7. ZERO HOURS SLIPS THROUGH -- `< 0` for `<= 0`, the same one-character "
+     "edit as arm 5, on the other factor",
+     MODULE,
+     "    if (r.hours <= 0) {",
+     "    if (r.hours < 0) {"),
+
+    ("8. THE HOURS REFUSAL WIDENS ONTO NO-CHARGE WORK -- a zero-hour "
+     "no-charge row cannot reach an invoice, so refusing it refuses work the "
+     "app has no reason to stop",
+     MODULE,
+     "  if (r.billable) {\n"
+     "    if (typeof r.rate !== 'number' || !isFinite(r.rate)) {",
+     "  if (r.billable||r.hours===0) {\n"
+     "    if (typeof r.rate !== 'number' || !isFinite(r.rate)) {"),
 ]
 
 sys.exit(run_probe(

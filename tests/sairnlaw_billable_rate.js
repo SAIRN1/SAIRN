@@ -291,18 +291,73 @@ test('the matter and hours guards still come first and are unchanged', async () 
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-section('5. the gap this did NOT close, asserted so the tracked row cannot go stale');
+section('5. the OTHER factor of the same $0.00 line -- hours, closed 2026-09-21');
 
-test('hours is STILL unvalidated at the server, and hours 0 is the same $0.00 line', async () => {
-  // If this arm ever fails, somebody closed the gap and
-  // docs/SAIRN-OPEN-WORK-INDEX.md needs the row updated -- a suite that
-  // silently starts covering more than it says is how an index row becomes a
-  // lie. Deliberately NOT bundled into this change: the scope asked for was
-  // the rate.
+// THIS SECTION USED TO ASSERT THE OPPOSITE. It carried one arm pinning hours
+// as STILL UNVALIDATED at the server, so that the open-work row saying so
+// could not quietly become a lie. Michael's direction closed the gap; the arm
+// is inverted rather than deleted, because the inversion is the record that
+// the pin was honoured instead of being dropped when it became inconvenient.
+//
+// hours 0 and rate 0 produce the IDENTICAL invoice line -- $0.00 on work that
+// renders as ordinary billable time. One factor being guarded and the other
+// not was never a coherent position; it was a scope boundary, and it is gone.
+
+test('a billable entry at 0 HOURS is REFUSED, and nothing is written', async () => {
   const r = await endpoint(Object.assign({}, ENDPOINT_ENTRY, { billable: true, rate: 350, hours: 0 }));
-  assert.strictEqual(r.res.statusCode, 200,
-    'hours 0 is now refused -- good, but the open-work row still says it is not');
+  assert.strictEqual(r.res.statusCode, 400, 'status was ' + r.res.statusCode);
+  assert.strictEqual(r.res.body.error.code, 'INVALID_TIME_ENTRY', JSON.stringify(r.res.body));
+  assert.strictEqual(r.upserts, 0, 'the row reached Supabase anyway');
+});
+
+test('missing, string, negative, NaN and Infinity hours are all refused', () => {
+  const noHours = entry({}); delete noHours.hours;
+  assert.ok(timeEntryProblem(noHours));
+  const p = timeEntryProblem(entry({ hours: '2' }));
+  assert.ok(p && /send a number, not a string/.test(p), String(p));
+  assert.ok(timeEntryProblem(entry({ hours: -2 })));
+  assert.ok(timeEntryProblem(entry({ hours: NaN })));
+  assert.ok(timeEntryProblem(entry({ hours: Infinity })));
+  assert.ok(timeEntryProblem(entry({ hours: null })));
+});
+
+test('a real billable entry, and a fractional one, still pass', () => {
+  assert.strictEqual(timeEntryProblem(entry({ hours: 2 })), null);
+  assert.strictEqual(timeEntryProblem(entry({ hours: 0.1 })), null);
+});
+
+test('a NO-CHARGE entry at 0 hours is left alone -- narrower than the browser, on purpose', async () => {
+  // saveTime() refuses hours <= 0 on EVERY entry. This refuses it only on a
+  // BILLABLE one, because a zero-hour no-charge row cannot reach an invoice
+  // and refusing it would refuse work the app has no reason to stop. Where the
+  // two differ the stricter one is the client's, and a caller that bypasses
+  // the client gets the narrower rule rather than a guess at the wider one.
+  assert.strictEqual(timeEntryProblem(entry({ billable: false, hours: 0 })), null);
+  const r = await endpoint(Object.assign({}, ENDPOINT_ENTRY, { billable: false, rate: 0, hours: 0 }));
+  assert.strictEqual(r.res.statusCode, 200, JSON.stringify(r.res.body));
   assert.strictEqual(r.upserts, 1);
+});
+
+test('the RATE refusal still comes first when both factors are zero', () => {
+  // Both are wrong; the caller is told about one. Pinned so the message a firm
+  // sees does not silently change when either check is edited.
+  const p = timeEntryProblem(entry({ hours: 0, rate: 0 }));
+  assert.match(p, /hourly rate above zero/, p);
+});
+
+test('matter_id is STILL unvalidated here, and the module says so', () => {
+  // The remaining named gap, pinned the same way the hours gap was, so the
+  // comment and the index row cannot drift from the code. matter_id's failure
+  // is an orphaned entry rather than a wrong number on a bill, which is why it
+  // was left; if somebody closes it, this arm fails and the record gets
+  // updated with it.
+  const noMatter = entry({}); delete noMatter.matter_id;
+  assert.strictEqual(timeEntryProblem(noMatter), null,
+    'matter_id is now validated -- good, but the module comment and the '
+    + 'open-work row still say it is not');
+  const src = fs.readFileSync(path.join(ROOT, 'api/_lib/law-timeentry.js'), 'utf8');
+  assert.match(src, /STILL NOT CHECKED HERE: `matter_id`/,
+    'the module stopped naming the gap it is still carrying');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

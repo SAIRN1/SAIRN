@@ -50,6 +50,7 @@ from sabotage_harness import run_probe                           # noqa: E402
 SUITE = os.path.join('tests', 'server_wins_hydration.js')
 LEG = 'sairnlegacy.html'
 DSN = 'sairndesign.html'
+LAW = 'sairnlaw.html'
 
 WINS = "      if(neverSeeded||syncedHere[id]){"
 KEPT_COMMENT = ("      // else: pending first push. Keep local, and do NOT record it as synced --")
@@ -100,11 +101,33 @@ MUTATIONS = [
      DSN,
      "      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)sdnMarkSynced(resource,payload.id);",
      "      if(false)sdnMarkSynced(resource,payload.id);"),
+
+    # ── THE THIRD APP, converted one claim later ──────────────────────────
+    ("10. [sairnlaw] THE OLD BEHAVIOUR RESTORED -- the third copy of the rule, "
+     "and the app the decision was actually taken about",
+     LAW, WINS, "      if(false){"),
+
+    ("11. [sairnlaw] THE CARVE-OUT REMOVED -- every id the server has is "
+     "overwritten, including one whose first push never landed",
+     LAW, WINS, "      if(true){"),
+
+    ("12. [sairnlaw] THE TRANSPORT STOPS RECORDING LANDED PUSHES",
+     LAW,
+     "      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)lawMarkSynced(resource,payload.id);",
+     "      if(false)lawMarkSynced(resource,payload.id);"),
+
+    ("13. [sairnlaw] THE EMPTY-READ SHORTCUT COMES BACK -- `if(!rows.length)"
+     "continue;` was removed because under this rule it leaves the resource "
+     "un-seeded forever, so every later hydrate overwrites unconditionally. "
+     "It is the line a reader would most plausibly restore as an optimisation",
+     LAW,
+     "    if(!Array.isArray(rows)){failed++;continue;}\n    var local=ld(key,[]);",
+     "    if(!Array.isArray(rows)){failed++;continue;}\n    if(!rows.length)continue;\n    var local=ld(key,[]);"),
 ]
 
 sys.exit(run_probe(
     SUITE, MUTATIONS,
     title='server-wins hydration, and the first-push carve-out, must be '
           'REFUSABLE -- in every app that carries the rule',
-    stage=(LEG, DSN),
+    stage=(LEG, DSN, LAW),
 ))

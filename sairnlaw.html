@@ -1547,6 +1547,13 @@ function sdnData(action,resource,payload){
         return null;
       }
       delete lawLastErr[resource];
+      // ── ONE LINE IN THE TRANSPORT, NOT 31 CALL SITES (2026-09-21) ───────
+      // The server-wins carve-out needs to know which ids have really reached
+      // the server. Recording that at every save path is 31 chances to miss
+      // one, and a missed one means a record silently loses its protection.
+      // Here it is unmissable: a write past the `!r.ok||!d.ok` guard above is
+      // a write the server accepted.
+      if(action==='write'&&payload&&payload.id!==undefined&&payload.id!==null)lawMarkSynced(resource,payload.id);
       return d.data;
     });
   }).catch(function(e){lawLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
@@ -4984,22 +4991,119 @@ var LAW_SYNC_RESOURCES=['law_clients','law_matters','law_deadlines','law_trusttx
   'law_matterdocs','law_mattertasks','law_mattermilestones','law_timeentries','law_invoices',
   'law_opaccounts','law_optx','law_bankstatements','law_picases','law_pimedical',
   'law_portalmessages','law_portalesign','law_barcerts','law_clecredits','law_clerequirements'];
+// ── SERVER-WINS, AS OF 2026-09-21. THIS USED TO BE ADDITIVE-ONLY. ─────────
+// Identical rule and identical code to sairnlegacy.html and sairndesign.html;
+// tests/server_wins_hydration.js drives all three from ONE set of arms and
+// fails if any of them diverges from the others.
+//
+// The comment above still describes the ADDITIVE merge because that is what
+// the read-back was when it was built, and the note about law_trust_reconcile
+// being excluded is unaffected. What changed is the merge itself. Once a
+// record's id exists on BOTH sides, the server's copy wins -- no timestamp
+// comparison and no conflict UI, both considered and neither here. The cost
+// is stated rather than hidden: an edit made on this device and not yet
+// pushed IS LOST at the next hydrate.
+//
+// WHY THE OLD DISCLOSURE UNDERSTATED IT. "Two devices editing the SAME record
+// between hydrations is not resolved here" framed this as a race. It was
+// never only about concurrent EDITS: ANY field corrected on the server was
+// invisible FOREVER to a device that already held that id, with nothing
+// racing and nothing ever reconciling them. The case that found it: an
+// invoice marks its time entries invoiced:true, the server now says so, and a
+// workstation that hydrated those entries last week still offers them as
+// unbilled and will invoice the same hours again.
+//
+// THE CARVE-OUT IS ENFORCED BY STATE, NOT INFERRED. A record that has not
+// completed its FIRST successful push keeps its local value. That is NOT "the
+// server has no row for it" -- the merge handles that anyway. It protects a
+// server row arriving for an id whose own push never landed, which happens
+// when newId() collides (prefix + Date.now() + a 0-999 draw). Inferring the
+// carve-out from "the server has this id" gets exactly that case backwards
+// and overwrites a record with a stranger's. sdnData() records an id when its
+// write REALLY LANDED, per RESOURCE so a partial first hydrate does not
+// permanently exempt the resources whose read failed.
+//
+// AN UNREADABLE MAP IS A THIRD ANSWER. ld() returns its default for "absent"
+// AND for "corrupt", and absent means never-seeded, which means permission to
+// overwrite everything -- the destructive direction. So the key is read RAW
+// and the three are told apart.
+var LAW_SYNCED_KEY='law_synced_ids';
+function lawSyncedRead(){
+  var raw=null;
+  try{raw=localStorage.getItem(LAW_SYNCED_KEY);}catch(e){
+    try{console.error('SAIRNlaw: could not read "'+LAW_SYNCED_KEY+'" -- hydration will NOT overwrite anything this run.');}catch(_e){}
+    return {state:'unreadable',map:{}};
+  }
+  if(raw===null)return {state:'absent',map:{}};
+  try{
+    var m=JSON.parse(raw);
+    if(m&&typeof m==='object'&&!Array.isArray(m))return {state:'ok',map:m};
+  }catch(e){}
+  try{console.error('SAIRNlaw: "'+LAW_SYNCED_KEY+'" did not parse -- hydration will NOT overwrite anything this run. This is NOT the same as nothing having been synced.');}catch(_e){}
+  return {state:'unreadable',map:{}};
+}
+function lawMarkSynced(resource,id){
+  if(!resource||id===undefined||id===null)return;
+  var r=lawSyncedRead();
+  if(r.state==='unreadable')return;      // do not overwrite a map we could not read
+  var arr=r.map[resource];
+  if(!Array.isArray(arr))arr=[];
+  if(arr.indexOf(String(id))===-1)arr.push(String(id));
+  r.map[resource]=arr;
+  st(LAW_SYNCED_KEY,r.map);
+}
 async function lawHydrateAll(){
   if(!lawLicenseKey())return{merged:0,failed:0};
   var results=await Promise.all(LAW_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
   var merged=0,failed=0;
+  var syncedRead=lawSyncedRead();
+  var syncedMap=syncedRead.map,mapUsable=syncedRead.state!=='unreadable';
+  var mapDirty=false;
   for(var i=0;i<LAW_SYNC_RESOURCES.length;i++){
     var key=LAW_SYNC_RESOURCES[i],rows=results[i];
+    // A FAILED read is counted and skipped. An EMPTY one is not skipped any
+    // more: it used to `continue` before doing anything, which under this rule
+    // would leave the resource un-seeded forever and re-enter the
+    // never-seeded branch on every later hydrate.
     if(!Array.isArray(rows)){failed++;continue;}
-    if(!rows.length)continue;
     var local=ld(key,[]);
     if(!Array.isArray(local))continue;
-    var have={};
-    local.forEach(function(r){if(r&&r.id!=null)have[String(r.id)]=true;});
-    var added=0;
-    rows.forEach(function(r){if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);have[String(r.id)]=true;added++;}});
-    if(added){st(key,local);merged+=added;}
+    var seeded=mapUsable&&Array.isArray(syncedMap[key])?syncedMap[key]:null;
+    var neverSeeded=mapUsable&&seeded===null;
+    var syncedHere={};
+    if(seeded)seeded.forEach(function(id){syncedHere[String(id)]=true;});
+    var idx={};
+    local.forEach(function(r,n){if(r&&r.id!==undefined&&r.id!==null)idx[String(r.id)]=n;});
+    var changedHere=0,landed=[];
+    rows.forEach(function(r){
+      if(!r||r.id===undefined||r.id===null)return;
+      var id=String(r.id),at=idx[id];
+      if(at===undefined){local.push(r);idx[id]=local.length-1;changedHere++;landed.push(id);return;}
+      // HELD ON BOTH SIDES. Server wins -- unless this id's own first push has
+      // never landed, in which case the server's row belongs to somebody else.
+      if(neverSeeded||syncedHere[id]){
+        if(JSON.stringify(local[at])!==JSON.stringify(r)){local[at]=r;changedHere++;}
+        landed.push(id);
+      }
+      // else: pending first push. Keep local, and do NOT record it as synced --
+      // recording it here would hand the next hydrate permission to overwrite
+      // the very record this branch exists to protect.
+    });
+    // `merged` now counts records CHANGED rather than only appended, because
+    // an overwrite is as much a thing the user should be told about as an
+    // append. The boot toast's wording -- "N records restored from the server
+    // copy for this firm" -- is true of both.
+    if(changedHere){st(key,local);merged+=changedHere;}
+    if(mapUsable){
+      var arr=Array.isArray(syncedMap[key])?syncedMap[key]:[];
+      landed.forEach(function(id){if(arr.indexOf(id)===-1)arr.push(id);});
+      // Written even when `landed` is empty: the presence of the key is what
+      // says this resource HAS been seeded, and without it every later hydrate
+      // would re-enter the never-seeded branch and overwrite unconditionally.
+      syncedMap[key]=arr;mapDirty=true;
+    }
   }
+  if(mapDirty)st(LAW_SYNCED_KEY,syncedMap);
   return{merged:merged,failed:failed};
 }
 

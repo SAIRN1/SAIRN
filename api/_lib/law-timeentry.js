@@ -60,12 +60,20 @@
 // says here that it is not answering the other one.
 //
 // ── NOT ADDED, AND NAMED RATHER THAN LEFT SILENT ──────────────────────────
-// saveTime() also validates `matter_id` (required) and `hours` (> 0) in the
-// browser, and the server checks NEITHER. Those are the same shape as this gap
-// and they are real; they are out of scope here because this change was asked
-// for as the billing-code fix, and widening it silently would make the diff
-// stop matching its own reason. Recorded so the next reader knows the absence
-// was seen.
+// WHEN THIS MODULE WAS WRITTEN this paragraph said: "saveTime() also validates
+// `matter_id` (required) and `hours` (> 0) in the browser, and the server
+// checks NEITHER." TWO OF THE THREE ARE NOW CHECKED HERE -- `rate` and then
+// `hours`, both added 2026-09-21 -- so the sentence is updated rather than
+// left to read as current. It also said there were two fields; there were
+// three, and the one it did not name was `rate`, the one the invoice total
+// multiplies. That is the part worth remembering: the enumeration, not the
+// scoping decision, was what went wrong.
+//
+// STILL NOT CHECKED HERE: `matter_id`. It is required by saveTime() and by
+// nothing on the server. It is a different kind of field from the other two --
+// its failure is an orphaned entry rather than a wrong number on a bill -- and
+// it is left deliberately, recorded so the next reader knows the absence was
+// seen rather than missed.
 'use strict';
 
 // A generous ceiling rather than a format. UTBMS codes in the shipped list are
@@ -92,6 +100,13 @@ const NO_RATE_MESSAGE =
   + 'showing in the billing table as an ordinary billable hour -- the work is '
   + 'recorded, the fee is not, and nothing downstream says so. Enter the rate '
   + 'in the Log Time modal, or untick Billable if this hour is no-charge.';
+
+const NO_HOURS_MESSAGE =
+  'A BILLABLE hour needs a time above zero. The invoice total is hours x '
+  + 'rate, so an entry stored at 0 hours adds $0.00 to the bill while showing '
+  + 'in the billing table as ordinary billable work -- the same silent $0.00 '
+  + 'line a missing rate produces, from the other factor. Enter the time in '
+  + 'the Log Time modal, or untick Billable if this is no-charge.';
 
 function timeEntryProblem(record) {
   const r = record || {};
@@ -161,6 +176,37 @@ function timeEntryProblem(record) {
         + 'rather than leaving the rate blank -- a no-charge entry is allowed '
         + 'to have no rate, and it says so on the invoice.)';
     }
+    // ── AND THE OTHER HALF OF THE SAME $0.00 LINE (2026-09-21) ────────────
+    // The rate check above landed first and this comment sat beside it saying
+    // hours was "still unchecked at the server, and hours 0 produces the
+    // identical $0.00 line". It was a tracked gap with an arm asserting it was
+    // still open; this closes it on Michael's direction, same treatment.
+    //
+    // WHY IT IS NOT REDUNDANT WITH THE BROWSER. saveTime() has checked
+    // `hours <= 0` since it was written -- and that check has exactly the
+    // property this module exists to distrust: it is one <input> away from
+    // being the only thing standing there. Every other caller (an import, a
+    // new write path, a direct API call) has never been asked the question at
+    // all, which is the whole argument the billing-code gate above was built
+    // on. The client check is convenience; this is the gate.
+    //
+    // DELIBERATELY NARROWER THAN THE BROWSER'S, and the difference is not an
+    // oversight. saveTime() refuses hours <= 0 on EVERY entry; this refuses it
+    // only on a BILLABLE one, because a zero-hour no-charge row cannot reach
+    // an invoice and refusing it would refuse work the app has no reason to
+    // stop. Where the two differ, the stricter one is the client's, and a
+    // caller that bypasses the client gets the narrower rule rather than a
+    // guess at the wider one.
+    if (typeof r.hours !== 'number' || !isFinite(r.hours)) {
+      return NO_HOURS_MESSAGE + ' (hours arrived as ' + typeof r.hours
+        + (typeof r.hours === 'string' ? ' -- send a number, not a string' : '')
+        + ', so nothing could be multiplied by it)';
+    }
+    if (r.hours <= 0) {
+      return NO_HOURS_MESSAGE + ' (hours arrived as ' + r.hours
+        + '. An entry worth no time is not a billable hour; untick Billable, '
+        + 'or delete it.)';
+    }
   }
   return null;
 }
@@ -170,4 +216,5 @@ module.exports = {
   MAX_BILLING_CODE_CHARS,
   NO_CODE_MESSAGE,
   NO_RATE_MESSAGE,
+  NO_HOURS_MESSAGE,
 };
