@@ -10290,6 +10290,50 @@
         }
       ],
       "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
+    },
+    {
+      "commit": "fd5e4029874d",
+      "date": "2026-09-21",
+      "subject": "fix(monitoring): the trapdoor detector shared the blind spot it exists to catch, and watched 6 of 16 apps",
+      "files": [
+        ".claude/skills/sairn-code-scrubber/SKILL.md",
+        "api/alf-auth.js",
+        "api/bld-auth.js",
+        "api/grd-auth.js",
+        "api/law-auth.js",
+        "api/leg-auth.js",
+        "api/provisioner-health-sole-role.test.js",
+        "api/provisioner-health.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sv-auth.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_provisioner_health_sole_role_sabotage_probe.py",
+        "tools/licence_recoverability_check.py"
+      ],
+      "lines_added": 832,
+      "lines_removed": 27,
+      "app": "stonedesk",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/provisioner-health.js counted active holders of ANY provisioning role, so a licence with an active admin and no owner row at all reported HEALTHY though no route back to an owner exists; and tools/licence_recoverability_check.py keyed its verdict on state=='TRAPDOOR' alone, so the new unrecoverable state would have printed and exited 0. The detector shared the blind spot of the guard it exists to monitor, and watched 6 of the 16 apps that can reach the state.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "No single commit: the map and its counting rule were correct for every app registered at the time, and diverged app by app as second provisioning roles and new auth endpoints were added over months."
+      },
+      "citation_note": "The verdict half is a direct instance: tools/licence_recoverability_check.py RAN, recognised nothing, and returned 0. An unrecoverable licence with a zero exit code is 'could not tell' folded into 'passed'.",
+      "phase_note": "The detector was designed when its apps had one provisioning role each, so counting PROVISIONING_ROLES and counting the must-not-reach-zero role were the same operation. A second provisioning role was added to five apps without anything re-asking which count the detector needed.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is one count over the wrong set, but the coverage half (6 of 16 watched) has a different cause -- a comment asserting the remaining apps could not reach the state, which was true when written and never re-derived."
     }
   ],
   "started": "2026-09-09",
