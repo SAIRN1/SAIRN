@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; A deputy provisioning role could deactivate the last `owner` in SAIRNgrounds, SAIRNbiz and SAIRNscape &mdash; the SD-AUDIT-2026 loss shape, through the API** | **FIXED 2026-09-21 (Hank)** &mdash; `SOLE_ROLE = 'owner'` wired into `setActive()` in all three; new suite `api/_lib/last-admin-sole-role.test.js` **24 arms**, new probe `tests/run_last_admin_sole_rol | `api/_lib/last-admin-sole-role.test.js`, `tests/run_last_admin_sole_role_sabotage_probe.py` |
 | **&#9989; The six write-class cross-tenant gaps Phase 3 disclosed by line are closed** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data-cross-tenant-ownbranch.test.js`, 73 &rarr; 76 assertions, **6 of 6 sabotages caught individually**, and a full re-sweep of all 37 filtered queries leav | `api/sd-data-cross-tenant-ownbranch.test.js` |
 | **&#128308; FOUR MORE representation-PATCHes in `api/sd-data.js` report a change that did not happen &mdash; and the guard added to stop exactly this cannot see them** | **OPEN. Found 2026-09-21 (cc) while reviewing hank's json-catch-null sweep. NOT fixed: shared file, two sessions live in it, and a five-site repair is its own change** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; FOUR more representation-PATCHes reported writes that did not happen &mdash; and the guard added to stop exactly that could not see any of them** | **FIXED 2026-09-21 (cc).** All four repaired to the `wroteRow()` vocabulary answering **409 with a named race code**; the guard's predicate now walks the PATCH instead of the spelling of the read. `ap | `api/sd-data-unconfirmed-write-sweep.test.js`, `tests/run_unconfirmed_write_sweep_sabotage_probe.py` |
@@ -585,17 +586,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 559 of 620 traced, 90.2%.
+For context and not as the headline: 561 of 622 traced, 90.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 559 citations come from
+### Where the 561 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 285 |
+| `index` | 286 |
 | `declared` | 238 |
-| `declared+index` | 28 |
+| `declared+index` | 29 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -691,8 +692,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 620   tests/**, api/** (both walked)
-  open-work rows citing a test       308   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 622   tests/**, api/** (both walked)
+  open-work rows citing a test       309   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
