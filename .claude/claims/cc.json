@@ -1992,8 +1992,8 @@
       "task": "FILES: sairnsenior.html docs/SAIRN-OPEN-WORK-INDEX.md docs/2026-09-21-sairnbuild-server-wins-conversion-plan.md -- record in the FILE the deliberate unconditional-overwrite reason that was found only in a commit message, and flag the decision back; write the sairnbuild conversion plan WITHOUT converting it. sairncare stays held.",
       "claimed_at": "2026-09-21T13:31:27Z",
       "claimed_at_epoch": 1789997487.330872,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:37:51Z"
     }
   ]
 }
