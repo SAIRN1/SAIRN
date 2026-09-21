@@ -1974,6 +1974,16 @@
       "claimed_at_epoch": 1789993756.0146976,
       "status": "released",
       "released_at": "2026-09-21T12:40:15Z"
+    },
+    {
+      "id": "cc-1789994421",
+      "session": "cc",
+      "subject": "hydration-bootstrap-seven-apps",
+      "task": "FILES: sairnsenior.html stonedesk.html sairnbiz.html sairnfreedom.html sairnlegacy.html sairndesign.html sairnlaw.html tests/server_wins_hydration.js tests/run_server_wins_hydration_sabotage_probe.py -- one-time read-only seeding bootstrap plus the shared server-wins merge, across all seven converted apps. Re-claimed to ADD the seventh file now that the review claim holding it has been released.",
+      "claimed_at": "2026-09-21T12:40:21Z",
+      "claimed_at_epoch": 1789994421.7273166,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
