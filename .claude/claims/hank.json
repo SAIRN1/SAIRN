@@ -2343,8 +2343,8 @@
       "task": "declaration must be cross checked against the driving table",
       "claimed_at": "2026-09-21T13:36:21Z",
       "claimed_at_epoch": 1789997781.355271,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T13:49:37Z"
     }
   ]
 }
