@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -9235,60 +9235,64 @@
       "recurrence_open": "Only this test was audited. Every other suite on the platform that asserts source text with a whole-file match against api/sd-data.js is coupled the same way and none has been checked."
     },
     {
-      "commit": "eea7606e2159",
+      "commit": "2ee9c8191261",
       "date": "2026-09-21",
-      "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
+      "subject": "fix(sairnlaw): the clearance rollback could ERASE another device's clearance and write away a whole hydration -- and on a cheque the server never stored it in the first place",
       "files": [
-        "tests/server_wins_hydration.js"
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "sairnlaw.html",
+        "tests/sairnlaw_trust_clearance.js",
+        "tests/sairnlaw_trust_clearance_probe.py"
       ],
-      "lines_added": 23,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "tests/server_wins_hydration.js's UNGUARDED-overwrite detector shipped as a regex that could NEVER match. The backreference `\u0001` -- which is what makes the pattern mean 'the RHS is the same variable whose .id is the key', i.e. an overwrite rather than a seen-set -- was authored through a shell heredoc that consumed the backslash and left a raw 0x01 control byte. The pattern read `= <control-byte>`, matched nothing, and the arm asserting that NOBODY hydrates with an unguarded overwrite passed on every file vacuously. That arm exists because sairnsenior was found shipping four hydrates in exactly that state, invisible to the additive detector; a vacuous version of it reports the whole platform clean. Caught by the push gate's control-byte check, which is precisely the failure mode its own message describes. Fixed by building the pattern with explicit escapes and giving it a two-direction fixture.",
+      "lines_added": 304,
+      "lines_removed": 15,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnlaw.html lawSetClearance() captured the trust ledger array and the record's previous clearance values BEFORE awaiting the server, then wrote both back if the write failed. trustTransactions() is ld(), which JSON.parses localStorage on every call, so the captured array was genuinely stale: a failed single-row write erased everything that landed during the round trip -- a hydration, another save -- not the row but the whole array. And the previous values were restored unconditionally, so a clearance another device recorded mid-flight was overwritten by this device's pre-action value, putting an item the bank HAS taken back into the outstanding set and moving the expected bank balance by its amount. law_trusttx is attorney client trust money. confirmVoid() thirty lines above does all three things this did not -- re-read after the await, stamp its own change, refuse an already-in-target-state press -- and says in its own comment that re-reading is necessary and not sufficient. Found in the independent Tier A review of the 2026-09-18 outstanding-item work; the author's own negative control was green because every fixture had one device in play.",
       "rules": [
-        "1.1"
+        "1.10"
       ],
       "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "sairn_push_gate_hook.py",
+      "found_by_tool": null,
       "injection": {
-        "commit": "bf9c7c4fc522",
-        "date": "2026-09-21",
-        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
-        "lag_days": 0
+        "commit": "5e0b531f2776",
+        "date": "2026-09-18",
+        "subject": "fix(sairnlaw): the IOLTA reconciliation stops agreeing over money it never compared, and learns what an uncleared cheque is",
+        "lag_days": 3
       },
-      "citation_note": "1.1 is the right rule and the fit is close rather than exact: 'a check that stopped checking' is usually about a check that once worked and later went inert. This one was NEVER live -- it was inert from the commit that introduced it, which is the same failure with no good period before it.",
+      "citation_note": "A computed answer is only as current as its oldest input. The rollback's inputs -- the whole ledger array and the record's previous clearance values -- were all captured BEFORE the await, so by the time it ran, its answer was as current as a snapshot from before the round trip. It then wrote that answer back over storage that had moved on.",
       "contributing_factors": [
         {
-          "factor": "the regex backreference was authored through a shell heredoc, which consumed the backslash and left a raw 0x01 byte in its place -- so the pattern that shipped was not the pattern that was written",
+          "factor": "lawSetClearance() held `list` and `t` across the await and wrote the pre-round-trip array back in the revert, while trustTransactions() is ld() and parses localStorage fresh on every call -- so a failed SINGLE-ROW write erased the whole ledger as it stood mid-flight",
           "kind": "technical",
           "action_status": "done",
-          "action": "the pattern is built with explicit escapes and no longer passes through a heredoc"
+          "action": "the revert re-reads with trustTransactions() and writes back the re-read array, the way confirmVoid() thirty lines above has since 2026-09-02"
         },
         {
-          "factor": "a detector whose regex stops matching reports the BEST possible answer -- a clean platform -- so nothing about the output looks wrong. The arm was added and passed in the same minute it was written, which is the moment a green result carries the least information",
-          "kind": "detection",
+          "factor": "the revert restored the previous values unconditionally, with no way to tell its own change from one another device made during the round trip",
+          "kind": "technical",
           "action_status": "done",
-          "action": "the detector now has a two-direction fixture: it must match sairnsenior's real old shape and must NOT match the seen-set assignment it would otherwise confuse with one"
+          "action": "a cleared_at stamp captured before the write; the revert fires only if the record still carries it, and says so and leaves the record alone when it does not"
         },
         {
-          "factor": "the arm was written in the same session, from the same reading, as the code it checks -- so there was no independent signal that it was inert",
+          "factor": "confirmVoid() in the same file was hardened against this exact class on 2026-09-02 -- its commit says it was found by driving the function OVERLAPPED -- and the hardening was not carried across to the function written beside it six weeks later",
           "kind": "process",
           "action_status": "planned",
-          "action": "the sabotage probe covers the merge and the bootstrap but does NOT yet plant a defect that only this detector would catch; adding one would have caught it"
+          "action": "no mechanism proposes the sibling: the general form is a check that finds two optimistic-write-then-revert functions in one file where only one re-reads after its await. Not built"
         },
         {
-          "factor": "the platform has no general check that a suite's assertions are non-vacuous, and regexes authored through shells are a standing hazard here -- two privilege guards were found in this exact state on 2026-09-10",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "the push gate's control-byte check IS the general check, and it worked -- this defect was caught by it rather than by the suite or by review. Nothing further is actionable; the note is that the gate earned its place again."
+          "factor": "the negative control was green and could not see any of it: all four of its mutations drove ONE device, and the stub trustTransactions() returned the store BY REFERENCE, which makes the entire stale-snapshot class unplantable",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "a duringWrite hook that runs while the caller awaits, a deep-copying stub, an arm pinning that fidelity, and six new mutations -- 4 to 10, all refused"
         }
       ],
-      "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
+      "recurrence_open": "Only this function was fixed. No check finds the next optimistic-write-then-revert that keeps a pre-await snapshot, and the fidelity trap -- a test stub handing back a shared reference where the real reader parses fresh -- is fixed in one harness and unaudited everywhere else."
     },
     {
       "commit": "b09674f65e9d",
@@ -9521,6 +9525,62 @@
         }
       ],
       "recurrence_open": "`hours` is unchecked at the SERVER and hours 0 produces the identical $0.00 line -- asserted as still-open by section 5 of tests/sairnlaw_billable_rate.js so the index row cannot go stale, but NOT fixed. The `Number(x)||0`-into-an-arithmetic-total checker does not exist, so the same shape in the other billing apps is unmeasured. And the LEDES export named in the summary is still not built."
+    },
+    {
+      "commit": "eea7606e2159",
+      "date": "2026-09-21",
+      "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
+      "files": [
+        "tests/server_wins_hydration.js"
+      ],
+      "lines_added": 23,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tests/server_wins_hydration.js's UNGUARDED-overwrite detector shipped as a regex that could NEVER match. The backreference `\u0001` -- which is what makes the pattern mean 'the RHS is the same variable whose .id is the key', i.e. an overwrite rather than a seen-set -- was authored through a shell heredoc that consumed the backslash and left a raw 0x01 control byte. The pattern read `= <control-byte>`, matched nothing, and the arm asserting that NOBODY hydrates with an unguarded overwrite passed on every file vacuously. That arm exists because sairnsenior was found shipping four hydrates in exactly that state, invisible to the additive detector; a vacuous version of it reports the whole platform clean. Caught by the push gate's control-byte check, which is precisely the failure mode its own message describes. Fixed by building the pattern with explicit escapes and giving it a two-direction fixture.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "sairn_push_gate_hook.py",
+      "injection": {
+        "commit": "bf9c7c4fc522",
+        "date": "2026-09-21",
+        "subject": "feat(hydration): the one-time read-only bootstrap, and server-wins in four more apps -- seven of nine now",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is the right rule and the fit is close rather than exact: 'a check that stopped checking' is usually about a check that once worked and later went inert. This one was NEVER live -- it was inert from the commit that introduced it, which is the same failure with no good period before it.",
+      "contributing_factors": [
+        {
+          "factor": "the regex backreference was authored through a shell heredoc, which consumed the backslash and left a raw 0x01 byte in its place -- so the pattern that shipped was not the pattern that was written",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the pattern is built with explicit escapes and no longer passes through a heredoc"
+        },
+        {
+          "factor": "a detector whose regex stops matching reports the BEST possible answer -- a clean platform -- so nothing about the output looks wrong. The arm was added and passed in the same minute it was written, which is the moment a green result carries the least information",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the detector now has a two-direction fixture: it must match sairnsenior's real old shape and must NOT match the seen-set assignment it would otherwise confuse with one"
+        },
+        {
+          "factor": "the arm was written in the same session, from the same reading, as the code it checks -- so there was no independent signal that it was inert",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "the sabotage probe covers the merge and the bootstrap but does NOT yet plant a defect that only this detector would catch; adding one would have caught it"
+        },
+        {
+          "factor": "the platform has no general check that a suite's assertions are non-vacuous, and regexes authored through shells are a standing hazard here -- two privilege guards were found in this exact state on 2026-09-10",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "the push gate's control-byte check IS the general check, and it worked -- this defect was caught by it rather than by the suite or by review. Nothing further is actionable; the note is that the gate earned its place again."
+        }
+      ],
+      "recurrence_open": "the sabotage probe does not yet plant a defect that ONLY this detector would catch, so the detector's liveness rests on its fixture rather than on a mutation. And no general non-vacuity check exists for suites on this platform -- the control-byte gate catches this particular authoring accident, not the wider class of an assertion that cannot fail."
     }
   ],
   "started": "2026-09-09",
