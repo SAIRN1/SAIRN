@@ -1529,8 +1529,8 @@
       "task": "tier-a review of cc sc_credential_scope unparseable 2xx write obligation opened 2026-09-18T16:20:00Z",
       "claimed_at": "2026-09-21T08:00:06Z",
       "claimed_at_epoch": 1789977606.8523057,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T11:59:37Z"
     }
   ]
 }
