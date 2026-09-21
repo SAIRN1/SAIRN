@@ -2393,8 +2393,8 @@
       "task": "sd-auth hand-written last-admin guard owner admin",
       "claimed_at": "2026-09-21T20:47:29Z",
       "claimed_at_epoch": 1790023649.2953963,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-21T21:28:09Z"
     }
   ]
 }
