@@ -22,6 +22,7 @@ actually shipped as a false pass somewhere.
 """
 import io
 import os
+import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -359,6 +360,91 @@ def main():
         print('        declared but NOT driven: %s' % (extra or '-'))
         print('        driven but NOT declared: %s' % (missing or '-'))
         FAILED.append('declaration-vs-driven')
+
+    # ── THE EXCLUSION LIST ITSELF, WHICH NOTHING WAS GUARDING ────────────
+    # SELF_EXCLUDED is the fix for a real false GENUINE: the grader was
+    # counting its OWN fixture bodies as platform coverage, so two of three
+    # reported GENUINEs were one real file and this one. The fix is two string
+    # literals, and a string literal naming another file is the exact shape
+    # this platform keeps recording as "nothing announces the day a check stops
+    # testing anything" -- rename either file and the exclusion silently
+    # excludes nothing, while the report keeps PRINTING both names as excluded.
+    # A claim that the exclusion happened, over an exclusion that did not.
+    print('')
+    print('SELF-EXCLUSION -- the guard on the guard, and it had none')
+    scanned = set(S.all_files(('.js', '.py')))
+    for rel in S.SELF_EXCLUDED:
+        # Membership of the SCANNED set, not os.path.isfile. A path that exists
+        # on disk but is spelled differently from what all_files() emits -- a
+        # backslash, a './' prefix, a file moved out of api/ or tests/ -- is
+        # excluded from nothing, and `isfile` would call it healthy.
+        oke = rel in scanned
+        print('  %-4s %-58s %s'
+              % ('ok' if oke else 'FAIL', 'excluded and actually scanned: ' + rel,
+                 'in the scan set' if oke else 'NOT a file this scan reaches'))
+        if not oke:
+            FAILED.append('self-excluded-missing:' + rel)
+            continue
+        # And the exclusion has to still be LOAD-BEARING. A file the scanner
+        # would have ignored anyway is a decorative guard, and a decorative
+        # guard is one nobody notices has stopped mattering. Either grade or a
+        # declaration is enough -- both are ways this file would have been
+        # credited had it not been excluded.
+        body = io.open(os.path.join(REPO, rel), encoding='utf-8').read()
+        g, _w = S.grade(body)
+        decl, _n = S.declared_coverage(body)
+        okl = g != 'NONE' or bool(decl)
+        print('  %-4s %-58s %s'
+              % ('ok' if okl else 'FAIL', 'and the exclusion still prevents something',
+                 'grades %s, declares %d' % (g, len(decl))))
+        if not okl:
+            FAILED.append('self-excluded-decorative:' + rel)
+
+    # ── AND THE LIST MUST BE COMPLETE, which is a question a literal cannot
+    # answer about itself. No heuristic here: a test file that IMPORTS this
+    # grader has the grader as its subject, full stop. That is how
+    # tests/cross_tenant_dispatchers_review_probe.py was found -- it imports
+    # the module, quotes the reference file's CROSS-TENANT-ISOLATION line in
+    # its prose, and was therefore credited with law_invoices, law_opaccounts
+    # and law_barcerts "on the declaration alone".
+    importers = []
+    for rel in sorted(scanned):
+        if not S.is_test(rel) or not rel.endswith('.py'):
+            continue
+        body = io.open(os.path.join(REPO, rel), encoding='utf-8').read()
+        if re.search(r'^\s*(?:import|from)\s+cross_tenant_isolation_scope\b',
+                     body, re.M):
+            importers.append(rel)
+    unexcluded = [r for r in importers if r not in S.SELF_EXCLUDED]
+    oki = not unexcluded
+    print('  %-4s %-58s %d importer(s)'
+          % ('ok' if oki else 'FAIL',
+             'every test that IMPORTS the grader is excluded', len(importers)))
+    if not oki:
+        for r in unexcluded:
+            print('        NOT excluded: %s' % r)
+        FAILED.append('grader-importer-not-excluded')
+
+    # ── AND THE EXCLUSION IS APPLIED, not merely declared ────────────────
+    # The two arms above check the LIST. This checks that tests_naming()
+    # actually consults it: a `continue` deleted from the loop would leave both
+    # arms above green and the false GENUINE back.
+    hits = S.tests_naming(['law_invoices'])
+    cited = [rel for rel, _g, _w in hits.get('law_invoices', [])]
+    oka = 'tests/run_cross_tenant_scope_probe.py' not in cited
+    print('  %-4s %-58s %s'
+          % ('ok' if oka else 'FAIL', 'and tests_naming() really skips them',
+             '%d file(s) cited for law_invoices' % len(cited)))
+    if not oka:
+        FAILED.append('self-exclusion-not-applied')
+    # A skip that skipped EVERYTHING would also pass the arm above, so the
+    # citation list has to be non-empty for the same resource.
+    okb = bool(cited)
+    print('  %-4s %-58s %s'
+          % ('ok' if okb else 'FAIL', 'while still citing the files that are not excluded',
+             ','.join(cited[:3]) or '(none)'))
+    if not okb:
+        FAILED.append('self-exclusion-skipped-everything')
 
     print('')
     if FAILED:

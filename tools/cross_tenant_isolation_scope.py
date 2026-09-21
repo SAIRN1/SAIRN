@@ -463,6 +463,20 @@ SELF_EXCLUDED = (
     # read the word `declaration` out of a sentence as a resource. A file whose
     # subject is the measurer is not a measurement.
     'tests/cross_tenant_scope_grader_review_probe.py',
+    # THE THIRD, AND IT WAS FOUND BY A GUARD RATHER THAN BY A READER
+    # (2026-09-21). This tuple is two string literals naming other files, which
+    # is the shape this platform keeps recording as "nothing announces the day
+    # a check stops testing anything" -- and nothing was guarding it. The arms
+    # added to tests/run_cross_tenant_scope_probe.py assert that every test
+    # file IMPORTING this module is listed here, and the first run of that arm
+    # named this one: it imports the grader, quotes the reference suite's
+    # `CROSS-TENANT-ISOLATION:` line in its prose, and was therefore credited
+    # with law_invoices, law_opaccounts and law_barcerts "on the declaration
+    # alone". It graded WEAK rather than GENUINE, so it was not inflating the
+    # headline number -- it was one fixture edit away from doing so, and it was
+    # already putting two lines of noise into the disclosure list attributed to
+    # a file whose subject is the measurer.
+    'tests/cross_tenant_dispatchers_review_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
