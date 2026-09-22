@@ -329,11 +329,27 @@ async function main() {
   // staff member with the app already open. Two lists, both explicit, because
   // deriving either from SD_SESSION_GATED would assert that the code equals
   // itself -- the same vacuous shape as deriving BESPOKE above.
-  const PHASE1_STILL_OPEN = ['law_clients', 'law_matters', 'law_deadlines'];
-  const PHASE2_NOW_GATED = ['law_trusttx'];
+  // ── PHASE 2 COMPLETED 2026-09-22, AND THIS ARM WAS INVERTED RATHER THAN
+  //    DELETED, WHICH IS WHAT THE ORIGINAL ASKED FOR TWICE ─────────────────
+  // The first version asserted all FOUR bespoke resources worked without a
+  // session and said "WHEN THAT HAPPENS THIS TEST MUST BE INVERTED, not
+  // deleted." law_trusttx moved on 2026-09-16 and the arm was NOT inverted, so
+  // this suite ran red for days on an arm that was correct about the code and
+  // wrong about the policy. The list is now EMPTY, and the emptiness is asserted
+  // rather than the arm being removed: deleting it would erase the only
+  // mechanical record that a phased rollout existed, and a future resource
+  // added as licence-only would then land in no boundary at all.
+  const PHASE1_STILL_OPEN = [];
+  const PHASE2_NOW_GATED = ['law_trusttx', 'law_clients', 'law_matters', 'law_deadlines'];
 
-  await test('PHASE 1 BOUNDARY: the not-yet-flipped bespoke resources still work '
-             + 'WITHOUT a session', async () => {
+  await test('PHASE 1 BOUNDARY IS NOW EMPTY -- no bespoke resource is reachable '
+             + 'with the licence key alone', async () => {
+    // Asserted as an emptiness rather than skipped, so that adding a resource
+    // to PHASE1_STILL_OPEN in future is a deliberate act with a red arm behind
+    // it rather than a quiet re-opening.
+    assert.deepStrictEqual(PHASE1_STILL_OPEN, [],
+      'a bespoke SAIRNlaw resource is licence-only again: '
+      + PHASE1_STILL_OPEN.join(', '));
     for (const r of PHASE1_STILL_OPEN) {
       const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
       const res = mockRes();
@@ -342,8 +358,8 @@ async function main() {
     }
   });
 
-  await test('PHASE 2: law_trusttx is REFUSED without a session -- the inversion '
-             + 'the original arm asked for', async () => {
+  await test('PHASE 2: every bespoke writable resource is REFUSED without a '
+             + 'session -- the inversion the original arm asked for', async () => {
     for (const r of PHASE2_NOW_GATED) {
       const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
       const res = mockRes();

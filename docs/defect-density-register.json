@@ -10451,127 +10451,6 @@
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     },
     {
-      "commit": "37bf15fd9811",
-      "date": "2026-09-22",
-      "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
-      "files": [
-        "api/_lib/employee-lifecycle.js",
-        "api/_lib/last-admin-sole-role.test.js",
-        "tests/run_last_admin_sole_role_sabotage_probe.py",
-        "tests/run_solerole_validation_sabotage_probe.py"
-      ],
-      "lines_added": 362,
-      "lines_removed": 8,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "summary": "api/_lib/employee-lifecycle.js setActive() narrows the last-admin count to [soleRole] when an app names one, and nothing validated that the name was a real provisioning role. THE FAILURE WAS PERMISSIVE, which is the opposite of what the only comment describing the scenario said: guardRoles matches no row, activeProvisioners counts ZERO, and the refusal condition ALSO tests guardRoles.indexOf(target.role) !== -1 -- false for every real row -- so the branch is UNREACHABLE. Driven against the real engine before the fix: roster of one post.govern and one post.govern.deputy, soleRole 'post.governor' (one letter), caller the deputy, target the governor, result 200 WITH THE PATCH SENT. The licence reaches zero governors and bootstrap still 409s because it does not filter on active, which is the SD-AUDIT-2026 loss reached through a typo rather than through a missing guard. Five endpoints pass this value as a hand-written literal that must agree with a role vocabulary kept in ROLES_BY_APP, in each schema check constraint and in each app's capability list. Now refused 500 GUARD_MISCONFIGURED before the roster is read, as a RETURN rather than a throw because every endpoint's catch would relabel a throw 502 'Upstream connection error -- try again'.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "2cb6460dc5c3",
-        "date": "2026-09-21",
-        "subject": "feat(sairnfreedom): per-employee credentials end to end -- and setup could empty a post of its last governor, on every app",
-        "lag_days": 1
-      },
-      "citation_note": "ARGUABLE and close. 1.11 is a check that cannot run being folded into a pass. Here the check RAN, on a set that could not contain its subject, and produced a pass -- could-not-answer folded into permitted, one level in from tool availability. The fix is the rule's prescription exactly: say which value is wrong, say the check did not run, and fail.",
-      "contributing_factors": [
-        {
-          "factor": "The guard narrows to a set built from one caller-supplied string, and both the count and the membership test are derived from that same set -- so a wrong value makes the guard vacuous rather than wrong, and a vacuous guard is indistinguishable from a satisfied one at every call site.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "soleRole is validated against provisioningRoles before anything else happens, and a mismatch is refused 500 GUARD_MISCONFIGURED naming the bad value and the real roles"
-        },
-        {
-          "factor": "The value is a hand-written literal repeated in five endpoints and has to agree with a role vocabulary kept in three other places. Nothing generates any of them from any other.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "generate the schema check constraint and each app capability list from ROLES_BY_APP rather than maintaining four copies; recorded, not done here"
-        },
-        {
-          "factor": "The only place on the platform that named this scenario described the OPPOSITE consequence -- a static arm told its reader the guard would refuse every deactivation, the over-restrictive failure. A reader who hit it and believed it would have treated a trapdoor as an inconvenience.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the arm message and mutation 3 of the existing sabotage probe are both corrected to the permissive direction, and six new arms drive it rather than asserting it in prose"
-        },
-        {
-          "factor": "The existing static arm parses const SOLE_ROLE and the call site with a regex and covers only endpoints with MORE THAN ONE provisioning role, so a single-role endpoint, a non-literal value or a spelling the regex misses were all invisible.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the validation is at runtime in the shared engine, which is where the behaviour is actually decided, and covers all ten callers rather than the parseable subset"
-        }
-      ],
-      "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
-    },
-    {
-      "commit": "9320ed8f8e1b",
-      "date": "2026-09-22",
-      "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
-      "files": [
-        "api/_lib/employee-lifecycle-wiring.test.js",
-        "api/_lib/setup-demotion-guard.test.js",
-        "api/grd-auth.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-auth.js",
-        "tests/run_setup_demotion_sabotage_probe.py"
-      ],
-      "lines_added": 547,
-      "lines_removed": 3,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "The last-admin guard watches DEACTIVATION and not the role change that reaches the identical end state. Every setup on this platform upserts on (license_hash, employee_id) writing the role column, so demoting the last holder of a sole role empties the licence of provisioners through a door nothing was standing at -- zero active owners, with bootstrap still answering 409 ALREADY_PROVISIONED because it deliberately does not filter on active, so there is no route back through the app. MEASURED across every api/*-auth.js: 17 setup paths, ONE carried a guard (api/sf-auth.js, written the same day by the session whose review surfaced this), 16 did not, and FOUR were REACHABLE -- api/grd-auth.js, api/sb-auth.js, api/scp-auth.js and api/sd-auth.js each declare SOLE_ROLE 'owner' (so their set_active guard counts owners only) AND each setup upserts writing role. Those four are the same apps commit 591531ce hardened against DEACTIVATION hours earlier. Closed with one shared soleRoleDemotionRefusal() in api/_lib/employee-lifecycle.js wired into all four, refusing 409 LAST_ADMIN before the write, allowing promotions and PIN resets, and refusing 500 rather than counting zero when soleRole names no real role.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "591531ce6fd6",
-        "date": "2026-09-21",
-        "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
-        "lag_days": 1
-      },
-      "citation_note": "ARGUABLE. 1.11 is about could-not-run being folded into a pass; the closest fit here is that an absent control is indistinguishable from a present one at the call site -- the same citation c98b5d674c76 and the LEG_RESOURCES record both took for a gate that does not exist. What makes it arguable rather than clean is that a control DID exist and was correct; it was simply pointed at one of the two routes to the same state.",
-      "contributing_factors": [
-        {
-          "factor": "The guard is keyed on the ACTION (deactivation) rather than on the STATE it protects (a licence with at least one active sole-role holder). Any other write reaching the same state is outside it by construction, and setup writes the role column on a conflict key that makes it an update.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "a second guard on the setup route; the residual that the STATE is still protected by two action-shaped checks rather than one invariant is recorded, not closed"
-        },
-        {
-          "factor": "591531ce hardened four apps against deactivation and did not ask what else reaches zero owners. The demotion route was named in the sf-auth work the same day and reported as open elsewhere, which is how it was found -- by a review quantifying somebody else stated residual rather than by a sweep.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "an arm derives the set of endpoints that name a sole role AND upsert a role in setup, so a FIFTH such app cannot appear unguarded and unnoticed"
-        },
-        {
-          "factor": "Nothing drove setup with a role change at all. The existing suites drive set_active, and a setup that demotes looks exactly like a setup that provisions from the outside.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "twelve arms drive the four REAL handlers end to end on the demotion, the two-owner case and a fresh provision, asserting the upsert was NOT sent rather than reading the status"
-        },
-        {
-          "factor": "My own first wiring arms asserted that the guard function NAME appeared in each setup block. The sabotage probe planted a short-circuited call -- name present, call disabled -- and all four went silent.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "replaced with arms that drive the handler; the probe mutation that killed them is kept as arms 6-9, one endpoint at a time"
-        }
-      ],
-      "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
-    },
-    {
       "commit": "270c60ed76a2",
       "date": "2026-09-22",
       "subject": "fix(cross-tenant-scope): the importer guard was red on main, and the one-line fix it asked for was refused by the arm next to it",
@@ -10710,6 +10589,160 @@
         }
       ],
       "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
+    },
+    {
+      "commit": "33af07b41a39",
+      "date": "2026-09-22",
+      "subject": "fix(sairnlaw): phase 2 completed -- the last three resources authorised by a key shipped to the browser now need a session",
+      "files": [
+        "api/sd-data-law-phase2-session.test.js",
+        "api/sd-data-sairnlaw-resources.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/app_session_isolation.js"
+      ],
+      "lines_added": 374,
+      "lines_removed": 29,
+      "app": "SAIRNLAW",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "--factors-unknown"
+      },
+      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
+      "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
+      "factors_unknown_reason": "--rule"
+    },
+    {
+      "commit": "37bf15fd9811",
+      "date": "2026-09-22",
+      "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
+      "files": [
+        "api/_lib/employee-lifecycle.js",
+        "api/_lib/last-admin-sole-role.test.js",
+        "tests/run_last_admin_sole_role_sabotage_probe.py",
+        "tests/run_solerole_validation_sabotage_probe.py"
+      ],
+      "lines_added": 362,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/employee-lifecycle.js setActive() narrows the last-admin count to [soleRole] when an app names one, and nothing validated that the name was a real provisioning role. THE FAILURE WAS PERMISSIVE, which is the opposite of what the only comment describing the scenario said: guardRoles matches no row, activeProvisioners counts ZERO, and the refusal condition ALSO tests guardRoles.indexOf(target.role) !== -1 -- false for every real row -- so the branch is UNREACHABLE. Driven against the real engine before the fix: roster of one post.govern and one post.govern.deputy, soleRole 'post.governor' (one letter), caller the deputy, target the governor, result 200 WITH THE PATCH SENT. The licence reaches zero governors and bootstrap still 409s because it does not filter on active, which is the SD-AUDIT-2026 loss reached through a typo rather than through a missing guard. Five endpoints pass this value as a hand-written literal that must agree with a role vocabulary kept in ROLES_BY_APP, in each schema check constraint and in each app's capability list. Now refused 500 GUARD_MISCONFIGURED before the roster is read, as a RETURN rather than a throw because every endpoint's catch would relabel a throw 502 'Upstream connection error -- try again'.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "2cb6460dc5c3",
+        "date": "2026-09-21",
+        "subject": "feat(sairnfreedom): per-employee credentials end to end -- and setup could empty a post of its last governor, on every app",
+        "lag_days": 1
+      },
+      "citation_note": "ARGUABLE and close. 1.11 is a check that cannot run being folded into a pass. Here the check RAN, on a set that could not contain its subject, and produced a pass -- could-not-answer folded into permitted, one level in from tool availability. The fix is the rule's prescription exactly: say which value is wrong, say the check did not run, and fail.",
+      "contributing_factors": [
+        {
+          "factor": "The guard narrows to a set built from one caller-supplied string, and both the count and the membership test are derived from that same set -- so a wrong value makes the guard vacuous rather than wrong, and a vacuous guard is indistinguishable from a satisfied one at every call site.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "soleRole is validated against provisioningRoles before anything else happens, and a mismatch is refused 500 GUARD_MISCONFIGURED naming the bad value and the real roles"
+        },
+        {
+          "factor": "The value is a hand-written literal repeated in five endpoints and has to agree with a role vocabulary kept in three other places. Nothing generates any of them from any other.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "generate the schema check constraint and each app capability list from ROLES_BY_APP rather than maintaining four copies; recorded, not done here"
+        },
+        {
+          "factor": "The only place on the platform that named this scenario described the OPPOSITE consequence -- a static arm told its reader the guard would refuse every deactivation, the over-restrictive failure. A reader who hit it and believed it would have treated a trapdoor as an inconvenience.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arm message and mutation 3 of the existing sabotage probe are both corrected to the permissive direction, and six new arms drive it rather than asserting it in prose"
+        },
+        {
+          "factor": "The existing static arm parses const SOLE_ROLE and the call site with a regex and covers only endpoints with MORE THAN ONE provisioning role, so a single-role endpoint, a non-literal value or a spelling the regex misses were all invisible.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the validation is at runtime in the shared engine, which is where the behaviour is actually decided, and covers all ten callers rather than the parseable subset"
+        }
+      ],
+      "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
+    },
+    {
+      "commit": "9320ed8f8e1b",
+      "date": "2026-09-22",
+      "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
+      "files": [
+        "api/_lib/employee-lifecycle-wiring.test.js",
+        "api/_lib/setup-demotion-guard.test.js",
+        "api/grd-auth.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "tests/run_setup_demotion_sabotage_probe.py"
+      ],
+      "lines_added": 547,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "The last-admin guard watches DEACTIVATION and not the role change that reaches the identical end state. Every setup on this platform upserts on (license_hash, employee_id) writing the role column, so demoting the last holder of a sole role empties the licence of provisioners through a door nothing was standing at -- zero active owners, with bootstrap still answering 409 ALREADY_PROVISIONED because it deliberately does not filter on active, so there is no route back through the app. MEASURED across every api/*-auth.js: 17 setup paths, ONE carried a guard (api/sf-auth.js, written the same day by the session whose review surfaced this), 16 did not, and FOUR were REACHABLE -- api/grd-auth.js, api/sb-auth.js, api/scp-auth.js and api/sd-auth.js each declare SOLE_ROLE 'owner' (so their set_active guard counts owners only) AND each setup upserts writing role. Those four are the same apps commit 591531ce hardened against DEACTIVATION hours earlier. Closed with one shared soleRoleDemotionRefusal() in api/_lib/employee-lifecycle.js wired into all four, refusing 409 LAST_ADMIN before the write, allowing promotions and PIN resets, and refusing 500 rather than counting zero when soleRole names no real role.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "591531ce6fd6",
+        "date": "2026-09-21",
+        "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
+        "lag_days": 1
+      },
+      "citation_note": "ARGUABLE. 1.11 is about could-not-run being folded into a pass; the closest fit here is that an absent control is indistinguishable from a present one at the call site -- the same citation c98b5d674c76 and the LEG_RESOURCES record both took for a gate that does not exist. What makes it arguable rather than clean is that a control DID exist and was correct; it was simply pointed at one of the two routes to the same state.",
+      "contributing_factors": [
+        {
+          "factor": "The guard is keyed on the ACTION (deactivation) rather than on the STATE it protects (a licence with at least one active sole-role holder). Any other write reaching the same state is outside it by construction, and setup writes the role column on a conflict key that makes it an update.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "a second guard on the setup route; the residual that the STATE is still protected by two action-shaped checks rather than one invariant is recorded, not closed"
+        },
+        {
+          "factor": "591531ce hardened four apps against deactivation and did not ask what else reaches zero owners. The demotion route was named in the sf-auth work the same day and reported as open elsewhere, which is how it was found -- by a review quantifying somebody else stated residual rather than by a sweep.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "an arm derives the set of endpoints that name a sole role AND upsert a role in setup, so a FIFTH such app cannot appear unguarded and unnoticed"
+        },
+        {
+          "factor": "Nothing drove setup with a role change at all. The existing suites drive set_active, and a setup that demotes looks exactly like a setup that provisions from the outside.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "twelve arms drive the four REAL handlers end to end on the demotion, the two-owner case and a fresh provision, asserting the upsert was NOT sent rather than reading the status"
+        },
+        {
+          "factor": "My own first wiring arms asserted that the guard function NAME appeared in each setup block. The sabotage probe planted a short-circuited call -- name present, call disabled -- and all four went silent.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "replaced with arms that drive the handler; the probe mutation that killed them is kept as arms 6-9, one endpoint at a time"
+        }
+      ],
+      "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     }
   ],
   "started": "2026-09-09",

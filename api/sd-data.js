@@ -805,7 +805,39 @@ module.exports = async (req, res) => {
       //    session AND a role, forty lines below this one. A reader comparing
       //    the two would conclude the gate exists; a reader of either alone
       //    would not think to ask.
-      'law_trusttx': ['read', 'write']
+      'law_trusttx': ['read', 'write'],
+      // ── PHASE 2 COMPLETED, 2026-09-22. THE LAST THREE THAT WERE STILL THE
+      //    LICENCE KEY ALONE. law_trusttx was flipped on 2026-09-16 and these
+      //    three were deliberately left: the comment at the LAW_RESOURCES table
+      //    records why -- Vercel deploys the page and the endpoint together, so
+      //    a staff member with the app already open, or a cached page, would
+      //    start failing mid-session. The fifteen were the canary, and the
+      //    trigger written into the open-work row was "when that has been quiet
+      //    for a full working day".
+      //
+      //    THE CANARY HAS BEEN QUIET FOR SIX DAYS, and the client half is
+      //    confirmed rather than assumed: sairnlaw.html:1509 sdnData() sets
+      //    X-SD-Auth on EVERY data call whenever a token exists -- it is not
+      //    conditional on the resource and not conditional on a withSession
+      //    flag, so a signed-in employee already sends the header on these
+      //    three today.
+      //
+      //    MEASURED BEFORE THE CHANGE, so "it was open" is evidence and not an
+      //    inference from a document: all SIX pairs -- three resources by read
+      //    and write -- answered 200 with no token at all, against a control
+      //    where law_invoices/read answered 401.
+      //
+      //    WHAT IS STILL NOT DECIDED HERE, same as law_trusttx: a SESSION gate,
+      //    not a ROLE gate. ROLES_BY_APP.sairnlaw is owner / attorney /
+      //    paralegal and all three legitimately work clients, matters and
+      //    deadlines. The boundary is "a signed-in employee of this firm".
+      //
+      //    law_matters names the client and the matter, which is why it was the
+      //    most exposed of the three: a licence key is shipped to the browser
+      //    and readable by anyone who can open the app.
+      'law_clients': ['read', 'write'],
+      'law_matters': ['read', 'write'],
+      'law_deadlines': ['read', 'write']
     };
     // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
     // The gate below resolved this as "memory follows the caller, everything
@@ -820,6 +852,16 @@ module.exports = async (req, res) => {
     // 2026-09-03 while pinned to 'stonedesk'.
     const SD_GATE_APP = {
       'law_trusttx': 'sairnlaw',
+      // Phase 2's final three. WITHOUT THESE THREE LINES the gate above would
+      // resolve expectedApp to 'stonedesk' by default and refuse every
+      // correctly signed-in attorney with FORBIDDEN "sign in first" -- the
+      // exact defect this table's own comment records for `memory` on
+      // 2026-09-03 and for law_trusttx after it. Adding a resource to
+      // SD_SESSION_GATED without adding it here is the failure mode, and it
+      // fails CLOSED and confusingly rather than open.
+      'law_clients': 'sairnlaw',
+      'law_matters': 'sairnlaw',
+      'law_deadlines': 'sairnlaw',
       'sf_accounts': 'sairnfreedom',
       'sf_ledger': 'sairnfreedom',
       'sf_vendor_prices': 'sairnfreedom'

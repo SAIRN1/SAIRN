@@ -334,24 +334,37 @@ section('0. the fixture really is a token, and really is app-bound');
   // Two changes, both of them the point: reachability is asserted POSITIVELY as
   // 200, and the gated resource is in its own list with the inversion the
   // section asked for. Never `!== <one code>` for "it got through".
-  const PHASE_2_GATED = ['law_trusttx'];
+  // PHASE 2 COMPLETED 2026-09-22. The remaining three moved into the shared
+  // SD_SESSION_GATED table with sairnlaw expectedApp entries, so STILL_UNGATED
+  // derives to EMPTY and the loop below runs zero times -- which is the arm
+  // being INVERTED by the mechanism it was written with, exactly as its own
+  // instruction asked, rather than by deleting anything. The emptiness is
+  // asserted immediately after, so a resource re-opened later cannot vanish
+  // from this boundary by leaving both lists.
+  const PHASE_2_GATED = ['law_trusttx', 'law_clients', 'law_matters', 'law_deadlines'];
   const STILL_UNGATED = PHASE_1_UNGATED.filter((r) => PHASE_2_GATED.indexOf(r) === -1);
 
+  ok(STILL_UNGATED.length === 0,
+     'PHASE 1 IS CLOSED (2026-09-22): no SAIRNlaw resource on the original four is '
+     + 'reachable with the LICENCE ALONE. STILL_UNGATED derives to '
+     + (STILL_UNGATED.join(', ') || 'nothing') + ' -- if that is ever non-empty '
+     + 'again, a resource went back to being authorised by a key shipped to the '
+     + 'browser');
   for (const resource of STILL_UNGATED) {
     const out = await call(h, resource, null, null);
     ok(out.code === 200,
-       'PHASE 1 (2026-09-05, still open): ' + resource + ' is reachable with the LICENCE '
-       + 'ALONE -- no session -- and answers ' + out.code
-       + '. When phase 2 lands, INVERT this arm rather than deleting it');
+       'PHASE 1: ' + resource + ' is reachable with the LICENCE ALONE -- no session '
+       + '-- and answers ' + out.code);
   }
   for (const resource of PHASE_2_GATED) {
     const out = await call(h, resource, null, null);
     ok(out.code === 403 && out.body && out.body.error
        && out.body.error.code === 'FORBIDDEN',
-       'PHASE 2 (2026-09-16, DONE): ' + resource + ' is REFUSED without a session '
-       + 'and answers ' + out.code + ' ' + ((out.body && out.body.error
-       && out.body.error.code) || '?') + ' -- attorney CLIENT TRUST MONEY, Tier A, '
-       + 'the one balance a bar association audits');
+       'PHASE 2 (law_trusttx 2026-09-16, the other three 2026-09-22 -- ALL DONE): '
+       + resource + ' is REFUSED without a session and answers ' + out.code + ' '
+       + ((out.body && out.body.error && out.body.error.code) || '?')
+       + ' -- law_trusttx is attorney CLIENT TRUST MONEY, the one balance a bar '
+       + 'association audits, and law_matters names the client and the matter');
   }
   // ── AND THE EXPECTED APP, WHICH IS THIS WHOLE FILE'S SUBJECT ─────────────
   // Added 2026-09-16 after a negative control emptied SD_GATE_APP -- reverting

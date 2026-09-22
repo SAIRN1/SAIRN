@@ -1527,6 +1527,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-22T08:48:28Z",
+      "resources": [
+        "law_deadlines",
+        "law_invoices",
+        "law_trusttx"
+      ],
+      "files": [
+        "api/sd-data-law-phase2-session.test.js",
+        "api/sd-data-sairnlaw-resources.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "tests/app_session_isolation.js"
+      ],
+      "what": "SERVING CHANGE, and a small one with a large blast radius: six lines in two tables in api/sd-data.js put law_clients, law_matters and law_deadlines behind the shared session gate. They were the last three SAIRNlaw resources authorised by the licence key alone -- a key shipped to the browser and readable by anyone who can open the app. Plus a new suite (api/sd-data-law-phase2-session.test.js, 24 arms) and two anticipated arms inverted in api/sd-data-sairnlaw-resources.test.js and tests/app_session_isolation.js. MEASURED BEFORE: all six pairs answered 200 with no token, control law_invoices/read answered 401. AFTER: all six answer 403 FORBIDDEN. Sabotage-verified 4 of 4 on the real file, restored byte-for-byte. Regression green across nine suites. WHAT A REVIEWER SHOULD ATTACK, hardest first. (1) THE BREAKAGE RISK IS THE WHOLE QUESTION AND MY EVIDENCE FOR IT BEING ZERO IS INDIRECT. api/sd-data.js's own comment says these three were held back because Vercel ships the page and the endpoint together, so a staff member with the app already open would start failing mid-session. I argue the trigger is met: the fifteen have been gated six days, and sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists. BUT I DID NOT OBSERVE A REAL FIRM'S TRAFFIC, and I cannot. If a stale cached page is still out there, this change breaks reads of the client list and the matter list for whoever holds it, until they reload. Judge whether six days of a quiet canary is the evidence the rollout comment actually asked for, or whether it asked for something I have substituted an argument for. That is the one that could be wrong in a way that matters to a working attorney. (2) I CHOSE THE 403 GATE OVER THE 401 GATE AND THE APP NOW ANSWERS BOTH. The fifteen answer 401 NO_SESSION from the inline gate beside LAW_RESOURCES; law_trusttx and now these three answer 403 FORBIDDEN from SD_SESSION_GATED. My reasoning: the shared gate carries the per-resource expectedApp machinery that stops another app's valid session passing, and law_trusttx -- the most sensitive resource in the app -- already uses it. The cost is that one endpoint has two refusal shapes for one condition, which a client writing error handling sees as an inconsistency I widened from one resource to four. Say whether to unify, and if so which way. I did NOT unify because it is a client-visible contract change. (3) THE EXPECTEDAPP ENTRIES ARE THE FAILURE MODE, NOT THE GATE ENTRIES. A resource in SD_SESSION_GATED with no SD_GATE_APP line defaults to expectedApp 'stonedesk' and refuses every correctly signed-in attorney with FORBIDDEN 'sign in first' -- the exact defect that table's own comment records happening to `memory` in 2026-09-03 and to law_trusttx after it. I added all three and asserted them in a SEPARATE arm from the gate-table arm, deliberately, so one passing cannot hide the other failing. Check the separation really exists and that mutation 4 of my control (expectedApp entries removed) is what it says it is. (4) DEACTIVATED-CREDENTIAL COVERAGE IS ASSERTED WEAKLY AND I KNOW IT. My arm asserts notStrictEqual(status, 200) rather than a specific code, because I did not want to pin a refusal shape I had not established. That is weaker than the law_trusttx suite's equivalent. Check what the handler actually answers for a deactivated SAIRNlaw employee on these three and tighten it, or say the loose form is right. (5) I INVERTED TWO ARMS I DID NOT WRITE, in two suites I do not own, because both carried written instructions to invert rather than delete when phase 2 landed. Check I inverted them in the spirit asked: PHASE1_STILL_OPEN is now an EMPTY list whose emptiness is asserted, and STILL_UNGATED derives to empty through the partition mechanism that suite already had. If either should have become something else -- a removed section, a differently-shaped assertion -- say so, because a boundary arm that has stopped asking anything is the failure both comments were written to prevent.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-22T08:48:28Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

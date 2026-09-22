@@ -157,6 +157,15 @@ async function main() {
     // suite left red by its own correct finding is a suite whose next finding
     // is read as noise.
     assert.match(m[0], /'law_trusttx':\s*\['read', 'write'\]/);
+    // PHASE 2 COMPLETED, 2026-09-22. The last three SAIRNlaw resources that
+    // were the licence key alone. Measured before the change: all six pairs
+    // answered 200 with no token, against a control where law_invoices/read
+    // answered 401. Driven in api/sd-data-law-phase2-session.test.js, which
+    // this file's coverage arm below names -- adding them here without that
+    // file fails that arm, which is how this was caught rather than shipped.
+    assert.match(m[0], /'law_clients':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'law_matters':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'law_deadlines':\s*\['read', 'write'\]/);
     // SAIRNfreedom's three Tier A resources, 2026-09-21. Same shape as
     // law_trusttx above and found the same way: SF_RESOURCES' read and write
     // branches carried NO session check of any kind, so the licence key --
@@ -171,16 +180,31 @@ async function main() {
     assert.match(m[0], /'sf_ledger':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_vendor_prices':\s*\['read', 'write'\]/);
     const pairs = (m[0].match(/'(read|write|reserve)'/g) || []).length;
-    assert.strictEqual(pairs, 17,
+    // 17 -> 23 on 2026-09-22: phase 2's final three, six pairs. WHY THEY ARE
+    // GATED, which is what this tripwire asks for: law_clients, law_matters and
+    // law_deadlines were the last three resources in SAIRNlaw authorised by the
+    // licence key alone -- a key shipped to the browser and readable by anyone
+    // who can open the app. Measured before the change: all six pairs answered
+    // 200 with no token, against a control where law_invoices/read answered 401.
+    // law_matters names the client and the matter.
+    assert.strictEqual(pairs, 23,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
   // ── EVERY PAIR IN THE TABLE IS DRIVEN SOMEWHERE, AND IT IS SAID WHERE ─────
   // Added 2026-09-16. The count arm above proves the table has not changed
   // size; it says nothing about whether anything EXERCISES the entries. GATED
-  // drives 7 of the 11 pairs -- `locations` and `law_trusttx` were added later
-  // and are driven in their own suites, which is right, because law_trusttx
-  // needs a SAIRNlaw session and this file mints StoneDesk ones.
+  // drives the StoneDesk-session pairs; everything needing another app's session
+  // is driven in its own suite and named in `drivenElsewhere` below, because
+  // this file mints StoneDesk tokens and cannot mint a SAIRNlaw or SAIRNfreedom
+  // one.
+  //
+  // THE PROSE HERE USED TO SAY "7 of the 11 pairs" AND THE TABLE HELD 17 WHEN
+  // THAT WAS READ (2026-09-22) -- a hand-maintained count in a comment, stale
+  // and invisible because nothing compares prose to the table. Replaced with a
+  // description rather than a number: the arm below DERIVES both sides and names
+  // what is missing, so a count in this comment adds nothing but a second thing
+  // to get wrong.
   //
   // The failure this prevents is the quiet one: a resource added to the table,
   // counted by the arm above, and driven by nothing anywhere -- which looks
@@ -199,6 +223,17 @@ async function main() {
       const drivenElsewhere = {
         locations: 'api/sd-data-locations.test.js',
         law_trusttx: 'api/sd-data-law-trusttx-session.test.js',
+        // Phase 2's final three, driven together in one suite for the same
+        // reason law_trusttx has its own: they need a SAIRNlaw session and
+        // this file mints StoneDesk ones. That suite drives the whole chain --
+        // no session refused on read AND write with ZERO database calls, all
+        // three real roles still reading, a write still succeeding so the gate
+        // is a split rather than a lockout, a session from another SAIRN app
+        // refused, a deactivated credential refused on a token that still
+        // verifies, and both table entries asserted on the source.
+        law_clients: 'api/sd-data-law-phase2-session.test.js',
+        law_matters: 'api/sd-data-law-phase2-session.test.js',
+        law_deadlines: 'api/sd-data-law-phase2-session.test.js',
         // SAIRNfreedom's three, driven in their own suite for the same reason
         // law_trusttx is: they need a SAIRNfreedom session, and this file mints
         // StoneDesk ones. That suite drives the whole chain -- no session
