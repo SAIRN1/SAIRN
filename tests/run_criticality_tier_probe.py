@@ -23,6 +23,7 @@ Run: python tests/run_criticality_tier_probe.py
 CONTROLS_FOR = ['criticality_tier_check.py']
 
 import io
+import re
 import os
 import shutil
 import subprocess
@@ -118,9 +119,37 @@ try:
            'a Tier A row with an EMPTY evidence cell is refused', 'NO EVIDENCE')
 
     # ── ARM 6: A ROLLUP THAT DISAGREES WITH ITS OWN DETAIL ─────────────────
+    # ── THE HARDCODED 10 WENT STALE AND THIS ARM WENT RED (2026-09-22) ────
+    # It read `roll.replace('| **10** |', '| **3** |')`. StoneDesk's Tier A
+    # count was 10 when that was written; sd_exec_msgs and sd_negotiated_prices
+    # were re-tiered afterwards and it is 12. The replace matched NOTHING, the
+    # mutated document was byte-identical to the original, the checker passed
+    # -- correctly, it had nothing to complain about -- and the arm reported
+    # FAIL because the marker never appeared.
+    #
+    # RED IS THE SAFE DIRECTION AND IT IS STILL WRONG: the arm was failing for
+    # a reason that has nothing to do with the property it guards, so a reader
+    # learns to expect one red arm here, which is how a probe stops being read
+    # at all. And it is the SECOND thing in this file to go stale by somebody
+    # else correctly re-tiering a row -- the count is a fact about the table,
+    # so it must be DERIVED from the table rather than typed beside it.
+    #
+    # The mutation now reads whatever the A count is and writes a different
+    # number, and it ASSERTS the edit landed. A mutation that plants nothing
+    # must be a loud failure about the ANCHOR, never a quiet one about the
+    # subject.
     roll = one_row('| `stonedesk` |')
-    mutate(ORIGINAL.replace(roll, roll.replace('| **10** |', '| **3** |', 1), 1),
-           'a rollup count that contradicts the rows is refused', 'COUNT')
+    m6 = re.search(r'\| \*\*(\d+)\*\* \|', roll)
+    assert m6, ('fixture invalid: the stonedesk rollup row carries no '
+                '| **N** | A-count cell -- the row shape changed and this arm '
+                'is not testing what it says it tests: %r' % roll)
+    a_count = int(m6.group(1))
+    wrong = a_count + 7           # any number the rows cannot support
+    rolled = roll.replace(m6.group(0), '| **%d** |' % wrong, 1)
+    assert rolled != roll, 'the rollup mutation did not land'
+    mutate(ORIGINAL.replace(roll, rolled, 1),
+           'a rollup count that contradicts the rows is refused (A=%d -> %d)'
+           % (a_count, wrong), 'COUNT')
 
     # ── ARM 7: A HALF-TIERED APP ───────────────────────────────────────────
     # A resource row under an app whose rollup says NOT YET RE-TIERED. Without

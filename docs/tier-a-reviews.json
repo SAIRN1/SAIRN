@@ -1661,6 +1661,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-22T10:52:01Z",
+      "resources": [
+        "sd_exec_msgs",
+        "sd_negotiated_prices"
+      ],
+      "files": [
+        "tests/run_criticality_tier_probe.py"
+      ],
+      "what": "TEST-ONLY, no serving code: tests/run_criticality_tier_probe.py arm 6. It names sd_exec_msgs and sd_negotiated_prices only because the COMMENT explaining why the arm went stale says those two were re-tiered to A after it was written -- that is the cause of the staleness and the prose has to name it or the next reader cannot check the account. No resource's tier changes here and no serving code is touched. WHY I AM RECORDING RATHER THAN OVERRIDING: this file is a CONTROL on tools/criticality_tier_check.py, which is what stands between a Tier A row and a rollup that silently disagrees with it. A control on a Tier A mechanism deserves the second reader even though its own diff is a comment and a regex. WHAT A REVIEWER SHOULD PRESS ON. (1) THE ARM WAS DEAD AND NOBODY KNOWS FOR HOW LONG. It replaced the literal \"| **10** |\" in StoneDesk's rollup row; the count became 12 at some point, so the replace matched nothing, the document was mutated to a byte-identical copy, the checker passed and the arm reported FAIL. Check the DATE the count moved -- git log -S on that row will give it -- and say out loud how long the rollup-contradiction property was unguarded while this file reported a failure that looked like the guard working. I did not establish that window and it is the number a reader should want. (2) MY REPLACEMENT DERIVES THE COUNT AND ADDS 7. Check that a_count + 7 cannot accidentally equal a number the rows DO support for some app -- it cannot for StoneDesk today because the rollup is compared against that app's own rows, but the arm hardcodes the +7 and I did not test the boundary. A value that happened to be right would make the arm pass by planting nothing, which is the failure it was just fixed for. (3) I ASSERT THE EDIT LANDED, AND THE ASSERTION IS `rolled != roll`. That catches a regex that matched nothing. It does NOT catch a regex that matched the WRONG cell -- the row has several \"| **N** |\"-shaped cells if anybody adds one, and re.search takes the first. Check whether the first such cell is always the A count, and whether one_row's uniqueness guard is the whole protection. (4) THE COMMENT CLAIMS THIS IS THE THIRD INSTANCE OF ONE SHAPE IN TWO DAYS and names cody's session_gate_table_probe and my own route-record mutation 1 as the other two. Check that characterisation is fair to both -- I am grouping somebody else's defect with mine and with this one, and a tidy pattern is exactly the kind of claim that gets repeated once it is written down.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-22T10:52:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
