@@ -390,13 +390,44 @@ def main():
         # guard is one nobody notices has stopped mattering. Either grade or a
         # declaration is enough -- both are ways this file would have been
         # credited had it not been excluded.
+        #
+        # ── AN IMPORTER IS LOAD-BEARING BY THE OTHER ARM'S OWN RULE ─────────
+        # (2026-09-22) These two arms CONTRADICTED each other and the
+        # contradiction was unreachable until a file hit it. The completeness
+        # arm below says, in its own words, "a test file that IMPORTS this
+        # grader has the grader as its subject, full stop" -- so it DEMANDS
+        # such a file be listed. This arm then REFUSED the listing when that
+        # file happened to declare nothing and grade NONE. Both arms cannot be
+        # satisfied for it: listed, it is decorative; unlisted, the list is
+        # incomplete. tests/grader_exclusion_parser_review_probe.py sat in that
+        # gap and left the importer arm red on main, which stopped
+        # tests/run_self_exclusion_guard_sabotage_probe.py at its baseline and
+        # took all five of its mutations out of service.
+        #
+        # The resolution takes the completeness arm's rule as the stronger one,
+        # because it is about WHAT THE FILE IS rather than what it currently
+        # happens to be credited with. cc's own reasoning for excluding
+        # tests/cross_tenant_dispatchers_review_probe.py was that it "was one
+        # fixture edit away" from inflating the headline -- that argument does
+        # not depend on today's credit either.
+        #
+        # MEASURED, so the cost is known: all six current entries import the
+        # grader, and five of them are load-bearing by the original test as
+        # well. So this exemption changes the verdict for exactly one entry
+        # today, and it leaves the decorative check with NO current entry to
+        # bite on -- it still applies to any future NON-importer entry, which
+        # is the padding case it was written for, but it is unexercised by the
+        # live corpus and a mutation cannot prove it bites without a fixture.
+        # Stated rather than quietly accepted.
         body = io.open(os.path.join(REPO, rel), encoding='utf-8').read()
         g, _w = S.grade(body)
         decl, _n = S.declared_coverage(body)
-        okl = g != 'NONE' or bool(decl)
+        imports_grader = 'cross_tenant_isolation_scope' in body
+        okl = g != 'NONE' or bool(decl) or imports_grader
         print('  %-4s %-58s %s'
               % ('ok' if okl else 'FAIL', 'and the exclusion still prevents something',
-                 'grades %s, declares %d' % (g, len(decl))))
+                 'grades %s, declares %d%s' % (g, len(decl),
+                                               ', IMPORTS the grader' if imports_grader else '')))
         if not okl:
             FAILED.append('self-excluded-decorative:' + rel)
 

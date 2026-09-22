@@ -511,6 +511,27 @@ SELF_EXCLUDED = (
     # narrowing this tuple to a rule is a change to the measurer and belongs in
     # its own commit with its own control.
     'tests/grader_declaration_reconstruction_review_probe.py',
+    # THE SIXTH, AND IT WAS FOUND RED ON MAIN RATHER THAN BEFORE A PUSH
+    # (2026-09-22). cc's review of fourth's 22:16:20Z landed this file in
+    # 4c7892e9 and did not list it, so the importer arm above has been
+    # FAILING on main ever since -- and the failure took the five-mutation
+    # control in tests/run_self_exclusion_guard_sabotage_probe.py down with
+    # it, because that probe stops at a red baseline. The guard bit
+    # correctly within three hours of being written; nothing noticed,
+    # because a report-only probe that fails on main is invisible until
+    # somebody runs it. Found reviewing cc's 20:42:06Z obligation.
+    #
+    # MEASURED BEFORE ADDING, the same test every entry above is held to:
+    # this file grades NONE and declares nothing, and the headline is
+    # GENUINE 84 / WEAK 1 with it excluded and without. A false credit
+    # removed, not coverage lost.
+    #
+    # AND IT IS THE SIXTH ENTRY, WHICH IS THE POINT THE NOTE ABOVE ALREADY
+    # MAKES: a list that grows by one every time somebody reviews this tool
+    # is a list that will be one short again. The open-work row for turning
+    # this tuple into the computation the importer arm already performs is
+    # still open, and this entry is evidence for it rather than against it.
+    'tests/grader_exclusion_parser_review_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────

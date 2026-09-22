@@ -74,8 +74,21 @@ MUTATIONS = [
      "completeness question, which the two string literals cannot answer "
      "about themselves",
      TOOL,
-     "    'tests/cross_tenant_dispatchers_review_probe.py',\n)",
-     ")"),
+     # ── RE-AIMED 2026-09-22, AND IT WAS STALE BEFORE TODAY ───
+     # This anchored on the entry PLUS the tuple's closing paren, which only
+     # matches while that entry is LAST. Two entries were appended after it on
+     # 2026-09-21 and a third on 2026-09-22, so the anchor had ALREADY gone to
+     # ANCHOR-0 -- and nobody could see it, because the importer arm was failing
+     # and this probe stops at a red baseline before it checks a single anchor.
+     # Fixing the baseline is what surfaced it. That is the real cost of a red
+     # control: it hides the state of the controls behind it, not just the
+     # mutations it was going to run.
+     #
+     # Anchored on the entry LINE alone now, so appending to the tuple does not
+     # move it. A comment naming the same file cannot collide: comment lines
+     # start with '#', not four spaces and a quote.
+     "    'tests/cross_tenant_dispatchers_review_probe.py',\n",
+     ""),
 ]
 
 sys.exit(run_probe(
