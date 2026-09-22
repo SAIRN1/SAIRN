@@ -10451,6 +10451,65 @@
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     },
     {
+      "commit": "04412beed2a4",
+      "date": "2026-09-22",
+      "subject": "fix(stonedesk): \"First-Pass Approval: 100%\" was a constant, and two fabrication sweeps each stopped one tile short of it",
+      "files": [
+        "stonedesk.html",
+        "tests/run_seam_remake_derivation_sabotage_probe.py",
+        "tests/seam_remake_derivation.js"
+      ],
+      "lines_added": 288,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html Seam AI: every row sdSeamAnalyze() wrote carried remake:false, set at both insert sites and never set true by anything, and three user-facing readers derived from it -- First-Pass Approval read 100% for every shop forever, Remake Issues read 0, and the CSV exported No in a column headed Remake Risk. The sd_remakes log that would answer it already existed and was never wired to the panel. Beside it, Material Savings read a bare d.length*180 with no benchmark or source.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "02ed4702b48d",
+        "date": "2026-07-26",
+        "subject": "Fix 5 panels with missing nav-render hooks (ap, employees, itadmin, template, templates) and remove fabricated KPIs on seamai/veinmatch",
+        "lag_days": 58
+      },
+      "citation_note": "1.7 is written about a sampling WINDOW exempting what it does not reach. Both sweeps here exempted by SCOPE instead -- 02ed4702 swept the hardcoded percentages and left both currency constants; 5571e5a0 swept Vein Match's Material Savings tile and left the identically-labelled Seam AI one three weeks later. Same shape, a scan covering N of M and reporting clean, arriving by a different route, so it is recorded as arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "remake was a BOOLEAN FROZEN AT INSERT TIME, and the event it describes happens afterwards -- a seam is analysed, then weeks later the job is or is not remade. No value written at insert could ever have been right.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "seamHadRemake() derives it at read time from sd_remakes, matching on normalised job name and requiring the remake to be logged on or after the analysis date; the stored field is removed from both insert sites and is ignored even where old rows still carry it."
+        },
+        {
+          "factor": "the sd_remakes log already carried customer, material, reason and cost per remake and was simply never wired to this panel, so the fix needed no new data, no new store and no new write path -- only a read.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the panel reads sd_remakes from localStorage rather than the sdRemakes global, so it does not depend on another script block's load order; saveSD5() keeps the two in step."
+        },
+        {
+          "factor": "02ed4702 replaced the hardcoded '94%' with arithmetic over the frozen field. That made a fabricated number look COMPUTED, which is strictly worse than the literal it replaced -- a reader who checks for a hardcoded percentage finds a filter and a division and stops.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/seam_remake_derivation.js asserts both directions of the derivation plus four source-text arms, because a call site can revert to the constant while every unit assertion about the derivation still passes."
+        },
+        {
+          "factor": "two separate fabrication sweeps each stopped one tile short. 02ed4702 stripped the phantom ||6 and ||8 baselines and the hardcoded percentages and left BOTH currency constants; 5571e5a0 removed Vein Match's Material Savings figure three weeks later and left the identically-labelled Seam AI tile beside it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_seam_remake_derivation_sabotage_probe.py, 5 mutations, all refused -- three make the derivation more permissive (the direction that flatters the tile and nobody checks) and two restore the constants, which only a source-text arm can see."
+        }
+      ],
+      "recurrence_open": "Nothing here sweeps the OTHER panels. The same four-tile shape exists across StoneDesk and the other apps, and only two of these tiles have ever been audited -- both of them in this one panel pair. A cross-panel census of KPI tiles whose value is a constant times a row count has not been run."
+    },
+    {
       "commit": "2154f6330dcb",
       "date": "2026-09-22",
       "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
@@ -10928,6 +10987,68 @@
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
+      "commit": "6fb6d696489c",
+      "date": "2026-09-22",
+      "subject": "fix(sairnvet): 41 tables including the DEA-relevant controlled-substance register were readable and writable on a bare licence key",
+      "files": [
+        "api/sd-data-sv-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "sairnvet.html",
+        "tests/run_sv_session_gate_sabotage_probe.py"
+      ],
+      "lines_added": 486,
+      "lines_removed": 22,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js dispatched all 41 SV_RESOURCES entries -- including sv_controlled, the DEA-relevant controlled-substance register, plus sv_patients and sv_soapnotes -- with NO session check on either verb. The licence key is a BEARER CREDENTIAL shipped to the browser and readable by anyone who can open the app, so it was the entire boundary on the clinical record. REPRODUCED LIVE WITH A CONTROL before the fix was applied, because an unmigrated table answers an honest empty to everybody and that is not a gate: sairncare/alf_mar and sairncare/alf_claim_routes answered 401 NO_SESSION on a bare key, while sairnvet/sv_controlled, sv_patients, sv_soapnotes and sv_whiteboard all answered 200 with provisioned:true on identical treatment. STATED RATHER THAN GLOSSED: every open table returned ZERO ROWS on the tenant I drove (SV-PINNACLE-2026), so my run demonstrated that nothing stops a caller REACHING the resource rather than that regulated data left; hover2's reproduction on their tenant did return rows. THE INJECTION COMMIT IS 29b1f1d5 AND THAT NEEDS SAYING: the dispatcher's own comment -- 'SAIRNvet has no per-employee authentication at all ... a session gate here would gate on a session that does not exist' -- was TRUE when written. 29b1f1d5 shipped api/sv-auth.js, ROLES_BY_APP.sairnvet, AUTH_TABLE_BY_APP.sairnvet and the schema on 2026-09-13, under the subject line 'the last app without it held the DEA register', and nothing re-read the justification after the premise it rested on stopped holding. The absence became a defect at that moment, not when the dispatcher was written.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "29b1f1d53fad",
+        "date": "2026-09-13",
+        "subject": "feat(sairnvet): per-employee auth -- the last app without it held the DEA register",
+        "lag_days": 9
+      },
+      "citation_note": "2.3 is 'a fact with a tense needs a read' and it lives in Part 2, EDITING STANDING DOCUMENTS. This was a CODE COMMENT, not a standing document -- a present-tense assertion about the platform ('SAIRNvet has no per-employee authentication at all') sitting in api/sd-data.js and load-bearing, because it is the stated reason a gate is absent. Cited as the nearest true match while naming the extension rather than pretending the fit is exact: the rule as written would not have caught this, and whether it should be widened to cover justification comments is a real question this record is evidence for. Not recorded as not-citable, because the failure mode is 2.3's failure mode exactly.",
+      "contributing_factors": [
+        {
+          "factor": "29b1f1d5 built the whole per-employee auth subsystem for SAIRNvet -- endpoint, role list, auth table mapping, schema -- and did not wire it into the one dispatcher that serves the app data. The subsystem existed and nothing consumed it for nine days.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "One session check before the SV_RESOURCES dispatch, so neither branch is reachable without it, scoped to sairnvet via verifySessionToken third argument, and placed BEFORE the pre-existing sv_controlled witness lock so an unauthenticated write is refused for having no session rather than merely for lacking a witness."
+        },
+        {
+          "factor": "The reason the gate was absent was recorded as a present-tense code comment. A comment cannot notice that its premise expired, and this one kept reading as current documentation for nine days after it stopped being true -- to at least one other session, which cited it to reach the WRONG conclusion (cody cc7165b4) before hover2 checked the premise instead of the comment.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "NAMED, NOT BUILT IN THE SAME BREATH AS A SECURITY FIX: a checker that reads every comment asserting an app LACKS a subsystem and re-derives that claim from AUTH_TABLE_BY_APP / ROLES_BY_APP / the api/*-auth.js file set, failing when the comment and the code disagree. PR 2.3 covers standing documents and does not reach code comments, so nothing on this platform re-checks a justification against its premise today. To be scoped as its own item."
+        },
+        {
+          "factor": "Nothing tested that SV_RESOURCES required a session. The app had no such arm at all, so there was no check to go stale -- the absence was invisible to every suite, every push gate and every prior review of this file.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-sv-session-gate.test.js (19 arms, asserting the gate covers the WHOLE 41-entry map rather than a named sample) and tests/run_sv_session_gate_sabotage_probe.py (7 mutations, all refused) -- including one that moves the gate BEHIND the query so it answers 401 having already read the rows, which passes every status-code assertion and leaks anyway."
+        },
+        {
+          "factor": "The client transport sent only the licence key on all 14 svData call sites, so the server gate alone would have been a total outage rather than a fix -- the shape that gets a security change reverted instead of fixed forward.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "svData() now attaches X-SD-Auth whenever a token is held -- always-attach rather than a per-call opt-in, because an opt-in needs adding at 14 sites and one missed site is one silent gap again. Probe mutation 6 removes it and is refused."
+        }
+      ],
+      "recurrence_open": "THE APP IS NOW DOWN, DELIBERATELY, AND THIS IS NOT CLOSED UNTIL THE MIGRATION RUNS. sql/sairnvet_employee_auth_schema.sql has NOT been run against the live database -- measured, not inferred: /api/sv-auth login answers 503 NOT_PROVISIONED for sairnvet while sairnlegacy and sairndental, which already carry this gate, answer 401 INVALID_CREDENTIALS. So nobody can obtain a session and all 41 resources answer 401 from the moment this deploys. Only Michael can run that file. Second item, unrelated to the outage: docs/2026-09-03-demo-credentials.md line 114 still asserts SAIRNvet has no auth endpoint -- the same expired premise in a second place, and no SAIRNvet row exists in that table. Third: no mechanism re-checks a justification comment against its premise, which is the factor recorded as PLANNED above."
+    },
+    {
       "commit": "b3797733c152",
       "date": "2026-09-22",
       "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
@@ -11109,65 +11230,6 @@
         }
       ],
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
-    },
-    {
-      "commit": "04412beed2a4",
-      "date": "2026-09-22",
-      "subject": "fix(stonedesk): \"First-Pass Approval: 100%\" was a constant, and two fabrication sweeps each stopped one tile short of it",
-      "files": [
-        "stonedesk.html",
-        "tests/run_seam_remake_derivation_sabotage_probe.py",
-        "tests/seam_remake_derivation.js"
-      ],
-      "lines_added": 288,
-      "lines_removed": 7,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "stonedesk.html Seam AI: every row sdSeamAnalyze() wrote carried remake:false, set at both insert sites and never set true by anything, and three user-facing readers derived from it -- First-Pass Approval read 100% for every shop forever, Remake Issues read 0, and the CSV exported No in a column headed Remake Risk. The sd_remakes log that would answer it already existed and was never wired to the panel. Beside it, Material Savings read a bare d.length*180 with no benchmark or source.",
-      "rules": [
-        "1.7"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "02ed4702b48d",
-        "date": "2026-07-26",
-        "subject": "Fix 5 panels with missing nav-render hooks (ap, employees, itadmin, template, templates) and remove fabricated KPIs on seamai/veinmatch",
-        "lag_days": 58
-      },
-      "citation_note": "1.7 is written about a sampling WINDOW exempting what it does not reach. Both sweeps here exempted by SCOPE instead -- 02ed4702 swept the hardcoded percentages and left both currency constants; 5571e5a0 swept Vein Match's Material Savings tile and left the identically-labelled Seam AI one three weeks later. Same shape, a scan covering N of M and reporting clean, arriving by a different route, so it is recorded as arguable rather than clean.",
-      "contributing_factors": [
-        {
-          "factor": "remake was a BOOLEAN FROZEN AT INSERT TIME, and the event it describes happens afterwards -- a seam is analysed, then weeks later the job is or is not remade. No value written at insert could ever have been right.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "seamHadRemake() derives it at read time from sd_remakes, matching on normalised job name and requiring the remake to be logged on or after the analysis date; the stored field is removed from both insert sites and is ignored even where old rows still carry it."
-        },
-        {
-          "factor": "the sd_remakes log already carried customer, material, reason and cost per remake and was simply never wired to this panel, so the fix needed no new data, no new store and no new write path -- only a read.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the panel reads sd_remakes from localStorage rather than the sdRemakes global, so it does not depend on another script block's load order; saveSD5() keeps the two in step."
-        },
-        {
-          "factor": "02ed4702 replaced the hardcoded '94%' with arithmetic over the frozen field. That made a fabricated number look COMPUTED, which is strictly worse than the literal it replaced -- a reader who checks for a hardcoded percentage finds a filter and a division and stops.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "tests/seam_remake_derivation.js asserts both directions of the derivation plus four source-text arms, because a call site can revert to the constant while every unit assertion about the derivation still passes."
-        },
-        {
-          "factor": "two separate fabrication sweeps each stopped one tile short. 02ed4702 stripped the phantom ||6 and ||8 baselines and the hardcoded percentages and left BOTH currency constants; 5571e5a0 removed Vein Match's Material Savings figure three weeks later and left the identically-labelled Seam AI tile beside it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/run_seam_remake_derivation_sabotage_probe.py, 5 mutations, all refused -- three make the derivation more permissive (the direction that flatters the tile and nobody checks) and two restore the constants, which only a source-text arm can see."
-        }
-      ],
-      "recurrence_open": "Nothing here sweeps the OTHER panels. The same four-tile shape exists across StoneDesk and the other apps, and only two of these tiles have ever been audited -- both of them in this one panel pair. A cross-panel census of KPI tiles whose value is a constant times a row count has not been run."
     }
   ],
   "started": "2026-09-09",
