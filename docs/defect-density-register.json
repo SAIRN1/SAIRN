@@ -10795,6 +10795,65 @@
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
     },
     {
+      "commit": "f9e9628f4762",
+      "date": "2026-09-22",
+      "subject": "fix(sairncare): six append-only trail reads had no order= clause -- not three, and unordered is not insertion order",
+      "files": [
+        "api/alf-append-only-read-order.test.js",
+        "api/sd-data.js",
+        "tests/run_alf_read_order_sabotage_probe.py"
+      ],
+      "lines_added": 377,
+      "lines_removed": 6,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js read SIX SAIRNcare append-only trails with no order= clause -- alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits. Postgres promises nothing about the order of a SELECT that does not ask for one and PostgREST forwards that through, so rows came back in plan order. On a small table a seq scan usually returns heap order, which is why it looked like insertion order for the whole of development and would stop the first time the planner picked an index. WORST INSTANCE, and the one the severity is set by: prRenderRecorded maps alf_claim_routes rows straight into a table with NO client sort of any kind and renders created_at sliced to 10 characters, so the server order WAS the display order and there was none -- a billing determination trail in arbitrary order. alf_mar and alf_incidents do sort, but on a date-only jsonb field, so every same-day entry ties and falls back to server order under a stable sort. alf_staff_credentials and alf_op_audits already sorted by created_at desc client-side and were deterministic except on an exact tie. alf_signals has no consumer yet. THE INJECTION COMMIT NAMED IS f29e5f95, the claim_routes instance; the other five entered in separate commits and the lag here is that one instance's, not the class's.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f29e5f95cf05",
+        "date": "2026-08-22",
+        "subject": "feat: SAIRNcare Phase 1 -- payer/billing-routing engine (HCBS waiver + hospice/MA relatedness)",
+        "lag_days": 31
+      },
+      "citation_note": "1.1 is cited for the DETECTION half, not for the defect itself -- an unordered read is not a check that stopped checking. tests/sairncare/test-alf-mar.js and test-alf-signals.js both assert the read URL with an UNANCHORED prefix regex that stops at '...data', so both matched identically before and after the fix. They were green throughout and could never have gone red either way, which is 1.1's shape exactly: a suite that passes on both sides of a change is not evidence about that change.",
+      "contributing_factors": [
+        {
+          "factor": "Six facility-wide trail reads were written with no order= clause, on the implicit assumption that PostgREST returns insertion order. It does not; it returns plan order.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Explicit &order= added to all six reads -- created_at.desc on five, recorded_at.desc on alf_signals. Direction chosen against the consumer: every SAIRNcare renderer that sorts this data sorts newest-first."
+        },
+        {
+          "factor": "Nothing on the platform checked read ordering at all, and the two suites that DO assert these URLs use unanchored prefix regexes that match either side of the change.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/alf-append-only-read-order.test.js (9 arms) plus tests/run_alf_read_order_sabotage_probe.py, which plants seven defects -- including the clause surviving only as a comment, and the read hoisted out of the arm sight -- and all seven are refused."
+        },
+        {
+          "factor": "The work arrived scoped to THREE of the six reads. The other three were found only by enumerating the whole append-only class rather than working the list as handed over; fixing three and shipping an arm named for the class would have published an all-clear over reads it never looked at.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The arm PARSES its table list out of the const TABLES array in api/alf-append-only-fail-closed.test.js instead of retyping it, so the scope cannot silently be three again and a seventh trail added upstream fails the arm until it is ordered too."
+        },
+        {
+          "factor": "Each of these reads answers an upstream 400 with {ok:true,data:[],provisioned:false}, so an order column that does not exist in the live database would render to the user as THE TABLE IS NOT SET UP rather than as an error. That standing shape is what makes a query-syntax change here riskier than it looks.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The 400-as-not-provisioned mapping is deliberate and load-bearing elsewhere -- it is how the client distinguishes a never-migrated table from a genuinely empty one, which was itself a 2026-09-21 fix. Narrowing it is a separate decision, not a side effect of this one. Mitigated here instead by a live read-back of all six reads against the deployed endpoint."
+        }
+      ],
+      "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
+    },
+    {
       "commit": "cd2662fae046",
       "date": "2026-09-22",
       "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
