@@ -1785,8 +1785,8 @@
       "task": "EVV completeness and a real payroll path: service_type, member_id, state_caregiver_id, and pay computed from logged visits FILES: sairnsenior.html api/_lib/sen-evv-readiness.js api/_lib/sen-payroll.js api/sd-data.js api/_resources/sairnsenior.js sql/sairnsenior_payroll_schema.sql tests/",
       "claimed_at": "2026-09-22T15:02:08Z",
       "claimed_at_epoch": 1790089328.4761136,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:28:12Z",
       "files": [
         "api/_lib/sen-evv-readiness.js",
         "api/_lib/sen-payroll.js",
