@@ -838,8 +838,40 @@ module.exports = async (req, res) => {
       //    exist yet and arming the gate first would have been the wrong order
       //    -- sairnfreedom.html ALREADY attaches X-SD-Auth whenever a token is
       //    held, so nothing else needs to land first.
+      // ── THE THREE NAMED AS STILL OPEN, CLOSED 2026-09-22 ────────────────
+      // The comment above says `sf_members` "in particular carr[ies] identity"
+      // and that the open-work row stays open because it was not in that
+      // batch. It is in this one, with `sf_donor_awards`, and the two are
+      // genuinely the same class as what was already gated.
+      //
+      //   sf_donor_awards  {donorKey, tierId, state, updated}. THE donorKey IS
+      //                    A DONOR, and tierId resolves to a giving amount --
+      //                    so the row says THIS PERSON GAVE AT LEAST THIS
+      //                    MUCH. That is the same disclosure `sf_donations`
+      //                    was gated for, on the batch above's own stated
+      //                    ground that "donor identity is not public by
+      //                    default". Gating donations and leaving awards open
+      //                    leaves one fact reachable through a second door.
+      //   sf_members       member identity, already named above as an
+      //                    acknowledged gap rather than a decision.
+      //
+      // ── sf_donor_tiers IS DIFFERENT AND I AM SAYING SO RATHER THAN SWEEPING
+      // ── IT IN SILENTLY ──────────────────────────────────────────────────
+      // It is `{id, amount, item, cost, logo}` -- a PRICE LIST of giving
+      // levels and what each earns. THERE IS NO PERSON ON THE ROW, so it is
+      // not the same class as sf_staff (DOB) or sf_youth_participants (names
+      // of minors), and it does not qualify on its own identity argument.
+      // It is gated anyway for one narrow reason, stated so it can be
+      // reversed on its own: an awards row is `{donorKey, tierId}` and tierId
+      // is opaque without this table, so leaving it open hands back the
+      // AMOUNT half of a disclosure the awards gate just removed. That is
+      // defence in depth, not an identity finding, and if Michael wants the
+      // tier list public it is the one line here to take back out.
       'sf_accounts':            ['read', 'write'],
       'sf_disbursements':       ['read', 'write'],
+      'sf_donor_awards':        ['read', 'write'],
+      'sf_donor_tiers':         ['read', 'write'],
+      'sf_members':             ['read', 'write'],
       'sf_donations':           ['read', 'write'],
       'sf_gaming_expenses':     ['read', 'write'],
       'sf_ledger':              ['read', 'write'],
@@ -937,8 +969,16 @@ module.exports = async (req, res) => {
       // 2026-09-22 alongside their gate entries; api/sd-data-sf-session-gate.test.js
       // asserts the two lists AGREE rather than asserting either one's contents,
       // because the defect is always the disagreement.
+      // Three more, 2026-09-22, and they are added HERE in the SAME edit as
+      // their gate entries for the reason the comment above states: the
+      // failure mode is the DISAGREEMENT between the two lists, and
+      // api/sd-data-sf-session-gate.test.js asserts they agree rather than
+      // asserting either one's contents.
       'sf_accounts': 'sairnfreedom',
       'sf_disbursements': 'sairnfreedom',
+      'sf_donor_awards': 'sairnfreedom',
+      'sf_donor_tiers': 'sairnfreedom',
+      'sf_members': 'sairnfreedom',
       'sf_donations': 'sairnfreedom',
       'sf_gaming_expenses': 'sairnfreedom',
       'sf_ledger': 'sairnfreedom',

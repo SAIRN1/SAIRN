@@ -137,18 +137,40 @@ function main() {
   });
 
   test('the remaining sf_ resources are NOT silently swept in -- this batch is ' +
-       'eleven, and the rest are still an open decision', () => {
+       'fourteen, and the rest are still an open decision', () => {
     // A gate that quietly widened to all 35 would pass every assertion above
-    // and would be a product decision nobody made. sf_members and sf_signatures
-    // carry identity, were named in the 2026-09-22 finding, and are
-    // deliberately NOT in this batch -- so their absence is asserted, which is
-    // what keeps the open-work row honest.
+    // and would be a product decision nobody made.
+    //
+    // ── THIS ARM REFUSED THE 2026-09-22 ADDITION AND WAS RIGHT TO ─────────
+    // `sf_members` was in the earlier batch's absence list, and adding it here
+    // tripped this arm exactly as designed, with a message naming both things
+    // to do. It is now gated ON PURPOSE, with `sf_donor_awards` and
+    // `sf_donor_tiers`, and the arm's JOB IS UNCHANGED rather than removed:
+    // `sf_signatures` is still an open decision and its absence is still what
+    // this asserts.
+    //
+    // WHY sf_members MOVED: the gate comment above it already called it an
+    // acknowledged gap rather than a decision. WHY sf_donor_awards MOVED: its
+    // rows are {donorKey, tierId, ...}, so the row says THIS PERSON GAVE AT
+    // LEAST THIS MUCH -- the same disclosure sf_donations was gated for.
+    // WHY sf_donor_tiers MOVED, and it is the weak one: it carries NO PERSON,
+    // and it is gated only so an awards row's opaque tierId cannot be resolved
+    // back to an amount. That is defence in depth, not an identity finding.
     const g = gatedSet();
-    ['sf_members', 'sf_signatures'].forEach((r) => {
+    ['sf_signatures'].forEach((r) => {
       assert.ok(!g.has(r),
-        r + ' is gated, but it was not in the approved batch. If that is ' +
+        r + ' is gated, but it was not in an approved batch. If that is ' +
         'intended, update this arm AND the open-work row that still lists it ' +
         'as an open decision -- do not let the row and the code disagree.');
+    });
+    // THE PAIRED POSITIVE. Without this, the arm above is satisfied by a gate
+    // that is EMPTY -- and an empty gate passes "nothing was swept in" while
+    // protecting nothing at all.
+    ['sf_members', 'sf_donor_awards', 'sf_donor_tiers'].forEach((r) => {
+      assert.ok(g.has(r),
+        r + ' was added to the gate on 2026-09-22 and is not there. This arm ' +
+        'asserts what IS gated as well as what is not, so it cannot be ' +
+        'satisfied by a gate that protects nothing.');
     });
   });
 }
