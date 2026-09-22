@@ -10650,6 +10650,55 @@
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
     },
     {
+      "commit": "6508ca3885f8",
+      "date": "2026-09-22",
+      "subject": "fix(criticality): a row with an INVENTED tier matched neither branch and was dropped in silence",
+      "files": [
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 23,
+      "lines_removed": 4,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "criticality_tier_check.py parse(): the rollup-vs-resource disambiguator was spelled ^\\*\\*([ABC])\\*\\*$, so a resource row carrying an INVENTED tier (| `sd_invoices` | **CRITICAL** |) matched neither branch -- not a resource row because the letter is wrong, not a rollup row because cell 1 is not a bare integer -- and was dropped in silence. The BAD TIER check, which exists to stop a second tier vocabulary starting, became unreachable by exactly the rows it was written for, and the register reported the resource as having NO ROW rather than a wrong one.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_criticality_tier_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "924a861bad7a",
+        "date": "2026-09-22",
+        "subject": "feat(criticality): step 1 of the two-axis migration -- the parser, both shapes, and the mis-parse found before a row moved",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule names 'a disambiguator narrowed to the valid vocabulary makes the invalid-vocabulary check unreachable'. Closest is PR 1.11 (a check that reports a pass it never performed), but that one is about a MISSING dependency, not about a parser silently discarding its own subject.",
+      "contributing_factors": [
+        {
+          "factor": "The disambiguator and the validator were written to the same vocabulary, so narrowing one silently narrowed what the other could ever see",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "RESOURCE_CELL1 now matches any bold token; validating the letter stays with BAD TIER, which is the only place it belongs"
+        },
+        {
+          "factor": "parse() drops an unrecognised row rather than reporting it, so a mis-parse is indistinguishable from an absent row",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Report a row whose cell 0 is a backticked name and which matches neither branch as UNREADABLE ROW instead of skipping it. Not done here -- scoped out deliberately so this fix stays the one-line disambiguator change the probe proved."
+        },
+        {
+          "factor": "The change landed in the same session that wrote it, with the probe not re-run before commit -- arm 4 would have caught it immediately",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both criticality probes now run before commit on this file, and arm 4 is green"
+        }
+      ],
+      "recurrence_open": "The actions close THIS narrowing. They do not close the general shape: any other consumer of the register that anchors on the valid vocabulary rather than on row structure can lose a row the same way, and nothing enumerates those consumers."
+    },
+    {
       "commit": "467baf7493e0",
       "date": "2026-09-22",
       "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
