@@ -4229,7 +4229,82 @@ var SERVICE_METHODS_EXTENDING = { mail: true, left_with_clerk: true, other_conse
 // Returns { ok, date, detail, authority } so the caller decides whether to
 // push an audit step. Refusals are returned unchanged for the caller to
 // propagate.
+// ── PARSE A PERIOD COUNT, AT THE BOUNDARY (item 90, 2026-09-22) ───────────
+// `Number(x.count.value)` appeared at four call sites and none of them could
+// tell an ABSENT count from a real zero, because `Number('')`, `Number(null)`
+// and `Number([])` are all 0 -- and zero is a LEGITIMATE count here
+// (Md. Rule 2-311(b) has a zero-count limb whose deadline is the trigger date
+// itself). After the coercion the distinction is gone for good, so no amount
+// of checking the RESULT can recover it. This checks the raw value instead.
+//
+// ACCEPTS a finite number, or a string that is entirely a number. REFUSES
+// undefined, null, '', whitespace, an object, an array, and any string with
+// trailing junk -- `Number('7 days')` is NaN but `parseInt` would have said 7,
+// which is the other half of the same trap.
+//
+// Returns { ok: true, value } or { ok: false, ... } in the engine's own
+// refusal shape, so a caller can only proceed by unwrapping it.
+function periodCount(raw, ruleId, where) {
+  var n = null;
+  if (typeof raw === 'number') {
+    n = raw;
+  } else if (typeof raw === 'string' && raw.trim() !== '' && isFinite(Number(raw))) {
+    n = Number(raw);
+  }
+  if (n === null || !isFinite(n) || n < 0) {
+    return { ok: false, code: 'INVALID_PERIOD_COUNT',
+      message: 'Rule ' + (ruleId || 'unknown') + ' supplies ' + (where || 'a period') +
+        ' whose count is ' + JSON.stringify(raw) + '. A deadline is withheld rather ' +
+        'than computed from it. An absent or empty count coerces to 0, which is ' +
+        'indistinguishable from a rule that genuinely counts zero days, and would ' +
+        'produce a confident deadline on the trigger date itself.',
+      count: raw, rule_id: ruleId || null };
+  }
+  return { ok: true, value: n };
+}
+
+
 function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, calendars, jurisdiction, ruleId) {
+  // ── PARSE THE COUNT HERE, ONCE, BEFORE ANY ARITHMETIC (item 90, 2026-09-22)
+  // Every caller reaches this function through `Number(x.count.value)` and NOT
+  // ONE of them checked the result. `Number('')` is 0 and `Number(null)` is 0,
+  // so a rule whose count is missing or empty produced a deadline EQUAL TO ITS
+  // TRIGGER DATE -- a zero-day legal deadline, computed confidently, with
+  // `ok: true` and a detail line reading "counted 0 calendar days". A
+  // non-numeric string gives NaN, `addDays` returns an Invalid Date, and that
+  // propagates as a date-shaped value nothing downstream questions.
+  //
+  // ZERO IS LEGITIMATE AND MY FIRST VERSION OF THIS GUARD REFUSED IT.
+  // It read `!(countValue > 0)` and two suites went red immediately:
+  // Md. Rule 2-311(b) has a ZERO-COUNT LIMB whose deadline is the supplied
+  // date itself, and deadline-maryland.test.js asserts exactly that. I had
+  // searched the rule data for count literals, found none, and concluded zero
+  // never occurs -- a conclusion drawn from a search that could not see the
+  // data. The suites knew and I did not.
+  //
+  // SO THE CHECK MOVED TO WHERE IT BELONGS: `Number('')` is 0 and so is a
+  // real zero, and after coercion NOTHING can tell them apart. Validating the
+  // coerced result was always going to be too late -- that is the whole of
+  // "parse, don't validate", and the first attempt got the boundary wrong
+  // rather than the idea. The callers now parse the RAW value (see
+  // periodCount) and this stays as the last line of defence for anything that
+  // still arrives malformed.
+  //
+  // NEGATIVE AND NON-FINITE ONLY, and the form is deliberate: `< 0` cannot
+  // see NaN -- every comparison against NaN is false -- so NaN is caught by
+  // the isFinite arm rather than by a comparison that silently passes it.
+  // That exact difference was a live hole on attorney trust money on
+  // 2026-09-14, which is why item 90's checker warns about guard FORM and not
+  // merely guard presence.
+  if (!isFinite(countValue) || countValue < 0) {
+    return { ok: false, code: 'INVALID_PERIOD_COUNT',
+      message: 'Rule ' + (ruleId || 'unknown') + ' supplied a period count of ' +
+        JSON.stringify(countValue) + ' ' + (unit || 'units') + '. A deadline is ' +
+        'withheld rather than computed from it: a non-numeric count becomes NaN, ' +
+        'addDays returns an Invalid Date, and that propagates as a date-shaped ' +
+        'value nothing downstream questions.',
+      count: countValue, unit: unit || null, rule_id: ruleId || null };
+  }
   if (unit === 'calendar_days') {
     // Short-period weekend/holiday exclusion: gated on the STANDARD
     // declaring short_period_exclusion_days, not on a specific impl string or
@@ -4431,9 +4506,15 @@ function resolvePeriods(rule, input, std) {
   var computed = [];
   for (var i = 0; i < limbs.length; i++) {
     var lb = limbs[i];
-    var res = computeBasePeriod(std, supplied[lb.event], Number(lb.count.value), lb.count.unit,
+    // PARSED, NOT COERCED. `Number(lb.count.value)` could not tell an absent
+    // count from a real zero, and zero is legitimate here.
+    var lbCount = periodCount(lb.count && lb.count.value, rule.rule_id,
+      'the "' + lb.event + '" limb');
+    if (!lbCount.ok) return lbCount;
+    var res = computeBasePeriod(std, supplied[lb.event], lbCount.value, lb.count.unit,
       'forward', 1, input.calendars, input.jurisdiction, rule.rule_id);
     if (!res.ok) return res;
+    lb.__count = lbCount.value;
     computed.push({ limb: lb, trigger: supplied[lb.event], end: res.date });
   }
   var sorted = computed.slice().sort(function (a, b) { return a.end < b.end ? -1 : a.end > b.end ? 1 : 0; });
@@ -4442,7 +4523,9 @@ function resolvePeriods(rule, input, std) {
   return {
     ok: true,
     date: winner.trigger,
-    count_override: { value: Number(winner.limb.count.value), unit: winner.limb.count.unit, direction: 'forward' },
+    // Already parsed above -- reusing it rather than re-coercing, so the
+    // number reported is provably the number counted.
+    count_override: { value: winner.limb.__count, unit: winner.limb.count.unit, direction: 'forward' },
     period_resolution: {
       resolve: spec.resolve_periods,
       governing_event: winner.limb.event,
