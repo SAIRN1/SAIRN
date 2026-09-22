@@ -2141,8 +2141,8 @@
       "task": "FILES: tests/run_criticality_tier_probe.py -- the rollup arm is RED on a clean tree; its fixture no longer makes the checker fail",
       "claimed_at": "2026-09-22T10:48:31Z",
       "claimed_at_epoch": 1790074111.5387058,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:55:01Z",
       "files": [
         "tests/run_criticality_tier_probe.py"
       ]
