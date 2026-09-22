@@ -1885,6 +1885,16 @@
       "claimed_at_epoch": 1790064980.3310375,
       "status": "released",
       "released_at": "2026-09-22T08:27:12Z"
+    },
+    {
+      "id": "fourth-1790065996",
+      "session": "fourth",
+      "subject": "sairnlaw-phase2-final-three",
+      "task": "FILES: api/sd-data.js and a new test suite under api/ -- wire law_clients, law_matters, law_deadlines to require a signed-in SAIRNlaw employee session, the last three resources in this app still authorised by the licence key alone. Phase 2 completion; law_trusttx was flipped 2026-09-16 by the same mechanism.",
+      "claimed_at": "2026-09-22T08:33:16Z",
+      "claimed_at_epoch": 1790065996.1230726,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
