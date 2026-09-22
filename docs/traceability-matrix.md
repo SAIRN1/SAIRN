@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; `rf_claim_agreements` is the SAIRNcare `alf_claim_routes` defect again, both halves &mdash; an append-only chain of executed/rescinded contingency-agreement events, no server `order=`, no client sort, and `created_at` rendered DATE-ONLY** | **FOUND 2026-09-22 (Hank)** by the cross-app scan the SAIRNcare fix left as an open item. **NOT FIXED** &mdash; `api/sd-data.js` is held by cody (sairnsenior EVV) and the display half alone leaves the | `tests/run_append_only_read_order_probe.py` |
 | **&#9989; Two hover tools refused outright for BOTH sessions the moment a second hover instance existed &mdash; a self-inflicted split-brain caused by the throughput fix that was wanted** | **FIXED 2026-09-22 (Fourth)** &mdash; `tools/hover_separation_audit.py` and `tools/hover_process_pass_freshness.py`. Designed, driven and proposed by **hover2**; applied from the build side | `tests/run_hover_separation_probe.py` |
 | **The separation audit reported **1 SEPARATION VIOLATION** against hover1 and it was a FALSE POSITIVE &mdash; the attribution regex could not tell hover QUOTING somebody else&rsquo;s &ldquo;pushed &lt;sha&gt;&rdquo; from hover claiming its own** | **FIXED 2026-09-22 (Fourth)** &mdash; `467baf74`; probe 95/95 (was 81), live audit no longer reports it. **NOT SETTLED &mdash; flagged to hover1 and hover2 for independent review, and a Tier A obligat | `tests/run_hover_separation_probe.py` |
 | **&#9888; The confidentiality flagger&rsquo;s ASYMMETRY signal is 0-for-2 on EVIDENCE and 1-for-2 on CONCLUSION &mdash; and the neighbour-bleed the payload signal was rewritten to remove is still live in its sibling** | **REVIEWED 2026-09-22 (Fourth)** &mdash; `tests/confidentiality_flagger_asymmetry_review_probe.py`, report-only, exit 0. **4 findings, NONE fixed by me** &mdash; what counts as a client restriction is | `tests/confidentiality_flagger_asymmetry_review_probe.py` |
@@ -615,17 +616,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 602 of 678 traced, 88.8%.
+For context and not as the headline: 603 of 679 traced, 88.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 602 citations come from
+### Where the 603 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 306 |
 | `declared` | 248 |
-| `declared+index` | 40 |
+| `declared+index` | 41 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -736,8 +737,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 678   tests/**, api/** (both walked)
-  open-work rows citing a test       338   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 679   tests/**, api/** (both walked)
+  open-work rows citing a test       339   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
