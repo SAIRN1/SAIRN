@@ -10762,6 +10762,59 @@
       "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
     },
     {
+      "commit": "34fadf4bf861",
+      "date": "2026-09-22",
+      "subject": "fix(xtenant): hank and I fixed the same branch within the hour -- hank's design kept, mine reduced to the residue it leaves",
+      "files": [
+        "tests/run_cross_tenant_scope_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 165,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/cross_tenant_isolation_scope.py: after the untabled-declaration branch was downgraded from GENUINE to WEAK, a residue survived -- the hits loop's presence test is satisfied by the declaration line itself, so a resource named ONLY in the declaration still earns WEAK credit. unbacked_declarations() strips the declaration block, continuation lines included, and reports every declared name the file does not mention outside it. Reported rather than re-graded because a fourth grade would reach rank()'s closed lookup.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d538f1e8eaed",
+        "date": "2026-09-21",
+        "subject": "fix(scope): a name on the declaration line and nowhere else credited a resource -- the declaration is now checked against the table the arms drive",
+        "lag_days": 1
+      },
+      "citation_note": "Same citation as the tabled half: the tool could not tell a claim about the code from the code. Arguable rather than clean -- 1.2's worked example is source-vs-comment and this is a declaration comment being read as evidence of the file's behaviour, which is the same inability pointed the other way.",
+      "phase_note": "Coding: d538f1e8 fixed the declaration-as-own-evidence defect for TABLED files and did not carry it into the untabled branch. Inferred rather than stated -- nothing in that commit records a decision to leave the other branch alone, so it reads as reach rather than intent.",
+      "contributing_factors": [
+        {
+          "factor": "The hits loop credits a resource when its name appears anywhere in the body, and the CROSS-TENANT-ISOLATION declaration line is part of the body -- so for an untabled file the declaration satisfied the only evidence test that remained after the WEAK downgrade. A name with nothing else in the file still earns WEAK.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "unbacked_declarations() strips the declaration block, including its wrapped continuation lines, and REPORTS every declared name the file does not mention outside it."
+        },
+        {
+          "factor": "Reporting rather than re-grading is a deliberate limit, not a partial fix: a fourth outcome would reach rank()'s {'GENUINE':0,'WEAK':2,'NONE':3} lookup, which has no key for a new string, and would take the tool down on the first file to hit this branch.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The grade vocabulary is closed by rank(). Widening it is a larger change than this residue justifies, and an arm now reads the grade set from the scanner's own source so a fourth one cannot be added unnoticed."
+        },
+        {
+          "factor": "Two sessions were handed the same item and fixed the same branch within the hour, with different designs. The collision surfaced as a rebase conflict rather than as a coordination signal, and only because both of us edited the same lines -- a differently-shaped pair of fixes would have merged cleanly and left two rules fighting.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Declared in the status registry to the other session before starting, with an explicit offer to hand it back; the conflict was then resolved to their design rather than mine, and this record says which parts of each survived."
+        }
+      ],
+      "recurrence_open": "The residue is REPORTED, not re-graded: a declared name with nothing behind it still earns WEAK, and only a reader of UNDECLARED will see that it rests on nothing. Closing it properly needs rank() to carry a fourth outcome, which is a larger change than this justifies today. And the whole branch remains ARMED AND UNEXERCISED -- 683 test files, 5 declarations, all three that declare resources are tabled -- so neither the downgrade nor this report has ever fired on real data, and both rest entirely on synthetic fixtures."
+    },
+    {
       "commit": "357612ce4d37",
       "date": "2026-09-22",
       "subject": "fix(sairncare): the trail's \"On\" column showed a date, and the refusal it serves promises the reader can tell which one is later",
@@ -10880,6 +10933,53 @@
         }
       ],
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
+    },
+    {
+      "commit": "7acf4659eee2",
+      "date": "2026-09-22",
+      "subject": "fix(sairnbuild): three money folds routed through the coercion helper that was already two lines above them",
+      "files": [
+        "sairnbuild.html",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 3,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnbuild.html rDrawsTbl(): `outstanding` and `received` summed d.amount and d.amount_received with `s + (x || 0)` while the two figures beside them, retHeld and retReleased, went through drawMoney() -- defined on the line immediately above the function. `|| 0` does not coerce: a non-empty string is truthy, the guard never fires and `+` concatenates. A third site at line 7408 summed d.amount_received the same way on the job-detail view.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "truthy_sum_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "All three folds predate tools/truthy_sum_baseline.json's grandfathering pass of 2026-09-11, which dated none of its fifty-one keys, and `git -S` on a fragment as common as this one cannot separate the commit that introduced a fold from the commits that reformatted the line around it."
+      },
+      "citation_note": "No numbered process rule covers a JavaScript coercion hazard; same reasoning as the stonedesk record filed an hour earlier. The nearest standing statement is an auto-memory about a quiet wrong number beating a loud crash, which is not a numbered section.",
+      "contributing_factors": [
+        {
+          "factor": "rDrawsTbl() computes four figures from the same draw records and drawMoney() is defined on the line immediately above it, yet two of the four went through the helper and two did not. Outstanding draws and cash received on a construction job are money; `|| 0` does not coerce, so a string field would have concatenated.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "all three sites -- 5508, 5509 and 7408 -- now call drawMoney(), which is `var n=Number(v);return isFinite(n)?n:0;` and is stricter than Number(x)||0 because it also rejects Infinity. No second coercion spelling was introduced into a function that already had one."
+        },
+        {
+          "factor": "THE THIRD SITE WAS FOUND BY THE CHECKER'S STALENESS REPORT, NOT BY READING. After 5509 was fixed the tool reported sairnbuild.html::d.amount newly stale but NOT d.amount_received -- which could only mean that field was still uncoerced elsewhere. It was: line 7408, `billed` on the job-detail view, the same field summed the same way.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the baselined-but-absent count is now a signal that gets read rather than a line at the bottom of the output: a key going stale while its FIELD still has occurrences is the specific evidence of a half-applied fix."
+        },
+        {
+          "factor": "These three sat beside a correctly coerced fold for as long as the grandfathering has existed, and the checker never failed on them because all three keys were in the baseline carrying the words NOT ASSESSED.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The baseline is the design -- a checker reporting 82 occurrences forever would gate nothing. What this case shows is narrower and is recorded rather than fixed: a grandfathered key sitting two lines from a coerced one is a stronger signal than a grandfathered key on its own, and nothing ranks them. Building that ranking on the strength of one instance would be a tool written from a single data point."
+        }
+      ],
+      "recurrence_open": "Twenty-three uncoerced folds remain in sairnbuild.html across fourteen other fields -- c.committed, c.actual, c.budget, c.amount, p.amount, t.hours, r.deal_value and more -- all grandfathered and all still carrying NOT ASSESSED. This commit fixed the three that sat beside an existing coercion helper and did not touch the rest, because sweeping fourteen figures in one unreviewed change is a different and larger decision."
     },
     {
       "commit": "467baf7493e0",
@@ -12041,59 +12141,6 @@
         }
       ],
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
-    },
-    {
-      "commit": "34fadf4bf861",
-      "date": "2026-09-22",
-      "subject": "fix(xtenant): hank and I fixed the same branch within the hour -- hank's design kept, mine reduced to the residue it leaves",
-      "files": [
-        "tests/run_cross_tenant_scope_probe.py",
-        "tools/cross_tenant_isolation_scope.py"
-      ],
-      "lines_added": 165,
-      "lines_removed": 0,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "tools/cross_tenant_isolation_scope.py: after the untabled-declaration branch was downgraded from GENUINE to WEAK, a residue survived -- the hits loop's presence test is satisfied by the declaration line itself, so a resource named ONLY in the declaration still earns WEAK credit. unbacked_declarations() strips the declaration block, continuation lines included, and reports every declared name the file does not mention outside it. Reported rather than re-graded because a fourth grade would reach rank()'s closed lookup.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "d538f1e8eaed",
-        "date": "2026-09-21",
-        "subject": "fix(scope): a name on the declaration line and nowhere else credited a resource -- the declaration is now checked against the table the arms drive",
-        "lag_days": 1
-      },
-      "citation_note": "Same citation as the tabled half: the tool could not tell a claim about the code from the code. Arguable rather than clean -- 1.2's worked example is source-vs-comment and this is a declaration comment being read as evidence of the file's behaviour, which is the same inability pointed the other way.",
-      "phase_note": "Coding: d538f1e8 fixed the declaration-as-own-evidence defect for TABLED files and did not carry it into the untabled branch. Inferred rather than stated -- nothing in that commit records a decision to leave the other branch alone, so it reads as reach rather than intent.",
-      "contributing_factors": [
-        {
-          "factor": "The hits loop credits a resource when its name appears anywhere in the body, and the CROSS-TENANT-ISOLATION declaration line is part of the body -- so for an untabled file the declaration satisfied the only evidence test that remained after the WEAK downgrade. A name with nothing else in the file still earns WEAK.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "unbacked_declarations() strips the declaration block, including its wrapped continuation lines, and REPORTS every declared name the file does not mention outside it."
-        },
-        {
-          "factor": "Reporting rather than re-grading is a deliberate limit, not a partial fix: a fourth outcome would reach rank()'s {'GENUINE':0,'WEAK':2,'NONE':3} lookup, which has no key for a new string, and would take the tool down on the first file to hit this branch.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "The grade vocabulary is closed by rank(). Widening it is a larger change than this residue justifies, and an arm now reads the grade set from the scanner's own source so a fourth one cannot be added unnoticed."
-        },
-        {
-          "factor": "Two sessions were handed the same item and fixed the same branch within the hour, with different designs. The collision surfaced as a rebase conflict rather than as a coordination signal, and only because both of us edited the same lines -- a differently-shaped pair of fixes would have merged cleanly and left two rules fighting.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Declared in the status registry to the other session before starting, with an explicit offer to hand it back; the conflict was then resolved to their design rather than mine, and this record says which parts of each survived."
-        }
-      ],
-      "recurrence_open": "The residue is REPORTED, not re-graded: a declared name with nothing behind it still earns WEAK, and only a reader of UNDECLARED will see that it rests on nothing. Closing it properly needs rank() to carry a fourth outcome, which is a larger change than this justifies today. And the whole branch remains ARMED AND UNEXERCISED -- 683 test files, 5 declarations, all three that declare resources are tabled -- so neither the downgrade nor this report has ever fired on real data, and both rest entirely on synthetic fixtures."
     }
   ],
   "started": "2026-09-09",
