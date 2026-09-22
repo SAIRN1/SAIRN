@@ -1905,6 +1905,16 @@
       "claimed_at_epoch": 1790068049.6101074,
       "status": "released",
       "released_at": "2026-09-22T09:14:56Z"
+    },
+    {
+      "id": "fourth-1790069032",
+      "session": "fourth",
+      "subject": "defect-budget-window-decision",
+      "task": "record the ROLLING 30-day window decision in tools/defect_budget_policy.py through its own --decide path, with the note that the calibration is revisited once a steady non-marathon baseline exists. Nothing else in that file changes.",
+      "claimed_at": "2026-09-22T09:23:52Z",
+      "claimed_at_epoch": 1790069032.5376532,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
