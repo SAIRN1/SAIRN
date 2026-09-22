@@ -113,17 +113,43 @@ function summariseDraw(input) {
   // Retainage. A missing percentage is NOT zero: "we hold nothing" and "nobody
   // recorded what is held" are different facts, and defaulting to zero would
   // silently tell a contractor the full amount is collectable.
+  // ── ONE STATE, NAMED ONCE (item 90 S3, 2026-09-22) ──────────────────────
+  // This is ONE either/or -- can the retainage be worked out or not -- and it
+  // was spelled as three nullable fields, then a fourth further down when
+  // `retainage_outstanding` follows `retainage_held`. Every consumer had to
+  // re-derive the answer, and api/sd-data.js:4149 really did:
+  //
+  //     if (!s.ok || s.retainage_held === null || s.retainage_outstanding === null)
+  //
+  // Three clauses to ask one question, and a reader cannot tell from that line
+  // whether the third clause is load-bearing or belt-and-braces. (It is the
+  // latter: `retainage_outstanding` is nulled from `retainage_held === null`,
+  // so the two always move together -- which is exactly the sort of thing a
+  // caller should not have to go and check.)
+  //
+  // `retainage_state` says it once. The nullable fields STAY -- sairnbuild.html
+  // and sairnroofing.html read them directly and this is additive, not a
+  // migration -- but a consumer that wants the question answered now has one
+  // field to read instead of a conjunction to reconstruct.
+  //
+  // THE TWO UNCOMPUTABLE CASES ARE KEPT APART rather than merged into one
+  // "unknown". They need different actions: `unrecorded` means nobody entered
+  // a percentage and somebody must; `out_of_range` means a percentage WAS
+  // entered and is wrong, which is a correction, not an omission.
   if (pct === null) {
+    out.retainage_state = 'unrecorded';
     out.retainage_pct = null;
     out.retainage_held = null;
     out.net_requested = null;
     out.problems.push('no retainage percentage recorded -- what is collectable cannot be worked out');
   } else if (pct < 0 || pct > 100) {
+    out.retainage_state = 'out_of_range';
     out.retainage_pct = null;
     out.retainage_held = null;
     out.net_requested = null;
     out.problems.push('retainage percentage "' + d.retainage_pct + '" is outside 0-100');
   } else {
+    out.retainage_state = 'computed';
     out.retainage_pct = pct;
     out.retainage_held = money(amount * pct / 100);
     out.net_requested = money(amount - out.retainage_held);

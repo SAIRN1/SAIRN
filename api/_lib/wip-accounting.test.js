@@ -64,6 +64,77 @@ test('an out-of-range retainage percentage is refused, not clamped', () => {
   assert.ok(/outside 0-100/.test(d.problems.join(' ')));
 });
 
+// ── retainage_state: ONE state, named once (item 90 S3, 2026-09-22) ───────
+// The three nullable fields stay for the consumers that read them directly.
+// What these arms pin is that the DISCRIMINATOR and the nulls cannot drift
+// apart -- a state field that stops agreeing with the fields it summarises is
+// worse than no state field, because a caller reading it would be confidently
+// wrong instead of merely verbose.
+
+test('retainage_state names all three cases, and agrees with the nulls', () => {
+  const ok = w.summariseDraw({ today: TODAY, draw: draw({ retainage_pct: 10 }) });
+  assert.strictEqual(ok.retainage_state, 'computed');
+  assert.notStrictEqual(ok.retainage_held, null);
+
+  const none = w.summariseDraw({ today: TODAY, draw: draw({ retainage_pct: null }) });
+  assert.strictEqual(none.retainage_state, 'unrecorded');
+  assert.strictEqual(none.retainage_held, null);
+
+  const bad = w.summariseDraw({ today: TODAY, draw: draw({ retainage_pct: 140 }) });
+  assert.strictEqual(bad.retainage_state, 'out_of_range');
+  assert.strictEqual(bad.retainage_held, null);
+});
+
+test('the two uncomputable cases are NOT merged -- they need different actions',
+  () => {
+    // `unrecorded` means nobody entered a percentage and somebody must.
+    // `out_of_range` means one WAS entered and is wrong, which is a
+    // correction. Collapsing them into one "unknown" would send a biller to
+    // do the wrong thing half the time.
+    const none = w.summariseDraw({ today: TODAY, draw: draw({ retainage_pct: null }) });
+    const bad = w.summariseDraw({ today: TODAY, draw: draw({ retainage_pct: 140 }) });
+    assert.notStrictEqual(none.retainage_state, bad.retainage_state);
+  });
+
+test('state === computed is equivalent to the conjunction it replaced', () => {
+  // THE ARM THAT LICENSES THE CONSUMER CHANGE. api/sd-data.js dropped
+  // `retainage_held === null || retainage_outstanding === null` in favour of
+  // `retainage_state !== 'computed'`. That is only safe while the two say the
+  // same thing, so it is asserted rather than assumed -- across every shape
+  // the engine can produce, including the ones that null outstanding on its
+  // own path.
+  const shapes = [
+    { retainage_pct: 10 },
+    { retainage_pct: 0 },
+    { retainage_pct: 100 },
+    { retainage_pct: null },
+    { retainage_pct: 140 },
+    { retainage_pct: -5 },
+    { retainage_pct: 10, retainage_released: 99999 },
+    { retainage_pct: null, retainage_released: 500 }
+  ];
+  shapes.forEach(function (sh) {
+    const d = w.summariseDraw({ today: TODAY, draw: draw(sh) });
+    const oldWay = d.retainage_held === null || d.retainage_outstanding === null;
+    const newWay = d.retainage_state !== 'computed';
+    assert.strictEqual(newWay, oldWay,
+      'the discriminator and the null-conjunction disagree for '
+      + JSON.stringify(sh) + ' -- state=' + d.retainage_state
+      + ' held=' + d.retainage_held + ' outstanding=' + d.retainage_outstanding);
+  });
+});
+
+test('a draw the engine refuses outright carries NO state, and the consumer '
+  + 'short-circuits before reading it', () => {
+    // summariseDraw returns ok:false with NO_TODAY before it reaches the
+    // retainage branches, so retainage_state is undefined there. The
+    // consumer's `!s.ok ||` is what keeps that from being read, and this arm
+    // is why that clause must stay.
+    const r = w.summariseDraw({ draw: draw({}) });
+    assert.strictEqual(r.ok, false);
+    assert.strictEqual(r.retainage_state, undefined);
+  });
+
 test('outstanding never goes negative, and overpayment is surfaced', () => {
   const d = w.summariseDraw({ today: TODAY, draw: draw({ amount_received: 50000 }) });
   assert.strictEqual(d.outstanding, 40000);

@@ -4146,7 +4146,19 @@ module.exports = async (req, res) => {
         // a total would understate what a contractor is owed.
         let held = 0, released = 0, outstanding = 0, unknown = 0;
         out.forEach((s) => {
-          if (!s.ok || s.retainage_held === null || s.retainage_outstanding === null) { unknown++; return; }
+          // TWO CLAUSES FOR TWO DIFFERENT QUESTIONS (item 90 S3, 2026-09-22).
+          // This read `!s.ok || s.retainage_held === null ||
+          // s.retainage_outstanding === null` -- THREE clauses to ask ONE
+          // thing, and the reader could not tell which were load-bearing.
+          // (`retainage_outstanding` is nulled from `retainage_held === null`,
+          // so those two always moved together; the third clause was never
+          // doing any work.) The engine now names the state once.
+          //
+          // `!s.ok` stays and IS load-bearing: summariseDraw returns ok:false
+          // with NO_TODAY before it reaches the retainage branches at all, so
+          // retainage_state is undefined on that path -- the short-circuit is
+          // what keeps this from reading it.
+          if (!s.ok || s.retainage_state !== 'computed') { unknown++; return; }
           held += s.retainage_held;
           released += s.retainage_released;
           outstanding += s.retainage_outstanding;
