@@ -2599,6 +2599,20 @@
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "tools/append_only_read_order_scan.py"
       ]
+    },
+    {
+      "id": "hank-1790091436",
+      "session": "hank",
+      "subject": "sairnfreedom",
+      "task": "session gates for eight more sf_ resources -- sf_disbursements sf_youth_participants sf_staff sf_waivers sf_operators sf_gaming_expenses sf_donations sf_service_appointments FILES: api/sd-data.js sairnfreedom.html",
+      "claimed_at": "2026-09-22T15:37:16Z",
+      "claimed_at_epoch": 1790091436.9655159,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "sairnfreedom.html"
+      ]
     }
   ]
 }
