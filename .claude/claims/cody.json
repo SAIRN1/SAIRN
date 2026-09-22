@@ -1717,6 +1717,17 @@
       "status": "released",
       "released_at": "2026-09-22T10:46:24Z",
       "files": null
+    },
+    {
+      "id": "cody-1790076774",
+      "session": "cody",
+      "subject": "platform",
+      "task": "two-axis criticality tier format implementation CRITICALITY-TIERS.md and criticality_tier_check.py validation",
+      "claimed_at": "2026-09-22T11:32:54Z",
+      "claimed_at_epoch": 1790076774.3257012,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
