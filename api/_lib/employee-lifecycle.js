@@ -136,6 +136,48 @@ async function setActive(ctx) {
   // no audit log would read as "we tried to record this and failed".
   const withAudit = (v) => (v === undefined ? {} : { audited: v });
 
+  // ── A soleRole THAT NAMES NO REAL ROLE MUST FAIL CLOSED (2026-09-21) ─────
+  // The last-admin guard below narrows to `[soleRole]` when an app names one.
+  // Nothing checked that the name was real, and the failure was PERMISSIVE:
+  // guardRoles matches no row, activeProvisioners counts ZERO, and the refusal
+  // condition also tests `guardRoles.indexOf(target.role) !== -1`, which is
+  // false for every real row -- so the branch is UNREACHABLE and the last
+  // holder is deactivated. Driven before this existed: roster of one
+  // post.govern and one post.govern.deputy, soleRole 'post.governor', result
+  // 200 with the PATCH sent. The licence reaches zero governors and bootstrap
+  // still 409s, which is the SD-AUDIT-2026 trapdoor arriving through a typo.
+  //
+  // THE VALUE IS A HAND-WRITTEN LITERAL IN FIVE ENDPOINTS and has to agree
+  // with a role vocabulary kept in ROLES_BY_APP, in each schema's check
+  // constraint and in each app's own capability list. A static arm in
+  // api/_lib/last-admin-sole-role.test.js already compares the two literals it
+  // can parse, and it covers only MULTI-role endpoints, only `const SOLE_ROLE
+  // = '...'`, and only what a regex can see. The behaviour is decided at
+  // RUNTIME by a string, so the runtime is where it has to be checked.
+  //
+  // A RETURN, NOT A `throw`, AND THAT IS THE POINT. Every endpoint wraps this
+  // call in `catch (err)` and answers 502 "Upstream connection error — try
+  // again". A throw would be refused (safe) while telling the operator to
+  // check the network (wrong), which is PR 1.5 exactly -- the confident line
+  // printed after the error. A refusal travels back through
+  // `res.status(out.status).json(out.body)` with its own code intact.
+  //
+  // BEFORE THE ROSTER READ, deliberately: a misconfiguration must not be
+  // maskable by an unreachable store, and nothing should be fetched on behalf
+  // of a guard that cannot run. An arm asserts zero reads.
+  //
+  // A FALSY soleRole IS NOT A TYPO. '' / null / undefined all mean "this app
+  // names no sole role", which is the behaviour nine callers rely on.
+  if (ctx.soleRole && roles.indexOf(ctx.soleRole) === -1) {
+    return refusal(500, 'GUARD_MISCONFIGURED',
+      'The last-admin guard cannot run: this app names ' + JSON.stringify(ctx.soleRole)
+      + ' as the role a license must never lose, and that is not one of its '
+      + 'provisioning roles ' + JSON.stringify(roles) + '. Refusing rather than '
+      + 'proceeding unguarded, because the guard would otherwise match no row and '
+      + 'allow the last holder to be deactivated. Fix the soleRole this endpoint '
+      + 'passes to setActive(); no credential was changed.');
+  }
+
   if (!caller || roles.indexOf(caller.role) === -1) {
     return refusal(403, 'FORBIDDEN', 'Only ' + label + ' can activate or deactivate a credential');
   }
@@ -295,4 +337,63 @@ async function roster(ctx) {
   return { status: 200, body: { ok: true, employees: r.rows } };
 }
 
-module.exports = { setActive, roster, readRoster, ROSTER_SELECT };
+// ── THE OTHER WAY TO REACH ZERO PROVISIONERS (2026-09-21) ─────────────────
+// setActive() refuses DEACTIVATING the last holder of a sole role. It says
+// nothing about CHANGING that holder's role, and every `setup` on this
+// platform upserts on (license_hash, employee_id) writing the role column --
+// so demoting the last owner is one call the deactivation guard never sees.
+// A licence dead through the API, which is how SD-AUDIT-2026 was lost,
+// reached by a route nothing was watching.
+//
+// MEASURED BEFORE THIS EXISTED: 17 setup paths across api/*-auth.js, ONE
+// carried a guard (api/sf-auth.js, written by hank the same day), 16 did not,
+// and FOUR of those were REACHABLE -- grd, sb, scp and sd each declare a
+// SOLE_ROLE, so their set_active guard counts only that role, and each setup
+// upserts writing `role`. Those are the same four apps hardened against
+// DEACTIVATION hours earlier; the demotion route was not part of that change.
+//
+// HERE RATHER THAN FOUR TIMES, because four hand-written copies of a security
+// guard is the duplication this platform keeps paying for -- and because the
+// soleRole misconfiguration check above has to apply to this route too. A
+// typo'd soleRole would make `activeSole` count zero and the refusal
+// unreachable in exactly the same way.
+//
+// MODELLED ON api/sf-auth.js's INLINE VERSION, deliberately and byte-for-byte
+// in behaviour, so the two cannot disagree while both exist. THE RESIDUAL IS
+// STATED RATHER THAN HIDDEN: sf-auth still carries its own copy. Folding it
+// onto this one deletes a duplicate rather than adding one, but it edits code
+// inside a just-discharged review and belongs in its own claim.
+//
+// IT GUARDS ONLY THE DEMOTION DIRECTION. Promoting somebody TO the sole role
+// cannot reduce the number of holders, so refusing that would refuse real work.
+async function soleRoleDemotionRefusal(ctx) {
+  const roles = ctx.provisioningRoles || [];
+  const sole = ctx.soleRole;
+  if (!sole) { return null; }
+  if (roles.indexOf(sole) === -1) {
+    return refusal(500, 'GUARD_MISCONFIGURED',
+      'The last-admin guard cannot run: this app names ' + JSON.stringify(sole)
+      + ' as the role a license must never lose, and that is not one of its '
+      + 'provisioning roles ' + JSON.stringify(roles) + '. Refusing rather than '
+      + 'proceeding unguarded; no credential was changed.');
+  }
+  if (ctx.newRole === sole) { return null; }
+  const r = await readRoster(ctx);
+  if (!r.ok) { return { upstream: r.detail }; }
+  const all = r.rows;
+  const target = all.filter((x) => x.employee_id === ctx.employee_id)[0];
+  const activeSole = all.filter((x) => x.active === true && x.role === sole);
+  if (target && target.active === true && target.role === sole
+      && activeSole.length <= 1) {
+    return refusal(409, 'LAST_ADMIN',
+      'This is the only active ' + (ctx.soleLabel || sole) + ' on this license. '
+      + 'Changing their role would leave the license with none and lock everyone '
+      + 'out with no way back in through the app. Provision another first, then '
+      + 'change this one.');
+  }
+  return null;
+}
+
+module.exports = {
+  setActive, roster, readRoster, ROSTER_SELECT, soleRoleDemotionRefusal
+};

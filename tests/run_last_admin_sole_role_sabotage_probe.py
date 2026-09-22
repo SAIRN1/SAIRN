@@ -77,18 +77,55 @@ def m1_remove_sole_role_pass():
 
 
 def m2_pass_null_but_keep_the_constant():
-    """The QUIET one -- the file still declares SOLE_ROLE, the call site lies."""
+    """The QUIET one -- the file still declares SOLE_ROLE, the call site lies.
+
+    ── IT USED TO SAY `.replace(..., 1)` AND THAT ANCHOR MOVED (2026-09-21) ──
+    `soleRole: SOLE_ROLE,` was unique in these files, so mutating the FIRST
+    occurrence mutated the setActive call. Then the setup demotion guard
+    landed, which passes the same field to soleRoleDemotionRefusal() and sits
+    EARLIER in every one of these files -- so the mutation started landing on
+    the setup guard and leaving setActive untouched. The suite stayed green
+    because the thing it guards was never broken, and this probe correctly
+    reported the mutation as SURVIVING.
+
+    That is the anchor-staleness class this platform keeps recording, and it
+    arrived here by somebody adding a second, legitimate caller. So the
+    mutation is now scoped to the setActive call BLOCK, and it refuses rather
+    than guessing if that block cannot be found or does not carry the field.
+    """
     out = {}
     for rel in APPS:
         s = read(rel)
-        if 'soleRole: SOLE_ROLE,' not in s:
+        m = re.search(r'lifecycle\.setActive\(\{[\s\S]*?\n {6}\}\);', s)
+        if not m:
             return None
-        out[rel] = s.replace('soleRole: SOLE_ROLE,', 'soleRole: null,', 1)
+        block = m.group(0)
+        if 'soleRole: SOLE_ROLE,' not in block:
+            return None
+        mutated = block.replace('soleRole: SOLE_ROLE,', 'soleRole: null,')
+        # The whole point of the rewrite: prove it landed in the block, not
+        # merely somewhere in the file.
+        if mutated == block:
+            return None
+        out[rel] = s[:m.start()] + mutated + s[m.end():]
     return out
 
 
 def m3_sole_role_not_in_provisioning_roles():
-    """Over-restriction: a sole role nobody holds refuses EVERY deactivation."""
+    """A SOLE_ROLE naming no real role -- and the direction is PERMISSIVE.
+
+    This docstring and the arm label both said "over-restriction: refuses
+    EVERY deactivation" until 2026-09-21, and so did the only comment on the
+    platform describing the scenario. Both were backwards. guardRoles becomes
+    the one-member array, activeProvisioners counts ZERO, and the refusal
+    condition ALSO tests `guardRoles.indexOf(target.role) !== -1` -- false for
+    every real row -- so the branch is unreachable and the last holder is
+    deactivated. Driven, not reasoned: 200 with the PATCH sent.
+
+    The engine now refuses 500 GUARD_MISCONFIGURED rather than counting zero,
+    so this mutation is caught by that check; the label is corrected so the
+    next reader is not told the failure was an inconvenience.
+    """
     rel = APPS[0]
     s = read(rel)
     if "const SOLE_ROLE = 'owner';" not in s:
@@ -142,7 +179,9 @@ MUTATIONS = [
      m1_remove_sole_role_pass),
     ('2. the call site passes null while SOLE_ROLE STAYS DECLARED -- the quiet one',
      m2_pass_null_but_keep_the_constant),
-    ('3. SOLE_ROLE names a role nobody holds -- the OVER-RESTRICTIVE failure',
+    ('3. SOLE_ROLE names a role that is not a provisioning role -- and the '
+     'failure is PERMISSIVE, not over-restrictive: the refusal branch '
+     'becomes unreachable and the last holder is deactivated',
      m3_sole_role_not_in_provisioning_roles),
     ('4. the engine stops honouring soleRole at all -- the fix undone one layer down',
      m4_guard_counts_over_roles_again),

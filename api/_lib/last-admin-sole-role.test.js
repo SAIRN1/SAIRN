@@ -208,9 +208,126 @@ function section(t) { console.log('\n' + t); }
       assert.ok(c.roles.indexOf(c.soleRoleConst) !== -1,
         c.file + ' names SOLE_ROLE ' + JSON.stringify(c.soleRoleConst)
         + ' which is not in PROVISIONING_ROLES ' + JSON.stringify(c.roles)
-        + ' -- the guard would then count zero holders and refuse every '
-        + 'deactivation, which is the over-restrictive failure');
+        // ── THIS SENTENCE SAID THE OPPOSITE UNTIL 2026-09-21 ──────────────
+        // It read "the guard would then count zero holders and refuse every
+        // deactivation, which is the over-restrictive failure". That is
+        // backwards, and this was the ONLY place on the platform describing
+        // the scenario. DRIVEN: guardRoles becomes the one-member array,
+        // activeProvisioners counts ZERO, and the refusal condition also
+        // tests `guardRoles.indexOf(target.role) !== -1` -- false for every
+        // real row -- so the branch is UNREACHABLE and the deactivation is
+        // ALLOWED. Permissive, not restrictive. A reader who hit this arm and
+        // believed its message would have downgraded a trapdoor to an
+        // annoyance. The arms below drive it in the real direction rather
+        // than asserting it in prose.
+        + ' -- the guard then counts zero holders AND its role test can never '
+        + 'match, so the refusal branch is unreachable and the last holder can '
+        + 'be deactivated. Permissive, not restrictive.');
     });
+  });
+
+  // ── AND THE STATIC ARM ABOVE IS NOT ENOUGH, WHICH IS WHY THESE EXIST ────
+  // It parses `const SOLE_ROLE = '...'` and the call site with a regex, and it
+  // only looks at MULTI endpoints. A single-role endpoint passing a wrong
+  // soleRole, a value that is not a literal, a spelling the regex misses, or a
+  // brand-new caller are all invisible to it. The guard's behaviour is decided
+  // at RUNTIME by a string, so the runtime is where it has to be checked.
+  section('A soleRole THAT NAMES NO REAL ROLE -- it must fail CLOSED and say so');
+
+  await okAsync('a mistyped soleRole is REFUSED, not silently unguarded', async () => {
+    const r = await drive({
+      roster: [
+        { employee_id: 'GOV', role: 'post.govern', active: true },
+        { employee_id: 'DEP', role: 'post.govern.deputy', active: true }
+      ],
+      callerId: 'DEP', callerRole: 'post.govern.deputy', targetId: 'GOV',
+      roles: ['post.govern', 'post.govern.deputy'], label: 'an officer',
+      soleRole: 'post.governor'                       // one letter, no such role
+    });
+    assert.strictEqual(r.patched, false,
+      'the sole-role holder was DEACTIVATED -- guardRoles matched no row, so the '
+      + 'refusal branch was unreachable and the guard silently did nothing');
+    assert.strictEqual(r.status, 500, 'status was ' + r.status);
+    assert.strictEqual(r.code, 'GUARD_MISCONFIGURED', 'code was ' + r.code);
+  });
+
+  await okAsync('...and an EMPTY-STRING soleRole is treated as absent, not as a typo', async () => {
+    // '' is falsy, so `ctx.soleRole || null` already means "no sole role" and
+    // the guard counts over every provisioning role. That is the OLD behaviour
+    // and it is safe; refusing it would break the nine callers passing null.
+    const r = await drive({
+      roster: [
+        { employee_id: 'A', role: 'owner', active: true },
+        { employee_id: 'B', role: 'hr', active: true }
+      ],
+      callerId: 'B', callerRole: 'hr', targetId: 'A',
+      roles: ['owner', 'hr'], label: 'an admin', soleRole: ''
+    });
+    assert.strictEqual(r.status, 200, 'an absent soleRole changed behaviour: ' + r.status);
+    assert.strictEqual(r.patched, true);
+  });
+
+  await okAsync('a VALID soleRole still refuses -- the check does not refuse everything', async () => {
+    const r = await drive({
+      roster: [
+        { employee_id: 'GOV', role: 'post.govern', active: true },
+        { employee_id: 'DEP', role: 'post.govern.deputy', active: true }
+      ],
+      callerId: 'DEP', callerRole: 'post.govern.deputy', targetId: 'GOV',
+      roles: ['post.govern', 'post.govern.deputy'], label: 'an officer',
+      soleRole: 'post.govern'
+    });
+    assert.strictEqual(r.status, 409);
+    assert.strictEqual(r.code, 'LAST_ADMIN');
+    assert.strictEqual(r.patched, false);
+  });
+
+  await okAsync('...and a valid soleRole still ALLOWS a deactivation it should allow', async () => {
+    const r = await drive({
+      roster: [
+        { employee_id: 'GOV', role: 'post.govern', active: true },
+        { employee_id: 'GOV2', role: 'post.govern', active: true },
+        { employee_id: 'DEP', role: 'post.govern.deputy', active: true }
+      ],
+      callerId: 'GOV', callerRole: 'post.govern', targetId: 'GOV2',
+      roles: ['post.govern', 'post.govern.deputy'], label: 'an officer',
+      soleRole: 'post.govern'
+    });
+    assert.strictEqual(r.status, 200, 'the guard refused a safe deactivation: ' + r.status);
+    assert.strictEqual(r.patched, true);
+  });
+
+  await okAsync('the misconfiguration is refused BEFORE the roster is even read', async () => {
+    // A 500 that still fetched would mean the check runs after the work, and
+    // an unreachable store could then mask the misconfiguration entirely.
+    let reads = 0;
+    const realFetch = global.fetch;
+    global.fetch = async () => { reads += 1; return { ok: true, json: async () => [] }; };
+    try {
+      const out = await lifecycle.setActive({
+        caller: { employee_id: 'DEP', role: 'hr' },
+        body: { employee_id: 'A', active: false, reason: 'x' },
+        licHash: 'L', table: 't', provisioningRoles: ['owner', 'hr'],
+        roleLabel: 'an admin', soleRole: 'ownr',
+        rest: (q) => 'http://x/' + q, headers: {}
+      });
+      assert.strictEqual(out.status, 500);
+      assert.strictEqual(out.body.error.code, 'GUARD_MISCONFIGURED');
+      assert.strictEqual(reads, 0, 'the roster was read ' + reads + ' time(s) before refusing');
+    } finally { global.fetch = realFetch; }
+  });
+
+  await okAsync('the refusal NAMES the bad value and the roles it was checked against', async () => {
+    const out = await lifecycle.setActive({
+      caller: { employee_id: 'DEP', role: 'hr' },
+      body: { employee_id: 'A', active: false, reason: 'x' },
+      licHash: 'L', table: 't', provisioningRoles: ['owner', 'hr'],
+      roleLabel: 'an admin', soleRole: 'ownr',
+      rest: (q) => 'http://x/' + q, headers: {}
+    });
+    const m = out.body.error.message;
+    assert.match(m, /ownr/, 'the message does not name the bad value: ' + m);
+    assert.match(m, /owner/, 'the message does not name the real roles: ' + m);
   });
 
   // ── THE BEHAVIOUR, DRIVEN THROUGH THE REAL ENGINE ────────────────────────
