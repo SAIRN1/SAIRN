@@ -10743,6 +10743,67 @@
         }
       ],
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
+    },
+    {
+      "commit": "9b5f044635c7",
+      "date": "2026-09-22",
+      "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/claims/run_fileset_matcher_probe.py",
+        "tests/claims/run_fileset_matcher_sabotage_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 554,
+      "lines_removed": 24,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/sairn_claim.py decided whether two sessions collide by LEXICAL OVERLAP -- shared app word, shared identifier, shared adjacent word pair -- which is a proxy for the real question, 'would these two sessions edit the same file'. Claims began declaring FILES: <paths> on 2026-09-21, making the real question answerable, and the proxy was measured against it: over all 318 cross-session pairs among claims that declare files, the matcher BLOCKS 153 and only 43 of those have intersecting file sets. 110 blocks -- 72% -- are false, on boilerplate such as 'html tests', 'api files', 'api lib' and '2026 obligation'. One stale claim produced three of tonight's collisions against two different sessions, each costing a real stop-and-flag cycle, and one session resorted to choosing a subject slug specifically to dodge a bigram, which is the rewording PR 4.3 forbids arriving as an adaptation. Fixed: the declared file set is now the primary check (intersect -> refuse naming the path, disjoint -> no block with the lexical match printed as a warning), and a claim declaring no files falls back to the lexical matcher unchanged.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "0a1eed7327c6",
+        "date": "2026-09-04",
+        "subject": "fix(claims): the matcher blocks on a phrase or a real name, never on one English word",
+        "lag_days": 18
+      },
+      "citation_note": "CLEAN. 1.2 is 'grep cannot tell code from text that describes code' -- a lexical match standing in for a semantic fact. This is that premise applied to claims: shared words stand in for shared work, and two claims naming the same app or the same boilerplate phrase describe the same subject matter without touching the same file. The fix is the shape the rule implies -- stop matching the text, match the thing.",
+      "contributing_factors": [
+        {
+          "factor": "The matcher had no access to the fact it was approximating. Until claims declared their files there was nothing to intersect, so a word heuristic was the only thing available and every improvement to it was another heuristic.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the FILES: convention arrived independently on 2026-09-21; this change makes the matcher read it rather than continuing to approximate around it"
+        },
+        {
+          "factor": "Every rule in the matcher is a POSITIVE signal, so the tool could only be made tighter by adding rules -- and each new rule widened the false-positive surface. The file's own header records two prior attempts measured and rejected for that reason.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the file set is a NARROWER and stronger signal, so it can subtract blocks without loosening anything: it is what the sessions themselves said they would touch"
+        },
+        {
+          "factor": "A false block has no channel. A session that believes a block is wrong can only proceed and declare it in a commit message nobody greps, or reword the task string past the matcher -- and both happened tonight, the second one openly.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "an override flag that RECORDS its reason in the claim record is recommended in the tool-bugs bucket and is NOT built here; the file check removes the cases where an override would have been needed rather than adding the override"
+        },
+        {
+          "factor": "Nothing measured the matcher against real outcomes. Its probes assert that specific historical pairs block or do not, which cannot see a 72% false-positive rate across the corpus.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the new probe re-derives the whole 318-pair split on every run and pins the number of pairs the file set refuses alone, so the two checks drifting apart becomes visible rather than discovered"
+        }
+      ],
+      "recurrence_open": "The file set is only as honest as the session that declared it, and making it authoritative rewards under-declaring. The parsed paths are now stored on the claim record so a later pass CAN compare them against what the session actually changed -- but nothing does that comparison yet, and until something does, a claim naming one file while touching ten is invisible. Separately, 774 of 805 claims declare no files and are unaffected by any of this; the convention is one day old and adoption is not enforced anywhere."
     }
   ],
   "started": "2026-09-09",
