@@ -2089,6 +2089,20 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "fourth-1790092144",
+      "session": "fourth",
+      "subject": "claim-matcher-id",
+      "task": "sairn_claim.py identifier matching -- an ISO timestamp obligation id tokenised into a bigram refuses two reviews that share no files FILES: tools/sairn_claim.py tests/run_claim_search_probe.py",
+      "claimed_at": "2026-09-22T15:49:04Z",
+      "claimed_at_epoch": 1790092144.0892642,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_claim_search_probe.py",
+        "tools/sairn_claim.py"
+      ]
     }
   ]
 }
