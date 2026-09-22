@@ -58,14 +58,45 @@ payload, and `payload_fields` returns it as a separate boolean rather than an
 empty list so the two can never be confused. Do not quote the figure from here
 -- run the tool; it moves as the apps do.
 
+(c) HAD THE SAME DEFECT AGAIN, IN ITS OWN COORDINATE, AND IT SURVIVED THE FIRST
+REWRITE BECAUSE ONLY ONE SIBLING WAS FIXED. Found 2026-09-22 by an independent
+review of the 12:33:51Z obligation. `client_restricted()` kept the 400-character
+window and its comment defended it by citing the payload read -- which no longer
+had one. Measured at that point: the signal produced exactly TWO rows out of 288
+and NEITHER rested on evidence that could establish it. `dnt_complaints` had the
+matched name AND the gate inside the same BLOCK COMMENT, so deleting a comment
+would have flipped the answer on a byte-identical app; `sdn_team`'s gate was a
+KPI tile counting rows whose stored `role` COLUMN is 'designer', with no role
+check anywhere in `openTeamModal()` or `saveTeam()`. And the neighbour bleed was
+still live -- `sd_remakes` and `sd_comms` answering off ONE `_ROLES` declaration
+belonging to neither -- producing no false candidate only because the server
+half happened to say gated, which is masking rather than correctness.
+
+IT NOW ASKS WHAT THE GATE IS ATTACHED TO: comments blanked first, the gate and
+the name required in the SAME function body found by BRACE BALANCE rather than
+by a spelling, and a `<expr>.role ===` comparison treated as a record column.
+Two further things were found by MEASURING the rewrite rather than by reading
+it, and both were fail-open: anchoring the body on `^function name(` matched
+NOTHING in one app and silently made the whole 667KB file one unit, and a
+function body can legitimately BE the whole app -- so a body over
+FUNCTION_BODY_CEILING is a COULD-NOT-TELL, never a clean "nothing restricts it".
+The ceiling is measured, not chosen: over all B/C occurrences the sizes run p50
+777, p75 1,995, p90 7,549, p95 41,579, then a cliff to 403,966, and every real
+gated handler is under 2,000.
+
 IT STILL OVER-REPORTS IN ONE DIRECTION ON PURPOSE. A resource gated through a
 dispatcher this tool does not recognise looks ungated here. Reported as a
 candidate, never as a finding, and the report says so on every line.
 
-THE FIXTURES ARE THE LOCK. `--self-test` runs six synthetic cases covering both
-defect shapes and both directions -- three that must not flag and three that
-must, including the second-argument write shape (`f('write','<name>', rec)`)
-that the first anchor missed entirely. Run it before trusting any count below.
+THE FIXTURES ARE THE LOCK, AND THEY NOW COVER TWO SIGNALS RATHER THAN ONE.
+`--self-test` runs eleven synthetic cases in both directions: six on the payload
+signal (three that must not flag, three that must, including the second-argument
+write shape `f('write','<name>', rec)` that the first anchor missed entirely)
+and five on the client-restriction signal (three bleeds that must NOT restrict,
+two real gates that must). The client half exists because the review found this
+file claiming its fixtures covered "both defect shapes" when both shapes had
+been found in the SAME coordinate, and the signal its own docstring calls "the
+one worth having" had no lock at all. Run it before trusting any count below.
 
 WHAT THIS TOOL WILL NOT DO, stated rather than discovered: it does not edit
 docs/CRITICALITY-TIERS.md, it does not write a tier anywhere, and it exits 0
@@ -287,20 +318,281 @@ CLIENT_GATE = re.compile(
     r"role\s*===|role\s*!==|ROLES\[|MANAGEMENT_ROLES|_ROLES\b", re.I)
 
 
+# A `role === '...'` comparison against a RECORD's own column is not a session
+# gate. `t.role==='designer'` inside a `.filter()` is a dashboard count, and
+# sdn_team is a resource whose rows literally carry a `role` field -- so the
+# collision is systematic, not unlucky: any app storing a role attribute looked
+# client-restricted. Anchored on the DOT, which is what distinguishes a
+# property read from the bare session variable the gates use.
+RECORD_ROLE = re.compile(r"[\w$\]]\s*\.\s*role\s*(?:===|!==|==|!=)")
+
+# ── THE UNIT IS A FUNCTION BODY, FOUND BY BRACES, NOT BY A SPELLING ─────────
+# THE FIRST VERSION OF THIS FIX ANCHORED ON `^function name(` AT COLUMN 0 AND
+# WAS MEASURED BEFORE IT SHIPPED, WHICH IS THE ONLY REASON IT DID NOT. On
+# sairncode that pattern matches NOTHING, so the "enclosing function" became
+# the whole 667,230-character file -- the loosest possible answer, produced by
+# an anchor that matched nothing, and client_restricted went from 18 rows to
+# 47 while looking like a tightening. Fail-open by silent anchor failure, which
+# is the shape this platform polices hardest.
+#
+# So the body is found by BRACE BALANCE and the head test accepts every
+# spelling the apps actually use: `function f(){`, `function(){`, `=>{`,
+# `f: function(){`, indented or not.
+FN_HEAD = re.compile(r'(?:function\s*[\w$]*\s*\([^()]*\)|=>)\s*$')
+
+# ── AND A FUNCTION BODY CAN BE THE WHOLE APP, WHICH IS NOT AN ATTACHMENT ────
+# Same-function is the right QUESTION and an insufficient answer on its own:
+# several apps wrap everything in one body, so "the gate is in the same
+# function" came back true for a `role ===` 103,222 characters away, inside
+# `window.addMsg = function(role, content)` -- a chat-message role, in a
+# 403,966-character body.
+#
+# MEASURED over all 1048 B/C occurrences, and the distribution is bimodal
+# rather than a judgement call: p50 777 chars, p75 1,995, p90 7,549, p95
+# 41,579, then a cliff straight to 403,966. Real gated handlers -- every
+# sen_* positive -- are 30 to 1,751 characters. The ceiling sits in the gap.
+#
+# OVER THE CEILING IS A COULD-NOT-TELL, NOT A FALSE. The occurrence is inside
+# a body too large for containment to mean guarding, and saying "not
+# restricted" there would be asserting a fact about an app this tool cannot
+# see into. The count is printed.
+FUNCTION_BODY_CEILING = 20000
+
+
+SCRIPT_OPEN = re.compile(r'<script\b[^>]*>', re.I)
+SCRIPT_CLOSE = re.compile(r'</script\s*>', re.I)
+
+
+def script_only(src):
+    """Blank everything outside <script> blocks, preserving offsets and lines.
+
+    ── THESE ARE HTML FILES AND THE JS LEXER WAS BEING RUN OVER THE MARKUP ───
+    Found by arm 5b of the controls, which compares the body count per app:
+    sairnmechanical came back with SEVEN function bodies for 194 `function`
+    keywords, and the parse died at 11.7% of the file -- exactly where the
+    first `</script>` ends and prose begins. An apostrophe in ordinary English
+    ("don't") opens a string the lexer never closes, and every brace after it
+    is invisible. sairnscape died the same way at 16.3%, on a template literal
+    in markup.
+
+    THE FAILURE DIRECTION WAS SAFE AND THE SILENCE WAS NOT: fewer bodies means
+    more could-not-tell, so nothing was wrongly called restricted -- but two
+    whole apps had quietly stopped being readable and only a cross-check
+    against the keyword count said so. CLAUDE.md already names this: extract
+    from the HTML structure, never treat a page as one language.
+    """
+    out = list(src)
+    pos = 0
+    keep = []
+    while True:
+        o = SCRIPT_OPEN.search(src, pos)
+        if not o:
+            break
+        c = SCRIPT_CLOSE.search(src, o.end())
+        end = c.start() if c else len(src)
+        keep.append((o.end(), end))
+        pos = c.end() if c else len(src)
+    if not keep:
+        return src          # not an HTML page; parse it whole
+    for i in range(len(out)):
+        if out[i] != '\n':
+            out[i] = ' '
+    for a, b in keep:
+        out[a:b] = list(src[a:b])
+    return ''.join(out)
+
+
+def strip_comments(src):
+    """Blank every // and /* */ comment, preserving offsets and line breaks.
+
+    OFFSETS ARE PRESERVED ON PURPOSE so a caller can still report where a hit
+    was. Newlines survive so line numbers do not move.
+    """
+    out = list(src)
+    i, n, quote = 0, len(src), None
+    while i < n:
+        c = src[i]
+        if quote:
+            if c == '\\':
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+            i += 1
+            continue
+        if c in '\'"`':
+            quote = c
+            i += 1
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '/':
+            j = src.find('\n', i)
+            j = n if j < 0 else j
+            for k in range(i, j):
+                out[k] = ' '
+            i = j
+            continue
+        if c == '/' and i + 1 < n and src[i + 1] == '*':
+            j = src.find('*/', i + 2)
+            j = n if j < 0 else j + 2
+            for k in range(i, j):
+                if out[k] != '\n':
+                    out[k] = ' '
+            i = j
+            continue
+        i += 1
+    return ''.join(out)
+
+
+def function_spans(clean):
+    """(start, end) of every FUNCTION BODY in comment-stripped source."""
+    spans, stack, quote, i, n = [], [], None, 0, len(clean)
+    while i < n:
+        c = clean[i]
+        if quote:
+            if c == '\\':
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+            i += 1
+            continue
+        if c in '\'"`':
+            quote = c
+            i += 1
+            continue
+        if c == '{':
+            stack.append((i, bool(FN_HEAD.search(clean[max(0, i - 160):i]))))
+        elif c == '}':
+            if stack:
+                start, isfn = stack.pop()
+                if isfn:
+                    spans.append((start, i + 1))
+        i += 1
+    return spans
+
+
+def enclosing_function(spans, pos):
+    """The INNERMOST function body containing `pos`, or None for top-level code.
+
+    None is not a pass. An occurrence outside every function -- a resource-list
+    array, a bulk loader's declarations -- has no body to be attached to, so no
+    gate can be attributed to it. That is the under-reporting direction, which
+    signal (c) already declares as the safe one.
+    """
+    best = None
+    for a, b in spans:
+        if a <= pos < b and (best is None or a > best[0]):
+            best = (a, b)
+    return best
+
+
+_PARSED = {}
+
+
+def _parsed(app, src):
+    """(comment-stripped source, function bodies) for one page, computed once."""
+    # KEYED ON THE CONTENT, NOT THE APP NAME. Keying on the name alone made
+    # every --self-test fixture reuse the FIRST fixture's parse, because they
+    # all call themselves 'fx' -- three arms then answered about source they
+    # had never seen. Caught by two arms failing; it would have been silent if
+    # the fixtures had agreed.
+    key = (app, len(src), hash(src))
+    if key not in _PARSED:
+        clean = strip_comments(script_only(src))
+        _PARSED[key] = (clean, function_spans(clean))
+    return _PARSED[key]
+
+
+def pages_without_function_bodies(pages):
+    """Apps where the brace pass found NO function body at all.
+
+    A page this parser cannot see into yields zero gates for every resource in
+    it, which is indistinguishable from an app that restricts nothing. Named
+    and printed as a could-not-tell rather than left to read as clean -- the
+    same decision `payload_fields` already makes with its `found` flag.
+    """
+    return [a for a, s in sorted(pages.items()) if s and not _parsed(a, s)[1]]
+
+
 def client_restricted(name, pages, owner):
     """Does the page restrict this resource to a role? Returns the construct or ''.
 
-    Same 400-character window as the payload read, and for the same reason: a
-    wider one starts describing the panel next door.
+    ── REWRITTEN 2026-09-22 AFTER AN INDEPENDENT REVIEW, AND THE OLD COMMENT
+    HERE WAS PART OF THE PROBLEM ───────────────────────────────────────────
+    It read: "Same 400-character window as the payload read, and for the same
+    reason: a wider one starts describing the panel next door." Both halves
+    were wrong by the time it was read. The payload read had already been
+    rewritten precisely BECAUSE that window was wrong, so this function was
+    defending its window by citing a sibling that no longer had one -- and the
+    defect was never that the window was too WIDE. PROXIMITY IS NOT OWNERSHIP
+    AT ANY WIDTH.
+
+    MEASURED, at the point of the review: the signal produced exactly two rows
+    out of 288 and NEITHER rested on evidence that could establish it.
+
+      dnt_complaints -- the matched occurrence AND the `role===` that answered
+        for it were inside the SAME BLOCK COMMENT. The conclusion happened to
+        be true because the comment said so; deleting a comment would have
+        flipped the tool's answer on a byte-identical application.
+      sdn_team -- the "gate" at 373 characters was
+        `$('tm-designers').textContent=list.filter(...t.role==='designer'...)`,
+        a KPI tile counting rows whose stored `role` COLUMN is designer.
+        openTeamModal() and saveTeam() contain no role construct at all.
+
+    And the bleed the payload signal was rewritten to remove was still here:
+    sd_remakes and sd_comms both answered TRUE off ONE `_ROLES` declaration
+    sitting above a bulk localStorage loader and belonging to neither. That
+    produced no false CANDIDATE only because the asymmetry test is
+    `client_gate AND NOT server_gated` and the server half happened to say
+    gated -- the masking was doing the work the fix was supposed to do, and it
+    would have stopped the day a dispatcher was renamed.
+
+    THREE CHANGES, AND THEY ARE THE SAME MOVE THE PAYLOAD SIGNAL ALREADY MADE
+    -- stop asking what is NEARBY and start asking what it is ATTACHED TO:
+
+      1. Comments are blanked before anything is searched. Offsets survive.
+      2. The gate and the name must be in the SAME top-level function, which is
+         a real declaration boundary rather than a character count. A gate
+         inside a `.then()` callback still counts, because the callback is
+         inside the function; a gate in the NEXT function does not.
+      3. A `<expr>.role ===` comparison is a RECORD column, not a session role.
+
+    IT STILL OVER-REPORTS BY CONSTRUCTION, unchanged: a resource gated through
+    a helper this tool does not recognise looks ungated. Candidate, never
+    finding.
+
+    Returns (construct, unreadable). `unreadable` True means every occurrence
+    sat in a body over the ceiling, so this is a COULD-NOT-TELL and NOT a
+    clean 'nothing restricts it' -- the same three-state discipline
+    payload_fields() already uses for its `found` flag.
     """
     app = owner.get(name)
     src = pages.get(app or '', '')
-    for m in re.finditer(r"'" + re.escape(name) + r"'", src):
-        window = src[max(0, m.start() - 400):m.end() + 400]
-        g = CLIENT_GATE.search(window)
-        if g:
-            return g.group(0)
-    return ''
+    if not src:
+        # NO PAGE IS A COULD-NOT-TELL, NOT A CLEAN 'NOTHING RESTRICTS IT'.
+        # main() already reports the missing pages; this makes the per-row
+        # answer agree with that instead of quietly saying False.
+        return '', True
+    clean, spans = _parsed(app, src)
+    unreadable = False
+    for m in re.finditer(r"'" + re.escape(name) + r"'", clean):
+        body = enclosing_function(spans, m.start())
+        if body is None:
+            continue
+        lo, hi = body
+        if hi - lo > FUNCTION_BODY_CEILING:
+            unreadable = True
+            continue
+        unit = clean[lo:hi]
+        for g in CLIENT_GATE.finditer(unit):
+            # A record-column comparison is not a gate. Tested on the text
+            # ENDING at the match so `t.role===` is caught while a bare
+            # `role===` on a session variable is not.
+            head = unit[max(0, g.start() - 24):g.end()]
+            if RECORD_ROLE.search(head):
+                continue
+            return g.group(0), False
+    return '', unreadable
 
 
 def server_gated(name, handler_src):
@@ -370,15 +662,81 @@ FIXTURES = [
 ]
 
 
+# ── THE CLIENT-GATE FIXTURES, ADDED 2026-09-22 AFTER AN INDEPENDENT REVIEW ──
+# Finding 4 of Fourth's review of the 12:33:51Z obligation: self_test() called
+# payload_fields() and nothing else, while the docstring claimed the six cases
+# covered "both defect shapes". Both shapes had been found in the SAME
+# coordinate. Signal (c) -- the one this file's own docstring calls "the one
+# worth having" -- had no lock at all, and FIXTURES[0] is literally named "the
+# sen_pay_rates bleed" and IS a resource-list array, the exact input shape the
+# surviving defect was about, yet it was only ever asserted against the payload
+# signal.
+#
+# All five are the REAL shapes measured on the corpus, not invented ones.
+CLIENT_FIXTURES = [
+    # (label, page source, resource, expect_restricted)
+    ('the bulk-loader bleed -- a _ROLES declaration belonging to NEITHER, with '
+     'four resources loaded next to each other (measured: sd_remakes, sd_comms)',
+     "var SD_EXEC_ROLES=['owner','exec']; // These map to admin user logins\n"
+     "function loadSD5Data(){\n"
+     "  try{sdRemakes=JSON.parse(localStorage.getItem('sd_remakes')||'[]');}catch(e){}\n"
+     "  try{sdComms=JSON.parse(localStorage.getItem('sd_comms')||'[]');}catch(e){}\n"
+     "}\n",
+     'sd_remakes', False),
+    ('the comment bleed -- both the name AND the gate inside one block comment '
+     '(measured: dnt_complaints)',
+     "function respondToComplaint(id){\n"
+     "  // dnt_complaints is READ-ONLY through the generic path -- this never\n"
+     "  // calls dnt('write','dnt_complaints',...). Owner-only enforcement is\n"
+     "  // UI-level here (prole==='owner'), a stated, accepted limitation.\n"
+     "  return post(id);\n"
+     "}\n",
+     'dnt_complaints', False),
+    ('the KPI-tile bleed -- `role===` comparing a RECORD COLUMN, in the '
+     'NEXT function (measured: sdn_team)',
+     "async function saveTeam(){\n"
+     "  var rec={id:1,role:$('tmrole').value};\n"
+     "  await sdnData('write','sdn_team',rec);\n"
+     "}\n"
+     "function rTeam(){\n"
+     "  var list=team();\n"
+     "  $('tm-designers').textContent=list.filter(function(t){"
+     "return t.status==='Active'&&t.role==='designer';}).length;\n"
+     "}\n",
+     'sdn_team', False),
+    ('A REAL restriction at the resource\'s own hydrate, with the gate inside a '
+     '.then() callback (measured: sen_pay_rates, sen_caregivers)',
+     "function senHydratePayRates(){\n"
+     "  if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);\n"
+     "  return senData('read','sen_pay_rates',null,true).then(function(rows){\n"
+     "    return !!rows;\n"
+     "  });\n"
+     "}\n",
+     'sen_pay_rates', True),
+    ('A REAL restriction where the gate comes AFTER the name in the same '
+     'function (measured: sen_branches)',
+     "function brRender(){\n"
+     "  var list=ld('sen_branches',[]);\n"
+     "  var isMgmt=senIsManagement();\n"
+     "  var addBtn=$('br-add-btn');if(addBtn)addBtn.style.display=isMgmt?'':'none';\n"
+     "}\n",
+     'sen_branches', True),
+]
+
+
 def self_test():
     """Run the locked fixtures. Exits non-zero on any disagreement.
 
-    Both directions on purpose: three fixtures must NOT flag and three MUST.
-    A one-directional lock would be satisfied by a payload signal that had
-    stopped working altogether, which is the way this particular rewrite is
-    most likely to fail.
+    BOTH SIGNALS, BOTH DIRECTIONS. The payload set is three that must not flag
+    and three that must; the client-gate set is three that must not restrict
+    and two that must. A one-directional lock would be satisfied by a signal
+    that had stopped working altogether, which is the way each of these
+    rewrites is most likely to fail -- and the client-gate half exists because
+    the first version of this function had NO lock and shipped two wrong
+    answers out of the two it produced.
     """
     bad = 0
+    print('  PAYLOAD SIGNAL (b)')
     for label, src, res, want_hits, want_found in FIXTURES:
         hits, found = payload_fields(res, {'fx': src}, {res: 'fx'})
         ok = (bool(hits) == want_hits) and (found == want_found)
@@ -386,7 +744,16 @@ def self_test():
               % ('PASS' if ok else 'FAIL', label, hits, found, want_hits, want_found))
         if not ok:
             bad += 1
-    print('\n  %d fixture(s), %d failing' % (len(FIXTURES), bad))
+    print('\n  CLIENT-RESTRICTION SIGNAL (c)')
+    for label, src, res, want in CLIENT_FIXTURES:
+        got, unreadable = client_restricted(res, {'fx': src}, {res: 'fx'})
+        ok = bool(got) == want and not unreadable
+        print('  %-4s %s\n         restricted=%r (wanted %s)'
+              % ('PASS' if ok else 'FAIL', label, got, want))
+        if not ok:
+            bad += 1
+    total = len(FIXTURES) + len(CLIENT_FIXTURES)
+    print('\n  %d fixture(s), %d failing' % (total, bad))
     return 1 if bad else 0
 
 
@@ -414,7 +781,8 @@ def main(argv=None):
         return 3
 
     bc = [(n, t) for n, t, _ in rows if t in ('B', 'C')]
-    flagged, clear, no_payload_read = [], [], []
+    flagged, clear, no_payload_read, no_client_read = [], [], [], []
+    n_client, asym_rows = 0, []
     for name, tier in bc:
         why = []
         if NAME_PATTERN.search(name):
@@ -426,7 +794,13 @@ def main(argv=None):
             why.append(('payload', 'stores field(s) matching PII/PHI indicators: '
                                    + ', '.join(fields[:6])))
         gated, how = server_gated(name, handler_src)
-        client_gate = client_restricted(name, pages, owner)
+        client_gate, client_unreadable = client_restricted(name, pages, owner)
+        if client_unreadable:
+            no_client_read.append(name)
+        if client_gate:
+            n_client += 1
+            if not gated:
+                asym_rows.append(name)
         # THE SIGNAL IS THE ASYMMETRY, NOT THE ABSENCE. Measured: asking only
         # "is there a server-side check" flagged 173 of 288 rows, because whole
         # apps -- BLD_RESOURCES, SD_LOCAL_RESOURCES and others -- have NO
@@ -447,7 +821,8 @@ def main(argv=None):
     if args.json:
         print(json.dumps({'flagged': flagged, 'clear': [c['resource'] for c in clear],
                           'missing_pages': missing_pages,
-                          'payload_signal_could_not_be_read': no_payload_read},
+                          'payload_signal_could_not_be_read': no_payload_read,
+                          'client_signal_could_not_be_read': no_client_read},
                          indent=1))
         return 0
 
@@ -465,6 +840,29 @@ def main(argv=None):
         print('  FLAGGED FOR A HUMAN READ: %d of %d B/C rows' % (len(flagged), len(bc)))
         print('  carried forward as Confidentiality-B by the stated rule: %d'
               % len(clear))
+        print('')
+        # ── SIGNAL (c) REPORTS ITS OWN ARITHMETIC ────────────────────────
+        # It can legitimately produce ZERO candidates, and zero looks exactly
+        # like a signal that has stopped working. So the three counts behind
+        # the zero are printed: a reader can see the client half DID find
+        # restrictions and the server half agreed with every one it could be
+        # asked about, which is a finding of its own rather than an absence.
+        print('  ASYMMETRY SIGNAL (c), the arithmetic behind its count:')
+        print('    client restricts it                : %d' % n_client)
+        print('    ...and the server ALSO gates it    : %d  (no disagreement, '
+              'so not a candidate)' % (n_client - len(asym_rows)))
+        print('    ...and the server does NOT         : %d  <- the candidates'
+              % len(asym_rows))
+        print('    COULD NOT BE ASKED at all          : %d  -- every occurrence '
+              'sat in a' % len(no_client_read))
+        print('      function body over %d characters, or the app has no page. '
+              'That is a' % FUNCTION_BODY_CEILING)
+        print('      could-not-tell, NOT "nothing restricts it".')
+        if not asym_rows:
+            print('    ZERO CANDIDATES IS A RESULT, NOT A DEAD SIGNAL: the two '
+                  'halves agreed')
+            print('      everywhere this tool could ask. Read the could-not-'
+                  'ask count beside it.')
         print('')
         print('  PAYLOAD SIGNAL COULD NOT BE READ AT ALL for %d of %d B/C rows --'
               % (len(no_payload_read), len(bc)))

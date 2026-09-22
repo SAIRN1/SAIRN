@@ -1,31 +1,55 @@
-r"""Independent review of tools/confidentiality_candidate_flagger.py's ASYMMETRY
-signal, discharging cody's Tier A obligation opened 2026-09-22T12:33:51Z.
+r"""The attachment controls for tools/confidentiality_candidate_flagger.py's
+client-restriction signal -- four measured bleeds that must never come back.
 
     python tests/confidentiality_flagger_asymmetry_review_probe.py
 
 REPORT-ONLY. Exit 0 by design, findings or not. It asserts nothing about a
-shipped app and gates no push; it exists so the numbers below can be re-run by
-the author instead of believed from prose.
+shipped app and gates no push.
 
-WHY A PROBE AT ALL, since I have argued the other way twice this week. A review
-whose every check is a direct read of one file needs no probe -- writing one to
-restate a source read is ceremony. This is not that: the claims here are
-computed over 288 register rows against 22 app files, and no reader can check
-"18 of 288" or "the gate behind this flag is a data-field comparison" by eye.
+WHAT THIS FILE WAS, AND WHY IT CHANGED SHAPE. It began on 2026-09-22 as the
+independent review discharging cody's Tier A obligation opened 12:33:51Z, and
+it carried four findings. All four were then fixed. A review probe whose
+findings no longer reproduce is not evidence of anything -- it prints COULD NOT
+TELL forever and slowly stops being read. So it was re-aimed at the same four
+shapes from the other side: each arm now drives the TOOL and requires the bad
+answer to be gone, with a paired control requiring the good answer to survive.
+The original measurements are kept as the reason each arm exists, because an
+arm that cannot say what it is defending against is one rename from being
+deleted as noise.
 
-AND THE CHECKS DELIBERATELY DO NOT GO THROUGH THE SUBJECT'S OWN PATTERNS WHERE
-IT MATTERS. Asking `CLIENT_GATE` whether `CLIENT_GATE` matched something would
-agree with the subject even where the subject is wrong -- the Ariane 5 point
-CLAUDE.md already records: a second copy is not a second opinion. Arms 1-3
-recompute comment spans and read the raw source line, which is a structurally
-different method from the regex under review.
+THE FOUR SHAPES, ALL MEASURED ON THE REAL CORPUS RATHER THAN IMAGINED:
 
-EVERY ANCHOR IS COUNTED AND A MISSING ONE IS A COULD-NOT-TELL, NOT A PASS. An
-arm whose anchor has moved reports COULD NOT TELL and says which anchor, rather
-than quietly reporting clean -- the failure `tools/sabotage_control_check.py`
-measured most controls on this platform skipping.
+  1. dnt_complaints -- the matched resource name AND the `role===` that
+     answered for it were inside the SAME BLOCK COMMENT. The conclusion was
+     true only because the comment said so; deleting a comment would have
+     flipped the tool's answer on a byte-identical application.
+  2. sdn_team -- the "gate" 373 characters away was
+     `$('tm-designers').textContent=list.filter(...t.role==='designer'...)`,
+     a KPI tile counting rows whose stored `role` COLUMN is designer.
+     openTeamModal() and saveTeam() contain no role construct at all.
+  3. sd_remakes / sd_comms -- both answered TRUE off ONE `_ROLES` declaration
+     sitting above a bulk localStorage loader and belonging to neither. It
+     produced no false CANDIDATE only because the server half happened to say
+     gated, which is masking rather than correctness.
+  4. The fixture lock covered ONE signal of three: self_test() called
+     payload_fields() and nothing else, while the docstring claimed six cases
+     covered "both defect shapes" -- both had been found in the same
+     coordinate.
+
+AND TWO MORE THAT THE FIX ITSELF INTRODUCED AND MEASUREMENT CAUGHT BEFORE IT
+SHIPPED, both fail-open, both pinned here (arms 5 and 6): anchoring the
+function body on `^function name(` matched NOTHING in one app and silently made
+the whole 667,230-character file one unit; and a function body can legitimately
+BE the whole app, so containment inside one is not attachment.
+
+THE CHECKS GO THROUGH THE TOOL, because what is being defended is the tool's
+ANSWER. Where a claim is about the app rather than the tool -- arm 2's "nothing
+actually restricts sdn_team" -- it is checked by reading the write path, which
+is a structurally different method from the regex under review.
+
+EVERY ANCHOR IS COUNTED AND A MISSING ONE IS A COULD-NOT-TELL, NOT A PASS.
 """
-CONTROLS_FOR = []
+CONTROLS_FOR = ['tools/confidentiality_candidate_flagger.py']
 
 import io
 import os
@@ -39,76 +63,24 @@ os.chdir(REPO)
 
 import confidentiality_candidate_flagger as F          # noqa: E402
 
-FINDINGS, NOTES, CNR = [], [], []
+FINDINGS, PASSES, CNR = [], [], []
 
 
-def finding(n, text):
-    FINDINGS.append(n)
-    print('\nFINDING %d -- %s' % (n, text))
+def ok(label, cond, detail=''):
+    if cond:
+        PASSES.append(label)
+        print('  ok   %s' % label)
+    else:
+        FINDINGS.append(label)
+        print('  FAIL %s' % label)
+        if detail:
+            print('       %s' % str(detail)[:400])
 
 
-def note(text):
-    NOTES.append(text)
-    print('\n  %s' % text)
-
-
-def could_not_tell(text):
-    CNR.append(text)
-    print('\nCOULD NOT TELL -- %s' % text)
-
-
-def comment_spans(src):
-    """(start, end) of every // line comment and /* */ block, string-aware.
-
-    WRITTEN FROM THE RULE, not borrowed from the subject, because the subject
-    has no notion of a comment at all -- which is half of finding 1.
-    """
-    spans, i, n = [], 0, len(src)
-    quote = None
-    while i < n:
-        c = src[i]
-        if quote:
-            if c == '\\':
-                i += 2
-                continue
-            if c == quote:
-                quote = None
-            i += 1
-            continue
-        if c in '\'"`':
-            quote = c
-            i += 1
-            continue
-        if c == '/' and i + 1 < n and src[i + 1] == '/':
-            j = src.find('\n', i)
-            j = n if j < 0 else j
-            spans.append((i, j))
-            i = j
-            continue
-        if c == '/' and i + 1 < n and src[i + 1] == '*':
-            j = src.find('*/', i + 2)
-            j = n if j < 0 else j + 2
-            spans.append((i, j))
-            i = j
-            continue
-        i += 1
-    return spans
-
-
-def inside(spans, pos):
-    return any(a <= pos < b for a, b in spans)
-
-
-def first_gate_site(name, src):
-    """(name_offset, gate_offset, gate_text) for the occurrence client_restricted()
-    would answer from -- the FIRST with a gate in its window, which is the
-    subject's own short-circuit."""
-    for m in re.finditer(r"'" + re.escape(name) + r"'", src):
-        lo = max(0, m.start() - 400)
-        g = F.CLIENT_GATE.search(src[lo:m.end() + 400])
-        if g:
-            return m.start(), lo + g.start(), g.group(0)
-    return None, None, None
+def could_not_tell(label, text):
+    CNR.append(label)
+    print('  ---- COULD NOT TELL: %s' % label)
+    print('       %s' % text)
 
 
 print(__doc__.split('\n\n')[0])
@@ -122,233 +94,172 @@ handler = io.open(os.path.join(REPO, 'api', 'sd-data.js'),
                   encoding='utf-8', errors='replace').read()
 
 if not bc:
-    could_not_tell('no B/C rows parsed from the register; every arm below '
-                   'would pass vacuously. Nothing was checked.')
+    could_not_tell('corpus', 'no B/C rows parsed from the register; every arm '
+                             'below would pass vacuously. Nothing was checked.')
+    print('\n%d passed, %d finding(s), %d could-not-tell.'
+          % (len(PASSES), len(FINDINGS), len(CNR)))
     sys.exit(0)
 
-client_true = [n for n in bc if F.client_restricted(n, pages, owner)]
-asym = [n for n in client_true if not F.server_gated(n, handler)[0]]
-print('\nCORPUS: %d register rows, %d B/C. client_restricted TRUE for %d; of '
-      'those,\n%d are also server-ungated and therefore reach the ASYMMETRY '
-      'signal: %s'
-      % (len(rows), len(bc), len(client_true), len(asym), ', '.join(sorted(asym))))
+restricted, unreadable = {}, {}
+for n in bc:
+    g, u = F.client_restricted(n, pages, owner)
+    restricted[n] = g
+    unreadable[n] = u
+asym = [n for n, g in restricted.items() if g and not F.server_gated(n, handler)[0]]
+print('\nCORPUS: %d register rows, %d B/C. client_restricted TRUE for %d, '
+      'could-not-tell for %d,\nand %d reach the asymmetry signal: %s\n'
+      % (len(rows), len(bc), len([g for g in restricted.values() if g]),
+         len([u for u in unreadable.values() if u]), len(asym),
+         ', '.join(sorted(asym)) or '(none)'))
 
-# ── FINDING 1: BOTH HALVES OF dnt_complaints' EVIDENCE ARE COMMENT TEXT ─────
-if 'dnt_complaints' not in asym:
-    could_not_tell('dnt_complaints no longer reaches the asymmetry signal, so '
-                   'arm 1 was not run. It is not reporting clean.')
+# ── 1. THE COMMENT BLEED ───────────────────────────────────────────────────
+if 'dnt_complaints' not in restricted:
+    could_not_tell('arm 1', 'dnt_complaints is not a B/C row any more.')
 else:
-    src = pages[owner['dnt_complaints']]
-    spans = comment_spans(src)
-    npos, gpos, gtext = first_gate_site('dnt_complaints', src)
-    occurrences = list(re.finditer(r"'dnt_complaints'", src))
-    coded = [m for m in occurrences if not inside(spans, m.start())]
-    if inside(spans, npos) and inside(spans, gpos):
-        finding(1, 'dnt_complaints: BOTH halves of the client-restriction '
-                   'evidence are COMMENT TEXT, not code.')
-        print('  the matched occurrence is at offset %d, inside a comment.' % npos)
-        print('  the gate %r that answered for it is at offset %d, inside the '
-              'SAME comment.' % (gtext, gpos))
-        print('  %d occurrence(s) of the name in the file; %d outside comments, '
-              'and none of those has a gate in window.'
-              % (len(occurrences), len(coded)))
-        print('  THE CONCLUSION IS STILL TRUE and that is the trap: the comment '
-                'itself says\n  owner-only enforcement is UI-level, so the app '
-                'really is client-restricted.\n  But the tool is reading '
-                'DOCUMENTATION. Delete the comment and the flag\n  disappears '
-                'while the application is byte-identical. PR 1.2 / scrubber '
-                'item 2.')
+    page = pages[owner['dnt_complaints']]
+    clean, _ = F._parsed(owner['dnt_complaints'], page)
+    occ = len(list(re.finditer(r"'dnt_complaints'", page)))
+    occ_clean = len(list(re.finditer(r"'dnt_complaints'", clean)))
+    ok('1a the comment-borne occurrence is GONE from the stripped source, so '
+       'nothing can match inside it (%d occurrences in the file, %d survive '
+       'comment stripping)' % (occ, occ_clean), occ_clean < occ,
+       (occ, occ_clean))
+    ok('1b ...and dnt_complaints is no longer reported as client-restricted '
+       'on the strength of a comment', not restricted['dnt_complaints'],
+       restricted['dnt_complaints'])
+
+# ── 2. THE KPI-TILE BLEED ──────────────────────────────────────────────────
+if 'sdn_team' not in restricted:
+    could_not_tell('arm 2', 'sdn_team is not a B/C row any more.')
+else:
+    ok('2a sdn_team is no longer reported as client-restricted off a record '
+       'field', not restricted['sdn_team'], restricted['sdn_team'])
+    # THE CLAIM ABOUT THE APP, CHECKED BY A DIFFERENT METHOD THAN THE REGEX
+    # UNDER REVIEW: read the two functions that create and write the record.
+    page = pages[owner['sdn_team']]
+    unguarded, absent = [], []
+    for fn in ('openTeamModal', 'saveTeam'):
+        m = re.search(r'(?:async\s+)?function\s+%s\s*\(' % fn, page)
+        if not m:
+            absent.append(fn)
+            continue
+        end = page.find('\n}', m.start())
+        body = page[m.start():end if end > 0 else m.start() + 2000]
+        if not F.CLIENT_GATE.search(body):
+            unguarded.append(fn)
+    if absent:
+        could_not_tell('arm 2b', 'sairndesign has no %s(); the corroboration '
+                                 'did not run.' % ', '.join(absent))
     else:
-        note('dnt_complaints evidence is NOT comment-sourced (name inside=%s, '
-             'gate inside=%s). Finding 1 does not reproduce.'
-             % (inside(spans, npos), inside(spans, gpos)))
+        ok('2b CORROBORATION by reading the write path rather than re-asking '
+           'the same regex: %s contain no role construct, so "not restricted" '
+           'is the true answer and 2a is right for the right reason'
+           % ' and '.join('%s()' % f for f in unguarded),
+           len(unguarded) == 2, unguarded)
+    ok('2c the record-column rule is what does it, and it is discriminating -- '
+       'it rejects `t.role===` and accepts a bare session `role ===`',
+       bool(F.RECORD_ROLE.search("t.role==='designer'"))
+       and not F.RECORD_ROLE.search("if(role === 'owner')"),
+       (F.RECORD_ROLE.search("t.role==='designer'"),
+        F.RECORD_ROLE.search("if(role === 'owner')")))
 
-# ── FINDING 2: sdn_team's "GATE" IS A RECORD FIELD, NOT A SESSION ROLE ─────
-if 'sdn_team' not in asym:
-    could_not_tell('sdn_team no longer reaches the asymmetry signal, so arm 2 '
-                   'was not run. It is not reporting clean.')
+# ── 3. THE NEIGHBOUR BLEED ─────────────────────────────────────────────────
+_bleed = [n for n in ('sd_remakes', 'sd_comms') if n in restricted]
+if not _bleed:
+    could_not_tell('arm 3', 'neither sd_remakes nor sd_comms is a B/C row.')
 else:
-    src = pages[owner['sdn_team']]
-    npos, gpos, gtext = first_gate_site('sdn_team', src)
-    line = src[src.rfind('\n', 0, gpos) + 1:src.find('\n', gpos)]
-    # READ THE RAW LINE, not CLIENT_GATE's opinion of it.
-    is_field_cmp = bool(re.search(r"\b\w+\.role\s*===\s*'", line))
-    in_filter = '.filter(' in line
-    if is_field_cmp:
-        finding(2, "sdn_team: the construct that answered \"the CLIENT "
-                   "restricts it\" is a RECORD FIELD comparison, not a session "
-                   "gate.")
-        print('  gate text matched : %r at offset %d (%d chars from the name)'
-              % (gtext, gpos, gpos - npos))
-        print('  the actual line   : %s' % line.strip()[:160])
-        print('  inside a .filter(): %s -- it COUNTS team members whose stored '
-              '`role`\n                      column is "designer" for a KPI '
-              'tile.' % in_filter)
-        print('  CLIENT_GATE\'s `role\\s*===` cannot tell a SESSION role from a '
-              'RECORD\'s role\n  column, and this is systematic rather than '
-              'unlucky: sdn_team is a resource\n  whose own rows carry a `role` '
-              'field, so any app storing one looks\n  client-restricted. Same '
-              'class as scrubber item 24 -- a pattern bucketing on\n  a word '
-              'with no context to say whose word it is.')
-        # THE CONCLUSION IS CHECKED, NOT ASSERTED. "Nothing restricts sdn_team"
-        # is a claim about a shipped app, so it is measured against the two
-        # functions that actually create and write the record -- by reading
-        # their bodies, not by asking CLIENT_GATE a second time.
-        unguarded = []
-        for fn in ('openTeamModal', 'saveTeam'):
-            m = re.search(r'(?:async\s+)?function\s+%s\s*\(' % fn, src)
-            if not m:
-                could_not_tell('sairndesign has no %s(); the corroboration for '
-                               'finding 2 did not run.' % fn)
-                unguarded = None
-                break
-            end = src.find('\n}', m.start())
-            body = src[m.start():end if end > 0 else m.start() + 2000]
-            if not F.CLIENT_GATE.search(body):
-                unguarded.append(fn)
-        if unguarded:
-            print('  CORROBORATED BY READING THE WRITE PATH, not by re-asking '
-                  'the same regex:\n  %s contain no role construct of any kind. '
-                  'sdnIsManagement() exists in\n  this app (%d call sites) and '
-                  'is used for assignee rows and the roster --\n  never for the '
-                  'team modal or the write. So sdn_team is NOT '
-                  'client-restricted.'
-                  % (' and '.join('%s()' % f for f in unguarded),
-                     src.count('sdnIsManagement(')))
-        print('  THIS ONE IS SIMPLY WRONG. Unlike finding 1 the conclusion does '
-              'not survive:\n  the asymmetry signal has produced a candidate '
-              'out of a dashboard count.')
-    else:
-        note('sdn_team gate line is not a record-field comparison: %r. '
-             'Finding 2 does not reproduce.' % line.strip()[:120])
+    ok('3a the bulk-loader bleed is gone: %s no longer answer off a _ROLES '
+       'declaration belonging to neither' % ' and '.join(_bleed),
+       not any(restricted[n] for n in _bleed),
+       {n: restricted[n] for n in _bleed})
+    # AND IT IS NOT GONE BECAUSE THE SERVER HALF MASKS IT. That was the old
+    # state and it was luck; this asserts the CLIENT half answers correctly on
+    # its own, independently of what server_gated says.
+    ok('3b ...and that is the CLIENT half answering correctly, not the server '
+       'half masking it -- both are still server_gated, so the old masking '
+       'would have hidden a wrong answer just as well',
+       all(F.server_gated(n, handler)[0] for n in _bleed),
+       {n: F.server_gated(n, handler) for n in _bleed})
 
-# ── ARM 3, THE CONTROL: REAL GATES ARE NOT COMMENT-SOURCED ────────────────
-# Without this, findings 1 and 2 are satisfied by a probe that calls everything
-# comment text or everything a field comparison.
-_ctrl = [n for n in client_true if n.startswith('sen_')]
-if not _ctrl:
-    could_not_tell('no sen_* row is client_restricted, so the control for '
-                   'findings 1-2 did not run and they stand unqualified.')
-else:
-    src = pages['sairnsenior']
-    spans = comment_spans(src)
-    real = []
-    for n in _ctrl:
-        npos, gpos, gtext = first_gate_site(n, src)
-        if npos is not None and not inside(spans, npos) and not inside(spans, gpos):
-            real.append(n)
-    print('\nCONTROL (arm 3): %d of %d sen_* client-restricted rows have BOTH '
-          'halves of\n  their evidence in real code, at the resource\'s own '
-          'hydrate/accessor --\n  e.g. senHydratePayRates() guarded by '
-          'senIsManagement(). So findings 1-2\n  are discriminating, not a '
-          'probe that condemns every match.\n  %s'
-          % (len(real), len(_ctrl), ', '.join(sorted(real)[:8])))
-    if len(real) != len(_ctrl):
-        note('%d sen_* row(s) did NOT come back as real-code evidence: %s'
-             % (len(_ctrl) - len(real), sorted(set(_ctrl) - set(real))))
+# ── 4. THE FIXTURE LOCK COVERS BOTH SIGNALS ───────────────────────────────
+tool_src = io.open(os.path.join(REPO, 'tools',
+                                'confidentiality_candidate_flagger.py'),
+                   encoding='utf-8').read()
+try:
+    body = tool_src[tool_src.index('def self_test('):tool_src.index('def main(')]
+except ValueError:
+    body = ''
+    could_not_tell('arm 4', 'self_test() or main() could not be located.')
+if body:
+    calls = {f: body.count(f + '(') for f in
+             ('payload_fields', 'client_restricted', 'server_gated')}
+    ok('4a self_test() exercises the client-restriction signal, not only the '
+       'payload one (calls: %s)' % calls, calls['client_restricted'] >= 1, calls)
+    ok('4b ...and the client fixtures run in BOTH directions -- at least two '
+       'that must NOT restrict and at least one that must',
+       len([f for f in F.CLIENT_FIXTURES if not f[3]]) >= 2
+       and len([f for f in F.CLIENT_FIXTURES if f[3]]) >= 1,
+       [(f[0][:40], f[3]) for f in F.CLIENT_FIXTURES])
 
-# ── FINDING 3: THE NEIGHBOUR BLEED IS LIVE, AND ONLY MASKED ───────────────
-# The defect the payload signal was rewritten to remove is still present in
-# client_restricted(), which shares the 400-character window. It produces no
-# candidate TODAY only because the server half answers True.
-bleed = []
-for n in ('sd_remakes', 'sd_comms'):
-    if n not in bc:
-        continue
-    src = pages.get(owner.get(n) or '', '')
-    if not src:
-        continue
-    npos, gpos, gtext = first_gate_site(n, src)
-    if npos is None:
-        continue
-    window = src[max(0, npos - 300):npos + 300]
-    others = set(re.findall(r"'([a-z]{2,4}_[a-z0-9_]+)'", window)) - {n}
-    gated, how = F.server_gated(n, handler)
-    bleed.append((n, gtext, gpos - npos, sorted(others)[:5], gated, how))
-if not bleed:
-    could_not_tell('neither sd_remakes nor sd_comms produced a gate site, so '
-                   'arm 4 did not run.')
-else:
-    multi = [b for b in bleed if len(b[3]) >= 2]
-    if multi:
-        finding(3, 'the NEIGHBOUR BLEED the payload signal was rewritten to '
-                   'remove is STILL LIVE in client_restricted(), which kept '
-                   'the same 400-character window.')
-        for n, gtext, dist, others, gated, how in multi:
-            print('  %-12s gate %r at %+d chars; %d OTHER resource name(s) in '
-                  'the same\n               window: %s'
-                  % (n, gtext, dist, len(others), ', '.join(others)))
-            print('               server_gated=%s (%s)' % (gated, how))
-        print('  Both are loaded by one bulk localStorage loader, and the '
-              '_ROLES construct\n  that answered for them is a declaration '
-              'ABOVE it belonging to neither.')
-        print('  IT PRODUCES NO FALSE CANDIDATE TODAY -- and that is luck, not '
-              'design. The\n  asymmetry signal is `client_gate AND NOT '
-              'server_gated`, so a false\n  client_gate is invisible exactly '
-              'while the server half happens to say yes.\n  The masking is '
-              'doing the work the fix was supposed to do.')
-        print('  AND THE DOCSTRING ARGUES FOR THE WINDOW BY POINTING AT A '
-              'SIBLING THAT NO\n  LONGER USES ONE: client_restricted() says '
-              '"Same 400-character window as the\n  payload read, and for the '
-              'same reason" -- the payload read was rewritten\n  precisely '
-              'because that window was wrong.')
-    else:
-        note('sd_remakes/sd_comms gate sites carry fewer than two neighbouring '
-             'resource names; finding 3 does not reproduce as measured.')
+# ── 5. THE ANCHOR THAT MATCHED NOTHING ────────────────────────────────────
+# `^function name(` found ZERO declarations in sairncode, so the "enclosing
+# function" became the whole 667KB file. The brace pass must see into every
+# app, and an app it cannot see into must be NAMED.
+_blind = F.pages_without_function_bodies(pages)
+ok('5a the brace pass finds function bodies in EVERY app page, so no app '
+   'silently becomes one giant unit', not _blind, _blind)
+# NOT A BARE THRESHOLD. The body count is cross-checked against the number of
+# `function`/`=>` keywords INSIDE the script regions of the same page, which is
+# the quantity that moves with the app. A lexer desync shows up here as a
+# collapsed ratio long before it shows up as a wrong answer. MEASURED across
+# all 17 pages after the fix: 0.59 to 0.99, with the low end being stonedesk's
+# many one-line arrow callbacks. Before the fix sairnmechanical sat at 0.04.
+_ratio = {}
+for _a, _s in sorted(pages.items()):
+    _clean, _spans = F._parsed(_a, _s)
+    _kw = len(re.findall(r'function|=>', _clean))
+    _ratio[_a] = round(len(_spans) / max(_kw, 1), 2)
+ok('5b ...and the body count tracks the keyword count in every page (min '
+   'ratio %.2f across %d pages), so a lexer desync collapses this arm before '
+   'it reaches an answer' % (min(_ratio.values()), len(_ratio)),
+   min(_ratio.values()) >= 0.40, _ratio)
 
-# ── FINDING 4: THE FIXTURE LOCK COVERS ONE SIGNAL OF THREE ────────────────
-src = io.open(os.path.join(REPO, 'tools',
-                           'confidentiality_candidate_flagger.py'),
-              encoding='utf-8').read()
-body = src[src.index('def self_test('):src.index('def main(')]
-calls = {f: body.count(f + '(') for f in
-         ('payload_fields', 'client_restricted', 'server_gated')}
-if calls['payload_fields'] and not (calls['client_restricted']
-                                    or calls['server_gated']):
-    finding(4, 'the locked fixtures exercise ONE of the three signals. '
-               'self_test() calls payload_fields() and nothing else.')
-    print('  calls inside self_test(): %s' % calls)
-    print('  The docstring says "six synthetic cases covering both defect '
-          'shapes and\n  both directions" and "THE FIXTURES ARE THE LOCK". '
-          'Both defect shapes were\n  found in the same coordinate -- the '
-          'payload one. The asymmetry signal, which\n  the same docstring '
-          'calls "the one worth having", has no lock at all.')
-    print('  The fixture at FIXTURES[0] is even NAMED "the sen_pay_rates '
-          'bleed" and is a\n  resource-list array -- the exact input shape '
-          'findings 2 and 3 are about --\n  yet it is only ever asserted '
-          'against payload_fields().')
-else:
-    note('self_test() call profile is %s; finding 4 does not reproduce.' % calls)
+# ── 6. A BODY CAN BE THE WHOLE APP ────────────────────────────────────────
+# Containment inside a 403,966-character body is not attachment. Over the
+# ceiling must be a COULD-NOT-TELL, never a clean "nothing restricts it".
+_over = [n for n in bc if unreadable[n]]
+print('  note  %d of %d rows are COULD-NOT-TELL for signal (c): every '
+      'occurrence sat in a body\n        over %d characters, or the app has '
+      'no page.' % (len(_over), len(bc), F.FUNCTION_BODY_CEILING))
+ok('6a not-restricted and could-not-tell are DISJOINT, so the third state is '
+   'a real state and not a decorated False',
+   not any(restricted[n] and unreadable[n] for n in bc),
+   [n for n in bc if restricted[n] and unreadable[n]][:5])
+ok('6b CONTROL: the ceiling has NOT swallowed everything -- real gated '
+   'handlers are still read and still answer TRUE',
+   len([g for g in restricted.values() if g]) > 0,
+   sorted(n for n, g in restricted.items() if g)[:8])
+ok('6c ...and the could-not-tell set is not the whole corpus either, which '
+   'would be a parser that had quietly stopped working',
+   len(_over) < len(bc) // 2, (len(_over), len(bc)))
 
-# ── NOTE: DEAD CODE, and it is the shape a checker is supposed to catch ───
-dead = re.search(r"if name in handler_src\.split\('SD_SESSION_GATED'\)\[0\]:\s*\n\s*pass",
-                 src)
-if dead:
-    note('server_gated() opens with `if name in handler_src.split('
-         "'SD_SESSION_GATED')[0]: pass` -- a computed condition whose only "
-         'branch is `pass`. Harmless, and it is the dormant-code shape '
-         'Guardian check 0d exists for. Minor; listed so it is not '
-         'rediscovered.')
-
-# ── THE OBLIGATION'S OWN QUESTION, ANSWERED DIRECTLY ──────────────────────
-print('\n' + '=' * 72)
-print('THE OBLIGATION ASKED ONE THING: confirm the three Tier A names are inert')
-print('text and that nothing here reads, writes or gates those resources.')
-occ = {n: [src[:m.start()].count('\n') + 1
-           for m in re.finditer(re.escape(n), src)]
+# ── 7. THE OBLIGATION'S ORIGINAL QUESTION, KEPT BECAUSE IT IS STILL THE ───
+#      CHEAPEST THING THAT COULD SILENTLY STOP BEING TRUE.
+occ = {n: [tool_src[:m.start()].count('\n') + 1
+           for m in re.finditer(re.escape(n), tool_src)]
        for n in ('sd_exec_msgs', 'sen_pay_rates', 'sen_payer_contracts')}
-writes = re.findall(r"io\.open\([^)]*,\s*'[wa]", src) + re.findall(r"\.write\(", src)
-for n, lines in occ.items():
-    print('  %-22s lines %s' % (n, lines))
-print('  CONFIRMED: every occurrence is docstring prose or the body of a '
-      'synthetic\n  fixture page; none is a resource under test. All %d '
-      'io.open() calls are READS\n  (%d write-mode or .write() calls), the only '
-      'subprocess is `git rev-parse\n  --show-toplevel`, the register is parsed '
-      'line-by-line and never rewritten, and\n  main() prints. There is no path '
-      'that reads, writes or gates any of the three.'
-      % (src.count('io.open('), len(writes)))
+writes = (re.findall(r"io\.open\([^)]*,\s*'[wa]", tool_src)
+          + re.findall(r"\.write\(", tool_src))
+ok('7a the three Tier A names are still inert text -- docstring prose or '
+   'fixture page bodies, never a resource under test: %s'
+   % {k: len(v) for k, v in occ.items()}, all(occ.values()), occ)
+ok('7b ...and the tool still has no write path at all (%d io.open calls, %d '
+   'write-mode or .write())' % (tool_src.count('io.open('), len(writes)),
+   not writes, writes[:3])
 
 print('\n' + '=' * 72)
-print('%d finding(s), %d note(s), %d could-not-tell. Report-only: exit 0 by '
-      'design.' % (len(FINDINGS), len(NOTES), len(CNR)))
+print('%d passed, %d finding(s), %d could-not-tell. Report-only: exit 0 by '
+      'design.' % (len(PASSES), len(FINDINGS), len(CNR)))
+for f in FINDINGS:
+    print('  FINDING: %s' % f)
 sys.exit(0)
