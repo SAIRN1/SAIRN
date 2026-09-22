@@ -469,6 +469,131 @@ rc, out = hook(_notadir)
 ok('12 a registry path that is a FILE, not a directory, still exits 0',
    rc == 0, 'exit %d' % rc)
 
+# ── 13. --note APPENDS. THE FIELD THAT ATE TWO REAL MESSAGES ───────────────
+# `--note` REPLACED the whole field on every `set` that passed it, silently,
+# and on 2026-09-22 that destroyed two notes addressed to other sessions. This
+# registry is the platform's fastest cross-session channel -- CLAUDE.md sends
+# every session here FIRST, ahead of the claim record and the open-work index,
+# because it is current without a fetch -- and it was the one channel with no
+# durability and no audit. Michael's ruling: append by default, with an
+# explicit --note-replace for the rare full replacement.
+#
+# THE ARM THAT MATTERS IS 13d, NOT 13b. Every other arm here passes on a tool
+# that appends and never replaces, or on one that replaces and never appends.
+# 13d drives BOTH modes against the same file in sequence and requires the
+# earlier text to survive one and not the other -- otherwise "it appended" and
+# "it ignored --note-replace" are the same observation.
+print('\n13. --note appends by default; --note-replace is the explicit override')
+d13 = os.path.join(tmproot, 'note-append')
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'working',
+              '--task', 'T1', '--note', 'FIRST MESSAGE')
+
+
+def note_of(status_dir, name):
+    p = os.path.join(status_dir, '%s.json' % name)
+    return (json.load(io.open(p, encoding='utf-8')) or {}).get('note') or ''
+
+
+ok('13a the first note is stored', 'FIRST MESSAGE' in note_of(d13, 'n1'),
+   note_of(d13, 'n1')[:200])
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'working',
+              '--task', 'T2', '--note', 'SECOND MESSAGE')
+_n = note_of(d13, 'n1')
+ok('13b a second --note APPENDS rather than replacing -- BOTH survive',
+   'FIRST MESSAGE' in _n and 'SECOND MESSAGE' in _n, _n[:300])
+ok('13c ...and the order is oldest first, so a reader gets the history in the '
+   'order it happened',
+   0 <= _n.find('FIRST MESSAGE') < _n.find('SECOND MESSAGE'), _n[:300])
+
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'working',
+              '--task', 'T3', '--note-replace', 'ONLY THIS')
+_n = note_of(d13, 'n1')
+ok('13d CONTROL: --note-replace DOES replace -- the earlier text is gone and '
+   'only the new text remains, so 13b is discriminating',
+   'ONLY THIS' in _n and 'FIRST MESSAGE' not in _n
+   and 'SECOND MESSAGE' not in _n, _n[:300])
+
+# A BARE `set` MUST STILL CARRY THE NOTE FORWARD. This is the half the first
+# report of the bug got WRONG -- it claimed `set --state idle` wiped the note.
+# It never did: payload() carries every unpassed field forward. Pinned here so
+# the append change cannot quietly introduce the bug that was wrongly reported.
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'idle')
+ok('13e a bare `set --state idle` CARRIES THE NOTE FORWARD, unchanged',
+   note_of(d13, 'n1').strip() == _n.strip(), (note_of(d13, 'n1')[:200], _n[:200]))
+
+# AN EMPTY --note MUST NOT BE A WIPE, and must not be a silent no-op either.
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'working',
+              '--task', 'T4', '--note', '')
+ok('13f an EMPTY --note is REFUSED, exit 2, rather than appending nothing or '
+   'wiping the field', rc == 2, 'exit %d\n%s' % (rc, out[:300]))
+ok('13g ...and it names --note-replace as the way to actually clear it',
+   '--note-replace' in out, out[:400])
+ok('13h ...and the note is untouched by the refusal',
+   'ONLY THIS' in note_of(d13, 'n1'), note_of(d13, 'n1')[:200])
+
+# BOTH FLAGS AT ONCE IS AMBIGUOUS AND MUST REFUSE, not pick one.
+rc, out = run(d13, 'set', '--session', 'n1', '--state', 'working',
+              '--task', 'T5', '--note', 'A', '--note-replace', 'B')
+ok('13i --note and --note-replace together are REFUSED rather than one winning '
+   'silently', rc == 2, 'exit %d\n%s' % (rc, out[:300]))
+ok('13j ...and nothing was written',
+   'A' not in note_of(d13, 'n1') or 'ONLY THIS' in note_of(d13, 'n1'),
+   note_of(d13, 'n1')[:200])
+
+# EACH APPENDED ENTRY IS STAMPED, or a reader cannot tell a note from today
+# from one left three days ago by a session that has since died.
+#
+# THE FIRST ENTRY IS DELIBERATELY NOT STAMPED and 13k2 pins that. `report()`
+# prints `note[:100]`, so leading every single-entry note with a 40-character
+# header would spend 40% of every preview on a time the row's own `updated`
+# field already carries exactly. Stamps appear precisely when they start
+# carrying information -- the moment a second entry makes `updated` ambiguous.
+rc, out = run(d13, 'set', '--session', 'n2', '--state', 'working',
+              '--task', 'T', '--note', 'FIRST')
+_n2first = note_of(d13, 'n2')
+ok('13k2 a lone note is stored BARE, so the 100-char preview is not spent on '
+   'a timestamp `updated` already carries',
+   _n2first.strip() == 'FIRST', repr(_n2first[:200]))
+rc, out = run(d13, 'set', '--session', 'n2', '--state', 'working',
+              '--task', 'T', '--note', 'STAMPED')
+_n2 = note_of(d13, 'n2')
+ok('13k an APPENDED entry carries a UTC timestamp, so a stale message is '
+   'visible as stale', 'UTC' in _n2 and '20' in _n2, _n2[:300])
+
+# THE WRITE IS VERIFIED, NOT TRUSTED. The whole failure mode was a writer
+# seeing a normal success line while the content was gone.
+ok('13l the tool ECHOES the appended text back after re-reading the file, so '
+   'the write is confirmed rather than assumed',
+   'STAMPED' in out, out[:500])
+
+# --note-replace ON AN EMPTY FIELD IS HOW YOU CLEAR IT, and that must work.
+rc, out = run(d13, 'set', '--session', 'n2', '--state', 'working',
+              '--task', 'T', '--note-replace', '')
+ok('13m --note-replace "" clears the field, which is the sanctioned way to '
+   'prune', rc == 0 and not note_of(d13, 'n2').strip(),
+   'exit %d %r' % (rc, note_of(d13, 'n2')[:120]))
+
+# A NOTE THAT HAS GROWN MUST SAY SO. Append-only with nothing watching it is
+# the next quiet failure: readers truncate to 100 chars, so a message appended
+# under 40KB of history is delivered nowhere. NOTHING IS DROPPED -- dropping
+# is the bug this change exists to fix -- the author is TOLD to prune.
+_big = 'x' * 9000
+run(d13, 'set', '--session', 'n3', '--state', 'working', '--task', 'T',
+    '--note', _big)
+rc, out = run(d13, 'set', '--session', 'n3', '--state', 'working',
+              '--task', 'T', '--note', _big)
+ok('13n an oversized note WARNS the author to prune', 'prune' in out.lower(),
+   out[:500])
+ok('13o ...and NOTHING was dropped to achieve it -- both halves are still there',
+   note_of(d13, 'n3').count('x' * 9000) == 2,
+   len(note_of(d13, 'n3')))
+ok('13p CONTROL: a small note produces NO such warning, so 13n is '
+   'discriminating rather than a line printed every time',
+   'prune' not in run(d13, 'set', '--session', 'n4', '--state', 'working',
+                      '--task', 'T', '--note', 'tiny')[1].lower(),
+   run(d13, 'set', '--session', 'n5', '--state', 'working', '--task', 'T',
+       '--note', 'tiny')[1][:300])
+
 shutil.rmtree(tmproot, ignore_errors=True)
 print('\n' + '=' * 68)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))

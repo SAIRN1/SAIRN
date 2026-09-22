@@ -331,6 +331,76 @@ def overlaps(entries):
     return pairs
 
 
+# ── THE NOTE FIELD APPENDS. IT USED TO EAT WHAT WAS ALREADY THERE ───────────
+# `--note` REPLACED the whole field on every `set` that passed it -- no append,
+# no diff, no confirmation, no warning -- and on 2026-09-22 that destroyed two
+# notes addressed to other sessions, which were restored from memory rather
+# than from the tool. Recorded as tool-bugs item 12.
+#
+# THE FIRST ACCOUNT OF THE BUG WAS WRONG AND THE CORRECTION IS WHY THIS COMMENT
+# IS HERE: it was reported as "any `set` loses the note, including a bare
+# `--state idle`". It never did. payload() carries every unpassed field forward,
+# driven against a scratch registry via SAIRN_STATUS_DIR -- NOTE ONE survives
+# `set --state idle` and dies only when `--note` is passed again. So the loss
+# always needed an author who passed `--note`. Probe arm 13e pins the
+# carry-forward half so this change cannot introduce the bug that was wrongly
+# reported.
+#
+# WHY APPEND AND NOT WARN-AND-CONFIRM (Michael's ruling, 2026-09-22): this tool
+# runs inside a fast, silent workflow and must stay cheap enough to run every
+# few minutes. A confirmation prompt stalls a session on something that should
+# just work. `--note-replace` carries the rare full replacement, and is also the
+# sanctioned way to PRUNE -- so pruning is a thing somebody decides, never a
+# side effect of writing.
+#
+# NOTHING IS EVER DROPPED TO CONTROL GROWTH. A cap that discards the oldest
+# entries would be the same silent destruction one layer down, so an oversized
+# note WARNS the author and keeps every byte. The risk it warns about is real
+# and specific: `report()` prints `note[:100]`, so a message appended under
+# 40KB of history has been written and delivered nowhere.
+NOTE_SEP = '\n\n--- appended %s UTC ---\n'
+NOTE_WARN_CHARS = 16000
+
+
+def note_entry(text):
+    return (NOTE_SEP % time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())) + text
+
+
+def resolve_note(args, prev):
+    """The stored note for this write. Callers have already validated the flags.
+
+    Three cases and no fourth: neither flag given carries the previous value
+    forward unchanged; `--note-replace` is the stored value outright; `--note`
+    is appended to whatever was there.
+    """
+    replace = getattr(args, 'note_replace', None)
+    if replace is not None:
+        return replace
+    if args.note is None:
+        return prev.get('note')
+    old = prev.get('note') or ''
+    return (old.rstrip() + note_entry(args.note)) if old.strip() else args.note
+
+
+def check_note_flags(args):
+    """(message, exit_code) when the note flags are unusable, else (None, None).
+
+    REFUSES RATHER THAN GUESSES in both ambiguous cases. An empty `--note` is
+    the dangerous one: it reads like a wipe, it would append nothing, and
+    silently doing either is how this field lost data in the first place.
+    """
+    replace = getattr(args, 'note_replace', None)
+    if args.note is not None and replace is not None:
+        return ('--note and --note-replace were both passed and they mean '
+                'opposite things. Refusing rather than picking one: --note '
+                'APPENDS, --note-replace REPLACES the whole field.'), EXIT_COULD_NOT_RUN
+    if args.note is not None and not args.note.strip():
+        return ('--note was passed with nothing in it. It APPENDS, so this '
+                'would add nothing -- and it is not a way to clear the field '
+                'either. To actually clear it, say so: --note-replace ""'), EXIT_COULD_NOT_RUN
+    return None, None
+
+
 def payload(args, existing=None):
     mod = _lockmod()
     pid = sig = None
@@ -348,7 +418,7 @@ def payload(args, existing=None):
         'item': args.item if args.item is not None else prev.get('item'),
         'blocked_on': (args.blocked_on if args.blocked_on is not None
                        else prev.get('blocked_on')),
-        'note': args.note if args.note is not None else prev.get('note'),
+        'note': resolve_note(args, prev),
         'updated': time.strftime('%Y-%m-%dT%H:%M:%S'),
         'claude_pid': pid,
         'claude_start': sig,
@@ -361,6 +431,11 @@ def cmd_set(args):
     if args.state and args.state not in STATES:
         print('--state must be one of %s' % (STATES,))
         return EXIT_COULD_NOT_RUN
+    # CHECKED BEFORE THE FILE IS READ, so a refusal cannot leave a half-write.
+    _why, _rc = check_note_flags(args)
+    if _why:
+        print(_why)
+        return _rc
     # BLOCKED WITHOUT A BLOCKER IS A SILENCE, NOT A STATUS. The whole value of
     # this registry to Michael is knowing what is waiting on him; a `blocked`
     # row that does not say on what is a row he cannot act on.
@@ -409,6 +484,40 @@ def cmd_set(args):
     print('status written: %s' % written)
     print('  %s  %s  %s' % (body['session'], body['state'],
                             (body['task'] or '(no task)')[:90]))
+    # ── THE WRITE IS RE-READ, NOT ASSUMED ───────────────────────────────────
+    # The whole failure this field is famous for is a writer seeing a normal
+    # success line while the content was gone. "It exited 0" and "it stored
+    # what I sent" are two claims and only one of them was checked. So the
+    # appended text is confirmed FROM DISK and echoed back, and a mismatch is
+    # COULD NOT RUN rather than a quiet pass.
+    if args.note is not None or getattr(args, 'note_replace', None) is not None:
+        sent = args.note if args.note is not None else args.note_replace
+        stored = ''
+        try:
+            with io.open(written, encoding='utf-8') as fh:
+                stored = (json.load(fh) or {}).get('note') or ''
+        except Exception as exc:                                 # noqa: BLE001
+            print('  COULD NOT RE-READ the row just written (%s), so this '
+                  'write is UNVERIFIED rather than confirmed.' % exc)
+            return EXIT_COULD_NOT_RUN
+        if sent and sent not in stored:
+            print('  THE NOTE DID NOT LAND. The file was written and does not '
+                  'contain what was sent. Reporting COULD NOT RUN rather than '
+                  'success -- this is exactly the silent loss this field has '
+                  'already cost real messages to.')
+            return EXIT_COULD_NOT_RUN
+        print('  note %s and CONFIRMED by re-reading the file: %s'
+              % ('REPLACED' if args.note is None else 'APPENDED',
+                 (sent or '(cleared)').strip()[:120]))
+        if len(stored) > NOTE_WARN_CHARS:
+            print('  PRUNE THIS NOTE. It is %d characters and every reader '
+                  'prints only the first 100, so anything appended now is '
+                  'stored and delivered nowhere.' % len(stored))
+            print('    NOTHING WAS DROPPED to tell you this -- dropping the '
+                  'oldest entries would be the same silent loss one layer '
+                  'down. Prune deliberately:')
+            print('      python tools/sairn_status.py set '
+                  '--note-replace "<what is still live>"')
     if body['blocked_on']:
         print('  blocked on: %s' % body['blocked_on'])
     if body['claude_pid'] is None:
@@ -562,7 +671,11 @@ def main(argv=None):
     s.add_argument('--task', default=None)
     s.add_argument('--item', default=None)
     s.add_argument('--blocked-on', dest='blocked_on', default=None)
-    s.add_argument('--note', default=None)
+    s.add_argument('--note', default=None,
+                   help='APPEND to this session\'s note, stamped with the time')
+    s.add_argument('--note-replace', dest='note_replace', default=None,
+                   help='REPLACE the whole note. Also the sanctioned way to '
+                        'prune it -- pruning is decided, never a side effect')
     s.add_argument('--session', default=None)
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--self-check', action='store_true', dest='selfcheck')
