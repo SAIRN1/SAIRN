@@ -2283,6 +2283,19 @@
         "tests/run_reclassification_sweep_probe.py",
         "tools/reclassification_sweep.py"
       ]
+    },
+    {
+      "id": "cc-1790111149",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "file hover2 external defect record FILES: docs/defect-density-register.json",
+      "claimed_at": "2026-09-22T21:05:49Z",
+      "claimed_at_epoch": 1790111149.4306552,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/defect-density-register.json"
+      ]
     }
   ]
 }
