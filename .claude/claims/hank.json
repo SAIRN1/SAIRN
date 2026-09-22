@@ -2464,8 +2464,8 @@
       "task": "tlc model check remaining ten apps FILES: docs/spec/MCRoleGates.tla docs/spec/MCRoleGates.cfg tools/run_tlc.py",
       "claimed_at": "2026-09-22T10:23:08Z",
       "claimed_at_epoch": 1790072588.2962985,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:44:58Z",
       "files": [
         "docs/spec/MCRoleGates.cfg",
         "docs/spec/MCRoleGates.tla",
