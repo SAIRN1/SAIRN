@@ -2580,8 +2580,8 @@
       "task": "discharge fourth 2026-09-22T14:30:54Z obligation -- review the confidentiality flagger client-restriction signal. Review-only, no edits. FILES: docs/tier-a-reviews.json -- reads tools/confidentiality_candidate_flagger.py tests/confidentiality_flagger_asymmetry_review_probe.py",
       "claimed_at": "2026-09-22T14:50:23Z",
       "claimed_at_epoch": 1790088623.9722428,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:04:01Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
