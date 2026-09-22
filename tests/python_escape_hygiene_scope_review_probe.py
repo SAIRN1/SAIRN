@@ -78,14 +78,34 @@ worktree, and the checker and its probe are both run there.
         p = os.path.join(wt, CHECKER)
         src = io.open(p, encoding='utf-8').read()
         OLD = "PATTERNS = ('tools/*.py', 'tests/*.py', 'tests/**/*.py')"
-        if OLD not in src:
-            cannot(4, 'the PATTERNS tuple is not where this arm expects it')
+        NEW = "PATTERNS = ('tests/python_escape_hygiene.py',)"
+        # ── THE SABOTAGE IS VERIFIED TO HAVE LANDED, BY COUNT AND BY BYTES ──
+        # This arm shipped 2026-09-22 with `if OLD not in src` and nothing
+        # after the write, and tools/sabotage_control_check.py reported it
+        # UNGUARDED the same day. The report was RIGHT, and a presence check
+        # is the weaker half of why: it catches a rename of the anchor and is
+        # blind to an anchor that matches in several places, where
+        # `.replace()` would silently narrow only the first. A COUNT catches
+        # both. The verdict below is read off the exit codes of a checker that
+        # was supposed to have been narrowed -- so an anchor that stopped
+        # matching would leave this arm comparing a clean checker against
+        # itself and reporting THE CONTROL ALREADY CATCHES IT, which is the
+        # confident wrong answer this whole probe is about.
+        n = src.count(OLD)
+        if n != 1:
+            cannot(4, 'the PATTERNS tuple matches %d times, not once -- this '
+                      'arm cannot say which one it would have narrowed' % n)
             return
         # Not "scan nothing" -- that would be caught by the `if not seen` guard
         # cody already wrote. One real file is the honest narrowing: the check
-        # still runs, still passes, and covers 1 file instead of 466.
+        # still runs, still passes, and covers 1 file instead of the whole tree.
         io.open(p, 'w', encoding='utf-8', newline='\n').write(
-            src.replace(OLD, "PATTERNS = ('tests/python_escape_hygiene.py',)"))
+            src.replace(OLD, NEW))
+        after = io.open(p, encoding='utf-8').read()
+        if after == src or NEW not in after:
+            cannot(4, 'the narrowing did not land on disk -- nothing below '
+                      'would mean anything')
+            return
         code_n, out_n = run([sys.executable, CHECKER], cwd=wt)
         code_p, out_p = run([sys.executable, PROBE], cwd=wt)
         m = re.search(r'scanned: (\d+) file', out_n)
