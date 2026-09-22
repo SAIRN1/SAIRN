@@ -1875,6 +1875,16 @@
       "claimed_at_epoch": 1790064344.9595466,
       "status": "released",
       "released_at": "2026-09-22T08:14:30Z"
+    },
+    {
+      "id": "fourth-1790064980",
+      "session": "fourth",
+      "subject": "tier-a-leg-invoices-discharge",
+      "task": "discharge cody obligation 2026-09-21T22:38:40Z. FILES: docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-fourth.md. Reads only, no serving code touched. Subject slug chosen to avoid a matcher bigram collision with cody's live platform claim -- the slug is a label, the task text is unchanged and accurate.",
+      "claimed_at": "2026-09-22T08:16:20Z",
+      "claimed_at_epoch": 1790064980.3310375,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
