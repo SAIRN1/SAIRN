@@ -314,3 +314,65 @@ bucket tests like `'can read' in name`, any classifier whose branches are
 `if ... elif ... ` with no final `else` that records the leftover, and any place
 a **resource or agent NAME** is matched against arbitrary changed lines, commit
 messages or free-text summaries.
+
+## 25. A structured IDENTIFIER tokenised as prose, so the most precise reference is the one that collides
+An id — an ISO timestamp, a commit sha, a resource name, an obligation key — is
+split into words, bigrams or substrings and matched **partially**. Unlike item
+24, there is no context that would rescue it: an identifier has no word-level
+meaning to recover. `2026-09-22T12:02:38Z` is one thing or it is nothing;
+`2026`, `22t12` and `09` are not smaller facts about it.
+
+**THE SIGNATURE OF THIS CLASS, AND IT IS WHAT MAKES IT EXPENSIVE: naming the
+thing MORE precisely makes the collision MORE likely.** A vague task string
+slips through; the correct one, carrying the id that makes it identifiable at
+all, is refused. That inverts the incentive on exactly the field you most need
+people to fill in honestly — and the workaround that suggests itself, dropping
+or fuzzing the id, is worse than the block.
+
+**MEASURED: THREE INSTANCES IN ONE DAY, 2026-09-22, in two different gates.**
+
+1. **`sairn_claim.py`, an ISO timestamp as a bigram.** Two Tier A discharge
+   claims opened **one minute apart** — hank's `2026-09-22T12:02:38Z` and
+   Fourth's `2026-09-22T12:01:35Z` — and the matcher refused with
+   *`blocked by: shared phrase "2026 22t12"`*. The two pieces of work ran in
+   **opposite directions**: hank reviewing Fourth's change, Fourth reviewing
+   hank's. Disjoint file sets, opposite reviewer/author roles, and the only
+   thing in common was the minute. Recorded as tool-bugs item 6, instance 8 and
+   its fourth distinct mechanism.
+2. **`tier_a_review_gate.py`, a resource NAME in prose.** The Tier A resource
+   `quotes` — StoneDesk's money-bearing quotes — matched changed lines reading
+   `quoted_spans()`, *"prose quotes unevenly"* and *"inside a balanced
+   quotation"*, in a file about hover-auditor attribution.
+3. **The same gate again, hours later**, matching `sen_pay_rates` against a
+   docstring paragraph and a synthetic fixture page in
+   `tools/confidentiality_candidate_flagger.py` — a file with four `io.open()`
+   calls, all reads, and no path that touches any resource at all.
+
+**THE RULE, and it is one line plus a consequence.**
+
+**An identifier is matched WHOLE, by its own syntax, or not at all.** Recognise
+the shape before tokenising — `\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z` for a
+timestamp, `[0-9a-f]{7,40}` for a sha, the declared name list for a resource —
+and compare the unit. Never let a prefix, a bigram or a substring of one stand
+for it.
+
+**And the consequence, which is the part usually skipped: an identifier
+appearing in PROSE is a MENTION, not a USE.** A resource name in a docstring, a
+sha in a commit message, an obligation key in a sentence explaining why you are
+claiming something — none of these is the thing itself. Where a gate must scan
+free text, it has to decide which it has found, and the cheap honest version is
+to scan **code positions only** (comments and string bodies blanked) and treat
+a prose hit as a note rather than a trigger.
+
+**THE CONTROL SHAPE:** two ids that differ only outside the compared span —
+same day different minute, same sha prefix different commit, same word
+different resource — and an assertion that they do **not** match. Plus the
+mirror: the *same* id in two spellings (short sha vs full, with and without the
+trailing `Z`) asserting they **do**. Either arm alone passes on a rule that
+answers one way to everything.
+
+**WHERE TO LOOK:** any matcher that calls `.split()` on a task string, a commit
+message or a summary; any `word in text` over a name list; anything computing
+shared words, bigrams or Jaccard similarity between two free-text descriptions;
+and any gate whose trigger list contains names that are also ordinary English
+(`quotes`, `client`, `notes`, `account`, `message`).
