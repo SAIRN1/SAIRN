@@ -12043,7 +12043,7 @@
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
     },
     {
-      "commit": "8dc58571140a",
+      "commit": "34fadf4bf861",
       "date": "2026-09-22",
       "subject": "fix(xtenant): hank and I fixed the same branch within the hour -- hank's design kept, mine reduced to the residue it leaves",
       "files": [
