@@ -2443,8 +2443,8 @@
       "task": "tier-a-review-gate body-file flag for free text verdicts",
       "claimed_at": "2026-09-22T09:17:09Z",
       "claimed_at_epoch": 1790068629.473198,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T09:39:46Z"
     }
   ]
 }
