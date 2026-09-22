@@ -8540,6 +8540,39 @@ module.exports = async (req, res) => {
     // read them and can write the other two (routine execution) types.
     const ALF_MAR_ORDER_ROLES = { owner: true, nursing: true };
     const ALF_MAR_ENTRY_TYPES = ['medication_order', 'administration', 'count', 'reconciliation', 'assessment_refusal'];
+    // ── AN APPEND-ONLY TRAIL READ WITHOUT order= IS NOT "INSERTION ORDER" ──────
+    // Postgres makes no ordering promise on a SELECT that does not ask for one,
+    // and PostgREST passes that straight through: the rows come back in whatever
+    // order the plan produced. It LOOKS like insertion order on a small table
+    // because a seq scan usually returns heap order -- and stops looking like it
+    // the first time the planner picks an index, or a page gets reused. That is
+    // the worst failure shape available: correct for the whole of development,
+    // wrong in production, and silent in both.
+    //
+    // All SIX SAIRNcare append-only trails now order explicitly -- alf_mar here,
+    // then alf_incidents (:8923), alf_signals (:9117), alf_claim_routes (:9342),
+    // alf_staff_credentials (:9537), alf_op_audits (:9623). The count matters:
+    // the handoff that sent this work named three, and fixing three of six while
+    // calling the class done would have left an all-clear covering reads that
+    // were never touched. api/alf-append-only-read-order.test.js asserts all six
+    // from the shared TABLES list, so a seventh trail added later fails the arm
+    // until it is ordered too.
+    //
+    // DESC, not asc, and that is chosen against the consumer rather than by
+    // taste: every SAIRNcare renderer that sorts this data sorts it newest-first
+    // (sairncare.html sortByDateDesc at :2382, the incident sort at :4141, the
+    // credentials sort at :3929, the op-audit sort at :4254). Those sorts key on
+    // a DATE ONLY, so same-day entries tie and a stable sort leaves them in
+    // whatever order the server sent -- which is the same defect wearing a sort.
+    // Server-side desc makes the tie-break deterministic and agree with the
+    // direction the reader is already being shown. alf_claim_routes has no client
+    // sort at all (prRenderRecorded maps rows straight out), so for that one this
+    // is the ONLY ordering there is.
+    //
+    // Residual, stated rather than implied: a single-column order still ties when
+    // two rows share the timestamp to the microsecond. No read in this file uses
+    // a tiebreaker and this change does not introduce the first one; the exposure
+    // is a batch insert inside one transaction, where now() is identical.
     if (resource === 'alf_mar' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -8547,7 +8580,7 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Medication records are not available to your role' } });
         return;
       }
-      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data'), { headers });
+      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -8887,7 +8920,7 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The incident log is not available to your role' } });
         return;
       }
-      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data'), { headers });
+      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -9081,7 +9114,7 @@ module.exports = async (req, res) => {
     if (resource === 'alf_signals' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const r = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,signal_type,data,recorded_at'), { headers });
+      const r = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,signal_type,data,recorded_at&order=recorded_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) {
         res.status(200).json({ ok: true, data: [], provisioned: false, coverage: { have: 0, need: ALF_SIGNAL_TYPES.length } });
         return;
@@ -9306,7 +9339,7 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Billing is not available to your role' } });
         return;
       }
-      const r = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,service_month,data,decided_by,created_at'), { headers });
+      const r = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,service_month,data,decided_by,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -9501,7 +9534,7 @@ module.exports = async (req, res) => {
     if (resource === 'alf_staff_credentials' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,staff_id,record_type,data,recorded_by,created_at'), { headers });
+      const r = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&select=entry_id,staff_id,record_type,data,recorded_by,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -9587,7 +9620,7 @@ module.exports = async (req, res) => {
     if (resource === 'alf_op_audits' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const r = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by,reviewed_by,reviewed_at,created_at'), { headers });
+      const r = await fetch(rest('alf_op_audits?license_hash=eq.' + enc(licHash) + '&select=entry_id,record_type,observed_on,passed,data,recorded_by,reviewed_by,reviewed_at,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) {
         res.status(200).json({ ok: true, data: [], provisioned: false, summary: opAudit.summarise([]) });
         return;
