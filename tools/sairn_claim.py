@@ -261,6 +261,96 @@ def apps_in(*parts):
     return words & app_names()
 
 
+# ── THE PRIMARY CHECK IS THE FILE SET, AND THE LEXICAL ONE IS A WARNING ────
+# (2026-09-22. The measurement is below and it is the whole argument.)
+#
+# Every rule in block_reason() answers "do these two strings talk about the
+# same thing". That is a proxy, and the thing it is a proxy FOR is "would these
+# two sessions edit the same file". The convention that makes the real question
+# answerable arrived on 2026-09-21: claims now carry `FILES: <paths>` in the
+# task text. 31 of the most recent claims declare one.
+#
+# MEASURED over every cross-session pair among the claims that declare files
+# -- 318 pairs, using the tool's own block_reason():
+#
+#     153 pairs BLOCK today
+#      43 of those have INTERSECTING file sets   <- real, still blocked
+#     110 of those have DISJOINT file sets       <- 72%, false, now cleared
+#
+# The 110 are not marginal. They include `shared phrase: "html tests"` between
+# a SAIRNlegacy hydration claim and a SAIRNlaw trust-clearance claim, and
+# `same app: sairnlegacy` between a hydration claim and one whose declared
+# files are three api/ test files in other apps entirely. That second one
+# blocked two different sessions three times each in a single night.
+#
+# ── WHY THIS IS NOT "LOOSENING THE MATCHER" ────────────────────────────────
+# This file already records, twice, that the honest fix is always a NARROWER
+# NEW SIGNAL and never a looser existing one, and that every gap resolves to
+# CLEAR rather than to a doubt. Both still hold. The file set is a narrower and
+# STRONGER signal than any word overlap: it is what the two sessions actually
+# said they would touch. What is being removed is not a check -- it is a proxy,
+# in the cases where the real evidence is present and says the proxy was wrong.
+#
+# ── AND IT IS THREE STATES, NOT TWO, WHICH IS THE PART THAT KEEPS IT SAFE ──
+#   BOTH claims declare files, and they INTERSECT   -> refuse. The strongest
+#                                                      signal this tool has
+#                                                      ever had.
+#   BOTH declare files, and they are DISJOINT       -> no block. The lexical
+#                                                      hit is printed as a
+#                                                      WARNING so nothing is
+#                                                      hidden.
+#   EITHER declares nothing                          -> COULD NOT TELL. The
+#                                                      lexical matcher decides,
+#                                                      byte-for-byte as before.
+#
+# The third state is why this cannot weaken anything by accident. 774 of the
+# 805 claims in the record declare no files; every one of them keeps exactly
+# the behaviour it has today, and the tool SAYS SO in its output rather than
+# leaving a reader to assume the file check ran.
+#
+# ── THE INCENTIVE THIS CREATES, STATED BECAUSE IT IS REAL ──────────────────
+# Making the file set authoritative rewards under-declaring it. That is the
+# same failure as rewording a task string past the matcher, in a new costume,
+# and PR 4.3 forbids one so it forbids the other. Two things are done about it
+# and neither is sufficient alone: the parsed set is STORED on the claim record
+# (`files`), so a later audit can compare declared paths against what the
+# session actually changed; and a claim that declares nothing is named in the
+# output every time, so "no files declared" is visible rather than silent.
+FILES_DECL = re.compile(r'FILES:\s*(.*?)(?:\s+--\s|$)', re.I | re.S)
+# A path is a token carrying a dot-extension. Deliberately NOT "any word with a
+# slash": `docs/` alone is a directory claim this tool cannot reason about, and
+# guessing at it would put the file check back into the proxy business.
+FILE_TOKEN = re.compile(r'[A-Za-z0-9_./\\-]+\.[A-Za-z0-9]{1,5}')
+
+
+def declared_files(task):
+    """The file set a claim's task DECLARES, or None when it declares none.
+
+    None and empty are different and the difference decides everything below:
+    None means "this claim gave no file evidence", empty would mean "it gave
+    evidence that it touches nothing". Only the first is reachable, and it is
+    the one that must fall back to the lexical matcher rather than to CLEAR.
+    """
+    m = FILES_DECL.search(task or '')
+    if not m:
+        return None
+    found = {f.replace('\\', '/') for f in FILE_TOKEN.findall(m.group(1))}
+    return found or None
+
+
+def file_verdict(mine_task, their_task):
+    """('refuse'|'clear'|'unknown', shared_paths).
+
+    'unknown' is the honest answer when either side declared nothing, and the
+    caller must then fall through to the lexical matcher unchanged.
+    """
+    a, b = declared_files(mine_task), declared_files(their_task)
+    if a is None or b is None:
+        return 'unknown', set()
+    shared = a & b
+    return ('refuse' if shared else 'clear'), shared
+
+
 def block_reason(mine_subj, mine_task, their_subj, their_task):
     """Why these two claims collide, or None if they only share vocabulary.
 
@@ -1060,6 +1150,20 @@ def cmd_check(args, quiet=False):
         # tool is that a human reads the other session's actual task rather
         # than trusting a token match either way.
         reason = block_reason(subj, task, c.get('subject'), c.get('task'))
+        # ── THE FILE SET DECIDES WHEN BOTH SIDES GAVE ONE (2026-09-22) ────
+        # See the header above declared_files(). A lexical hit over DISJOINT
+        # declared files is demoted to the warning list rather than blocking;
+        # a file intersection blocks even when no word matched, which is the
+        # direction this change makes STRICTER and the reason it is not a
+        # loosening.
+        fv, fshared = file_verdict(task, c.get('task'))
+        if fv == 'refuse':
+            reason = ('same declared FILES: ' + ', '.join(sorted(fshared))
+                      + ((' (and ' + reason + ')') if reason else ''))
+        elif fv == 'clear' and reason:
+            weak.append((c, shared, 'LEXICAL ONLY -- ' + reason
+                         + '; the declared file sets are DISJOINT'))
+            continue
         (blocking if reason else weak).append((c, shared, reason))
     if blocking:
         if not quiet:
@@ -1110,14 +1214,41 @@ def cmd_check(args, quiet=False):
                 print('  `claim` will REFUSE this. Either carry on under the claim you')
                 print('  already hold, or release it first so the record says one thing.')
         if weak:
-            print('\nNote: %d active claim(s) share WORDS with this task but no '
-                  'app, file, subject or phrase, so they are NOT blocking. '
-                  'Shown so you can judge, not because the tool thinks they '
-                  'overlap:' % len(weak))
-            for c, shared, _reason in weak:
-                print('  %s: %s -- %s  (shares only: %s)'
-                      % (c.get('session'), c.get('subject'), c.get('task'),
-                         ', '.join(sorted(shared))))
+            # ── TWO KINDS OF WEAK NOW, AND ONE SENTENCE CANNOT COVER BOTH ──
+            # (2026-09-22.) This printed "share WORDS ... but no app, file,
+            # subject or phrase" for everything in the list. That is still true
+            # of a plain vocabulary overlap, and it became FALSE the moment a
+            # lexical BLOCK could be demoted here on disjoint file sets: for
+            # those the phrase matched, and saying it did not would be this
+            # tool telling a reader the opposite of why the entry is in front
+            # of them. Caught by the probe asserting the demoted reason reaches
+            # the output -- the arm went red on a sentence, not on a verdict,
+            # which is the only reason it was noticed at all.
+            demoted = [w for w in weak if w[2]]
+            plain = [w for w in weak if not w[2]]
+            if demoted:
+                print('\nNote: %d active claim(s) MATCHED the word matcher and are '
+                      'NOT blocking, because the FILES each claim declares do not '
+                      'overlap. The match is shown so you can overrule it -- a '
+                      'declared file list is only as good as the session that '
+                      'wrote it:' % len(demoted))
+                for c, shared, reason in demoted:
+                    print('  %s: %s -- %s' % (c.get('session'), c.get('subject'),
+                                              c.get('task')))
+                    print('      %s' % reason)
+                    print('      your files : %s'
+                          % ', '.join(sorted(declared_files(task) or [])))
+                    print('      their files: %s'
+                          % ', '.join(sorted(declared_files(c.get('task')) or [])))
+            if plain:
+                print('\nNote: %d active claim(s) share WORDS with this task but no '
+                      'app, file, subject or phrase, so they are NOT blocking. '
+                      'Shown so you can judge, not because the tool thinks they '
+                      'overlap:' % len(plain))
+                for c, shared, _reason in plain:
+                    print('  %s: %s -- %s  (shares only: %s)'
+                          % (c.get('session'), c.get('subject'), c.get('task'),
+                             ', '.join(sorted(shared))))
         stale = [c for c in load_all(from_origin=not args.no_fetch)
                  if c.get('session') != me and c.get('status') == 'active'
                  and not is_active(c) and overlaps(c, subj, task)]
@@ -1360,6 +1491,16 @@ def cmd_claim(args):
         'claimed_at_epoch': ts,
         'status': 'active',
         'released_at': None,
+        # ── THE DECLARED FILE SET, STORED RATHER THAN RE-PARSED (2026-09-22) ──
+        # The matcher reads it out of the task string at compare time, so this
+        # field is not what it acts on -- it is what makes the declaration
+        # AUDITABLE. Making the file set authoritative rewards under-declaring
+        # it, which is rewording-past-the-matcher in a new costume; the answer
+        # is that a later pass can compare these paths against what the session
+        # actually changed in the commits it made while holding the claim.
+        # `null` means the task declared none, which is the state that keeps a
+        # claim on the lexical path and is worth being able to count.
+        'files': sorted(declared_files(task) or []) or None,
     })
     ok = save_mine(doc, 'chore(claims): %s claims %s -- %s' % (session_name(), subj, task),
                    push=not args.no_push)
