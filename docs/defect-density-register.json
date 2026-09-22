@@ -9527,6 +9527,63 @@
       "recurrence_open": "The findings that were held have NOT been back-filled -- this adds the channel, it does not recover what went down it. How many there are is known only to the hover role, and asking for them is a separate action. And the arm reads the hover skill only; a role whose instructions live somewhere else could hit the identical gap with nothing to catch it."
     },
     {
+      "commit": "4b5260f5e3a5",
+      "date": "2026-09-21",
+      "subject": "fix(sairnlegacy): merchandise reservation has been refused 401 in production since the session gate landed, and a refused reservation was left showing Reserved",
+      "files": [
+        "sairnlegacy.html",
+        "tests/run_leg_session_gate_sabotage_probe.py",
+        "tests/sairnlegacy_fault_probe.py",
+        "tests/sairnlegacy_reservation_lock.js"
+      ],
+      "lines_added": 256,
+      "lines_removed": 20,
+      "app": "sairnlegacy",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "sairnlegacy.html confirmReserve() writes leg_merch_units through a direct fetch rather than sdnData(), deliberately, because it needs the real 409 ALREADY_RESERVED status that sdnData() collapses to null. The LEG_RESOURCES session gate shipped its client half by attaching X-SD-Auth inside sdnData(), so this one call site never got it and posted the licence key alone to a resource that now requires a session: 401 NO_SESSION for every user since the gate landed, i.e. merchandise reservation was broken in production. Reproduced against the DEPLOYED page and endpoint, and in the suite before the fix existed. SECOND HALF: on failure the function left its optimistic local write in place, so the device showed Reserved with nothing on the server -- the two-devices-one-casket state the reservation lock exists to prevent, reached by being refused and ignoring it. Fixed by sending the token at that call site and by rolling back on an explicit 4xx refusal while deliberately NOT rolling back on 5xx or a thrown request, which mean we could not tell.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "760a34a9b014",
+        "date": "2026-09-21",
+        "subject": "fix(sd-data): 36 SAIRNlegacy tables, including the chain-of-custody log for human remains, were authorised by the licence key alone",
+        "lag_days": 0
+      },
+      "citation_note": "The nearest section is 1.11, a check that depends on another tool must fail CLOSED when that tool is absent -- and it does not fit: nothing here was absent and nothing reported a pass it never performed. The shape is a shared TRANSPORT being fixed while a deliberate bypass of that transport was not, which the process rules do not state. Same gap the sd_exec_msgs record named from the other direction: a member that does not inherit its group's property.",
+      "contributing_factors": [
+        {
+          "factor": "A security fix changed a shared transport and the one call site that bypasses that transport on purpose was not checked against it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The token is attached explicitly at that call site, and tests/sairnlegacy_fault_probe.py mutation 16 plants its removal"
+        },
+        {
+          "factor": "The reservation path treated every failure as recoverable-local, so an explicit refusal left the device asserting a lock the server had denied",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rollback on 4xx only, sharing one undoLocalReservation() with the 409 path so the two cannot drift; both directions planted as mutations 17 and 18"
+        },
+        {
+          "factor": "No suite drove the headers that call site actually sends -- the existing 47 assertions exercised its rollback logic thoroughly and never looked at the request",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Section 7 of tests/sairnlegacy_reservation_lock.js asserts the request carries the session token, written and observed RED against the shipped page before the fix"
+        },
+        {
+          "factor": "The gate author ran a live probe that verified refusals and a real session reading, which cannot see a client call site that was never exercised",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Stated rather than actioned: no live probe of an endpoint can enumerate the callers of that endpoint inside a 315KB page. It was found by a reviewer reading every call site, which is what the independent-review obligation is for, and it worked."
+        }
+      ],
+      "recurrence_open": "Every app has a shared sdnData()-style transport and an unknown number of deliberate bypasses of it. Nothing enumerates those bypasses, and the next gate that changes a transport will have the same blind spot. sairnlegacy is now known to have exactly two data-endpoint call sites; no other app has been counted."
+    },
+    {
       "commit": "4f4afc8a113f",
       "date": "2026-09-21",
       "subject": "fix(monitoring): the trapdoor detector shared the blind spot it exists to catch, and watched 6 of 16 apps",
@@ -10281,63 +10338,6 @@
       "recurrence_open": "`hours` is unchecked at the SERVER and hours 0 produces the identical $0.00 line -- asserted as still-open by section 5 of tests/sairnlaw_billable_rate.js so the index row cannot go stale, but NOT fixed. The `Number(x)||0`-into-an-arithmetic-total checker does not exist, so the same shape in the other billing apps is unmeasured. And the LEDES export named in the summary is still not built."
     },
     {
-      "commit": "4b5260f5e3a5",
-      "date": "2026-09-21",
-      "subject": "fix(sairnlegacy): merchandise reservation has been refused 401 in production since the session gate landed, and a refused reservation was left showing Reserved",
-      "files": [
-        "sairnlegacy.html",
-        "tests/run_leg_session_gate_sabotage_probe.py",
-        "tests/sairnlegacy_fault_probe.py",
-        "tests/sairnlegacy_reservation_lock.js"
-      ],
-      "lines_added": 256,
-      "lines_removed": 20,
-      "app": "sairnlegacy",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "sairnlegacy.html confirmReserve() writes leg_merch_units through a direct fetch rather than sdnData(), deliberately, because it needs the real 409 ALREADY_RESERVED status that sdnData() collapses to null. The LEG_RESOURCES session gate shipped its client half by attaching X-SD-Auth inside sdnData(), so this one call site never got it and posted the licence key alone to a resource that now requires a session: 401 NO_SESSION for every user since the gate landed, i.e. merchandise reservation was broken in production. Reproduced against the DEPLOYED page and endpoint, and in the suite before the fix existed. SECOND HALF: on failure the function left its optimistic local write in place, so the device showed Reserved with nothing on the server -- the two-devices-one-casket state the reservation lock exists to prevent, reached by being refused and ignoring it. Fixed by sending the token at that call site and by rolling back on an explicit 4xx refusal while deliberately NOT rolling back on 5xx or a thrown request, which mean we could not tell.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "760a34a9b014",
-        "date": "2026-09-21",
-        "subject": "fix(sd-data): 36 SAIRNlegacy tables, including the chain-of-custody log for human remains, were authorised by the licence key alone",
-        "lag_days": 0
-      },
-      "citation_note": "The nearest section is 1.11, a check that depends on another tool must fail CLOSED when that tool is absent -- and it does not fit: nothing here was absent and nothing reported a pass it never performed. The shape is a shared TRANSPORT being fixed while a deliberate bypass of that transport was not, which the process rules do not state. Same gap the sd_exec_msgs record named from the other direction: a member that does not inherit its group's property.",
-      "contributing_factors": [
-        {
-          "factor": "A security fix changed a shared transport and the one call site that bypasses that transport on purpose was not checked against it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The token is attached explicitly at that call site, and tests/sairnlegacy_fault_probe.py mutation 16 plants its removal"
-        },
-        {
-          "factor": "The reservation path treated every failure as recoverable-local, so an explicit refusal left the device asserting a lock the server had denied",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Rollback on 4xx only, sharing one undoLocalReservation() with the 409 path so the two cannot drift; both directions planted as mutations 17 and 18"
-        },
-        {
-          "factor": "No suite drove the headers that call site actually sends -- the existing 47 assertions exercised its rollback logic thoroughly and never looked at the request",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Section 7 of tests/sairnlegacy_reservation_lock.js asserts the request carries the session token, written and observed RED against the shipped page before the fix"
-        },
-        {
-          "factor": "The gate author ran a live probe that verified refusals and a real session reading, which cannot see a client call site that was never exercised",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "Stated rather than actioned: no live probe of an endpoint can enumerate the callers of that endpoint inside a 315KB page. It was found by a reviewer reading every call site, which is what the independent-review obligation is for, and it worked."
-        }
-      ],
-      "recurrence_open": "Every app has a shared sdnData()-style transport and an unknown number of deliberate bypasses of it. Nothing enumerates those bypasses, and the next gate that changes a transport will have the same blind spot. sairnlegacy is now known to have exactly two data-endpoint call sites; no other app has been counted."
-    },
-    {
       "commit": "eea7606e2159",
       "date": "2026-09-21",
       "subject": "fix(tests): the UNGUARDED-overwrite detector was a regex that could NEVER match",
@@ -10449,6 +10449,127 @@
         }
       ],
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
+    },
+    {
+      "commit": "98daea85d518",
+      "date": "2026-09-22",
+      "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
+      "files": [
+        "api/_lib/employee-lifecycle.js",
+        "api/_lib/last-admin-sole-role.test.js",
+        "tests/run_last_admin_sole_role_sabotage_probe.py",
+        "tests/run_solerole_validation_sabotage_probe.py"
+      ],
+      "lines_added": 362,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "api/_lib/employee-lifecycle.js setActive() narrows the last-admin count to [soleRole] when an app names one, and nothing validated that the name was a real provisioning role. THE FAILURE WAS PERMISSIVE, which is the opposite of what the only comment describing the scenario said: guardRoles matches no row, activeProvisioners counts ZERO, and the refusal condition ALSO tests guardRoles.indexOf(target.role) !== -1 -- false for every real row -- so the branch is UNREACHABLE. Driven against the real engine before the fix: roster of one post.govern and one post.govern.deputy, soleRole 'post.governor' (one letter), caller the deputy, target the governor, result 200 WITH THE PATCH SENT. The licence reaches zero governors and bootstrap still 409s because it does not filter on active, which is the SD-AUDIT-2026 loss reached through a typo rather than through a missing guard. Five endpoints pass this value as a hand-written literal that must agree with a role vocabulary kept in ROLES_BY_APP, in each schema check constraint and in each app's capability list. Now refused 500 GUARD_MISCONFIGURED before the roster is read, as a RETURN rather than a throw because every endpoint's catch would relabel a throw 502 'Upstream connection error -- try again'.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "2cb6460dc5c3",
+        "date": "2026-09-21",
+        "subject": "feat(sairnfreedom): per-employee credentials end to end -- and setup could empty a post of its last governor, on every app",
+        "lag_days": 1
+      },
+      "citation_note": "ARGUABLE and close. 1.11 is a check that cannot run being folded into a pass. Here the check RAN, on a set that could not contain its subject, and produced a pass -- could-not-answer folded into permitted, one level in from tool availability. The fix is the rule's prescription exactly: say which value is wrong, say the check did not run, and fail.",
+      "contributing_factors": [
+        {
+          "factor": "The guard narrows to a set built from one caller-supplied string, and both the count and the membership test are derived from that same set -- so a wrong value makes the guard vacuous rather than wrong, and a vacuous guard is indistinguishable from a satisfied one at every call site.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "soleRole is validated against provisioningRoles before anything else happens, and a mismatch is refused 500 GUARD_MISCONFIGURED naming the bad value and the real roles"
+        },
+        {
+          "factor": "The value is a hand-written literal repeated in five endpoints and has to agree with a role vocabulary kept in three other places. Nothing generates any of them from any other.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "generate the schema check constraint and each app capability list from ROLES_BY_APP rather than maintaining four copies; recorded, not done here"
+        },
+        {
+          "factor": "The only place on the platform that named this scenario described the OPPOSITE consequence -- a static arm told its reader the guard would refuse every deactivation, the over-restrictive failure. A reader who hit it and believed it would have treated a trapdoor as an inconvenience.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the arm message and mutation 3 of the existing sabotage probe are both corrected to the permissive direction, and six new arms drive it rather than asserting it in prose"
+        },
+        {
+          "factor": "The existing static arm parses const SOLE_ROLE and the call site with a regex and covers only endpoints with MORE THAN ONE provisioning role, so a single-role endpoint, a non-literal value or a spelling the regex misses were all invisible.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the validation is at runtime in the shared engine, which is where the behaviour is actually decided, and covers all ten callers rather than the parseable subset"
+        }
+      ],
+      "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
+    },
+    {
+      "commit": "e9a613de4a58",
+      "date": "2026-09-22",
+      "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
+      "files": [
+        "api/_lib/employee-lifecycle-wiring.test.js",
+        "api/_lib/setup-demotion-guard.test.js",
+        "api/grd-auth.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "tests/run_setup_demotion_sabotage_probe.py"
+      ],
+      "lines_added": 547,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "The last-admin guard watches DEACTIVATION and not the role change that reaches the identical end state. Every setup on this platform upserts on (license_hash, employee_id) writing the role column, so demoting the last holder of a sole role empties the licence of provisioners through a door nothing was standing at -- zero active owners, with bootstrap still answering 409 ALREADY_PROVISIONED because it deliberately does not filter on active, so there is no route back through the app. MEASURED across every api/*-auth.js: 17 setup paths, ONE carried a guard (api/sf-auth.js, written the same day by the session whose review surfaced this), 16 did not, and FOUR were REACHABLE -- api/grd-auth.js, api/sb-auth.js, api/scp-auth.js and api/sd-auth.js each declare SOLE_ROLE 'owner' (so their set_active guard counts owners only) AND each setup upserts writing role. Those four are the same apps commit 591531ce hardened against DEACTIVATION hours earlier. Closed with one shared soleRoleDemotionRefusal() in api/_lib/employee-lifecycle.js wired into all four, refusing 409 LAST_ADMIN before the write, allowing promotions and PIN resets, and refusing 500 rather than counting zero when soleRole names no real role.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "591531ce6fd6",
+        "date": "2026-09-21",
+        "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
+        "lag_days": 1
+      },
+      "citation_note": "ARGUABLE. 1.11 is about could-not-run being folded into a pass; the closest fit here is that an absent control is indistinguishable from a present one at the call site -- the same citation c98b5d674c76 and the LEG_RESOURCES record both took for a gate that does not exist. What makes it arguable rather than clean is that a control DID exist and was correct; it was simply pointed at one of the two routes to the same state.",
+      "contributing_factors": [
+        {
+          "factor": "The guard is keyed on the ACTION (deactivation) rather than on the STATE it protects (a licence with at least one active sole-role holder). Any other write reaching the same state is outside it by construction, and setup writes the role column on a conflict key that makes it an update.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "a second guard on the setup route; the residual that the STATE is still protected by two action-shaped checks rather than one invariant is recorded, not closed"
+        },
+        {
+          "factor": "591531ce hardened four apps against deactivation and did not ask what else reaches zero owners. The demotion route was named in the sf-auth work the same day and reported as open elsewhere, which is how it was found -- by a review quantifying somebody else stated residual rather than by a sweep.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "an arm derives the set of endpoints that name a sole role AND upsert a role in setup, so a FIFTH such app cannot appear unguarded and unnoticed"
+        },
+        {
+          "factor": "Nothing drove setup with a role change at all. The existing suites drive set_active, and a setup that demotes looks exactly like a setup that provisions from the outside.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "twelve arms drive the four REAL handlers end to end on the demotion, the two-owner case and a fresh provision, asserting the upsert was NOT sent rather than reading the status"
+        },
+        {
+          "factor": "My own first wiring arms asserted that the guard function NAME appeared in each setup block. The sabotage probe planted a short-circuited call -- name present, call disabled -- and all four went silent.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "replaced with arms that drive the handler; the probe mutation that killed them is kept as arms 6-9, one endpoint at a time"
+        }
+      ],
+      "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     }
   ],
   "started": "2026-09-09",
