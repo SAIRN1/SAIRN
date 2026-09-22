@@ -11456,6 +11456,59 @@
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
     },
     {
+      "commit": "e312f2e8f1e3",
+      "date": "2026-09-22",
+      "subject": "fix(sairnfreedom): donor identity and member identity were still reachable on the licence key alone -- the three the last batch named and left",
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 69,
+      "lines_removed": 7,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sf_donor_awards and sf_members were reachable for read AND write on the SAIRNfreedom licence key alone, with no employee session. sf_donor_awards rows are {donorKey, tierId, state, updated} -- the donorKey identifies a donor and tierId resolves through sf_donor_tiers to a giving amount, so the row asserts THIS NAMED PERSON GAVE AT LEAST THIS MUCH. That is the same disclosure sf_donations was gated for on 2026-09-22, on the stated ground that donor identity is not public by default; gating donations and leaving awards open left the same fact reachable through a second door. sf_members carries member identity and the gate's own comment already named it an acknowledged gap rather than a decision. The licence key is a BEARER CREDENTIAL shipped to the browser, so it was the entire boundary on both.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both resources have been ungated since SF_RESOURCES was written; no commit introduced this as a regression. The 2026-09-22 batch gated eleven siblings and explicitly recorded these as left out, so the gap was documented before it was closed rather than discovered."
+      },
+      "citation_note": "No standing rule names 'a resource gated for a fact reachable through an ungated sibling'. PR 1.11 is about a check failing open when a dependency is absent; this is a gate that was complete about the resource it named and incomplete about the FACT it was protecting. The nearest recorded precedent is the SV_RESOURCES sweep the same day, which was a whole-map absence rather than a partial one.",
+      "contributing_factors": [
+        {
+          "factor": "The gate was chosen RESOURCE BY RESOURCE against a list of sensitive fields, not against the FACTS the resources jointly disclose -- sf_donations and sf_donor_awards say the same thing about the same person and only one was gated",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both added to SD_SESSION_GATED, and sf_donor_tiers with them so an opaque tierId on an awards row cannot be resolved back to an amount"
+        },
+        {
+          "factor": "The earlier batch DOCUMENTED the gap in a code comment and an open-work row rather than closing it, which made it visible but left it live",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed here; the anti-sweep arm that guarded the batch boundary refused the change and named both things to do, which is the control working"
+        },
+        {
+          "factor": "The two tables that must agree -- SD_SESSION_GATED and the resource-to-app map -- are maintained by hand, and a resource in one but not the other fails CLOSED and confusingly rather than open",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both edited in the same change and verified after: gated 14, app-mapped 14, empty differences in both directions. api/sd-data-sf-session-gate.test.js asserts the two lists AGREE rather than asserting either one contents."
+        },
+        {
+          "factor": "Closing the gate widens an outage nobody can clear from a clone -- sql/sairnfreedom_employee_auth_schema.sql has still not been run, so every gated SF resource answers 403",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Not closed here and not closeable from a clone: the SQL run is Michael only. Recorded so the outage is a stated consequence of the fix rather than a surprise, the same trade SAIRNvet and the earlier SF batch took the same day."
+        }
+      ],
+      "recurrence_open": "This closes two of the three named resources plus one supporting table. sf_signatures and 21 other sf_ resources remain ungated, and the gate comment still says that is a decision nobody has made rather than a decision that they are fine. Nothing sweeps for the wider class either -- a fact disclosed by an ungated resource that a gated sibling was protecting."
+    },
+    {
       "commit": "bd7f90fcce71",
       "date": "2026-09-22",
       "subject": "fix(sairnsenior): the reclassification sweep reads its corpus now -- DEEM 1, PERMIT 5, where it had printed zero from every directory it was ever run in",
@@ -11613,62 +11666,6 @@
       "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
       "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
       "factors_unknown_reason": "--rule"
-    },
-    {
-      "commit": "f4fc75a9884f",
-      "date": "2026-09-22",
-      "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
-      "files": [
-        "api/_lib/mech-redact.js",
-        "api/_lib/mech-redact.test.js",
-        "api/sd-data.js",
-        "sairnmechanical.html",
-        "tests/mech_docs_redaction_wiring_probe.py"
-      ],
-      "lines_added": 712,
-      "lines_removed": 4,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "mech_docs stored and SERVER-SYNCED raw AI-extracted document text verbatim, with no redaction of any kind. sairnmechanical.html's scanDoc() asks the model, in its own words, to 'EXTRACT: Every field -- names, dates, amounts, codes, reference numbers' from photographed work orders, maintenance contracts, permits, inspection reports and INVOICES; saveDoc() then stored el.textContent unchanged as {id,date,text} and mechPushRecord pushed it to the mech_docs table. A customer's name, site address and phone number reached a server because a technician photographed a work order. SECOND HALF: the toast said 'Saved on this device' ONE LINE AFTER the push, and the comment above the function still asserted 'there is no server data layer for this app yet' -- true when written, false since mech_docs was registered in api/_resources/sairnmechanical.js.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The verbatim store shipped with the scan feature; no commit introduced it as a regression. The stale 'no server data layer' comment became false when mech_docs was registered, which is a separate commit, but the unredacted storage was never correct."
-      },
-      "citation_note": "No standing rule covers 'model output containing PII is persisted unredacted'. The nearest are the fabrication rules, which are about numbers with no function behind them, and this is the opposite shape -- a real function whose output was never filtered. The stale-comment half IS covered by the eighth cross-domain discipline (nothing announces the day a claim stops being true), but the primary defect is not.",
-      "contributing_factors": [
-        {
-          "factor": "The prompt EXPLICITLY asks for names and amounts, and nothing between the model answer and the store filtered any of it",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "api/_lib/mech-redact.js, applied on the server write path in api/sd-data.js so text reaching the table has been through it regardless of caller, with the client calling the same rules so the local row is redacted too"
-        },
-        {
-          "factor": "A client-side-only redaction would have been a convenience rather than a boundary, and the app is the only caller today so it would have looked sufficient",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The pass runs server-side on the mech_docs branch; the client copy is explicitly documented as the convenience and the server as the boundary"
-        },
-        {
-          "factor": "The toast and the function comment both understated where the document went, so nothing on screen or in the source would have prompted anyone to ask",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Toast now names the sync and the limits; the stale comment is replaced with the record of what changed"
-        },
-        {
-          "factor": "REDACTION CANNOT BE COMPLETE AND A PASS THAT IMPLIED OTHERWISE WOULD BE WORSE THAN NONE -- a name in ordinary prose is not findable by regex without a dictionary that also redacts Carrier, Trane and York",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "complete is a constant false, the limits travel on the stored row, and a suite arm ASSERTS that a prose name survives so the documented limit cannot quietly become aspirational. The residual exposure is real and disclosed rather than closed."
-        }
-      ],
-      "recurrence_open": "This covers mech_docs. Nothing sweeps the platform for OTHER paths that persist raw model output -- every app with a scan, extract or summarise feature is the same shape, and no tool enumerates them."
     },
     {
       "commit": "d8529ad5732d",
@@ -11882,6 +11879,62 @@
         }
       ],
       "recurrence_open": "Other probes in tests/ carry string anchors into files they do not own. Nothing sweeps for anchors that no longer match; this one was found because its arm was red, which only works for anchors inside a harness that reports ANCHOR-0."
+    },
+    {
+      "commit": "f4fc75a9884f",
+      "date": "2026-09-22",
+      "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/_lib/mech-redact.test.js",
+        "api/sd-data.js",
+        "sairnmechanical.html",
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 712,
+      "lines_removed": 4,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "mech_docs stored and SERVER-SYNCED raw AI-extracted document text verbatim, with no redaction of any kind. sairnmechanical.html's scanDoc() asks the model, in its own words, to 'EXTRACT: Every field -- names, dates, amounts, codes, reference numbers' from photographed work orders, maintenance contracts, permits, inspection reports and INVOICES; saveDoc() then stored el.textContent unchanged as {id,date,text} and mechPushRecord pushed it to the mech_docs table. A customer's name, site address and phone number reached a server because a technician photographed a work order. SECOND HALF: the toast said 'Saved on this device' ONE LINE AFTER the push, and the comment above the function still asserted 'there is no server data layer for this app yet' -- true when written, false since mech_docs was registered in api/_resources/sairnmechanical.js.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The verbatim store shipped with the scan feature; no commit introduced it as a regression. The stale 'no server data layer' comment became false when mech_docs was registered, which is a separate commit, but the unredacted storage was never correct."
+      },
+      "citation_note": "No standing rule covers 'model output containing PII is persisted unredacted'. The nearest are the fabrication rules, which are about numbers with no function behind them, and this is the opposite shape -- a real function whose output was never filtered. The stale-comment half IS covered by the eighth cross-domain discipline (nothing announces the day a claim stops being true), but the primary defect is not.",
+      "contributing_factors": [
+        {
+          "factor": "The prompt EXPLICITLY asks for names and amounts, and nothing between the model answer and the store filtered any of it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "api/_lib/mech-redact.js, applied on the server write path in api/sd-data.js so text reaching the table has been through it regardless of caller, with the client calling the same rules so the local row is redacted too"
+        },
+        {
+          "factor": "A client-side-only redaction would have been a convenience rather than a boundary, and the app is the only caller today so it would have looked sufficient",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The pass runs server-side on the mech_docs branch; the client copy is explicitly documented as the convenience and the server as the boundary"
+        },
+        {
+          "factor": "The toast and the function comment both understated where the document went, so nothing on screen or in the source would have prompted anyone to ask",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Toast now names the sync and the limits; the stale comment is replaced with the record of what changed"
+        },
+        {
+          "factor": "REDACTION CANNOT BE COMPLETE AND A PASS THAT IMPLIED OTHERWISE WOULD BE WORSE THAN NONE -- a name in ordinary prose is not findable by regex without a dictionary that also redacts Carrier, Trane and York",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "complete is a constant false, the limits travel on the stored row, and a suite arm ASSERTS that a prose name survives so the documented limit cannot quietly become aspirational. The residual exposure is real and disclosed rather than closed."
+        }
+      ],
+      "recurrence_open": "This covers mech_docs. Nothing sweeps the platform for OTHER paths that persist raw model output -- every app with a scan, extract or summarise feature is the same shape, and no tool enumerates them."
     },
     {
       "commit": "f9e9628f4762",
