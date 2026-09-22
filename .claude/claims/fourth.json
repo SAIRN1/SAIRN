@@ -1970,6 +1970,17 @@
       "status": "released",
       "released_at": "2026-09-22T10:59:11Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790074774",
+      "session": "fourth",
+      "subject": "hover-multilog-selflog-fix",
+      "task": "apply hover2's tested multi-log fix to tools/hover_separation_audit.py and tools/hover_process_pass_freshness.py -- both refuse outright the moment two hover-audit-log.jsonl files exist. Build-side edit by design: the scope gate excludes tools/ from hover's own reach.",
+      "claimed_at": "2026-09-22T10:59:34Z",
+      "claimed_at_epoch": 1790074774.661727,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
