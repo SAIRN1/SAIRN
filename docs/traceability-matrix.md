@@ -543,8 +543,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **&#9888; EIGHT of the eleven `senServerWinsMerge` call sites are pinned by NO arm &mdash; three more than the row that opened this, and the three extra are the ones a grep cannot see** | **MEASURED 2026-09-21 (Hank), NOT FIXED** &mdash; Finding 2 of my Tier A review of fourth&rsquo;s `2026-09-21T23:14:37Z` obligation. Extends their own press-on 5 rather than contradicting it | `tests/server_wins_hydration.js` |
-| **&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation &mdash; rewriting one back to additive-only would break nothing** | **MEASURED 2026-09-21 (Fourth), NOT FIXED** &mdash; found while re-aiming the three arms that WERE pinned; the other five were never checked by anybody | `tests/server_wins_hydration.js` |
+| **&#9989; All eleven `senServerWinsMerge` call sites are pinned &mdash; and the three a resource grep cannot see carry TWO resources each, so the real coverage was fourteen** | **CLOSED 2026-09-22 (Hank)** &mdash; new `api/_lib/sairnsenior-hydrate-delegation.test.js` **16 arms**, new `tests/run_sairnsenior_hydrate_delegation_probe.py` **22 mutations ALL REFUSED** | `api/_lib/sairnsenior-hydrate-delegation.test.js`, `tests/run_sairnsenior_hydrate_delegation_probe.py`, `tests/server_wins_hydration.js` |
+| **~~&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation~~ &mdash; SUPERSEDED: it was EIGHT of ELEVEN, and all are now pinned** | **CLOSED 2026-09-22 (Hank).** Opened by fourth with a correct direction and an undercount; the live row is the **&#9989; All eleven** one above | `api/_lib/sairnsenior-hydrate-delegation.test.js`, `tests/run_sairnsenior_hydrate_delegation_probe.py` |
 | **&#9888; Three suites RED on `main` &mdash; hydration replaces the local row instead of only adding unseen ones** | **FLAGGED 2026-09-21 (Hank), NOT MINE AND NOT FIXED** &mdash; confirmed pre-existing by stashing my own changes and re-running on a clean tree | `api/_lib/sairnsenior-authorizations.test.js` |
 | **Gate 4 on federally-mandated EVV &mdash; and the probe found TWO concurrency guards nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnsenior_fault_probe.py`, 8 mutation arms + 4 controls; `api/_lib/sairnsenior-offline-evv.test.js` gained a concurrency section (4 arms, 26 &rarr; 30). MA | `api/_lib/sairnsenior-offline-evv.test.js`, `tests/sairnsenior_fault_probe.py` |
 
@@ -600,15 +600,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 579 of 643 traced, 90.0%.
+For context and not as the headline: 581 of 645 traced, 90.1%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 579 citations come from
+### Where the 581 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 296 |
+| `index` | 298 |
 | `declared` | 242 |
 | `declared+index` | 33 |
 | `GUARD_TESTS+index` | 5 |
@@ -709,7 +709,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 643   tests/**, api/** (both walked)
+  test files on disk                 645   tests/**, api/** (both walked)
   open-work rows citing a test       323   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY

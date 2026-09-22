@@ -1509,6 +1509,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-22T08:32:48Z",
+      "resources": [
+        "sen_claims"
+      ],
+      "files": [
+        "api/_lib/sairnsenior-hydrate-delegation.test.js",
+        "tests/run_sairnsenior_hydrate_delegation_probe.py"
+      ],
+      "what": "TEST-ONLY, no app code touched -- api/_lib/sairnsenior-hydrate-delegation.test.js (NEW) and tests/run_sairnsenior_hydrate_delegation_probe.py (NEW). It names sen_claims because senHydrateClaims is one of the eight hydrates now pinned, and sairnsenior.html is UNTOUCHED -- the probe proves it by mutating and restoring byte-for-byte, checked after every one of 22 mutations. These ARE guards and they CAN fail, which is why this is recorded rather than overridden.\n\nWHAT IT CLOSES. Eight of eleven senServerWinsMerge call sites were pinned by NOTHING: rewriting any of them back to additive-only would have broken no test anywhere. Three suites were re-aimed at the post-conversion shape on 2026-09-21 and the rest were left behind.\n\nTHE CENSUS TOOK TWO PASSES AND THAT IS THE FINDING. senServerWinsMerge( occurs 13 times: one definition, one prose mention, ELEVEN call sites -- not eight. Three pass a VARIABLE key (senHydrateReferrals, senHydrateOrg, senHydrateTraining), which a resource-name grep cannot see, and each merges TWO resources, so real coverage is fourteen resources.\n\nVERIFIED: 16 arms green; 22 mutations ALL REFUSED (A delegation removed x8, B call still in the FILE but not in that hydrate x8, C one resource dropped from the pair list x6); all four sairnsenior suites pass; tests/server_wins_hydration.js 179/0.\n\nWHAT A REVIEWER SHOULD PRESS ON, hardest first.\n\n(1) I ASSERT ON A BRACE-BALANCED EXTRACTED BODY AND THAT IS THE LOAD-BEARING PART. fn() finds `function <name>(` and counts braces to the matching close. Check the span is the WHOLE hydrate and not a prefix -- a truncated body containing the call would pass while proving less. My evidence is mutation B, which moves the call OUT of the hydrate into a comment at end of file and is refused for all eight; that specifically distinguishes an extracted-body assertion from a file-wide match. It does NOT prove the span reaches the end of the function.\n\n(2) TWO OF MY OWN THINGS WERE WRONG AND THE PROBE CAUGHT BOTH -- check I drew the right conclusion each time. First the pair-list arm asked whether the resource appeared ANYWHERE in the body; each hydrate names each resource TWICE (senData fetch + pair list), so all six C mutations survived. I re-anchored on `['<res>',`. Then all six survived AGAIN -- and that time the ARM was right and the MUTATION was lying, replacing the first occurrence, which is the FETCH. Check the second diagnosis rather than taking it: if the mutation was actually fine and the arm is still weak, I have written a green suite over a live gap.\n\n(3) I PINNED THE CALL-SITE COUNT AT 11 BY SUBTRACTION, not by parsing. The arm counts all `senServerWinsMerge(` occurrences and subtracts one definition and a prose-mention count derived from `senServerWinsMerge() ` with a trailing space. That is fragile in a way I could not think of a better cheap answer to: a second prose mention written WITHOUT the trailing-space shape would be counted as a call and the arm would go red for no reason; one written WITH it would be silently excluded. Judge whether the count is worth keeping in that form.\n\n(4) THE THREE ALREADY-PINNED HYDRATES ARE DELIBERATELY ABSENT and an arm asserts they stay absent. My reasoning: duplicating them creates a second copy of one rule kept in step by nobody. The cost is that this file's coverage claim is only true when read together with the other three suites. Judge that division.\n\n(5) I WROTE THE THREE-CARVE-OUT SENTENCE INTO A FOURTH PLACE. The guard is `if(!senBootstrappedNow && usable && seeded[id])` and the three suites re-aimed yesterday describe only seeded[id]. I have written all three into this file's header. Check my reading of `usable` and `!senBootstrappedNow` against senServerWinsMerge itself -- if it is wrong, I have now put the wrong contract in four places instead of three, and mine is the one that sounds most settled.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-22T08:32:48Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
