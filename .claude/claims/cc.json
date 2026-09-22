@@ -2214,6 +2214,20 @@
       "files": [
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "cc-1790084226",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "0072 material-correlated job risk engine -- per-material remake rate from sd_remakes wired into runAlertScan and the health score FILES: stonedesk.html tests/material_risk_engine.js",
+      "claimed_at": "2026-09-22T13:37:06Z",
+      "claimed_at_epoch": 1790084226.954114,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html",
+        "tests/material_risk_engine.js"
+      ]
     }
   ]
 }
