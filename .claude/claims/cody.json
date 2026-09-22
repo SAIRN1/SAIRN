@@ -1795,6 +1795,19 @@
         "sairnsenior.html",
         "sql/sairnsenior_payroll_schema.sql"
       ]
+    },
+    {
+      "id": "cody-1790090918",
+      "session": "cody",
+      "subject": "platform-architecture",
+      "task": "multi-location/multi-brand + client multiplicity: scope as a design doc serving StoneDesk, SAIRNlegacy, SAIRNgrounds, SAIRNsenior, SAIRNcare as one solution. DESIGN ONLY, no app code. FILES: docs/2026-09-22-multi-location-multi-brand-design.md",
+      "claimed_at": "2026-09-22T15:28:38Z",
+      "claimed_at_epoch": 1790090918.5696993,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-22-multi-location-multi-brand-design.md"
+      ]
     }
   ]
 }
