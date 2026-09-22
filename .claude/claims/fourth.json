@@ -2036,6 +2036,19 @@
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
       ]
+    },
+    {
+      "id": "fourth-1790084684",
+      "session": "fourth",
+      "subject": "tooling-flagger",
+      "task": "confidentiality flagger client_restricted -- same-function attachment, comment stripping, record-role exclusion FILES: tools/confidentiality_candidate_flagger.py",
+      "claimed_at": "2026-09-22T13:44:44Z",
+      "claimed_at_epoch": 1790084684.9308047,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/confidentiality_candidate_flagger.py"
+      ]
     }
   ]
 }
