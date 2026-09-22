@@ -217,7 +217,7 @@ ok('5a the brace pass finds function bodies in EVERY app page, so no app '
 _ratio = {}
 for _a, _s in sorted(pages.items()):
     _clean, _spans = F._parsed(_a, _s)
-    _kw = len(re.findall(r'function|=>', _clean))
+    _kw = len(re.findall(r'\bfunction\b|=>', _clean))
     _ratio[_a] = round(len(_spans) / max(_kw, 1), 2)
 ok('5b ...and the body count tracks the keyword count in every page (min '
    'ratio %.2f across %d pages), so a lexer desync collapses this arm before '
