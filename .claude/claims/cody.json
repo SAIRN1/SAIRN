@@ -1768,8 +1768,8 @@
       "task": "KX per-beneficiary accumulator: persisted server-side, replacing the typed text box FILES: sairncode.html api/_lib/sairncode-kx-accumulator.js api/_lib/sairncode-kx-accumulator.test.js api/sd-data.js api/_resources/sairncode.js tests/",
       "claimed_at": "2026-09-22T14:46:08Z",
       "claimed_at_epoch": 1790088368.18421,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:01:42Z",
       "files": [
         "api/_lib/sairncode-kx-accumulator.js",
         "api/_lib/sairncode-kx-accumulator.test.js",
