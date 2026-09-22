@@ -2175,6 +2175,19 @@
         "tests/run_body_file_wiring_sabotage_probe.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "cc-1790078257",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "guard the escape-hygiene scope review probe anchor and add tla cfg line-ending rules FILES: tests/python_escape_hygiene_scope_review_probe.py .gitattributes",
+      "claimed_at": "2026-09-22T11:57:37Z",
+      "claimed_at_epoch": 1790078257.437859,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/python_escape_hygiene_scope_review_probe.py"
+      ]
     }
   ]
 }
