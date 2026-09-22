@@ -176,6 +176,23 @@ mutation 7 is the control shape for this class: it re-asserts the removed commen
 and **changes no code**, and the suite must still refuse it, because the sentence
 is what carried the defect through review.
 
+**THE SAME RULE HAS A THIRD PLACE, ADDED 2026-09-22: A FREE-TEXT BODY PASSED
+TO A TOOL.** `tier_a_review_gate.py --open` and `--discharge` take long prose,
+and several sessions passed it as `"$(cat <<EOF ... EOF)"`. With an UNQUOTED
+heredoc delimiter the shell evaluates the body first, so `$(...)` RUNS and
+backticks are stripped -- measured: a 221-byte verdict arrived as 140, with
+`$USER` silently expanded to EMPTY and `${HOME}` replaced by a path. **THE
+TOOLS WERE AUDITED AND ARE NOT THE PROBLEM** -- every `subprocess.run` in
+`tier_a_review_gate.py` and `sairn_claim.py` passes an argument LIST with no
+`shell=`, so nothing in a body can mean anything by the time it reaches argv.
+The damage is done in the caller's shell before the tool exists.
+
+**USE `--body-file <path>`.** A path is a short argument with no
+metacharacters and the body never meets a shell.
+`tests/run_body_file_roundtrip_probe.py` holds it: every eaten shape survives
+byte-for-byte, and an absent, empty or non-UTF-8 file is COULD NOT TELL rather
+than a silently empty review.
+
 ## 23. A command that reports nothing and did nothing -- `git commit -F -` inside a compound
 `git add -A && git commit -q -F - <<'EOF' ... EOF` **silently produces no
 commit** when it is chained with `&&` or `;` into a longer compound command,

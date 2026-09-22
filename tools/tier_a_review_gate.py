@@ -984,6 +984,67 @@ def check(diff_text, verbose=True):
     return 1, lines
 
 
+# ── --body-file: THE SHELL IS WHERE THE TEXT DIES, NOT THIS TOOL ────────────
+# Audited 2026-09-22 after several sessions landed corrupted verdict bodies.
+# THIS TOOL WAS NEVER THE VULNERABILITY and the audit says so rather than
+# implying it: every subprocess call here passes an ARGUMENT LIST with no
+# `shell=`, so by the time a body reaches `argv[1]` no metacharacter in it can
+# mean anything. There is no injection path inside this file to close.
+#
+# THE DAMAGE HAPPENS BEFORE argv EXISTS, in the caller's shell, and it was
+# reproduced rather than assumed:
+#
+#   "the anchor is `echo SUBSTITUTED` in the file"
+#       -> arrives as 'the anchor is SUBSTITUTED in the file', 37 bytes.
+#          Twelve characters of the author's sentence are simply gone.
+#
+#   "$(cat <<EOF ... $(echo INJECTED) ... EOF)"     [UNQUOTED delimiter]
+#       -> the substitution RUNS and its output is spliced into the body.
+#
+# Both shapes report success. The shell did what it was told, the tool stores
+# what it was handed, and nobody re-reads a verdict they just wrote -- which is
+# bug class 18 in `.claude/skills/sairn-code-scrubber/SKILL.md`, and the reason
+# class 23 exists for commit messages.
+#
+# SO THE FIX IS TO REMOVE THE NEED FOR COMMAND SUBSTITUTION, not to sanitise
+# anything. A path is a short argument with no metacharacters in it; the body
+# never passes through a shell at all. `--body-file` is the same answer
+# CLAUDE.md already gives for commit messages (`git commit -F <path>`) and for
+# regexes, applied to the third place free text is typed on this platform.
+#
+# READ AS BYTES AND DECODED HERE, deliberately: a file written by one session
+# and read by another is the seam where an encoding assumption becomes a
+# corrupted verdict, and this platform has already paid for `cp1252` defaults
+# 358 times in one sweep. An unreadable or empty file is COULD NOT TELL --
+# never silently the empty string, which this gate would store as a review.
+def body_from_file_or(argv, fallback):
+    """Return the body from --body-file if given, else `fallback`."""
+    if '--body-file' not in argv:
+        return fallback
+    i = argv.index('--body-file')
+    if len(argv) <= i + 1:
+        raise CouldNotTell('--body-file needs a path')
+    path = argv[i + 1]
+    if not os.path.isfile(path):
+        raise CouldNotTell('--body-file %r does not exist. Nothing was '
+                           'recorded -- an absent body is not an empty one.'
+                           % path)
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read()
+    except OSError as e:
+        raise CouldNotTell('--body-file %r could not be read: %s' % (path, e))
+    try:
+        text = raw.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise CouldNotTell('--body-file %r is not UTF-8 (%s). Refusing rather '
+                           'than storing a lossy decode.' % (path, e))
+    if not text.strip():
+        raise CouldNotTell('--body-file %r is empty. A record with no content '
+                           'is a tick, not a review.' % path)
+    return text.strip()
+
+
 def cmd_open(why, rng=None):
     resources = tier_a_resources()
     if rng:
@@ -1470,6 +1531,11 @@ def main(argv):
     if '--open' in argv:
         i = argv.index('--open')
         why = argv[i + 1] if len(argv) > i + 1 else ''
+        try:
+            why = body_from_file_or(argv, why)
+        except CouldNotTell as e:
+            sys.stderr.write('COULD NOT TELL: %s\n' % e)
+            return 2
         if not why.strip():
             sys.stderr.write('--open needs a sentence saying what changed. An entry '
                              'nobody can read is not a record.\n')
@@ -1494,7 +1560,27 @@ def main(argv):
         # nobody could find.
         takeover = '--takeover' in argv
         argv = [a for a in argv if a != '--takeover']
+        # --body-file and its path are stripped before the positional parse for
+        # the same reason --takeover is: a flag swallowed into the verdict
+        # prose is a verdict nobody can search and a flag nobody can find.
+        try:
+            file_body = body_from_file_or(argv, None)
+        except CouldNotTell as e:
+            sys.stderr.write('COULD NOT TELL: %s\n' % e)
+            return 2
+        if '--body-file' in argv:
+            k = argv.index('--body-file')
+            argv = argv[:k] + argv[k + 2:]
         rest = argv[argv.index('--discharge') + 1:]
+        if file_body is not None:
+            if len(rest) >= 2 and re.match(r'^\d{4}-\d{2}-\d{2}T', rest[1]):
+                return cmd_discharge(rest[0], file_body, opened_at=rest[1],
+                                     takeover=takeover)
+            if len(rest) >= 1:
+                return cmd_discharge(rest[0], file_body, takeover=takeover)
+            sys.stderr.write('--discharge <author-session> [opened_at] '
+                             '--body-file <path>\n')
+            return 1
         if len(rest) >= 3 and re.match(r'^\d{4}-\d{2}-\d{2}T', rest[1]):
             return cmd_discharge(rest[0], ' '.join(rest[2:]), opened_at=rest[1],
                                  takeover=takeover)
