@@ -11311,65 +11311,6 @@
       "recurrence_open": "The tiebreak makes THIS output deterministic. It does not establish that any other multi-source derivation on the platform sorts on a key fine enough to resolve its own ties, and nothing enumerates those."
     },
     {
-      "commit": "d8529ad5732d",
-      "date": "2026-09-22",
-      "subject": "fix(claims): the control whose job is proving a guard can fail was proving nothing -- red baseline, 25 vacuous passes, both halves fixed",
-      "files": [
-        "tests/claims/run_claim_retype_mutation_control.py",
-        "tests/claims/run_push_verify_probe.py"
-      ],
-      "lines_added": 128,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/claims/run_claim_retype_mutation_control.py reported five sabotages as caught while its own baseline was red: run_push_verify_probe.py exited 1 against a CLEAN tool because its throwaway clone lacked both sairn_claim.py's new sibling module and the per-clone identity marker 527b31bf introduced. Every mutation arm asserted only 'the probe exited non-zero', which a probe that fails unconditionally satisfies, so 25 of 26 passes were vacuous. Fixed by resolving sibling imports from source, provisioning the clone, stopping the run on a red baseline, and asserting the failure is located in the section under test rather than anywhere at all.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "527b31bfdba5",
-        "date": "2026-09-18",
-        "subject": "fix(identity): \"who am I\" was a folder name, so a rename let a clone certify its own Tier A review",
-        "lag_days": 4
-      },
-      "citation_note": "1.1 is a check that stopped checking, and this is the purest instance recorded so far: the control kept running, kept printing 26 results, and 25 of them were true of any input whatsoever. Cited clean.",
-      "phase_note": "Coding. 527b31bf is a CORRECT hardening -- it stopped the session name being guessed from a folder after a rename let a clone certify its own review -- and it simply did not carry its two consequences into a probe that builds a synthetic clone. The design was right; the propagation was incomplete.",
-      "contributing_factors": [
-        {
-          "factor": "run_push_verify_probe.py builds a throwaway clone and copied exactly ONE file into it. When 527b31bf added `import sairn_session_identity` to sairn_claim.py, every invocation inside that clone died on ModuleNotFoundError; the same commit moved session identity to a per-clone .git marker the throwaway clone never had, so it would have died on NoIdentity too.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Sibling modules are RESOLVED from the tool's own source transitively rather than listed, and the clone is provisioned with a .git/sairn-session marker."
-        },
-        {
-          "factor": "The failure surfaced 180 lines downstream as a FileNotFoundError on a claim file that was never written, so the visible symptom named neither the missing module nor the missing marker.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The dependency sweep removes the class of cause; the baseline arm already reported the symptom loudly and now stops the run as well."
-        },
-        {
-          "factor": "Every mutation arm asserted only 'the probe exited non-zero'. A probe that fails UNCONDITIONALLY satisfies that whatever the mutation is, so the five sabotages were reported as caught by a control that would have said the same with no mutation applied. 25 of 26 passes were vacuous, in the file whose whole subject is that a control must be shown to fail.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Each arm now asserts three things: non-zero exit, that the probe REACHED the section testing this guard, and that it reported a failed ARM rather than a traceback."
-        },
-        {
-          "factor": "The baseline arm was working perfectly -- it failed and said so -- and nothing stopped the arms below from running once it had. A red baseline hid the health of everything behind it.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "A red baseline now prints COULD NOT RUN, skips the mutation sections and exits 2. baseline_ok() is extracted so three arms drive the refusal in both directions, including a probe that exits 0 but never reached the section."
-        }
-      ],
-      "recurrence_open": "The dependency sweep follows `import X` and `from X import` at the start of a line. A tool that imported a sibling dynamically -- importlib, a deferred import inside a function body indented past the regex, a name built at runtime -- would still be missed, and the failure would look exactly like this one did. And nothing on this platform scans for the SHAPE of the defect: a suite whose arms all assert the same single condition on a shared upstream artefact is vacuous the moment that artefact breaks, and only reading it finds that."
-    },
-    {
       "commit": "9320ed8f8e1b",
       "date": "2026-09-22",
       "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
@@ -11672,6 +11613,121 @@
       "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
       "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
       "factors_unknown_reason": "--rule"
+    },
+    {
+      "commit": "f4fc75a9884f",
+      "date": "2026-09-22",
+      "subject": "fix(sairnmechanical): scanned-document text was stored and SYNCED verbatim, names and all, and the toast said it stayed on the device",
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/_lib/mech-redact.test.js",
+        "api/sd-data.js",
+        "sairnmechanical.html",
+        "tests/mech_docs_redaction_wiring_probe.py"
+      ],
+      "lines_added": 712,
+      "lines_removed": 4,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "mech_docs stored and SERVER-SYNCED raw AI-extracted document text verbatim, with no redaction of any kind. sairnmechanical.html's scanDoc() asks the model, in its own words, to 'EXTRACT: Every field -- names, dates, amounts, codes, reference numbers' from photographed work orders, maintenance contracts, permits, inspection reports and INVOICES; saveDoc() then stored el.textContent unchanged as {id,date,text} and mechPushRecord pushed it to the mech_docs table. A customer's name, site address and phone number reached a server because a technician photographed a work order. SECOND HALF: the toast said 'Saved on this device' ONE LINE AFTER the push, and the comment above the function still asserted 'there is no server data layer for this app yet' -- true when written, false since mech_docs was registered in api/_resources/sairnmechanical.js.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The verbatim store shipped with the scan feature; no commit introduced it as a regression. The stale 'no server data layer' comment became false when mech_docs was registered, which is a separate commit, but the unredacted storage was never correct."
+      },
+      "citation_note": "No standing rule covers 'model output containing PII is persisted unredacted'. The nearest are the fabrication rules, which are about numbers with no function behind them, and this is the opposite shape -- a real function whose output was never filtered. The stale-comment half IS covered by the eighth cross-domain discipline (nothing announces the day a claim stops being true), but the primary defect is not.",
+      "contributing_factors": [
+        {
+          "factor": "The prompt EXPLICITLY asks for names and amounts, and nothing between the model answer and the store filtered any of it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "api/_lib/mech-redact.js, applied on the server write path in api/sd-data.js so text reaching the table has been through it regardless of caller, with the client calling the same rules so the local row is redacted too"
+        },
+        {
+          "factor": "A client-side-only redaction would have been a convenience rather than a boundary, and the app is the only caller today so it would have looked sufficient",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The pass runs server-side on the mech_docs branch; the client copy is explicitly documented as the convenience and the server as the boundary"
+        },
+        {
+          "factor": "The toast and the function comment both understated where the document went, so nothing on screen or in the source would have prompted anyone to ask",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Toast now names the sync and the limits; the stale comment is replaced with the record of what changed"
+        },
+        {
+          "factor": "REDACTION CANNOT BE COMPLETE AND A PASS THAT IMPLIED OTHERWISE WOULD BE WORSE THAN NONE -- a name in ordinary prose is not findable by regex without a dictionary that also redacts Carrier, Trane and York",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "complete is a constant false, the limits travel on the stored row, and a suite arm ASSERTS that a prose name survives so the documented limit cannot quietly become aspirational. The residual exposure is real and disclosed rather than closed."
+        }
+      ],
+      "recurrence_open": "This covers mech_docs. Nothing sweeps the platform for OTHER paths that persist raw model output -- every app with a scan, extract or summarise feature is the same shape, and no tool enumerates them."
+    },
+    {
+      "commit": "d8529ad5732d",
+      "date": "2026-09-22",
+      "subject": "fix(claims): the control whose job is proving a guard can fail was proving nothing -- red baseline, 25 vacuous passes, both halves fixed",
+      "files": [
+        "tests/claims/run_claim_retype_mutation_control.py",
+        "tests/claims/run_push_verify_probe.py"
+      ],
+      "lines_added": 128,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/claims/run_claim_retype_mutation_control.py reported five sabotages as caught while its own baseline was red: run_push_verify_probe.py exited 1 against a CLEAN tool because its throwaway clone lacked both sairn_claim.py's new sibling module and the per-clone identity marker 527b31bf introduced. Every mutation arm asserted only 'the probe exited non-zero', which a probe that fails unconditionally satisfies, so 25 of 26 passes were vacuous. Fixed by resolving sibling imports from source, provisioning the clone, stopping the run on a red baseline, and asserting the failure is located in the section under test rather than anywhere at all.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "527b31bfdba5",
+        "date": "2026-09-18",
+        "subject": "fix(identity): \"who am I\" was a folder name, so a rename let a clone certify its own Tier A review",
+        "lag_days": 4
+      },
+      "citation_note": "1.1 is a check that stopped checking, and this is the purest instance recorded so far: the control kept running, kept printing 26 results, and 25 of them were true of any input whatsoever. Cited clean.",
+      "phase_note": "Coding. 527b31bf is a CORRECT hardening -- it stopped the session name being guessed from a folder after a rename let a clone certify its own review -- and it simply did not carry its two consequences into a probe that builds a synthetic clone. The design was right; the propagation was incomplete.",
+      "contributing_factors": [
+        {
+          "factor": "run_push_verify_probe.py builds a throwaway clone and copied exactly ONE file into it. When 527b31bf added `import sairn_session_identity` to sairn_claim.py, every invocation inside that clone died on ModuleNotFoundError; the same commit moved session identity to a per-clone .git marker the throwaway clone never had, so it would have died on NoIdentity too.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Sibling modules are RESOLVED from the tool's own source transitively rather than listed, and the clone is provisioned with a .git/sairn-session marker."
+        },
+        {
+          "factor": "The failure surfaced 180 lines downstream as a FileNotFoundError on a claim file that was never written, so the visible symptom named neither the missing module nor the missing marker.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The dependency sweep removes the class of cause; the baseline arm already reported the symptom loudly and now stops the run as well."
+        },
+        {
+          "factor": "Every mutation arm asserted only 'the probe exited non-zero'. A probe that fails UNCONDITIONALLY satisfies that whatever the mutation is, so the five sabotages were reported as caught by a control that would have said the same with no mutation applied. 25 of 26 passes were vacuous, in the file whose whole subject is that a control must be shown to fail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Each arm now asserts three things: non-zero exit, that the probe REACHED the section testing this guard, and that it reported a failed ARM rather than a traceback."
+        },
+        {
+          "factor": "The baseline arm was working perfectly -- it failed and said so -- and nothing stopped the arms below from running once it had. A red baseline hid the health of everything behind it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "A red baseline now prints COULD NOT RUN, skips the mutation sections and exits 2. baseline_ok() is extracted so three arms drive the refusal in both directions, including a probe that exits 0 but never reached the section."
+        }
+      ],
+      "recurrence_open": "The dependency sweep follows `import X` and `from X import` at the start of a line. A tool that imported a sibling dynamically -- importlib, a deferred import inside a function body indented past the regex, a name built at runtime -- would still be missed, and the failure would look exactly like this one did. And nothing on this platform scans for the SHAPE of the defect: a suite whose arms all assert the same single condition on a shared upstream artefact is vacuous the moment that artefact breaks, and only reading it finds that."
     },
     {
       "commit": "e0a52dc8925d",
