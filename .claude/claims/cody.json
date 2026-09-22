@@ -1863,6 +1863,19 @@
       "files": [
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "cody-1790115147",
+      "session": "cody",
+      "subject": "criticality-tiers",
+      "task": "B->A tier batches: the 6-resource signature/authorisation batch then the queued per-app batches FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-22T22:12:27Z",
+      "claimed_at_epoch": 1790115147.8553395,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
