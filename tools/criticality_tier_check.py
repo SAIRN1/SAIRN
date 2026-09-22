@@ -177,10 +177,29 @@ def resource_names(path):
     return names, None
 
 
-# A resource row's cell 1 is a BOLD TIER LETTER; a rollup row's is a bare
-# integer. That difference -- not the column count -- is what tells the two
-# apart from 2026-09-22 onward.
-RESOURCE_CELL1 = re.compile(r'^\*\*([ABC])\*\*$')
+# A resource row's cell 1 is BOLD; a rollup row's is a bare integer. That
+# difference -- not the column count -- is what tells the two apart from
+# 2026-09-22 onward.
+#
+# IT MATCHES ANY BOLD TOKEN, NOT ONLY A/B/C, AND THAT IS THE POINT. The first
+# spelling was `^\*\*([ABC])\*\*$`, which made a row carrying an invented tier
+# (`| **CRITICAL** |`) match NEITHER branch: it was not a resource row because
+# the letter was wrong, and not a rollup row because cell 1 was not an integer,
+# so it was dropped in silence. The BAD TIER check could then never see it --
+# the check that exists to stop a second tier vocabulary starting became
+# unreachable by the exact rows it was written for, and the register reported
+# the resource as having no row at all rather than as having a wrong one.
+#
+# Caught by run_criticality_tier_probe's arm 4 going red, which is the probe
+# doing its job -- and it was red for a reason with nothing to do with the
+# property it guards, which is the state the file's own arm 6 comment says
+# teaches a reader to stop reading it.
+#
+# Recognising the row is what lets BAD TIER refuse it. Validating the letter
+# is BAD TIER's job and stays there; this regex's job is only to answer "is
+# this a resource row or a rollup row", and a wrong tier is still a resource
+# row.
+RESOURCE_CELL1 = re.compile(r'^\*\*([^*|]+)\*\*$')
 
 
 def parse():
