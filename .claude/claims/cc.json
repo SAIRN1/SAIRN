@@ -2264,8 +2264,8 @@
       "task": "reclassification_sweep sweeps the cwd non-recursively so it has never read the statute corpus and prints a zero tally either way FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-22T15:53:14Z",
       "claimed_at_epoch": 1790092394.950892,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T20:27:56Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
