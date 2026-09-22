@@ -10876,6 +10876,59 @@
       "recurrence_open": "The two suppression signals are not shown to be independent -- they agreed exactly once in 415 entries and disagreed never, which is one data point, not a measurement. And there is exactly ONE real citation-shaped match on this platform, so the criteria are locked against synthetic fixtures rather than validated against a population. A citation phrased without a quotation and without a ref entry is still classified OWN and would still produce a false violation."
     },
     {
+      "commit": "5b145fd6a3a5",
+      "date": "2026-09-22",
+      "subject": "fix(hover): a log quoting ITSELF satisfied both suppression signals -- the quote signal now requires speaker ATTRIBUTION",
+      "files": [
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_separation_audit.py"
+      ],
+      "lines_added": 189,
+      "lines_removed": 9,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "tools/hover_separation_audit.py classify_own_commit(): both suppression signals were containment tests that never asked WHO was being quoted, so a log quoting ITSELF satisfied both and an out-of-scope commit the log claimed in its own words was suppressed to zero violations. Found jointly by hover1 and hover2 and reproduced two ways before being acted on. The quote signal now requires the sentence to attribute the quotation to a different session; identity is taken from the owning directory.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "2154f6330dcb",
+        "date": "2026-09-22",
+        "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
+        "lag_days": 0
+      },
+      "citation_note": "Same citation as the defect this was fixing, one level up: the classifier could not tell the log's own words from the log quoting somebody. Arguable rather than clean -- 1.2's worked example is code-vs-comment and this is speaker identity inside prose.",
+      "phase_note": "Design. The classifier does exactly what its stated rule says; the rule never mentioned the speaker. The defect entered with the three-state design itself, which is why the injection commit is the fix that introduced classify_own_commit().",
+      "contributing_factors": [
+        {
+          "factor": "The quote signal tested CONTAINMENT -- is the match inside a balanced quotation -- and read that as evidence of another speaker. Position was standing in for identity, and the reason string said so in terms: 'so it is another session speaking and not this log', asserted having never checked.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The quote signal now requires ATTRIBUTION: the nearest speaker marker in the sentence before the opening quote must name a session other than the log being read. Identity comes from the owning directory, never from the entry."
+        },
+        {
+          "factor": "Both suppression signals were containment tests over the same entry, so requiring TWO to agree bought much less independence than it appeared to. A single self-quotation satisfies both at once.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The third check is an identity test rather than a fourth containment test, so the signals are no longer degenerate. Stated in the code beside the rule."
+        },
+        {
+          "factor": "The author's own fixtures were written from the rule as stated, and the rule as stated never mentioned the speaker -- so no fixture could have caught it. The gap was recorded in the first fix's own recurrence_open as 'the two signals are not shown to be independent' and left as an open uncertainty rather than driven.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Seven arms G15-G21 drive attribution in both directions, including G18 as the control and G19/G20 where the same sentence classifies differently depending on which log is being read. Found by hover1 and hover2 jointly, not by the author."
+        }
+      ],
+      "recurrence_open": "The lead-in is bounded by the sentence, so a self-marker one sentence back reports 'attributes it to nobody' rather than 'to this log itself' -- same safe verdict, less precise wording, pinned by arm G16b. And the attribution vocabulary is a CLOSED LIST of session names: a new session, or a quotation that attributes by role rather than by name ('the build agent reported'), attributes to nobody and falls to DISPUTED. That is the safe direction, but it means the rule degrades quietly as the platform's cast changes and nothing announces it."
+    },
+    {
       "commit": "6508ca3885f8",
       "date": "2026-09-22",
       "subject": "fix(criticality): a row with an INVENTED tier matched neither branch and was dropped in silence",
@@ -10923,68 +10976,6 @@
         }
       ],
       "recurrence_open": "The actions close THIS narrowing. They do not close the general shape: any other consumer of the register that anchors on the valid vocabulary rather than on row structure can lose a row the same way, and nothing enumerates those consumers."
-    },
-    {
-      "commit": "9320ed8f8e1b",
-      "date": "2026-09-22",
-      "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
-      "files": [
-        "api/_lib/employee-lifecycle-wiring.test.js",
-        "api/_lib/setup-demotion-guard.test.js",
-        "api/grd-auth.js",
-        "api/sb-auth.js",
-        "api/scp-auth.js",
-        "api/sd-auth.js",
-        "tests/run_setup_demotion_sabotage_probe.py"
-      ],
-      "lines_added": 547,
-      "lines_removed": 3,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "independent-review",
-      "summary": "The last-admin guard watches DEACTIVATION and not the role change that reaches the identical end state. Every setup on this platform upserts on (license_hash, employee_id) writing the role column, so demoting the last holder of a sole role empties the licence of provisioners through a door nothing was standing at -- zero active owners, with bootstrap still answering 409 ALREADY_PROVISIONED because it deliberately does not filter on active, so there is no route back through the app. MEASURED across every api/*-auth.js: 17 setup paths, ONE carried a guard (api/sf-auth.js, written the same day by the session whose review surfaced this), 16 did not, and FOUR were REACHABLE -- api/grd-auth.js, api/sb-auth.js, api/scp-auth.js and api/sd-auth.js each declare SOLE_ROLE 'owner' (so their set_active guard counts owners only) AND each setup upserts writing role. Those four are the same apps commit 591531ce hardened against DEACTIVATION hours earlier. Closed with one shared soleRoleDemotionRefusal() in api/_lib/employee-lifecycle.js wired into all four, refusing 409 LAST_ADMIN before the write, allowing promotions and PIN resets, and refusing 500 rather than counting zero when soleRole names no real role.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "injection": {
-        "commit": "591531ce6fd6",
-        "date": "2026-09-21",
-        "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
-        "lag_days": 1
-      },
-      "citation_note": "ARGUABLE. 1.11 is about could-not-run being folded into a pass; the closest fit here is that an absent control is indistinguishable from a present one at the call site -- the same citation c98b5d674c76 and the LEG_RESOURCES record both took for a gate that does not exist. What makes it arguable rather than clean is that a control DID exist and was correct; it was simply pointed at one of the two routes to the same state.",
-      "contributing_factors": [
-        {
-          "factor": "The guard is keyed on the ACTION (deactivation) rather than on the STATE it protects (a licence with at least one active sole-role holder). Any other write reaching the same state is outside it by construction, and setup writes the role column on a conflict key that makes it an update.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "a second guard on the setup route; the residual that the STATE is still protected by two action-shaped checks rather than one invariant is recorded, not closed"
-        },
-        {
-          "factor": "591531ce hardened four apps against deactivation and did not ask what else reaches zero owners. The demotion route was named in the sf-auth work the same day and reported as open elsewhere, which is how it was found -- by a review quantifying somebody else stated residual rather than by a sweep.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "an arm derives the set of endpoints that name a sole role AND upsert a role in setup, so a FIFTH such app cannot appear unguarded and unnoticed"
-        },
-        {
-          "factor": "Nothing drove setup with a role change at all. The existing suites drive set_active, and a setup that demotes looks exactly like a setup that provisions from the outside.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "twelve arms drive the four REAL handlers end to end on the demotion, the two-owner case and a fresh provision, asserting the upsert was NOT sent rather than reading the status"
-        },
-        {
-          "factor": "My own first wiring arms asserted that the guard function NAME appeared in each setup block. The sabotage probe planted a short-circuited call -- name present, call disabled -- and all four went silent.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "replaced with arms that drive the handler; the probe mutation that killed them is kept as arms 6-9, one endpoint at a time"
-        }
-      ],
-      "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
       "commit": "6fb6d696489c",
@@ -11047,6 +11038,68 @@
         }
       ],
       "recurrence_open": "THE APP IS NOW DOWN, DELIBERATELY, AND THIS IS NOT CLOSED UNTIL THE MIGRATION RUNS. sql/sairnvet_employee_auth_schema.sql has NOT been run against the live database -- measured, not inferred: /api/sv-auth login answers 503 NOT_PROVISIONED for sairnvet while sairnlegacy and sairndental, which already carry this gate, answer 401 INVALID_CREDENTIALS. So nobody can obtain a session and all 41 resources answer 401 from the moment this deploys. Only Michael can run that file. Second item, unrelated to the outage: docs/2026-09-03-demo-credentials.md line 114 still asserts SAIRNvet has no auth endpoint -- the same expired premise in a second place, and no SAIRNvet row exists in that table. Third: no mechanism re-checks a justification comment against its premise, which is the factor recorded as PLANNED above."
+    },
+    {
+      "commit": "9320ed8f8e1b",
+      "date": "2026-09-22",
+      "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
+      "files": [
+        "api/_lib/employee-lifecycle-wiring.test.js",
+        "api/_lib/setup-demotion-guard.test.js",
+        "api/grd-auth.js",
+        "api/sb-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "tests/run_setup_demotion_sabotage_probe.py"
+      ],
+      "lines_added": 547,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "independent-review",
+      "summary": "The last-admin guard watches DEACTIVATION and not the role change that reaches the identical end state. Every setup on this platform upserts on (license_hash, employee_id) writing the role column, so demoting the last holder of a sole role empties the licence of provisioners through a door nothing was standing at -- zero active owners, with bootstrap still answering 409 ALREADY_PROVISIONED because it deliberately does not filter on active, so there is no route back through the app. MEASURED across every api/*-auth.js: 17 setup paths, ONE carried a guard (api/sf-auth.js, written the same day by the session whose review surfaced this), 16 did not, and FOUR were REACHABLE -- api/grd-auth.js, api/sb-auth.js, api/scp-auth.js and api/sd-auth.js each declare SOLE_ROLE 'owner' (so their set_active guard counts owners only) AND each setup upserts writing role. Those four are the same apps commit 591531ce hardened against DEACTIVATION hours earlier. Closed with one shared soleRoleDemotionRefusal() in api/_lib/employee-lifecycle.js wired into all four, refusing 409 LAST_ADMIN before the write, allowing promotions and PIN resets, and refusing 500 rather than counting zero when soleRole names no real role.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "591531ce6fd6",
+        "date": "2026-09-21",
+        "subject": "fix(auth): a deputy provisioning role could empty three licences of their last owner -- and the same defect is live in a fourth",
+        "lag_days": 1
+      },
+      "citation_note": "ARGUABLE. 1.11 is about could-not-run being folded into a pass; the closest fit here is that an absent control is indistinguishable from a present one at the call site -- the same citation c98b5d674c76 and the LEG_RESOURCES record both took for a gate that does not exist. What makes it arguable rather than clean is that a control DID exist and was correct; it was simply pointed at one of the two routes to the same state.",
+      "contributing_factors": [
+        {
+          "factor": "The guard is keyed on the ACTION (deactivation) rather than on the STATE it protects (a licence with at least one active sole-role holder). Any other write reaching the same state is outside it by construction, and setup writes the role column on a conflict key that makes it an update.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "a second guard on the setup route; the residual that the STATE is still protected by two action-shaped checks rather than one invariant is recorded, not closed"
+        },
+        {
+          "factor": "591531ce hardened four apps against deactivation and did not ask what else reaches zero owners. The demotion route was named in the sf-auth work the same day and reported as open elsewhere, which is how it was found -- by a review quantifying somebody else stated residual rather than by a sweep.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "an arm derives the set of endpoints that name a sole role AND upsert a role in setup, so a FIFTH such app cannot appear unguarded and unnoticed"
+        },
+        {
+          "factor": "Nothing drove setup with a role change at all. The existing suites drive set_active, and a setup that demotes looks exactly like a setup that provisions from the outside.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "twelve arms drive the four REAL handlers end to end on the demotion, the two-owner case and a fresh provision, asserting the upsert was NOT sent rather than reading the status"
+        },
+        {
+          "factor": "My own first wiring arms asserted that the guard function NAME appeared in each setup block. The sabotage probe planted a short-circuited call -- name present, call disabled -- and all four went silent.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "replaced with arms that drive the handler; the probe mutation that killed them is kept as arms 6-9, one endpoint at a time"
+        }
+      ],
+      "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
       "commit": "b3797733c152",
