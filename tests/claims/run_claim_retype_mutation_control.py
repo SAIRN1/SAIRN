@@ -63,6 +63,16 @@ def check(name, cond, detail=''):
         failed += 1
 
 
+def baseline_ok(rc, out):
+    """Is the probe usable as a negative control at all?
+
+    Extracted so the refusal below can be DRIVEN in both directions rather
+    than reasoned about. A control that stops on a red baseline is itself a
+    guard, and a guard that has never been shown to fire is not yet a guard.
+    """
+    return rc == 0 and '11. a RETYPED task string' in out
+
+
 def run_probe(tool_path):
     env = dict(os.environ)
     env['SAIRN_CLAIM_TOOL'] = tool_path
@@ -119,10 +129,46 @@ def main():
         clean = os.path.join(tmp, 'clean_sairn_claim.py')
         shutil.copy(SRC, clean)
         rc, out = run_probe(clean)
+        baseline_green = rc == 0
+        reached_11 = '11. a RETYPED task string' in out
         check('run_push_verify_probe.py passes against an unmutated copy '
-              '(exit %s)' % rc, rc == 0, out[-800:])
+              '(exit %s)' % rc, baseline_green, out[-800:])
         check('...and it really ran section 11, so the arms below have something '
-              'to break', '11. a RETYPED task string' in out, out[-400:])
+              'to break', reached_11, out[-400:])
+        # THE REFUSAL ITSELF IS DRIVEN, BOTH WAYS. Without this the "stop on a
+        # red baseline" rule below is a branch nothing has ever taken, which is
+        # the same shape as the vacuous arms it was added to prevent.
+        check('the baseline rule ACCEPTS this run', baseline_ok(rc, out))
+        check('...and REFUSES a probe that exited non-zero',
+              not baseline_ok(1, out))
+        check('...and REFUSES a probe that never reached section 11, even at '
+              'exit 0 -- a probe that stops early proves nothing either',
+              not baseline_ok(0, 'ok everything\n69 passed, 0 failed'))
+
+        # ── A RED BASELINE STOPS THE RUN. IT DOES NOT PRODUCE 25 PASSES ──────
+        # FOUND 2026-09-22 (Fourth), and it is this file's own subject turned on
+        # itself. Section 0 was failing -- `527b31bf` moved session identity
+        # from the folder name to a per-clone marker, and the probe's throwaway
+        # clone had neither the marker nor the tool's new sibling module, so
+        # run_push_verify_probe.py exited 1 against a CLEAN tool.
+        #
+        # EVERY ARM BELOW ASSERTS "the probe FAILS on this mutation", AND A
+        # PROBE THAT FAILS UNCONDITIONALLY SATISFIES ALL OF THEM. So the five
+        # sabotages were reported as caught by a control that would have said
+        # the same with the mutations never applied: 25 of 26 passes vacuous,
+        # in the file whose whole job is proving a guard can fail. That is
+        # tool-bugs item 10 -- a red baseline hides the health of everything
+        # behind it.
+        #
+        # The baseline arm was working perfectly: it FAILED and said so. What
+        # was missing was anything that stopped the run once it had.
+        if not baseline_ok(rc, out):
+            print('\nCOULD NOT RUN -- the baseline is red, so "the probe failed '
+                  'on this\nmutation" cannot be distinguished from "the probe '
+                  'fails on everything".\nThe five mutation sections are SKIPPED '
+                  'rather than reported as caught.')
+            print('\n%d passed, %d failed' % (passed, failed))
+            return 2
 
         print('\n1. each mutation: found, applied, and caught')
         for idx, m in enumerate(MUTATIONS, 1):
@@ -157,8 +203,28 @@ def main():
                 continue
 
             rc, out = run_probe(path)
-            check('run_push_verify_probe.py FAILS on it (exit %s)' % rc, rc != 0,
-                  '\n'.join([l for l in out.split('\n') if l.strip()][-8:]))
+            tail = '\n'.join([l for l in out.split('\n') if l.strip()][-8:])
+            # ── "FAILED" IS NOT THE SAME CLAIM AS "CAUGHT" ──────────────────
+            # A non-zero exit can mean the guard refused the mutation, or it
+            # can mean the probe fell over before it ever tested one. Those
+            # look identical from an exit code, and telling them apart is the
+            # whole point of a negative control. THREE PARTS:
+            #   1. it exited non-zero at all;
+            #   2. it REACHED the section that tests this guard, so the failure
+            #      is downstream of the mutation rather than upstream of it;
+            #   3. it reported a FAILED ARM rather than crashing -- a traceback
+            #      is a broken probe, not a caught defect.
+            reached = '11. a RETYPED task string' in out
+            armed = '  FAIL ' in out
+            crashed = 'Traceback (most recent call last)' in out
+            check('run_push_verify_probe.py FAILS on it (exit %s)' % rc,
+                  rc != 0, tail)
+            check('...and it REACHED the section that tests this guard, so the '
+                  'failure is the mutation and not an earlier collapse',
+                  reached, tail)
+            check('...and it reported a FAILED ARM rather than a traceback, so '
+                  'the guard refused rather than the probe breaking',
+                  armed and not crashed, tail)
 
         # ── 2. THE SHIPPED TOOL IS UNTOUCHED ─────────────────────────────────
         print('\n2. tools/sairn_claim.py was never written to')

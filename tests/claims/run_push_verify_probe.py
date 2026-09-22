@@ -60,6 +60,35 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)
 TOOL = os.environ.get('SAIRN_CLAIM_TOOL') or os.path.join(ROOT, 'tools', 'sairn_claim.py')
 HOOK = os.path.join(ROOT, 'tools', 'sairn_claim_hook.py')
 
+LOCAL_IMPORT_RE = re.compile(
+    r'(?m)^\s*(?:import\s+([a-z_][a-z0-9_]*)|from\s+([a-z_][a-z0-9_]*)\s+import)')
+
+
+def local_deps(path, seen=None):
+    """Every tools/*.py module `path` imports, transitively, as bare names.
+
+    Resolved from the SOURCE rather than kept as a list, because a list is a
+    second copy of the import statements and goes stale the first time one is
+    added. Only names that exist as `tools/<name>.py` are returned, so stdlib
+    and third-party imports fall through untouched.
+    """
+    seen = set() if seen is None else seen
+    try:
+        with open(path, encoding='utf-8') as fh:
+            src = fh.read()
+    except OSError:
+        return seen
+    for a, b in LOCAL_IMPORT_RE.findall(src):
+        name = a or b
+        if name in seen:
+            continue
+        sibling = os.path.join(ROOT, 'tools', name + '.py')
+        if os.path.isfile(sibling):
+            seen.add(name)
+            local_deps(sibling, seen)
+    return seen
+
+
 passed = 0
 failed = 0
 
@@ -116,7 +145,36 @@ def build():
                  ('commit.gpgsign', 'false')):
         git(clone, 'config', k, v)
     os.makedirs(os.path.join(clone, 'tools'), exist_ok=True)
+    # ── THE TOOL'S OWN SIBLING MODULES, RESOLVED RATHER THAN LISTED ─────────
+    # This used to copy `sairn_claim.py` and nothing else. On 2026-09-22 that
+    # stopped working silently: `527b31bf` added `import sairn_session_identity`
+    # to the tool, the clone still received one file, and EVERY invocation
+    # inside it died with ModuleNotFoundError. No claim was ever written, and
+    # the failure surfaced 180 lines later as a FileNotFoundError on the claim
+    # file the probe expected to read.
+    #
+    # A HAND-KEPT LIST WOULD BE A SECOND COPY OF THE IMPORT STATEMENTS and
+    # would go stale the same way on the next sibling. The deps are read out of
+    # the tool's own source, transitively.
+    for dep in local_deps(TOOL):
+        shutil.copy(os.path.join(ROOT, 'tools', dep + '.py'),
+                    os.path.join(clone, 'tools', dep + '.py'))
+    # LAST, so a mutated copy passed in via SAIRN_CLAIM_TOOL wins over anything
+    # the dependency sweep may have copied under the same name.
     shutil.copy(TOOL, os.path.join(clone, 'tools', 'sairn_claim.py'))
+    # ── AND THE CLONE HAS TO BE PROVISIONED ────────────────────────────────
+    # The other half of the same 2026-09-22 breakage. `527b31bf` stopped
+    # guessing the session name from the folder -- correctly, because a rename
+    # had let a clone discharge its own Tier A obligation -- and now reads a
+    # per-clone marker in `.git/`. A throwaway clone has no marker, so every
+    # invocation raised NoIdentity and wrote nothing.
+    #
+    # Written directly rather than by shelling out to --provision: this is
+    # fixture setup for a probe about claim publishing, and adding a second
+    # subprocess whose failure mode is a third thing to diagnose buys nothing.
+    with open(os.path.join(clone, '.git', 'sairn-session'), 'w',
+              encoding='utf-8') as fh:
+        fh.write('probe\n')
     return tmp, origin, seed, clone
 
 
