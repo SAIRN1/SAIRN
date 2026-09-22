@@ -1682,8 +1682,8 @@
       "task": "cross tenant grader SELF_EXCLUDED add grader_exclusion_parser_review_probe importer guard red",
       "claimed_at": "2026-09-22T08:04:14Z",
       "claimed_at_epoch": 1790064254.7085814,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T08:50:36Z"
     }
   ]
 }
