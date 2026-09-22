@@ -2094,6 +2094,19 @@
       "files": [
         "tests/sabotage_harness.py"
       ]
+    },
+    {
+      "id": "cc-1790072212",
+      "session": "cc",
+      "subject": "hover-sabotage-verify-docstring",
+      "task": "FILES: docs/SAIRN-OPEN-WORK-INDEX.md -- record hover2's sabotage_claim_verify docstring fabrication; the file itself is hover operational tooling outside every clone and is not a build agent's to edit",
+      "claimed_at": "2026-09-22T10:16:52Z",
+      "claimed_at_epoch": 1790072212.6060872,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
