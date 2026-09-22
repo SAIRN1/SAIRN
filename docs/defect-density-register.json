@@ -11668,6 +11668,61 @@
       "recurrence_open": "FUNCTION_BODY_CEILING is a number in a file with NO re-measurement cadence. It was chosen from a measured bimodal distribution (p90 7,549 / p95 41,579 / cliff at 403,966) rather than taste, but nothing announces the day it stops sitting in that gap as the apps grow. And script_only() splits HTML from JS with a regex on <script> tags: a script tag inside a string, or an unclosed tag, would mis-split and only the bodies-to-keywords ratio in the controls would notice. There is no fixture for that shape."
     },
     {
+      "commit": "external:hover2-audit-log:064f795df9b7",
+      "date": "2026-09-22",
+      "subject": "chore: initial commit of hover2's local operational tooling (self-log, coverage ledger, cold-scan pool, duplicate-finding-check, sabotage_claim_verify.py)",
+      "files": [],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "external": {
+        "repo": "hover2-audit-log",
+        "sha": "064f795df9b7",
+        "note": "hover2's operational tooling lives at ~/.claude/projects/C--Users-marsh-Documents-SAIRN-hover2/hover-audit-log/, a separate local git repository OUTSIDE every SAIRN clone by design -- the separation that makes the hover role's audits independent is the same separation that puts its commits beyond this repo's rev-parse. Tracked in no SAIRN clone; git ls-files returns zero matches here."
+      },
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "sabotage_claim_verify.py -- hover2's own tool for checking whether a commit claiming N-of-N sabotages caught is backed by an artefact that exists -- carried a docstring claiming run_fixtures() had a real-repo calibration section covering eight named SHAs plus a live read of hover-audit-log.jsonl. run_fixtures() references the real repository zero times; every case is a synthetic tmpdir fixture. The tool committed, in its own voice, the defect shape it exists to detect. Found by hover2, confirmed line-by-line by cc, corrected by hover2. NOTE: the cited commit is the INITIAL IMPORT of hover2's repository, in which the file already carries the correction -- there is no diff of the repair, because the file was untracked while the defect existed.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "unknown_reason": "The file was untracked until 064f795, which is the initial import of hover2's repository and already contains the correction. There is no commit in which the false docstring exists, so git cannot date it; what is known is that cc read the uncorrected text directly on 2026-09-22 and recorded it in docs/SAIRN-OPEN-WORK-INDEX.md before the repository existed."
+      },
+      "citation_note": "No numbered process rule covers a tool's own docstring asserting a calibration it never performed. It is adjacent to 1.1 -- a check that stopped checking -- but 1.1 is about a CHECK whose condition cannot fire, and every check in this tool fires correctly; what was false was a sentence describing what they had been run against. Recording it as not-citable rather than stretching 1.1 to cover prose.",
+      "contributing_factors": [
+        {
+          "factor": "The docstring was the tool's CREDIBILITY CLAIM -- the sentence a reader uses to decide whether to trust its verdicts -- and it cited eight real SHAs (0b1e017f/5a878e71, 608c310b, cfbb2427, 0dd84d94, 200fe086, deea8c55, b40c659090, 2cb6460dc5) against a run_fixtures() that reads the real repository ZERO times. Every case in it is a synthetic tempfile.mkdtemp fixture.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "hover2 narrowed the docstring to what the fixtures actually are, naming the eight SHAs it had falsely claimed and stating outright that no such section existed -- the honest option of the two cc's open-work row put to them, rather than softening the sentence while still implying live coverage."
+        },
+        {
+          "factor": "THE TOOL'S OWN SUBJECT IS WHETHER A COMMIT CLAIMING 'N of N sabotages caught' IS BACKED BY AN ARTEFACT THAT EXISTS. It committed that exact defect in its own voice, which is why it was recorded rather than treated as a stale comment.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the corrected text states the calibration status as synthetic-fixtures-only in both directions and does not claim live-data calibration."
+        },
+        {
+          "factor": "NOTHING MECHANICAL COULD HAVE CAUGHT IT. The fixtures are real, they drive both directions and they pass; what was unbacked was a sentence about them. No checker on this platform reads a docstring's factual claims against the function beneath it.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "A checker that verified prose claims against code would be a natural-language problem, not a grep. The durable control here is that the finding was made by a second reader -- hover2 -- and confirmed line-by-line by a third -- cc -- which is what the hover role exists for."
+        },
+        {
+          "factor": "THE FILE WAS NOT UNDER VERSION CONTROL WHILE THE DEFECT EXISTED. hover2's repository was initialised on 2026-09-22 and 064f795 is its initial import, in which sabotage_claim_verify.py already carries the correction. So there is no injection commit and no diff of the repair.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the file is now tracked, so the next change to it is diffable. This record cites the initial import as a POINTER TO WHERE THE FILE LIVES, which is stated in the summary rather than left for a reader to discover when they open it and find no fix in the diff."
+        }
+      ],
+      "recurrence_open": "Nothing checks any OTHER docstring on this platform against the code beneath it, and this class is invisible to every mechanical control the repo has. The finding needed a second reader; the register now has a channel for that reader's findings, which is what this record demonstrates, but it does not make the class detectable."
+    },
+    {
       "commit": "f48e7d575d77",
       "date": "2026-09-22",
       "subject": "fix(tests): re-anchor the as-of mutation -- it planted NOTHING and had been red on a stale anchor",
