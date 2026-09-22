@@ -64,10 +64,15 @@ VALID_TIERS = ('A', 'B', 'C')
 # supports. The access-control half is a CODE FACT, and it was false for all 41
 # SV_RESOURCES rows: SAIRNvet has no per-employee authentication at all, `role`
 # is a self-selected dropdown, and api/sd-data.js says so in its own comment.
-# Re-verified against the handler 2026-09-22 -- still no session gate, by a
-# RECORDED decision rather than an oversight, pending the app's missing auth
-# subsystem. So the sentence was not describing something that had regressed;
-# it was asserting something nothing had ever checked.
+# AND THE GATE LANDED LATER THE SAME DAY, WHICH IS THE ARGUMENT RATHER THAN A
+# REASON TO DELETE THIS. When the check below was written the handler had no
+# session gate at all and said so in its own comment. A few hours on, `6fb6d696`
+# added one -- `verifySessionToken(..., 'sairnvet')` over the whole map -- so
+# the boilerplate's claim became true by accident, on that day, having been
+# false on every day before it. That is precisely why a table must not assert a
+# code fact: it is right only until the code moves, and it never says which day
+# that was. Do not take the current state from this comment either; read the
+# handler.
 #
 # THIS TABLE MUST NOT ASSERT A CODE FACT IT DOES NOT VERIFY. That is the whole
 # finding, and the enforceable half of it is this: a row that has MIGRATED to
@@ -476,9 +481,13 @@ def main(argv):
             problems.append('ASSERTS A GATE  %s has migrated to the two-axis shape '
                             'and still asserts an access-control fact ("auth-gated" '
                             'or similar). That half of the old B sentence was FALSE '
-                            'for all 41 SV_RESOURCES rows and nothing in this table '
-                            'verifies it. State what the data IS; whether a gate '
-                            'exists is a code fact this file does not assert.'
+                            'for all 41 SV_RESOURCES rows until 6fb6d696 -- and it '
+                            'is TRUE for them now, which is the point rather than a '
+                            'reason to relax: nothing in this table verified it '
+                            'either way, so the sentence was right by accident on '
+                            'one day and wrong on every day before it. State what '
+                            'the data IS; whether a gate exists is a code fact this '
+                            'file does not assert.'
                             % name)
         if conf not in VALID_TIERS:
             problems.append('BAD CONFIDENTIALITY  %s has confidentiality %r, not one '
