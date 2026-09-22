@@ -1744,6 +1744,22 @@
         "sairnlaw.html",
         "sairnsenior.html"
       ]
+    },
+    {
+      "id": "cody-1790087912",
+      "session": "cody",
+      "subject": "sairncode",
+      "task": "KX modifier cumulative threshold: a real persisted per-beneficiary per-year accumulator to replace the typed text box FILES: sairncode.html api/_lib/sairncode-kx-accumulator.js sql/sairncode_therapy_accumulator_schema.sql api/_resources/sairncode.js tests/",
+      "claimed_at": "2026-09-22T14:38:32Z",
+      "claimed_at_epoch": 1790087912.7384634,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/sairncode-kx-accumulator.js",
+        "api/_resources/sairncode.js",
+        "sairncode.html",
+        "sql/sairncode_therapy_accumulator_schema.sql"
+      ]
     }
   ]
 }
