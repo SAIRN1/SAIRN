@@ -1876,6 +1876,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cody-1790117348",
+      "session": "cody",
+      "subject": "criticality-tiers",
+      "task": "apply hank's routed correction: rf_proposals confidentiality B->A on the decision-row signature FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-22T22:49:08Z",
+      "claimed_at_epoch": 1790117348.248812,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
