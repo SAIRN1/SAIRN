@@ -1714,8 +1714,8 @@
       "task": "python syntaxwarning invalid escape sweep and hygiene guard",
       "claimed_at": "2026-09-22T10:34:27Z",
       "claimed_at_epoch": 1790073267.1885178,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:46:24Z",
       "files": null
     }
   ]
