@@ -2585,6 +2585,20 @@
       "files": [
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "hank-1790089499",
+      "session": "hank",
+      "subject": "platform-read-order",
+      "task": "MEASUREMENT ONLY, no edit to any dispatcher: scan every app's append-only trail reads for a missing order= clause. FILES: docs/SAIRN-OPEN-WORK-INDEX.md tools/append_only_read_order_scan.py -- reads api/sd-data.js and sql/ but writes NEITHER; cody holds api/sd-data.js and any fix waits for them",
+      "claimed_at": "2026-09-22T15:04:59Z",
+      "claimed_at_epoch": 1790089499.9735203,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tools/append_only_read_order_scan.py"
+      ]
     }
   ]
 }
