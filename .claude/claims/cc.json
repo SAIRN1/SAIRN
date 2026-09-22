@@ -2068,6 +2068,19 @@
         "api/_lib/setup-demotion-guard.test.js",
         "api/sf-auth.js"
       ]
+    },
+    {
+      "id": "cc-1790070461",
+      "session": "cc",
+      "subject": "criticality-tiers-three-moves",
+      "task": "FILES: docs/CRITICALITY-TIERS.md -- exec_context law_portalmessages sv_soapnotes B to A on the incident clause, counts re-derived from the table",
+      "claimed_at": "2026-09-22T09:47:41Z",
+      "claimed_at_epoch": 1790070461.2241879,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
