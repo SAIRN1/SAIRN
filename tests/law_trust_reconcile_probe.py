@@ -79,9 +79,24 @@ MUTATIONS = [
     ("4. the BANK LEG loses its as-of boundary and compares an all-time ledger "
      "total against a point-in-time bank balance. That is the original defect "
      "this file was built to fix, and the two quantities are not the same thing",
+     # ── RE-ANCHORED 2026-09-22, AND THE ARM WAS RED, NOT SILENT ──────────
+     # The old anchor was the two-line form
+     #     if (d <= latest.date) asOfCents += signed;
+     #     else afterStatementCents += signed;
+     # which stopped existing when the outstanding-item clearance tracking
+     # landed inside that branch on 2026-09-18. The mutation then planted
+     # NOTHING and the harness reported ANCHOR-0 -- red, which is the harness
+     # working, and red for a reason with nothing to do with the property the
+     # arm guards, which is how a suite teaches people to expect one failure.
+     #
+     # Anchored on the BOUNDARY ITSELF now rather than on the two statements
+     # that happened to sit either side of it. Neutering the condition removes
+     # the as-of comparison and leaves every other behaviour in the branch --
+     # including the clearance tracking -- untouched, which is a cleaner
+     # expression of the defect than deleting the else ever was.
      LIB,
-     "      if (d <= latest.date) asOfCents += signed;\n      else afterStatementCents += signed;",
-     "      asOfCents += signed;"),
+     "      if (d <= latest.date) {",
+     "      if (true) {"),
 
     ("5. the NEGATIVE-CLIENT signal is dropped. A client whose allocation is "
      "negative is one client's money spent on another -- the per-client "
