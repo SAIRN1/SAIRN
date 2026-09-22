@@ -207,6 +207,50 @@ check('11. an UN-migrated row asserting a gate is COUNTED and printed, not refus
       'ROWS_STILL_ASSERTING_A_GATE:1' in out and 'ASSERTS A GATE' not in out,
       out[-400:])
 
+# ── 12-14. THE TWO REFINEMENTS THE MIGRATION ITSELF FORCED ───────────────
+# Both were found by running the §2.3 check over real rows, one app apart, and
+# both are cases where the first spelling refused the writing the register
+# wants MORE of. They are locked here because the next person to tighten
+# ACCESS_CONTROL_CLAIM will otherwise re-break them.
+#
+# 12. A QUOTED claim is not an asserted one. `grd_boq_rates` explains its own
+# re-tier by quoting the sentence it was rescued from -- the check's own
+# success story, refused by the check.
+QUOTED = ('| `alpha_one` | **A** | **B** | money moves wrongly | commercial only '
+          '| RE-TIERED on the money limb. It was B on the generic sentence '
+          '&ldquo;employee-auth-gated operational data: neither money nor a '
+          'regulated record&rdquo;, which is false about a pricing rule |\n'
+          '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(QUOTED, NEW_HDR)
+check('12. a row QUOTING the old sentence to say it was wrong is ACCEPTED',
+      'ASSERTS A GATE' not in out, out[-500:])
+
+# 13. A CITED claim is not an uncited one. `law_portalmessages` says the
+# resource is session-gated and names the dispatcher, the handler and a test
+# that drives it to 401. §2.3's words are "stop asserting things NOTHING
+# VERIFIED"; refusing this would delete the best-evidenced sentence in the file
+# to protect a rule aimed at the worst-evidenced one.
+CITED = ('| `alpha_one` | **A** | **A** | privileged material lost | privilege waived '
+         '| The resource is genuinely session-gated (`LAW_RESOURCES` in '
+         '`api/sd-data.js`, driven to 401 with no session in '
+         '`api/sd-data-sairnlaw-resources.test.js`) |\n'
+         '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(CITED, NEW_HDR)
+check('13. an access-control claim that CITES a file and a test is ACCEPTED',
+      'ASSERTS A GATE' not in out, out[-500:])
+
+# 14. AND THE PAIRED POSITIVE FOR BOTH. Arms 12 and 13 are each satisfied by a
+# check that has stopped working; this is the one that says it has not. Bare
+# assertion, no quotation marks, no citation anywhere in the sentence.
+BARE = ('| `alpha_one` | **A** | **B** | money moves wrongly | commercial only '
+        '| Employee-auth-gated operational data: neither money nor a regulated '
+        'record |\n'
+        '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(BARE, NEW_HDR)
+check('14. THE PAIRED POSITIVE: a BARE uncited, unquoted gate claim is still '
+      'REFUSED, so arms 12-13 are not a check that accepts everything',
+      'ASSERTS A GATE' in out, out[-500:])
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

@@ -89,9 +89,86 @@ ACCESS_CONTROL_CLAIM = re.compile(
 # table and PRINTED on every run, clean or not.
 
 
+# ── A QUOTED CLAIM IS NOT AN ASSERTED ONE, AND THE FIRST SPELLING COULD NOT
+#    TELL THE DIFFERENCE ───────────────────────────────────────────────────
+# Found the moment the migration reached SAIRNgrounds. `grd_boq_rates` is a
+# re-tiered row whose evidence explains the correction by QUOTING the sentence
+# it was rescued from -- *"It was B on the generic sentence &ldquo;employee-
+# auth-gated operational data...&rdquo;"*. That row is the check's own success
+# story and the check refused it. The cell is not claiming a gate exists; it is
+# citing the claim in order to say it was wrong, which is exactly the writing
+# this register wants more of.
+#
+# The same shape is already on this platform's record: a comment quoting the
+# old code makes the scanner re-flag the fix. So the quotation spans are
+# blanked before the search rather than the pattern being narrowed -- narrowing
+# it would have lost real assertions to keep one citation.
+#
+# SINGLE QUOTES ARE DELIBERATELY NOT TREATED AS QUOTATION. Apostrophes are
+# everywhere in this file ("the firm's own"), and pairing them would blank
+# arbitrary spans of real prose -- which is the fail-open direction.
+QUOTE_SPANS = [
+    re.compile(r'`[^`]*`'),                      # code span
+    re.compile(r'&ldquo;.*?&rdquo;', re.S),      # HTML curly quotes
+    re.compile(r'“.*?”', re.S),        # literal curly quotes
+    re.compile(r'"[^"]*"'),                      # straight quotes
+]
+
+
+def strip_quotations(s):
+    """Blank quoted spans so a CITED claim is not read as an ASSERTED one."""
+    for pat in QUOTE_SPANS:
+        s = pat.sub(lambda m: ' ' * len(m.group(0)), s)
+    return s
+
+
+# ── AND AN UNCITED CLAIM IS NOT A CITED ONE ───────────────────────────────
+# Found at SAIRNlaw, one app after the quotation case. `law_portalmessages`
+# says *the resource is already genuinely session-gated (`LAW_RESOURCES` in
+# `api/sd-data.js`, driven to 401 with no session in
+# `api/sd-data-sairnlaw-resources.test.js`)*. That is an access-control claim
+# and it is a TRUE, CHECKABLE one: it names the dispatcher, the handler and a
+# test that drives the refusal.
+#
+# 2.3's words are "must stop asserting things NOTHING VERIFIED", and this
+# register's governing sentence is that a tier asserted with no evidence is a
+# label. Both point the same way: the defect is an UNCITED claim, not a claim.
+# Refusing a cited one would have deleted the best-evidenced sentence in the
+# file to protect a rule against the worst-evidenced one.
+#
+# THE WEAKENING IS REAL AND IS STATED: a row could satisfy this by appending a
+# backticked filename to the old boilerplate. What it cannot do is satisfy it
+# by accident -- the 264 rows carrying the false sentence cite nothing, and the
+# act of adding a citation is the act of pointing at something a reader can go
+# and check, which is the whole standard this file holds everything else to.
+CITATION = re.compile(r'`[^`]*\.(?:js|py|sql|html|md|json)`|`[^`]*test[^`]*`',
+                      re.I)
+
+
+def _sentence_around(s, i):
+    """The sentence containing offset i, bounded so a neighbour's citation
+    cannot be borrowed to excuse this sentence's claim."""
+    lo = max(0, i - 250)
+    hi = min(len(s), i + 250)
+    a = s.rfind('. ', lo, i)
+    b = s.find('. ', i, hi)
+    return s[(a + 2) if a != -1 else lo: b if b != -1 else hi]
+
+
 def asserts_access_control(*cells_):
-    """The false-claim half of the old boilerplate, wherever it sits in a row."""
-    return bool(ACCESS_CONTROL_CLAIM.search(' '.join(c or '' for c in cells_)))
+    """An UNCITED access-control claim, wherever it sits in a row.
+
+    Quotations are excluded (QUOTE_SPANS): a row quoting the old sentence to
+    say it was wrong is doing the opposite of asserting it. A claim whose own
+    sentence cites a file or a test is allowed: this check is about claims
+    nothing verifies, not about the subject matter.
+    """
+    joined = ' '.join(c or '' for c in cells_)
+    for m in ACCESS_CONTROL_CLAIM.finditer(strip_quotations(joined)):
+        # Offsets align: strip_quotations blanks in place, preserving length.
+        if not CITATION.search(_sentence_around(joined, m.start())):
+            return True
+    return False
 
 
 def cells(line):
@@ -369,10 +446,6 @@ def main(argv):
             problems.append('NO EVIDENCE  %s is Tier A with an empty evidence cell -- '
                             'that is a label, not a tier.' % name)
         if conf is None:
-            # Not migrated. The row is allowed to keep the old sentence for now,
-            # but the debt is COUNTED rather than tolerated silently -- see the
-            # note on ACCESS_CONTROL_CLAIM for why this is a printed number and
-            # not a problem line.
             if asserts_access_control(worst, ev):
                 stale_boilerplate.append(name)
             continue
