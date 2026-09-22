@@ -2663,8 +2663,8 @@
       "task": "items 2-13 B->A retiering across sairnlegacy sairndesign sairnroofing sairncare sairncode sairnfreedom sairndental sairnbuild sairnlaw sairnvet sairnsenior FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-22T22:12:33Z",
       "claimed_at_epoch": 1790115153.8504248,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T22:35:12Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
