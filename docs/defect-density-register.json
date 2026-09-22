@@ -10570,6 +10570,146 @@
         }
       ],
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
+    },
+    {
+      "commit": "270c60ed76a2",
+      "date": "2026-09-22",
+      "subject": "fix(cross-tenant-scope): the importer guard was red on main, and the one-line fix it asked for was refused by the arm next to it",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_cross_tenant_scope_probe.py",
+        "tests/run_self_exclusion_guard_sabotage_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 73,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/cross_tenant_isolation_scope.py SELF_EXCLUDED was missing tests/grader_exclusion_parser_review_probe.py, a file that imports the grader and therefore has the grader as its subject. The importer arm of tests/run_cross_tenant_scope_probe.py failed grader-importer-not-excluded on main from 4c7892e9 onward, printing its own verdict that the scope tool's numbers are NOT trustworthy. The guard was written in b7621dec and caught a real omission within three hours; nothing noticed, because a report-only probe that fails on main is invisible until somebody runs it. Found reviewing cc's 2026-09-21T20:42:06Z obligation, not by running the probe for its own sake.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "4c7892e98579",
+        "date": "2026-09-21",
+        "subject": "review(grader-exclusion): discharge fourth 22:16:20Z -- answer confirmed, one LOW finding in the parser behind it",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The exclusion list is five hand-written literals, one added per review of the tool, so it is one short every time somebody reviews it again",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "The entry is added; turning the tuple into the computation the importer arm already performs is recorded as an open-work row rather than done inside a fix, because narrowing the measurer belongs in its own commit with its own control"
+        },
+        {
+          "factor": "The probe that would have said so is report-only and nothing runs it on a schedule, so a red arm on main waits for a reader",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Stated rather than actioned: making it blocking is a decision about a gate, and this record is not the place to make it. recurrence_open carries it."
+        }
+      ],
+      "recurrence_open": "The list is now six literals and will be seven at the next review of this tool. Nothing runs the report-only probes on main, so the next red arm also waits for somebody to read it."
+    },
+    {
+      "commit": "270c60ed76a2",
+      "date": "2026-09-22",
+      "subject": "fix(cross-tenant-scope): the importer guard was red on main, and the one-line fix it asked for was refused by the arm next to it",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_cross_tenant_scope_probe.py",
+        "tests/run_self_exclusion_guard_sabotage_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 73,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/run_cross_tenant_scope_probe.py carries two arms over SELF_EXCLUDED that cannot both be satisfied for a file that imports the grader but declares nothing and grades NONE. The COMPLETENESS arm demands every importer be listed -- its own words, a test file that IMPORTS this grader has the grader as its subject, full stop. The DECORATIVE arm then refuses a listed entry that prevents nothing today. Listed, the file is decorative; unlisted, the list is incomplete. Unreachable until a file landed in the gap, which tests/grader_exclusion_parser_review_probe.py did, and the result was a guard nobody could make green. Resolved by treating an importer as load-bearing by the completeness arm's own rule.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "b7621dec9e27",
+        "date": "2026-09-21",
+        "subject": "fix(cross-tenant-scope): the grader's self-exclusion list had no guard, and the first guard found a third file it was missing",
+        "lag_days": 1
+      },
+      "citation_note": "Two guards in one file, each correct alone, whose rules contradict for an input neither author considered. docs/SAIRN-PROCESS-RULES.md has no section on that -- 1.1 is a check going stale, and neither of these had.",
+      "contributing_factors": [
+        {
+          "factor": "Two predicates over the same list were written in separate changes, each with a sound rule, and no input existed that could make them disagree until one did",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The decorative arm now exempts importers, with the contradiction and the measurement written into the arm rather than left for the next reader"
+        },
+        {
+          "factor": "The exemption leaves the decorative check with no current entry to bite on -- all six entries import the grader",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not fixed by inventing a fixture: the check still covers a future NON-importer entry, which is the padding case it was written for. Recorded in the code and in recurrence_open so it is a known unexercised arm rather than a silent one."
+        }
+      ],
+      "recurrence_open": "The decorative arm is now unexercised by the live corpus and no mutation can prove it bites without a fixture. If the exclusion tuple is ever narrowed to a computed rule, both arms should be re-derived together rather than one at a time -- that is how they came to disagree."
+    },
+    {
+      "commit": "270c60ed76a2",
+      "date": "2026-09-22",
+      "subject": "fix(cross-tenant-scope): the importer guard was red on main, and the one-line fix it asked for was refused by the arm next to it",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_cross_tenant_scope_probe.py",
+        "tests/run_self_exclusion_guard_sabotage_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 73,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/run_self_exclusion_guard_sabotage_probe.py mutation 5 anchored on its target entry PLUS the tuple's closing parenthesis, so it only matched while that entry was LAST. Two entries were appended to SELF_EXCLUDED on 2026-09-21 and the anchor went to ANCHOR-0 -- the mutation stopped being planted at all. NOBODY COULD SEE IT: the probe stops at a red baseline before it checks a single anchor, and the baseline had been red since 4c7892e9 for an unrelated reason. So a red control was hiding the state of the control behind it, not merely the mutations it would have run. Surfaced only by fixing the baseline. Re-aimed at the entry line alone, which does not move when the tuple grows.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "commit": "b7621dec9e27",
+        "date": "2026-09-21",
+        "subject": "fix(cross-tenant-scope): the grader's self-exclusion list had no guard, and the first guard found a third file it was missing",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "The anchor encoded a POSITION (last in the tuple) rather than the thing it meant to damage (one entry), so an append invalidated it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Anchored on the entry line alone; a comment naming the same file cannot collide because comment lines start with # rather than four spaces and a quote"
+        },
+        {
+          "factor": "A red baseline suppresses anchor checking entirely, so staleness in the mutations accumulates invisibly for as long as any unrelated arm is failing",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Not changed here: stopping at a red baseline is correct -- a mutation scored against an already-broken suite means nothing. The cost is that anchor health is unobservable while it stops, and that is recorded rather than traded away by a session fixing something else."
+        }
+      ],
+      "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
     }
   ],
   "started": "2026-09-09",
