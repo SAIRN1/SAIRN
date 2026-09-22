@@ -11210,7 +11210,7 @@
       ],
       "lines_added": 326,
       "lines_removed": 6,
-      "app": "platform",
+      "app": "PLATFORM",
       "layer": "tooling",
       "severity": "high",
       "detection_method": "independent-review",
