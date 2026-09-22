@@ -416,7 +416,7 @@ number, and only one of them is a document.
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            151   tests/**/*.py, *.js
+  tools invoked by tests/            152   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
