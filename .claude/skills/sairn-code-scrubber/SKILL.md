@@ -79,7 +79,8 @@ A negative control proves a checker can FIRE by planting a defect and asserting 
 
 The loud outcome is an arm failing against a tool that works, which is how it was noticed. **THE QUIET ONE IS WHY IT MATTERS: an arm written as "expect no findings" keeps PASSING on a file nobody touched, and reports green forever.**
 
-**THE RULE: a control asserts its own sabotage APPLIED before it asserts anything about the checker.** Compare the bytes, or use a helper that RAISES when the anchor is absent — never call `str.replace` directly in a probe. And restore by comparing byte-for-byte afterwards, **after `tr -d ''`**: a CRLF-vs-LF difference is not drift, and mistaking one for drift produced three false alarms in a single session on 2026-09-03.
+**THE RULE: a control asserts its own sabotage APPLIED before it asserts anything about the checker.** Compare the bytes, or use a helper that RAISES when the anchor is absent — never call `str.replace` directly in a probe. And restore by comparing byte-for-byte afterwards, **after `tr -d '
+'`**: a CRLF-vs-LF difference is not drift, and mistaking one for drift produced three false alarms in a single session on 2026-09-03.
 
 ## 18. A shell metacharacter surviving into content nobody re-reads
 `\b` typed into a heredoc becomes byte `0x08`, a literal BACKSPACE, and a regex containing it **can never match**. An assertion built on it passes unconditionally forever. **This has now happened FOUR times**, most recently at `api/sv-auth.test.js:301`, where `!/\bdelete\b/i.test(SRC)` became `!/[BS]delete[BS]/i.test(SRC)` — so the test *"NOTHING in this endpoint deletes a credential row"* had always passed without checking anything, on a DEA-relevant path.
@@ -233,3 +234,83 @@ currently checked out -- which is somebody else's. That happened twice on
 2026-09-21 and both times the fix was `git rebase --abort` and a clean redo.
 When a rebase stops, run `git status` and read which commit you are on **before**
 running anything that writes.
+
+## 24. A pattern bucketing on a WORD, with no context to say whose text it is or what it is about
+A regex or substring test sees the word and cannot see the **speaker**, the
+**subject**, or **how much of the population it failed to classify**. The match
+is correct; the conclusion drawn from it is about something else entirely.
+Distinct from item 2 (*grep cannot tell code from text that describes code*,
+PR §1.2), which is one axis of this: that is code-vs-prose, and these are
+mine-vs-someone-else's, subject-vs-wording, and classified-vs-merely-unmatched.
+
+**MEASURED: FOUR CONFIRMED INSTANCES IN ONE DAY, 2026-09-21/22**, in four
+different tools written by three different sessions. The fourth was found while
+committing the fix for the third.
+
+1. **The sentence's wording, not its subject** — `api/sd-data.js:12642`. An arm
+   asserted the `CLEARANCE_NOT_STORED` 409 *named the affected fields* by
+   matching `/\bcleared\b/` over the message. The message ends *"whether a
+   cheque has cleared the bank"*, so the arm matched the refusal's own closing
+   prose and **stayed green while a planted defect dropped `cleared` from the
+   field list**. Fixed by putting a machine-readable `fields` array beside the
+   sentence and asserting on that.
+2. **The residue nobody counted** — cc's ALLOW/REFUSAL bucketing in the
+   law-phase-2 control probe. 25 arms: 10 ALLOW, 6 REFUSAL, **9 in neither
+   bucket, and six of those nine are refusal arms in substance**. `cannot read`
+   escapes the ALLOW pattern `can read` because the characters after `can` are
+   `not` — so it is **not mis-bucketed, which would be worse; it is simply not
+   classified**, and the verdict was gated on `if fails and allow and not
+   refuse`, which makes `not refuse` the safety argument.
+3. **Whose commit is it** — `tools/hover_separation_audit.py`'s `OWN_COMMIT_RE`
+   matched `pushed <sha>` **inside hover1's quotation of cody's status line**,
+   so a commit the auditor CITED was reported as a `SEPARATION VIOLATION`
+   against cc's `270c60ed`. Fixed in `467baf74` by giving the verdict a third
+   state (OWN / CITED / DISPUTED), not by narrowing the regex.
+4. **A resource name matched against prose about the word** — committing (3)
+   was blocked by `tools/tier_a_review_gate.py`, which matched the Tier A
+   resource `quotes` (StoneDesk's money-bearing quotes) against changed lines
+   reading `quoted_spans()`, *"prose quotes unevenly"* and *"inside a balanced
+   quotation"*. The file has nothing to do with StoneDesk quotes. **Open.**
+
+**THE RULE, and it is three parts, because the four instances fail differently.**
+
+1. **A bucketing pattern must account for 100% of its input, and PRINT the
+   residue.** Instance 2's nine unclassified arms were invisible because nothing
+   ever printed "9 of 25 matched no bucket". Count the population, count each
+   bucket, and assert they reconcile — the same count-and-refuse discipline
+   tool-bugs item 11 names for extractors.
+2. **"Did not match" must never mean "safe".** Any verdict gated on `not
+   <bucket>` converts an item the classifier failed to recognise into a pass.
+   The negative of a partial classifier is not a classification, and the
+   difference is silent.
+3. **Match on STRUCTURE before prose; where only prose exists, say in the code
+   which speaker and which subject the match assumes.** Instance 1's fix was a
+   `fields` array; instance 3's was a verdict that can say *"I cannot tell whose
+   this is"*. Both replaced an inference with something checkable.
+
+**THE TEMPTING FIX IS THE WRONG ONE.** The reflex on finding a false positive is
+to **narrow the pattern** — demand sentence-initial `Committed`, add more
+negative lookahead, tighten the word list. That clears the known instance and
+**fails silently on the next phrasing**, and in a detector a false negative is
+invisible where a false positive is loud and gets read. Prefer **widening the
+VERDICT** (a third state, a residue bucket, a DISPUTED label) over narrowing the
+MATCH. Where a suppression is unavoidable, require **two independent signals to
+agree** before anything is suppressed, and **print every suppressed match with
+its reason** — a silent suppression and a correct classification look identical
+from a count.
+
+**THE CONTROL SHAPE, and it is cheap.** Every bucketing pattern needs a
+**negative fixture containing the word in the wrong context** — the subject
+discussed rather than present, the other speaker quoted, the resource named in
+passing. Write it from the rule, not from the one real instance: with n=1 on the
+negative side you will otherwise tune until that instance goes away and learn
+nothing general. `tests/run_hover_separation_probe.py` section G is the worked
+example, including the arm that matters most — **the same input claimed
+unambiguously must STILL be flagged**, or the fix is indistinguishable from
+disarming the tool.
+
+**WHERE TO LOOK:** `\b<word>\b`, `word in text`, `text.count(word)`, substring
+bucket tests like `'can read' in name`, any classifier whose branches are
+`if ... elif ... ` with no final `else` that records the leftover, and any place
+a **resource or agent NAME** is matched against arbitrary changed lines, commit
+messages or free-text summaries.
