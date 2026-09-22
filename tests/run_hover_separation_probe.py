@@ -475,9 +475,26 @@ ok('F14 ...and the auditor-commit ROW marks it rather than showing a bare 0',
 ok('F15 CONTROL: the real document\'s auditor rows show 0 out of scope, so '
    'F14 is discriminating',
    'VIOLATION' not in doc.split('## The auditor')[1].split('\n---\n')[0], '')
-ok('F16 CONTROL: the real document does NOT say violation, so F12 is '
-   'discriminating rather than matching any document',
-   'SEPARATION VIOLATION' not in doc, '')
+# ── F16 RE-AIMED 2026-09-22, AND THE REASON IS A REAL FINDING ─────────────
+# This asserted that the LIVE document does not say SEPARATION VIOLATION, using
+# the live corpus as the negative case. That premise stopped holding the day the
+# multi-log fix let hover_separation_audit.py actually READ the self-logs again:
+# it now reports 1 violation, and that violation is a FALSE POSITIVE --
+# OWN_COMMIT_RE matches "pushed <sha>" inside hover's QUOTATION of cody's status
+# line, so a sha hover CITED is counted as a sha hover CLAIMS. See the open-work
+# row; it is not a hover breach.
+#
+# A CONTROL MUST NOT REST ON LIVE DATA STAYING CLEAN. Re-aimed to an A/B on the
+# SAME generator: the same synthetic trail, once with a violation and once
+# without. That is what actually shows F12 discriminates, and it cannot be
+# falsified by anything happening in the real corpus.
+_clean_doc_path = os.path.join(_tmpF, 'noviolation.md')
+A.write_report(_clean_doc_path, _viol_trail, Counter({'hover': 1}), _viol_hov,
+               [], [], {}, 0)
+_cleandoc = io.open(_clean_doc_path, encoding='utf-8').read()
+ok('F16 CONTROL: the SAME generator with NO violations produces a document that '
+   'does not say it, so F12 is discriminating rather than matching any document',
+   'SEPARATION VIOLATION' not in _cleandoc, _cleandoc[-400:])
 
 # A COULD-NOT-RUN MUST NOT READ AS CLEAN IN THE DOCUMENT EITHER.
 _cnr = os.path.join(_tmpF, 'cnr.md')

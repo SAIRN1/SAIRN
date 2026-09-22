@@ -104,27 +104,36 @@ def gaps(rows, seqs):
     return out
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser(add_help=True)
-    ap.add_argument('--fail-hours', type=float, default=FAIL_HOURS)
-    ap.add_argument('--warn-hours', type=float, default=WARN_HOURS)
-    ap.add_argument('--selftest', action='store_true')
-    args = ap.parse_args(argv)
-    if args.selftest:
-        return selftest()
+def cnr(msg):
+    """COULD NOT RUN for ONE session. Prints and RETURNS 2 -- it does not exit.
 
-    rows, path, problem = HSA.read_hover_log()
-    if problem:
-        fail(problem)
+    fail() calls sys.exit(2) directly, which was correct while there was exactly
+    one session and is the specific trap in a loop: it would kill the process
+    after the first log and make every later session invisible. The aggregate in
+    main() is what decides the exit code now.
+    """
+    print('  COULD NOT RUN: ' + msg)
+    return 2
+
+
+def _check_one_session(rows, path, args):
+    """One session's freshness. Returns 0 OK/WARN, 1 STALE, 2 COULD NOT RUN.
+
+    LIFTED FROM main() (2026-09-22) with one change of kind: every fail() became
+    a RETURNED could-not-run. Nothing about the bounds, the calibration or the
+    staleness arithmetic moved.
+    """
 
     ok, why, _n = HSA.verify_chain(rows)
     if not ok:
-        fail('the self-log HASH CHAIN does not verify (%s). A timestamp read '
+        return cnr('the self-log HASH CHAIN does not verify (%s). A timestamp read '
              'out of an unverified chain is the thing being checked vouching '
              'for itself.' % why)
 
     flagged = [r for r in rows if r.get('process_pass')]
-    print('HOVER PROCESS-PASS FRESHNESS -- asked from the build side')
+    # The banner is printed once by main(); this printed its own because it WAS
+    # the only session. The path stays, so a reader sees which log each block is
+    # about.
     print('  log: %s' % path)
     print('  %d entries, chain verifies' % len(rows))
 
@@ -136,7 +145,7 @@ def main(argv=None):
               % (max(h for _s, h in g), args.warn_hours, args.fail_hours))
 
     if not flagged:
-        fail('NO entry carries process_pass. That is not "the auditor never ran "'
+        return cnr('NO entry carries process_pass. That is not "the auditor never ran "'
              'a process pass" -- the field postdates the first real ones -- it '
              'is that this tool has nothing it is allowed to count. Counting '
              'prose instead would make the auditor\'s own wording load-bearing.')
@@ -144,7 +153,7 @@ def main(argv=None):
     first, last = flagged[0], flagged[-1]
     le = epoch(last.get('ts'))
     if le is None:
-        fail('the newest flagged entry (seq %s) has an unparseable ts %r'
+        return cnr('the newest flagged entry (seq %s) has an unparseable ts %r'
              % (last.get('seq'), last.get('ts')))
     age = (time.time() - le) / 3600.0
 
@@ -171,6 +180,60 @@ def main(argv=None):
         return 0
     print('OK: a process pass was recorded %.1f hours ago, inside the %.0f-hour '
           'bound.' % (age, args.warn_hours))
+    return 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(add_help=True)
+    ap.add_argument('--fail-hours', type=float, default=FAIL_HOURS)
+    ap.add_argument('--warn-hours', type=float, default=WARN_HOURS)
+    ap.add_argument('--selftest', action='store_true')
+    args = ap.parse_args(argv)
+    if args.selftest:
+        return selftest()
+
+    # ── ONE VERDICT PER SESSION, WORST WINS (2026-09-22) ─────────────────
+    # This called HSA.read_hover_log() and refused outright once two logs
+    # existed, so both sessions lost their answer the day a second hover
+    # instance started. Each log is now checked on its own and NOTHING IS FUSED:
+    # hover2's genuine "no process pass logged yet" must not read as hover1
+    # being stale, and hover1 being fine must not cover for hover2.
+    #
+    # PRECEDENCE IS THE ONE hover_separation_audit.py ALREADY USES: any STALE
+    # beats any COULD NOT RUN beats clean. A second session can never soften a
+    # first.
+    print('HOVER PROCESS-PASS FRESHNESS -- asked from the build side')
+    print('')
+    logs = HSA.read_hover_logs()
+    if not logs:
+        fail('no hover auditor self-log found under '
+             '~/.claude/projects/*/hover-audit-log/. Set SAIRN_HOVER_LOG to '
+             'point at it.')
+
+    codes = []
+    for lg in logs:
+        print('-- %s --' % lg['session'])
+        if lg['problem']:
+            codes.append(cnr(lg['problem']))
+            print('')
+            continue
+        ok, why, _n = HSA.verify_chain(lg['rows'])
+        if not ok:
+            codes.append(cnr('the self-log HASH CHAIN does not verify (%s). A '
+                             'timestamp read out of an unverified chain is the '
+                             'thing being checked vouching for itself.' % why))
+            print('')
+            continue
+        codes.append(_check_one_session(lg['rows'], lg['path'], args))
+        print('')
+
+    if 1 in codes:
+        print('OVERALL: at least one session is STALE (not a clean bill)')
+        return 1
+    if 2 in codes:
+        print('OVERALL: PART COULD NOT RUN (not a clean bill)')
+        return 2
+    print('OVERALL: every session inside its bound')
     return 0
 
 

@@ -192,9 +192,55 @@ def find_hover_log():
         p = os.path.join(base, name, 'hover-audit-log', 'hover-audit-log.jsonl')
         if os.path.isfile(p):
             hits.append(p)
-    # More than one is NOT a case to pick a winner in: two black boxes for one
-    # role means somebody has a second copy and neither is authoritative.
+    # ── MORE THAN ONE IS NOW THE EXPECTED SHAPE (2026-09-22) ─────────────────
+    # This used to return the bare LIST on count > 1, and both callers read that
+    # as "none of them is authoritative" and refused. The reasoning was sound
+    # when one hover instance existed: two black boxes for one role meant
+    # somebody had a second copy.
+    #
+    # A SECOND INSTANCE IS NOW A DELIBERATE THROUGHPUT DECISION, and the moment
+    # hover2 built its own real self-log BOTH tools began refusing for BOTH
+    # sessions -- a self-inflicted split-brain caused by the very fix that was
+    # wanted. Reproduced live by hover2 before any of this was changed.
+    #
+    # Each log is still independently OWNED by its directory, which is already a
+    # stable identifier, and each is still verified on its own. Nothing is fused:
+    # no chain is joined to another and no verdict is averaged with another. The
+    # aggregate keeps the precedence both tools already use -- violations beat
+    # could-not-run beats clean -- so a second session can never soften a first.
+    #
+    # find_hover_log() IS KEPT WITH ITS OLD BEHAVIOUR UNCHANGED, deliberately,
+    # so any caller still on the single-log contract keeps refusing rather than
+    # silently receiving one of several.
     return hits[0] if len(hits) == 1 else (hits or None)
+
+
+def find_hover_logs():
+    """Every self-log on this machine -- 0, 1 or many. The multi-log answer."""
+    env = os.environ.get('SAIRN_HOVER_LOG')
+    if env:
+        return [env] if os.path.isfile(env) else []
+    base = os.path.join(os.path.expanduser('~'), '.claude', 'projects')
+    if not os.path.isdir(base):
+        return []
+    out = []
+    for name in sorted(os.listdir(base)):
+        p = os.path.join(base, name, 'hover-audit-log', 'hover-audit-log.jsonl')
+        if os.path.isfile(p):
+            out.append(p)
+    return out
+
+
+def session_of(path):
+    """The owning session, taken from the directory rather than from the file.
+
+    ~/.claude/projects/<session-dir>/hover-audit-log/hover-audit-log.jsonl, so
+    the session is two levels up. Derived rather than parsed out of the entries,
+    because a log that lied about its own identity is exactly what this tool
+    exists to be able to detect.
+    """
+    d = os.path.dirname(os.path.dirname(os.path.abspath(path)))
+    return os.path.basename(d) or path
 
 
 def _canonical(value):
@@ -263,13 +309,44 @@ def read_hover_log():
                             'repository by design and a clone that is not the '
                             'auditor\'s will not have one.')
     if isinstance(path, list):
-        return None, None, ('MORE THAN ONE self-log found and none of them is '
-                            'authoritative:\n      ' + '\n      '.join(path))
+        # The single-log contract cannot answer for several, and says so by name
+        # rather than picking one. read_hover_logs() is the multi-log answer.
+        return None, None, ('MORE THAN ONE self-log found, so the SINGLE-log '
+                            'contract cannot answer -- call read_hover_logs() '
+                            'instead, which checks each independently. Found '
+                            '%d, one per session:\n      %s'
+                            % (len(path), '\n      '.join(
+                                '%s  (%s)' % (p, session_of(p)) for p in path)))
     try:
         rows = [json.loads(l) for l in io.open(path, encoding='utf-8') if l.strip()]
     except (OSError, ValueError) as exc:
         return None, path, 'the self-log could not be read: %s' % exc
     return rows, path, ''
+
+def read_hover_logs():
+    """Every self-log, read independently: [{path, session, rows, problem}].
+
+    One dict per discovered log, never fused. `problem` non-empty on an entry
+    means COULD NOT RUN for THAT session and says nothing about the others --
+    which is the whole point: hover2 having logged no process pass yet must not
+    read as hover1 being stale, and hover1 being fine must not cover for hover2.
+
+    An empty list means no log was found at all, which is the one case that is
+    still a single answer. Its absence is not evidence of anything: the logs live
+    outside this repository by design and a clone that is not an auditor's has
+    none.
+    """
+    paths = find_hover_logs()
+    out = []
+    for p in paths:
+        try:
+            rows = [json.loads(l) for l in io.open(p, encoding='utf-8') if l.strip()]
+            problem = ''
+        except (OSError, ValueError) as exc:
+            rows, problem = None, 'the self-log could not be read: %s' % exc
+        out.append({'path': p, 'session': session_of(p),
+                    'rows': rows, 'problem': problem})
+    return out
 
 
 def _utc(ts):
@@ -297,7 +374,7 @@ def write_csv(path, trail):
 
 
 def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
-                 log_report, rc):
+                 log_reports, rc):
     """The evidence document -- the thing somebody is actually shown.
 
     ── WHY THIS IS NOT JUST THE TERMINAL OUTPUT REDIRECTED ──────────────────
@@ -424,13 +501,24 @@ def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
     A('independently by this tool rather than by calling the log\'s own '
       '`--verify`.')
     A('')
-    if not log_report:
+    # ── ONE SUBSECTION PER SESSION (2026-09-22) ──────────────────────────
+    # This rendered ONE table because there was one log, and step 2's rename of
+    # the parameter left the body still saying `log_report` -- a latent
+    # NameError that only --report would have hit, which is why it was found by
+    # reading rather than by running. It now loops, and never merges two
+    # sessions into one row: a reader who cannot tell which instance a figure
+    # came from cannot use the peer check the second instance exists for.
+    if not log_reports:
         A('**COULD NOT RUN.** The self-log was not readable from this clone, '
           'so the')
         A('git half above stands alone — and on its own it cannot prove the '
           'negative.')
         A('This is reported as unanswered, not as a pass.')
     else:
+      for _sess in sorted(log_reports):
+        log_report = log_reports[_sess]
+        A('#### %s' % _sess)
+        A('')
         A('| | |')
         A('|---|---|')
         A('| entries | %s |' % log_report.get('entries', '?'))
@@ -454,6 +542,7 @@ def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
               'are listed as')
             A('unexplained in the tool\'s own output and are why it exits 2 '
               'rather than 0.')
+        A('')
     A('')
     A('---')
     A('')
@@ -504,6 +593,115 @@ def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
     with io.open(path, 'w', encoding='utf-8', newline='\n') as fh:
         fh.write('\n'.join(L) + '\n')
 
+
+
+def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
+    """One session's self-log, checked on its own. Returns its report dict.
+
+    LIFTED VERBATIM FROM main() (2026-09-22) rather than rewritten. The body was
+    never the defect -- it verifies a chain and cross-checks claimed SHAs
+    correctly, and did so for the single log it was handed. What was wrong was the
+    assumption that there is exactly one. So this is the same code called once per
+    session, with `violations` and `could_not_run` accumulating across sessions
+    exactly as they did for one.
+
+    NOTHING IS FUSED. Each call sees one log: no chain is joined to another and no
+    verdict is averaged with another. A session that COULD NOT RUN records that
+    for itself and says nothing about the others -- which is the point, because
+    hover2 having logged no process pass yet must not read as hover1 being stale,
+    and hover1 being fine must not cover for hover2.
+    """
+    report = {}
+    ok, why, checked = verify_chain(rows)
+    # The aggregate header is printed once by main(); this used to print its own
+    # because it WAS the only one. Left as the path alone so a reader sees which
+    # file each per-session block is about.
+    print('  %s' % path)
+    print('  %d entries; hash chain re-derived independently: %s'
+          % (len(rows), 'INTACT' if ok else 'BROKEN'))
+    if not ok:
+        print('  %s' % why)
+        print('')
+        print('  REFUSING to report from a record whose chain does not')
+        print('  verify. A tampered black box is worse than none, because')
+        print('  it reads as evidence.')
+        could_not_run.append('self-log chain broken at entry %d: %s' % (checked, why))
+    else:
+        claimed = set()
+        for r in rows:
+            blob = (r.get('summary') or '') + ' ' + (r.get('ref') or '')
+            for m in OWN_COMMIT_RE.finditer(blob):
+                claimed.add(m.group(1))
+        resolved, unresolved = {}, []
+        for s in sorted(claimed):
+            code, out, _ = git('rev-parse', '--verify', s + '^{commit}')
+            if code != 0:
+                unresolved.append(s)
+            else:
+                resolved[s] = out.strip()
+        log_bad = []
+        for short, full in sorted(resolved.items()):
+            code, out, _ = git('show', '--name-only', '--format=', full)
+            files = [l.strip().replace('\\', '/') for l in out.split('\n') if l.strip()]
+            outside = [p for p in files if not in_auditor_scope(p)]
+            if outside:
+                log_bad.append((short, outside))
+                violations.append(('self-log', short, 'named by the auditor as its own', outside))
+        git_hover = {k['sha'] for k in hover_commits}
+        named_full = set(resolved.values())
+        print('  SHAs the log names as its OWN commits/pushes: %d' % len(claimed))
+        print('    resolve in this clone : %d' % len(resolved))
+        print('    of those, in scope    : %d' % (len(resolved) - len(log_bad)))
+        print('    of those, VIOLATIONS  : %d' % len(log_bad))
+        for short, outside in log_bad:
+            print('      VIOLATION %s -> %s' % (short, ', '.join(outside[:6])))
+        # ── THE UNRESOLVABLE HALF, EXPLAINED BY MEASUREMENT ─────────────
+        # The obvious reading is "a rebase before push rewrote the sha, so
+        # the local object never reached this clone." That is a hypothesis,
+        # and the log itself can test it: entries of the form "Committed a,
+        # pushed b" name both ends of exactly that rewrite. If the
+        # hypothesis holds, a is absent and b is present, every time.
+        paired, pair_ok = {}, 0
+        for r in rows:
+            m = PAIR_RE.search(r.get('summary') or '')
+            if m:
+                local, pushed = m.group(1), m.group(2)
+                paired[local] = pushed
+                if local not in resolved and pushed in resolved:
+                    pair_ok += 1
+        explained = [s for s in unresolved if s in paired and paired[s] in resolved]
+        unexplained = [s for s in unresolved if s not in explained]
+        print('    DO NOT RESOLVE here   : %d' % len(unresolved))
+        if unresolved:
+            print('      %d of %d are EXPLAINED rather than assumed away: the'
+                  % (len(explained), len(unresolved)))
+            print('      log names both ends of the rewrite ("Committed a,')
+            print('      pushed b"), and the pushed counterpart resolves here')
+            print('      and is in scope. Tested over every such pair in the')
+            print('      log: %d of %d have the local sha ABSENT and the'
+                  % (pair_ok, len(paired)))
+            print('      pushed one PRESENT, which is what a rebase-before-')
+            print('      push produces and nothing else here does.')
+            if unexplained:
+                print('      %d are NOT explained and are NOT shown to be clean'
+                      % len(unexplained))
+                print('      by this tool: %s' % ', '.join(unexplained[:10]))
+                could_not_run.append(
+                    '%d sha(s) the self-log claims are unresolvable in this '
+                    'clone and unpaired: %s'
+                    % (len(unexplained), ', '.join(unexplained[:6])))
+        only_git = sorted(git_hover - named_full)
+        print('    git-visible auditor commits NOT named by the log: %d'
+              % len(only_git))
+        for s in only_git[:10]:
+            code, out, _ = git('log', '-1', '--format=%s', s)
+            print('      %s %s' % (s[:8], out.strip()[:58]))
+        report = {'entries': len(rows), 'chain': 'intact',
+                      'claimed': len(claimed), 'resolved': len(resolved),
+                      'unresolved': unresolved, 'violations': len(log_bad),
+                      'git_only': [s[:8] for s in only_git]}
+    
+    return report
 
 def main(argv=None):
     ap = argparse.ArgumentParser(add_help=True)
@@ -595,10 +793,26 @@ def main(argv=None):
             print('        %s' % p)
     print('')
 
-    # ── the second, structurally different source ────────────────────────────
-    rows, path, problem = read_hover_log()
-    log_report = {}
-    if problem:
+    # ── the second, structurally different source ────────────────────────
+    # ONE LOG PER SESSION, EACH CHECKED INDEPENDENTLY (2026-09-22). This called
+    # read_hover_log() and refused outright the moment two logs existed -- which
+    # happened the day a second hover instance was deliberately started, so BOTH
+    # tools began refusing for BOTH sessions at once. A self-inflicted split-brain
+    # caused by the very throughput fix that was wanted.
+    #
+    # REPRODUCED LIVE BY hover2 BEFORE ANYTHING HERE CHANGED, and routed out to
+    # the build side rather than self-applied: tools/ is outside the auditor's own
+    # scope gate by design, and this file's own docstring says it is maintained
+    # from the build side because an auditor enforcing its own separation proves
+    # nothing about the case where the auditor is the problem.
+    log_reports = {}
+    _logs = read_hover_logs()
+    if not _logs:
+        problem = ('no hover auditor self-log found under '
+                   '~/.claude/projects/*/hover-audit-log/. Set SAIRN_HOVER_LOG '
+                   'to point at it. Its absence is not evidence of anything -- '
+                   'it lives outside this repository by design and a clone that '
+                   "is not the auditor's will not have one.")
         could_not_run.append('self-log cross-reference: ' + problem)
         print('SELF-LOG CROSS-REFERENCE -- COULD NOT RUN')
         print('  %s' % problem)
@@ -608,93 +822,21 @@ def main(argv=None):
         print('  this the question is open, not answered.')
         print('')
     else:
-        ok, why, checked = verify_chain(rows)
-        print('SELF-LOG CROSS-REFERENCE')
-        print('  %s' % path)
-        print('  %d entries; hash chain re-derived independently: %s'
-              % (len(rows), 'INTACT' if ok else 'BROKEN'))
-        if not ok:
-            print('  %s' % why)
-            print('')
-            print('  REFUSING to report from a record whose chain does not')
-            print('  verify. A tampered black box is worse than none, because')
-            print('  it reads as evidence.')
-            could_not_run.append('self-log chain broken at entry %d: %s' % (checked, why))
-        else:
-            claimed = set()
-            for r in rows:
-                blob = (r.get('summary') or '') + ' ' + (r.get('ref') or '')
-                for m in OWN_COMMIT_RE.finditer(blob):
-                    claimed.add(m.group(1))
-            resolved, unresolved = {}, []
-            for s in sorted(claimed):
-                code, out, _ = git('rev-parse', '--verify', s + '^{commit}')
-                if code != 0:
-                    unresolved.append(s)
-                else:
-                    resolved[s] = out.strip()
-            log_bad = []
-            for short, full in sorted(resolved.items()):
-                code, out, _ = git('show', '--name-only', '--format=', full)
-                files = [l.strip().replace('\\', '/') for l in out.split('\n') if l.strip()]
-                outside = [p for p in files if not in_auditor_scope(p)]
-                if outside:
-                    log_bad.append((short, outside))
-                    violations.append(('self-log', short, 'named by the auditor as its own', outside))
-            git_hover = {k['sha'] for k in hover_commits}
-            named_full = set(resolved.values())
-            print('  SHAs the log names as its OWN commits/pushes: %d' % len(claimed))
-            print('    resolve in this clone : %d' % len(resolved))
-            print('    of those, in scope    : %d' % (len(resolved) - len(log_bad)))
-            print('    of those, VIOLATIONS  : %d' % len(log_bad))
-            for short, outside in log_bad:
-                print('      VIOLATION %s -> %s' % (short, ', '.join(outside[:6])))
-            # ── THE UNRESOLVABLE HALF, EXPLAINED BY MEASUREMENT ─────────────
-            # The obvious reading is "a rebase before push rewrote the sha, so
-            # the local object never reached this clone." That is a hypothesis,
-            # and the log itself can test it: entries of the form "Committed a,
-            # pushed b" name both ends of exactly that rewrite. If the
-            # hypothesis holds, a is absent and b is present, every time.
-            paired, pair_ok = {}, 0
-            for r in rows:
-                m = PAIR_RE.search(r.get('summary') or '')
-                if m:
-                    local, pushed = m.group(1), m.group(2)
-                    paired[local] = pushed
-                    if local not in resolved and pushed in resolved:
-                        pair_ok += 1
-            explained = [s for s in unresolved if s in paired and paired[s] in resolved]
-            unexplained = [s for s in unresolved if s not in explained]
-            print('    DO NOT RESOLVE here   : %d' % len(unresolved))
-            if unresolved:
-                print('      %d of %d are EXPLAINED rather than assumed away: the'
-                      % (len(explained), len(unresolved)))
-                print('      log names both ends of the rewrite ("Committed a,')
-                print('      pushed b"), and the pushed counterpart resolves here')
-                print('      and is in scope. Tested over every such pair in the')
-                print('      log: %d of %d have the local sha ABSENT and the'
-                      % (pair_ok, len(paired)))
-                print('      pushed one PRESENT, which is what a rebase-before-')
-                print('      push produces and nothing else here does.')
-                if unexplained:
-                    print('      %d are NOT explained and are NOT shown to be clean'
-                          % len(unexplained))
-                    print('      by this tool: %s' % ', '.join(unexplained[:10]))
-                    could_not_run.append(
-                        '%d sha(s) the self-log claims are unresolvable in this '
-                        'clone and unpaired: %s'
-                        % (len(unexplained), ', '.join(unexplained[:6])))
-            only_git = sorted(git_hover - named_full)
-            print('    git-visible auditor commits NOT named by the log: %d'
-                  % len(only_git))
-            for s in only_git[:10]:
-                code, out, _ = git('log', '-1', '--format=%s', s)
-                print('      %s %s' % (s[:8], out.strip()[:58]))
-            log_report = {'entries': len(rows), 'chain': 'intact',
-                          'claimed': len(claimed), 'resolved': len(resolved),
-                          'unresolved': unresolved, 'violations': len(log_bad),
-                          'git_only': [s[:8] for s in only_git]}
+        print('SELF-LOG CROSS-REFERENCE -- %d log(s) found, one per session, '
+              'each checked independently:' % len(_logs))
         print('')
+        for _lg in _logs:
+            print('-- %s --' % _lg['session'])
+            if _lg['problem']:
+                could_not_run.append('self-log cross-reference (%s): %s'
+                                     % (_lg['session'], _lg['problem']))
+                print('  COULD NOT RUN: %s' % _lg['problem'])
+                print('')
+                continue
+            log_reports[_lg['session']] = _selflog_one(
+                _lg['rows'], _lg['path'], _lg['session'],
+                hover_commits, violations, could_not_run)
+            print('')
 
     print('=' * 72)
     if violations:
@@ -727,12 +869,12 @@ def main(argv=None):
         print(json.dumps({'total': total, 'attribution': dict(by_who),
                           'auditor_commits': [k['sha'][:8] for k in hover_commits],
                           'violations': violations, 'could_not_run': could_not_run,
-                          'self_log': log_report, 'trail': trail if args.trail else []},
+                          'self_log': log_reports, 'trail': trail if args.trail else []},
                          indent=1))
 
     if args.report:
         write_report(args.report, trail, by_who, hover_commits, violations,
-                     could_not_run, log_report, rc)
+                     could_not_run, log_reports, rc)
         print('wrote %s' % args.report)
     if args.csv:
         write_csv(args.csv, trail)

@@ -190,6 +190,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; Two hover tools refused outright for BOTH sessions the moment a second hover instance existed &mdash; a self-inflicted split-brain caused by the throughput fix that was wanted** | **FIXED 2026-09-22 (Fourth)** &mdash; `tools/hover_separation_audit.py` and `tools/hover_process_pass_freshness.py`. Designed, driven and proposed by **hover2**; applied from the build side | `tests/run_hover_separation_probe.py` |
+| **&#9888; The separation audit now reports **1 SEPARATION VIOLATION** against hover1 and it is a FALSE POSITIVE &mdash; the attribution regex cannot tell hover QUOTING somebody else&rsquo;s &ldquo;pushed &lt;sha&gt;&rdquo; from hover claiming its own** | **FOUND 2026-09-22 (Fourth), NOT FIXED** &mdash; surfaced by the multi-log fix above; **the tool could not run at all while this was hiding** | `tests/run_cross_tenant_scope_probe.py`, `tests/run_self_exclusion_guard_sabotage_probe.py` |
 | **Independent review of the law-phase-2 control probe (CC) &mdash; the ALLOW/REFUSAL bucketing cannot see 9 of 25 arms, and SIX of the nine are the refusal arms its verdict rests on** | **REVIEWED 2026-09-22 (Fourth)** &mdash; `tests/law_phase2_control_bucketing_review_probe.py`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/law_phase2_control_bucketing_review_probe.py` |
 | **&#9888; The control probe&rsquo;s ALLOW/REFUSAL split is a regex over ARM NAMES and misses 36% of the suite &mdash; including the refusal arms whose emptiness is the whole safety argument** | **OPEN 2026-09-22, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s review of cc&rsquo;s `2026-09-22T10:00:26Z`; the risk was cc&rsquo;s own disclosure and the measurement is worse than the disclosure  | `api/sd-data-law-phase2-session.test.js`, `tests/law_phase2_control_review_probe.py` |
 | **&#128308; The cross-tenant grader’s own importer guard is RED on main, and it takes its sabotage control down with it** | **FOUND 2026-09-21 (Cody), reviewing cc’s `20:42:06Z` obligation &mdash; NOT FIXED BY ME** &mdash; `tests/grader_exclusion_parser_review_probe.py`, added in `4c7892e9` AFTER that obligation was opened | `tests/grader_exclusion_parser_review_probe.py`, `tests/run_cross_tenant_scope_probe.py`, `tests/run_self_exclusion_guard_sabotage_probe.py` |
@@ -728,7 +730,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 662   tests/**, api/** (both walked)
-  open-work rows citing a test       332   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       334   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
