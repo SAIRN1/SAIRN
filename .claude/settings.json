@@ -135,9 +135,9 @@
           },
           {
             "type": "command",
-            "command": "python \"C:/Users/marsh/.claude/projects/C--Users-marsh-Documents-SAIRN-hover/hover-audit-log/hover_self_health_hook.py\"",
-            "timeout": 20,
-            "statusMessage": "Running the hover auditor self-health check (no-op outside the hover auditor's own clone)..."
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/hover_self_health_shim.py\"",
+            "timeout": 30,
+            "statusMessage": "Running THIS clone's hover self-health check (silent no-op in a build clone; says so by name if this auditor clone has no hook installed)..."
           }
         ]
       }

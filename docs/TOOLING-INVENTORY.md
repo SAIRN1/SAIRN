@@ -19,13 +19,13 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**212 files in `tools/`.** By what actually invokes them:
+**213 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
-| **ADVISORY** | 2 | session-start or prompt hooks, informational |
+| **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 25 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 40 | nothing runs these at all |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 147 |
+| CHECKER | 148 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
 | LIVE | 20 |
@@ -291,10 +291,11 @@ is how a reader stops believing the number.
 
 ---
 
-## ADVISORY (2)
+## ADVISORY (3)
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `hover_self_health_shim.py` | CHECKER | a SessionStart hook registered by ABSOLUTE PATH into ONE clone, so a second instance of the same role self-checks the FIRST clone record on every firing while its own is never checked at all. Measured 2026-09-22: the hover self-health hook resolved its log from the SCRIPT location and its clone gate resolved from the CWD, and those two disagree the moment a second auditor exists -- which it does. This derives the per-clone path from CLAUDE_PROJECT_DIR and runs THAT, with THREE outcomes rather than two: silent in a build clone, the hook own output passed straight through in an auditor clone that has one, and a NAMED refusal in one that does not. There is deliberately NO fallback to a neighbouring clone copy, because the fallback IS the defect | `run_hover_self_health_shim_probe.py` |
 | `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_push_verify_probe.py` |
 | `sairn_status.py` | REPORTER | what every agent on this machine says it is doing, RIGHT NOW, without a push/pull. The gap tools/session_lock_check.py names in its own header and puts out of scope: the lock answers "is somebody else in THIS directory", this answers "what is every agent doing". tools/dispatch_state.py already joins the open-work index against the claims, but both of its inputs are in git, so its answer is only as fresh as the last fetch and an unpushed claim is invisible. This is the live half: ~/SAIRN-SESSION-LOCKS/status, outside every clone. ONE FILE PER AGENT, NOT ONE FILE WITH SECTIONS -- a shared file needs a read-modify-write and two interleaved readers silently erase each other, which the control measures at 5 of 6 agents lost. Writes are atomic (temp + os.replace) with a Windows retry on both sides of the rename. Read at SessionStart by a hook that FAILS OPEN. It refuses to call two task strings the same work -- that judgement scored 38% with five false positives out of five | `run_python_escape_hygiene_probe.py`, `run_sairn_status_probe.py` |
 
@@ -412,11 +413,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      212   git ls-files tools/
-  hook entries                         9   .claude\settings.json
+  tools on disk                      213   git ls-files tools/
+  hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            152   tests/**/*.py, *.js
+  tools invoked by tests/            153   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
