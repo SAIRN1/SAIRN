@@ -1830,8 +1830,8 @@
       "task": "alf_mar derive_charges unordered append-only read -- the third-signal gap hank's scanner could not see FILES: api/sd-data.js",
       "claimed_at": "2026-09-22T20:52:39Z",
       "claimed_at_epoch": 1790110359.7694538,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T21:05:00Z",
       "files": [
         "api/sd-data.js"
       ]
