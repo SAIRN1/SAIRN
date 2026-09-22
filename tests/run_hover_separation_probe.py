@@ -735,6 +735,171 @@ ok('G21 END TO END: the self-quoted out-of-scope sha now REACHES the verdict '
    'as a violation instead of being suppressed to zero',
    len(_sv) == 1 and 'DISPUTED' in _sv[0][2], (_sv, _srep))
 
+
+
+# ── H: THE GIT HALF'S VIOLATION BRANCH WAS STRUCTURALLY DEAD ───────────────
+# FINDING A of hank's review of 467baf74, CONFIRMED HERE BEFORE IT WAS ACTED
+# ON, structurally and then by measurement.
+#
+# `attribute()` returns 'hover' only when EVERY file is under
+# AUDITOR_SIGNATURE, and AUDITOR_SIGNATURE is a STRICT SUBSET of
+# AUDITOR_SCOPE. So `who == 'hover'` implies every file is in scope, which
+# implies `rec['outside']` is empty, which implies the branch that appends a
+# ('git', ...) violation CAN NEVER RUN. A genuine scope breach -- a hover
+# commit touching api/sd-data.js -- is attributed 'unattributed' and never
+# reaches the branch meant to catch it.
+#
+# MEASURED over all 6,564 commits in this repo: 31 attributed to hover, ZERO
+# reaching the violation branch.
+#
+# WHY NO CONTROL CAUGHT IT: F12 and F14 drive write_report() with a FABRICATED
+# violation tuple. They prove the REPORT says "SEPARATION VIOLATION" when
+# handed one -- they never ask whether anything can produce one. An arm that
+# tests the reporting of a finding is not an arm that tests its detection, and
+# that distinction is the whole of this section.
+print('\nH. the git half must be able to PRODUCE a violation, not just print one')
+
+_SIG = '.claude/skills/sairn-hover-auditor/SKILL.md'
+_REG = 'docs/defect-density-register.json'
+_OUT = 'api/sd-data.js'
+
+# H1 pins the structural fact the whole finding rests on, so it cannot quietly
+# stop being true: SIGNATURE is a strict subset of SCOPE, therefore
+# who == 'hover' can never carry an out-of-scope file.
+ok('H1 AUDITOR_SIGNATURE is a strict subset of AUDITOR_SCOPE, which is what '
+   'made the old branch unreachable',
+   A.signature_subset_of_scope()
+   and len(A.AUDITOR_SIGNATURE) < len(A.AUDITOR_SCOPE),
+   (A.AUDITOR_SIGNATURE, A.AUDITOR_SCOPE))
+ok('H2 ...so a commit attributed to hover NEVER has an out-of-scope file, '
+   'which is the proof the old branch could not fire',
+   A.attribute({'files': [_SIG, _OUT]})[0] != 'hover'
+   and A.attribute({'files': [_SIG]})[0] == 'hover',
+   (A.attribute({'files': [_SIG, _OUT]}), A.attribute({'files': [_SIG]})))
+
+# ── THE ARM THAT MATTERS: THE BREACH SHAPE IS NOW DETECTED ────────────────
+# A commit touching the auditor's EXCLUSIVE signature AND something outside
+# its scope is the only shape git alone can attribute to hover at all. It used
+# to come back 'unattributed' and vanish.
+_mixed_commit = {'sha': 'a' * 40, 'ts': 1757000000, 'subject': 'a breach',
+                 'files': [_SIG, _OUT]}
+_pure_commit = {'sha': 'b' * 40, 'ts': 1757000000, 'subject': 'in scope',
+                'files': [_SIG, _REG]}
+_other_commit = {'sha': 'c' * 40, 'ts': 1757000000, 'subject': 'a build agent',
+                 'files': [_OUT, 'stonedesk.html']}
+_found = A.mixed_signature_commits([_mixed_commit, _pure_commit, _other_commit])
+ok('H3 a commit mixing the auditor SIGNATURE with an out-of-scope file is '
+   'DETECTED -- the shape that was invisible',
+   len(_found) == 1 and _found[0][0]['sha'] == 'a' * 40, _found)
+ok('H4 ...and the out-of-scope path is named, not just counted',
+   _found and _found[0][1] == [_OUT], _found)
+ok('H5 CONTROL: a pure in-scope auditor commit is NOT flagged, so H3 is not a '
+   'rule that fires on every signature file',
+   all(k['sha'] != 'b' * 40 for k, _ in _found), _found)
+ok('H6 CONTROL: a commit with NO signature file is NOT flagged however far out '
+   'of scope it is -- attribution still requires the exclusive marker',
+   all(k['sha'] != 'c' * 40 for k, _ in _found), _found)
+
+# ── TWO SIGNALS TO ASSERT A BREACH, ONE TO RAISE A QUESTION ───────────────
+# A mixed commit is ambiguous on its own: hover may have breached scope, or a
+# build agent may have touched the skill mirror alongside its own work -- and
+# 8165d1ba is a real build-agent commit to that directory. So the self-log is
+# the second signal: if the log NAMES the sha as its own, that is hover
+# agreeing it is theirs, and only then is it asserted as a violation.
+_v, _c = [], []
+A.classify_mixed(_found, {'d' * 40}, _v, _c)
+ok('H7 a mixed commit the self-log does NOT name is a COULD-NOT-RUN question, '
+   'not an asserted breach', not _v and len(_c) == 1, (_v, _c))
+ok('H8 ...and the question says BOTH readings, so it cannot be read as an '
+   'accusation', _c and 'build agent' in _c[0].lower(), _c)
+_v2, _c2 = [], []
+A.classify_mixed(_found, {'a' * 40}, _v2, _c2)
+ok('H9 a mixed commit the self-log DOES name is a VIOLATION -- two independent '
+   'signals agreeing', len(_v2) == 1 and _v2[0][0] == 'git', (_v2, _c2))
+ok('H10 ...and it is NOT also filed as a could-not-run, because it is no '
+   'longer an open question', not _c2, _c2)
+
+# ── THE INVARIANT MUST FAIL CLOSED ────────────────────────────────────────
+# Everything above reasons from "signature is inside scope". If somebody edits
+# the constants so it is not, the reasoning is void and the tool must say so
+# rather than carry on.
+_real_sig = A.AUDITOR_SIGNATURE
+try:
+    A.AUDITOR_SIGNATURE = ('tools/',)
+    ok('H11 if SIGNATURE stops being a subset of SCOPE the invariant reports '
+       'FALSE, so the tool can refuse rather than reason from a premise that '
+       'no longer holds', not A.signature_subset_of_scope())
+finally:
+    A.AUDITOR_SIGNATURE = _real_sig
+ok('H12 CONTROL: and it reports TRUE again once restored, so H11 is not an '
+   'invariant that always fails', A.signature_subset_of_scope())
+
+# ── ON THE REAL CORPUS, STATED RATHER THAN HIDDEN ─────────────────────────
+_commits, _err = A.load_commits()
+if _err or not _commits:
+    ok('H13 COULD NOT RUN against real history: %s' % (_err or 'no commits'),
+       False, _err)
+else:
+    _real_mixed = A.mixed_signature_commits(_commits)
+    _hov = [k for k in _commits if A.attribute(k)[0] == 'hover']
+    print('    real corpus: %d commits, %d attributed to hover, %d mixed-'
+          'signature' % (len(_commits), len(_hov), len(_real_mixed)))
+    ok('H13 the detection runs against real history and reports a number '
+       'rather than erroring', isinstance(_real_mixed, list))
+    ok('H14 ...and there are commits attributed to hover to be checked at all, '
+       'so H13 is not passing on an empty set', len(_hov) > 0, len(_hov))
+
+
+# ── I: A COLON IS NOT A SENTENCE BREAK ────────────────────────────────────
+# FINDING B of hank's review, reproduced before it was acted on: the lead-in
+# for quote attribution was cut at the nearest sentence break, and `: ` was in
+# that list. A colon is the most common way to INTRODUCE a quotation, so
+# `cody said: "Committed <sha>, pushed."` truncated the lead-in to nothing and
+# the attribution came back `none` -- DISPUTED where it should be CITED.
+#
+# IT FAILS SAFE, which is why it is not urgent: under-suppression means more
+# matches reported, never fewer. What was wrong beyond the behaviour is that
+# the docstring said "back to the nearest sentence break or newline" while the
+# code was also cutting at a clause introducer, so the stated rule and the
+# implemented rule were different rules.
+print('\nI. a colon introduces a quotation; it does not end a sentence')
+_SHA = 'abc1234'
+
+
+def _cls(text, ref=_SHA, own='hover'):
+    return A.classify_own_commit(text, ref, _SHA, text.index(_SHA), own)[0]
+
+
+ok('I1 a colon IMMEDIATELY before the quote no longer truncates the lead-in '
+   '-- the attribution is still found',
+   _cls('cody said: "Committed %s, pushed."' % _SHA) == 'cited',
+   _cls('cody said: "Committed %s, pushed."' % _SHA))
+ok('I2 CONTROL: the same shape attributed to THIS log is still DISPUTED, so '
+   'I1 is not a rule that suppresses every colon-led quote',
+   _cls('I said: "Committed %s, pushed."' % _SHA) == 'disputed',
+   _cls('I said: "Committed %s, pushed."' % _SHA))
+ok('I3 CONTROL: a colon-led quote with NO speaker named at all is still '
+   'DISPUTED', _cls('The record says: "Committed %s, pushed."' % _SHA)
+   == 'disputed', _cls('The record says: "Committed %s, pushed."' % _SHA))
+ok('I4 REGRESSION: the real entry-404 shape, where the colon comes BEFORE the '
+   'attributing phrase, is still CITED',
+   _cls('Re-checked whether it settled: cody\'s status now shows '
+        '"pushed %s..."' % _SHA) == 'cited')
+ok('I5 ...and a plain attributed quote with no colon is unaffected',
+   _cls('cody\'s status shows "Committed %s, pushed."' % _SHA) == 'cited')
+# THE STATED RULE AND THE IMPLEMENTED RULE MUST BE THE SAME RULE. The boundary
+# set is a named constant so the docstring can point at it and this arm can
+# check it, rather than the two drifting in prose.
+ok('I6 the lead-in boundaries are sentence terminators and newlines only -- no '
+   'clause introducer', ':' not in ''.join(A.LEAD_IN_BOUNDARIES),
+   A.LEAD_IN_BOUNDARIES)
+ok('I7 ...and a NEWLINE still bounds it, so an unrelated earlier line cannot '
+   'attribute a quotation',
+   _cls('cody pushed something.\nThe log says "Committed %s, pushed."' % _SHA)
+   == 'disputed',
+   _cls('cody pushed something.\nThe log says "Committed %s, pushed."' % _SHA))
+
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:

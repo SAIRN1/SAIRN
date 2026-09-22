@@ -209,6 +209,24 @@ QUOTABLE_RE = re.compile(r'\b(' + '|'.join(QUOTABLE) + r')\b', re.I)
 # NOT read as the word "hover". `_` is a word character, so \bhover\b does not
 # match inside it -- which is the behaviour wanted, and is asserted rather than
 # assumed by the probe.
+# ── THE LEAD-IN BOUNDARY SET, NAMED SO THE RULE AND ITS DESCRIPTION AGREE ───
+# FINDING B of hank's review of 467baf74: `: ` used to be in this set. A colon
+# is the most common way to INTRODUCE a quotation, so `cody said: "Committed
+# <sha>, pushed."` truncated the lead-in to nothing and the attribution came
+# back `none` -- DISPUTED where it should be CITED.
+#
+# IT FAILED SAFE, which is why it was not urgent: under-suppression reports
+# more matches, never fewer. What was wrong beyond the behaviour is that the
+# docstring said "back to the nearest sentence break or newline" while the code
+# was ALSO cutting at a clause introducer. The stated rule and the implemented
+# rule were different rules, and only one of them was reviewable.
+#
+# A semicolon stays: it genuinely separates clauses, and "cody flagged it; my
+# own log says ..." lands on `self` either way because the rule takes the
+# NEAREST marker. It is kept for the case where the earlier clause is the only
+# thing naming a session.
+LEAD_IN_BOUNDARIES = ('\n', '. ', '! ', '? ', '; ')
+
 SELF_MARKER = re.compile(
     r'\bI\b|\bmy\b|\bmine\b|\bmyself\b|\bmy own\b|\bthis log\b|\bits own\b|'
     r'\bthis record\b|\bmy earlier\b', re.I)
@@ -225,13 +243,16 @@ def short_session(session):
 def quote_attribution(summary, quote_open, own_session):
     """'other', 'self' or 'none' for the quotation opening at `quote_open`.
 
-    The lead-in is bounded STRUCTURALLY -- back to the nearest sentence break
-    or newline -- rather than by a character count, because the attributing
-    phrase is always in the same sentence as the quote it introduces, and a
-    fixed window is the defect class this platform named as scrubber item 24.
+    The lead-in is bounded STRUCTURALLY -- back to the nearest of
+    LEAD_IN_BOUNDARIES -- rather than by a character count, because the
+    attributing phrase is always in the same sentence as the quote it
+    introduces, and a fixed window is the defect class this platform named as
+    scrubber item 24. The boundary set is a NAMED CONSTANT so this sentence and
+    the code cannot describe different rules, which is exactly what happened
+    when `: ` was in the set and this docstring said "sentence break".
     """
     lo = 0
-    for sep in ('\n', '. ', '! ', '? ', '; ', ': '):
+    for sep in LEAD_IN_BOUNDARIES:
         k = summary.rfind(sep, 0, quote_open)
         if k >= 0 and k + len(sep) > lo:
             lo = k + len(sep)
@@ -334,6 +355,96 @@ def load_commits():
         elif line.strip() and cur is not None:
             cur['files'].append(line.strip().replace('\\', '/'))
     return commits, ''
+
+
+# ── THE GIT HALF COULD PRINT A VIOLATION AND COULD NOT PRODUCE ONE ──────────
+# FINDING A of hank's review of 467baf74, confirmed structurally and then
+# measured before it was acted on.
+#
+# `attribute()` returns 'hover' only when EVERY file is under
+# AUDITOR_SIGNATURE, and AUDITOR_SIGNATURE is a STRICT SUBSET of AUDITOR_SCOPE.
+# So `who == 'hover'` implied every file was in scope, which implied the
+# `outside` list was empty, which made the branch that appends a ('git', ...)
+# violation UNREACHABLE. A genuine scope breach -- a hover commit touching
+# api/sd-data.js -- came back 'unattributed' and never reached the branch
+# written to catch it. MEASURED over all 6,564 commits in this repo: 31
+# attributed to hover, ZERO reaching that branch.
+#
+# WHY NO CONTROL CAUGHT IT, and this is the part worth keeping: arms F12 and
+# F14 drive write_report() with a FABRICATED violation tuple. They prove the
+# REPORT says "SEPARATION VIOLATION" when handed one. They never ask whether
+# anything can produce one. An arm that tests the REPORTING of a finding is not
+# an arm that tests its DETECTION.
+#
+# WHAT CAN ACTUALLY BE DETECTED FROM GIT, and it is narrower than it looks.
+# Every commit on this platform carries the same author, so git cannot say who
+# made one. The ONLY handle is the exclusive signature: nothing but the auditor
+# should be writing `.claude/skills/sairn-hover-auditor/`. A commit touching
+# that AND something outside the auditor's scope is the breach shape.
+#
+# BUT IT IS AMBIGUOUS ON ITS OWN, so it is NOT asserted as a breach. 8165d1ba
+# is a real BUILD AGENT commit to that directory -- a skill mirror -- and a
+# mirror sweep touching several skill directories at once would produce exactly
+# this shape while being nobody's breach. So the self-log is the second signal:
+# only when the auditor's own record NAMES the sha is it reported as a
+# violation. Otherwise it is a QUESTION, printed and filed as could-not-run,
+# never silently dropped and never asserted.
+def signature_subset_of_scope():
+    """The invariant every line of reasoning above rests on.
+
+    Checked at runtime rather than asserted in a comment, because the whole
+    account of why the old branch was dead -- and why the new detection needs
+    to exist -- is void if somebody edits the constants so a signature path is
+    no longer in scope.
+    """
+    return all(_under(p, AUDITOR_SCOPE) for p in AUDITOR_SIGNATURE)
+
+
+def mixed_signature_commits(commits):
+    """[(commit, out_of_scope_paths)] for the breach shape git can see.
+
+    Touches the auditor's EXCLUSIVE signature AND something outside its scope.
+    A commit with no signature file is not attributable to the auditor at all
+    however far out of scope it is, and a pure in-scope auditor commit is not a
+    breach -- both are controls in the probe rather than assumptions here.
+    """
+    out = []
+    for k in commits:
+        files = k.get('files') or []
+        if any(is_auditor_signature(p) for p in files):
+            outside = [p for p in files if not in_auditor_scope(p)]
+            if outside:
+                out.append((k, outside))
+    return out
+
+
+def classify_mixed(mixed, named_shas, violations, could_not_run):
+    """Split mixed-signature commits by whether the self-log claims them.
+
+    NAMED BY THE LOG -> a VIOLATION: two independent sources agreeing, the
+    auditor's own record and the file list in git.
+
+    NOT NAMED -> a QUESTION, filed as could-not-run so the run cannot exit 0.
+    Both readings are printed because only one of them is an accusation, and
+    asserting the wrong one about another agent is the failure this file has
+    already made twice today.
+    """
+    for k, outside in mixed:
+        sha = k['sha']
+        if any(_sha_prefix_match(sha, n) for n in named_shas):
+            violations.append(
+                ('git', sha[:8],
+                 k.get('subject', ''),
+                 outside))
+        else:
+            could_not_run.append(
+                'commit %s touches the auditor\'s exclusive signature AND %d '
+                'path(s) outside its scope (%s), and the self-log does NOT '
+                'name it. That is either a scope breach the auditor did not '
+                'record, or a BUILD AGENT touching the skill mirror alongside '
+                'its own work -- 8165d1ba is a real commit of the second kind. '
+                'This tool cannot tell them apart and is not guessing.'
+                % (sha[:8], len(outside), ', '.join(outside[:4])))
 
 
 def attribute(commit):
@@ -943,6 +1054,11 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
                       'unresolved': unresolved, 'violations': len(log_bad),
                       'cited': {s: cited[s][2] for s in cited},
                       'disputed': sorted(disputed),
+                      # THE FULL SHAs THIS LOG NAMES AS ITS OWN, already
+                      # resolved through `git rev-parse` above. Carried out so
+                      # the git half can use them as its SECOND signal rather
+                      # than resolving the same shas a second time.
+                      'named': sorted(resolved.values()),
                       'git_only': [s[:8] for s in only_git]}
     
     return report
@@ -995,10 +1111,25 @@ def main(argv=None):
                'subject': k['subject'], 'n_files': len(k['files'])}
         if who == 'hover':
             hover_commits.append(k)
+            # KEPT, AND IT IS STRUCTURALLY EMPTY BY THE INVARIANT ABOVE.
+            # who == 'hover' means every file is under AUDITOR_SIGNATURE, which
+            # is inside AUDITOR_SCOPE, so this list cannot be non-empty while
+            # signature_subset_of_scope() holds. The report still prints it, so
+            # a constants edit that broke the invariant would show here -- and
+            # the invariant itself is checked below rather than assumed.
             rec['outside'] = [p for p in k['files'] if not in_auditor_scope(p)]
             if rec['outside']:
                 violations.append(('git', k['sha'][:8], k['subject'], rec['outside']))
         trail.append(rec)
+
+    # ── THE DETECTION THAT REPLACES THE DEAD BRANCH ──────────────────────
+    if not signature_subset_of_scope():
+        could_not_run.append(
+            'AUDITOR_SIGNATURE is no longer inside AUDITOR_SCOPE, so the git '
+            'half\'s reasoning about which commits can breach scope does not '
+            'hold. Refusing to report from it rather than reasoning from a '
+            'premise somebody edited out.')
+    mixed = mixed_signature_commits(commits)
 
     total = len(commits)
     unattr = by_who['UNATTRIBUTED']
@@ -1081,6 +1212,30 @@ def main(argv=None):
                 _lg['rows'], _lg['path'], _lg['session'],
                 hover_commits, violations, could_not_run)
             print('')
+
+    # ── THE GIT HALF'S SECOND SIGNAL, WHICH IS THE SELF-LOG ─────────────
+    # Deliberately AFTER the self-log pass: a mixed-signature commit is only
+    # asserted as a breach when the auditor's own record names it, and that
+    # set does not exist until the logs have been read.
+    print('MIXED-SIGNATURE COMMITS -- the only breach shape git alone can see:')
+    _named = set()
+    for _r in log_reports.values():
+        _named.update(_r.get('named') or [])
+    if not mixed:
+        print("  0 found. A commit touching the auditor's exclusive signature")
+        print('  AND a path outside its scope is what this looks for. There are')
+        print('  none in %d commits -- ARMED AND UNEXERCISED, which is not the' % total)
+        print('  same as tested: the controls drive it on synthetic commits.')
+    else:
+        print('  %d found. Each is checked against the self-log, because the'
+              % len(mixed))
+        print('  shape alone is ambiguous -- a build agent touching the skill')
+        print('  mirror alongside its own work produces it too.')
+        for _k, _out in mixed:
+            print('    %s %s' % (_k['sha'][:8], _k.get('subject', '')[:54]))
+            print('       outside scope: %s' % ', '.join(_out[:5]))
+    classify_mixed(mixed, _named, violations, could_not_run)
+    print('')
 
     print('=' * 72)
     if violations:
