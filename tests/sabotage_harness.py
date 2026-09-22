@@ -25,6 +25,19 @@ copied harness is a copy that will drift from all five:
   * DIRT IS COMPARED BEFORE AGAINST AFTER. Asking only "is this file dirty now"
     fires on the author's own uncommitted work, which is how a probe becomes one
     people ignore -- and that is how real residue gets through.
+  * `stage` EVERY FILE THE SUITE READS THAT THIS SESSION HAS TOUCHED, not just
+    the suite. The worktree is at HEAD. If the suite asserts something about a
+    fix that is still uncommitted -- the app file, the lib, the tool -- the
+    baseline measures the OLD code against the NEW suite, goes red, and plants
+    nothing. THE SYMPTOM IS NOT OBVIOUS FROM THE MESSAGE: the probe says "the
+    baseline is red, so no mutation below would mean anything", and the red arm
+    is about your own change rather than about any mutation, so it reads as a
+    broken suite. Two sessions hit this hours apart on 2026-09-21/22 and made
+    the same one-line fix independently -- cody staging `api/sd-data.js` into
+    `tests/session_gate_table_probe.py`, cc staging `sairnvet.html` into
+    `tests/sairnvet_controlled_export_probe.py`. Neither found the other's note,
+    because both were comments beside a call rather than a rule here. The
+    baseline failure now NAMES the likely files; see `_unstaged_suspects()`.
 
 Usage:
 
@@ -115,6 +128,51 @@ def _carry_identity(wt):
     return name
 
 
+def _unstaged_suspects(suite, stage):
+    """Files this clone has modified, named by the suite, and NOT staged.
+
+    A guess, and it says so where it prints. The point is not to be right --
+    it is that a session reading "the baseline is red" should be handed the
+    list it would otherwise have to assemble by hand, which is what two
+    sessions did independently before deciding to add one `stage` entry each.
+
+    Deliberately NARROW: only files git reports as modified, and only those the
+    suite mentions by path. A broader guess would print half the repo and be
+    ignored, which is the failure mode of every noisy diagnostic.
+    """
+    try:
+        dirty = subprocess.run(['git', '-C', REPO, 'status', '--porcelain'],
+                               capture_output=True, text=True, encoding='utf-8',
+                               errors='replace').stdout
+    except OSError:
+        return []
+    changed = []
+    for line in dirty.splitlines():
+        rel = line[3:].strip().strip('"')
+        if ' -> ' in rel:
+            rel = rel.split(' -> ')[-1]
+        if rel:
+            changed.append(rel.replace('\\', '/'))
+    if not changed:
+        return []
+    try:
+        body = io.open(os.path.join(REPO, suite), encoding='utf-8',
+                       errors='replace').read()
+    except OSError:
+        return []
+    staged = {suite.replace('\\', '/')} | {s.replace('\\', '/') for s in stage}
+    out = []
+    for rel in changed:
+        if rel in staged:
+            continue
+        # The suite has to NAME it -- by full path or by basename. A suite that
+        # never mentions a file cannot be red because of it.
+        base = rel.rsplit('/', 1)[-1]
+        if rel in body or (len(base) > 6 and base in body):
+            out.append(rel)
+    return sorted(set(out))
+
+
 def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
     """0 when every planted defect was refused, 1 when one was not, 3 when the
     probe could not run at all -- which is NOT a pass and says so.
@@ -179,6 +237,25 @@ def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
         if rc != 0:
             print('\n  The baseline is red, so no mutation below would mean '
                   'anything. Stopping.')
+            # ── AND THE COMMONEST CAUSE IS NAMED, NOT LEFT TO BE GUESSED ──
+            # See the sixth discipline in this module's header. The message
+            # above is true and, on its own, sent two sessions hunting a
+            # broken suite when the real cause was a file this clone has
+            # changed and the worktree does not have.
+            suspects = _unstaged_suspects(suite, stage)
+            if suspects:
+                print('\n  FILES THIS CLONE HAS CHANGED THAT THE SUITE NAMES '
+                      'AND `stage` DOES NOT:')
+                for rel in suspects:
+                    print('      %s' % rel)
+                print('  The worktree is at HEAD, so the baseline just measured '
+                      'the OLD')
+                print('  version of these against a suite that expects the new '
+                      'one. If that')
+                print('  is what happened, add them to `stage` -- that is what '
+                      'the argument')
+                print('  is for. If it is not, this list is noise and the suite '
+                      'is really red.')
             return 1
 
         originals = {}
