@@ -1889,6 +1889,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cody-1790118101",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "the visualizer's slab picker lists a session-cached array, so a slab another device reserved still shows in-stock and a metered render is spent on it FILES: stonedesk.html",
+      "claimed_at": "2026-09-22T23:01:41Z",
+      "claimed_at_epoch": 1790118101.8451092,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html"
+      ]
     }
   ]
 }
