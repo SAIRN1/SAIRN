@@ -2415,6 +2415,16 @@
       "claimed_at_epoch": 1790031286.9036338,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1790063547",
+      "session": "hank",
+      "subject": "sairnbuild",
+      "task": "change orders criticality re-tier to A",
+      "claimed_at": "2026-09-22T07:52:27Z",
+      "claimed_at_epoch": 1790063547.9500709,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
