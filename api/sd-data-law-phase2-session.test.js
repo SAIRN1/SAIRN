@@ -211,6 +211,82 @@ const ROLES = ['owner', 'attorney', 'paralegal'];
     });
   }
 
+  // ── THE CLIENT HALF, EXECUTED RATHER THAN READ (added 2026-09-22, Cody) ──
+  // ADDED BY A CONTROL, NOT BY REVIEW. tests/run_law_phase2_session_sabotage_
+  // probe.py plants `var tok=null;` in sairnlaw.html's transport -- the app
+  // stops sending the session token, every gated SAIRNlaw resource answers 403
+  // to the real page -- and ALL 24 ARMS OF THIS SUITE STAYED GREEN. The string
+  // X-SD-Auth did not appear anywhere in this file, so nothing here could see
+  // it.
+  //
+  // The commit that landed this gate said the client half was "confirmed rather
+  // than assumed", and it was -- by reading the page. Reading is a fact about
+  // the moment somebody read it. The gap that leaves is exactly what SAIRNlegacy
+  // shipped on 2026-09-21: a gate landed against a client that did not send a
+  // token, found only when somebody re-read every call site days later.
+  //
+  // AND IT IS RUN, NOT SCANNED. A scan for the header name passes while the
+  // behaviour is broken -- measured on this platform the same hour, on this same
+  // mutation: an arm looking for the string stayed green because the mutation
+  // left the string in place and emptied the value. So sdnData() is lifted out
+  // of the page and executed against a stub, asserting what the request carries.
+  await test('sairnlaw.html ACTUALLY SENDS the session token -- the transport '
+    + 'executed, not scanned', async () => {
+      const fs = require('fs');
+      const path = require('path');
+      const vm = require('vm');
+      const html = fs.readFileSync(path.join(__dirname, '..', 'sairnlaw.html'), 'utf8');
+      function grab(sig) {
+        const start = html.indexOf(sig);
+        assert.ok(start > 0, 'not found in sairnlaw.html: ' + sig);
+        let i = html.indexOf('{', start + sig.length - 1), depth = 0, q = null;
+        for (; i < html.length; i++) {
+          const c = html[i], prev = html[i - 1];
+          if (q) { if (c === q && prev !== '\\') q = null; continue; }
+          if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+          if (c === '/' && html[i + 1] === '/') { i = html.indexOf('\n', i); continue; }
+          if (c === '{') depth++;
+          else if (c === '}') { depth--; if (!depth) return html.slice(start, i + 1); }
+        }
+        throw new Error('unbalanced: ' + sig);
+      }
+      const sent = [];
+      const ctx = {
+        console: console,
+        DATA_API: 'https://stub.invalid/api/sd-data',
+        APP_ID: 'sairnlaw',
+        LAW_FETCH_TIMEOUT_MS: 1000,
+        lawSession: { token: 'TOK-LAW-1' },
+        localStorage: { getItem: (k) => (k === 'law_license_key' ? 'LIC-1' : null) },
+        JSON: JSON,
+        lawLastErr: {},
+        toast: function () {},
+        fetch: async function (url, init) {
+          sent.push({ url: String(url), headers: (init && init.headers) || {} });
+          return { ok: true, status: 200, json: async () => ({ ok: true, data: {} }) };
+        }
+      };
+      vm.createContext(ctx);
+      for (const sig of ['function lawLicenseKey(', 'function lawSessionToken(',
+                         'function lawFetchTimeoutSignal(', 'function sdnData(']) {
+        vm.runInContext(grab(sig), ctx);
+      }
+      await ctx.sdnData('read', 'law_clients', {});
+      assert.strictEqual(sent.length, 1, 'the transport made ' + sent.length + ' request(s)');
+      assert.strictEqual(sent[0].headers['X-SD-Auth'], 'TOK-LAW-1',
+        'sdnData() did not SEND the session token -- every gated SAIRNlaw resource answers '
+        + '403 to this app, which is an outage rather than a gate');
+      assert.ok(/Bearer LIC-1/.test(sent[0].headers.Authorization || ''),
+        '...and the licence is still sent: a separate credential, not a substitute');
+      // The other direction, so this arm cannot pass by always finding a header.
+      sent.length = 0;
+      ctx.lawSession = null;
+      await ctx.sdnData('read', 'law_clients', {});
+      assert.ok(!('X-SD-Auth' in sent[0].headers),
+        'a signed-out page sends an X-SD-Auth header anyway -- an empty credential is not '
+        + 'the same as no credential');
+    });
+
   console.log('\n' + passed + '/' + total + (passed === total ? ' PASS' : ' FAILED'));
   process.exit(passed === total ? 0 : 1);
 })();

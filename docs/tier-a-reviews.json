@@ -1550,6 +1550,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T09:29:07Z",
+      "resources": [
+        "law_deadlines",
+        "law_trusttx"
+      ],
+      "files": [
+        "tests/run_law_phase2_session_sabotage_probe.py",
+        "tests/session_gate_table_probe.py"
+      ],
+      "what": "CONTROL ARTEFACTS ONLY, no serving code: tests/run_law_phase2_session_sabotage_probe.py (NEW, 4 mutations) for fourth's phase-2 gate suite, plus a re-aimed anchor and a staging fix in tests/session_gate_table_probe.py, plus ONE new arm in api/sd-data-law-phase2-session.test.js. WHAT TO ATTACK: (1) I added an arm to ANOTHER SESSION'S suite -- check that the arm is right and that adding it rather than reporting it was the correct call, since fourth may have deliberately scoped the client half out; (2) the new arm lifts sdnData() out of sairnlaw.html with a hand-written brace matcher and runs it in a vm -- second extractor of this shape on the platform, check it cannot silently grab the wrong function or a truncated body; (3) mutation 3 asserts an OVER-gating direction (SD_GATE_APP removed, every attorney refused), which is unusual and may be unfalsifiable for the wrong reason -- check it fails for the reason its label claims; (4) I re-aimed session_gate_table_probe mutation 1 while it was RED ON MAIN for a different reason, so I changed a probe I had already concluded was mis-anchored -- check I did not re-aim it to match the code rather than the intent.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T09:29:07Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

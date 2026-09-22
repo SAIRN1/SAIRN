@@ -42,8 +42,16 @@ MUTATIONS = [
     ("1. law_trusttx leaves the table -- attorney IOLTA trust money back on the "
      "licence key alone, which is the state it shipped in until 2026-09-16",
      API,
-     "      'law_trusttx': ['read', 'write']\n    };",
-     "    };"),
+     # ── RE-AIMED 2026-09-22, THE SAME STALENESS SHAPE AS THE GRADER PROBE ──
+     # This anchored on the entry PLUS the table's closing brace, so it only
+     # matched while law_trusttx was LAST. Three SAIRNlaw resources were added
+     # after it and the anchor went to ANCHOR-0 -- the mutation stopped being
+     # planted at all. The probe reported that as a FAILURE rather than a skip,
+     # which is the only reason it was caught in the same hour it was created.
+     # Anchored on the entry line alone now, so appending to the table does not
+     # move it.
+     "      'law_trusttx': ['read', 'write'],\n",
+     ""),
 
     ("2. slabs leaves the table -- the whole inventory readable and WRITABLE by "
      "anyone holding the link the shop was told to send customers",
@@ -94,4 +102,12 @@ if __name__ == '__main__':
         SUITE, MUTATIONS,
         title='SD_SESSION_GATED -- the suite must refuse a resource leaving the '
               'table, half of one leaving it, and a new one nothing drives',
-        stage=[SUITE]))
+        # ── THE SUBJECT IS STAGED TOO, AS OF 2026-09-22 ───────────────
+        # Staging only the suite was right while api/sd-data.js was always
+        # committed by the time this ran. It stops being right the first time
+        # a gate and its control are written in one session: the worktree is
+        # built at HEAD, so the baseline measures the UNGATED handler against
+        # a suite that already expects the gate, goes red, and plants nothing.
+        # A control that can only run after its own fix is pushed is the wrong
+        # order -- the control is what says the suite bites.
+        stage=[SUITE, os.path.join('api', 'sd-data.js')]))

@@ -205,7 +205,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#9989; The `json-catch-null` sweep finished &mdash; the 4 sites it missed, including the one serving seven Tier A resources and the one moving money** | **FIXED 2026-09-21 (Hank)** &mdash; `api/sd-data.js`; new standing guard `api/sd-data-unconfirmed-write-sweep.test.js`, 18 assertions, **9 of 9 sabotages caught** | `api/sd-data-unconfirmed-write-sweep.test.js` |
 | **&#9989; A negative-control arm was DISARMED BY AN UNRELATED COMMIT IN ANOTHER APP&rsquo;S SWEEP, and nothing announced it &mdash; arm 5 of the append-only probe went silent for three days** | **FIXED 2026-09-21 (Cody)** &mdash; the assertion is now scoped to the function body, the way the two beside it already were; `tests/alf_append_only_probe.py` back to 11/11 with all 7 mutations refuse | `api/alf-append-only-fail-closed.test.js`, `tests/alf_append_only_probe.py` |
 | **&#128308; The `json-catch-null` sweep was NOT a sweep &mdash; 4 more sites in the file it swept have the identical defect, and one serves SEVEN Tier A resources** | **FOUND 2026-09-21 (Hank)**, reviewing cc&rsquo;s `92be209a`. Driven in `tests/sd_data_unconfirmed_write_review_probe.js`, report-only, exit 0. **NOT FIXED &mdash; I hold a review claim, not the file* | `tests/sd_data_unconfirmed_write_review_probe.js` |
-| **&#128308; TOOL-BUGS BUCKET &mdash; NINE measured, unfixed defects in the tools sessions rely on to tell them the truth about their own state. Each one answers CONFIDENTLY on a question it got wrong** | **MEASURED, NOT FIXED.** Items 1-2 2026-09-21 (Cody); items 3-4 2026-09-21 (Fourth); **items 5-6 2026-09-21 (Fourth), and item 5 was hit independently by Cody the same afternoon.** **Items 8-9 2026-09 | `tests/cross_tenant_scope_grader_review_probe.py`, `tests/defect_register_capa_control.py`, `tests/failsafe/countersign_coverage_probe.py`, `tests/faults/alf_rule_read_faults.js`, `tests/sairnscape_outbound_queue_review_probe.js`, `tests/sairnscape_send_button_and_licence.js` |
+| **&#128308; TOOL-BUGS BUCKET &mdash; TEN measured, unfixed defects in the tools sessions rely on to tell them the truth about their own state. Each one answers CONFIDENTLY on a question it got wrong** | **MEASURED, NOT FIXED.** Items 1-2 2026-09-21 (Cody); items 3-4 2026-09-21 (Fourth); **items 5-6 2026-09-21 (Fourth), and item 5 was hit independently by Cody the same afternoon.** **Items 8-9 2026-09 | `tests/alf_append_only_probe.py`, `tests/cross_tenant_scope_grader_review_probe.py`, `tests/defect_register_capa_control.py`, `tests/failsafe/countersign_coverage_probe.py`, `tests/faults/alf_rule_read_faults.js`, `tests/run_self_exclusion_guard_sabotage_probe.py`, `tests/sairncare_fault_probe.py`, `tests/sairnscape_outbound_queue_review_probe.js`, `tests/sairnscape_send_button_and_licence.js` |
 | **Findings #276/#278 &mdash; all 84 Tier A resources filter by `license_hash` and ZERO of them assert it** | **SCOPED 2026-09-21 (Hank)** &mdash; `docs/2026-09-21-cross-tenant-isolation-build-plan.md`, `tools/cross_tenant_isolation_scope.py`, `tests/run_cross_tenant_scope_probe.py`, and **one REFERENCE IMPLE | `api/sairndental/complaint-respond.test.js`, `api/sd-data-cross-tenant-isolation.test.js`, `tests/app_session_isolation.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128994; SERVER-WINS is the hydration rule, with a ONE-TIME READ-ONLY BOOTSTRAP so the upgrade itself discards nothing &mdash; 7 of 9 apps** | **DECIDED 2026-09-21 (Michael), twice. 7 of 9 CONVERTED (cc): `sairnlaw`, `sairnlegacy`, `sairndesign`, `sairnsenior`, `stonedesk`, `sairnbiz`, `sairnfreedom`. 2 HELD: `sairncare` (6), `sairnbuild` (2 | `tests/run_server_wins_hydration_sabotage_probe.py`, `tests/server_wins_hydration.js` |
 | **&#9989; The deployed product has no build provenance and cannot be given any by adding a step &mdash; so a SOURCE MANIFEST is attested instead, and it is NOT called SLSA** | **BUILT AND EXERCISED 2026-09-18 (Fourth)** &mdash; `tools/source_manifest.py`, `.github/workflows/source-manifest.yml`, `tests/source_manifest_probe.py` 11 arms. Run `35355044141`, head `29a0b6c3`, c | `tests/source_manifest_probe.py` |
@@ -598,11 +598,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 66 test files are traced to no stated requirement
+### 67 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 583 of 649 traced, 89.8%.
+For context and not as the headline: 583 of 650 traced, 89.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -624,7 +624,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 53 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 54 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -674,6 +674,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_claim_search_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
 - `tests/run_known_red_probe.py`
+- `tests/run_law_phase2_session_sabotage_probe.py`
 - `tests/run_log_cluster_probe.py`
 - `tests/run_response_shape_probe.py`
 - `tests/run_shape_search_probe.py`
@@ -713,7 +714,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 649   tests/**, api/** (both walked)
+  test files on disk                 650   tests/**, api/** (both walked)
   open-work rows citing a test       325   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
