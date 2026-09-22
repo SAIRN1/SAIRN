@@ -47,6 +47,77 @@ REG = os.path.join('docs', 'defect-density-register.json')
 LAYERS = ('product', 'tooling', 'test')
 SEVERITIES = ('critical', 'high', 'moderate', 'low')
 
+# ── `--app` WAS FREE TEXT, AND FREE TEXT DRIFTS (2026-09-22) ───────────────
+# The one-entity-one-spelling check below `--check` has been right since it was
+# written and it is a DETECTOR, not a gate: it fires AFTER the bad value is in
+# the file, on the next clone to rebase through it, having blocked that clone's
+# push on somebody else's typo. Measured rather than argued -- 'platform' vs
+# 'PLATFORM' was normalised by hand on 2026-09-14, again on 2026-09-22, and TWO
+# MORE lower-case records landed within the hour of that second fix. Five
+# corrections to one value, each one a session stopping what it was doing.
+#
+# The vocabulary is DERIVED, not listed. A hardcoded tuple is a second place
+# that has to be edited when an app ships, and the register already knows how
+# to enumerate apps -- app_lines() reads `git ls-files '*.html'` for the
+# denominator. Same source, so they cannot disagree.
+#
+# TWO ENTITIES ARE NOT FILES and are named here because nothing can derive
+# them: PLATFORM is cross-app work, `tooling` is the checkers themselves.
+# Both already carry records and neither has a line count, which is why the
+# density block already reports them as a count with no denominator.
+NON_APP_ENTITIES = ('PLATFORM', 'tooling')
+
+# `--check` enforces the vocabulary only from this date. OLD RECORDS ARE
+# EXEMPT ON PURPOSE, the same way found_by_session is: an app file deleted
+# tomorrow would otherwise turn every historical record against it red, and a
+# checker that goes red for a reason nobody can fix is a checker somebody
+# switches off. `--add` is strict for everything, which is where drift is
+# actually stopped.
+APP_VOCAB_FROM = '2026-09-22'
+
+
+def known_apps():
+    """Every value `--app` may take, derived from the repo rather than listed.
+
+    Returns a dict {value: why} so a refusal can print what it wanted.
+    """
+    out = {}
+    for f in (git('ls-files', '*.html') or '').split('\n'):
+        f = f.strip()
+        if f and '/' not in f:
+            out[os.path.splitext(f)[0]] = 'an app file in this repo'
+    for e in NON_APP_ENTITIES:
+        out[e] = 'a non-file entity with no line denominator'
+    return out
+
+
+# ── A COMMIT IN A REPOSITORY THIS ONE CANNOT SEE (2026-09-22) ──────────────
+# hover2's finding, and the gap is structural rather than an oversight. The
+# hover auditor's own tooling lives OUTSIDE every clone by design -- the
+# separation that makes its audits independent is the same separation that
+# puts its commits beyond `git rev-parse`. `--add` requires `--commit` and
+# `--check` requires every commit to resolve, so a real defect found and fixed
+# in that repo had NO WAY INTO THIS FILE. The register's own coverage figure
+# was therefore understating the hover channel by however many such fixes
+# exist, and nothing in the file said so.
+#
+# THE FORMAT IS DELIBERATELY UGLY. `external:<repo-label>:<sha>` cannot be
+# mistaken for a sha at a glance, cannot be pasted into `git show` and appear
+# to work, and sorts away from real citations in any dump of the file. A
+# prettier format would be one somebody reads past.
+#
+# AND IT IS NOT A CITATION THIS FILE CAN CHECK. That is the whole cost and it
+# is stated in three places -- here, in the refusal text, and in `--check`'s
+# own summary, which counts them SEPARATELY rather than folding them into
+# "every commit resolves". A register that reported an unverifiable pointer
+# with the same confidence as a verified one would be worth less than one that
+# refused them outright.
+EXTERNAL_RE = re.compile(r'^external:([a-z0-9][a-z0-9._-]{0,40}):([0-9a-f]{7,40})$')
+
+
+def is_external(sha):
+    return bool(EXTERNAL_RE.match(str(sha or '').strip()))
+
 # ── WHAT THE FOUR WORDS MEAN (added 2026-09-15, and the evidence is measured)
 # `layer` and `injection_phase` each carry a paragraph explaining what they are.
 # SEVERITY CARRIED NOTHING -- four words and no definitions -- and two blind
@@ -480,8 +551,24 @@ def is_bookkeeping_only(files):
         any(f.startswith(b) for b in BOOKKEEPING) for f in files)
 
 
-def derive(sha):
-    """The mechanical half, from git. A field a human retypes goes wrong."""
+def derive(sha, external=None):
+    """The mechanical half, from git. A field a human retypes goes wrong.
+
+    An EXTERNAL citation has no mechanical half -- that is what makes it
+    external -- so the caller supplies what git would have, and the line counts
+    are recorded as 0 with the files list EMPTY rather than guessed at. The
+    zeros are load-bearing: `--add`'s bookkeeping-only detector reads `files`,
+    and the density block divides by lines that live in THIS repo. A fabricated
+    line count would deflate a defect rate with a number nobody measured, which
+    is the one thing this file exists to stop.
+    """
+    if is_external(sha):
+        return {'commit': str(sha).strip(), 'date': external['date'],
+                'subject': external['subject'], 'files': [],
+                'lines_added': 0, 'lines_removed': 0,
+                'external': {'repo': EXTERNAL_RE.match(str(sha).strip()).group(1),
+                             'sha': EXTERNAL_RE.match(str(sha).strip()).group(2),
+                             'note': external['note']}}
     full = git('rev-parse', sha)
     if not full:
         return None
@@ -523,6 +610,66 @@ def cmd_add(argv):
         return ''
 
     sha, app = opt('--commit'), opt('--app')
+    # ── THE APP VOCABULARY, ENFORCED AT THE POINT OF WRITING ───────────────
+    # Strict and case-SENSITIVE. 'platform' is refused and the message names
+    # 'PLATFORM', because the whole cost of this drift was five separate
+    # sessions each discovering the difference after the fact.
+    apps = known_apps()
+    if app not in apps:
+        near = [k for k in apps if k.lower() == str(app).lower()]
+        print('unknown --app %r.' % app)
+        if near:
+            print('  Did you mean %r? This file is case-sensitive on purpose: '
+                  'one entity with two spellings is two entities to every '
+                  'per-app figure in it.' % near[0])
+        print('  Allowed (derived from `git ls-files \'*.html\'` plus the two '
+              'non-file entities, so it cannot drift from the denominator):')
+        for k in sorted(apps, key=lambda s: (s not in NON_APP_ENTITIES, s)):
+            print('    %-24s %s' % (k, apps[k]))
+        return 2
+    # ── AN EXTERNAL CITATION CARRIES ITS OWN THREE FIELDS ──────────────────
+    ext = None
+    ext_note = opt('--external-note', required=False)
+    ext_date = opt('--external-date', required=False)
+    ext_subject = opt('--external-subject', required=False)
+    if is_external(sha):
+        missing = [n for n, v in (('--external-note', ext_note),
+                                  ('--external-date', ext_date),
+                                  ('--external-subject', ext_subject))
+                   if not str(v).strip()]
+        if missing:
+            print('an external citation cannot be derived from git, so it has '
+                  'to be told: %s' % ', '.join(missing))
+            print('  --external-subject is the commit subject in that repo; '
+                  'it is what a reader searches for when they go and look.')
+            print('  --external-note says WHERE that repo is and why the '
+                  'commit is not in this one. At least 40 characters: a bare '
+                  '"external" is the silence this format exists to replace.')
+            return 2
+        if len(str(ext_note).strip()) < 40:
+            print('--external-note is %d characters. A pointer this file '
+                  'cannot verify is only as good as the sentence telling a '
+                  'reader where to go and look; 40 is the floor.'
+                  % len(str(ext_note).strip()))
+            return 2
+        if not re.match(r'^\d{4}-\d{2}-\d{2}$', str(ext_date).strip()):
+            print('--external-date must be YYYY-MM-DD -- it feeds the '
+                  'discovery-lag and per-period figures like any other date.')
+            return 2
+        # NO LINE DENOMINATOR EXISTS for a file that is not in this repo, so an
+        # external record may only be filed against an entity that already has
+        # none. Otherwise it would enter a per-app rate as a numerator with
+        # nothing under it, which is the exact arithmetic the density block was
+        # rewritten in 2026-09-13 to stop.
+        if app not in NON_APP_ENTITIES:
+            print('an external citation must use one of %s, not %r. The per-app '
+                  'defect rate divides by lines counted in THIS repo, and a '
+                  'commit in another one contributes none -- filing it against '
+                  'an app file would add a numerator with no denominator.'
+                  % (NON_APP_ENTITIES, app))
+            return 2
+        ext = {'note': str(ext_note).strip(), 'date': str(ext_date).strip(),
+               'subject': str(ext_subject).strip()}
     layer, sev, method = opt('--layer'), opt('--severity'), opt('--method')
     summary = opt('--summary')
     # REQUIRED, not optional, and that is the whole fix. The field was absent
@@ -649,9 +796,14 @@ def cmd_add(argv):
                   % (rule, RULES_DOC, ', '.join(sorted(known)))); return 2
     if conf != 'clean' and not note:
         print('--rule-note is required unless the citation is clean'); return 2
-    d = derive(sha)
+    d = derive(sha, ext)
     if not d:
-        print('no such commit: %s' % sha); return 2
+        print('no such commit: %s' % sha)
+        if re.match(r'^external', str(sha).strip()):
+            print('  That looks like an attempt at an external citation. '
+                  'The format is external:<repo-label>:<sha> -- lower-case '
+                  'label, 7-40 hex characters, no spaces.')
+        return 2
     # ── THE $(git rev-parse HEAD) TRAP. See is_bookkeeping_only(). ──────────
     # REFUSES rather than warns, because a warning printed above a `registered`
     # line is a warning nobody reads -- and the whole failure mode here is a
@@ -1007,6 +1159,12 @@ def resolve(rec, idx):
     guessing which of two commits a record meant is the thing a register must
     never do.
     """
+    # AN EXTERNAL CITATION RESOLVES BY DECLARATION AND NOTHING ELSE. It is
+    # reported under its own heading rather than counted in "every commit
+    # resolves", because it was never checked and saying otherwise would make
+    # the summary line mean less for every record above it.
+    if is_external(rec.get('commit')):
+        return rec['commit'], 'external'
     if git('rev-parse', '--verify', rec['commit'] + '^{commit}'):
         return rec['commit'], 'sha'
     hits = idx.get(rec.get('subject') or '\x00absent', [])
@@ -1173,6 +1331,22 @@ def cmd_check(argv=()):
             bad.append('the app %r appears under %d spellings %s -- one entity '
                        'with two names is two entities to every per-app figure '
                        'in this file' % (low, len(spellings), sorted(spellings)))
+    # ── AND THE VOCABULARY ITSELF, from APP_VOCAB_FROM (2026-09-22) ────────
+    # The spelling check above only fires once BOTH spellings are in the file,
+    # which makes it a detector of damage already done -- and the damage is
+    # done to whoever rebases through it next, not to whoever caused it. This
+    # asks the stronger question: is this value one of the names that exist?
+    # A single consistently-wrong spelling passes the check above and fails
+    # this one.
+    apps = known_apps()
+    for r in reg['records']:
+        if r.get('date', '') < APP_VOCAB_FROM:
+            continue
+        if r.get('app') not in apps:
+            near = [k for k in apps if k.lower() == str(r.get('app')).lower()]
+            bad.append('%s -- app %r is not one of the %d known values%s'
+                       % (r['commit'], r.get('app'), len(apps),
+                          (' (did you mean %r?)' % near[0]) if near else ''))
 
     # ── CONFIRMATIONS ARE CHECKED TOO, AND KEPT OUT OF THE DEFECT NUMBERS ──
     # Same standard as a defect record: it must resolve, it must carry the
@@ -1240,9 +1414,23 @@ def cmd_check(argv=()):
     confs = reg.get('confirmations', [])
     print('    confirmations: %d checked -- a SEPARATE population, in no defect '
           'figure above or below' % len(confs))
-    print('OK: %d record(s), every commit resolves and every field is in '
-          'vocabulary.%s' % (len(reg['records']),
-                             ' %d by subject.' % len(reseat) if reseat else ''))
+    # ── EXTERNAL CITATIONS ARE COUNTED APART FROM "every commit resolves" ──
+    # They did not resolve; nothing looked. Folding them into that sentence
+    # would weaken it for every record it is true of, which is the whole
+    # reason the sentence is worth printing.
+    exts = [r for r in reg['records'] if is_external(r.get('commit'))]
+    if exts:
+        print('    external citations: %d -- in a repository this one cannot '
+              'see, so NOT verified by the line below. Each carries the repo, '
+              'the sha and a note saying where to look:' % len(exts))
+        for r in exts:
+            e = r.get('external') or {}
+            print('      %-28s %s' % (r['commit'], (e.get('note') or '')[:88]))
+    print('OK: %d record(s)%s, every commit resolves and every field is in '
+          'vocabulary.%s'
+          % (len(reg['records']),
+             (' (%d of them external and unverified)' % len(exts)) if exts else '',
+             ' %d by subject.' % len(reseat) if reseat else ''))
     print('    standing-rule citations: %d cited, %d deliberately not-citable, '
           'every id checked against %s'
           % (cited, len(reg['records']) - cited, RULES_DOC))
@@ -1311,6 +1499,22 @@ def cmd_reseat():
     n = 0
     for r in reg['records']:
         sha, how = resolve(r, idx)
+        # ── NO `if how == 'external': continue` HERE, AND THAT IS MEASURED ──
+        # One was written and then DELETED, because its own negative control
+        # proved it could not fire: with `resolve()` returning 'external', the
+        # two branches below test `how == 'sha'` and `how in ('subject',
+        # 'dangling')`, so an external record already falls through the loop
+        # untouched. tests/run_defect_register_vocab_sabotage_probe.py planted
+        # the removal of that `continue` and the suite stayed GREEN -- a
+        # guard indistinguishable from its own absence, which is PR 1.1 in a
+        # file that exists to count exactly that shape.
+        #
+        # THE PROTECTION IS REAL AND IT LIVES IN resolve(). Remove its external
+        # branch and the same control goes red, because --check then reports a
+        # pointer to another repository as a record pointing at nothing -- or
+        # re-seats it onto a local commit that happens to share a subject. One
+        # guard, in one place, with a control that bites on it.
+        #
         # A SHA THAT RESOLVES BUT IS NOT ON THE BRANCH is exactly the case a
         # re-seat exists for, and it was the one case this skipped.
         if how == 'sha' and not reachable(r['commit'], base):

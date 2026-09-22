@@ -82,7 +82,7 @@ try:
     check('A2 --check passes on the committed register', rc, 0)
 
     # ── B. IT REFUSES WHAT IT CANNOT VERIFY ────────────────────────────────
-    rc, out = run(wt, '--add', '--commit', 'deadbeefdead', '--app', 'x',
+    rc, out = run(wt, '--add', '--commit', 'deadbeefdead', '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
                   '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
@@ -90,7 +90,7 @@ try:
     check('B1 a commit that does not exist is REFUSED', rc, 2)
     check('B2 and it says so', 'no such commit' in out, True)
 
-    rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'high',
                   '--method', 'vibes', '--summary', 'nope', '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
                   '--factors-unknown', 'probe fixture -- item 75 makes --factors or an explicit unknown-reason required at --add; this probe is about other fields')
@@ -98,7 +98,7 @@ try:
     check('B4 because the matrix is meaningless with free text',
           '--method must be one of' in out, True)
 
-    rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'guesswork', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
                   '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
