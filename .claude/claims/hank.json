@@ -2423,8 +2423,8 @@
       "task": "change orders criticality re-tier to A",
       "claimed_at": "2026-09-22T07:52:27Z",
       "claimed_at_epoch": 1790063547.9500709,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T08:01:27Z"
     }
   ]
 }
