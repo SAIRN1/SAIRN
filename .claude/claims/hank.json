@@ -2508,8 +2508,8 @@
       "task": "append-only trail ordering three reads FILES: api/sd-data.js sairncare.html",
       "claimed_at": "2026-09-22T11:44:27Z",
       "claimed_at_epoch": 1790077467.878606,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T13:15:13Z",
       "files": [
         "api/sd-data.js",
         "sairncare.html"
