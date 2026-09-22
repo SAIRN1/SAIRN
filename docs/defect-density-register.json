@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -10745,7 +10745,7 @@
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
-      "commit": "374f1ae1a12a",
+      "commit": "cd2662fae046",
       "date": "2026-09-22",
       "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
       "files": [
