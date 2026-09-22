@@ -86,6 +86,10 @@ SEVERITIES = ('critical', 'high', 'moderate', 'low')
 # governance decision with a real cost either way and is not one a definition
 # comment gets to make silently.
 SEVERITY_DEFINED_FROM = '2026-09-15'
+# The day found_by_session began to be required. Records before it are not
+# back-filled: inventing which instance found a defect nobody re-attributed
+# is the manufactured agreement this register refuses everywhere else.
+SESSION_FIELD_FROM = '2026-09-22'
 
 # ── WHERE THE DEFECT WAS INJECTED (item 77, added 2026-09-14) ──────────────
 # `detection_method` records how a defect was REMOVED. This records where it
@@ -157,6 +161,33 @@ TOOL_UNKNOWN = 'unknown'
 
 def tool_required(method):
     return checkpoint_of(method) == 'automated-checker'
+
+
+# ── WHICH HOVER INSTANCE FOUND IT (2026-09-22) ──────────────────────
+# `hover-audit` names a POPULATION -- the fifth role, structurally separate
+# from the four build agents -- and that population currently runs as TWO
+# concurrent instances, hover and hover2. Without this field their findings
+# are indistinguishable in the register, which matters for the one thing the
+# second instance exists to provide: a PEER CHECK. Two records of the same
+# defect are corroboration when two instances found it and a duplicate when
+# one found it twice, and nothing here could tell those apart.
+#
+# REQUIRED-OR-REFUSED, exactly like found_by_tool above, and for the reason
+# this file has now recorded three times in its own words: a field that is
+# optional at the moment of recording is a field that stays empty. It is
+# refused for every other method so the column cannot fill with plausible
+# names nobody can check -- a build agent's own review is already identified
+# by the obligation record, not by this field.
+#
+# THE VALUE IS NOT A CLOSED LIST. A third instance would be `hover3` and
+# freezing the vocabulary at two would refuse it; the shape is checked
+# instead, which is enough to keep the column meaningful without pinning a
+# count that is somebody else's to change.
+HOVER_SESSION_SHAPE = re.compile(r'^hover[0-9]*$')
+
+
+def session_required(method):
+    return method == 'hover-audit'
 
 
 CHECKPOINTS = ('human-read', 'automated-checker', 'monitoring', 'unknown')
@@ -510,6 +541,9 @@ def cmd_add(argv):
     # than the gap this closes.
     # REQUIRED when a tool did the finding, REFUSED when one did not.
     found_by = opt('--found-by-tool', required=False)
+    # REQUIRED when the hover auditor found it, REFUSED otherwise -- the
+    # same shape as --found-by-tool one line up, so the two cannot drift.
+    found_session = opt('--found-by-session', required=False)
     inj = opt('--injection-commit', required=False)
     inj_unknown = opt('--injection-unknown', required=False)
     if bool(str(inj).strip()) == bool(str(inj_unknown).strip()):
@@ -584,6 +618,21 @@ def cmd_add(argv):
         print('--found-by-tool is not accepted for %r: %s found it, not a tool. '
               'A column of plausible names nobody can check is worse than an '
               'empty one.' % (method, checkpoint_of(method))); return 2
+    if session_required(method) and not str(found_session).strip():
+        print('--found-by-session is required for %r. The hover auditor runs as '
+              'more than one instance, and two records of one defect are '
+              'CORROBORATION when two instances found it and a DUPLICATE when one '
+              'found it twice -- which is the whole point of the second instance '
+              'and is unreadable without this field.' % method); return 2
+    if not session_required(method) and str(found_session).strip():
+        print('--found-by-session is not accepted for %r: it identifies WHICH hover '
+              'instance found something, and a build agent\'s review is already '
+              'identified by its obligation record.' % method); return 2
+    if str(found_session).strip() and not HOVER_SESSION_SHAPE.match(str(found_session).strip()):
+        print('--found-by-session %r does not look like a hover instance. Expected '
+              'hover, hover2, hover3... -- the shape is checked rather than a closed '
+              'list, so a third instance needs no code change here.'
+              % str(found_session).strip()); return 2
     if rule == 'not-citable':
         rules, conf = [], 'not-citable'
     else:
@@ -650,6 +699,7 @@ def cmd_add(argv):
                 'rules': rules, 'citation_confidence': conf,
                 'injection_phase': phase, 'phase_confidence': phase_conf,
                 'found_by_tool': (str(found_by).strip() or None),
+                'found_by_session': (str(found_session).strip() or None),
                 'injection': inj_rec or {'unknown_reason': str(inj_unknown).strip()}})
     if note:
         rec['citation_note'] = note
@@ -1024,6 +1074,25 @@ def cmd_check(argv=()):
         if not tool_required(r['detection_method']) and str(fbt or '').strip():
             bad.append('%s -- carries found_by_tool %r but %s found it'
                        % (r['commit'], fbt, checkpoint_of(r['detection_method'])))
+        # ── WHICH HOVER INSTANCE, same rule as --add for the same reason ──
+        # OLD RECORDS ARE EXEMPT and that is deliberate: every hover-audit
+        # record written before this field existed has no honest answer, and
+        # back-filling one would invent the very attribution the field is for.
+        # The exemption is by DATE rather than by absence, so a new record
+        # that simply omits the field is still refused.
+        fbs = r.get('found_by_session')
+        if session_required(r['detection_method']):
+            if r.get('date', '') >= SESSION_FIELD_FROM and not str(fbs or '').strip():
+                bad.append('%s -- a hover-audit record from %s with no '
+                           'found_by_session. Two instances run; this is what '
+                           'separates a peer check from a duplicate.'
+                           % (r['commit'], r.get('date')))
+        elif str(fbs or '').strip():
+            bad.append('%s -- carries found_by_session %r but its method is %r'
+                       % (r['commit'], fbs, r['detection_method']))
+        if str(fbs or '').strip() and not HOVER_SESSION_SHAPE.match(str(fbs).strip()):
+            bad.append('%s -- found_by_session %r is not a hover instance name'
+                       % (r['commit'], fbs))
         # ── THE INJECTION PHASE, checked the same way and for the same reason ─
         ph = r.get('injection_phase')
         phc = r.get('phase_confidence')

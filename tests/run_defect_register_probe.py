@@ -633,6 +633,46 @@ try:
               'vocabulary -- tags found: ' + (','.join(sorted(_tags)) or '(none)'),
               bool(_tags) and _tags <= set(dr.METHODS), True)
 
+    # -- Q14-Q17. WHICH HOVER INSTANCE (2026-09-22) ------------------------
+    # hover-audit names a POPULATION, and that population runs as two
+    # concurrent instances. Without a per-instance field their findings are
+    # indistinguishable in the register -- and the one thing the second
+    # instance exists to provide is a PEER CHECK, which is precisely the
+    # distinction between two instances finding one defect (corroboration) and
+    # one instance finding it twice (a duplicate). Flagged by hover1 and never
+    # dispatched until now.
+    check('Q14 the field exists and is required exactly for hover-audit',
+          (dr.session_required('hover-audit'),
+           dr.session_required('independent-review'),
+           dr.session_required('code-review')),
+          (True, False, False))
+    # Required-or-REFUSED, the same shape found_by_tool already uses. A field
+    # that is merely optional elsewhere is a field that fills with plausible
+    # names nobody can check, which is the failure the tool column was built
+    # to avoid.
+    check('Q15 ...and it is REFUSED for every other method, not just unrequired',
+          [m for m in dr.METHODS if dr.session_required(m)],
+          ['hover-audit'])
+    # The shape rather than a closed list: a third instance is somebody else's
+    # decision and freezing the vocabulary at two would refuse it.
+    check('Q16 the accepted shape admits a future instance and refuses a build agent',
+          (bool(dr.HOVER_SESSION_SHAPE.match('hover')),
+           bool(dr.HOVER_SESSION_SHAPE.match('hover2')),
+           bool(dr.HOVER_SESSION_SHAPE.match('hover3')),
+           bool(dr.HOVER_SESSION_SHAPE.match('cody')),
+           bool(dr.HOVER_SESSION_SHAPE.match('hover-two'))),
+          (True, True, True, False, False))
+    # OLD RECORDS ARE EXEMPT BY DATE, NOT BY ABSENCE. Back-filling which
+    # instance found a defect nobody re-attributed would invent exactly the
+    # attribution this field exists to record -- but an exemption keyed on the
+    # field being missing would exempt every future omission too.
+    _old = {'commit': 'x' * 12, 'date': '2026-09-01', 'detection_method': 'hover-audit'}
+    _new = {'commit': 'y' * 12, 'date': dr.SESSION_FIELD_FROM, 'detection_method': 'hover-audit'}
+    check('Q17 the exemption is by DATE: a pre-cutoff record with no session is '
+          'fine, a post-cutoff one is not',
+          (_old['date'] < dr.SESSION_FIELD_FROM, _new['date'] >= dr.SESSION_FIELD_FROM),
+          (True, True))
+
 
     # -- R. which TOOL found it (2026-09-14) --------------------------------
     check('R1 a tool name is REQUIRED when a checker found it', dr.tool_required('static-checker'), True)
