@@ -1235,6 +1235,29 @@ function alfLocalToday(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
+// ── A SERVER TIMESTAMP ON AN APPEND-ONLY TRAIL NEEDS ITS TIME, NOT ITS DATE ──
+// fdate() above takes a DATE STRING a person typed and is right to show only a
+// date. This takes a `timestamptz` the SERVER stamped, and the difference is
+// load-bearing on a trail whose own refusal message promises the reader will
+// see "both, with the later one as what is believed now": two determinations
+// recorded the same day rendered through a date-only slice carry IDENTICAL
+// text, so the reader cannot tell which is later even with both in front of
+// them. Ordering the read fixes the sequence; this is what makes the sequence
+// legible without the reader having to know the sort direction.
+//
+// LOCAL TIME, DELIBERATELY. created_at arrives as UTC. Slicing the raw string
+// would print a UTC clock face with no marking, which is worse than a date
+// alone -- it looks local and is not. Date parsing converts; the catch and the
+// isNaN branch fall back to the raw ISO prefix rather than to '--', because a
+// timestamp we could not parse is still evidence and should be shown as-is.
+function fstamp(t){
+  if(!t)return'--';
+  try{
+    var d=new Date(t);
+    if(isNaN(d.getTime()))return String(t).slice(0,16).replace('T',' ');
+    return d.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit'});
+  }catch(e){return String(t).slice(0,16).replace('T',' ');}
+}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
@@ -3305,7 +3328,7 @@ async function prRenderRecorded(){
         '<td>'+(x.outcome==='refused'
           ? '<span class="badge br">not routed</span>'
           : '<span class="badge bg">routed</span>')+'</td>'+
-        '<td>'+H(x.decided_by||'')+'</td><td>'+H(String(x.created_at||'').slice(0,10))+'</td></tr>';
+        '<td>'+H(x.decided_by||'')+'</td><td>'+H(fstamp(x.created_at))+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 }
 

@@ -123,6 +123,16 @@ MUTATIONS = [
      APP,
      "    if(alfNotProvisioned('alf_claim_routes')){",
      "    if(false&&alfNotProvisioned('alf_claim_routes')){"),
+
+    ("11. THE DATE-ONLY TRAIL STAMP RESTORED: the 'On' column goes back to "
+     "String(created_at).slice(0,10), so two determinations recorded the same "
+     "day render IDENTICAL text and the 409's promise that the reader sees "
+     "'the later one as what is believed now' is half-true again. Nothing "
+     "errors and every other arm in the suite still passes -- the row is "
+     "there, the resident resolves, the outcome is labelled",
+     APP,
+     "'</td><td>'+H(fstamp(x.created_at))+'</td></tr>';",
+     "'</td><td>'+H(String(x.created_at||'').slice(0,10))+'</td></tr>';"),
 ]
 
 if __name__ == '__main__':

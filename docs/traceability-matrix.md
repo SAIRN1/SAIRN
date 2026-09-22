@@ -423,6 +423,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; Three refusal messages promise the trail shows &ldquo;the later one as what is believed now&rdquo; &mdash; and NOTHING ordered the rows, on either half** | **CLOSED 2026-09-22 (Hank)** &mdash; both halves, and the read half turned out to be SIX reads rather than three | `api/alf-append-only-fail-closed.test.js`, `api/alf-append-only-read-order.test.js`, `tests/run_alf_read_order_sabotage_probe.py`, `tests/sairncare/test-alf-mar.js`, `tests/sairncare_route_record.js` |
 | **&#9888; The route-record sabotage probe&rsquo;s MUTATION 1 &mdash; &ldquo;the original defect restored EXACTLY&rdquo; &mdash; has been ANCHOR-2 since `ad6a6b9d`, so the arm the probe was built around has not been planted since** | **FOUND 2026-09-22 (Fourth), NOT FIXED** &mdash; surfaced while adding arms to `tests/sairncare_route_record.js`; the anchor count was traced through git rather than guessed | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
 | **&#9989; `tests/faults/alf_rule_read_faults.js` had been RED since 2026-09-18 &mdash; six of thirteen arms dying on `prRenderRecorded is not defined`, reported as product failures** | **FIXED 2026-09-21 (Cody)** &mdash; a no-op stub in the vm sandbox; suite 13/13, `tests/sairncare_fault_probe.py` back to 0 failures | `tests/faults/alf_rule_read_faults.js`, `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_fault_probe.py`, `tests/sairncare_route_record.js` |
 | **&#9989; A routing result the ENGINE NEVER JUDGED was still offered a &ldquo;Record this determination&rdquo; button, and one of the four shapes wrote a permanent append-only Tier A billing row** | **FIXED 2026-09-21 (Cody)** &mdash; `deea8c55`. Closed at the PRODUCER (`alfRoute()` stamps `HTTP_<status>` on every non-200 &mdash; the engine judges on 200 and only on 200) and again at the CONSUMER | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
@@ -607,21 +608,21 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 74 test files are traced to no stated requirement
+### 73 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 592 of 666 traced, 88.9%.
+For context and not as the headline: 593 of 666 traced, 89.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 592 citations come from
+### Where the 593 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 304 |
-| `declared` | 245 |
-| `declared+index` | 35 |
+| `index` | 305 |
+| `declared` | 243 |
+| `declared+index` | 37 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -633,14 +634,13 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 61 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 60 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/csv-cell.test.js`
 - `api/_lib/roofing-gl-export.test.js`
 - `api/agent/enqueue.test.js`
-- `api/alf-append-only-read-order.test.js`
 - `api/provisioner-health-rate-limit.test.js`
 - `api/sairncash/trial-renew-idempotency.test.js`
 - `api/sairncash/trial-renew.test.js`
@@ -731,7 +731,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 666   tests/**, api/** (both walked)
-  open-work rows citing a test       334   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       335   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

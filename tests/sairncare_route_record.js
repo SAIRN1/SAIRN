@@ -90,6 +90,14 @@ const SRC = [
   grab('function alfRouteRecordable('),
   grab('function alfRouteOutcome('),
   grab('async function alfRecordRoute('),
+  // GRABBED, NOT STUBBED (2026-09-22). prRenderRecorded now renders the trail's
+  // server timestamp through fstamp() instead of a date-only slice, because two
+  // determinations recorded the same day rendered identically and the refusal
+  // message promises the reader can tell which is later. Stubbing it here would
+  // make this suite blind to the exact thing that change was for -- section 8
+  // asserts the rendered timestamp carries a time, and it can only do that
+  // against the real helper.
+  grab('function fstamp('),
   grab('async function prRenderRecorded(')
 ].join('\n');
 // Everything alfRecordRoute() and prRenderRecorded() reach for that belongs to
@@ -352,7 +360,24 @@ async function main() {
     data: [{ resident_id: 'RES-1', service_month: '2026-09', outcome: 'refused',
              decided_by: 'EMP-9', created_at: '2026-09-19T10:00:00Z' }] } });
   ok('A REAL TRAIL renders the row, resolves the resident and labels the outcome',
-    /A\. Resident/.test(rows) && /not routed/.test(rows) && /2026-09-19/.test(rows), rows);
+    /A\. Resident/.test(rows) && /not routed/.test(rows) && /2026/.test(rows), rows);
+
+  // ── THE TRAIL'S TIMESTAMP MUST CARRY A TIME, NOT ONLY A DATE (2026-09-22) ──
+  // The 409 below promises the trail shows "both, with the later one as what is
+  // believed now". This column rendered `String(created_at).slice(0,10)`, so two
+  // determinations recorded the SAME DAY carried identical text and the reader
+  // could not tell which was later even with both in front of them. Ordering the
+  // server read fixes the sequence; this is what makes the sequence legible.
+  //
+  // ASSERTED AS A CLOCK COMPONENT, NOT AS A LITERAL STRING. fstamp() renders in
+  // the reader's LOCAL zone -- created_at is UTC, and printing an unmarked UTC
+  // clock face is worse than a date alone because it looks local and is not. A
+  // literal expected string would therefore pass or fail on the runner's
+  // timezone rather than on the code, which is a test that measures the machine.
+  // The day is not asserted for the same reason: a far-western zone moves it.
+  ok('...and the "On" column carries a TIME, so same-day rows are distinguishable',
+    /\d:\d\d(:\d\d)?\s?(AM|PM)?/.test(rows.replace(/2026-09/g, '')) &&
+    !/>\s*2026-09-19\s*</.test(rows), rows);
 
   // ── THE REFUSAL MUST NAME THE CORRECTION PATH (added 2026-09-22) ─────
   // alf_claim_routes is append-only and refuses an overwrite with 409

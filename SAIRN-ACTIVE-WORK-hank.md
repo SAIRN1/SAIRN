@@ -1929,3 +1929,101 @@ predates the split — including the `cc-work` worktree correction — stays in
   **THE TWO-RUN SHAPE WAS STATED BEFORE IT HAPPENED AND IS WHAT MAKES THIS EVIDENCE RATHER THAN A COINCIDENCE.** `02:15:28Z` ran the fixed code — verified by ancestry, `550d69cd` is an ancestor of the deployed `9f820331`, not assumed from a timestamp — and still REPORTED `PARTIAL`, because it read the `partial` row `01:15` had written. What it WROTE was `ok`. `03:15` read that back. A fix whose first run still looks broken is exactly the shape somebody checks once, sees red, and reverts.
 
   **NOT ESTABLISHED, AND IT IS THE SAME GAP AS BEFORE:** no alert has been sent through the channel, because nothing has needed one. `notify_channel.configured` is true and Resend has been shown to ACCEPT a send from this project; whether mail lands in the inbox is still unconfirmed, and `CRON_SECRET` is still absent from the repository's Actions secrets, so `.github/workflows/cron-liveness.yml` — the out-of-band reader that would have caught this latch from outside Vercel — has still never run.
+
+---
+
+## 2026-09-22 — SAIRNcare append-only trail reads had no ordering, and it was six reads rather than three
+
+**Sent to fix three unordered reads. Found six, and the difference is the
+point rather than a bonus.** The handoff named `alf_mar`, `alf_signals` and
+`alf_claim_routes`. `alf_incidents`, `alf_staff_credentials` and
+`alf_op_audits` carry the identical defect at the identical call shape in the
+same file. **Fixing three and shipping an arm called "append-only read order"
+would have published an all-clear over three reads it never looked at** —
+which is the shape CLAUDE.md names as the most common defect here after a
+silent failure.
+
+**THE DEFECT.** Postgres promises nothing about the order of a `SELECT` that
+does not ask for one, and PostgREST forwards that straight through. On a small
+table a seq scan usually returns heap order, so an unordered read LOOKS like
+insertion order for the whole of development and stops looking like it the
+first time the planner picks an index or a reused page moves a row. Correct in
+dev, wrong in production, silent in both.
+
+**THE SIX DO NOT SHARE A SEVERITY and flattening them would overstate four.**
+Checked against `sairncare.html`, not inferred from the API shape:
+
+- `alf_claim_routes` — **worst.** `prRenderRecorded` maps rows straight into a
+  table with **no client sort of any kind**. The server order WAS the display
+  order and there was none.
+- `alf_mar`, `alf_incidents` — the renderers DO sort, on a **date-only** jsonb
+  field. `Array.prototype.sort` is stable, so every same-day entry ties and
+  falls back to the order the server sent. **A sort that ties is the same
+  defect wearing a sort**, and same-day is the normal case on a MAR.
+- `alf_staff_credentials`, `alf_op_audits` — already sorted `created_at` desc
+  client-side, so deterministic except on an exact tie. Recorded as the smaller
+  finding they are.
+- `alf_signals` — **no consumer in the app at all today.** Nothing was displayed
+  wrongly; the API contract was simply nondeterministic. Named rather than
+  quietly counted with the rest.
+
+**DESC, chosen against the consumer rather than by taste.** Every SAIRNcare
+renderer that sorts this data sorts newest-first, so server-side desc makes the
+tie-break agree with the direction the reader is already being shown. The wider
+file uses `asc` for supersede chains (`rf_proposals`, `rf_photos`) where
+oldest-first is semantically required; none of these six is that shape.
+`alf_signals` orders by `recorded_at` — when the signal OCCURRED — matching
+`rf_certifications`, its structural twin in the same file.
+
+**THE DISPLAY HALF, which the open-work row said was required and I nearly
+skipped.** The row's own words were *"Either alone leaves the promise
+half-true."* `prRenderRecorded`'s "On" column rendered
+`String(created_at).slice(0,10)`, so two determinations recorded the same day
+carried IDENTICAL text — and the 409 that row is about promises the reader will
+see *"both, with the later one as what is believed now."* Now renders through a
+new `fstamp()`, which converts to the reader's **local** zone: slicing the raw
+string would print an unmarked UTC clock face, which is worse than a date alone
+because it looks local and is not.
+
+**THE TWO EXISTING SUITES COULD NOT HAVE FOUND ANY OF THIS.**
+`tests/sairncare/test-alf-mar.js` and `test-alf-signals.js` both assert the read
+URL with an **unanchored** prefix regex that stops at `...data`. They matched
+before the fix and match after it. **A suite that passes identically either side
+of a change is not evidence about that change** — which is why this shipped with
+a new arm and a negative control rather than with "the tests are green."
+
+**ARMS.** `api/alf-append-only-read-order.test.js`, 9 assertions, and it
+**parses its table list out of the `const TABLES` array in
+`api/alf-append-only-fail-closed.test.js`** instead of retyping it, so a seventh
+trail added there fails this arm until it is ordered too. It exits **2** if
+either file is unreadable or the sibling is restructured, and strips comment
+lines before scanning so the fix's own prose cannot satisfy it.
+`tests/run_alf_read_order_sabotage_probe.py` plants seven defects; all seven
+refused — including the clause surviving **only as a comment**, and the read
+hoisted into a local so the arm finds **zero** and must say so rather than sweep
+clean. `tests/sairncare_route_record.js` grew the time-in-the-stamp arm (asserted
+as a **clock component, not a literal string** — a literal would pass or fail on
+the runner's timezone rather than on the code) and its probe grew mutation 11.
+
+**LIVE-VERIFIED, and the 200 is not the check that mattered.** Each of these
+read branches maps an upstream 400 to `{ok:true,data:[],provisioned:false}`, so
+an order column that does not exist in the live database does not error — it
+renders to a user as *"the table is NOT SET UP in this database."* A check that
+only asked "did it return 200" would pass on exactly that failure. All six
+answered **`provisioned:true`** on `ALF-TEST-2026` against the deployed
+endpoint, against a deployment confirmed by sha rather than by elapsed time.
+
+**WHAT IS NOT PROVEN, stated rather than implied: the DIRECTION, live.** The
+verification tenant holds 0–2 rows per trail, so "descending over one row" is
+not evidence. Direction rests on the code and on mutation 4 of the probe, which
+catches an `asc` flip. **I did not seed rows to strengthen it** — these are
+append-only tables with `grant select, insert` and no delete, and the open-work
+index already records a probe on this exact app that damaged a row by
+re-sending an id.
+
+**STILL OPEN.** The arm covers ONLY SAIRNcare `alf_*` trails. `api/sd-data.js`
+is shared by eleven apps and carries append-only trails for several of them;
+whether any of those reads are unordered has **not** been checked here and is
+not guarded. A single-column order also still ties when two rows share the
+timestamp to the microsecond — no read in the file uses a tiebreaker and this
+change did not introduce the first one.
