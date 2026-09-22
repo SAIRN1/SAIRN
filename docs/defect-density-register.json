@@ -10814,6 +10814,59 @@
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
+      "commit": "af2fc48a71d3",
+      "date": "2026-09-22",
+      "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
+      "files": [
+        "tests/run_sairn_status_probe.py",
+        "tools/sairn_status.py"
+      ],
+      "lines_added": 240,
+      "lines_removed": 2,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "tools/sairn_status.py --note replaced the whole note field on every set that passed it, with no append, no diff, no confirmation and no warning, destroying two notes addressed to other sessions on 2026-09-22. Fixed by making --note append with a UTC stamp, adding --note-replace for explicit replacement, refusing both ambiguous flag combinations, and re-reading the row from disk to confirm the write rather than reporting from intent.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "21268b33ba86",
+        "date": "2026-09-16",
+        "subject": "feat(process): the shared status registry -- a directory, not a file, and the concurrency claim is measured",
+        "lag_days": 6
+      },
+      "citation_note": "1.5 is the confident line printed after the error. Here the confident line is printed after a SUCCESS that lost data rather than after an error, which is the same defect with no error to ignore -- so the citation is arguable, not clean. The fix is 1.5's fix: re-read and confirm rather than report from what was intended.",
+      "phase_note": "Design. The replace-on-write behaviour is what payload() was written to do and is stated on its own line; what was wrong was choosing a single replaceable string as the carrier for a cross-session channel, which was decided when the registry was built.",
+      "contributing_factors": [
+        {
+          "factor": "The `note` field is a single string with no append path, so the only way to add to it was to send the whole thing back -- and any author who sent less than the whole thing destroyed the rest.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--note now APPENDS with a UTC-stamped separator; --note-replace carries the rare full replacement and is the sanctioned way to prune."
+        },
+        {
+          "factor": "The write reported success without ever checking what was stored. 'It exited 0' and 'it stored what I sent' were two claims and only one was checked, so the loss was silent at the writing end as well as the reading end.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "cmd_set re-reads the row from disk after writing, confirms the sent text is present, echoes it back, and exits 2 COULD NOT RUN on a mismatch."
+        },
+        {
+          "factor": "This registry is the platform's fastest cross-session channel -- CLAUDE.md sends every session here FIRST because it is current without a fetch -- and it was the one channel with no durability and no audit. Nothing distinguishes 'nobody wrote to me' from 'what was written to me was replaced'.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Anything meant for another session goes in docs/SAIRN-OPEN-WORK-INDEX.md as well as the note. Named as a standing habit in tool-bugs item 12 rather than enforced, because no check can tell a note meant for another session from one meant for self."
+        }
+      ],
+      "recurrence_open": "Growth is warned about, not bounded -- a note can still be appended to past the point where every reader's 100-character preview makes it undeliverable, and only the author's attention stops that. And nothing can distinguish a note meant for another session from one meant for self, so the 'also put it in the open-work index' habit is unenforced and will be skipped under time pressure, which is when it matters most."
+    },
+    {
       "commit": "b3797733c152",
       "date": "2026-09-22",
       "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
@@ -10842,65 +10895,6 @@
       "citation_note": "Adjacent rather than identical: no check ran and reported a pass -- instead a coercion silently produced a value indistinguishable from a valid one, so every downstream check passed honestly on a number that meant nothing. Same family: a could-not-tell folded into an answer.",
       "phase_note": "The coercion and the absence of any guard were written together; there was never a version of this code that validated the count and then stopped.",
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
-    },
-    {
-      "commit": "f9e9628f4762",
-      "date": "2026-09-22",
-      "subject": "fix(sairncare): six append-only trail reads had no order= clause -- not three, and unordered is not insertion order",
-      "files": [
-        "api/alf-append-only-read-order.test.js",
-        "api/sd-data.js",
-        "tests/run_alf_read_order_sabotage_probe.py"
-      ],
-      "lines_added": 377,
-      "lines_removed": 6,
-      "app": "sairncare",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "api/sd-data.js read SIX SAIRNcare append-only trails with no order= clause -- alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits. Postgres promises nothing about the order of a SELECT that does not ask for one and PostgREST forwards that through, so rows came back in plan order. On a small table a seq scan usually returns heap order, which is why it looked like insertion order for the whole of development and would stop the first time the planner picked an index. WORST INSTANCE, and the one the severity is set by: prRenderRecorded maps alf_claim_routes rows straight into a table with NO client sort of any kind and renders created_at sliced to 10 characters, so the server order WAS the display order and there was none -- a billing determination trail in arbitrary order. alf_mar and alf_incidents do sort, but on a date-only jsonb field, so every same-day entry ties and falls back to server order under a stable sort. alf_staff_credentials and alf_op_audits already sorted by created_at desc client-side and were deterministic except on an exact tie. alf_signals has no consumer yet. THE INJECTION COMMIT NAMED IS f29e5f95, the claim_routes instance; the other five entered in separate commits and the lag here is that one instance's, not the class's.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "f29e5f95cf05",
-        "date": "2026-08-22",
-        "subject": "feat: SAIRNcare Phase 1 -- payer/billing-routing engine (HCBS waiver + hospice/MA relatedness)",
-        "lag_days": 31
-      },
-      "citation_note": "1.1 is cited for the DETECTION half, not for the defect itself -- an unordered read is not a check that stopped checking. tests/sairncare/test-alf-mar.js and test-alf-signals.js both assert the read URL with an UNANCHORED prefix regex that stops at '...data', so both matched identically before and after the fix. They were green throughout and could never have gone red either way, which is 1.1's shape exactly: a suite that passes on both sides of a change is not evidence about that change.",
-      "contributing_factors": [
-        {
-          "factor": "Six facility-wide trail reads were written with no order= clause, on the implicit assumption that PostgREST returns insertion order. It does not; it returns plan order.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Explicit &order= added to all six reads -- created_at.desc on five, recorded_at.desc on alf_signals. Direction chosen against the consumer: every SAIRNcare renderer that sorts this data sorts newest-first."
-        },
-        {
-          "factor": "Nothing on the platform checked read ordering at all, and the two suites that DO assert these URLs use unanchored prefix regexes that match either side of the change.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/alf-append-only-read-order.test.js (9 arms) plus tests/run_alf_read_order_sabotage_probe.py, which plants seven defects -- including the clause surviving only as a comment, and the read hoisted out of the arm sight -- and all seven are refused."
-        },
-        {
-          "factor": "The work arrived scoped to THREE of the six reads. The other three were found only by enumerating the whole append-only class rather than working the list as handed over; fixing three and shipping an arm named for the class would have published an all-clear over reads it never looked at.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The arm PARSES its table list out of the const TABLES array in api/alf-append-only-fail-closed.test.js instead of retyping it, so the scope cannot silently be three again and a seventh trail added upstream fails the arm until it is ordered too."
-        },
-        {
-          "factor": "Each of these reads answers an upstream 400 with {ok:true,data:[],provisioned:false}, so an order column that does not exist in the live database would render to the user as THE TABLE IS NOT SET UP rather than as an error. That standing shape is what makes a query-syntax change here riskier than it looks.",
-          "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "The 400-as-not-provisioned mapping is deliberate and load-bearing elsewhere -- it is how the client distinguishes a never-migrated table from a genuinely empty one, which was itself a 2026-09-21 fix. Narrowing it is a separate decision, not a side effect of this one. Mitigated here instead by a live read-back of all six reads against the deployed endpoint."
-        }
-      ],
-      "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
     },
     {
       "commit": "cd2662fae046",
@@ -10995,6 +10989,65 @@
       "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
       "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
       "factors_unknown_reason": "--rule"
+    },
+    {
+      "commit": "f9e9628f4762",
+      "date": "2026-09-22",
+      "subject": "fix(sairncare): six append-only trail reads had no order= clause -- not three, and unordered is not insertion order",
+      "files": [
+        "api/alf-append-only-read-order.test.js",
+        "api/sd-data.js",
+        "tests/run_alf_read_order_sabotage_probe.py"
+      ],
+      "lines_added": 377,
+      "lines_removed": 6,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js read SIX SAIRNcare append-only trails with no order= clause -- alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits. Postgres promises nothing about the order of a SELECT that does not ask for one and PostgREST forwards that through, so rows came back in plan order. On a small table a seq scan usually returns heap order, which is why it looked like insertion order for the whole of development and would stop the first time the planner picked an index. WORST INSTANCE, and the one the severity is set by: prRenderRecorded maps alf_claim_routes rows straight into a table with NO client sort of any kind and renders created_at sliced to 10 characters, so the server order WAS the display order and there was none -- a billing determination trail in arbitrary order. alf_mar and alf_incidents do sort, but on a date-only jsonb field, so every same-day entry ties and falls back to server order under a stable sort. alf_staff_credentials and alf_op_audits already sorted by created_at desc client-side and were deterministic except on an exact tie. alf_signals has no consumer yet. THE INJECTION COMMIT NAMED IS f29e5f95, the claim_routes instance; the other five entered in separate commits and the lag here is that one instance's, not the class's.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f29e5f95cf05",
+        "date": "2026-08-22",
+        "subject": "feat: SAIRNcare Phase 1 -- payer/billing-routing engine (HCBS waiver + hospice/MA relatedness)",
+        "lag_days": 31
+      },
+      "citation_note": "1.1 is cited for the DETECTION half, not for the defect itself -- an unordered read is not a check that stopped checking. tests/sairncare/test-alf-mar.js and test-alf-signals.js both assert the read URL with an UNANCHORED prefix regex that stops at '...data', so both matched identically before and after the fix. They were green throughout and could never have gone red either way, which is 1.1's shape exactly: a suite that passes on both sides of a change is not evidence about that change.",
+      "contributing_factors": [
+        {
+          "factor": "Six facility-wide trail reads were written with no order= clause, on the implicit assumption that PostgREST returns insertion order. It does not; it returns plan order.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Explicit &order= added to all six reads -- created_at.desc on five, recorded_at.desc on alf_signals. Direction chosen against the consumer: every SAIRNcare renderer that sorts this data sorts newest-first."
+        },
+        {
+          "factor": "Nothing on the platform checked read ordering at all, and the two suites that DO assert these URLs use unanchored prefix regexes that match either side of the change.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/alf-append-only-read-order.test.js (9 arms) plus tests/run_alf_read_order_sabotage_probe.py, which plants seven defects -- including the clause surviving only as a comment, and the read hoisted out of the arm sight -- and all seven are refused."
+        },
+        {
+          "factor": "The work arrived scoped to THREE of the six reads. The other three were found only by enumerating the whole append-only class rather than working the list as handed over; fixing three and shipping an arm named for the class would have published an all-clear over reads it never looked at.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The arm PARSES its table list out of the const TABLES array in api/alf-append-only-fail-closed.test.js instead of retyping it, so the scope cannot silently be three again and a seventh trail added upstream fails the arm until it is ordered too."
+        },
+        {
+          "factor": "Each of these reads answers an upstream 400 with {ok:true,data:[],provisioned:false}, so an order column that does not exist in the live database would render to the user as THE TABLE IS NOT SET UP rather than as an error. That standing shape is what makes a query-syntax change here riskier than it looks.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "The 400-as-not-provisioned mapping is deliberate and load-bearing elsewhere -- it is how the client distinguishes a never-migrated table from a genuinely empty one, which was itself a 2026-09-21 fix. Narrowing it is a separate decision, not a side effect of this one. Mitigated here instead by a live read-back of all six reads against the deployed endpoint."
+        }
+      ],
+      "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
     }
   ],
   "started": "2026-09-09",
