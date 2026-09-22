@@ -1973,6 +1973,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T21:36:25Z",
+      "resources": [
+        "invoices",
+        "quotes"
+      ],
+      "files": [
+        "api/_lib/mech-redact.js"
+      ],
+      "what": "sairnmechanical mech_docs redaction before storage. THE TRIGGER IS SPURIOUS AND I AM RECORDING RATHER THAN OVERRIDING: 'invoices' appears in api/_lib/mech-redact.js only as an English word in the prose listing the document types scanDoc asks the model to identify -- work orders, contracts, permits, inspection reports, INVOICES. The bare Tier A resource 'invoices' belongs to SAIRNscape and no code path here touches it. THE OBLIGATION IS STILL WANTED: mech_docs stored and SYNCED raw AI-extracted document text verbatim, and this change is a redaction pass on a server write path. WHAT A REVIEWER SHOULD ATTACK, hardest first. (1) THE RULE SET IS A JUDGEMENT ABOUT WHAT COUNTS AS AN IDENTIFIER AND I MADE IT ALONE. I KEEP amounts, model numbers and equipment serials, on the grounds that they are the document's subject rather than its leak and a redactor that eats them gets switched off. I REMOVE emails, 13-19 digit runs, SSN/EIN, structured phones, street addresses, and labelled person fields. Argue the keeps, not the removes -- an invoice total beside a redacted customer name may still be identifying in a small trade, and I did not weigh that. (2) THE CARD RULE IS BOUNDED AT 19 DIGITS so a long equipment serial is not swallowed; that bound is also what lets a 20-digit account number through. Check the trade. (3) THE PHONE RULE REQUIRES STRUCTURE (parens, dots or hyphens) so a bare ten-digit serial is not eaten -- which means a bare ten-digit phone number is not redacted either. (4) complete is a CONSTANT false and a suite arm ASSERTS that a name in prose survives. Confirm that is the right contract rather than a way of excusing an incomplete pass. (5) THE CLIENT COPY IS A SECOND IMPLEMENTATION of the same rules because a single-file HTML app cannot require the module; a parity arm drives both on 12 inputs and requires identical output. Confirm that is sufficient, and note the first version of the client had every \\b eaten as a literal backspace so five of six rules were dead -- the parity arm is what found it, and arm 5 now refuses a 0x08 permanently.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T21:36:25Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
