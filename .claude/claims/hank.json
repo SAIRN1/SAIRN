@@ -2668,6 +2668,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "hank-1790117010",
+      "session": "hank",
+      "subject": "dup-reconcile-route",
+      "task": "route two tier corrections to cody who holds CRITICALITY-TIERS.md -- rf_proposals confidentiality and bld_referrals confidentiality. NOT editing the register. FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-22T22:43:30Z",
+      "claimed_at_epoch": 1790117010.1872087,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
