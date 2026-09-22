@@ -9311,7 +9311,30 @@ module.exports = async (req, res) => {
       const existingR = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
       const existingRows = await appendOnlyExisting(res, existingR, 'alf_claim_routes'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
-        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This routing decision has already been recorded and cannot be overwritten' } });
+        // THE REFUSAL NAMES THE CORRECTION PATH, 2026-09-22. This answered only
+        // "cannot be overwritten", which is true and leaves a biller who has
+        // discovered a WRONG determination with nowhere to go -- and the thing
+        // they are most likely to try next is pressing Record again, which mints
+        // a fresh id from Date.now() and puts TWO rows in the trail with nothing
+        // marking which one is believed. The append-only comment above already
+        // states the intended path in terms ("a NEW decision with its own
+        // timestamp"); it was stated to the next PROGRAMMER and never to the
+        // user who needs it.
+        //
+        // THE WORDING FOLLOWS THE TWO SIBLINGS THAT ALREADY DO THIS rather than
+        // inventing a third phrasing: rf_supplier_documents ("A corrected
+        // invoice is a NEW document, not an edit -- the match will show both")
+        // and mech_credentials ("A renewal is a NEW record, not an edit -- use a
+        // new credential_id"). Same shape, same promise that both rows remain
+        // visible, because on an append-only billing trail the superseded row is
+        // evidence of what was believed and acted on.
+        //
+        // alf_mar (:8651), alf_signals (:9094), alf_staff_credentials (:9500)
+        // and alf_observations (:9591) all still refuse WITHOUT naming a path.
+        // Left alone deliberately and recorded in the open-work index: four more
+        // message changes on four regulated logs is a sweep, and a sweep inside a
+        // change asked for on one resource is how scope stops being reviewable.
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This routing decision has already been recorded and cannot be overwritten. A CORRECTED determination is a NEW decision, not an edit -- record it again and the trail will show both, with the later one as what is believed now. If you are retrying because you are not sure the first one saved, check the trail before recording: a retry and a correction look identical to this endpoint.' } });
         return;
       }
       const routeData = Object.assign({}, payload);

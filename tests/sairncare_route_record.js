@@ -354,6 +354,34 @@ async function main() {
   ok('A REAL TRAIL renders the row, resolves the resident and labels the outcome',
     /A\. Resident/.test(rows) && /not routed/.test(rows) && /2026-09-19/.test(rows), rows);
 
+  // ── THE REFUSAL MUST NAME THE CORRECTION PATH (added 2026-09-22) ─────
+  // alf_claim_routes is append-only and refuses an overwrite with 409
+  // ALREADY_RECORDED. That refusal used to say only "cannot be overwritten",
+  // which leaves a biller who has found a WRONG determination with nowhere to
+  // go -- and the thing they try next is pressing Record again, which mints a
+  // fresh id from Date.now() and puts TWO rows in the trail with nothing
+  // marking which one is believed.
+  //
+  // ASSERTED ON THE SERVER SOURCE rather than by driving the handler, because
+  // this suite drives the CLIENT half of the round trip. The message is the
+  // contract between the two, and a message change with nothing pinning it is
+  // one edit away from reverting in silence.
+  {
+    const fs = require('fs');
+    const path = require('path');
+    const api = fs.readFileSync(path.join(__dirname, '..', 'api', 'sd-data.js'), 'utf8');
+    const i = api.indexOf("code: 'ALREADY_RECORDED', message: 'This routing decision");
+    const msg = i < 0 ? '' : api.slice(i, api.indexOf("' } });", i));
+    ok('the alf_claim_routes 409 names the CORRECTION PATH, not just the refusal',
+      i > 0 && /A CORRECTED determination is a NEW decision/.test(msg)
+      && /the trail will show both/.test(msg), msg.slice(0, 220));
+    // The half easiest to leave out: a retry and a correction are
+    // indistinguishable to this endpoint, so the message has to say so or it
+    // invites the duplicate row it exists to prevent.
+    ok('...and it warns that a RETRY and a CORRECTION look identical to the endpoint',
+      /retry and a correction look identical/.test(msg), msg.slice(0, 220));
+  }
+
   console_warn('\n' + (failed ? failed + ' ARM(S) FAILED' : 'ALL ARMS PASS'));
   process.exit(failed ? 1 : 0);
 }

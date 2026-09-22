@@ -1569,6 +1569,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-22T09:41:03Z",
+      "resources": [
+        "alf_claim_routes",
+        "alf_staff_credentials",
+        "mech_credentials"
+      ],
+      "files": [
+        "api/sd-data.js",
+        "tests/sairncare_route_record.js"
+      ],
+      "what": "ONE REFUSAL MESSAGE AND TWO ARMS PINNING IT. api/sd-data.js's alf_claim_routes 409 ALREADY_RECORDED now names the CORRECTION PATH instead of only refusing the overwrite, and tests/sairncare_route_record.js gains two arms asserting it. It names alf_staff_credentials and mech_credentials because my comment cites their sibling messages as the wording precedent, and alf_claim_routes because that is the resource. NO BEHAVIOUR CHANGED -- the 409 fired before and fires now, same code, same status; what changed is what the refusal tells the biller. WHY AT ALL: the branch's own comment already said the correction path in terms -- a new decision with its own timestamp, not an edit -- and said it to the next PROGRAMMER. The user read only 'cannot be overwritten', and the thing they try next is pressing Record again, which mints a fresh id from Date.now() and puts two rows in an append-only billing trail with nothing marking which is believed. WHAT A REVIEWER SHOULD ATTACK, hardest first. (1) I WROTE A LONGER USER-FACING MESSAGE ON A REGULATED BILLING REFUSAL AND NOBODY REVIEWED THE WORDS. It now tells a biller to record again AND to check the trail first, because a retry and a correction are indistinguishable to this endpoint. If that instruction is wrong for how billers actually work -- if 'record it again' invites the duplicate more than the check prevents it -- I have made the duplicate hazard worse while sounding careful. Judge the WORDS, not the mechanism. (2) I FOLLOWED TWO SIBLINGS' PHRASING RATHER THAN INVENTING A THIRD, and that choice deserves a check: rf_supplier_documents says 'the match will show both' and mech_credentials says 'use a new credential_id'. Mine says the trail will show both with the later one as what is believed now. Confirm that is TRUE of this resource -- that the read really does return both rows and that the client renders them in an order where 'later' is legible. If the trail sorts the other way or collapses duplicates, my message promises something the UI does not do. (3) THE ARMS ASSERT THE SERVER SOURCE FROM A CLIENT SUITE, by reading api/sd-data.js off disk and regexing the message. That is deliberate -- the message is the contract between the two halves and this suite owns the client half -- but it couples a client suite to a server file's text, and a reworded message breaks the arm rather than the behaviour. Say whether that coupling is right or whether the pin belongs in a server-side suite instead. (4) I LEFT FOUR SIBLINGS ALONE ON PURPOSE and that is arguable: alf_mar, alf_signals, alf_staff_credentials and alf_observations all still refuse without naming a path, and three of those are regulated logs. My reasoning is that four more message changes is a sweep and a sweep inside a single-resource change stops being reviewable. The counter-argument is that a correction path a biller learns on one screen and not the next is worse than none. It is recorded as its own row either way. (5) AND THE THING I FOUND RATHER THAN CHANGED, which is the most load-bearing item here: tests/run_sairncare_route_record_sabotage_probe.py mutation 1 -- the ORIGINAL DEFECT RESTORED -- has been ANCHOR-2 since ad6a6b9d, so it has planted NOTHING since. Traced through git rather than guessed: the anchor counted 1 at deea8c55 and 2 at ad6a6b9d, where the same stamping shape was applied to alfPostRaw(). Nine other mutations still plant and are still refused. I did not re-aim it: that needs its own control proving the re-aimed mutation still lands, and it is the author's probe. Check my dating, and check that my two new arms did not themselves contribute to the anchor count -- they did not, they are in a test file and the anchor is in sairncare.html, but that is exactly the kind of claim worth verifying rather than accepting.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T09:41:03Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

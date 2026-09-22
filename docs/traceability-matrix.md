@@ -419,6 +419,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; The route-record sabotage probe&rsquo;s MUTATION 1 &mdash; &ldquo;the original defect restored EXACTLY&rdquo; &mdash; has been ANCHOR-2 since `ad6a6b9d`, so the arm the probe was built around has not been planted since** | **FOUND 2026-09-22 (Fourth), NOT FIXED** &mdash; surfaced while adding arms to `tests/sairncare_route_record.js`; the anchor count was traced through git rather than guessed | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
 | **&#9989; `tests/faults/alf_rule_read_faults.js` had been RED since 2026-09-18 &mdash; six of thirteen arms dying on `prRenderRecorded is not defined`, reported as product failures** | **FIXED 2026-09-21 (Cody)** &mdash; a no-op stub in the vm sandbox; suite 13/13, `tests/sairncare_fault_probe.py` back to 0 failures | `tests/faults/alf_rule_read_faults.js`, `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_fault_probe.py`, `tests/sairncare_route_record.js` |
 | **&#9989; A routing result the ENGINE NEVER JUDGED was still offered a &ldquo;Record this determination&rdquo; button, and one of the four shapes wrote a permanent append-only Tier A billing row** | **FIXED 2026-09-21 (Cody)** &mdash; `deea8c55`. Closed at the PRODUCER (`alfRoute()` stamps `HTTP_<status>` on every non-200 &mdash; the engine judges on 200 and only on 200) and again at the CONSUMER | `tests/run_sairncare_route_record_sabotage_probe.py`, `tests/sairncare_route_record.js` |
 | **Gate 4 on the vertical with the most suites and no probe &mdash; 18 green suites, none ever observed red** | **BUILT 2026-09-15 (Fourth)** &mdash; `tests/sairncare_fault_probe.py`, 14 mutation arms + 6 controls, green after two real findings were closed. MASTER-PLAN `sairncare` fault 0 &rarr; 1 | `api/alf-append-only-fail-closed.test.js`, `tests/sairncare_fault_probe.py` |
@@ -716,7 +717,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 651   tests/**, api/** (both walked)
-  open-work rows citing a test       325   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       326   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
