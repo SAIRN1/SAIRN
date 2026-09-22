@@ -560,6 +560,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **~~&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation~~ &mdash; SUPERSEDED: it was EIGHT of ELEVEN, and all are now pinned** | **CLOSED 2026-09-22 (Hank).** Opened by fourth with a correct direction and an undercount; the live row is the **&#9989; All eleven** one above | `api/_lib/sairnsenior-hydrate-delegation.test.js`, `tests/run_sairnsenior_hydrate_delegation_probe.py` |
 | **&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation &mdash; rewriting one back to additive-only would break nothing** | **MEASURED 2026-09-21 (Fourth), NOT FIXED** &mdash; found while re-aiming the three arms that WERE pinned; the other five were never checked by anybody | `tests/server_wins_hydration.js` |
 | **&#9888; Three suites RED on `main` &mdash; hydration replaces the local row instead of only adding unseen ones** | **FLAGGED 2026-09-21 (Hank), NOT MINE AND NOT FIXED** &mdash; confirmed pre-existing by stashing my own changes and re-running on a clean tree | `api/_lib/sairnsenior-authorizations.test.js` |
+| **&#128308; `reclassification_sweep.py` GLOBS THE CURRENT DIRECTORY, NON-RECURSIVELY &mdash; so there is NO directory from which it reads the statute corpus it was written for, and it prints a ZERO TALLY from every one of them** | **MEASURED 2026-09-22 (cc), found sideways during the tools/package version audit and NOT FIXED.** Driven from four locations, all four printing `TALLY: {&#39;DEEM&#39;: 0, &#39;ROLE&#39;: 0, &#39;PER | `tests/run_cron_liveness_probe.py` |
 | **Gate 4 on federally-mandated EVV &mdash; and the probe found TWO concurrency guards nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnsenior_fault_probe.py`, 8 mutation arms + 4 controls; `api/_lib/sairnsenior-offline-evv.test.js` gained a concurrency section (4 arms, 26 &rarr; 30). MA | `api/_lib/sairnsenior-offline-evv.test.js`, `tests/sairnsenior_fault_probe.py` |
 
 ### sairnvet
@@ -743,7 +744,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 686   tests/**, api/** (both walked)
-  open-work rows citing a test       340   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       341   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
