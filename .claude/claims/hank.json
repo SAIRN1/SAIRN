@@ -2433,8 +2433,8 @@
       "task": "rf_draws bld_draws law_pimedical money and health data retier",
       "claimed_at": "2026-09-22T08:13:43Z",
       "claimed_at_epoch": 1790064823.9285057,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T08:41:54Z"
     }
   ]
 }
