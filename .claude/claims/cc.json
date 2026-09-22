@@ -2044,6 +2044,16 @@
       "claimed_at_epoch": 1790029795.888196,
       "status": "released",
       "released_at": "2026-09-21T22:45:33Z"
+    },
+    {
+      "id": "cc-1790067120",
+      "session": "cc",
+      "subject": "tooling-claim-matcher-fileset",
+      "task": "FILES: tools/sairn_claim.py -- primary check becomes FILE-SET INTERSECTION; the lexical bigram/app overlap becomes a secondary warning that reports and never refuses",
+      "claimed_at": "2026-09-22T08:52:00Z",
+      "claimed_at_epoch": 1790067120.2547014,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
