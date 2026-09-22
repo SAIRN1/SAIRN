@@ -139,6 +139,73 @@ def main():
     arm('...and None stays None, so a caller can tell "not given" from ""',
         tg.body_from_file_or(['--discharge', 'cody'], None) is None)
 
+    # ── IS THE HELPER ACTUALLY WIRED IN? ────────────────────────────────────
+    # EVERY ARM ABOVE THIS LINE TESTS body_from_file_or IN ISOLATION, and on
+    # 2026-09-22 that was the whole probe -- so it could not tell a wired
+    # --body-file from an unwired one. MEASURED rather than argued: delete the
+    # single line `why = body_from_file_or(argv, why)` from main()'s --open
+    # branch and this probe still exits 0 with zero failures, while
+    # `--open --body-file <path>` records the literal string '--body-file' as
+    # the entire "what changed and why" -- eleven characters, non-empty, so
+    # the gate reports success and opens an obligation with no content in it.
+    # A correct helper nothing calls is the defect shape this platform keeps
+    # paying for; the arms below drive main() so the wiring itself is the
+    # subject. cmd_open and cmd_discharge are captured rather than run,
+    # because this probe must never write to the real ledger.
+    print('\nTHE WIRING -- main() must actually CALL it, on both commands')
+    seen = {}
+    tg.cmd_open = lambda why, rng=None: (seen.update(why=why, rng=rng), 0)[1]
+    tg.cmd_discharge = (lambda author, verdict, opened_at=None, takeover=False:
+                        (seen.update(author=author, verdict=verdict,
+                                     opened_at=opened_at, takeover=takeover), 0)[1])
+
+    seen.clear()
+    tg.main(['--open', '--body-file', good])
+    arm('--open reads the file rather than the flag that names it',
+        seen.get('why') == HOSTILE.strip(), 'stored %r' % (seen.get('why'),))
+
+    seen.clear()
+    tg.main(['--open', '--body-file', good, '--range', 'A..B'])
+    arm('--open still parses --range beside it',
+        seen.get('why') == HOSTILE.strip() and seen.get('rng') == 'A..B',
+        'body=%r range=%r' % (seen.get('why'), seen.get('rng')))
+
+    seen.clear()
+    tg.main(['--discharge', 'cody', '2026-09-22T10:00:00Z', '--body-file', good])
+    arm('--discharge reads the file, and keeps author and opened_at',
+        (seen.get('verdict') == HOSTILE.strip() and seen.get('author') == 'cody'
+         and seen.get('opened_at') == '2026-09-22T10:00:00Z'),
+        'author=%r opened_at=%r' % (seen.get('author'), seen.get('opened_at')))
+
+    # THE FLAG AND ITS PATH MUST NOT SURVIVE INTO THE PROSE. --discharge joins
+    # its trailing words into the verdict, so a --body-file left in argv would
+    # be stored as part of the review -- a verdict nobody can search carrying a
+    # temp path nobody else can open. Given LAST here and FIRST below, because
+    # the tool's own comment promises the flag works anywhere.
+    seen.clear()
+    tg.main(['--discharge', '--body-file', good, 'cody'])
+    arm('--discharge takes --body-file before the author too',
+        seen.get('verdict') == HOSTILE.strip() and seen.get('author') == 'cody',
+        'author=%r verdict=%r' % (seen.get('author'), seen.get('verdict')))
+    arm('neither the flag nor its path leaks into the stored verdict',
+        '--body-file' not in (seen.get('verdict') or '')
+        and good not in (seen.get('verdict') or ''),
+        'stored %r' % (seen.get('verdict'),))
+
+    # FAIL CLOSED END TO END, not just in the helper. The refusal arms above
+    # prove the helper raises; these prove the raise reaches the exit code and
+    # that NOTHING is recorded on the way -- an absent body must leave no
+    # obligation behind, rather than a blank one.
+    seen.clear()
+    rc = tg.main(['--open', '--body-file', good + '.nope'])
+    arm('--open on an unreadable body exits 2 and records nothing',
+        rc == 2 and not seen, 'rc=%r seen=%r' % (rc, seen))
+
+    seen.clear()
+    rc = tg.main(['--discharge', 'cody', '--body-file', good + '.nope'])
+    arm('--discharge on an unreadable body exits 2 and records nothing',
+        rc == 2 and not seen, 'rc=%r seen=%r' % (rc, seen))
+
     print('\n%d failure(s)' % len(FAILS))
     for f in FAILS:
         print('  - ' + f)

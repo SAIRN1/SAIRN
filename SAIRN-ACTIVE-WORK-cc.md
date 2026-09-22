@@ -4891,3 +4891,50 @@ Two older controls do not carry the arm in this shape and were **skipped and
 named** rather than guessed at -- population 12, fix covered 10.
 
 41 of 157 suites controlled.
+
+---
+
+## 2026-09-22 -- `--body-file` was implemented and never proven WIRED
+
+Tool-bugs bucket item 5. The row said the fix was SUGGESTED; it had landed six
+hours earlier in `49e9395b`. So the work was not the fix -- it was that the
+control could not see the half that breaks.
+
+`tests/run_body_file_roundtrip_probe.py` tested `body_from_file_or` **in
+isolation**. Every arm was correct and none of them touched `main()`, so it
+proved the helper decodes, strips and refuses exactly right and proved nothing
+about whether either command CALLS it.
+
+**MEASURED BEFORE IT WAS ARGUED.** Deleted the single line
+`why = body_from_file_or(argv, why)` from the `--open` branch in a throwaway
+copy: the probe exited **0 with zero failures**, and `--open --body-file <path>`
+stored the literal string `'--body-file'` as the whole *"what changed and why"*
+-- eleven characters, non-empty, past the emptiness check, gate reports success,
+obligation opened with nothing in it. The same experiment on `--discharge`
+showed that branch correctly wired, which is why the mutation list covers both
+rather than the one that was broken in the mutation.
+
+Seven WIRING arms now drive `main()` with `cmd_open`/`cmd_discharge` **captured
+rather than run**, so the probe can never write to the real ledger: both
+commands, `--range` beside the flag, `--body-file` given BEFORE the author, the
+flag and its path never leaking into the joined verdict prose, and fail-closed
+end to end -- exit 2 with **nothing recorded**, not a blank review.
+
+`tests/run_body_file_wiring_sabotage_probe.py`, 4 mutations, all four refused,
+baseline green and byte-identical restore verified. **The fourth is the one to
+read twice:** an absent body returns `''` instead of raising. It breaks neither
+the round trip nor the wiring, and it turns a refusal into a stored tick --
+PR 1.11 at the smallest scale this platform has recorded it.
+
+**A correct helper that nothing calls is indistinguishable from a correct helper
+everything calls, from inside a unit test.** Same shape as `_discharge()`'s
+docstring at `85464d4088f3`.
+
+### Found against my own work, and NOT folded in
+
+`tools/sabotage_control_check.py` reports
+`tests/python_escape_hygiene_scope_review_probe.py` -- which I wrote and pushed
+this morning -- as one of 4 UNGUARDED controls. Reported here rather than fixed
+in this commit: it is a different file, a different defect and a different
+claim, and bundling it would be the orthogonal-change rule I am supposed to be
+holding.
