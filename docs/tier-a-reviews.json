@@ -1713,6 +1713,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T12:33:51Z",
+      "resources": [
+        "sd_exec_msgs",
+        "sen_pay_rates",
+        "sen_payer_contracts"
+      ],
+      "files": [
+        "tools/confidentiality_candidate_flagger.py"
+      ],
+      "what": "confidentiality candidate flagger: both signals measured PROXIMITY not ownership; payload signal rewritten to read the resource's own record literal, 30 flags -> 17. WHAT TRIPPED THIS GATE IS A FIXTURE STRING, NOT A CODE PATH: 'sen_pay_rates' and 'sen_payer_contracts' appear only inside the synthetic --self-test fixture reproducing the bleed defect, and in the docstring describing it. tools/confidentiality_candidate_flagger.py serves no resource and writes no tier. Reviewer should confirm exactly that -- that the two Tier A names are inert text and the tool has no path that reads, writes or gates either resource.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-22T12:33:51Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

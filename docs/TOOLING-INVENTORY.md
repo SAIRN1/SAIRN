@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**210 files in `tools/`.** By what actually invokes them:
+**211 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,13 +28,13 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 40 | nothing runs these at all |
+| **UNWIRED** | 41 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| ADVISORY | 2 |
+| ADVISORY | 3 |
 | CHECKER | 146 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
@@ -332,7 +332,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (40)
+## UNWIRED (41)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -343,6 +343,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
 | `bypass_log.py` | CHECKER | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it | &mdash; |
 | `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
+| `confidentiality_candidate_flagger.py` | ADVISORY | the B/C rows of docs/CRITICALITY-TIERS.md that a person must read before the two-axis migration scores them for confidentiality -- 288 rows narrowed to a list short enough to read by hand. IT FLAGS AND DOES NOT SCORE, which is not a limitation to be closed later: the register's own header says a tier asserted with no evidence is a label, so a script cannot assign one. It does not edit the register, writes no tier anywhere, and exits 0 at any count. THE THING IT ACTUALLY CATCHES IS A SIGNAL THAT MEASURED PROXIMITY INSTEAD OF OWNERSHIP, because both of its own signals did. Asking only "is there a server-side check" flagged 173 of 288 rows, since whole apps have no session gate by a RECORDED decision (SD_LOCAL_RESOURCES says so in its own header) -- the signal is the DISAGREEMENT between client and server, not the absence. And the payload signal scanned 400 characters after the resource name for a PII/PHI word, which in a single-file app runs straight into the declaration next door: all 17 rows it flagged were wrong, ten sen_* rows for `pay_rate` off a cache array containing the DIFFERENT resource 'sen_pay_rates', four leg_* rows for `decedent` off one shared helper reading a CASE. It now reads the resource's own record literal, balance-parsed and string-blanked. WHERE THE APP HANDS IT NO READABLE LITERAL THE PAYLOAD SIGNAL CANNOT BE ASKED AT ALL, returned as a separate boolean rather than an empty field list so a could-not-tell is never read as a clean payload, and printed on its own lines in the report. --self-test carries six locked fixtures in BOTH directions, because a count that fell is indistinguishable from a signal that stopped working. | &mdash; |
 | `csv_formula_injection_check.py` | CHECKER | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it | &mdash; |
 | `defect_budget_gate.py` | CHECKER | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
@@ -409,7 +410,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      210   git ls-files tools/
+  tools on disk                      211   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
