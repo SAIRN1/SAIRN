@@ -101,6 +101,99 @@ OWN_COMMIT_RE = re.compile(r'(?:[Cc]ommitted|[Pp]ushed)\s+([0-9a-f]{7,40})')
 # the unresolvable half below from an unknown into an explained gap, so the
 # pairing is MEASURED here rather than offered as an explanation.
 PAIR_RE = re.compile(r'[Cc]ommitted\s+([0-9a-f]{7,40})[,\s]+pushed\s+([0-9a-f]{7,40})')
+SHA_RE = re.compile(r'^[0-9a-f]{7,40}$')
+
+
+# ── WHOSE COMMIT IS IT: THREE ANSWERS, NOT TWO ───────────────────────────────
+# OWN_COMMIT_RE answers "does this text say committed/pushed <sha>". It was
+# being read as "does this log CLAIM <sha> as its own", and those are not the
+# same question. hover1's entry 404 quotes cody's status line -- cody's status
+# now shows "grader importer guard FIXED and pushed 270c60ed..." -- and the
+# regex matched inside the quotation, so a sha the auditor CITED was reported
+# as a SEPARATION VIOLATION against cc's commit 270c60ed. The multi-log fix did
+# not create that; while the tool was refusing it never reached the attribution
+# step at all, so the fix un-hid it.
+#
+# THE OBVIOUS REPAIR IS THE WRONG ONE. Narrowing the regex -- demanding
+# sentence-initial "Committed", or the Committed/pushed pair -- would clear the
+# one known case and would also stop matching any FUTURE entry phrased
+# differently. In an attribution audit a false negative is silent: the auditor
+# breaches its scope, the log says so in prose, and nothing reports it. A false
+# positive is loud and gets read by a human. So the rule is not narrowed; the
+# VERDICT gains a third state.
+#
+#   OWN       -- nothing contradicts the claim. Eligible for a violation.
+#   CITED     -- TWO independent signals agree this is someone else's commit.
+#                Not a violation, and PRINTED with its reasons, never dropped.
+#   DISPUTED  -- exactly one signal fired. Still checked, still reported if it
+#                is out of scope, but labelled as contested rather than
+#                asserted as the auditor's own.
+#
+# TWO SIGNALS ARE REQUIRED TO SUPPRESS because suppression is the direction
+# that loses a real violation, and each signal alone is defeasible:
+#
+#   quoted     -- a quotation is another speaker by construction. Strong in
+#                 meaning, weak mechanically: prose quotes unevenly.
+#   audited    -- the sha is in this entry's own `ref` list, which is what the
+#                 entry EXAMINED. Structural, but an entry may legitimately
+#                 reference its own commit.
+#
+# Measured over hover1's 414 entries at the time of writing: 34 matches, 33
+# OWN, 1 CITED with both signals firing. The two signals agree exactly once and
+# disagree never -- which is a fact about one corpus and not a validation, so
+# the criteria are locked against synthetic fixtures in both directions in
+# tests/run_hover_separation_probe.py section G rather than against this count.
+def quoted_spans(text):
+    """Balanced double-quote spans as (open_index, close_index) pairs.
+
+    An UNMATCHED FINAL QUOTE CLOSES NOTHING and is dropped. A parity test would
+    instead let one stray quote reclassify the whole rest of an entry as
+    quoted -- the same desync this repo already paid for once, where odd quote
+    parity threw off `is_report_only_artefact`'s stripper.
+    """
+    spans, open_at = [], None
+    for i, ch in enumerate(text):
+        if ch != '"':
+            continue
+        if open_at is None:
+            open_at = i
+        else:
+            spans.append((open_at, i))
+            open_at = None
+    return spans
+
+
+def _sha_prefix_match(a, b):
+    """True when one sha is a prefix of the other. Lengths differ on purpose:
+    the log writes short shas and `ref` records whatever length it recorded, so
+    an equality test would find nothing and quietly answer OWN."""
+    n = min(len(a), len(b))
+    return n >= 7 and a[:n] == b[:n]
+
+
+def ref_shas(ref):
+    return [s for s in re.split(r'[,\s]+', ref or '') if SHA_RE.match(s)]
+
+
+def classify_own_commit(summary, ref, sha, pos):
+    """(verdict, reasons) for one OWN_COMMIT_RE hit at `pos` in `summary`.
+
+    verdict is 'own', 'cited' or 'disputed'. `reasons` is empty for 'own' and
+    otherwise names every signal that fired, in words, so a suppression can be
+    read and disagreed with rather than taken on trust.
+    """
+    reasons = []
+    if any(a < pos < b for a, b in quoted_spans(summary)):
+        reasons.append('the text is inside a quotation, so it is another '
+                       'session speaking and not this log')
+    if any(_sha_prefix_match(sha, r) for r in ref_shas(ref)):
+        reasons.append("the sha is in this entry's own ref list, which is what "
+                       'the entry AUDITED rather than what it wrote')
+    if len(reasons) >= 2:
+        return 'cited', reasons
+    if reasons:
+        return 'disputed', reasons
+    return 'own', reasons
 
 
 def git(*args):
@@ -531,6 +624,28 @@ def write_report(path, trail, by_who, hover_commits, violations, could_not_run,
         if unres:
             A('| …that do NOT resolve here | %d |' % len(unres))
         A('')
+        # THE DOCUMENT IS THE THING A READER IS HANDED, so a suppressed match
+        # has to appear HERE too. A row that only counts what was checked reads
+        # identically whether nothing was suppressed or something was.
+        _cited = log_report.get('cited') or {}
+        _disp = log_report.get('disputed') or []
+        if _cited:
+            A('%d further match(es) of the same phrasing are **not counted as '
+              'the auditor\'s own**, and are' % len(_cited))
+            A('listed rather than dropped — a silent suppression and a genuine '
+              'attribution look the')
+            A('same from a count:')
+            A('')
+            for _sha in sorted(_cited):
+                A('- **CITED `%s`** — %s' % (_sha, '; '.join(_cited[_sha])))
+            A('')
+        if _disp:
+            A('%d match(es) are **DISPUTED** — exactly one attribution signal '
+              'fired, so they are still' % len(_disp))
+            A('scope-checked above and are reported as contested rather than '
+              'asserted: %s'
+              % ', '.join('`%s`' % s for s in _disp))
+            A('')
         if unres:
             A('The unresolvable SHAs are **explained by measurement, not by a '
               'plausible story**:')
@@ -627,11 +742,25 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
         print('  it reads as evidence.')
         could_not_run.append('self-log chain broken at entry %d: %s' % (checked, why))
     else:
-        claimed = set()
+        # ── ATTRIBUTION, PER MATCH, WITH PRECEDENCE PER SHA ──────────────
+        # A sha may appear twice in one log: claimed outright in one entry and
+        # quoted from somebody else in another. OWN wins over DISPUTED wins
+        # over CITED, so one unambiguous claim is never cancelled by a later
+        # citation of the same sha.
+        RANK = {'own': 2, 'disputed': 1, 'cited': 0}
+        seen = {}
         for r in rows:
-            blob = (r.get('summary') or '') + ' ' + (r.get('ref') or '')
+            summary = r.get('summary') or ''
+            blob = summary + ' ' + (r.get('ref') or '')
             for m in OWN_COMMIT_RE.finditer(blob):
-                claimed.add(m.group(1))
+                sha = m.group(1)
+                verdict, why = classify_own_commit(
+                    summary, r.get('ref') or '', sha, m.start())
+                if sha not in seen or RANK[verdict] > RANK[seen[sha][0]]:
+                    seen[sha] = (verdict, r.get('seq'), why)
+        claimed = {s for s, v in seen.items() if v[0] in ('own', 'disputed')}
+        disputed = {s for s, v in seen.items() if v[0] == 'disputed'}
+        cited = {s: v for s, v in seen.items() if v[0] == 'cited'}
         resolved, unresolved = {}, []
         for s in sorted(claimed):
             code, out, _ = git('rev-parse', '--verify', s + '^{commit}')
@@ -646,10 +775,34 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
             outside = [p for p in files if not in_auditor_scope(p)]
             if outside:
                 log_bad.append((short, outside))
-                violations.append(('self-log', short, 'named by the auditor as its own', outside))
+                # THE WORDING CARRIES THE ATTRIBUTION STATE. "Named by the
+                # auditor as its own" is an accusation, and asserting it over a
+                # one-signal match is what made 270c60ed read as damning.
+                how = ('attribution DISPUTED -- matched the auditor\'s own '
+                       'phrasing, but %s' % '; '.join(seen[short][2])
+                       if short in disputed
+                       else 'named by the auditor as its own')
+                violations.append(('self-log', short, how, outside))
         git_hover = {k['sha'] for k in hover_commits}
         named_full = set(resolved.values())
         print('  SHAs the log names as its OWN commits/pushes: %d' % len(claimed))
+        # A SUPPRESSED MATCH IS PRINTED, ALWAYS. If CITED were silent, the
+        # difference between "correctly attributed to another session" and "a
+        # real violation the classifier swallowed" would be invisible, which is
+        # the failure this whole change exists to avoid repeating in reverse.
+        if cited:
+            print('    plus %d match(es) NOT counted as the auditor\'s own, '
+                  'shown rather than dropped:' % len(cited))
+            for sha in sorted(cited):
+                _v, _seq, _why = cited[sha]
+                print('      CITED %s (entry %s) -- %s'
+                      % (sha, _seq, '; '.join(_why)))
+        if disputed:
+            print('    %d match(es) are DISPUTED -- one attribution signal '
+                  'fired, so they are still checked below:' % len(disputed))
+            for sha in sorted(disputed):
+                print('      DISPUTED %s (entry %s) -- %s'
+                      % (sha, seen[sha][1], '; '.join(seen[sha][2])))
         print('    resolve in this clone : %d' % len(resolved))
         print('    of those, in scope    : %d' % (len(resolved) - len(log_bad)))
         print('    of those, VIOLATIONS  : %d' % len(log_bad))
@@ -699,6 +852,8 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
         report = {'entries': len(rows), 'chain': 'intact',
                       'claimed': len(claimed), 'resolved': len(resolved),
                       'unresolved': unresolved, 'violations': len(log_bad),
+                      'cited': {s: cited[s][2] for s in cited},
+                      'disputed': sorted(disputed),
                       'git_only': [s[:8] for s in only_git]}
     
     return report

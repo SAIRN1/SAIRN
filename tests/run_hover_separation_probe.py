@@ -513,6 +513,137 @@ ok('F18 ...and an unreadable self-log is named as COULD NOT RUN, not omitted',
 shutil.rmtree(_tmpF, ignore_errors=True)
 ok('F19 the scratch directory is gone', not os.path.isdir(_tmpF))
 
+# ── G: ATTRIBUTION -- WHOSE COMMIT IS IT ───────────────────────────────────
+# OWN_COMMIT_RE answers "does this text say committed/pushed <sha>". It was
+# being read as "does this log claim <sha> as ITS OWN", and those are not the
+# same question. hover1's entry 404 quotes cody's status line -- `... "guard
+# FIXED and pushed 270c60ed ..."` -- and the regex matched inside the
+# quotation, so a sha the auditor CITED was reported as a SEPARATION VIOLATION
+# against cc's commit. The multi-log fix did not cause that; it un-hid it, by
+# letting the tool reach the attribution step at all.
+#
+# THE FIXTURES BELOW ARE SYNTHETIC AND WRITTEN FROM THE RULE, NOT FROM THE LIVE
+# CORPUS, and they run in BOTH directions. Locking criteria against fixtures
+# before touching real data is this platform's own standing convention
+# (docs/2026-09-13-cross-domain-disciplines.md); tuning a classifier until the
+# one real instance goes away is how you get a rule that only knows that
+# instance. There is exactly ONE real negative on this platform, which is not
+# enough to fit anything to.
+#
+# THE SUPPRESSING DIRECTION IS THE DANGEROUS ONE. Every arm that says "this is
+# NOT the auditor's own" is an arm that can make a real violation disappear, so
+# CITED requires TWO independent signals to agree and a single signal yields
+# DISPUTED -- surfaced, still checked, never silently cleared. Three states,
+# because "could not tell whose it is" is not "clean".
+_OWN_TEXT = ('References/case-studies.md now 342 lines. '
+             'Committed a39b4828, pushed 2f7d33bc.')
+ok('G1 an unambiguous own-commit line is OWN',
+   A.classify_own_commit(_OWN_TEXT, '', 'a39b4828',
+                         _OWN_TEXT.index('a39b4828'))[0] == 'own',
+   A.classify_own_commit(_OWN_TEXT, '', 'a39b4828', _OWN_TEXT.index('a39b4828')))
+ok('G2 ...and so is the second half of the pair, which is the sha that '
+   'actually reached origin',
+   A.classify_own_commit(_OWN_TEXT, '', '2f7d33bc',
+                         _OWN_TEXT.index('2f7d33bc'))[0] == 'own')
+
+# The real shape, rebuilt rather than pasted: a quotation of another session's
+# status line, for a sha this entry also lists as one it AUDITED.
+_CITED_TEXT = ('Re-checked whether the contest had settled: cody\'s status now '
+               'shows "grader importer guard FIXED and pushed 270c60ed... '
+               'Next: hank\'s sen_claims review" (moved on). No active claim.')
+_v, _why = A.classify_own_commit(_CITED_TEXT, '906d4934,4b460b3f,270c60ed',
+                                 '270c60ed', _CITED_TEXT.index('270c60ed'))
+ok('G3 a sha QUOTED from another session AND listed as audited is CITED, '
+   'not claimed', _v == 'cited', (_v, _why))
+ok('G4 ...and the CITED verdict says WHY, both signals, in words',
+   len(_why) == 2 and any('quotation' in r for r in _why)
+   and any('ref' in r for r in _why), _why)
+
+# BOTH ONE-SIGNAL CASES ARE DISPUTED, NOT CLEARED. A single signal is not
+# enough to suppress an attribution, because suppression is the direction that
+# loses a real violation.
+_v2, _why2 = A.classify_own_commit(_CITED_TEXT, '', '270c60ed',
+                                   _CITED_TEXT.index('270c60ed'))
+ok('G5 quoted but NOT in the entry\'s ref list is DISPUTED, not cleared',
+   _v2 == 'disputed', (_v2, _why2))
+_REF_ONLY = 'Re-ran the check; cody pushed 270c60ed earlier and it is genuine.'
+_v3, _why3 = A.classify_own_commit(_REF_ONLY, '270c60ed', '270c60ed',
+                                   _REF_ONLY.index('270c60ed'))
+ok('G6 in the ref list but NOT quoted is DISPUTED, not cleared',
+   _v3 == 'disputed', (_v3, _why3))
+
+# A STRAY UNBALANCED QUOTE MUST NOT RECLASSIFY THE REST OF AN ENTRY. Parity
+# alone would do exactly that, and this repo has already paid for it once --
+# is_report_only_artefact()'s stripper desynced on odd quote parity. Spans are
+# taken as matched PAIRS and an unmatched final quote closes nothing.
+_STRAY = ('The arm asserts "cannot read and nothing else. '
+          'Committed a39b4828, pushed 2f7d33bc.')
+ok('G7 a single unbalanced quote earlier in the entry does NOT make a later '
+   'own-commit line look quoted',
+   A.classify_own_commit(_STRAY, '', 'a39b4828',
+                         _STRAY.index('a39b4828'))[0] == 'own',
+   A.quoted_spans(_STRAY))
+ok('G8 CONTROL: quoted_spans finds the pair when the quote IS closed, so G7 '
+   'is discriminating rather than a function that never matches',
+   len(A.quoted_spans('he said "pushed abc1234" and left')) == 1,
+   A.quoted_spans('he said "pushed abc1234" and left'))
+
+# The log writes short shas; ref lists whatever length the entry recorded.
+# A comparison that demanded equal length would miss the match entirely and
+# quietly report OWN.
+ok('G9 the ref comparison matches on common prefix, not equal length',
+   A.classify_own_commit(_CITED_TEXT, '270c60ed9f1a2b3c4d5e6f70123456789abcdef0',
+                         '270c60ed', _CITED_TEXT.index('270c60ed'))[0] == 'cited')
+
+# ── THE ARM THAT MATTERS MOST: THE FIX MUST NOT DISARM THE TOOL ────────────
+# Everything above is satisfied by a classifier that answers CITED to
+# everything. This drives _selflog_one() with a synthetic log naming a REAL
+# out-of-scope commit as its own, and requires the violation to still come out.
+_oos = subprocess.run(['git', 'log', '-1', '--format=%H', '--',
+                       'tools/hover_separation_audit.py'],
+                      cwd=REPO, capture_output=True, text=True).stdout.strip()
+ok('G10 the fixture resolves to a real out-of-scope commit, so G11 is not '
+   'passing on an empty set', len(_oos) == 40, _oos)
+
+
+def _chain(summaries_refs):
+    """Build a genuinely hash-chained synthetic log the verifier will accept."""
+    rows, prev = [], A.GENESIS
+    for i, (summ, ref) in enumerate(summaries_refs):
+        r = {'seq': i + 1, 'ts': '2026-09-22T00:00:0%d' % i, 'type': 'note',
+             'target': 'fixture', 'severity': 'info', 'summary': summ,
+             'ref': ref, 'retrospective': False, 'prev_hash': prev}
+        r['hash'] = A._digest(prev, r)
+        prev = r['hash']
+        rows.append(r)
+    return rows
+
+
+_viol_rows = _chain([('Committed %s, pushed.' % _oos[:8], '')])
+_vv, _vc = [], []
+_rep = A._selflog_one(_viol_rows, 'fixture.jsonl', 'hoverF', [], _vv, _vc)
+ok('G11 an out-of-scope sha the log claims UNAMBIGUOUSLY is still a '
+   'violation after the fix', len(_vv) == 1, (_vv, _vc, _rep))
+
+_cited_rows = _chain([('cody\'s status shows "guard FIXED and pushed %s" '
+                       '(moved on)' % _oos[:8], _oos[:8])])
+_cv, _cc = [], []
+_crep = A._selflog_one(_cited_rows, 'fixture.jsonl', 'hoverF', [], _cv, _cc)
+ok('G12 CONTROL: the SAME out-of-scope sha, QUOTED and listed as audited, is '
+   'NOT a violation -- so G11 is discriminating on attribution and not on '
+   'the sha', len(_cv) == 0, (_cv, _crep))
+ok('G13 ...and the suppressed sha is PRINTED as CITED rather than dropped, '
+   'because a silent suppression is how a real violation would vanish',
+   _crep.get('cited') and _oos[:8] in _crep['cited'], _crep)
+
+_disp_rows = _chain([('Re-ran the check; cody pushed %s earlier and it is '
+                      'genuine.' % _oos[:8], _oos[:8])])
+_dv, _dc = [], []
+_drep = A._selflog_one(_disp_rows, 'fixture.jsonl', 'hoverF', [], _dv, _dc)
+ok('G14 a one-signal DISPUTED sha that is out of scope is STILL reported, '
+   'and labelled disputed rather than asserted as the auditor\'s own',
+   len(_dv) == 1 and 'DISPUTED' in _dv[0][2], (_dv, _drep))
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:
