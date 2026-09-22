@@ -10451,7 +10451,7 @@
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     },
     {
-      "commit": "98daea85d518",
+      "commit": "37bf15fd9811",
       "date": "2026-09-22",
       "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
       "files": [
@@ -10510,7 +10510,7 @@
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
     },
     {
-      "commit": "e9a613de4a58",
+      "commit": "9320ed8f8e1b",
       "date": "2026-09-22",
       "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
       "files": [
