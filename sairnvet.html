@@ -9844,10 +9844,22 @@ function svFetchTimeoutSignal(){
 function svData(action, resource, payload, wantEnvelope) {
   var lic = svLoad('license', '');
   if (!lic) return Promise.resolve(null);
+  // X-SD-Auth ADDED 2026-09-21 (hover2). Until today this transport sent only
+  // the licence key -- svAuthCall() (the auth endpoint's own transport,
+  // above) already attached the employee session token; this one, used for
+  // every real read and write of SV_RESOURCES data, never did. The server
+  // gate landing in api/sd-data.js requires this header now; attach it
+  // whenever a session is actually held, the same "always attach if present"
+  // rule sairnlegacy.html's transport uses, not a per-call opt-in -- a flag
+  // would need adding at all 14 call sites and one missed site is one silent
+  // gap again.
+  var headers = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
+  var svTokNow = svTok();
+  if (svTokNow) headers['X-SD-Auth'] = svTokNow;
   return fetch(SV_DATA_API, {
     signal: svFetchTimeoutSignal(),
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+    headers: headers,
     body: JSON.stringify({ action: action, resource: resource, app_id: 'sairnvet', payload: payload || {} })
   }).then(function(r) {
     return r.json().then(function(d) {

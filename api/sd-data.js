@@ -10062,13 +10062,6 @@ module.exports = async (req, res) => {
     // as BLD_RESOURCES and SD_LOCAL_RESOURCES above. sv_examrooms_turnover is
     // excluded with its reason in api/_resources/sairnvet.js.
     //
-    // NO SESSION GATE, and it is not an omission: SAIRNvet has no per-employee
-    // authentication at all -- `role` is a self-selected dropdown, never
-    // server-verified. A session gate here would gate on a session that does
-    // not exist. The licence is the whole boundary this app has, and the
-    // open-work row for its missing auth subsystem is where that changes, for
-    // all forty-one at once.
-    //
     // sv_controlled's ID IS THE DRUG NAME, not a minted id, because that is
     // what the app has always keyed on (`list.find(d => d.drug === drugName)`).
     // The client sends it as payload.id via a per-resource id-field map; this
@@ -10092,6 +10085,59 @@ module.exports = async (req, res) => {
       sv_wellness: 'wellness_id', sv_whiteboard: 'whiteboard_id',
       sv_wildliferehab: 'wildliferehab_id'
     };
+    // ── SAIRNVET: A SESSION, NOT THE LICENCE KEY ALONE (2026-09-21, hover2) ──
+    // The comment this replaced said "SAIRNvet has no per-employee
+    // authentication at all... a session gate here would gate on a session
+    // that does not exist" -- true when written, and false for 8 days by the
+    // time this landed: api/sv-auth.js, ROLES_BY_APP.sairnvet,
+    // AUTH_TABLE_BY_APP.sairnvet and sql/sairnvet_employee_auth_schema.sql
+    // all shipped 2026-09-13 (29b1f1d5, "the last app without it held the DEA
+    // register"). The comment was never re-checked after the premise it
+    // rested on stopped being true -- the exact shape CLAUDE.md's code-
+    // scrubber item 22 names: a justification that keeps being read as
+    // current documentation long after its premise changed underneath it.
+    //
+    // REPRODUCED against the shipped file before this landed, with a valid
+    // key and NO X-SD-Auth header at all:
+    //
+    //     sv_controlled read  -> 200 ok:true, rows returned
+    //     sv_patients    write -> 200 ok:true, the row upserted
+    //     sv_soapnotes   write -> 200 ok:true
+    //
+    // The licence key is a BEARER CREDENTIAL, shipped to the browser and
+    // readable by anyone who can open the app. Forty-one tables were open,
+    // including the DEA-relevant controlled-substance register and its own
+    // patient records -- the same shape as dnt_* (2026-08-27), SF_RESOURCES
+    // and law_trusttx (2026-09-16/21), and LEG_RESOURCES (2026-09-21),
+    // written here as a COPY of that gate rather than a fifth spelling: one
+    // check before the dispatch, so neither branch is reachable without it,
+    // scoped to 'sairnvet' by verifySessionToken's third argument -- what
+    // stops a valid session from a different app passing, the collision
+    // Check 28 exists for. Placed BEFORE the existing sv_controlled witness
+    // lock too, so an unauthenticated write is refused for having no
+    // session, not merely for lacking a witness token.
+    //
+    // THE CLIENT HALF SHIPS WITH IT, AND IT HAD TO. Measured before this
+    // landed: svData() (sairnvet.html) sent ONLY `Authorization: Bearer
+    // <licence>` on every one of its 14 call sites -- no X-SD-Auth anywhere.
+    // svAuthCall(), a DIFFERENT function used only for the auth endpoint
+    // itself (login/whoami/roster/set_active), already attached the header;
+    // the general data transport never did. Landing this gate alone would
+    // have refused every real read and write in the app. svData() now
+    // attaches X-SD-Auth whenever svTok() holds a token.
+    //
+    // NOT DONE HERE, NAMED RATHER THAN SILENT: whether the auth migration
+    // (sql/sairnvet_employee_auth_schema.sql) has actually been run against
+    // the live database is not verified by this change -- confirm that
+    // before this reaches production, or every real call answers
+    // NOT_PROVISIONED instead of the refusal a signed-out user expects.
+    if (SV_RESOURCES[resource]) {
+      const svSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnvet');
+      if (!svSess) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });
+        return;
+      }
+    }
     if (SV_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       // 404/400 means the table does not exist yet. An honest empty WITH
