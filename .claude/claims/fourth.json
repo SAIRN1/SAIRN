@@ -1934,8 +1934,8 @@
       "task": "the four SAIRNcare append-only refusals that name no correction path -- alf_mar, alf_signals, alf_staff_credentials, alf_observations -- brought to the standard alf_claim_routes now has. Touches api/sd-data.js and a pinning suite.",
       "claimed_at": "2026-09-22T10:07:12Z",
       "claimed_at_epoch": 1790071632.9068995,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:32:06Z",
       "files": null
     }
   ]
