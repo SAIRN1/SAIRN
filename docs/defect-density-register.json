@@ -10510,6 +10510,65 @@
       "recurrence_open": "Nothing here sweeps the OTHER panels. The same four-tile shape exists across StoneDesk and the other apps, and only two of these tiles have ever been audited -- both of them in this one panel pair. A cross-panel census of KPI tiles whose value is a constant times a row count has not been run."
     },
     {
+      "commit": "20d822772dbc",
+      "date": "2026-09-22",
+      "subject": "fix(sairnfreedom): eight more resources require an employee session -- a felony flag on a named volunteer, minors' names, and an ORC 2915 payee record were on a licence key",
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "tests/run_sf_session_gate_sabotage_probe.py"
+      ],
+      "lines_added": 363,
+      "lines_removed": 23,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "hover-audit",
+      "summary": "Eight SAIRNfreedom resources in api/sd-data.js were readable and writable with a bare licence key and no session check: sf_operators (name + DOB + a FELONY flag and a GAMBLING disqualification flag on one row -- a criminal-history assertion about a named volunteer), sf_youth_participants (MINORS), sf_gaming_expenses and sf_disbursements (payee name + amount, the records ORC 2915.10(A)(2) and (C) require a charitable-gaming licensee to keep), sf_donations (donor name + amount), sf_staff (DOB, which the app age-gates off), sf_waivers (health and military-status disclosure) and sf_service_appointments (a member tied to a VA-adjacent referral outcome). The licence key is a bearer credential shipped to the browser. REPRODUCED LIVE WITH A CONTROL before the fix: on SF-PINNACLE-2026 with no session token all eight answered 200, while sf_ledger -- gated since 2026-09-21, same dispatcher, identical treatment -- answered 403 FORBIDDEN, so the difference is the gate and not an absent table. STATED RATHER THAN GLOSSED: every one returned ZERO ROWS on that tenant, so this shows nothing stops a caller REACHING the resource rather than that regulated data left. THE DISTINCTIVE PART IS NOT THE MISSING GATE, IT IS WHY IT STAYED MISSING: the dispatcher recorded the remaining 32 resources as a deliberate open product decision, and described them as a question about who may see -- quote -- a duty roster or a bottle count. That description does not cover minors, a felony flag or an ORC 2915 payee. The deferral was legitimate; it was taken against an understated description of the set, so anyone reading that line to decide was deciding about the wrong thing.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "55889165384a",
+        "date": "2026-09-10",
+        "subject": "feat(sairnvet,sairnfreedom): the two apps that kept everything on one device now back it up -- 76 collections, SQL NOT RUN",
+        "lag_days": 12
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a deliberate deferral recorded against an understated description of what is being deferred. The nearest neighbour is 2.3, a fact with a tense needing a read, which I cited earlier today for the SAIRNvet stale premise -- but this comment was not STALE, it was accurate about its own reasoning and wrong about its subject matter from the day it was written. Recorded as not-citable with the reason rather than stretched onto 2.3, which would blur two different failure modes in the corpus the rule-coverage figures are computed from.",
+      "contributing_factors": [
+        {
+          "factor": "The SF_RESOURCES dispatcher shipped all 35 resources with no session check because SAIRNfreedom had no per-employee auth at the time. When auth landed on 2026-09-21 only three resources were gated, and the other 32 were left as an open decision.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Eight more added to SD_SESSION_GATED and to the expectedApp map, gated on both verbs through the single existing dispatch check. No client change was needed and that was checked rather than assumed: sairnfreedom.html sfData() already attaches X-SD-Auth whenever a token is held."
+        },
+        {
+          "factor": "The deferral was recorded in a comment that described the remaining 32 as a question about who may see a duty roster or a bottle count. The set actually contained minors names, a felony and gambling disqualification flag, an ORC 2915 payee record and a health disclosure. A decision-maker reading that line would have been deciding about the wrong set.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The comment is replaced rather than edited, with the old sentence quoted in place so the mis-description is visible, and every one of the eight now carries the specific reason it is gated. The 24 that remain ungated are named as a decision NOBODY HAS MADE rather than as a decision that they are fine."
+        },
+        {
+          "factor": "Nothing tested that any sf_ resource required a session. The three armed on 2026-09-21 had no arm either, so there was no check to go stale -- the absence was invisible to every suite and every push gate.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/sd-data-sf-session-gate.test.js (6 assertions) plus tests/run_sf_session_gate_sabotage_probe.py (6 mutations, all refused). The load-bearing assertion is SET EQUALITY between SD_SESSION_GATED and the expectedApp map rather than a hardcoded list, because a list goes stale at the twelfth resource and passes while the second map is forgotten -- which is the actual defect shape. One mutation keeps the gate and drops only the expectedApp entry, which still LOOKS gated and refuses every correctly signed-in caller."
+        },
+        {
+          "factor": "A gate can be widened silently. Adding resources nobody approved passes every is-it-gated assertion and takes a product decision without anyone making it -- the same failure as the deferral, running the other way.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The suite ASSERTS THE ABSENCE of sf_members and sf_signatures, which carry identity and were named in the 2026-09-22 finding but were not in the approved batch, so the code and the open-work row cannot drift apart. Probe mutation 6 widens the gate to exactly those two and is refused."
+        }
+      ],
+      "recurrence_open": "THE GATES ARE ONLY HALF-VERIFIABLE TODAY AND THIS IS NOT CLOSED. sql/sairnfreedom_employee_auth_schema.sql has not been run against the live database -- /api/sf-auth login answers 503 NOT_PROVISIONED -- so no real caller can hold a session. The half that can be driven is NO SESSION IS REFUSED; the half that cannot is A REAL SESSION PASSES, and it is not merely unrun, it is impossible until that file is run. Only Michael can run it. Second: 24 sf_ resources remain ungated, including sf_members and sf_signatures which carry identity, and that is a decision nobody has made rather than a decision that they are fine. Third: the same shape may exist in the other apps on this dispatcher -- the posture map in the open-work index lists six apps with NO session gate and a recorded reason for none of them, and this is the second of those six to be closed today."
+    },
+    {
       "commit": "2154f6330dcb",
       "date": "2026-09-22",
       "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
@@ -10927,6 +10986,65 @@
         }
       ],
       "recurrence_open": "The wiring probe covers THIS engine. Nothing enumerates the other api/_lib/ engines to ask which of them have no caller, and that is the class rather than the instance."
+    },
+    {
+      "commit": "548f487d707f",
+      "date": "2026-09-22",
+      "subject": "fix(claims): an identifier is matched WHOLE or not at all -- an ISO timestamp was becoming the words 2026, 22t12 and 38z",
+      "files": [
+        "tests/claims/run_matcher_probe.py",
+        "tools/sairn_claim.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 3,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "tools/sairn_claim.py tokenised structured identifiers as prose, so two Tier A discharge claims opened ONE MINUTE apart were refused on `shared phrase \"2026 22t12\"`, a bigram of the ISO-8601 obligation id, while their work ran in opposite directions over disjoint file sets. Commit shas were not compared at all in either direction. Fixed by stripping identifiers before tokenising and comparing timestamps and shas WHOLE as their own signal; a bare date is dropped rather than promoted, because promoting it would collide every same-day claim.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2eea5198c797",
+        "date": "2026-09-17",
+        "subject": "fix(claims): a brief restatement of an active claim no longer answers CLEAR",
+        "lag_days": 5
+      },
+      "citation_note": "1.2 is grep not telling code from text describing code. This is the same inability one step over: the matcher could not tell a structured identifier from ordinary prose. Arguable rather than clean, because 1.2's worked example is source-vs-comment.",
+      "phase_note": "Design rather than coding: the split is doing exactly what it was written to do, and the fault is that the matcher had no concept of an identifier distinct from a word. Inferred rather than stated -- the tokeniser predates the claim format that carries obligation ids, so the omission was never a decision anybody recorded.",
+      "contributing_factors": [
+        {
+          "factor": "word_seq() split on [^a-z0-9]+, so a structured identifier was shredded into word fragments. An ISO-8601 timestamp became the words 2026, 22t12 and 38z, and a bigram straddling two of them read as a shared phrase between two unrelated claims.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Timestamps, shas and bare dates are stripped before tokenising; timestamps and shas are compared WHOLE as their own signal, a bare date is dropped entirely."
+        },
+        {
+          "factor": "A commit sha was not compared at all, in either direction -- 'revert 467baf74' against 'extend 467baf74' answered CLEAR. The matcher had no notion of an identifier, so the strongest available evidence of two sessions working on one item was the one signal it did not use.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "shared_structured() compares shas whole, with a short sha matching its own longer form so that writing the full 40 characters is not punished."
+        },
+        {
+          "factor": "The incentive was inverted on the field the tool most needs filled in honestly: an obligation id is the one token a discharge claim must carry to be identifiable, so naming the item more precisely made a refusal more likely, and the workaround it invited -- dropping or fuzzing the id -- is worse than the block.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Named as sairn-code-scrubber item 25 with all three instances dated, and the reasoning is written into sairn_claim.py beside the rule rather than only in the register."
+        },
+        {
+          "factor": "Nothing exercised an identifier at all. The matcher's control corpus is 17 hand-written pairs of prose task strings, and not one of them carried a timestamp, a sha or a date -- so the tokenisation could shred identifiers with every arm green.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "12 arms added in both directions, plus a regression arm that re-runs the entire existing 17-case corpus through the changed tokenisation so a fix that cleared this case by breaking a real block would fail loudly."
+        }
+      ],
+      "recurrence_open": "The identifier vocabulary is a CLOSED LIST of three shapes -- ISO timestamp, hex sha, bare date. A fourth kind of id (an issue number, a PR reference, an app-prefixed resource key written without its usual punctuation) is still shredded into words, and nothing announces that: the failure looks exactly like an ordinary word collision. And the sha rule requires a digit to avoid eating `defaced`, so a genuine all-hex digitless sha -- about four in ten thousand -- is still treated as prose."
     },
     {
       "commit": "5b145fd6a3a5",
@@ -11376,65 +11494,6 @@
       "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
       "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
       "factors_unknown_reason": "--rule"
-    },
-    {
-      "commit": "20d822772dbc",
-      "date": "2026-09-22",
-      "subject": "fix(sairnfreedom): eight more resources require an employee session -- a felony flag on a named volunteer, minors' names, and an ORC 2915 payee record were on a licence key",
-      "files": [
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md",
-        "tests/run_sf_session_gate_sabotage_probe.py"
-      ],
-      "lines_added": 363,
-      "lines_removed": 23,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "hover-audit",
-      "summary": "Eight SAIRNfreedom resources in api/sd-data.js were readable and writable with a bare licence key and no session check: sf_operators (name + DOB + a FELONY flag and a GAMBLING disqualification flag on one row -- a criminal-history assertion about a named volunteer), sf_youth_participants (MINORS), sf_gaming_expenses and sf_disbursements (payee name + amount, the records ORC 2915.10(A)(2) and (C) require a charitable-gaming licensee to keep), sf_donations (donor name + amount), sf_staff (DOB, which the app age-gates off), sf_waivers (health and military-status disclosure) and sf_service_appointments (a member tied to a VA-adjacent referral outcome). The licence key is a bearer credential shipped to the browser. REPRODUCED LIVE WITH A CONTROL before the fix: on SF-PINNACLE-2026 with no session token all eight answered 200, while sf_ledger -- gated since 2026-09-21, same dispatcher, identical treatment -- answered 403 FORBIDDEN, so the difference is the gate and not an absent table. STATED RATHER THAN GLOSSED: every one returned ZERO ROWS on that tenant, so this shows nothing stops a caller REACHING the resource rather than that regulated data left. THE DISTINCTIVE PART IS NOT THE MISSING GATE, IT IS WHY IT STAYED MISSING: the dispatcher recorded the remaining 32 resources as a deliberate open product decision, and described them as a question about who may see -- quote -- a duty roster or a bottle count. That description does not cover minors, a felony flag or an ORC 2915 payee. The deferral was legitimate; it was taken against an understated description of the set, so anyone reading that line to decide was deciding about the wrong thing.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "commit": "55889165384a",
-        "date": "2026-09-10",
-        "subject": "feat(sairnvet,sairnfreedom): the two apps that kept everything on one device now back it up -- 76 collections, SQL NOT RUN",
-        "lag_days": 12
-      },
-      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a deliberate deferral recorded against an understated description of what is being deferred. The nearest neighbour is 2.3, a fact with a tense needing a read, which I cited earlier today for the SAIRNvet stale premise -- but this comment was not STALE, it was accurate about its own reasoning and wrong about its subject matter from the day it was written. Recorded as not-citable with the reason rather than stretched onto 2.3, which would blur two different failure modes in the corpus the rule-coverage figures are computed from.",
-      "contributing_factors": [
-        {
-          "factor": "The SF_RESOURCES dispatcher shipped all 35 resources with no session check because SAIRNfreedom had no per-employee auth at the time. When auth landed on 2026-09-21 only three resources were gated, and the other 32 were left as an open decision.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Eight more added to SD_SESSION_GATED and to the expectedApp map, gated on both verbs through the single existing dispatch check. No client change was needed and that was checked rather than assumed: sairnfreedom.html sfData() already attaches X-SD-Auth whenever a token is held."
-        },
-        {
-          "factor": "The deferral was recorded in a comment that described the remaining 32 as a question about who may see a duty roster or a bottle count. The set actually contained minors names, a felony and gambling disqualification flag, an ORC 2915 payee record and a health disclosure. A decision-maker reading that line would have been deciding about the wrong set.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The comment is replaced rather than edited, with the old sentence quoted in place so the mis-description is visible, and every one of the eight now carries the specific reason it is gated. The 24 that remain ungated are named as a decision NOBODY HAS MADE rather than as a decision that they are fine."
-        },
-        {
-          "factor": "Nothing tested that any sf_ resource required a session. The three armed on 2026-09-21 had no arm either, so there was no check to go stale -- the absence was invisible to every suite and every push gate.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "api/sd-data-sf-session-gate.test.js (6 assertions) plus tests/run_sf_session_gate_sabotage_probe.py (6 mutations, all refused). The load-bearing assertion is SET EQUALITY between SD_SESSION_GATED and the expectedApp map rather than a hardcoded list, because a list goes stale at the twelfth resource and passes while the second map is forgotten -- which is the actual defect shape. One mutation keeps the gate and drops only the expectedApp entry, which still LOOKS gated and refuses every correctly signed-in caller."
-        },
-        {
-          "factor": "A gate can be widened silently. Adding resources nobody approved passes every is-it-gated assertion and takes a product decision without anyone making it -- the same failure as the deferral, running the other way.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The suite ASSERTS THE ABSENCE of sf_members and sf_signatures, which carry identity and were named in the 2026-09-22 finding but were not in the approved batch, so the code and the open-work row cannot drift apart. Probe mutation 6 widens the gate to exactly those two and is refused."
-        }
-      ],
-      "recurrence_open": "THE GATES ARE ONLY HALF-VERIFIABLE TODAY AND THIS IS NOT CLOSED. sql/sairnfreedom_employee_auth_schema.sql has not been run against the live database -- /api/sf-auth login answers 503 NOT_PROVISIONED -- so no real caller can hold a session. The half that can be driven is NO SESSION IS REFUSED; the half that cannot is A REAL SESSION PASSES, and it is not merely unrun, it is impossible until that file is run. Only Michael can run it. Second: 24 sf_ resources remain ungated, including sf_members and sf_signatures which carry identity, and that is a decision nobody has made rather than a decision that they are fine. Third: the same shape may exist in the other apps on this dispatcher -- the posture map in the open-work index lists six apps with NO session gate and a recorded reason for none of them, and this is the second of those six to be closed today."
     },
     {
       "commit": "e0a52dc8925d",
