@@ -11311,6 +11311,65 @@
       "recurrence_open": "The tiebreak makes THIS output deterministic. It does not establish that any other multi-source derivation on the platform sorts on a key fine enough to resolve its own ties, and nothing enumerates those."
     },
     {
+      "commit": "d8529ad5732d",
+      "date": "2026-09-22",
+      "subject": "fix(claims): the control whose job is proving a guard can fail was proving nothing -- red baseline, 25 vacuous passes, both halves fixed",
+      "files": [
+        "tests/claims/run_claim_retype_mutation_control.py",
+        "tests/claims/run_push_verify_probe.py"
+      ],
+      "lines_added": 128,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/claims/run_claim_retype_mutation_control.py reported five sabotages as caught while its own baseline was red: run_push_verify_probe.py exited 1 against a CLEAN tool because its throwaway clone lacked both sairn_claim.py's new sibling module and the per-clone identity marker 527b31bf introduced. Every mutation arm asserted only 'the probe exited non-zero', which a probe that fails unconditionally satisfies, so 25 of 26 passes were vacuous. Fixed by resolving sibling imports from source, provisioning the clone, stopping the run on a red baseline, and asserting the failure is located in the section under test rather than anywhere at all.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "527b31bfdba5",
+        "date": "2026-09-18",
+        "subject": "fix(identity): \"who am I\" was a folder name, so a rename let a clone certify its own Tier A review",
+        "lag_days": 4
+      },
+      "citation_note": "1.1 is a check that stopped checking, and this is the purest instance recorded so far: the control kept running, kept printing 26 results, and 25 of them were true of any input whatsoever. Cited clean.",
+      "phase_note": "Coding. 527b31bf is a CORRECT hardening -- it stopped the session name being guessed from a folder after a rename let a clone certify its own review -- and it simply did not carry its two consequences into a probe that builds a synthetic clone. The design was right; the propagation was incomplete.",
+      "contributing_factors": [
+        {
+          "factor": "run_push_verify_probe.py builds a throwaway clone and copied exactly ONE file into it. When 527b31bf added `import sairn_session_identity` to sairn_claim.py, every invocation inside that clone died on ModuleNotFoundError; the same commit moved session identity to a per-clone .git marker the throwaway clone never had, so it would have died on NoIdentity too.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Sibling modules are RESOLVED from the tool's own source transitively rather than listed, and the clone is provisioned with a .git/sairn-session marker."
+        },
+        {
+          "factor": "The failure surfaced 180 lines downstream as a FileNotFoundError on a claim file that was never written, so the visible symptom named neither the missing module nor the missing marker.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The dependency sweep removes the class of cause; the baseline arm already reported the symptom loudly and now stops the run as well."
+        },
+        {
+          "factor": "Every mutation arm asserted only 'the probe exited non-zero'. A probe that fails UNCONDITIONALLY satisfies that whatever the mutation is, so the five sabotages were reported as caught by a control that would have said the same with no mutation applied. 25 of 26 passes were vacuous, in the file whose whole subject is that a control must be shown to fail.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Each arm now asserts three things: non-zero exit, that the probe REACHED the section testing this guard, and that it reported a failed ARM rather than a traceback."
+        },
+        {
+          "factor": "The baseline arm was working perfectly -- it failed and said so -- and nothing stopped the arms below from running once it had. A red baseline hid the health of everything behind it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "A red baseline now prints COULD NOT RUN, skips the mutation sections and exits 2. baseline_ok() is extracted so three arms drive the refusal in both directions, including a probe that exits 0 but never reached the section."
+        }
+      ],
+      "recurrence_open": "The dependency sweep follows `import X` and `from X import` at the start of a line. A tool that imported a sibling dynamically -- importlib, a deferred import inside a function body indented past the regex, a name built at runtime -- would still be missed, and the failure would look exactly like this one did. And nothing on this platform scans for the SHAPE of the defect: a suite whose arms all assert the same single condition on a shared upstream artefact is vacuous the moment that artefact breaks, and only reading it finds that."
+    },
+    {
       "commit": "9320ed8f8e1b",
       "date": "2026-09-22",
       "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
