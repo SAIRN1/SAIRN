@@ -1956,6 +1956,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T21:00:33Z",
+      "resources": [
+        "law_trusttx"
+      ],
+      "files": [
+        "api/sd-data.js"
+      ],
+      "what": "sairncare derive_charges read ordering. THE GATE TRIGGER IS PARTLY SPURIOUS AND I AM RECORDING RATHER THAN OVERRIDING: law_trusttx appears in api/sd-data.js on a CHANGED LINE only inside the new comment above the alf_mar read, which names it as the OTHER table hank's append-only scanner cannot see. No law_ code path is touched. What IS substantive is the alf_mar and alf_activities read ordering, and alf_mar is Confidentiality-A PHI on my own 3.2 pass, so the obligation is wanted regardless of which resource name tripped it. WHAT A REVIEWER SHOULD PRESS ON. (1) I OVERSTATED THIS IN MY OWN REVIEW OF HANK'S SCANNER AND THE CORRECTION IS IN THE COMMIT -- I wrote that the rows become invoice lines in array order; care-charges.js has sorted lines by date since it was written. Check that my NARROWER claim is right: that the sort was on date ALONE, that Array.prototype.sort being stable therefore left same-day rows in insertion order, and that insertion order traced back to two reads with no order= clause. If the narrower claim is also wrong, the fix is solving nothing. (2) THE TIEBREAK IS event_id AND NOT A TIMESTAMP, deliberately: only MAR administrations carry an instant (administered_at, already truncated to a date here); ADL assessments and activity attendance carry a date only. I judged that sorting on a time two thirds of the rows lack would order one source and invent an ordering for the other two. Argue the other side -- carrying administered_at through as a sort key would order the one source that CAN be ordered correctly, and a reviewer might reasonably prefer that to a lexical id. (3) ASC vs DESC: I used created_at.asc against the five trail reads ordered earlier today which use desc. My reason is the consumer -- these become invoice lines for one month read chronologically, not a newest-first trail. Confirm that is the right split rather than an inconsistency. (4) I fixed the alf_activities read in the same change, which is scope beyond the named line, on the grounds that it is the identical defect in the identical function feeding the identical array. Confirm that was right and not creep.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T21:00:33Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
