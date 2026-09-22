@@ -1967,8 +1967,8 @@
       "task": "add a session/clone attribution field alongside detection_method in docs/defect-density-register.json so peer-check tooling can tell hover1 findings from hover2. Touches tools/defect_register.py and the register.",
       "claimed_at": "2026-09-22T10:55:07Z",
       "claimed_at_epoch": 1790074507.447203,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:59:11Z",
       "files": null
     }
   ]
