@@ -1913,8 +1913,8 @@
       "task": "record the ROLLING 30-day window decision in tools/defect_budget_policy.py through its own --decide path, with the note that the calibration is revisited once a steady non-marathon baseline exists. Nothing else in that file changes.",
       "claimed_at": "2026-09-22T09:23:52Z",
       "claimed_at_epoch": 1790069032.5376532,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T09:31:21Z"
     }
   ]
 }
