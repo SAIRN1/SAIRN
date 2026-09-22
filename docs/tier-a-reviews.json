@@ -1918,6 +1918,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-22T20:25:17Z",
+      "resources": [
+        "quotes",
+        "sf_accounts",
+        "sf_ledger",
+        "sf_vendor_prices"
+      ],
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "sairnfreedom SECURITY: eight more SF_RESOURCES now require an employee session -- sf_operators (name + DOB + a FELONY flag and a GAMBLING disqualification flag on one row), sf_youth_participants (MINORS), sf_gaming_expenses and sf_disbursements (payee name + amount, ORC 2915.10(A)(2) and (C)), sf_donations (donor name + amount), sf_staff (DOB, which the app age-gates off), sf_waivers (health and military-status disclosure), sf_service_appointments (a member tied to a VA-adjacent referral outcome). Audited by hover2 across all 35 resources; approved by Michael; built and landed by hank. Three were already armed on 2026-09-21; these are eight of the remaining 32.\n\nREPRODUCED LIVE WITH A CONTROL BEFORE THE CHANGE: on `SF-PINNACLE-2026` with no session token all eight answered **200**, while `sf_ledger` -- gated since 2026-09-21, same dispatcher, identical treatment -- answered **403 FORBIDDEN**. Every one returned ZERO ROWS on that tenant, so this shows nothing stops a caller REACHING the resource, not that regulated data left. Said that way in the commit too.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first:\n\n(1) THE BATCH BOUNDARY IS A PRODUCT DECISION AND I IMPLEMENTED SOMEBODY ELSE'S. Eight are gated; 24 are not, including `sf_members` and `sf_signatures`, which carry identity and which I myself named in the 2026-09-22 finding. I asserted their ABSENCE in the suite so the code and the open-work row cannot drift -- but if the right answer was \"gate those two as well\", my arm now actively defends the wrong line and will have to be edited rather than merely extended. Decide whether the boundary is right before deciding whether the code is.\n\n(2) THE LOAD-BEARING ASSERTION IS SET EQUALITY, NOT A LIST, AND THAT IS ARGUABLE. `api/sd-data-sf-session-gate.test.js` asserts `SD_SESSION_GATED` and the expectedApp map are the SAME SET rather than asserting either one's contents. My reasoning: a hardcoded list of eleven goes stale at the twelfth resource, and it passes while the second map is forgotten -- which is the real defect, and is probe mutation 2. The counter-argument is that set equality would also pass if BOTH maps lost the same resource, and the only thing standing against that is the per-resource arms above it. Check whether those arms actually cover it.\n\n(3) I DID NOT VERIFY THE HALF THAT MATTERS MOST AND IT IS NOT POSSIBLE TO TODAY. `sql/sairnfreedom_employee_auth_schema.sql` has NOT been run against the live database -- `/api/sf-auth` login answers **503 NOT_PROVISIONED**, measured 2026-09-22. So no real caller can hold a session. The half I drove is \"no session is refused\". The half nobody can drive is \"a real session PASSES the gate\", and until that schema runs it is impossible rather than merely unrun. If you think landing a gate whose success path has never been executed is the wrong call, that is the thing to say -- it is the same trade SAIRNvet took the same day and it is a judgement, not a fact.\n\n(4) NO CLIENT CHANGE WAS MADE AND I CLAIM NONE WAS NEEDED. `sairnfreedom.html` `sfData()` at :1821 already attaches `X-SD-Auth` whenever a token is held -- the always-attach shape, not a per-call opt-in. Re-derive that rather than reading my summary: if any SAIRNfreedom call path reaches `/api/sd-data` through a DIFFERENT transport that does not attach the header, these eight become an outage on that path specifically, which is the shape that gets a security change reverted instead of fixed forward. I checked `sfData` and the auth transport at :2311; I did not exhaustively enumerate every fetch in the file.\n\n(5) THE INJECTION AND PHASE CALLS ARE MINE AND ARE CONTESTABLE. I recorded this as phase `design`, confidence `stated`, injection `55889165` -- the commit that first put these 35 resources on the server. An equally defensible reading is `coding` at `5030f718`, the 2026-09-21 commit that added auth and gated only three. I chose the earlier one because the resources were reachable on a bearer credential from the day they existed, not from the day auth arrived.\n\nMEASURED: api/sd-data-sf-session-gate.test.js 6/6; tests/run_sf_session_gate_sabotage_probe.py 10 arms, 6 mutations all refused, worktree restored byte-identical, no residue. Regression: sv-session-gate 19/19, alf-append-only-read-order 9/9, cross-tenant-dispatchers PASS, alf-append-only-fail-closed PASS.\n\nFILES: api/sd-data.js api/sd-data-sf-session-gate.test.js tests/run_sf_session_gate_sabotage_probe.py",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-22T20:25:17Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -11378,7 +11378,7 @@
       "factors_unknown_reason": "--rule"
     },
     {
-      "commit": "a4dbb0e67c74",
+      "commit": "20d822772dbc",
       "date": "2026-09-22",
       "subject": "fix(sairnfreedom): eight more resources require an employee session -- a felony flag on a named volunteer, minors' names, and an ORC 2915 payee record were on a licence key",
       "files": [
