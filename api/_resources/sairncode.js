@@ -225,10 +225,19 @@ module.exports = {
   // get 'soft_delete' rather than a 'delete' that quietly behaves differently.
   // A caller copying a working delete call from sc_dme to sc_claims now gets a
   // refusal naming the right verb, not the other behaviour.
+  // `therapy_accumulator` is COMPUTE-ONLY and persists nothing, same shape as
+  // SAIRNsenior's `readiness` verb on sen_visits. It reads the practice's own
+  // sc_claims rows and returns per-beneficiary year-to-date therapy totals
+  // against the CMS KX thresholds. It is a verb rather than a table because
+  // there is no second fact to store: the figure IS the claims, and a stored
+  // running total is a number that silently stops agreeing with the rows the
+  // day one is corrected -- the drift this file's own comment above describes
+  // for lists, applied to money.
   extraActions: RESOURCES.reduce(function (map, name) {
     map[name] = SC_TIER_A_SOFT_DELETE_ONLY.indexOf(name) === -1
       ? ['delete']
       : ['soft_delete'];
+    if (name === 'sc_claims') map[name] = map[name].concat(['therapy_accumulator']);
     return map;
   }, {}),
 };

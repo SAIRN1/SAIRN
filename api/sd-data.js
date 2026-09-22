@@ -137,6 +137,9 @@ Object.keys(ROLES_BY_APP).forEach(function (a) { if (a !== 'stonedesk_sub') MEMO
 // replaced, and the SAIRNcode DME commit (`9e54b47`) had to edit this array and
 // the registry file in the same change to keep it that way.
 const SC_RESOURCES = require('./_resources/sairncode').resources;
+// Pure; every fetch and every gate for it lives in the therapy_accumulator
+// branch below, same functional-core split as lawTrustReconcile above.
+const kxAccumulator = require('./_lib/sairncode-kx-accumulator');
 // Minimum data-retention any SAIRNcode practice may configure, in years.
 // Enforced server-side rather than trusted from the client because a value
 // written today is inherited by whatever purge mechanism is built later -- a
@@ -12797,6 +12800,60 @@ module.exports = async (req, res) => {
     }
 
     if (isScResource) {
+      // ── KX THERAPY ACCUMULATOR: COMPUTE-ONLY, PERSISTS NOTHING ──────────
+      // The year-to-date figure the KX rules are compared against was typed
+      // into a text box (`pt-ytd`, `mr-kx-ytd`). The rules themselves were
+      // right and CMS-cited; the argument was invented at the keyboard, and
+      // nothing could tell a real figure from a guess.
+      //
+      // IT IS A VERB, NOT A TABLE, and that is the decision worth reading. A
+      // stored running total is a second fact about the same money, and it
+      // stops agreeing with the claims the day one of them is corrected --
+      // silently, and in the direction that matters, because a STALE HIGH
+      // total attaches KX to claims that did not need it. The figure IS the
+      // rows, so it is derived on every read.
+      //
+      // SIGNED-IN ONLY. It returns per-beneficiary health-care payment totals
+      // -- PHI in its own right, before any clinical detail -- so it sits on
+      // the same footing as the six Tier A billing writes rather than on the
+      // licence key, which is a bearer credential the whole practice holds.
+      // Any signed-in SAIRNcode role may READ it: a coder deciding whether to
+      // append KX is exactly who needs it, and narrowing to admin would leave
+      // the text box as the only thing a coder could reach.
+      if (action === 'therapy_accumulator') {
+        if (resource !== 'sc_claims') {
+          res.status(400).json({ error: { message: 'therapy_accumulator is only defined for sc_claims' } });
+          return;
+        }
+        const scAccSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+        if (!scAccSess) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first — the therapy accumulator returns per-beneficiary payment totals' } }); return; }
+        const accYear = (payload && Number.isInteger(payload.year)) ? payload.year : null;
+        if (accYear === null) {
+          // NO DEFAULT TO "THIS YEAR". A threshold is annual and a service is
+          // priced on its DATE OF SERVICE; silently answering for the server's
+          // current year would quietly re-bucket a 2025 rework as 2026.
+          res.status(400).json({ error: { message: 'payload.year is required and must be a whole calendar year — a threshold is annual and this endpoint will not guess which one' } });
+          return;
+        }
+        const accR = await fetch(rest('sc_claims?license_hash=eq.' + enc(licHash)
+          + '&data->>_deleted_at=is.null&select=data&order=created_at.asc'), { headers });
+        // A TABLE THAT COULD NOT BE READ IS NOT AN EMPTY YEAR. Accumulating an
+        // unreadable table yields $0 against a federal threshold, which reads
+        // as "KX not required" for every beneficiary in the practice -- the
+        // denial direction, produced entirely by the read.
+        if (accR.status === 404 || accR.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'sc_claims could not be read — run sql/sairncode_claims_schema.sql in Supabase first. Nothing was accumulated.' } });
+          return;
+        }
+        const accRows = await accR.json();
+        if (!accR.ok) return upstream(res, accRows);
+        const accOut = kxAccumulator.accumulateTherapy({
+          rows: (accRows || []).map((x) => x.data || {}),
+          year: accYear,
+        });
+        res.status(200).json({ ok: true, data: accOut, provisioned: true });
+        return;
+      }
       if (action === 'read') {
         // SOFT-DELETED ROWS ARE EXCLUDED FOR THE SEVEN (2026-09-15, item 97).
         // Without this the soft delete is cosmetic: the row is marked and comes

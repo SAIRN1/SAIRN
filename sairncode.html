@@ -955,10 +955,47 @@
                 <input type="text" id="clm-add-id" placeholder="Claim ID" class="search-input">
                 <input type="text" id="clm-add-patient" placeholder="Patient" class="search-input">
                 <input type="text" id="clm-add-payer" placeholder="Payer" class="search-input">
-                <input type="number" step="0.01" id="clm-add-amount" placeholder="Amount" class="search-input">
+                <input type="number" step="0.01" id="clm-add-amount" placeholder="Billed amount" class="search-input">
                 <select id="clm-add-status"><option>Clean</option><option>Pending</option><option>Denied</option><option>Hold</option></select>
                 <input type="date" id="clm-add-date" class="search-input">
                 <button class="btn btn-primary" onclick="addClaimEntry()">Add Claim</button>
+            </div>
+            <!-- ── THE THREE FIELDS THE KX ACCUMULATOR NEEDS (2026-09-22) ──
+                 All optional. A claim with no discipline is simply not a
+                 therapy service and the accumulator counts it as `not_therapy`
+                 rather than as a therapy row that failed to parse.
+
+                 BENEFICIARY ID IS AN INTERNAL PRACTICE KEY, NOT AN MBI, and
+                 that is deliberate rather than an oversight: the accumulator
+                 needs STABLE IDENTITY, not a government identifier, and adding
+                 a Medicare Beneficiary Identifier to this row would put a
+                 HIPAA identifier in the payload for no functional gain.
+
+                 IT IS NOT THE PATIENT NAME AND MUST NEVER BECOME IT. `Patient`
+                 above is free text. Accumulating on a name is the defect this
+                 platform already carries in StoneDesk (jobs matched to
+                 customers by lowercased name, no FK) and SAIRNvet (`owner` is a
+                 typed last name) -- and here the consequence is one patient's
+                 therapy dollars counted against another patient's FEDERAL
+                 THRESHOLD, in both directions at once.
+
+                 ALLOWED, NOT BILLED. The statute counts ALLOWED charges.
+                 Submitted charges are routinely a multiple of them, so
+                 accumulating `Billed amount` would cross the threshold long
+                 before Medicare does -- and crossing early means KX attached
+                 to a claim that did not need it, which is an attestation of
+                 medical necessity rather than a rejection letter. Left blank,
+                 the row is EXCLUDED and the beneficiary's total is reported as
+                 a floor. -->
+            <div class="toolbar" style="margin-top:8px;">
+                <select id="clm-add-discipline" title="Medicare outpatient therapy discipline. PT and SLP share one annual threshold; OT has its own.">
+                    <option value="">Not a therapy claim</option>
+                    <option value="PT">PT — physical therapy</option>
+                    <option value="SLP">SLP — speech-language pathology</option>
+                    <option value="OT">OT — occupational therapy</option>
+                </select>
+                <input type="text" id="clm-add-beneficiary" placeholder="Beneficiary ID (your own stable key — not the name, not the MBI)" class="search-input" style="min-width:320px">
+                <input type="number" step="0.01" id="clm-add-allowed" placeholder="ALLOWED amount (not billed)" class="search-input">
             </div>
 
             <!-- Pre-submission risk check (Phase 3 item 5). Deliberately NOT
@@ -1427,7 +1464,17 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             <div class="toolbar" style="margin-bottom:10px;">
                 <input type="text" id="pt-timed" placeholder="Timed minutes e.g. 97110:22, 97140:12" class="search-input" style="min-width:260px;">
                 <input type="number" id="pt-units" placeholder="Units billed" class="search-input">
+                <!-- Beneficiary + year fill the YTD box from this practice's
+                     own recorded claims (api/_lib/sairncode-kx-accumulator.js).
+                     The YTD box is left editable so a beneficiary whose earlier
+                     therapy was billed elsewhere can still be checked -- but a
+                     HAND-ENTERED figure now says so on screen, which it never
+                     did before. -->
+                <input type="text" id="pt-beneficiary" placeholder="Beneficiary ID" class="search-input">
+                <input type="number" id="pt-ytd-year" placeholder="Year" class="search-input" style="max-width:100px;">
+                <button class="btn" type="button" onclick="scFillPtYtd()" id="pt-ytd-btn">Compute YTD</button>
                 <input type="number" id="pt-ytd" placeholder="PT+SLP $ year-to-date" class="search-input">
+                <div id="pt-ytd-note" style="font-size:12px;color:#666;flex-basis:100%;"></div>
                 <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="pt-kx"> KX applied</label>
                 <input type="text" id="pt-kxjust" placeholder="KX justification (real, not boilerplate)" class="search-input" style="min-width:240px;">
                 <input type="text" id="pt-pta" placeholder="PTA % e.g. 97110:40" class="search-input">
@@ -2301,10 +2348,29 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                     <option value="pt_slp">PT and SLP (combined threshold)</option>
                     <option value="ot">OT (separate threshold)</option>
                 </select>
-                <input type="number" step="any" id="mr-kx-ytd" placeholder="Beneficiary year-to-date $" class="search-input">
+                <!-- ── THE YEAR-TO-DATE FIGURE IS NO LONGER TYPED ─────────
+                     It was `<input id="mr-kx-ytd" placeholder="Beneficiary
+                     year-to-date $">`. The KX RULES were right and CMS-cited;
+                     the NUMBER they were compared against was whatever somebody
+                     keyed in, and nothing could tell a real figure from a guess.
+                     A coder typing 2400 got a clean "KX not required" with
+                     nothing behind it.
+
+                     It now comes from the practice's own sc_claims rows, keyed
+                     on beneficiary and calendar year, computed server-side by
+                     api/_lib/sairncode-kx-accumulator.js. The box remains for
+                     the one case the accumulator cannot serve -- a beneficiary
+                     whose earlier therapy was billed somewhere else entirely --
+                     and it is now clearly an OVERRIDE, labelled as one, rather
+                     than the only source. -->
+                <input type="text" id="mr-kx-beneficiary" placeholder="Beneficiary ID" class="search-input">
+                <input type="number" id="mr-kx-year" placeholder="Year" class="search-input" style="max-width:110px;">
+                <button class="btn btn-primary" onclick="runKxCheck()" id="mr-kx-btn">Check KX</button>
+            </div>
+            <div class="toolbar" style="margin-top:6px;">
                 <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="mr-kx-applied"> KX applied</label>
                 <input type="text" id="mr-kx-just" placeholder="KX justification (real, not boilerplate)" class="search-input" style="min-width:240px;">
-                <button class="btn btn-primary" onclick="runKxCheck()" id="mr-kx-btn">Check KX</button>
+                <input type="number" step="any" id="mr-kx-ytd" placeholder="Override YTD $ (only if therapy was billed elsewhere)" class="search-input" style="min-width:300px;">
             </div>
             <div id="mr-kx-result" style="margin-top:8px;"></div>
 
@@ -6506,8 +6572,33 @@ How to answer:
             var status = document.getElementById('clm-add-status').value;
             var date = document.getElementById('clm-add-date').value;
             if (!claimId || !patient || isNaN(amount)) { showToast('Claim ID, patient, and amount required'); return; }
+            // The three KX-accumulator fields. Each is written ONLY when it
+            // actually has a value -- an empty string for `discipline` would
+            // make every non-therapy claim look like a therapy row whose
+            // discipline failed to parse, and an `allowed_amount` of 0 is a
+            // real figure that must not be manufactured from a blank box.
+            var disciplineSel = document.getElementById('clm-add-discipline');
+            var discipline = disciplineSel ? disciplineSel.value : '';
+            var beneficiaryEl = document.getElementById('clm-add-beneficiary');
+            var beneficiaryId = beneficiaryEl ? beneficiaryEl.value.trim() : '';
+            var allowedEl = document.getElementById('clm-add-allowed');
+            var allowedRaw = allowedEl ? allowedEl.value.trim() : '';
+            var allowed = allowedRaw === '' ? null : parseFloat(allowedRaw);
+            if (discipline && !beneficiaryId) {
+                // REFUSED AT THE POINT OF ENTRY rather than silently landing in
+                // the unattributed bucket. The bucket exists for rows that
+                // already exist without a key; there is no reason to create a
+                // new one, and a therapy claim nobody can attribute is a claim
+                // whose threshold nobody can compute.
+                showToast('A therapy claim needs a Beneficiary ID — the year-to-date threshold is per beneficiary and a name cannot stand in for one');
+                return;
+            }
+            var rec = {id:'cl'+Date.now(), claimId:claimId, patient:patient, payer:payer||'—', amount:amount, status:status, date:date||scLocalToday()};
+            if (discipline) rec.discipline = discipline;
+            if (beneficiaryId) rec.beneficiary_id = beneficiaryId;
+            if (allowed !== null && isFinite(allowed)) rec.allowed_amount = allowed;
             var list = getClaimEntries();
-            list.push({id:'cl'+Date.now(), claimId:claimId, patient:patient, payer:payer||'—', amount:amount, status:status, date:date||scLocalToday()});
+            list.push(rec);
             var saved = saveClaimEntries(list);
             // Same await+sync-check discipline as every other add-function on this
             // page (2026-08-19 audit, code-scrubber Check 4).
@@ -6518,6 +6609,15 @@ How to answer:
             document.getElementById('clm-add-patient').value = '';
             document.getElementById('clm-add-payer').value = '';
             document.getElementById('clm-add-amount').value = '';
+            // The three KX fields clear with the rest. A beneficiary id left
+            // in the box would silently attach the NEXT claim to the PREVIOUS
+            // patient's threshold, which is the same misattribution the
+            // name-matching rule above exists to prevent, arriving through a
+            // stale form instead of a bad key.
+            ['clm-add-discipline', 'clm-add-beneficiary', 'clm-add-allowed'].forEach(function (f) {
+                var el = document.getElementById(f);
+                if (el) el.value = '';
+            });
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Claim added' : scWriteRefusalText('Claim added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
@@ -7788,6 +7888,41 @@ How to answer:
                 + '</div>' + scRenderRuleFindings(res.findings) + '</div>';
         }
 
+        // ── FILL pt-ytd FROM RECORDED CLAIMS, AND SAY WHERE IT CAME FROM ──
+        // The PT panel's threshold check was the SECOND typed-YTD site. It is
+        // wired to the same accumulator rather than to a second copy of the
+        // arithmetic -- a second implementation of a federal threshold is the
+        // drift this platform keeps writing rules about.
+        //
+        // IT FILLS THE BOX, IT DOES NOT LOCK IT. A beneficiary treated
+        // elsewhere earlier in the year has a real total this practice cannot
+        // see, and refusing to let a coder enter it would make the panel
+        // useless for exactly the case the threshold exists for. What changes
+        // is that the SOURCE is now stated either way.
+        async function scFillPtYtd(){
+            var note = document.getElementById('pt-ytd-note');
+            var ben = (document.getElementById('pt-beneficiary').value || '').trim();
+            var yr = (document.getElementById('pt-ytd-year').value || '').trim();
+            if (!ben || !/^\d{4}$/.test(yr)) {
+                if (note) note.textContent = 'A Beneficiary ID and a four-digit year are needed to compute the year-to-date total.';
+                return;
+            }
+            if (note) note.textContent = 'Computing from recorded claims…';
+            var acc = await scKxYtd(ben, Number(yr), 'pt_slp');
+            if (acc.failed) {
+                // The box is NOT filled and NOT zeroed. Writing 0 here would
+                // hand scValidatePtSession a figure that means "no therapy
+                // this year" when what happened was "we could not find out".
+                if (note) note.textContent = 'Not computed — ' + acc.message;
+                return;
+            }
+            document.getElementById('pt-ytd').value = String(acc.ytd);
+            var msg = 'Year-to-date $' + acc.ytd.toFixed(2) + ' from ' + acc.rowsCounted
+                + ' recorded PT/SLP claim(s) for ' + ben + ' in ' + yr + '.';
+            if (acc.isFloor) msg += ' FLOOR, NOT A TOTAL: ' + acc.rowsExcluded
+                + ' row(s) could not be counted, so the real figure is at least this and may be higher.';
+            if (note) note.textContent = msg;
+        }
         function runPtCheck(){
             var timed = scParsePairs(document.getElementById('pt-timed').value);
             var el = document.getElementById('pt-result');
@@ -11535,12 +11670,101 @@ How to answer:
                 + '<div style="margin-top:8px;font-size:12px;">PT and 33 are mutually exclusive — never stack them on the same claim.</div>',
                 r.modifier === '33' ? MOD_SOURCES.m33 : (r.status === 'apply' ? MOD_SOURCES.pt_scope : MOD_SOURCES.pt));
         }
-        function runKxCheck() {
+        // ── THE ACCUMULATOR CALL. COMPUTE-ONLY, PERSISTS NOTHING ───────────
+        // Returns {ytd, isFloor, source} or a refusal object. THE THREE ARE
+        // NEVER COLLAPSED: a real total, a floor, and "could not compute" are
+        // three different facts, and the whole defect this replaces was one of
+        // them wearing another's clothes.
+        var SC_KX_BUCKET_FIELD = { pt_slp: 'pt_slp_cents', ot: 'ot_cents' };
+        async function scKxYtd(beneficiaryId, year, bucket) {
+            var d = await scData('therapy_accumulator', 'sc_claims', { year: year });
+            if (!d) {
+                var e = _scLastDataError || {};
+                return { failed: true, code: e.code || 'UNKNOWN',
+                    message: e.message || 'The year-to-date total could not be computed.' };
+            }
+            if (!d.year_known) {
+                // NOT DEFAULTED TO THE LATEST AMOUNTS. A year with no
+                // threshold on file gets no verdict at all -- see the
+                // accumulator's own header on why a stale figure silently
+                // mispricing a future year is worse than refusing.
+                return { failed: true, code: 'UNKNOWN_YEAR',
+                    message: 'No CMS threshold is on file for ' + year + '. The amounts update annually by the Medicare Economic Index; this app will not price a year it has not been given.' };
+            }
+            var b = (d.beneficiaries || []).filter(function (x) { return x.beneficiary_id === beneficiaryId; })[0];
+            if (!b) {
+                // NO ROWS IS NOT ZERO DOLLARS. A beneficiary with no therapy
+                // claims in this practice's register may have had plenty
+                // elsewhere, and answering $0 would be the tool asserting a
+                // fact it has not got.
+                return { failed: true, code: 'NO_ROWS',
+                    message: 'No therapy claims are recorded for ' + beneficiaryId + ' in ' + year + '. That is not the same as $0 year-to-date — if therapy was billed elsewhere, use the override box.' };
+            }
+            return {
+                ytd: b[SC_KX_BUCKET_FIELD[bucket]] / 100,
+                isFloor: b.is_floor,
+                rowsCounted: b.rows_counted,
+                rowsExcluded: b.rows_excluded,
+                unattributedRows: (d.unattributed && d.unattributed.rows) || 0,
+                source: 'accumulator'
+            };
+        }
+        async function runKxCheck() {
             var out = document.getElementById('mr-kx-result');
             if (!out) return;
+            var bucket = document.getElementById('mr-kx-discipline').value;
+            var beneficiaryId = (document.getElementById('mr-kx-beneficiary').value || '').trim();
+            var yearRaw = (document.getElementById('mr-kx-year').value || '').trim();
+            var overrideRaw = (document.getElementById('mr-kx-ytd').value || '').trim();
+            var ytdValue = overrideRaw;
+            var provenance = '';
+            // A REAL BOOLEAN, NOT A SUBSTRING SEARCH OF THE MESSAGE. The first
+            // version of this read `provenance.indexOf('THIS IS A FLOOR')`,
+            // which couples the verdict logic to the wording of a sentence --
+            // so rephrasing the message for clarity would silently promote a
+            // floor back to a clearance, and nothing would say so.
+            var isFloorAnswer = false;
+            if (overrideRaw === '') {
+                if (!bucket || !beneficiaryId || !/^\d{4}$/.test(yearRaw)) {
+                    out.innerHTML = duBox(DU_STYLE_STOP,
+                        '<b>Cannot determine</b><div style="margin-top:6px;">'
+                        + escHtml('A discipline, a Beneficiary ID and a four-digit year are needed to compute the year-to-date total from this practice’s own claims. Enter them, or use the override box if the therapy was billed elsewhere.')
+                        + '</div>', MOD_SOURCES.kx);
+                    return;
+                }
+                out.innerHTML = duBox(DU_STYLE_INFO, '<b>Computing year-to-date from recorded claims&hellip;</b>');
+                var acc = await scKxYtd(beneficiaryId, Number(yearRaw), bucket);
+                if (acc.failed) {
+                    // A FAILED COMPUTATION IS NEVER "KX NOT REQUIRED". It is
+                    // the one answer the old typed box could not give and the
+                    // one a coder most needs before attesting anything.
+                    out.innerHTML = duBox(DU_STYLE_STOP,
+                        '<b>Cannot determine — do not submit without resolving this</b>'
+                        + '<div style="margin-top:6px;">' + escHtml(acc.message) + '</div>',
+                        MOD_SOURCES.kx);
+                    return;
+                }
+                ytdValue = String(acc.ytd);
+                provenance = 'Year-to-date $' + acc.ytd.toFixed(2) + ' computed from '
+                    + acc.rowsCounted + ' recorded therapy claim(s) for ' + beneficiaryId
+                    + ' in ' + yearRaw + '.';
+                isFloorAnswer = acc.isFloor;
+                if (acc.isFloor) {
+                    // Rule 3 of the accumulator, carried into the sentence a
+                    // human reads. "At least" is the whole point.
+                    provenance += ' THIS IS A FLOOR, NOT A TOTAL: ' + acc.rowsExcluded
+                        + ' row(s) for this beneficiary could not be counted (no allowed amount, or an unreadable date), so the real figure is AT LEAST this and may be higher.';
+                }
+                if (acc.unattributedRows) {
+                    provenance += ' ' + acc.unattributedRows + ' therapy claim(s) in this practice carry no Beneficiary ID at all and belong to nobody’s total.';
+                }
+            } else {
+                provenance = 'Year-to-date $' + escHtml(overrideRaw)
+                    + ' ENTERED BY HAND, not computed. Nothing in this app can check it.';
+            }
             var r = evaluateKx(
-                document.getElementById('mr-kx-discipline').value,
-                document.getElementById('mr-kx-ytd').value,
+                bucket,
+                ytdValue,
                 document.getElementById('mr-kx-applied').checked,
                 document.getElementById('mr-kx-just').value
             );
@@ -11556,12 +11780,22 @@ How to answer:
             var style = (r.status === 'satisfied' || r.status === 'not_required') ? DU_STYLE_OK
                       : (r.status === 'undetermined' || r.status === 'required_missing') ? DU_STYLE_STOP
                       : DU_STYLE_WARN;
+            // "NOT REQUIRED" IS DOWNGRADED WHEN THE FIGURE IS A FLOOR, and
+            // that downgrade is the single most important line in this
+            // function. Below a threshold on a total and below it on a partial
+            // count are different claims; rendering them identically is what
+            // let a typed guess read as a finding for as long as it did.
             var head = r.status === 'satisfied' ? '<b>KX satisfied</b>'
-                     : r.status === 'not_required' ? '<b>KX not required</b>'
+                     : r.status === 'not_required'
+                        ? (isFloorAnswer
+                          ? '<b>Below the threshold on the claims recorded here — not a clearance</b>'
+                          : '<b>KX not required</b>')
                      : r.status === 'required_missing' ? '<b>KX required and missing — this claim would be denied</b>'
                      : r.status === 'required_unjustified' ? '<b>KX applied but unjustified</b>'
                      : '<b>Cannot determine</b>';
-            out.innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>',
+            if (r.status === 'not_required' && isFloorAnswer) style = DU_STYLE_WARN;
+            out.innerHTML = duBox(style, head + '<div style="margin-top:6px;">' + escHtml(r.reason) + '</div>'
+                + '<div style="margin-top:8px;font-size:12px;color:#666;">' + escHtml(provenance) + '</div>',
                 r.overMr ? MOD_SOURCES.kx_mr : MOD_SOURCES.kx);
         }
         function runScCheck() {
