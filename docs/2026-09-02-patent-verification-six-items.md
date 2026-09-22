@@ -7,6 +7,43 @@
  line against `git log` before relying on any item.** Every claim names its
  file so that re-check is cheap.
 
+---
+
+## RE-VERIFIED 2026-09-22 (cc) — three paragraphs, against the tree at `9d21e942`
+
+**This section was written because the instruction I was given described
+`[0039]` and `[0040]` as open, and both had been closed twenty days earlier.**
+That is this document's own warning working exactly as intended and also
+failing: the warning is at the top, and the brief that reaches a session is
+usually a summary of the body. So the status is now restated here, first,
+with what was actually run.
+
+| ¶ | Subject | Status as of 2026-09-22 | How it was checked |
+|---|---|---|---|
+| `[0039]` | Composite Inference Context | **BUILT — unchanged since 2026-09-02** | `sdBuildInferenceContext()` at `stonedesk.html:29807`, budget constant at `:29613`, scorer at `:29695`, profile fields at `:29744`. `buildSDSystemPrompt()` still exists at `:29889` but now **delegates** — it calls the context builder at `:29950` and stores the object on `.lastContext` at `:29962`. The brief's description of it as "plain string concatenation" is the pre-`[0039]` finding preserved in §2 below, not the current code |
+| `[0040]` | Extraction-pipeline client trigger | **WIRED — but whether it has ever FIRED in production cannot be told from outside** | The dead call site is gone. `sendNetworkInsight()` (`:29989`) is now called from `sendMsg()` at `:4786`, and that path is live: `window.sdAISend` (`:4870`) reads `#ai-input`, which **occurs once in the markup**, and calls `sendMsg` at `:4873`. A second call site exists at `:30090`. The legacy `window.sendMessage` override was deliberately NOT revived and the reason is recorded in the code at `:4758-4765`. **`#userInput` still occurs ZERO times in the markup** and `getElementById('userInput')` still occurs 11 times, so that id is still dead — it is simply no longer on the path that matters |
+| `[0072]` | Material-correlated job-risk engine | **NOT BUILT. The data exists; nothing correlates it** | Searched for `jobRisk`, `job_risk`, `materialRisk`, `material_risk`, `riskEngine`, `materialCorrel` and the literal `0072`: **zero matches, all of them.** See the new §7 below |
+
+**THE LIVE READ, AND WHY IT SETTLES LESS THAN IT LOOKS LIKE IT DOES.**
+`GET https://sairn.vercel.app/api/network?app=stonedesk` returned, today,
+`200 {"ok":true,"insights":[]}` — through `tools/sairn_http.py`, not bare
+`curl`, so the 403 challenge class is excluded.
+
+**That empty array is NOT evidence the trigger is still dead, and reading it
+as such would repeat the §3 mistake in the opposite direction.**
+`api/network.js` sets `MIN_OCCURRENCES = 3` (`:69`) and `LOOKBACK_DAYS = 30`
+(`:70`), and `handleGet` filters to `counts[key] >= MIN_OCCURRENCES` (`:137`).
+An empty result is therefore consistent with 0, 1 **or 2** stored rows of every
+pattern. What the 200 DOES prove is that `network_insights` exists and
+`service_role` can read it — the same call returns 503 `NOT_PROVISIONED` or
+`PERMISSION_DENIED` otherwise (`:115`, `:122`).
+
+**What would settle it** is a raw `count(*)` on `network_insights` by someone
+with database access, or a read path that reports an unaggregated total. Until
+one of those exists, the honest statement for counsel is: **the trigger is on a
+live path by construction; it has not been observed to have fired.** Neither
+half of that sentence may be dropped.
+
 **Item 2 has since been corrected to BUILT** (2026-09-02, later the same day),
 by the same mechanism §4 used and for the same reason. **Item 4's caveat is now
 the document's rule, not its exception:** two of six items changed status
@@ -338,13 +375,54 @@ user or stored.
 
 ---
 
+## 7. `[0072]` — material-correlated job-risk engine
+
+**Added 2026-09-22 (cc). NOT BUILT.** This paragraph was never verified either
+way, so this is a first finding rather than a re-check.
+
+**Nothing of that name or shape exists.** `jobRisk`, `job_risk`, `materialRisk`,
+`material_risk`, `riskEngine`, `materialCorrel` and the literal `0072` all
+return **zero matches** across `stonedesk.html`.
+
+**THE DATA FOR ONE IS THERE, WHICH IS WHY THIS IS AN ENABLEMENT GAP RATHER
+THAN AN ABSENT FEATURE.** `sdRMAdd()` (`stonedesk.html:~10007`) writes a remake
+record carrying **`material`** and a **`reason`** drawn from a fixed
+seven-value vocabulary — `RM_CAUSE_TO_REASON` maps Measurement Error, Template
+Error, CNC Programming, Material Crack/Break, Customer Change Order, Edge
+Damage and Other onto `measure_error`, `design_change`, `cut_error`,
+`material_defect`, `customer_change`, `edge_error`, `other` — plus a `cost`.
+Material, failure mode and cost, per job, in one record. That is precisely the
+input a correlation would take.
+
+**NOTHING CORRELATES THEM.** There is no per-material failure rate, no score,
+no threshold and no ranking anywhere in the file. The only thing that consumes
+the set is `sdRMAI()` (`:~10038`), which serialises the raw records into a
+Claude prompt asking it to "identify root causes". **This platform does not
+accept a prompt as a mechanism** — the same rule already applied to
+SAIRNlaw's citation rule, where a rule reaching three prompts was recorded as
+covering nothing. A model asked to find a pattern in JSON is not an engine that
+computes one, produces a different answer on each run, and leaves nothing
+stored, thresholded or testable.
+
+**What §6 has instead** is two hardcoded time thresholds and a fixed
+−20/−30/−15 health score. **Neither reads `material` at all.** So StoneDesk's
+risk detection is material-BLIND today, which is the opposite of what `[0072]`
+describes.
+
+**This is the one of the three that needs a decision rather than a fix, and it
+is counsel's to make**: build the engine the paragraph describes, or amend the
+filing. Recorded and NOT guessed at, on the same standard §2 and §4 set.
+
+---
+
 ## Summary for counsel
 
 | # | Item | Status |
 |---|---|---|
 | 1 | Database / storage structure | **Built** — hybrid: Postgres/jsonb via per-app API, plus substantial browser `localStorage` |
 | 2 | Composite Inference Context | **Built as of `[0039]` (2026-09-02)** — `sdBuildInferenceContext()`: named profile fields, memories scored on relevance (0.65) + recency (0.35, 30-day half-life) instead of `slice(0,10)`, a 3,000-token bound on the assembled system prompt, and a declared drop order with disclosure. 63 assertions, 7 mutations. **Was "not built" earlier the same day** — see the correction in §2. StoneDesk only; other apps still concatenate |
-| 3 | Intelligence-extraction pipeline | **Half built** — server endpoint and table real and verified; the client write path is unreachable and has produced zero data |
+| 3 | Intelligence-extraction pipeline | **RE-VERIFIED 2026-09-22 — the client trigger is now WIRED**, on the live `sendMsg()` path at `stonedesk.html:4786`, reachable via `window.sdAISend` → `#ai-input` (present once in the markup). The row below is superseded: the dead `#userInput` call site is gone. **Whether it has fired cannot be told from outside** — the read filters at `MIN_OCCURRENCES = 3`, so today's `insights: []` is consistent with 0, 1 or 2 rows. See the re-verification section at the top |
+| 7 | `[0072]` material-correlated job-risk engine | **NOT BUILT** (first checked 2026-09-22) — zero matches for every name; remakes record `material`, `reason` and `cost` per job and **nothing correlates them**; the only consumer is a Claude prompt. §6's thresholds are material-blind. **Needs a build-or-amend decision** |
 | 4 | User style profiles | **Built as of `e634c8d` (2026-09-02)** — observed from the user's own messages, gated at 5 samples, persisted per `(license_hash, employee_id)`, applied to the prompt, client/server parity tested. **Was "not built" earlier the same day** — see the correction in §4 |
 | 5 | Token-deduction concurrency | **Not built** — no balance, no deduction; the counter that exists is non-atomic and ships non-blocking |
 | 6 | StoneDesk risk-detection defaults | **Built** — hardcoded 12 h / 24 h / 30-day thresholds and a fixed −20/−30/−15 health score; thresholds not user-configurable |
