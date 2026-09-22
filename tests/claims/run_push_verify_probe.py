@@ -175,6 +175,45 @@ def build():
     with open(os.path.join(clone, '.git', 'sairn-session'), 'w',
               encoding='utf-8') as fh:
         fh.write('probe\n')
+    # ── AND THE FIXTURE IS PROVEN TO WORK BEFORE ANYTHING IS ASSERTED ──────
+    # local_deps() above closes the recurrence that actually happened -- a new
+    # `import` of a tools/*.py sibling -- and it closes it properly, by reading
+    # the tool's own source instead of keeping a list. This is the other half,
+    # and it is about the SYMPTOM rather than the cause.
+    #
+    # THE FOUR-DAY LAG WAS NOT CAUSED BY THE MISSING MODULE. It was caused by
+    # WHERE THE FAILURE SURFACED: the tool died inside the clone, nothing was
+    # written, and the probe carried on for 180 lines before crashing on
+    # `json.load` of a claim file that had never been created. A missing .json
+    # reads as a fixture quirk; a missing module reads as what it is. One
+    # subprocess here turns any such cause into the right message immediately.
+    #
+    # IT IS DELIBERATELY NOT LIMITED TO IMPORTS. local_deps() cannot see a data
+    # file, a third-party package, a new marker in .git/ or an interpreter
+    # version -- and this refusal does not need to know which of those it is.
+    # `check`, NOT `list`, AND THAT WAS MEASURED RATHER THAN PICKED. In this
+    # fixture `list` exits 0 whether or not .git/sairn-session exists -- it
+    # never asks who you are -- so a smoke test built on it would have passed
+    # through exactly half of the 2026-09-22 breakage and caught only the
+    # import. `check` resolves the session to compare against your own claims,
+    # so it exercises the identity path, and it is read-only: it writes no
+    # claim, stages nothing and needs no network beyond the fetch the fixture
+    # already has. Driven both ways in a throwaway clone: list 0/0, check 1/0
+    # without and with the marker.
+    smoke = subprocess.run(
+        [sys.executable, os.path.join('tools', 'sairn_claim.py'),
+         'check', 'probesmoke', 'fixture smoke test, writes nothing'],
+        cwd=clone, capture_output=True, text=True, encoding='utf-8',
+        errors='replace')
+    if smoke.returncode != 0:
+        raise SystemExit(
+            'COULD NOT RUN -- sairn_claim.py does not execute inside this '
+            "probe's own fixture, so no arm below would mean anything:\n"
+            + ((smoke.stdout or '') + (smoke.stderr or '')).strip()[-600:]
+            + '\n\nbuild() is missing something the tool now needs. A tools/*.py '
+              'import is resolved automatically by local_deps(); anything else '
+              '-- a data file, a third-party package, a new marker in .git/ -- '
+              'has to be added there by hand.')
     return tmp, origin, seed, clone
 
 
