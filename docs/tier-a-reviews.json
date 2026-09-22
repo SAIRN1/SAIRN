@@ -1819,6 +1819,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T13:48:31Z",
+      "resources": [
+        "law_trust_reconcile",
+        "quotes"
+      ],
+      "files": [
+        "sairnlaw.html",
+        "tests/law_trust_reconcile_wiring_probe.py"
+      ],
+      "what": "sairnlaw trust panel wired to the server IOLTA reconciler. THIS IS A GENUINE TIER A CHANGE, not a name-in-a-comment one: the Trust Accounting panel and the dashboard alert are the surfaces that report on client trust money, and until this change they reported 'Reconciled -- all three balances match' from one leg that is arithmetically incapable of failing (clientSum partitions the same array ledgerBal sums whole) and one that was null until a bank statement is entered, with null read as agreement. api/_lib/law-trust-reconcile.js existed and was never called; the only occurrence of law_trust_reconcile in sairnlaw.html was a comment. REVIEWER SHOULD WEIGH THREE THINGS. (1) That the new UNAVAILABLE path genuinely cannot render as agreement -- a 403 for a non-owner role, a 503 NOT_PROVISIONED, and a network failure each produce 'Not verified' and no verdict, and the dashboard stays SILENT for a 403 (deliberate: a control that is not that role's is not their alarm) while surfacing every other failure. Is the silent-on-403 call right, or should an attorney be told the firm's trust account is unverified? (2) That renaming reconcileTrust to trustFigures really did catch every caller -- the rename was chosen so a missed one throws rather than reads a stale 'matches', and three call sites were found; confirm there is no dynamic/string reference. (3) That the AI explanation, now fed the server legs, cannot be handed a NOT COMPARED leg as if it were agreement. NOT CLOSED AND NOT CLAIMED: no automation/cron, no bank-statement import, and disbursements still cannot carry a clearance (409 CLEARANCE_NOT_STORED) because the balance-guard RPC has no clearance parameter.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-22T13:48:31Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
