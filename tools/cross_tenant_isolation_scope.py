@@ -637,6 +637,46 @@ def driven_resources(body):
     return found if tables else None
 
 
+# The declaration and its wrapped continuation lines, so they can be REMOVED
+# before anything looks for evidence. Same continuation shape declared_coverage()
+# reads: comment lines carrying nothing but resource names and commas.
+_DECL_BLOCK = re.compile(
+    r'CROSS-TENANT-ISOLATION\s*:[^\n]*(?:\n[ \t]*(?://|\#)[ \ta-z0-9_,]*)*')
+def unbacked_declarations(body, declared):
+    """Declared names that appear NOWHERE in the file outside the declaration.
+
+    ── WHAT THIS ADDS TO THE WEAK DOWNGRADE ABOVE, AND WHAT IT DELIBERATELY
+    ── DOES NOT ─────────────────────────────────────────────────────────────
+    The untabled branch now credits WEAK rather than GENUINE, which is the
+    load-bearing fix and is right: GENUINE is the strongest verdict this tool
+    issues and a declaration it cannot check is a claim, not evidence.
+
+    A RESIDUE SURVIVES THAT DOWNGRADE. The hits loop still requires the name to
+    appear in the body, and THE DECLARATION LINE ITSELF SATISFIES THAT -- so a
+    resource named only in the declaration, with nothing else in the file
+    referring to it at all, still earns WEAK. WEAK is a far smaller
+    overstatement than GENUINE, and it is still an overstatement: the file may
+    have nothing to do with that resource.
+
+    THIS REPORTS, IT DOES NOT RE-GRADE, and that is a deliberate limit rather
+    than laziness. Introducing a fourth outcome would reach `rank()`, whose
+    `{'GENUINE':0,'WEAK':2,'NONE':3}` lookup has no key for a new string and
+    would take the tool down on the first file to hit it -- the same reason the
+    WEAK downgrade above rejected a third grade. So the disclosure goes in
+    UNDECLARED, where a reader already looks for claims that outran their
+    evidence, and the grade is left alone.
+
+    Two convergent fixes landed on this branch within the hour (hank's
+    downgrade, fourth's intersection) and this is the part of the second that
+    is additive to the first rather than a competing design.
+    """
+    stripped = _DECL_BLOCK.sub(' ', body or '')
+    return sorted(
+        n for n in declared
+        if not re.search(r'(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])' % re.escape(n),
+                         stripped))
+
+
 def declared_coverage(body):
     """(resources, none_reason). A `none` declaration returns an empty set and
     a reason; an absent declaration returns an empty set and None, and the two
@@ -762,6 +802,19 @@ def tests_naming(names):
                                'than GENUINE, because a declaration this tool '
                                'cannot check is a claim and not evidence',
                                sorted(declared)))
+            # AND THE RESIDUE INSIDE THAT DOWNGRADE, reported rather than
+            # re-graded: a name that appears NOWHERE outside the declaration
+            # still earns WEAK, because the hits loop's presence test is
+            # satisfied by the declaration line itself. See
+            # unbacked_declarations() for why this does not introduce a fourth
+            # grade.
+            unbacked = unbacked_declarations(body, declared)
+            if unbacked:
+                UNDECLARED.append((rel, 'DECLARES these and the file does not '
+                                   'mention them ANYWHERE except in the '
+                                   'declaration itself -- still credited WEAK '
+                                   'by the rule above, and that is the residue',
+                                   unbacked))
         for n in names:
             # WORD BOUNDARIES, not `in`. `'invoices' in body` is true of any
             # file naming `law_invoices` or `sdn_invoices`, so the bare Tier A

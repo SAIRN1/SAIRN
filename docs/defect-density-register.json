@@ -11456,59 +11456,6 @@
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
     },
     {
-      "commit": "e312f2e8f1e3",
-      "date": "2026-09-22",
-      "subject": "fix(sairnfreedom): donor identity and member identity were still reachable on the licence key alone -- the three the last batch named and left",
-      "files": [
-        "api/sd-data-sf-session-gate.test.js",
-        "api/sd-data.js"
-      ],
-      "lines_added": 69,
-      "lines_removed": 7,
-      "app": "sairnfreedom",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sf_donor_awards and sf_members were reachable for read AND write on the SAIRNfreedom licence key alone, with no employee session. sf_donor_awards rows are {donorKey, tierId, state, updated} -- the donorKey identifies a donor and tierId resolves through sf_donor_tiers to a giving amount, so the row asserts THIS NAMED PERSON GAVE AT LEAST THIS MUCH. That is the same disclosure sf_donations was gated for on 2026-09-22, on the stated ground that donor identity is not public by default; gating donations and leaving awards open left the same fact reachable through a second door. sf_members carries member identity and the gate's own comment already named it an acknowledged gap rather than a decision. The licence key is a BEARER CREDENTIAL shipped to the browser, so it was the entire boundary on both.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Both resources have been ungated since SF_RESOURCES was written; no commit introduced this as a regression. The 2026-09-22 batch gated eleven siblings and explicitly recorded these as left out, so the gap was documented before it was closed rather than discovered."
-      },
-      "citation_note": "No standing rule names 'a resource gated for a fact reachable through an ungated sibling'. PR 1.11 is about a check failing open when a dependency is absent; this is a gate that was complete about the resource it named and incomplete about the FACT it was protecting. The nearest recorded precedent is the SV_RESOURCES sweep the same day, which was a whole-map absence rather than a partial one.",
-      "contributing_factors": [
-        {
-          "factor": "The gate was chosen RESOURCE BY RESOURCE against a list of sensitive fields, not against the FACTS the resources jointly disclose -- sf_donations and sf_donor_awards say the same thing about the same person and only one was gated",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both added to SD_SESSION_GATED, and sf_donor_tiers with them so an opaque tierId on an awards row cannot be resolved back to an amount"
-        },
-        {
-          "factor": "The earlier batch DOCUMENTED the gap in a code comment and an open-work row rather than closing it, which made it visible but left it live",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Closed here; the anti-sweep arm that guarded the batch boundary refused the change and named both things to do, which is the control working"
-        },
-        {
-          "factor": "The two tables that must agree -- SD_SESSION_GATED and the resource-to-app map -- are maintained by hand, and a resource in one but not the other fails CLOSED and confusingly rather than open",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Both edited in the same change and verified after: gated 14, app-mapped 14, empty differences in both directions. api/sd-data-sf-session-gate.test.js asserts the two lists AGREE rather than asserting either one contents."
-        },
-        {
-          "factor": "Closing the gate widens an outage nobody can clear from a clone -- sql/sairnfreedom_employee_auth_schema.sql has still not been run, so every gated SF resource answers 403",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Not closed here and not closeable from a clone: the SQL run is Michael only. Recorded so the outage is a stated consequence of the fix rather than a surprise, the same trade SAIRNvet and the earlier SF batch took the same day."
-        }
-      ],
-      "recurrence_open": "This closes two of the three named resources plus one supporting table. sf_signatures and 21 other sf_ resources remain ungated, and the gate comment still says that is a decision nobody has made rather than a decision that they are fine. Nothing sweeps for the wider class either -- a fact disclosed by an ungated resource that a gated sibling was protecting."
-    },
-    {
       "commit": "bd7f90fcce71",
       "date": "2026-09-22",
       "subject": "fix(sairnsenior): the reclassification sweep reads its corpus now -- DEEM 1, PERMIT 5, where it had printed zero from every directory it was ever run in",
@@ -11780,6 +11727,59 @@
       "recurrence_open": "FUNCTION_BODY_CEILING is a number in a file with NO re-measurement cadence. It was chosen from a measured bimodal distribution (p90 7,549 / p95 41,579 / cliff at 403,966) rather than taste, but nothing announces the day it stops sitting in that gap as the apps grow. And script_only() splits HTML from JS with a regex on <script> tags: a script tag inside a string, or an unclosed tag, would mis-split and only the bodies-to-keywords ratio in the controls would notice. There is no fixture for that shape."
     },
     {
+      "commit": "e312f2e8f1e3",
+      "date": "2026-09-22",
+      "subject": "fix(sairnfreedom): donor identity and member identity were still reachable on the licence key alone -- the three the last batch named and left",
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 69,
+      "lines_removed": 7,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sf_donor_awards and sf_members were reachable for read AND write on the SAIRNfreedom licence key alone, with no employee session. sf_donor_awards rows are {donorKey, tierId, state, updated} -- the donorKey identifies a donor and tierId resolves through sf_donor_tiers to a giving amount, so the row asserts THIS NAMED PERSON GAVE AT LEAST THIS MUCH. That is the same disclosure sf_donations was gated for on 2026-09-22, on the stated ground that donor identity is not public by default; gating donations and leaving awards open left the same fact reachable through a second door. sf_members carries member identity and the gate's own comment already named it an acknowledged gap rather than a decision. The licence key is a BEARER CREDENTIAL shipped to the browser, so it was the entire boundary on both.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Both resources have been ungated since SF_RESOURCES was written; no commit introduced this as a regression. The 2026-09-22 batch gated eleven siblings and explicitly recorded these as left out, so the gap was documented before it was closed rather than discovered."
+      },
+      "citation_note": "No standing rule names 'a resource gated for a fact reachable through an ungated sibling'. PR 1.11 is about a check failing open when a dependency is absent; this is a gate that was complete about the resource it named and incomplete about the FACT it was protecting. The nearest recorded precedent is the SV_RESOURCES sweep the same day, which was a whole-map absence rather than a partial one.",
+      "contributing_factors": [
+        {
+          "factor": "The gate was chosen RESOURCE BY RESOURCE against a list of sensitive fields, not against the FACTS the resources jointly disclose -- sf_donations and sf_donor_awards say the same thing about the same person and only one was gated",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both added to SD_SESSION_GATED, and sf_donor_tiers with them so an opaque tierId on an awards row cannot be resolved back to an amount"
+        },
+        {
+          "factor": "The earlier batch DOCUMENTED the gap in a code comment and an open-work row rather than closing it, which made it visible but left it live",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed here; the anti-sweep arm that guarded the batch boundary refused the change and named both things to do, which is the control working"
+        },
+        {
+          "factor": "The two tables that must agree -- SD_SESSION_GATED and the resource-to-app map -- are maintained by hand, and a resource in one but not the other fails CLOSED and confusingly rather than open",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both edited in the same change and verified after: gated 14, app-mapped 14, empty differences in both directions. api/sd-data-sf-session-gate.test.js asserts the two lists AGREE rather than asserting either one contents."
+        },
+        {
+          "factor": "Closing the gate widens an outage nobody can clear from a clone -- sql/sairnfreedom_employee_auth_schema.sql has still not been run, so every gated SF resource answers 403",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Not closed here and not closeable from a clone: the SQL run is Michael only. Recorded so the outage is a stated consequence of the fix rather than a surprise, the same trade SAIRNvet and the earlier SF batch took the same day."
+        }
+      ],
+      "recurrence_open": "This closes two of the three named resources plus one supporting table. sf_signatures and 21 other sf_ resources remain ungated, and the gate comment still says that is a decision nobody has made rather than a decision that they are fine. Nothing sweeps for the wider class either -- a fact disclosed by an ungated resource that a gated sibling was protecting."
+    },
+    {
       "commit": "external:hover2-audit-log:064f795df9b7",
       "date": "2026-09-22",
       "subject": "chore: initial commit of hover2's local operational tooling (self-log, coverage ledger, cold-scan pool, duplicate-finding-check, sabotage_claim_verify.py)",
@@ -11994,6 +11994,59 @@
         }
       ],
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
+    },
+    {
+      "commit": "8dc58571140a",
+      "date": "2026-09-22",
+      "subject": "fix(xtenant): hank and I fixed the same branch within the hour -- hank's design kept, mine reduced to the residue it leaves",
+      "files": [
+        "tests/run_cross_tenant_scope_probe.py",
+        "tools/cross_tenant_isolation_scope.py"
+      ],
+      "lines_added": 165,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tools/cross_tenant_isolation_scope.py: after the untabled-declaration branch was downgraded from GENUINE to WEAK, a residue survived -- the hits loop's presence test is satisfied by the declaration line itself, so a resource named ONLY in the declaration still earns WEAK credit. unbacked_declarations() strips the declaration block, continuation lines included, and reports every declared name the file does not mention outside it. Reported rather than re-graded because a fourth grade would reach rank()'s closed lookup.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "d538f1e8eaed",
+        "date": "2026-09-21",
+        "subject": "fix(scope): a name on the declaration line and nowhere else credited a resource -- the declaration is now checked against the table the arms drive",
+        "lag_days": 1
+      },
+      "citation_note": "Same citation as the tabled half: the tool could not tell a claim about the code from the code. Arguable rather than clean -- 1.2's worked example is source-vs-comment and this is a declaration comment being read as evidence of the file's behaviour, which is the same inability pointed the other way.",
+      "phase_note": "Coding: d538f1e8 fixed the declaration-as-own-evidence defect for TABLED files and did not carry it into the untabled branch. Inferred rather than stated -- nothing in that commit records a decision to leave the other branch alone, so it reads as reach rather than intent.",
+      "contributing_factors": [
+        {
+          "factor": "The hits loop credits a resource when its name appears anywhere in the body, and the CROSS-TENANT-ISOLATION declaration line is part of the body -- so for an untabled file the declaration satisfied the only evidence test that remained after the WEAK downgrade. A name with nothing else in the file still earns WEAK.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "unbacked_declarations() strips the declaration block, including its wrapped continuation lines, and REPORTS every declared name the file does not mention outside it."
+        },
+        {
+          "factor": "Reporting rather than re-grading is a deliberate limit, not a partial fix: a fourth outcome would reach rank()'s {'GENUINE':0,'WEAK':2,'NONE':3} lookup, which has no key for a new string, and would take the tool down on the first file to hit this branch.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The grade vocabulary is closed by rank(). Widening it is a larger change than this residue justifies, and an arm now reads the grade set from the scanner's own source so a fourth one cannot be added unnoticed."
+        },
+        {
+          "factor": "Two sessions were handed the same item and fixed the same branch within the hour, with different designs. The collision surfaced as a rebase conflict rather than as a coordination signal, and only because both of us edited the same lines -- a differently-shaped pair of fixes would have merged cleanly and left two rules fighting.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Declared in the status registry to the other session before starting, with an explicit offer to hand it back; the conflict was then resolved to their design rather than mine, and this record says which parts of each survived."
+        }
+      ],
+      "recurrence_open": "The residue is REPORTED, not re-graded: a declared name with nothing behind it still earns WEAK, and only a reader of UNDECLARED will see that it rests on nothing. Closing it properly needs rank() to carry a fourth outcome, which is a larger change than this justifies today. And the whole branch remains ARMED AND UNEXERCISED -- 683 test files, 5 declarations, all three that declare resources are tabled -- so neither the downgrade nor this report has ever fired on real data, and both rest entirely on synthetic fixtures."
     }
   ],
   "started": "2026-09-09",

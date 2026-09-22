@@ -182,6 +182,24 @@ assert.deepStrictEqual(owners, ['A']);
 NO_TABLE = chr(10).join(['// CROSS-TENANT-ISOLATION: a_one', 'console.log(1)'])
 
 
+def _re_grades(mod):
+    """Every grade string the scanner can attach to a hit, read from its own
+    source rather than from a list kept here -- a second copy of the vocabulary
+    is what would let a fourth grade slip in unnoticed."""
+    import re as _r
+    src = io.open(os.path.join(REPO, 'tools/cross_tenant_isolation_scope.py'),
+                  encoding='utf-8').read()
+    # ANCHORED ON THE FUNCTION THAT GRADES, AND THE ANCHOR IS ASSERTED. An
+    # anchor that has moved would make this arm scan an empty span and pass on
+    # nothing, which is the vacuous shape this file exists to police.
+    start = src.index('def tests_naming(')
+    end = src.index('# ── RISK RANK', start)
+    body = src[start:end]
+    found = set(_r.findall(r"hits\[n\]\.append\(\(rel, '([A-Z]+)'", body))
+    assert found, 'no graded append found -- the anchor has moved'
+    return found
+
+
 def main():
     print('GRADER CONTROL -- criteria %s' % S.CRITERIA_VERSION)
     print('')
@@ -337,6 +355,100 @@ def main():
                             'a file with no table reads as None, not as an empty set'))
     if not okn:
         FAILED.append('no-table-third-state')
+
+    # ── AN UNTABLED FILE'S DECLARATION WAS EVIDENCE FOR ITSELF ───────────
+    # THE GAP: when driven_resources() returned None the declaration was
+    # credited WHOLE, and the only other test a name had to pass was appearing
+    # somewhere in the body -- which the DECLARATION LINE ITSELF satisfies. So
+    # a suite with no table could declare any resource and be credited GENUINE
+    # for it with nothing driving it. Same shape as the tabled-file defect
+    # fixed in d538f1e8, in the branch that fix did not reach.
+    #
+    # MEASURED BEFORE THE FIX, and it matters for how this is read: 683 test
+    # files scanned, 5 carry a declaration, and ALL THREE that declare
+    # resources are TABLED. The other two declare `none(...)`. So the branch
+    # has ZERO live instances today -- this is ARMING it before it is
+    # exercised, not repairing a number that is currently wrong.
+    # ── THE RESIDUE INSIDE THE WEAK DOWNGRADE ────────────────────────────
+    # The untabled branch now credits WEAK rather than GENUINE, which is the
+    # load-bearing fix. A RESIDUE SURVIVES IT: the hits loop still requires the
+    # name to appear in the body, and the DECLARATION LINE ITSELF satisfies
+    # that -- so a resource named only in the declaration, with nothing else in
+    # the file referring to it, still earns WEAK. Reported, not re-graded; a
+    # fourth grade would reach rank()'s dict and take the tool down, which is
+    # the same reason the downgrade rejected a third one.
+    #
+    # TWO CONVERGENT FIXES LANDED ON THIS BRANCH WITHIN THE HOUR and these arms
+    # cover the merged behaviour rather than either one alone.
+    print('')
+    print('UNTABLED DECLARATIONS -- the declaration may not be its own evidence')
+    _u = getattr(S, 'unbacked_declarations', None)
+    if _u is None:
+        print('  FAIL %-58s' % 'unbacked_declarations() is missing')
+        FAILED.append('untabled-no-helper')
+    else:
+        # SYNTHETIC NAMES, matching NO_TABLE's own `a_one` convention above.
+        # I first wrote these fixtures with REAL Tier A resource names, and
+        # that is wrong on its own merits before any gate is involved: a reader
+        # cannot tell a fixture body from a quotation of real code, which is
+        # the confusion this whole file is about. It also made the Tier A
+        # review gate fire on three resources none of this touches -- said out
+        # loud so the rename is not read as slipping a gate: the gate is what
+        # made me look, the convention is why it changed.
+        DECL = '// CROSS-TENANT-ISOLATION: a_one'
+        # Nothing but the declaration mentions it.
+        GHOST = chr(10).join([DECL, 'assert.strictEqual(res.status, 401);'])
+        # The file really does refer to it outside the declaration.
+        REAL = chr(10).join([
+            DECL,
+            "await call({ resource: 'a_one', tenant: 'A' });",
+            'assert.strictEqual(res.status, 401);',
+        ])
+        for label, body, want in (
+                ('a name appearing ONLY in the declaration is REPORTED as '
+                 'unbacked', GHOST, True),
+                ('CONTROL: a name the file really refers to is NOT reported, '
+                 'so the check discriminates', REAL, False)):
+            got = 'a_one' in _u(body, {'a_one'})
+            good = got == want
+            print('  %-4s %-58s' % ('ok' if good else 'FAIL', label))
+            if not good:
+                FAILED.append('untabled-' + ('ghost' if want else 'real'))
+        # THE DECLARATION BLOCK IS STRIPPED INCLUDING ITS WRAPPED CONTINUATION
+        # LINES -- a 46-resource declaration does not fit on one line, and a
+        # strip that stopped at the first newline would read every continued
+        # name as evidence of itself.
+        WRAPPED = chr(10).join([
+            '// CROSS-TENANT-ISOLATION: a_one,',
+            '//   a_two, a_three',
+            'assert.strictEqual(res.status, 401);',
+        ])
+        okwrap = set(_u(WRAPPED, {'a_one', 'a_two', 'a_three'})) == \
+            {'a_one', 'a_two', 'a_three'}
+        print('  %-4s %-58s' % ('ok' if okwrap else 'FAIL',
+                                'a WRAPPED declaration is stripped whole, continuation lines too'))
+        if not okwrap:
+            FAILED.append('untabled-wrapped-not-stripped')
+        # AND IT REPORTS RATHER THAN RE-GRADING. A fourth grade would reach
+        # rank()'s {'GENUINE':0,'WEAK':2,'NONE':3} lookup and take the tool
+        # down on the first file to hit this branch.
+        okgrades = set(_re_grades(S)) <= {'GENUINE', 'WEAK', 'NONE'}
+        print('  %-4s %-58s' % ('ok' if okgrades else 'FAIL',
+                                'no fourth grade was introduced -- rank() has no key for one'))
+        if not okgrades:
+            FAILED.append('untabled-fourth-grade')
+        # THE TABLED PATH MUST BE UNTOUCHED. The whole change is in the
+        # `driven is None` branch, and quietly narrowing the tabled path would
+        # be a far worse trade than the gap.
+        _real_tabled = S.driven_resources(io.open(
+            os.path.join(REPO, 'api/sd-data-cross-tenant-dispatchers.test.js'),
+            encoding='utf-8').read())
+        oktab = _real_tabled is not None and len(_real_tabled) >= 40
+        print('  %-4s %-58s %s' % ('ok' if oktab else 'FAIL',
+                                   'CONTROL: the real tabled suite still reads its table',
+                                   len(_real_tabled or [])))
+        if not oktab:
+            FAILED.append('untabled-broke-tabled')
 
     # ── EVERY DECLARED RESOURCE MUST ACTUALLY BE DRIVEN ──────────────────
     # The declaration is a claim somebody signs, and a signature is only worth
