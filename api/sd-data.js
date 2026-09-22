@@ -8922,7 +8922,21 @@ module.exports = async (req, res) => {
       }
       const events = [];
       // MAR administrations -- one documented dose given is one documented service.
-      const marR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&resident_id=eq.' + enc(String(payload.resident_id)) + '&select=entry_id,entry_type,data'), { headers });
+      // ── ORDERED, 2026-09-22 ────────────────────────────────────────────
+      // This read and the alf_activities one below were the two unordered
+      // list reads in this function. `alf_mar` is append-only, but NOT by
+      // either signal tools/append_only_read_order_scan.py derives -- it
+      // carries UPDATE for merge-duplicates and its append-only-ness is
+      // enforced by the `alf_check_and_insert_mar_entry` RPC instead. That is
+      // a THIRD signal the scan does not model, so this read sat outside its
+      // 23-table population and the scan reported clean over it. `law_trusttx`
+      // is the other one; it is order-independent at its consumer.
+      //
+      // ASC, NOT DESC, and the difference is the consumer. The five trail
+      // reads ordered earlier today are newest-first because their renderers
+      // are. These rows become INVOICE LINES for one month, which a biller
+      // reads chronologically.
+      const marR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&resident_id=eq.' + enc(String(payload.resident_id)) + '&select=entry_id,entry_type,data&order=created_at.asc'), { headers });
       if (marR.ok) {
         const marRows = await marR.json().catch(() => []);
         (marRows || []).forEach((row) => {
@@ -8953,7 +8967,13 @@ module.exports = async (req, res) => {
         });
       }
       // Activity attendance.
-      const actR = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data'), { headers });
+      // Ordered for the same reason as the alf_mar read above, and fixed in
+      // the same change rather than left for a later one: it is the identical
+      // defect, in the identical function, feeding the identical array. Hank's
+      // own review note names that trap -- fixing part of a class and shipping
+      // an arm named for the whole of it publishes an all-clear over the reads
+      // nobody looked at.
+      const actR = await fetch(rest('alf_activities?license_hash=eq.' + enc(licHash) + '&select=entry_id,data&order=created_at.asc'), { headers });
       if (actR.ok) {
         const actRows = await actR.json().catch(() => []);
         (actRows || []).forEach((row) => {

@@ -104,7 +104,38 @@ function deriveCharges(opts) {
     });
   });
 
-  lines.sort((a, b) => (a.date < b.date ? -1 : (a.date > b.date ? 1 : 0)));
+  // ── THE TIEBREAK, 2026-09-22, AND WHY DATE ALONE WAS NOT ENOUGH ────────
+  // This sorted on `date` and nothing else. Array.prototype.sort is stable, so
+  // same-day rows kept INSERTION order -- which is the order the three sources
+  // were concatenated in, and within each source the order the server happened
+  // to return rows. Two of the three reads carried no `order=` clause, so two
+  // identical regenerations of one month could list the same day's doses in
+  // different sequences on a table whose first column is Date.
+  //
+  // The money was never wrong: the total is a sum, and
+  // reconcileAgainstInvoice() keys on `event_id`, so the regenerate-diff --
+  // the thing this endpoint exists to produce -- was order-independent
+  // throughout. What moved was the ORDER OF THE ROWS A BILLER READS.
+  //
+  // THE TIEBREAK IS `event_id`, NOT A TIMESTAMP, and that is a deliberate
+  // refusal of false precision. Only ONE of the three event sources has
+  // sub-day resolution: a MAR administration carries `administered_at`, an
+  // instant, which this function already truncates to a date. ADL assessments
+  // and activity attendance carry a DATE ONLY. Sorting on a time two thirds of
+  // the rows do not have would order one source correctly and invent an
+  // ordering for the other two. A stable id makes the output deterministic
+  // without claiming to know what happened first.
+  const byDateThenId = (a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+    const x = String(a.event_id || ''), y = String(b.event_id || '');
+    return x < y ? -1 : (x > y ? 1 : 0);
+  };
+  lines.sort(byDateThenId);
+  // `unpriced` was not sorted at all, and it is rendered as a dated list too --
+  // sairncare.html prints `u.date` for every entry under "Documented but NOT
+  // billed". An unordered list of the services a home is NOT being paid for is
+  // the one this view exists to make readable.
+  unpriced.sort(byDateThenId);
   const total = round2(lines.reduce((s, l) => s + l.amount, 0));
 
   return {

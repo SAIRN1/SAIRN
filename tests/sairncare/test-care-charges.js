@@ -153,5 +153,81 @@ check('a changed amount for the same event is reported as changed, not as add+re
   assertEq(rec.net_change, 2.5);
 });
 
+
+// ── SAME-DAY ORDER IS DETERMINISTIC, 2026-09-22 ────────────────────────────
+// The sort was on `date` alone. Array.prototype.sort is stable, so same-day
+// rows kept INSERTION order -- the order the three event sources were
+// concatenated in, and within each source the order the server returned rows.
+// Two of those three reads carried no `order=` clause, so two identical
+// regenerations could list one day's doses differently on a table whose first
+// column is Date.
+//
+// THE MONEY WAS NEVER WRONG and these arms say so explicitly: the total is a
+// sum and reconcileAgainstInvoice() keys on event_id, so the regenerate-diff
+// was order-independent throughout. What moved is the order a biller reads.
+check('same-day lines are ordered deterministically, not by arrival', () => {
+  const forward = c.deriveCharges({
+    month: '2026-08', resident_id: 'RES-1', rate_card: RATES,
+    events: [ev('E3', 'medication_administration', '2026-08-03'),
+      ev('E1', 'medication_administration', '2026-08-03'),
+      ev('E2', 'medication_administration', '2026-08-03')]
+  });
+  const reversed = c.deriveCharges({
+    month: '2026-08', resident_id: 'RES-1', rate_card: RATES,
+    events: [ev('E2', 'medication_administration', '2026-08-03'),
+      ev('E1', 'medication_administration', '2026-08-03'),
+      ev('E3', 'medication_administration', '2026-08-03')]
+  });
+  assertEq(forward.lines.map((l) => l.event_id), ['E1', 'E2', 'E3'],
+    'same-day rows must not depend on the order the server returned them');
+  assertEq(reversed.lines.map((l) => l.event_id), forward.lines.map((l) => l.event_id),
+    'two identical regenerations must produce the identical row order');
+});
+
+check('...and date still beats the tiebreak, so the table is chronological', () => {
+  const r = c.deriveCharges({
+    month: '2026-08', resident_id: 'RES-1', rate_card: RATES,
+    events: [ev('A9', 'medication_administration', '2026-08-20'),
+      ev('Z1', 'medication_administration', '2026-08-02')]
+  });
+  assertEq(r.lines.map((l) => l.date), ['2026-08-02', '2026-08-20'],
+    'the id tiebreak must never outrank the date -- Z1 is earlier and sorts first');
+});
+
+check('the UNPRICED list is ordered too -- it is rendered with dates as well', () => {
+  // No rate for an activity, so both land in `unpriced` rather than in lines.
+  const r = c.deriveCharges({
+    month: '2026-08', resident_id: 'RES-1', rate_card: { med_admin_rate: 2.5 },
+    events: [ev('U2', 'activity_attendance', '2026-08-09'),
+      ev('U1', 'activity_attendance', '2026-08-04')]
+  });
+  assertEq(r.unpriced.length, 2);
+  assertEq(r.unpriced.map((u) => u.event_id), ['U1', 'U2'],
+    'an unordered list of what a home is NOT being paid for is the one this '
+    + 'view exists to make readable');
+});
+
+check('THE PAIRED NEGATIVE: ordering changed no money and no diff', () => {
+  const events = [ev('E3', 'medication_administration', '2026-08-03'),
+    ev('E1', 'medication_administration', '2026-08-03')];
+  const a = c.deriveCharges({ month: '2026-08', resident_id: 'RES-1', rate_card: RATES, events: events });
+  const b = c.deriveCharges({
+    month: '2026-08', resident_id: 'RES-1', rate_card: RATES,
+    events: events.slice().reverse()
+  });
+  assertEq(a.total, b.total, 'the total is a sum and was never order-sensitive');
+  assertEq(a.total, 5);
+  // The diff keys on event_id, so a reordered derivation reconciles as
+  // entirely unchanged against the other one's lines.
+  const rec = c.reconcileAgainstInvoice(a, b.lines);
+  assertEq(rec.added.length, 0);
+  assertEq(rec.removed.length, 0);
+  assertEq(rec.changed.length, 0);
+  assertEq(rec.net_change, 0,
+    'if reordering could move the diff, the audit trail this endpoint exists '
+    + 'to produce would have been wrong -- it was not, and that is the half '
+    + 'of this finding that was overstated before it was checked');
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
