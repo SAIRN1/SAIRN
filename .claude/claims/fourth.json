@@ -1573,8 +1573,8 @@
       "task": "jurisdiction seeding next gate",
       "claimed_at": "2026-09-17T04:34:04Z",
       "claimed_at_epoch": 1789619644.005821,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-22T11:35:22Z"
     },
     {
       "id": "fourth-1789653393",
