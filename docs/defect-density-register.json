@@ -11674,6 +11674,53 @@
       "recurrence_open": "The dependency sweep follows `import X` and `from X import` at the start of a line. A tool that imported a sibling dynamically -- importlib, a deferred import inside a function body indented past the regex, a name built at runtime -- would still be missed, and the failure would look exactly like this one did. And nothing on this platform scans for the SHAPE of the defect: a suite whose arms all assert the same single condition on a shared upstream artefact is vacuous the moment that artefact breaks, and only reading it finds that."
     },
     {
+      "commit": "de7b4838c1b5",
+      "date": "2026-09-22",
+      "subject": "fix(stonedesk): eleven money and count folds where `|| 0` never coerced -- one string field and the whole KPI concatenates",
+      "files": [
+        "stonedesk.html",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 11,
+      "lines_removed": 12,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "stonedesk.html carried eleven uncoerced numeric folds of the shape `s + (x.field || 0)`, seven of them money: invoice totals, revenue MTD, average job margin, contractor YTD spend, waste cost and two profit calculations. `|| 0` does not coerce -- a non-empty string is truthy, so the guard never fires and `+` concatenates, turning a sum into a string from the first non-numeric row onward. Found by tools/truthy_sum_check.py via its own probe going red on the real-tree arm. REPAIRED IN PLACE 2026-09-22: three backtick spans in this summary were executed as SHELL COMMAND SUBSTITUTIONS by --add and arrived as empty strings, so the sentence read \\\"folds of the shape , seven of them\\\" and \\\"the guard never fires and  concatenates\\\". The words are restored here and the loss is recorded rather than tidied away -- tool-bugs item 5, fourth instance, and the first in defect_register.py, which has no --body-file route.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "truthy_sum_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Eleven occurrences across four panels with no common commit; tools/truthy_sum_baseline.json grandfathered fifty-one keys on 2026-09-11 without dating any of them, and git -S on a fragment as common as `||0)` cannot separate the commit that introduced a fold from the commits that reformatted the line around it. (The backtick span here was also eaten by the shell at --add time and is restored; see the summary.)"
+      },
+      "citation_note": "No numbered process rule covers a JavaScript coercion hazard. The nearest standing statement on this platform is the auto-memory note that a quiet wrong number beats a loud crash -- a concatenated KPI is plausible-looking and silent, which is the shape that rule is about -- but that is a memory, not a numbered section, and stretching one of the numbered rules to cover it would blur the class it actually names.",
+      "contributing_factors": [
+        {
+          "factor": "`|| 0` was used as if it coerced. It does not: a non-empty string is truthy, so the guard never fires and `+` concatenates. Seven of the eleven are money folds -- invoice totals, revenue month-to-date, average job margin, contractor YTD spend and two profit calculations -- where the result is a figure a shop owner reads and acts on.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "all eleven wrapped as `Number(x) || 0`, which is the idiom already present in these files. Number(x) || 0 rather than Number(x || 0) deliberately: the latter yields NaN on a non-numeric string and one bad row would take a whole KPI tile to NaN."
+        },
+        {
+          "factor": "WHETHER ANY OF THE ELEVEN IS EXPLOITABLE TODAY IS NOT ESTABLISHED, and the checker's own docstring says the question -- who can write this field -- is not derivable from the fold. A field written only by app code that already coerces cannot hold a string; one written through an API branch with no domain check can, which is what dnt_vendor_orders was.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "coerced all eleven rather than asserting eleven provenance claims that cannot be checked from here. The tool's alternative remedy -- baselining a field as provably numeric -- requires exactly the claim that would have been a guess."
+        },
+        {
+          "factor": "The checker and its probe both existed and both worked. What was missing is that nothing RUNS them on a cadence: truthy_sum_check.py is not a push gate and its probe is not in the promoted registry, so the eleven sat unbaselined and unreported until a sweep of fixture-building probes ran it for an unrelated reason.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Promoting it would make every push pay for a whole-tree regex scan of eight files to guard a hazard class that is explicitly NOT ASSESSED per field. The baseline mechanism is the design: it fails on a NEW occurrence, which is what it did here as soon as somebody ran it."
+        }
+      ],
+      "recurrence_open": "FIFTY grandfathered keys remain across eight files, every one of them carrying the words NOT ASSESSED, and this commit reduced that population by coercing eleven NEW occurrences rather than by assessing any of the fifty. The two lines immediately above the one stale entry removed here -- sairnbuild.html:5508 and 5509 -- are uncoerced money folds sitting beside a coerced one in the same function, and the checker does not fail on them because they are grandfathered."
+    },
+    {
       "commit": "e0a52dc8925d",
       "date": "2026-09-22",
       "subject": "fix(flagger): client_restricted() asks what the gate is ATTACHED to, not what is nearby -- and two fail-open bugs the fix itself introduced",
