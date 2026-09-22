@@ -295,5 +295,100 @@ arm('KNOWN OPEN: a synonym with an intervening word still reports CLEAR',
     'this gap was closed -- read block_reason()s note, then replace this arm '
     'with one measuring the new rules false-positive rate over the corpus')
 
+
+print()
+print('=== structured identifiers are matched WHOLE, never tokenised ===')
+print('    (2026-09-22 -- tool-bugs item 6, instance 8, a fourth mechanism)')
+# THE LIVE CASE, REPRODUCED. Two Tier A discharge claims opened ONE MINUTE
+# apart -- hank's 2026-09-22T12:02:38Z and fourth's 2026-09-22T12:01:35Z --
+# and the matcher refused with `shared phrase: "2026 22t12"`. word_seq splits
+# on [^a-z0-9]+, so an ISO timestamp became the words 2026, 22t12, 38z and a
+# bigram straddling two of them.
+#
+# THE TWO PIECES OF WORK RAN IN OPPOSITE DIRECTIONS -- hank reviewing fourth's
+# change, fourth reviewing hank's -- with disjoint file sets. The only thing
+# in common was the minute.
+#
+# AND THE SIGNATURE OF THE CLASS IS WHY IT IS EXPENSIVE: an obligation id is
+# the one token a discharge claim MUST carry to be identifiable, so naming the
+# thing more precisely made the collision more likely. sairn-code-scrubber
+# item 25.
+#
+# THE FIXTURES BELOW ARE DELIBERATELY STRIPPED OF EVERYTHING BUT THE
+# IDENTIFIER. The first draft of these arms passed and failed for the wrong
+# reasons -- "Review-only" was read as a file identifier and `fix-a`/`fix-b`
+# both reduce to the single word `fix`, so two arms were answering `same
+# subject` while claiming to measure a timestamp. Isolating the signal is the
+# whole point of a fixture, and these three were caught only because two of
+# them failed loudly.
+HANK = ('quotation speaker audit', 'discharge 2026-09-22T12:01:35Z')
+MINE = ('append trail ordering', 'discharge 2026-09-22T12:02:38Z')
+arm('two obligation ids ONE MINUTE apart no longer collide on a bigram of the '
+    'timestamp', _r(MINE[0], MINE[1], HANK[0], HANK[1]) is None,
+    _r(MINE[0], MINE[1], HANK[0], HANK[1]))
+arm('...and the fragments never become words at all -- no 2026, no 22t12',
+    not ({'2026', '22t12', '38z'} & set(claim.word_seq(MINE[1]))),
+    sorted(claim.word_seq(MINE[1])))
+
+# THE CONTROL, and without it the fix is indistinguishable from deleting the
+# timestamp: the SAME obligation id in two claims is a REAL collision -- two
+# sessions discharging one obligation -- and must still block.
+SAME_A = ('material risk engine', 'discharge 2026-09-22T13:51:10Z')
+SAME_B = ('denominator population', 'taking 2026-09-22T13:51:10Z')
+arm('CONTROL: the SAME obligation id in two claims still BLOCKS',
+    _r(SAME_A[0], SAME_A[1], SAME_B[0], SAME_B[1]) is not None,
+    _r(SAME_A[0], SAME_A[1], SAME_B[0], SAME_B[1]))
+arm('...and the reason NAMES the identifier rather than a word fragment',
+    'obligation' in (_r(SAME_A[0], SAME_A[1], SAME_B[0], SAME_B[1]) or '')
+    or '13:51:10' in (_r(SAME_A[0], SAME_A[1], SAME_B[0], SAME_B[1]) or ''),
+    _r(SAME_A[0], SAME_A[1], SAME_B[0], SAME_B[1]))
+
+# A COMMIT SHA IS THE SAME KIND OF THING, in both directions.
+arm('two DIFFERENT shas do not collide',
+    _r('quotation speaker', 'follow up on 467baf74',
+       'payroll accumulator', 'follow up on 5b145fd6') is None,
+    _r('quotation speaker', 'follow up on 467baf74',
+       'payroll accumulator', 'follow up on 5b145fd6'))
+arm('CONTROL: the SAME sha in two claims still BLOCKS',
+    _r('quotation speaker', 'revert 467baf74',
+       'payroll accumulator', 'extend 467baf74') is not None,
+    _r('quotation speaker', 'revert 467baf74',
+       'payroll accumulator', 'extend 467baf74'))
+arm('...and a short sha matches its longer form, so precision is not punished',
+    _r('quotation speaker', 'revert 467baf74',
+       'payroll accumulator', 'extend 467baf74e2229901') is not None,
+    _r('quotation speaker', 'revert 467baf74',
+       'payroll accumulator', 'extend 467baf74e2229901'))
+
+# AN ALL-HEX ENGLISH WORD IS NOT A SHA. `defaced` is seven hex characters and
+# no digits; a rule keyed on hex alone would eat it out of the word stream and
+# then report two unrelated claims as sharing a commit.
+arm('an all-hex WORD with no digit is not treated as a sha -- it stays a word',
+    'defaced' in set(claim.word_seq('the seed was defaced by the migration')),
+    sorted(claim.word_seq('the seed was defaced by the migration')))
+arm('...and two claims sharing only that word do not block on a fake commit',
+    'commit' not in (_r('seed loader', 'the seed was defaced',
+                        'header parser', 'a defaced header') or ''),
+    _r('seed loader', 'the seed was defaced',
+       'header parser', 'a defaced header'))
+
+# A BARE DATE IS NOT AN IDENTIFIER AND IS NOT WORK. Same-day claims must not
+# collide on the day, and the date must not become the word `2026` either.
+arm('a bare DATE is stripped rather than promoted to an identifier -- two '
+    'same-day claims on unrelated work do not block',
+    _r('seed loader', 'on 2026-09-22 rewrite it',
+       'payroll column', 'on 2026-09-22 add one') is None,
+    _r('seed loader', 'on 2026-09-22 rewrite it',
+       'payroll column', 'on 2026-09-22 add one'))
+
+# AND THE WHOLE CORPUS ABOVE MUST BE UNMOVED. A change to tokenisation that
+# fixed this case and broke a real block would be a far worse trade, so the
+# CASES table is re-run rather than trusted.
+_regress = [c for c in CASES
+            if verdict(c[1][0], c[1][1], c[2][0], c[2][1]) != c[3]]
+arm('REGRESSION: every case in the corpus above still gets its expected '
+    'verdict after the tokenisation change (%d cases)' % len(CASES),
+    not _regress, [c[0] for c in _regress][:5])
+
 print('\n%d failure(s)' % fails)
 sys.exit(1 if fails else 0)

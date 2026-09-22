@@ -208,10 +208,104 @@ def app_names():
     return _APP_NAMES
 
 
+# ── A STRUCTURED IDENTIFIER IS ONE THING OR IT IS NOTHING ───────────────────
+# TOOL-BUGS ITEM 6, INSTANCE 8, AND A FOURTH DISTINCT MECHANISM (2026-09-22).
+#
+# Two Tier A discharge claims opened ONE MINUTE apart -- hank's
+# `2026-09-22T12:02:38Z` and fourth's `2026-09-22T12:01:35Z` -- and this
+# matcher refused with `blocked by: shared phrase "2026 22t12"`. The two pieces
+# of work ran in OPPOSITE directions (hank reviewing fourth's change, fourth
+# reviewing hank's) over disjoint file sets. The only thing in common was the
+# minute.
+#
+# The cause is one line: `word_seq` splits on `[^a-z0-9]+`, so the lowercased
+# timestamp became the words `2026`, `22t12` and `38z`, and a bigram straddling
+# two of them read as a shared phrase.
+#
+# WHY THIS CLASS IS EXPENSIVE, and it is worth saying in the file rather than
+# only in the register: an obligation id is the ONE token a discharge claim
+# must carry to be identifiable at all, so NAMING THE THING MORE PRECISELY MADE
+# THE COLLISION MORE LIKELY. That inverts the incentive on exactly the field
+# this tool most needs people to fill in honestly, and the workaround it
+# invites -- dropping or fuzzing the id -- is worse than the block.
+# sairn-code-scrubber item 25.
+#
+# THE RULE: an identifier is matched WHOLE, by its own syntax, or not at all.
+# Never a prefix, a bigram or a substring of one.
+#
+#   TIMESTAMP -- an obligation id. Matched whole, and a MATCH IS A REAL
+#                COLLISION: two sessions discharging one obligation.
+#   SHA       -- the same, and it was not matched at all before: a claim to
+#                revert 467baf74 and a claim to extend it answered CLEAR.
+#   DATE      -- a bare date is STRIPPED and is NOT an identifier. Two claims
+#                on the same day are not related, and promoting a date would
+#                make every same-day pair collide -- the original bug with a
+#                wider blast radius.
+TIMESTAMP_RE = re.compile(r'\d{4}-\d{2}-\d{2}[t ]\d{2}:\d{2}:\d{2}(?:\.\d+)?z?')
+BARE_DATE_RE = re.compile(r'\d{4}-\d{2}-\d{2}')
+# EIGHT, NOT SEVEN, AND A DIGIT IS REQUIRED. `defaced` is seven hex characters
+# with no digit, and a rule keyed on hex alone would take it out of the word
+# stream and then report two unrelated claims as sharing a commit. Requiring a
+# digit costs nothing real: the chance an 8-character sha has none is (6/16)^8,
+# about four in ten thousand.
+SHA_TOKEN_RE = re.compile(r'\b(?=[0-9a-f]*\d)[0-9a-f]{8,40}\b')
+
+
+def structured_ids(*parts):
+    """Every whole structured identifier in the given strings.
+
+    Returned as ('timestamp'|'commit', value) pairs so the refusal can NAME
+    what it matched -- "same obligation" and "same commit" are different facts
+    and a reader can act on the difference.
+    """
+    out = set()
+    for p in parts:
+        low = (p or '').lower()
+        for m in TIMESTAMP_RE.findall(low):
+            out.add(('timestamp', m.rstrip('z')))
+        for m in SHA_TOKEN_RE.findall(TIMESTAMP_RE.sub(' ', low)):
+            out.add(('commit', m))
+    return out
+
+
+def shared_structured(mine, theirs):
+    """Shared identifiers, with a SHA matching its own longer form.
+
+    A short sha and the full one are the same commit, and a session that wrote
+    the full 40 characters must not slip past a session that wrote 8 -- being
+    more precise is exactly what this whole change is about not punishing.
+    """
+    hit = set()
+    for kind_a, val_a in mine:
+        for kind_b, val_b in theirs:
+            if kind_a != kind_b:
+                continue
+            if kind_a == 'commit':
+                n = min(len(val_a), len(val_b))
+                if n >= 8 and val_a[:n] == val_b[:n]:
+                    hit.add((kind_a, val_a if len(val_a) <= len(val_b) else val_b))
+            elif val_a == val_b:
+                hit.add((kind_a, val_a))
+    return hit
+
+
+def _strip_identifiers(text):
+    """Blank every structured identifier so its FRAGMENTS never become words."""
+    low = (text or '').lower()
+    low = TIMESTAMP_RE.sub(' ', low)
+    low = BARE_DATE_RE.sub(' ', low)
+    return SHA_TOKEN_RE.sub(' ', low)
+
+
 def word_seq(text):
     """Significant words IN ORDER -- phrase matching needs the order that
-    tokens() throws away."""
-    return [t for t in re.split(r'[^a-z0-9]+', (text or '').lower())
+    tokens() throws away.
+
+    Structured identifiers are removed FIRST. They are compared whole by
+    shared_structured(); leaving their fragments in the word stream is what
+    produced `shared phrase: "2026 22t12"` between two unrelated reviews.
+    """
+    return [t for t in re.split(r'[^a-z0-9]+', _strip_identifiers(text))
             if len(t) >= 3 and t not in STOPWORDS]
 
 
@@ -379,6 +473,17 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
             return 'subject "%s" is inside theirs' % ' '.join(sorted(ms))
         if ts < ms and len(ts) >= 2:
             return 'their subject "%s" is inside yours' % ' '.join(sorted(ts))
+    # ── IDENTIFIERS FIRST, BECAUSE THEY ARE THE STRONGEST EVIDENCE HERE ────
+    # An obligation id or a commit sha names ONE thing. Two claims carrying the
+    # same one are working on the same item, which is a better reason to block
+    # than any word overlap -- and until 2026-09-22 a sha was not compared at
+    # all, so "revert 467baf74" and "extend 467baf74" answered CLEAR.
+    sid = shared_structured(structured_ids(mine_subj, mine_task),
+                            structured_ids(their_subj, their_task))
+    if sid:
+        kind, val = sorted(sid)[0]
+        return ('same obligation: %s' % val) if kind == 'timestamp' \
+            else ('same commit: %s' % val)
     shared_apps = apps_in(mine_subj, mine_task) & apps_in(their_subj, their_task)
     if shared_apps:
         return 'same app: ' + ', '.join(sorted(shared_apps))
@@ -521,7 +626,10 @@ def iso(ts):
 def tokens(*parts):
     out = set()
     for p in parts:
-        for t in re.split(r'[^a-z0-9]+', (p or '').lower()):
+        # Same identifier strip as word_seq(), and it has to be the same or the
+        # two would disagree about what a word is -- tokens() gates whether
+        # block_reason() is consulted at all.
+        for t in re.split(r'[^a-z0-9]+', _strip_identifiers(p)):
             if len(t) >= 3 and t not in STOPWORDS:
                 out.add(t)
     return out
