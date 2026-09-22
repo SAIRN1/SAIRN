@@ -565,6 +565,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128308; 41 tables including the DEA-relevant controlled-substance register were readable AND writable on a bare licence key &mdash; the gate was absent because a comment said auth did not exist, and that stopped being true nine days earlier** | **CODE FIXED AND LIVE-VERIFIED CLOSED 2026-09-22.** Found and built by **hover2**; reproduced independently and landed by **Hank** (`6fb6d696`). **THE ITEM IS NOT CLOSED: the app is now DOWN BY DESIGN | `api/sd-data-sv-session-gate.test.js`, `tests/run_sv_session_gate_sabotage_probe.py` |
 | **Item 83 independently reviewed: 96 green arms cover two entry points of the witnessing lock and NEVER ENTER THE THIRD &mdash; the half that MINTS the token** | **REVIEWED 2026-09-16 (independent, commissioned by Michael, reported by Hank) &mdash; NOT FIXED, and deliberately not by the reviewer.** `docs/2026-09-16-item83-independent-review.md`, 3 records in ` | `api/sv-witness.test.js` |
 | **Item 83 independent review, pass three &mdash; the COUNTERSIGN half of the witnessing lock is caught by NOTHING, including &ldquo;two person&rdquo; itself** | **CLOSED 2026-09-15 (Cody)** &mdash; `tests/failsafe/witness_countersign.js`, 30 arms, and the probe now measures **0 of 6 MISSED** with the control still CAUGHT by all four suites. Every refusal on t | `api/sv-witness.test.js`, `tests/failsafe/witness_countersign.js` |
 | **Gate 4 closed on the vertical with the MOST resources and no fault probe at all &mdash; the 58-arm controlled-substance suite is now known to DENY** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnvet_fault_probe.py`, 6 mutation arms + 4 controls, all green. MASTER-PLAN `sairnvet` fault 0 &rarr; 1; platform total 8 &rarr; 9 | `tests/sairnvet_audit_and_controlled.js`, `tests/sairnvet_fault_probe.py` |
@@ -622,8 +623,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 306 |
-| `declared` | 247 |
-| `declared+index` | 37 |
+| `declared` | 245 |
+| `declared+index` | 39 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -732,7 +733,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 671   tests/**, api/** (both walked)
-  open-work rows citing a test       336   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       337   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

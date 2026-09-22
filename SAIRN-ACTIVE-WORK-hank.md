@@ -2027,3 +2027,86 @@ whether any of those reads are unordered has **not** been checked here and is
 not guarded. A single-column order also still ties when two rows share the
 timestamp to the microsecond — no read in the file uses a tiebreaker and this
 change did not introduce the first one.
+
+---
+
+## 2026-09-22 — SAIRNvet: landing hover2's SV_RESOURCES session gate (not my fix; my reproduction and my review)
+
+**THE CODE IS hover2's. Mine is the independent reproduction, the review, and
+the decision to land it knowing what landing it costs.** Saying so precisely
+matters because the Tier A obligation I opened on this is weaker than usual
+exactly here: I did not design it, so *"it looked right to me"* carries less
+than when I have argued myself through the alternatives.
+
+**THE DEFECT.** All 41 `SV_RESOURCES` entries in `api/sd-data.js` — including
+`sv_controlled` (DEA-relevant controlled-substance register), `sv_patients` and
+`sv_soapnotes` — dispatched with no session check on either verb. The licence
+key is a **bearer credential shipped to the browser**, so it was the whole
+boundary on the clinical record.
+
+**THE COMMENT THAT HELD IT OPEN WAS TRUE WHEN IT WAS WRITTEN.** *"SAIRNvet has
+no per-employee authentication at all … a session gate here would gate on a
+session that does not exist."* `29b1f1d5` shipped `api/sv-auth.js`,
+`ROLES_BY_APP.sairnvet`, `AUTH_TABLE_BY_APP.sairnvet` and the schema on
+**2026-09-13** — under the subject line *"the last app without it held the DEA
+register"* — and nothing re-read the justification after the premise died. At
+least one other session then **cited that comment to reach a wrong
+conclusion**. This is PR §2.3's failure mode ("a fact with a tense needs a
+read") occurring in a **code comment**, which §2.3 does not reach; I recorded
+that as the citation *and* named the mismatch rather than pretending the fit
+was exact.
+
+**I REPRODUCED IT WITH A CONTROL, AND THE CONTROL IS THE POINT.** An app whose
+tables were never migrated answers an honest empty to everybody, and that is
+not a gate — it is an absent table. So a gated sibling was driven with the same
+bare key in the same run:
+
+| | bare licence key, no session token |
+|---|---|
+| `sairncare/alf_mar` (control) | **401 NO_SESSION** |
+| `sairncare/alf_claim_routes` (control) | **401 NO_SESSION** |
+| `sairnvet/sv_controlled` | **200 provisioned:true** |
+| `sairnvet/sv_patients` | **200 provisioned:true** |
+| `sairnvet/sv_soapnotes` | **200 provisioned:true** |
+| `sairnvet/sv_whiteboard` | **200 provisioned:true** |
+
+**STATED RATHER THAN GLOSSED: every open table returned ZERO ROWS** on
+`SV-PINNACLE-2026`. So my run demonstrated that nothing stops a caller
+**reaching** the resource — not that regulated data left. hover2's run, on
+their tenant, did return rows. I did not upgrade their result into mine.
+
+**I ALSO REFUSED TO PRINT WHAT I PROVED WAS REACHABLE.** The reproduction
+script emits status, `provisioned` and a row **count**, never a row body. A
+reproduction that dumps the data it proves is exposed has published it a second
+time.
+
+**WHAT I CHECKED THAT THE FIX DOES NOT CLAIM.** A gate on one endpoint is not a
+gate on an app, so: `api/sv-witness.js` is a **separate routable endpoint**
+touching the same register — **not** a second hole, because all four of its
+actions (`policy`, `set_policy`, `request`, `countersign`) route through
+`activeCaller()`, which requires a session *and* a live active employee row. No
+other `sv_` path exists in the dispatcher. `sv_examrooms_turnover` is excluded
+from the map deliberately and is not a records resource.
+
+**AFTER THE FIX, SAME PROBES, SAME SCRIPT, AND THE BEFORE/AFTER IS IN ONE RUN:**
+attempt 1 hit the old deployment (all four 200), attempt 2 the new (all four
+**401 NO_SESSION**). A write probe answered **401 before any store call**, so
+nothing was written.
+
+**THE DECISION I MADE THAT SOMEBODY MAY DISAGREE WITH, AND SHOULD BE ABLE TO.**
+`sql/sairnvet_employee_auth_schema.sql` **has not been run** against the live
+database — measured, not inferred: `/api/sv-auth` `login` answers **503
+NOT_PROVISIONED** for sairnvet, while `sairnlegacy` and `sairndental`, which
+already carry this same gate, answer **401 INVALID_CREDENTIALS**. So from the
+moment this deployed, **nobody can sign in to SAIRNvet and all 41 resources
+answer 401.** I landed it anyway, on fail-closed grounds: an app that refuses
+loudly is recoverable in one SQL run, and a DEA register readable by anyone
+holding a browser-shipped bearer token is not. **That is a judgement, not a
+fact**, and it is written into the Tier A obligation as something to argue with.
+`bootstrap` mints the first owner without a pre-existing credential, so the
+outage ends the moment the migration runs.
+
+**STILL OPEN.** The migration (Michael only). And a **second copy of the same
+expired premise**: `docs/2026-09-03-demo-credentials.md:114` still says SAIRNvet
+has no auth endpoint, and that table carries no SAIRNvet row — not fixed here,
+because it needs a real credential to exist first.
