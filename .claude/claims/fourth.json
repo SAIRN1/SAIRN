@@ -1923,8 +1923,8 @@
       "task": "alf_claim_routes refuses an overwrite with 409 ALREADY_RECORDED but does not name the correction path, unlike rf_supplier_documents and mech_credentials which do. Bring the refusal into line. Touches api/sd-data.js and the sairncare route-record suite.",
       "claimed_at": "2026-09-22T09:33:38Z",
       "claimed_at_epoch": 1790069618.9615946,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T09:50:34Z",
       "files": null
     }
   ]
