@@ -10591,7 +10591,7 @@
       "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
     },
     {
-      "commit": "33af07b41a39",
+      "commit": "ce835a7e57b3",
       "date": "2026-09-22",
       "subject": "fix(sairnlaw): phase 2 completed -- the last three resources authorised by a key shipped to the browser now need a session",
       "files": [
