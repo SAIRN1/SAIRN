@@ -1876,6 +1876,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T15:18:11Z",
+      "resources": [
+        "sen_pay_rates"
+      ],
+      "files": [
+        "api/_lib/sen-payroll.js",
+        "api/sd-data.js",
+        "sairnsenior.html"
+      ],
+      "what": "SAIRNsenior EVV completeness + payroll engine. GENUINE Tier A: sen_visits and sen_pay_rates are the inputs and the output is what each caregiver is PAID. THREE THINGS FOR A SECOND READER, all judgement. (1) THE WEIGHTED-AVERAGE REGULAR RATE. FLSA overtime is 1.5x the regular rate and across multiple rates in one workweek that is straight-time earnings over hours worked, 29 CFR 778.115 -- NOT the rate of the visit that crossed hour 40. The suite drives 30h at 18 dollars plus 15h at 30 dollars and asserts the premium is 5h at half of 22.00, not 5h at half of 30.00. Check that reading of 778.115 against the source; everything about the overtime figure rests on it. (2) service_type IS A SCHEDULING FIELD AND NOT AN EVV ONE. I put it in SEN_VISIT_SCHEDULE_FIELDS so the caregiver being paid for a visit cannot also choose which service was billed. Confirm that is the right side of the split, because the opposite reading -- that the person who performed the service knows best what it was -- is not unreasonable. (3) THE FLOOR SEMANTICS: any unpayable visit makes the whole period a floor and the screen says 'at least'. Confirm that understating is the safe direction for PAYROLL specifically; I argued it from wage-claim exposure, but an agency that pays a floor and never revisits it has underpaid somebody, so the opposite argument exists and I did not take it. ALSO WORTH CHECKING: the UTC workweek boundary is a stated limitation -- a visit clocked late Saturday in a western timezone can land in the following UTC week, because the app captures no agency timezone. NOT BUILT, per instruction: the aggregator transmission path, blocked on Michael's trading-partner and credential decisions.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T15:18:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

@@ -343,6 +343,20 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="fg"><label>Payer</label><select id="cl-payer"><option value="medicaid">Medicaid</option><option value="va">VA</option><option value="ltci">LTCI</option><option value="private">Private Pay</option><option value="self_pay">Self-Pay</option></select></div></div>
     <div class="fr"><div class="fg"><label>Authorized Hours / Week</label><input id="cl-hours" type="number" placeholder="20"></div>
       <div class="fg"><label>Status</label><select id="cl-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div></div>
+    <!-- ── FEDERAL EVV ELEMENT 2: THE IDENTIFIER, NOT THE NAME ───────────
+         An aggregator matches the individual RECEIVING the service on a payer
+         member / Medicaid identifier. A display name is not sufficient and
+         api/_lib/sen-evv-readiness.js already reports its absence as MISSING
+         rather than as a warning, on the stated grounds that a submission
+         without it would be rejected -- so calling it advisory would mislead.
+         It reads `client.member_id`; this is that field.
+
+         IT IS PHI AND THE ROW ALREADY CARRIES PHI. sen_clients is
+         Confidentiality-A on its own diagnosis field, so nothing about the
+         tier moves -- but this is a payer identifier for a named person and
+         it is worth knowing that is what is now stored here. -->
+    <div class="fg"><label>Payer member / Medicaid ID <span style="font-weight:400;color:var(--muted)">— federal EVV element 2 of 6; an aggregator matches on this, not on the name</span></label>
+      <input id="cl-member-id" placeholder="As it appears on the payer's card"></div>
     <!-- Optional and blank by default. An existing client has no branch and
          reads UNASSIGNED everywhere rather than being folded into the first
          one -- a rollup that quietly attributes rows is worse than one that
@@ -410,10 +424,18 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <button class="btn bp bs" id="vs-tab-schedule" onclick="vsShowTab('schedule')">Schedule</button>
     <button class="btn bo bs" id="vs-tab-clock" onclick="vsShowTab('clock')">Clock In / Out</button>
     <button class="btn bo bs" id="vs-tab-readiness" onclick="vsShowTab('readiness')" style="display:none">EVV Readiness</button>
+    <!-- MANAGEMENT ONLY, and narrower than the readiness tab beside it. That
+         one opens to coordinators and schedulers because a non-compliant visit
+         is a supervisory matter. THIS SHOWS WAGES, and sen_pay_rates is already
+         the narrowest gate in the app on exactly that argument. The server
+         branch refuses regardless; this only stops offering a tab that would
+         always 403. -->
+    <button class="btn bo bs" id="vs-tab-payroll" onclick="vsShowTab('payroll')" style="display:none">Payroll</button>
   </div></div>
   <div id="vs-view-schedule"></div>
   <div id="vs-view-clock" style="display:none"></div>
   <div id="vs-view-readiness" style="display:none"></div>
+  <div id="vs-view-payroll" style="display:none"></div>
 </div>
 <div class="modal" id="visitmodal">
   <div class="mbox">
@@ -423,6 +445,36 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="fr"><div class="fg"><label>Date</label><input id="vs-date" type="date"></div>
       <div class="fg"><label>Start Time</label><input id="vs-start" type="time"></div></div>
     <div class="fg"><label>End Time</label><input id="vs-end" type="time"></div>
+    <!-- ── FEDERAL EVV ELEMENT 1: TYPE OF SERVICE (2026-09-22) ───────────
+         42 U.S.C. §1396b(l)(5)(A)(i). It was the ONE of the six federal
+         elements SAIRNsenior captured nowhere at all -- api/_lib/sen-evv-
+         readiness.js has been reporting it missing on every visit since
+         2026-08-27 and saying so in its own words: "SAIRNsenior does not
+         capture one yet". The readiness check already reads `v.service_type`;
+         this is the field it was reading for.
+
+         IT IS SCHEDULED, NOT CLOCKED, and that is why it sits in this modal
+         rather than on the clock-in. What service a visit is FOR is decided
+         when it is authorised; a caregiver arriving does not choose it. The
+         server's field-level split (sql/sairnsenior_visits_schema.sql) puts
+         scheduling fields with management/coordinator/scheduler and EVV
+         fields with the assigned caregiver -- this belongs to the first set.
+
+         THE VOCABULARY IS DELIBERATELY SMALL AND DELIBERATELY NOT AN HCPCS
+         CODE. A state aggregator matches on ITS OWN service taxonomy, and
+         which one is exactly the per-state detail sen-evv-readiness.js
+         refuses to guess (`state_rules: 'not_verified'`). These four are the
+         service categories the app already models in its care tasks and pay
+         rates; the mapping to a state's codes belongs with the transmission
+         work, which is not built. -->
+    <div class="fg"><label>Type of service <span style="font-weight:400;color:var(--muted)">— federal EVV element 1 of 6</span></label>
+      <select id="vs-service-type">
+        <option value="">Not recorded — the visit cannot be submitted without it</option>
+        <option value="personal_care">Personal care</option>
+        <option value="homemaker">Homemaker / home support</option>
+        <option value="home_health_aide">Home health aide</option>
+        <option value="respite">Respite</option>
+      </select></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeVisitModal()">Cancel</button>
       <button class="btn bp" onclick="saveVisit()">Save Visit</button>
@@ -483,6 +535,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="mtitle">Add / Edit Caregiver</div>
     <div class="fr"><div class="fg"><label>Name</label><input id="cg-name"></div><div class="fg"><label>Phone</label><input id="cg-phone"></div></div>
     <div class="fr"><div class="fg"><label>CPR Cert Expires</label><input id="cg-cpr" type="date"></div><div class="fg"><label>Background Check Date</label><input id="cg-bgcheck" type="date"></div></div>
+    <!-- ── FEDERAL EVV ELEMENT 5: THE IDENTIFIER, NOT THE NAME ───────────
+         Same shape as the client's member id one modal over, and
+         api/_lib/sen-evv-readiness.js argues it the same way: aggregators
+         match a caregiver on a STATE-ASSIGNED identifier, so a display name
+         leaves the visit unsubmittable. It reads `caregiver.state_caregiver_id`
+         and has been reporting it missing since 2026-08-27. -->
+    <div class="fg"><label>State caregiver ID <span style="font-weight:400;color:var(--muted)">— federal EVV element 5 of 6; assigned by the state, not by this app</span></label>
+      <input id="cg-state-id" placeholder="As issued by your state's EVV programme"></div>
     <div class="fr">
       <div class="fg"><label>Aide type</label><select id="cg-aide-type">
         <option value="">Not recorded</option>
@@ -2222,7 +2282,7 @@ async function revokePortalLink(linkId,clientId){
 }
 function openClientModal(){
   ceid=null;careTaskDraft=[];
-  ['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
+  ['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes','cl-member-id'].forEach(function(f){$(f).value='';});
   $('cl-payer').value='medicaid';$('cl-hours').value='';$('cl-status').value='intake';
   brFillSelect('cl-branch','');
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
@@ -2243,6 +2303,7 @@ function editClient(id){
   ceid=id;careTaskDraft=(c.care_tasks||[]).map(function(t){return Object.assign({},t);});
   $('cl-name').value=c.name||'';$('cl-phone').value=c.phone||'';$('cl-address').value=c.address||'';
   $('cl-diagnosis').value=c.diagnosis||'';$('cl-payer').value=c.payer||'medicaid';$('cl-hours').value=c.authorized_hours||'';
+  if($('cl-member-id'))$('cl-member-id').value=c.member_id||'';
   $('cl-status').value=c.status||'intake';$('cl-notes').value=c.notes||'';
   brFillSelect('cl-branch',c.branch_id||'');
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
@@ -2277,6 +2338,7 @@ async function saveClient(){
     id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
     diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
     status:$('cl-status').value,notes:$('cl-notes').value.trim(),care_tasks:careTaskDraft.slice(),created_at:senLocalToday(),
+    member_id:($('cl-member-id')&&$('cl-member-id').value.trim())||'',
     assigned_employee_id:assignedTo,branch_id:($('cl-branch')&&$('cl-branch').value)||''
   };
   var list=clients();
@@ -2490,7 +2552,7 @@ function senHydrateCaregivers(){
 }
 function openCaregiverModal(){
   if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
-  cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes'].forEach(function(f){$(f).value='';});
+  cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes','cg-state-id'].forEach(function(f){$(f).value='';});
   $('cg-status').value='onboarding';
   brFillSelect('cg-branch','');
   $('caregivermodal').classList.add('on');
@@ -2502,6 +2564,7 @@ function editCaregiver(id){
   cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
   $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
   $('cg-aide-type').value=c.aide_type||'';$('cg-program').value=c.program||'';
+  if($('cg-state-id'))$('cg-state-id').value=c.state_caregiver_id||'';
   brFillSelect('cg-branch',c.branch_id||'');
   $('caregivermodal').classList.add('on');
 }
@@ -2511,6 +2574,7 @@ async function saveCaregiver(){
   var rec={id:cgeid||newId('CG'),name:name,phone:$('cg-phone').value.trim(),cpr_expiry:$('cg-cpr').value,
     bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim(),
     aide_type:$('cg-aide-type').value,program:$('cg-program').value,
+    state_caregiver_id:($('cg-state-id')&&$('cg-state-id').value.trim())||'',
     branch_id:($('cg-branch')&&$('cg-branch').value)||''};
   var list=caregivers();
   if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
@@ -2577,6 +2641,8 @@ function vsRender(){
     // a tab that would always 403.
     var rb=$('vs-tab-readiness');
     if(rb)rb.style.display=senIsScheduler()?'':'none';
+    var pb=$('vs-tab-payroll');
+    if(pb)pb.style.display=senIsManagement()?'':'none';
     vsShowTab(_vsTab);
   });
 }
@@ -2592,7 +2658,8 @@ function vsShowTab(tab){
   // between renders must not land back on it.
   if(tab==='readiness'&&!senIsScheduler())tab='schedule';
   _vsTab=tab;
-  ['schedule','clock','readiness'].forEach(function(t){
+  if(tab==='payroll'&&!senIsManagement())tab='schedule';
+  ['schedule','clock','readiness','payroll'].forEach(function(t){
     var v=$('vs-view-'+t),b=$('vs-tab-'+t);
     if(v)v.style.display=(t===tab?'block':'none');
     if(b&&b.style.display!=='none')b.className='btn '+(t===tab?'bp':'bo')+' bs';
@@ -2600,6 +2667,7 @@ function vsShowTab(tab){
   if(tab==='schedule')renderScheduleView();
   if(tab==='clock')renderClockView();
   if(tab==='readiness')renderReadinessView();
+  if(tab==='payroll')renderPayrollView();
 }
 
 // ── EVV SUBMISSION READINESS (2026-08-27) ────────────────────────────────
@@ -2608,6 +2676,87 @@ function vsShowTab(tab){
 // api/_lib/sen-evv-readiness.js -- there is no client-side estimate, no
 // hardcoded total and no percentage with an invented denominator anywhere here.
 var SEN_FIXABLE_LABEL={visit:'on the visit',client:'on the client record',caregiver:'on the caregiver record'};
+// ── PAYROLL FROM CLOCKED VISITS (2026-09-22) ─────────────────────────────
+// READ-ONLY. Calls the compute-only 'payroll' verb, which persists nothing.
+// Every figure is computed server-side by api/_lib/sen-payroll.js from real
+// visit rows -- there is no client-side estimate, no hardcoded total and no
+// percentage with an invented denominator anywhere here, the same discipline
+// renderReadinessView() states above.
+//
+// THE SCREEN NEVER SAYS "PAY RUN". It says what it computed and what it could
+// not: gross only, on the visits it could price, with every exclusion named.
+// A figure a bookkeeper could mistake for a finished payroll is the one thing
+// this panel must not produce.
+function senMinutesLabel(m){
+  var h=Math.floor((m||0)/60), r=(m||0)%60;
+  return h+'h'+(r?' '+r+'m':'');
+}
+function renderPayrollView(){
+  var el=$('vs-view-payroll');
+  if(!el)return;
+  var today=senLocalToday();
+  var firstOfMonth=today.slice(0,8)+'01';
+  el.innerHTML='<div class="card"><div class="ch"><span class="ct">Payroll from clocked visits</span></div><div class="cb">'
+    +'<div class="note"><strong>Gross pay only, computed from CLOCKED hours -- never from the schedule.</strong> '
+    +'A visit that cannot be priced is excluded and named rather than paid at zero, and any exclusion makes the period a FLOOR rather than a total. '
+    +'This is not a pay run: taxes, net pay, travel time between clients, live-in arrangements and paid leave are not computed. They are listed under every result.</div>'
+    +'<div class="fr"><div class="fg"><label>Period start</label><input id="pay-start" type="date" value="'+H(firstOfMonth)+'"></div>'
+    +'<div class="fg"><label>Period end</label><input id="pay-end" type="date" value="'+H(today)+'"></div>'
+    +'<div class="fg"><label>Workweek starts on</label><select id="pay-weekstart">'
+    +'<option value="sunday">Sunday</option><option value="monday">Monday</option><option value="tuesday">Tuesday</option>'
+    +'<option value="wednesday">Wednesday</option><option value="thursday">Thursday</option><option value="friday">Friday</option>'
+    +'<option value="saturday">Saturday</option></select></div></div>'
+    +'<div class="note" style="margin-top:6px">The workweek start day is <strong>your agency\u2019s choice and it changes the answer</strong> -- FLSA overtime is computed per fixed 168-hour workweek, so the same hours give a different overtime total under a different start day. It is asked rather than assumed.</div>'
+    +'<button class="btn bp" style="margin-top:10px" onclick="runPayroll()">Compute</button>'
+    +'<div id="pay-result" style="margin-top:14px"></div>'
+    +'</div></div>';
+}
+function runPayroll(){
+  var out=$('pay-result');
+  if(!out)return;
+  out.innerHTML='<div class="note">Computing from recorded visits\u2026</div>';
+  senData('payroll','sen_visits',{
+    period_start:$('pay-start').value,
+    period_end:$('pay-end').value,
+    week_start_day:$('pay-weekstart').value
+  },true).then(function(d){
+    if(!d){
+      // NOT AN EMPTY PAY PERIOD. A failed call must never render as a run in
+      // which nobody earned anything -- that is indistinguishable from a real
+      // period with no visits, and only one of them means somebody is unpaid.
+      out.innerHTML='<div class="note"><strong>Nothing was computed.</strong> The payroll run could not be completed -- check your connection, or your role may not allow it. No figure below is missing; there is no figure.</div>';
+      return;
+    }
+    var rows=(d.caregivers||[]).map(function(c){
+      var flags=[];
+      if(c.no_rate_visits)flags.push(c.no_rate_visits+' visit(s) have no pay rate on file');
+      if(c.visits_excluded)flags.push(c.visits_excluded+' visit(s) could not be priced');
+      return '<tr>'
+        +'<td>'+H(senEmployeeName(c.employee_id))+'</td>'
+        +'<td>'+c.visits_counted+'</td>'
+        +'<td>'+senMinutesLabel(c.minutes)+'</td>'
+        +'<td>'+(c.overtime_minutes?senMinutesLabel(c.overtime_minutes):'--')+'</td>'
+        +'<td>'+(c.is_floor?'at least ':'')+fmt(c.gross_cents/100)+'</td>'
+        +'<td>'+(flags.length?'<span class="badge bw">'+H(flags.join('; '))+'</span>':'<span class="badge bg">complete</span>')+'</td>'
+        +'</tr>';
+    }).join('');
+    var exc=d.excluded||{};
+    var excLines=Object.keys(exc).filter(function(k){return exc[k];})
+      .map(function(k){return '<li>'+H(k.replace(/_/g,' '))+': '+exc[k]+'</li>';}).join('');
+    out.innerHTML=
+      (d.is_floor
+        ? '<div class="note" style="border-left:3px solid var(--warn)"><strong>These are FLOORS, not totals.</strong> At least one visit could not be priced, so every figure below is the least that is owed and may be higher. Resolve the exclusions before paying anyone from this.</div>'
+        : '<div class="note"><strong>Every visit in the period was priced.</strong> The figures below are totals for the visits on file -- which is not the same as a final pay run; see what is not computed, below.</div>')
+      +'<div class="tw"><table><thead><tr><th>Caregiver</th><th>Visits</th><th>Hours</th><th>Overtime</th><th>Gross</th><th></th></tr></thead><tbody>'
+      +(rows||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No payable visits in this period</td></tr>')
+      +'</tbody></table></div>'
+      +'<div style="margin-top:10px;font-size:13px;color:var(--muted)">Workweek starting '+H(d.week_start_day)+', '+H(d.period_start)+' to '+H(d.period_end)+'. '+d.total_visits+' visit(s) examined.</div>'
+      +(excLines?'<div style="margin-top:8px;font-size:13px"><strong>Excluded and why:</strong><ul style="margin:6px 0 0 18px">'+excLines+'</ul></div>':'')
+      +'<div style="margin-top:12px;font-size:13px"><strong>NOT computed by this figure:</strong><ul style="margin:6px 0 0 18px">'
+      +(d.not_computed||[]).map(function(x){return '<li>'+H(x)+'</li>';}).join('')
+      +'</ul></div>';
+  });
+}
 function renderReadinessView(){
   var el=$('vs-view-readiness');
   if(!el)return;
@@ -2860,6 +3009,7 @@ function openVisitModal(){
   var sel=$('vs-caregiver');
   if(_senRoster){sel.innerHTML='<option value="">Unassigned</option>'+senAssignable().map(function(e){return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';}).join('');}
   $('vs-date').value='';$('vs-start').value='';$('vs-end').value='';
+  if($('vs-service-type'))$('vs-service-type').value='';
   $('visitmodal').classList.add('on');
 }
 function closeVisitModal(){$('visitmodal').classList.remove('on');}
@@ -2871,6 +3021,7 @@ async function saveVisit(){
   var cl=clients().find(function(c){return c.id===clientId;});
   var rec={id:newId('VS'),client_id:clientId,client_name:cl?cl.name:'',
     scheduled_date:date,scheduled_start:$('vs-start').value,scheduled_end:$('vs-end').value,
+    service_type:($('vs-service-type')&&$('vs-service-type').value)||'',
     assigned_employee_id:$('vs-caregiver').value||'',status:'scheduled'};
   var list=visits();list.push(rec);st('sen_visits',list);
   closeVisitModal();renderScheduleView();vsRenderKpis();

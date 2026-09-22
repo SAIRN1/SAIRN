@@ -154,7 +154,14 @@ module.exports = {
   // It PERSISTS NOTHING. Checking whether a visit could be submitted must never
   // itself modify the visit, which is why it is a separate verb rather than a
   // flag on 'read'.
+  // `payroll` is COMPUTE-ONLY and persists nothing, same shape as `readiness`
+  // one line up. It is declared on sen_visits because THE VISITS ARE THE
+  // TIMESHEET -- a clocked visit with GPS at both ends already is the record of
+  // hours worked, and a separate sen_timesheet table would be a second copy of
+  // the same fact that stops agreeing with the first the moment a clock-out is
+  // corrected. Same argument the KX accumulator makes for not storing a
+  // running total.
   extraActions: {
-    sen_visits: ['readiness'],
+    sen_visits: ['readiness', 'payroll'],
   },
 };

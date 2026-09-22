@@ -63,6 +63,9 @@ const opAudit = require('./_lib/op-audit');
 const rfAuth = require('./rf-auth');
 const senAuth = require('./sen-auth');
 const senEvvReadiness = require('./_lib/sen-evv-readiness');
+// Pure; every fetch and every gate for it lives in the sen_visits payroll
+// branch, same functional-core split as senEvvReadiness one line up.
+const senPayroll = require('./_lib/sen-payroll');
 // SAIRNsenior EVV aggregators (2026-08-27). Must stay in sync with the selector in
 // sairnsenior.html's Settings panel -- these are the four real state EVV aggregators
 // plus an honest 'other', because several states run their own and forcing a wrong
@@ -4711,7 +4714,16 @@ module.exports = async (req, res) => {
     // notes) are writable ONLY by the assigned caregiver, and only on a visit that already
     // exists -- nobody schedules a visit by clocking into it.
     const SEN_VISIT_SCHEDULER_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
-    const SEN_VISIT_SCHEDULE_FIELDS = ['client_id', 'client_name', 'scheduled_date', 'scheduled_start', 'scheduled_end'];
+    // `service_type` IS A SCHEDULING FIELD, NOT AN EVV ONE, and the split is
+    // the decision rather than the list. Federal EVV element 1 (42 U.S.C.
+    // §1396b(l)(5)(A)(i)) is WHAT SERVICE the visit is for -- that is decided
+    // when the visit is authorised, by whoever authorises it. A caregiver
+    // arriving at a door does not choose it, and putting it in the EVV set
+    // would let the person being paid for the visit also decide which service
+    // was billed. The whole point of this split, per
+    // sql/sairnsenior_visits_schema.sql's own header, is that nobody can forge
+    // the half they benefit from.
+    const SEN_VISIT_SCHEDULE_FIELDS = ['client_id', 'client_name', 'scheduled_date', 'scheduled_start', 'scheduled_end', 'service_type'];
     const SEN_VISIT_EVV_FIELDS = ['clock_in_at', 'clock_in_lat', 'clock_in_lng', 'clock_out_at', 'clock_out_lat', 'clock_out_lng', 'services_notes', 'status'];
     if (resource === 'sen_visits' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
@@ -4885,6 +4897,63 @@ module.exports = async (req, res) => {
         ok: true, provisioned: true,
         data: senEvvReadiness.summarize(visitList, clientsById, caregiversById, { state: evvState })
       });
+      return;
+    }
+
+    // ── SAIRNSENIOR: PAYROLL FROM CLOCKED VISITS (2026-09-22) ───────────────
+    // COMPUTE-ONLY, WRITES NOTHING. The visits ARE the timesheet: a clocked
+    // visit with GPS at both ends already is the record of hours worked, so a
+    // sen_timesheet table would be a second copy of the same fact that stops
+    // agreeing with the first the moment a clock-out is corrected.
+    //
+    // MANAGEMENT-ONLY, and narrower than readiness one branch up. That one
+    // opens to coordinators and schedulers because a non-compliant visit is a
+    // supervisory matter. THIS returns WAGES, and sen_pay_rates is already the
+    // narrowest gate in the app on exactly that argument -- "nothing on a
+    // coordinator's or scheduler's screen needs to know what a colleague
+    // earns". A payroll run is the same fact aggregated, so it gets the same
+    // gate rather than a wider one reached by a different door.
+    if (resource === 'sen_visits' && action === 'payroll') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can run payroll — it reports what each caregiver earns' } });
+        return;
+      }
+      const pvr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
+      // AN UNREADABLE VISITS TABLE IS NOT AN EMPTY PAY PERIOD. Running payroll
+      // over a table that could not be read pays everybody nothing and looks
+      // exactly like a period in which nobody worked.
+      if (pvr.status === 404 || pvr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Visits could not be read — run sql/sairnsenior_visits_schema.sql in Supabase first. Nothing was computed.' } });
+        return;
+      }
+      const pvrows = await pvr.json();
+      if (!pvr.ok) return upstream(res, pvrows);
+      const prr = await fetch(rest('sen_pay_rates?license_hash=eq.' + enc(licHash) + '&select=rate_id,data'), { headers });
+      // AND AN UNREADABLE RATE TABLE IS NOT "NOBODY HAS A WAGE". Same shape,
+      // and worse: every visit would fall into no_rate and the run would look
+      // like a data-entry problem in the rate table rather than a failed read.
+      if (prr.status === 404 || prr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Pay rates could not be read — run sql/sairnsenior_pay_rates_schema.sql in Supabase first. Nothing was computed.' } });
+        return;
+      }
+      const prrows = await prr.json();
+      if (!prr.ok) return upstream(res, prrows);
+      const payOut = senPayroll.computePayroll({
+        visits: (pvrows || []).map((x) => Object.assign(
+          { id: x.visit_id, assigned_employee_id: x.assigned_employee_id || '' }, x.data)),
+        period_start: (payload && payload.period_start) || null,
+        period_end: (payload && payload.period_end) || null,
+        week_start_day: (payload && payload.week_start_day) || null,
+        resolveRate: senPayroll.resolveRateFrom(
+          (prrows || []).map((x) => Object.assign({ id: x.rate_id }, x.data))),
+      });
+      if (payOut.refused) {
+        res.status(400).json({ error: { code: payOut.refused.code, message: payOut.refused.message } });
+        return;
+      }
+      res.status(200).json({ ok: true, provisioned: true, data: payOut });
       return;
     }
 
