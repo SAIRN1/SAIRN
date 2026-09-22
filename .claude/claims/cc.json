@@ -2256,6 +2256,19 @@
         "tests/run_defect_register_probe.py",
         "tools/defect_register.py"
       ]
+    },
+    {
+      "id": "cc-1790092394",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "reclassification_sweep sweeps the cwd non-recursively so it has never read the statute corpus and prints a zero tally either way FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-22T15:53:14Z",
+      "claimed_at_epoch": 1790092394.950892,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
