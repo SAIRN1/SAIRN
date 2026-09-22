@@ -10591,39 +10591,6 @@
       "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
     },
     {
-      "commit": "ce835a7e57b3",
-      "date": "2026-09-22",
-      "subject": "fix(sairnlaw): phase 2 completed -- the last three resources authorised by a key shipped to the browser now need a session",
-      "files": [
-        "api/sd-data-law-phase2-session.test.js",
-        "api/sd-data-sairnlaw-resources.test.js",
-        "api/sd-data-session-gate.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/tier-a-reviews.json",
-        "docs/traceability-matrix.md",
-        "tests/app_session_isolation.js"
-      ],
-      "lines_added": 374,
-      "lines_removed": 29,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "injection": {
-        "unknown_reason": "--factors-unknown"
-      },
-      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
-      "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
-      "factors_unknown_reason": "--rule"
-    },
-    {
       "commit": "37bf15fd9811",
       "date": "2026-09-22",
       "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
@@ -10745,6 +10712,36 @@
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
+      "commit": "b3797733c152",
+      "date": "2026-09-22",
+      "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
+      "files": [
+        "api/_lib/deadline-engine.js",
+        "api/_lib/deadline-period-count.test.js"
+      ],
+      "lines_added": 230,
+      "lines_removed": 2,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "api/_lib/deadline-engine.js read Number(x.count.value) at four sites with no check. That coercion maps a real zero, an empty string, null and an empty array all to 0, and zero is a LEGITIMATE count here (Md. Rule 2-311(b) has a zero-count limb), so an absent or malformed period count produced ok:true and a legal deadline ON THE TRIGGER DATE with a detail line reading 'counted 0 calendar days'. A non-numeric count gave NaN, addDays returned an Invalid Date, and that propagated as a date-shaped value nothing downstream questioned. NOT OBSERVED IN LIVE RULE DATA -- the reachability is through a malformed or incomplete rule definition, and no such rule is in the repo today.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/shape_antipattern_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The Number() coercion predates the multi-limb resolver and no commit introduced the gap: the guard was never present at any point in the file's history, so there is no injection commit to cite."
+      },
+      "citation_note": "Adjacent rather than identical: no check ran and reported a pass -- instead a coercion silently produced a value indistinguishable from a valid one, so every downstream check passed honestly on a number that meant nothing. Same family: a could-not-tell folded into an answer.",
+      "phase_note": "The coercion and the absence of any guard were written together; there was never a version of this code that validated the count and then stopped.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
+    },
+    {
       "commit": "cd2662fae046",
       "date": "2026-09-22",
       "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
@@ -10804,6 +10801,39 @@
         }
       ],
       "recurrence_open": "The file set is only as honest as the session that declared it, and making it authoritative rewards under-declaring. The parsed paths are now stored on the claim record so a later pass CAN compare them against what the session actually changed -- but nothing does that comparison yet, and until something does, a claim naming one file while touching ten is invisible. Separately, 774 of 805 claims declare no files and are unaffected by any of this; the convention is one day old and adoption is not enforced anywhere."
+    },
+    {
+      "commit": "ce835a7e57b3",
+      "date": "2026-09-22",
+      "subject": "fix(sairnlaw): phase 2 completed -- the last three resources authorised by a key shipped to the browser now need a session",
+      "files": [
+        "api/sd-data-law-phase2-session.test.js",
+        "api/sd-data-sairnlaw-resources.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/app_session_isolation.js"
+      ],
+      "lines_added": 374,
+      "lines_removed": 29,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js authorised law_clients, law_matters and law_deadlines on the LICENCE KEY ALONE -- no employee session at all. A licence key is shipped to the browser and readable by anyone who can open the app, so the effective authorisation was 'opened the app'. law_matters names the client and the matter; law_clients is the client list. MEASURED BEFORE THE FIX rather than inferred: all SIX pairs (three resources by read and write) answered 200 with no token, against a control where law_invoices/read answered 401 -- so 'open' was established against a gated sibling rather than assumed. THIS WAS A KNOWN, DOCUMENTED RESIDUAL, NOT A DISCOVERY, and that is the honest framing: the rollout comment beside the LAW_RESOURCES table named these three as deliberately deferred because Vercel ships the page and the endpoint together, so flipping them mid-day would fail a staff member with the app already open. The fifteen extended resources were the canary and the written trigger was 'quiet for a full working day'. What made it actionable now is that the canary has been quiet six days AND the client half was confirmed rather than assumed -- sairnlaw.html:1509 sdnData() sets X-SD-Auth on every data call whenever a token exists, not conditionally per resource. FIXED with the same mechanism law_trusttx was flipped with on 2026-09-16: three entries in SD_SESSION_GATED plus three in SD_GATE_APP, six lines. All six pairs now answer 403 FORBIDDEN. A SESSION gate and not a ROLE gate, deliberately -- owner, attorney and paralegal all legitimately work clients, matters and deadlines and all three are driven green. DISCLOSED RATHER THAN TIDIED: the endpoint now answers two codes for one condition, 401 NO_SESSION from the inline gate for the fifteen and 403 FORBIDDEN from the shared gate for these four, widening a pre-existing split from one resource to four; unifying is a client-visible contract change and is recorded rather than decided.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "--factors-unknown"
+      },
+      "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
+      "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
+      "factors_unknown_reason": "--rule"
     }
   ],
   "started": "2026-09-09",
