@@ -1,0 +1,170 @@
+r"""tools/criticality_tier_check.py must handle BOTH tier-table shapes, and must
+refuse the ways the two-axis migration can go wrong.
+
+Run: python tests/run_two_axis_tier_parser_probe.py
+
+WHY A FIXTURE AND NOT THE LIVE FILE. Step 1 of the migration plan
+(docs/2026-09-21-criticality-tiers-two-axis-spec.md §3.4) lands the parser
+BEFORE any row moves, so on the live file every new branch is dead: 387 rows in
+the old shape, 0 migrated. A control that ran only against the live table would
+report a confident pass over code that has never executed -- the exact shape
+this platform keeps recording. Every arm here drives a constructed table
+instead, with the checker pointed at it.
+
+THE ARM THAT MATTERS MOST IS 3. hover2 found, before a single row moved, that
+parse() told a rollup row from a resource row by CELL COUNT -- and the new
+resource shape has six cells, exactly like a rollup. A migrated row would have
+fallen into the rollup branch and had its confidentiality letter read as a
+resource COUNT: a mis-parse, not a crash, so nothing would have said so. The
+fix disambiguates on cell 1's own shape. This arm is what stops that fix being
+quietly undone.
+"""
+import io
+import os
+import re
+import subprocess
+import sys
+import tempfile
+
+REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+                      capture_output=True, text=True).stdout.strip()
+TOOL = os.path.join(REPO, 'tools', 'criticality_tier_check.py')
+
+HEADER = '''# Criticality tiers -- fixture
+
+## Rollup -- one line per app
+
+| App | Registered resources | A | B | C | Status |
+|---|---|---|---|---|---|
+| `fixtureapp` | 2 | **1** | 1 | 0 | **RE-TIERED** -- fixture |
+
+## `fixtureapp` -- all 2 registered resources
+
+'''
+
+OLD_HDR = '| Resource | Tier | Worst consequence if it is wrong | Evidence |\n|---|---|---|---|\n'
+NEW_HDR = ('| Resource | Tier | Confidentiality | Worst consequence if it is wrong or lost '
+           '| Worst consequence if it is read by the wrong person | Evidence |\n'
+           '|---|---|---|---|---|---|\n')
+
+fails = []
+
+
+def check(name, cond, detail=''):
+    print(('  ok   ' if cond else '  FAIL ') + name
+          + ('' if cond else '\n         ' + str(detail)[:400]))
+    if not cond:
+        fails.append(name)
+
+
+def run(table_body, header):
+    """Point the checker at a constructed register and return its output."""
+    d = tempfile.mkdtemp(prefix='sairn-2axis-')
+    path = os.path.join(d, 'CRITICALITY-TIERS.md')
+    io.open(path, 'w', encoding='utf-8', newline='\n').write(HEADER + header + table_body)
+    env = dict(os.environ, SAIRN_TIER_REGISTER=path)
+    r = subprocess.run([sys.executable, TOOL], capture_output=True, text=True,
+                       cwd=REPO, env=env)
+    return (r.stdout or '') + (r.stderr or '')
+
+
+print('two-axis tier parser -- both shapes, and the ways the migration breaks\n')
+
+# The checker resolves its register path at import time; if it does not honour
+# an override this probe cannot drive it at all, and that is COULD NOT RUN
+# rather than a pass.
+src = io.open(TOOL, encoding='utf-8').read()
+if 'SAIRN_TIER_REGISTER' not in src:
+    print('COULD NOT RUN: tools/criticality_tier_check.py has no register override, '
+          'so this probe cannot point it at a fixture. Nothing was verified.')
+    sys.exit(3)
+
+OLD_ROWS = ('| `alpha_one` | **A** | money moves wrongly | Evidence for alpha |\n'
+            '| `alpha_two` | **B** | operational data lost | rule |\n')
+NEW_ROWS = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a competitor '
+            '| Evidence for alpha |\n'
+            '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+
+# ── WHAT THESE ARMS ASSERT, AND WHAT THEY DELIBERATELY DO NOT ─────────
+# A constructed table names an app that has no api/_resources/*.js, so the
+# app-vs-registry checks (NO ROLLUP / GONE / NOT A RESOURCE) fire on every
+# fixture by construction. Asserting PROBLEMS:0 here would be asserting that a
+# synthetic app is a real one -- the first spelling of these arms did exactly
+# that and failed for a reason that had nothing to do with the parser.
+# What is asserted instead is the PARSER's own output: how many resource rows
+# it found, how many it read as migrated, and the ABSENCE of the specific
+# row-level problem classes this change introduces.
+ROW_PROBLEMS = ('BAD TIER', 'BAD CONFIDENTIALITY', 'COMPUTED TIER MISMATCH',
+                'NO EVIDENCE', 'NO WORST CASE')
+
+
+def row_problems(out):
+    return [k for k in ROW_PROBLEMS if k in out]
+
+
+out = run(OLD_ROWS, OLD_HDR)
+check('1. the OLD four-cell shape still parses and raises no row-level problem',
+      'RESOURCE_ROWS:2' in out and not row_problems(out),
+      'row problems: %s\n%s' % (row_problems(out), out[-400:]))
+check('   ...and reports 0 of 2 migrated, so a partial migration is visible',
+      'ROWS_MIGRATED_TWO_AXIS:0 of 2' in out, out[-300:])
+
+out = run(NEW_ROWS, NEW_HDR)
+check('2. the NEW six-cell shape parses, raises no row-level problem, and counts '
+      'as migrated',
+      'ROWS_MIGRATED_TWO_AXIS:2 of 2' in out and not row_problems(out),
+      'row problems: %s\n%s' % (row_problems(out), out[-400:]))
+
+# ── 3. the mis-parse hover2 found before a row moved ──────────────────────
+# If a six-cell RESOURCE row fell into the rollup branch it would not be
+# counted as a resource row at all -- RESOURCE_ROWS would drop and the migrated
+# count would be 0. Both numbers together are the assertion; either alone could
+# be satisfied by the wrong parse.
+out = run(NEW_ROWS, NEW_HDR)
+check('3. a migrated six-cell resource row is NOT swallowed by the rollup branch',
+      'RESOURCE_ROWS:2' in out and 'ROWS_MIGRATED_TWO_AXIS:2 of 2' in out,
+      'a six-cell resource row was read as a rollup line: ' + out[-400:])
+
+# ── 4. the derived tier is cross-checked, not trusted ─────────────────────
+MISMATCH = ('| `alpha_one` | **B** | **A** | money moves wrongly | read by a competitor '
+            '| Evidence for alpha |\n'
+            '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(MISMATCH, NEW_HDR)
+check('4. Tier B beside Confidentiality A is REFUSED -- the tier is derived',
+      'COMPUTED TIER MISMATCH' in out and 'PROBLEMS:0' not in out, out[-400:])
+
+# ── 5. evidence is required per axis ──────────────────────────────────────
+NOEV = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a competitor |  |\n'
+        '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(NOEV, NEW_HDR)
+check('5. Confidentiality-A with an empty evidence cell is REFUSED',
+      'NO EVIDENCE' in out, out[-400:])
+
+# ── 6. an unanswered read-axis is not a low one ───────────────────────────
+NOREAD = ('| `alpha_one` | **A** | **A** | money moves wrongly |  | Evidence for alpha |\n'
+          '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(NOREAD, NEW_HDR)
+check('6. a migrated row with an EMPTY read-consequence is REFUSED, because an '
+      'unanswered axis is not a low one',
+      'NO WORST CASE (read)' in out, out[-400:])
+
+# ── 7. a nonsense confidentiality letter is refused rather than coerced ───
+BADC = ('| `alpha_one` | **A** | **X** | money moves wrongly | read by a competitor '
+        '| Evidence for alpha |\n'
+        '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated | rule |\n')
+out = run(BADC, NEW_HDR)
+check('7. a confidentiality letter outside A/B/C is REFUSED',
+      'BAD CONFIDENTIALITY' in out or 'RESOURCE_ROWS:1' in out, out[-400:])
+
+# ── 8. MIXED shapes coexist, which is the whole point of step 1 ───────────
+MIXED = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a competitor '
+         '| Evidence for alpha |\n'
+         '| `alpha_two` | **B** | operational data lost | rule |\n')
+out = run(MIXED, NEW_HDR)
+check('8. one migrated row and one not-yet-migrated row coexist and BOTH parse',
+      'RESOURCE_ROWS:2' in out and 'ROWS_MIGRATED_TWO_AXIS:1 of 2' in out, out[-400:])
+
+print('\n%d failure(s)' % len(fails))
+for f in fails:
+    print('  - ' + f)
+sys.exit(1 if fails else 0)

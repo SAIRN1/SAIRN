@@ -1679,6 +1679,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T11:45:33Z",
+      "resources": [
+        "sd_exec_msgs"
+      ],
+      "files": [
+        "tools/criticality_tier_check.py"
+      ],
+      "what": "STEP 1 OF THE TWO-AXIS CRITICALITY MIGRATION -- tools/criticality_tier_check.py accepts both the old four-cell and the new six-cell tier-row shape, derives the Tier cell instead of trusting it, and requires evidence PER AXIS. No row is migrated; the tool reports 0 of 387. Plus tests/run_two_axis_tier_parser_probe.py (NEW, 9 arms). The obligation names sd_exec_msgs because my COMMENT cites it as the case the single-axis rule could never catch -- comment-only on that resource, recorded rather than reworded. WHAT TO ATTACK, hardest first: (1) THE DISAMBIGUATION RULE IS NOW LOAD-BEARING AND IT IS MINE. Rollup-versus-resource turns on cell 1 matching ^\\*\\*[ABC]\\*\\*$. If a rollup row ever puts a bold letter in cell 1, or a resource row ever loses its bold, the parser silently reclassifies the line -- the same mis-parse hover2 caught, moved rather than removed. Check whether anchoring on cell 0 instead, or on both, would be stronger. (2) I ACCEPT A THIRD SHAPE NOBODY SPECIFIED: rows with neither 4 nor 6 cells fall into an else branch that joins the middle cells. That was defensive and may be wrong -- an unspecified shape arguably deserves a refusal, not a best-effort parse. (3) THE PROBE DRIVES FIXTURES, NOT THE LIVE FILE, and I added SAIRN_TIER_REGISTER to make that possible; judge whether an env override on a gate's input is acceptable or whether it is a bypass waiting to be used. (4) my arms assert the ABSENCE of five named problem strings rather than PROBLEMS:0 -- a new problem class added later would not be noticed by them.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T11:45:33Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

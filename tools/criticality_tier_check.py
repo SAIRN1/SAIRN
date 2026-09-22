@@ -41,7 +41,14 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
+# SAIRN_TIER_REGISTER points this at a constructed table instead of the live
+# one. Added 2026-09-22 so the two-axis parser can be DRIVEN: step 1 of the
+# migration lands the parser before any row moves, so on the live file every
+# new branch is dead code and a control run against it would report a
+# confident pass over something that never executed. Not a behaviour switch
+# -- the same code runs, against a different table.
+REGISTER = os.environ.get('SAIRN_TIER_REGISTER') or os.path.join(
+    REPO, 'docs', 'CRITICALITY-TIERS.md')
 RESOURCES = os.path.join(REPO, 'api', '_resources')
 VALID_TIERS = ('A', 'B', 'C')
 
@@ -170,26 +177,66 @@ def resource_names(path):
     return names, None
 
 
+# A resource row's cell 1 is a BOLD TIER LETTER; a rollup row's is a bare
+# integer. That difference -- not the column count -- is what tells the two
+# apart from 2026-09-22 onward.
+RESOURCE_CELL1 = re.compile(r'^\*\*([ABC])\*\*$')
+
+
 def parse():
-    """(rollup, resource_rows). Rollup rows have 6 cells and a backticked app in
-    cell 0; resource rows have 4 and a backticked name. Anchored on shape AND on
-    the backtick so the TIER LEGEND above -- same column count -- is not read as
-    data. Counting columns alone would have swallowed it."""
+    """(rollup, resource_rows). Anchored on CELL SHAPE, not on column count.
+
+    ── WHY NOT COLUMN COUNT ANY MORE (2026-09-22) ──────────────────────
+    This told a rollup row from a resource row by `len(c) == 6` versus
+    `len(c) == 4`. The two-axis migration
+    (docs/2026-09-21-criticality-tiers-two-axis-spec.md) grows resource rows to
+    SIX cells as well -- Resource | Tier | Confidentiality | worst-if-wrong |
+    worst-if-read | Evidence -- so the moment one row migrates it becomes
+    indistinguishable by count from a rollup line, falls into the rollup
+    branch, and has its confidentiality letter read as a resource COUNT. A
+    mis-parse, not a crash: nothing would say so.
+
+    hover2 found that before a single row moved, which is the only reason it is
+    being fixed rather than discovered. It is the same shape CLAUDE.md's PR
+    1.11 names -- a check reporting a pass it never performed -- arriving
+    through a parser instead of a gate.
+
+    The data already carried the distinguishing signal: cell 1 is `**A**` on a
+    resource row and a bare integer on a rollup row, in BOTH the old and new
+    shapes, because the spec deliberately keeps the tier in column 2 so the
+    three regex-based consumers of this file keep working unchanged.
+
+    BOTH SHAPES ARE ACCEPTED DURING THE MIGRATION, deliberately. A hard cutover
+    on a 387-row hand-edited file is the one-atomic-unreviewable-diff this
+    platform's own precedent says not to land. A row that has not migrated
+    yields confidentiality None, which every new check below treats as
+    not-yet-answered rather than as a pass.
+    """
     src = io.open(REGISTER, encoding='utf-8').read()
     rollup, rows = {}, []
     for line in src.split('\n'):
         if not line.startswith('|'):
             continue
         c = cells(line)
-        if len(c) == 6:
-            m = re.match(r'^`([\w.-]+)`$', c[0])
-            if m:
-                rollup[m.group(1)] = {
-                    'n': c[1], 'a': c[2], 'b': c[3], 'c': c[4], 'status': c[5]}
-        elif len(c) == 4:
-            m = re.match(r'^`([\w.-]+)`$', c[0])
-            if m:
-                rows.append((m.group(1), re.sub(r'[*`]', '', c[1]).strip(), c[2], c[3]))
+        m = re.match(r'^`([\w.-]+)`$', c[0]) if c else None
+        if not m:
+            continue
+        name = m.group(1)
+        if len(c) >= 2 and RESOURCE_CELL1.match(c[1].strip()):
+            tier = re.sub(r'[*`]', '', c[1]).strip()
+            if len(c) == 6:
+                conf = re.sub(r'[*`]', '', c[2]).strip()
+                rows.append((name, tier, conf, c[3], c[4], c[5]))
+            elif len(c) == 4:
+                # Pre-migration shape. `None` for confidentiality is NOT `B` --
+                # an unanswered axis and a low one are different facts and are
+                # reported differently below.
+                rows.append((name, tier, None, c[2], '', c[3]))
+            else:
+                rows.append((name, tier, None, ' '.join(c[2:-1]), '', c[-1]))
+        elif len(c) == 6:
+            rollup[name] = {
+                'n': c[1], 'a': c[2], 'b': c[3], 'c': c[4], 'status': c[5]}
     return rollup, rows
 
 
@@ -242,7 +289,8 @@ def main(argv):
     all_registered = set()
     for names in reg.values():
         all_registered |= names
-    for name, tier, worst, ev in rows:
+    migrated = 0
+    for name, tier, conf, worst, worst_read, ev in rows:
         if name not in all_registered:
             problems.append('NOT A RESOURCE  %s has a row and is not registered in any '
                             'api/_resources/*.js. The unit of this table is the registry.'
@@ -259,6 +307,43 @@ def main(argv):
         if tier == 'A' and not ev:
             problems.append('NO EVIDENCE  %s is Tier A with an empty evidence cell -- '
                             'that is a label, not a tier.' % name)
+        if conf is None:
+            continue                      # not migrated yet; nothing below applies
+        migrated += 1
+        if conf not in VALID_TIERS:
+            problems.append('BAD CONFIDENTIALITY  %s has confidentiality %r, not one '
+                            'of %s' % (name, conf, '/'.join(VALID_TIERS)))
+            continue
+        # ── THE TIER CELL IS DERIVED, NEVER HAND-ENTERED ────────────────
+        # Tier = max(Confidentiality, Integrity/Availability) on the register's
+        # own A > B > C worst-consequence order. This is the same principle the
+        # rollup cross-check below already applies to a computed TABLE, now
+        # applied to a computed CELL: a summary that disagrees with its own
+        # detail is worse than no summary. It catches exactly what a human
+        # free-typing three letters into adjacent cells gets wrong -- raising
+        # one axis and forgetting to bump the derived column.
+        # A < B < C alphabetically IS the severity order here, so the worst
+        # of the two axes is simply the smaller letter. Written as min()
+        # over the pair rather than an if-ladder so a third axis, if one is
+        # ever earned, is one list entry rather than a rewrite.
+        computed = min([tier, conf])
+        if tier != computed:
+            problems.append('COMPUTED TIER MISMATCH  %s states Tier %s but '
+                            'Confidentiality=%s / Integrity-Availability=%s computes '
+                            'to %s. The Tier cell is derived, never hand-entered.'
+                            % (name, tier, conf, tier, computed))
+        # ── EVIDENCE IS REQUIRED PER AXIS, WHICH IS THE POINT OF THE SPLIT ──
+        # Under the single-axis rule sd_exec_msgs never triggered the evidence
+        # requirement at all: it was scored B, and B rows are classified by the
+        # stated rule rather than individually read. The gap was not a missing
+        # rule, it was a missing AXIS for the existing rule to apply to.
+        if conf == 'A' and not ev:
+            problems.append('NO EVIDENCE (confidentiality)  %s is Confidentiality-A '
+                            'with an empty evidence cell.' % name)
+        if not worst_read:
+            problems.append('NO WORST CASE (read)  %s is migrated but states no '
+                            'consequence for being read by the wrong person. An empty '
+                            'cell is an unanswered axis, not a low one.' % name)
 
     if not quiet:
         for p in problems:
@@ -266,6 +351,9 @@ def main(argv):
         print('')
         print('APPS_WITH_REGISTRIES:%d' % len(reg))
         print('RESOURCES_REGISTERED:%d' % len(all_registered))
+        # Printed so a partial migration is VISIBLE rather than inferred --
+        # the same reason the file's own NOT YET RE-TIERED status exists.
+        print('ROWS_MIGRATED_TWO_AXIS:%d of %d' % (migrated, len(rows)))
         print('RESOURCE_ROWS:%d' % len(rows))
         print('RETIERED_APPS:%d' % sum(
             1 for a in rollup if 'NOT YET RE-TIERED' not in rollup[a]['status']))
