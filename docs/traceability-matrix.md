@@ -190,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; The hover self-health SessionStart hook was registered by ABSOLUTE PATH into ONE clone, so the SECOND auditor self-checked the FIRST one&rsquo;s log on every firing and its own was never checked at all** | **FIXED 2026-09-22 (Hank)** &mdash; `tools/hover_self_health_shim.py` (NEW) + `tests/run_hover_self_health_shim_probe.py` (NEW, 8 arms). **One residual is hover2&rsquo;s to close, named below** | `tests/run_hover_self_health_shim_probe.py` |
 | **&#128308; `rf_claim_agreements` is the SAIRNcare `alf_claim_routes` defect again, both halves &mdash; an append-only chain of executed/rescinded contingency-agreement events, no server `order=`, no client sort, and `created_at` rendered DATE-ONLY** | **FOUND 2026-09-22 (Hank)** by the cross-app scan the SAIRNcare fix left as an open item. **NOT FIXED** &mdash; `api/sd-data.js` is held by cody (sairnsenior EVV) and the display half alone leaves the | `tests/run_append_only_read_order_probe.py` |
 | **&#9989; Two hover tools refused outright for BOTH sessions the moment a second hover instance existed &mdash; a self-inflicted split-brain caused by the throughput fix that was wanted** | **FIXED 2026-09-22 (Fourth)** &mdash; `tools/hover_separation_audit.py` and `tools/hover_process_pass_freshness.py`. Designed, driven and proposed by **hover2**; applied from the build side | `tests/run_hover_separation_probe.py` |
 | **The separation audit reported **1 SEPARATION VIOLATION** against hover1 and it was a FALSE POSITIVE &mdash; the attribution regex could not tell hover QUOTING somebody else&rsquo;s &ldquo;pushed &lt;sha&gt;&rdquo; from hover claiming its own** | **FIXED 2026-09-22 (Fourth)** &mdash; `467baf74`; probe 95/95 (was 81), live audit no longer reports it. **NOT SETTLED &mdash; flagged to hover1 and hover2 for independent review, and a Tier A obligat | `tests/run_hover_separation_probe.py` |
@@ -628,8 +629,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 308 |
-| `declared` | 253 |
-| `declared+index` | 42 |
+| `declared` | 252 |
+| `declared+index` | 43 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -746,7 +747,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 692   tests/**, api/** (both walked)
-  open-work rows citing a test       342   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       343   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
