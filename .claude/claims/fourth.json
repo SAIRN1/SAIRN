@@ -1981,6 +1981,20 @@
       "status": "released",
       "released_at": "2026-09-22T11:27:56Z",
       "files": null
+    },
+    {
+      "id": "fourth-1790077810",
+      "session": "fourth",
+      "subject": "hover-attribution",
+      "task": "OWN_COMMIT_RE attribution fix -- a quoted sha the auditor CITED is counted as one it CLAIMS FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
+      "claimed_at": "2026-09-22T11:50:10Z",
+      "claimed_at_epoch": 1790077810.4688098,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_separation_audit.py"
+      ]
     }
   ]
 }
