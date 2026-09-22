@@ -2453,8 +2453,8 @@
       "task": "tla formal verification model check role gates",
       "claimed_at": "2026-09-22T10:05:58Z",
       "claimed_at_epoch": 1790071558.798492,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:18:05Z",
       "files": null
     }
   ]
