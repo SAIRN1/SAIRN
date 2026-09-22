@@ -2567,8 +2567,8 @@
       "task": "discharge fourth 2026-09-22T12:01:35Z obligation -- review OWN/CITED/DISPUTED attribution at current HEAD including the 5b145fd6 follow-up. Review-only, no edits. FILES: docs/tier-a-reviews.json -- reads tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
       "claimed_at": "2026-09-22T14:35:30Z",
       "claimed_at_epoch": 1790087730.7302618,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T14:46:34Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
