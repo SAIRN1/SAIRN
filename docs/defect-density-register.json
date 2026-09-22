@@ -10451,6 +10451,52 @@
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     },
     {
+      "commit": "63f6a4a0ee1a",
+      "date": "2026-09-22",
+      "subject": "fix(controls): two literal BACKSPACE bytes where \\b was meant -- arm 5b was passing vacuously",
+      "files": [
+        "tests/confidentiality_flagger_asymmetry_review_probe.py"
+      ],
+      "lines_added": 1,
+      "lines_removed": 1,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tests/confidentiality_flagger_asymmetry_review_probe.py carried two raw 0x08 BACKSPACE bytes where regex word boundaries were meant, so the keyword-count pattern could never match, the count was always zero, and arm 5b passed vacuously on any input -- including the lexer desync it was written to detect. Caught by the control-character push gate, not by the author.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "66922f2a0965",
+        "date": "2026-09-22",
+        "subject": "fix(flagger): client_restricted() asks what the gate is ATTACHED to, not what is nearby -- and two fail-open bugs the fix itself introduced",
+        "lag_days": 0
+      },
+      "citation_note": "1.1 is a check that stopped checking, which is exactly this: the arm ran, exited green, and tested nothing. Clean citation.",
+      "phase_note": "Design. Each piece did what its stated rule said; the rule was the wrong question -- proximity standing in for attachment.",
+      "contributing_factors": [
+        {
+          "factor": "The line was built through a shell heredoc and one level of backslash escaping was consumed, leaving a raw 0x08 byte where a regex word boundary was meant.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Rebuilt with chr(92), which is what the gate's own message prescribes."
+        },
+        {
+          "factor": "The arm still PASSED with the broken pattern: the keyword count was always 0, so the ratio was len(spans)/1 and the comparison succeeded on any input -- including the lexer desync the arm exists to detect.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Confirmed by comparing against a separate measurement script that had a correct word boundary throughout: 0.59 minimum ratio both ways after the fix."
+        }
+      ],
+      "recurrence_open": "Nothing stops the same heredoc from eating the next backslash; the push gate is the only thing that catches it, and it catches the BYTE rather than the vacuous pass. An arm whose pattern silently stops matching still reports green, and no check measures whether an arm's regex matched anything at all."
+    },
+    {
       "commit": "04412beed2a4",
       "date": "2026-09-22",
       "subject": "fix(stonedesk): \"First-Pass Approval: 100%\" was a constant, and two fabrication sweeps each stopped one tile short of it",
@@ -10876,6 +10922,59 @@
       "recurrence_open": "The two suppression signals are not shown to be independent -- they agreed exactly once in 415 entries and disagreed never, which is one data point, not a measurement. And there is exactly ONE real citation-shaped match on this platform, so the criteria are locked against synthetic fixtures rather than validated against a population. A citation phrased without a quotation and without a ref entry is still classified OWN and would still produce a false violation."
     },
     {
+      "commit": "4be7aa8978ff",
+      "date": "2026-09-22",
+      "subject": "fix(sairnlaw): the trust panel said \"all three balances match\" from one leg that CANNOT fail and one that was never made",
+      "files": [
+        "sairnlaw.html",
+        "tests/law_trust_reconcile_wiring_probe.py"
+      ],
+      "lines_added": 438,
+      "lines_removed": 25,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairnlaw.html trust panel rendered 'Reconciled -- all three balances match' on IOLTA client trust money from a verdict that could not fail. reconcileTrust() computed ledgerVsClient by comparing a ledger total against a per-client sum that PARTITIONS THE SAME ARRAY -- including the rows with no client_id, which form their own group and are summed like any other -- so leg one was a tautology disturbed only by float summation order. ledgerVsBank was null until a bank statement was entered and matches read null as agreement, so a firm that had never entered a statement saw a green THREE-WAY verdict with no third leg and no falsifiable second one. The dashboard suppressed its Trust Alert on the same value, reporting 'Nothing needs attention' precisely when nothing had been checked. api/_lib/law-trust-reconcile.js -- the correct reconciler, written to replace exactly this function and naming it by line number -- existed and was never called: the only occurrence of 'law_trust_reconcile' in the app was a code comment.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tautological reconcileTrust() predates the reconciler that replaced it; git log -S on ledgerVsClient would name a commit, but the DEFECT is the pair (tautology retained + replacement unwired) and the second half has no single introducing commit -- api/_lib/law-trust-reconcile.js was added correct and simply never called."
+      },
+      "citation_note": "PR 1.11 is the nearest standing rule (a check reporting a pass it never performed) but it is about a check failing OPEN when a dependency is absent. This is a verdict that is arithmetically incapable of the value it claims to test for, plus a correct replacement that shipped unwired. The fabricated-KPI rule is about numbers with no function behind them; this is a BOOLEAN with a function behind it that can only return true.",
+      "contributing_factors": [
+        {
+          "factor": "A unit test on the engine cannot see an absent caller. tests/law_trust_reconcile_probe.py was GREEN the whole time the panel was broken",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/law_trust_reconcile_wiring_probe.py added -- 13 arms, 4 of which mutate a copy to put the defect back and assert the probe refuses it"
+        },
+        {
+          "factor": "The verdict was computed from two quantities derived from one array, so no test data could ever make it false",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The verdict is now the server engine status; the client function is renamed trustFigures() and returns figures only -- the rename makes a missed caller throw instead of reading a stale matches"
+        },
+        {
+          "factor": "null was read as agreement. An uncompared leg and an agreeing leg were the same value",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The server engine refuses a single boolean and returns AGREES/DISAGREES/PARTIAL/CANNOT_RECONCILE; the UI adds UNAVAILABLE and none of the four non-AGREES states renders as agreement"
+        },
+        {
+          "factor": "A correct replacement was built and the wiring was left for later, with nothing recording that it was outstanding",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Not closed here. The general question -- what records that a built engine has no caller -- is wider than this resource. cc had already found this specific instance and logged it as a review obligation rather than a defect; that routing is what left it open."
+        }
+      ],
+      "recurrence_open": "The wiring probe covers THIS engine. Nothing enumerates the other api/_lib/ engines to ask which of them have no caller, and that is the class rather than the instance."
+    },
+    {
       "commit": "5b145fd6a3a5",
       "date": "2026-09-22",
       "subject": "fix(hover): a log quoting ITSELF satisfied both suppression signals -- the quote signal now requires speaker ATTRIBUTION",
@@ -10976,6 +11075,59 @@
         }
       ],
       "recurrence_open": "The actions close THIS narrowing. They do not close the general shape: any other consumer of the register that anchors on the valid vocabulary rather than on row structure can lose a row the same way, and nothing enumerates those consumers."
+    },
+    {
+      "commit": "e0a52dc8925d",
+      "date": "2026-09-22",
+      "subject": "fix(flagger): client_restricted() asks what the gate is ATTACHED to, not what is nearby -- and two fail-open bugs the fix itself introduced",
+      "files": [
+        "tests/confidentiality_flagger_asymmetry_review_probe.py",
+        "tools/confidentiality_candidate_flagger.py"
+      ],
+      "lines_added": 638,
+      "lines_removed": 329,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/confidentiality_candidate_flagger.py client_restricted() measured PROXIMITY rather than ownership -- the same defect its sibling payload_fields() had already been rewritten to remove, surviving because the first fix was scoped to the coordinate rather than the shape. Both of the signal's two outputs on a 288-row corpus rested on evidence that could not establish them: one read a block comment, the other a KPI tile counting a record's `role` column. Fixed by asking what the gate is attached to -- comments stripped, same function body by brace balance, record columns excluded -- plus a measured size ceiling above which the answer is a could-not-tell.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "fa419d4d8580",
+        "date": "2026-09-22",
+        "subject": "feat(criticality): the confidentiality candidate flagger -- both of its signals measured PROXIMITY and both were wrong",
+        "lag_days": 0
+      },
+      "citation_note": "Same citation as the sibling defect: the pattern could not tell the code from the text describing it, nor a session role from a record's role column. Arguable rather than clean -- 1.2's worked example is code-vs-comment and half of this is column-vs-session.",
+      "phase_note": "Design. Each piece did what its stated rule said; the rule was the wrong question -- proximity standing in for attachment.",
+      "contributing_factors": [
+        {
+          "factor": "client_restricted() kept the 400-character proximity window after the payload signal was rewritten away from it, and its own comment defended the window by citing that sibling -- a justification whose premise had already stopped holding.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Comments blanked before searching; gate and resource name required in the SAME function body, found by brace balance; `<expr>.role ===` treated as a record column."
+        },
+        {
+          "factor": "Only ONE of two sibling functions was fixed when the proximity defect was first found. The fix was scoped to the coordinate where the defect was noticed rather than to the shape, so the same defect survived next door with a comment pointing at the fixed sibling as its justification.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Named as sairn-code-scrubber item 24 with all instances dated, and the surviving sibling fixed here."
+        },
+        {
+          "factor": "self_test() locked payload_fields() only. The signal the file's own docstring calls 'the one worth having' had no fixture at all, and the docstring claimed six cases covered 'both defect shapes' when both shapes were in the same coordinate.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Five client-gate fixtures added in both directions, all from the real measured shapes, plus tests/confidentiality_flagger_asymmetry_review_probe.py re-aimed from a review artefact into a 16-arm regression control."
+        }
+      ],
+      "recurrence_open": "FUNCTION_BODY_CEILING is a number in a file with NO re-measurement cadence. It was chosen from a measured bimodal distribution (p90 7,549 / p95 41,579 / cliff at 403,966) rather than taste, but nothing announces the day it stops sitting in that gap as the apps grow. And script_only() splits HTML from JS with a regex on <script> tags: a script tag inside a string, or an unclosed tag, would mis-split and only the bodies-to-keywords ratio in the controls would notice. There is no fixture for that shape."
     },
     {
       "commit": "6fb6d696489c",
@@ -11130,59 +11282,6 @@
       "citation_note": "Adjacent rather than identical: no check ran and reported a pass -- instead a coercion silently produced a value indistinguishable from a valid one, so every downstream check passed honestly on a number that meant nothing. Same family: a could-not-tell folded into an answer.",
       "phase_note": "The coercion and the absence of any guard were written together; there was never a version of this code that validated the count and then stopped.",
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
-    },
-    {
-      "commit": "4be7aa8978ff",
-      "date": "2026-09-22",
-      "subject": "fix(sairnlaw): the trust panel said \"all three balances match\" from one leg that CANNOT fail and one that was never made",
-      "files": [
-        "sairnlaw.html",
-        "tests/law_trust_reconcile_wiring_probe.py"
-      ],
-      "lines_added": 438,
-      "lines_removed": 25,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "code-review",
-      "summary": "sairnlaw.html trust panel rendered 'Reconciled -- all three balances match' on IOLTA client trust money from a verdict that could not fail. reconcileTrust() computed ledgerVsClient by comparing a ledger total against a per-client sum that PARTITIONS THE SAME ARRAY -- including the rows with no client_id, which form their own group and are summed like any other -- so leg one was a tautology disturbed only by float summation order. ledgerVsBank was null until a bank statement was entered and matches read null as agreement, so a firm that had never entered a statement saw a green THREE-WAY verdict with no third leg and no falsifiable second one. The dashboard suppressed its Trust Alert on the same value, reporting 'Nothing needs attention' precisely when nothing had been checked. api/_lib/law-trust-reconcile.js -- the correct reconciler, written to replace exactly this function and naming it by line number -- existed and was never called: the only occurrence of 'law_trust_reconcile' in the app was a code comment.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The tautological reconcileTrust() predates the reconciler that replaced it; git log -S on ledgerVsClient would name a commit, but the DEFECT is the pair (tautology retained + replacement unwired) and the second half has no single introducing commit -- api/_lib/law-trust-reconcile.js was added correct and simply never called."
-      },
-      "citation_note": "PR 1.11 is the nearest standing rule (a check reporting a pass it never performed) but it is about a check failing OPEN when a dependency is absent. This is a verdict that is arithmetically incapable of the value it claims to test for, plus a correct replacement that shipped unwired. The fabricated-KPI rule is about numbers with no function behind them; this is a BOOLEAN with a function behind it that can only return true.",
-      "contributing_factors": [
-        {
-          "factor": "A unit test on the engine cannot see an absent caller. tests/law_trust_reconcile_probe.py was GREEN the whole time the panel was broken",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/law_trust_reconcile_wiring_probe.py added -- 13 arms, 4 of which mutate a copy to put the defect back and assert the probe refuses it"
-        },
-        {
-          "factor": "The verdict was computed from two quantities derived from one array, so no test data could ever make it false",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The verdict is now the server engine status; the client function is renamed trustFigures() and returns figures only -- the rename makes a missed caller throw instead of reading a stale matches"
-        },
-        {
-          "factor": "null was read as agreement. An uncompared leg and an agreeing leg were the same value",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The server engine refuses a single boolean and returns AGREES/DISAGREES/PARTIAL/CANNOT_RECONCILE; the UI adds UNAVAILABLE and none of the four non-AGREES states renders as agreement"
-        },
-        {
-          "factor": "A correct replacement was built and the wiring was left for later, with nothing recording that it was outstanding",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Not closed here. The general question -- what records that a built engine has no caller -- is wider than this resource. cc had already found this specific instance and logged it as a review obligation rather than a defect; that routing is what left it open."
-        }
-      ],
-      "recurrence_open": "The wiring probe covers THIS engine. Nothing enumerates the other api/_lib/ engines to ask which of them have no caller, and that is the class rather than the instance."
     },
     {
       "commit": "cd2662fae046",
