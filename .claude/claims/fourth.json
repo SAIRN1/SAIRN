@@ -2009,6 +2009,19 @@
         "tests/run_sairn_status_probe.py",
         "tools/sairn_status.py"
       ]
+    },
+    {
+      "id": "fourth-1790082553",
+      "session": "fourth",
+      "subject": "tooling-review",
+      "task": "confidentiality candidate flagger review discharge cody 12:33:51Z FILES: tools/confidentiality_candidate_flagger.py",
+      "claimed_at": "2026-09-22T13:09:13Z",
+      "claimed_at_epoch": 1790082553.345204,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/confidentiality_candidate_flagger.py"
+      ]
     }
   ]
 }
