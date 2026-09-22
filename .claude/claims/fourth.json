@@ -1895,6 +1895,16 @@
       "claimed_at_epoch": 1790065996.1230726,
       "status": "released",
       "released_at": "2026-09-22T09:06:47Z"
+    },
+    {
+      "id": "fourth-1790068049",
+      "session": "fourth",
+      "subject": "criticality-tier-three-corrections",
+      "task": "FILES: docs/CRITICALITY-TIERS.md -- move exec_context, law_portalmessages and sv_soapnotes from B to A, each with its reason, and re-derive the A/B/C counts from the table rather than trusting its prose. hank released criticality-tiers at 08:41:54Z after landing rf_draws/bld_draws/law_pimedical.",
+      "claimed_at": "2026-09-22T09:07:29Z",
+      "claimed_at_epoch": 1790068049.6101074,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
