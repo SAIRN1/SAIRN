@@ -2228,6 +2228,20 @@
         "stonedesk.html",
         "tests/material_risk_engine.js"
       ]
+    },
+    {
+      "id": "cc-1790086922",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "render the 0072 unmatched-material list where a shop can see it FILES: stonedesk.html tests/material_risk_engine.js",
+      "claimed_at": "2026-09-22T14:22:02Z",
+      "claimed_at_epoch": 1790086922.3755763,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html",
+        "tests/material_risk_engine.js"
+      ]
     }
   ]
 }
