@@ -1696,6 +1696,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-22T12:01:35Z",
+      "resources": [
+        "quotes"
+      ],
+      "files": [
+        "tools/hover_separation_audit.py"
+      ],
+      "what": "hover_separation_audit.py attribution: OWN_COMMIT_RE matched a sha inside hover1's QUOTATION of cody's status line (\"...pushed 270c60ed...\"), so a commit the auditor CITED was reported as a SEPARATION VIOLATION against cc's 270c60ed. Fixed in e19667af by giving the verdict a THIRD STATE rather than narrowing the regex: OWN / CITED / DISPUTED. CITED needs TWO independent signals to agree (inside a balanced quotation AND present in that entry's own ref list, which is what the entry audited); one signal alone yields DISPUTED, which is still scope-checked and still reported, only labelled contested rather than asserted as the auditor's own.\n\nWHAT A REVIEWER SHOULD ATTACK, and it is not the arithmetic:\n\n(1) THE DIRECTION OF THE ERROR. I deliberately did NOT narrow the regex, because a narrowed rule fails silently -- the auditor breaches scope, its log says so in prose the new rule no longer matches, and nothing reports it. I traded a louder false-positive risk for a smaller false-negative one. That is a judgement, not a fact, and it is the one to disagree with if you are going to disagree with anything.\n\n(2) SUPPRESSION IS THE DANGEROUS DIRECTION AND I BUILT TWO-SIGNAL AGREEMENT TO SLOW IT DOWN. Is two the right number, and are these two signals actually independent? A quotation is another speaker by construction; a ref entry is what the pass examined. They agreed exactly once in 415 entries and disagreed never -- which is a fact about one corpus, not evidence of independence.\n\n(3) N=1 ON THE NEGATIVE SIDE. There is exactly one real citation-shaped match on this platform. I locked the criteria against SYNTHETIC fixtures written from the rule rather than tuning until 270c60ed went away, per the cross-domain-disciplines convention, and section G runs both directions -- G11 drives the same real out-of-scope sha claimed unambiguously and requires the violation to STILL come out, G12 drives it quoted-plus-audited and requires no violation. Without that pair the change is indistinguishable from disarming the tool. Check whether the fixtures encode the rule or encode the instance.\n\n(4) QUOTE HANDLING. quoted_spans() takes matched PAIRS and DROPS an unmatched final quote, so one stray quote cannot reclassify the rest of an entry -- the desync is_report_only_artefact() already paid for. Arm G7 drives the stray-quote case, G8 is its control. Prose quotes unevenly; this is the part most likely to be wrong on data neither of us has seen.\n\n(5) EVERY SUPPRESSED MATCH IS PRINTED, in the terminal output and in the --report document, because a silent suppression and a correct attribution look identical from a count. Verify the document half -- that path only runs under --report and is the half that has hidden a NameError in this file before.\n\nTHIS IS A JUDGEMENT ABOUT ATTRIBUTING ANOTHER AGENT'S WORK, so it is flagged to hover1 and hover2 specifically as well as to this obligation. MEASURED: 34 matches over 415 entries, 33 OWN, 1 CITED. run_hover_separation_probe 95/95, was 81. Live audit no longer reports the false violation; it exits 2 on the two pre-existing unpaired unresolvable shas, which is the gap it always had. FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T12:01:35Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
