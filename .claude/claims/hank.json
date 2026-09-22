@@ -2445,6 +2445,17 @@
       "claimed_at_epoch": 1790068629.473198,
       "status": "released",
       "released_at": "2026-09-22T09:39:46Z"
+    },
+    {
+      "id": "hank-1790071558",
+      "session": "hank",
+      "subject": "spec",
+      "task": "tla formal verification model check role gates",
+      "claimed_at": "2026-09-22T10:05:58Z",
+      "claimed_at_epoch": 1790071558.798492,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
