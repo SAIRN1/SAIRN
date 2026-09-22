@@ -3,6 +3,7 @@
     python tools/defect_budget_policy.py
     python tools/defect_budget_policy.py --json
     python tools/defect_budget_policy.py --decide rolling|permanent "<why>"
+    python tools/defect_budget_policy.py --decide-budget <n> "<why>"
     python tools/defect_budget_policy.py --override "<reason>"   # rare, and counted
 
 Exit 0 always. It REPORTS a band and, once the window question is decided,
@@ -72,6 +73,14 @@ Both numbers are computed and printed. Until `--decide` records a choice with a
 reason, the tool reports BOTH bands and gates NOTHING. A tool that picked
 silently would be making a governance decision inside a utility.
 
+DECIDED 2026-09-22: rolling, 30-day. And the BUDGET was decided the same day at
+60 -- UNCHANGED, deliberately, against an observed rate several times that. The
+observed figure is evidence about the PERIOD (a one-time backlog-clearance
+marathon) rather than about the budget, and loosening 60 to accommodate it
+would encode the marathon as the standard. ALL HANDS until the backlog clears
+is the policy working. Recalibration is due after one full window, when those
+records have aged out on their own and the reading is steady state.
+
 ── THE OVERRIDE IS RARE BY CONSTRUCTION ───────────────────────────────────────
 An override that can be used habitually is not an override, it is the normal
 path with extra typing. So:
@@ -87,8 +96,16 @@ The failure mode being defended against is not one bad override. It is twenty
 good ones.
 
 ── WHAT IT CANNOT DO ──────────────────────────────────────────────────────────
-  * Decide the budget. BUDGET_PER_WINDOW is a judgement and is written here to
-    be argued with, not derived.
+  * DERIVE the budget. `--decide-budget` RECORDS one with its reason, and the
+    arithmetic uses the recorded figure over the constant -- but the number
+    itself is still a judgement somebody makes, not one this tool computes.
+    Setting it to the observed rate would permit whatever is happening by
+    definition, which is the circularity the whole module is built around
+    refusing.
+  * RECALIBRATE itself. `--decide-budget` stamps a date one full window out,
+    after which every run PROMPTS with the then-observed rate and says the
+    figure is due for review. Adopting a new one is another --decide-budget.
+    A budget that moves itself is a budget nobody decided.
   * Know whether a defect was serious. It weights by the register's own
     severity field and nothing else.
   * Stop anybody doing anything. It states the band; the humans hold to it.
@@ -169,9 +186,35 @@ def days_between(a, b):
     return int(round((tb - ta) / 86400.0))
 
 
+def effective_budget():
+    """The DECIDED budget if one is recorded, else the constant.
+
+    ── WHY THIS IS NOT JUST BUDGET_PER_WINDOW ────────────────────────────────
+    --decide-budget writes a number into docs/defect-budget-decisions.json,
+    and until this existed the arithmetic still used the module constant. A
+    future `--decide-budget 120` would have been recorded, printed back, and
+    then IGNORED by every band computation -- a decision the tool accepts and
+    does not act on, which is worse than one it refuses.
+
+    They agree today (both 60) so nothing moves, and that is precisely when a
+    divergence like this is cheapest to close and hardest to notice.
+    """
+    try:
+        d = load_decisions()
+        n = d.get('budget_per_window')
+        if isinstance(n, (int, float)) and n > 0:
+            return float(n)
+    except Exception:
+        # A decisions file that cannot be read must not silently change the
+        # budget. Fall back to the constant, which is at least declared.
+        pass
+    return BUDGET_PER_WINDOW
+
+
 def remaining_pct(recs, mode, today=None):
     total, counted = spent(recs, mode, today)
-    pct = max(0.0, (BUDGET_PER_WINDOW - total) / BUDGET_PER_WINDOW * 100.0)
+    budget = effective_budget()
+    pct = max(0.0, (budget - total) / budget * 100.0)
     return pct, total, counted
 
 
@@ -228,6 +271,41 @@ def stamp(recs, mode, pct, total, counted, band):
         'band': band,
         'register_digest': register_digest(recs),
     }
+
+
+def recalibration_due(decisions, recs, today=None):
+    """Is the recorded budget due to be looked at again, and what would it say?
+
+    ── A DATE IN A JSON FILE IS A NOTE NOBODY READS ──────────────────────────
+    --decide-budget stamps `budget_recalibrate_after` one full window out, so
+    the records that made the current reading extreme age out before anybody
+    re-derives from them. That stamp is worth nothing unless something says
+    the day has arrived, which is what this is for.
+
+    IT PROMPTS AND DOES NOT ACT, and the distinction is the whole design. The
+    obvious automation -- set the budget to the observed rate -- PERMITS
+    WHATEVER IS HAPPENING BY DEFINITION, which is the circularity this module
+    refuses to derive the number for in the first place. So it computes the
+    candidate, says what it is measured over, and leaves adopting it to a
+    human running --decide-budget again.
+
+    Returns None when no budget is recorded or the date has not arrived --
+    never a silent "fine", because those two are different and the caller
+    prints them differently.
+    """
+    after = decisions.get('budget_recalibrate_after')
+    if not decisions.get('budget_per_window_reason') or not after:
+        return None
+    now = today or time.strftime('%Y-%m-%d', time.gmtime())
+    if now < after:
+        return {'due': False, 'after': after}
+    obs = observed_rate(recs)
+    if obs is None:
+        # An empty register is not a licence to recalibrate to nothing.
+        return {'due': True, 'after': after, 'observed': None,
+                'current': decisions.get('budget_per_window')}
+    return {'due': True, 'after': after, 'observed': obs,
+            'current': decisions.get('budget_per_window')}
 
 
 def revisit_flags(decisions, recs):
@@ -305,6 +383,52 @@ def main(argv):
         print('RECORDED: window_mode=%s, band=%s at %.1f%% remaining' % (mode, band, pct))
         return 0
 
+    if '--decide-budget' in argv:
+        i = argv.index('--decide-budget')
+        raw = argv[i + 1] if len(argv) > i + 1 else ''
+        why = ' '.join(argv[i + 2:]).strip()
+        try:
+            n = float(raw)
+        except ValueError:
+            sys.stderr.write('--decide-budget takes a NUMBER of weighted '
+                             'defects per window, then a reason.\n')
+            return 1
+        if not (n > 0):
+            sys.stderr.write('--decide-budget must be greater than zero. A '
+                             'budget of zero forbids everything for ever.\n')
+            return 1
+        if len(why) < 20:
+            sys.stderr.write('--decide-budget needs a REASON, and for the same '
+                             'cause the window decision needed one: this number '
+                             'decides what kind of work is allowed, and one with '
+                             'no recorded reason cannot be argued with by '
+                             'anybody but the person who set it.\n')
+            return 1
+        # ── RECALIBRATION IS A DATE AND A PROMPT, NEVER AN AUTOMATIC EDIT ──
+        # A budget that moves itself is a budget nobody decided. And the
+        # obvious automatic rule -- set it to the observed rate -- PERMITS
+        # WHATEVER IS HAPPENING NOW BY DEFINITION, which is this module's own
+        # stated reason for refusing to derive the number at all. So this
+        # records WHEN the figure should be looked at again and leaves
+        # adopting a new one to another --decide-budget.
+        dec['budget_per_window'] = n
+        dec['budget_per_window_reason'] = why
+        dec['budget_decided_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ',
+                                                 time.gmtime())
+        dec['budget_recalibrate_after'] = time.strftime(
+            '%Y-%m-%d', time.gmtime(time.time() + WINDOW_DAYS * 86400))
+        save_decisions(dec)
+        pct, total, counted = remaining_pct(recs, dec.get('window_mode')
+                                            or 'rolling')
+        band, _a = raw_band(pct)
+        print('RECORDED: budget_per_window=%g, band=%s at %.1f%% remaining'
+              % (n, band, pct))
+        print('  recalibration due after %s -- %d days, one full window, so'
+              % (dec['budget_recalibrate_after'], WINDOW_DAYS))
+        print('  that today\'s records age out and the next reading is steady')
+        print('  state. It will PROMPT, not change itself.')
+        return 0
+
     if '--override' in argv:
         i = argv.index('--override')
         why = ' '.join(argv[i + 1:]).strip()
@@ -342,6 +466,7 @@ def main(argv):
             'permanent': {'remaining_pct': round(perm_pct, 2), 'band': raw_band(perm_pct)[0],
                           'counted': perm_n},
             'revisit': revisit_flags(dec, recs),
+            'recalibration': recalibration_due(dec, recs),
             'overrides_in_window': len(overrides),
             'register_digest': register_digest(recs),
         }, indent=2))
@@ -355,12 +480,37 @@ def main(argv):
               % (WINDOW_DAYS, len(overrides),
                  '   <- THE MECHANISM HAS FAILED' if len(overrides) > OVERRIDE_ALARM_IN_WINDOW else ''))
     print('  register: %d records, digest %s' % (len(recs), register_digest(recs)))
-    print('  budget  : %.0f weighted defects per %d-day window' % (BUDGET_PER_WINDOW, WINDOW_DAYS))
+    print('  budget  : %.0f weighted defects per %d-day window%s'
+          % (effective_budget(), WINDOW_DAYS,
+             '  (DECIDED)' if dec.get('budget_per_window_reason') else '  (not decided)'))
     print('')
     print('  ROLLING   (%d-day window) : %5.1f%% remaining  -> %-16s  %d record(s) counted'
           % (WINDOW_DAYS, roll_pct, raw_band(roll_pct)[0], roll_n))
     print('  PERMANENT (nothing ages) : %5.1f%% remaining  -> %-16s  %d record(s) counted'
           % (perm_pct, raw_band(perm_pct)[0], perm_n))
+    _rc = recalibration_due(dec, recs)
+    if _rc and _rc.get('due'):
+        print('')
+        print('  RECALIBRATION IS DUE -- the budget was set on %s and one full'
+              % dec.get('budget_decided_at', '?')[:10])
+        print('  window has passed, so the records that made that reading what')
+        print('  it was have aged out. The next figure can come from steady')
+        print('  state rather than from a marathon or a guess.')
+        _o = _rc.get('observed')
+        if _o:
+            print('    current budget  : %g' % _rc.get('current'))
+            print('    observed now    : %.1f weighted per %d days (%s to %s)'
+                  % (_o['per_window'], WINDOW_DAYS, _o['first'], _o['last']))
+        else:
+            print('    the register yielded no dated records, so no candidate')
+            print('    is offered -- an empty register is not a licence to')
+            print('    recalibrate to nothing.')
+        print('  IT DOES NOT CHANGE ITSELF. Setting the budget to the observed')
+        print('  rate permits whatever is happening by definition, which is')
+        print('  why this module refuses to derive the number. Adopt one with:')
+        print('    python tools/defect_budget_policy.py --decide-budget <n> "<why>"')
+    elif _rc:
+        print('  recalibration due after %s' % _rc.get('after'))
     print('')
 
     # ── THE BUDGET IS UNCALIBRATED, AND SAYING SO BEATS TUNING IT ───────────
@@ -374,8 +524,17 @@ def main(argv):
     # platform has a standing rule against -- so the number stays as written and
     # the tool reports that it cannot yet gate, with the OBSERVED RATE that a
     # real budget should be set from.
+    # ── AND ONCE THE BUDGET IS DECIDED, THIS NOTICE IS FALSE ───────────
+    # It fired on the BAND alone, so recording a budget left the tool
+    # printing UNCALIBRATED and NOTHING IS GATED beside a decided number
+    # and a gate that binds -- a report contradicting itself in the same
+    # breath. ALL HANDS on a DECIDED budget is the policy working, not
+    # evidence the number is wrong, and those two readings of the same
+    # band are exactly what the decision is for.
     obs = observed_rate(recs)
-    if obs and raw_band(roll_pct)[0] == BANDS[-1][1] and raw_band(perm_pct)[0] == BANDS[-1][1]:
+    if (not dec.get('budget_per_window_reason')
+            and obs and raw_band(roll_pct)[0] == BANDS[-1][1]
+            and raw_band(perm_pct)[0] == BANDS[-1][1]):
         print('  UNCALIBRATED -- NOTHING IS GATED ON THIS YET.')
         print('  Both windows read the most extreme band on the first reading,')
         print('  which means the budget is wrong rather than the platform being')
@@ -429,8 +588,15 @@ def main(argv):
     # disappears by itself the moment the budget is calibrated, because it is
     # derived from the same condition the notice above uses rather than from a
     # flag somebody has to remember to clear.
-    uncal = bool(obs) and (raw_band(roll_pct)[0] == BANDS[-1][1]
-                           and raw_band(perm_pct)[0] == BANDS[-1][1])
+    # DERIVED FROM THE DECISION, NOT FROM THE BAND ALONE (2026-09-22).
+    # The comment above is right that this must not be a flag somebody
+    # remembers to clear -- but keying it on the band alone meant a
+    # DECIDED budget still printed ADVISORY, NOT IN FORCE on the three
+    # lines that give the instruction, beside a gate that does enforce.
+    # ALL HANDS on a decided budget IS the policy in force.
+    uncal = (not dec.get('budget_per_window_reason')) and bool(obs) and (
+        raw_band(roll_pct)[0] == BANDS[-1][1]
+        and raw_band(perm_pct)[0] == BANDS[-1][1])
     tag = '  [UNCALIBRATED -- ADVISORY, NOT IN FORCE]' if uncal else ''
     print('  WINDOW MODE: %s -- %s' % (mode, dec.get('window_reason', '')[:90]))
     print('  BAND       : %s  (%.1f%% remaining)%s' % (band, pct, tag))
@@ -440,10 +606,15 @@ def main(argv):
     if uncal:
         print('  WHY THAT TAG: the band above is computed from '
               'BUDGET_PER_WINDOW, which the notice further up reports as wrong '
-              'for this corpus. A reading, not an instruction -- and nothing '
-              'consults this tool, so nothing is frozen by it. It clears itself '
-              'when the budget is calibrated against a steady, non-marathon '
-              'baseline; it is not a flag anybody has to remember to remove.')
+              'for this corpus. A reading, not an instruction. It clears itself '
+              'the moment a budget is DECIDED -- it is not a flag anybody has '
+              'to remember to remove -- and once one is, '
+              'tools/defect_budget_gate.py consults this module and the band '
+              'IS in force. (Both halves of the old sentence here went stale '
+              'on 2026-09-22: it said the tag clears when the budget is '
+              '"calibrated against a steady baseline", which is a condition '
+              'nothing could evaluate, and that "nothing consults this tool", '
+              'which stopped being true when the gate was built.)')
     if approaching:
         print('  APPROACHING %s -- held at %s because the number is within %.0f '
               'points of the boundary. The margin delays LEAVING a band as well '

@@ -18,5 +18,9 @@
     }
   ],
   "overrides": [],
-  "window_decided_at": "2026-09-22T09:27:21Z"
+  "window_decided_at": "2026-09-22T09:27:21Z",
+  "budget_per_window": 60.0,
+  "budget_per_window_reason": "SIXTY, UNCHANGED, and the ALL HANDS band it produces today is the intended behaviour rather than a symptom to tune away. Michael's decision 2026-09-22. The observed rate is ~317 weighted defects per 30 days, and the temptation is to read that as evidence the budget is wrong. It is evidence about the PERIOD, not about the budget: this platform has spent that window in a one-time backlog-clearance marathon where finding defects was the work, and a budget set to current output permits whatever is happening now BY DEFINITION -- which is this module's own stated reason for refusing to derive the number. Loosening 60 to accommodate the marathon would encode the marathon as the standard and the policy would stop discriminating between a quiet month and a bad one, which is the same failure the PERMANENT window was rejected for. So the gate sits in ALL HANDS until the real backlog clears, and that is what it is for: new-vertical work yields to reliability work while the defect load is what it is. RECALIBRATE AFTER ONE FULL WINDOW, not now. The rolling window means today's records age out on their own; once they have, the next reading is steady state and the figure can be set from real operating data rather than from a marathon or from a guess. That recalibration PROMPTS and does not act -- an automatic rule setting the budget to the observed rate would re-introduce the exact circularity this reason exists to refuse.",
+  "budget_decided_at": "2026-09-22T11:33:28Z",
+  "budget_recalibrate_after": "2026-10-22"
 }
