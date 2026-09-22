@@ -10233,7 +10233,48 @@ module.exports = async (req, res) => {
     // branch is ever reached; without the schema it answers 503 NOT_PROVISIONED
     // from inside it. Two different honest failures, two different fixes.
     //
-    // NO SESSION GATE: SAIRNfreedom has no per-employee authentication either.
+    // ── CORRECTED 2026-09-22. THIS LINE SAID "NO SESSION GATE: SAIRNfreedom
+    // has no per-employee authentication either" AND BOTH CLAUSES WERE FALSE
+    // BY THE TIME ANYBODY READ IT AGAIN. ─────────────────────────────────────
+    //
+    // "has no per-employee authentication": api/sf-auth.js,
+    // ROLES_BY_APP.sairnfreedom, AUTH_TABLE_BY_APP.sairnfreedom and
+    // sql/sairnfreedom_employee_auth_schema.sql all landed 2026-09-21 in
+    // 5030f718, whose own subject line is "per-employee credentials, and the
+    // ledger stops being readable by anyone holding the licence key."
+    //
+    // "NO SESSION GATE": THREE sf_ resources ARE gated, and have been since
+    // that same commit -- sf_accounts, sf_ledger and sf_vendor_prices, in
+    // SD_SESSION_GATED at :782 with their app scoping at :865. So this file
+    // contained two comments about the same app that disagreed with each
+    // other, nine thousand lines apart, and the one sitting next to the
+    // resource map was the wrong one.
+    //
+    // THE ACCURATE STATEMENT, AND IT IS NOT "THIS IS FINE": 3 of 35 sf_
+    // resources are session-gated. The other 32 are deliberately ungated and
+    // the reason is recorded at :778 -- "the finding was about Tier A,
+    // widening it further is a product decision about who may see a duty
+    // roster or a bottle count, and nobody has made that one." That is an
+    // honest open decision rather than an expired premise, and it is NOT
+    // corrected here because it is not a code fact to correct.
+    //
+    // BUT THE SET IT DESCRIBES IS UNDERSTATED, and that is worth naming where
+    // the decision will next be read. "A duty roster or a bottle count" does
+    // not cover sf_youth_participants (minors), sf_members, sf_signatures, or
+    // sf_disbursements -- which THIS FILE's own header two paragraphs above
+    // calls "CHARITABLE DISBURSEMENTS, which is the ORC 2915 reportable side
+    // of post gaming." Whoever makes the product decision should make it
+    // against that list rather than against the roster-and-bottle-count
+    // description. Driven live 2026-09-22 with a bare licence key and no
+    // session token: sf_ledger and sf_accounts answered 403 FORBIDDEN,
+    // sf_disbursements, sf_members, sf_youth_participants and sf_signatures
+    // all answered 200 provisioned:true.
+    //
+    // WHY THE WHOLE CORRECTION IS KEPT RATHER THAN THE LINE JUST REWRITTEN:
+    // the identical shape -- a justification comment whose premise expired and
+    // which kept reading as current documentation -- is what held all 41
+    // SV_RESOURCES open to a bare licence key for nine days, thirty lines
+    // above this one (6fb6d696). Two instances in one file is a pattern.
     const SF_RESOURCES = {
       sf_accounts: 'account_id', sf_bottle_fills: 'bottle_fill_id',
       sf_ceremonial_items: 'ceremonial_item_id', sf_disbursements: 'disbursement_id',
