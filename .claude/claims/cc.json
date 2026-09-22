@@ -2160,6 +2160,21 @@
         "tests/run_tier_a_review_gate_probe.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "cc-1790077033",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "body-file end-to-end wiring arms -- the roundtrip probe unit-tests the helper and cannot see whether --open or --discharge calls it FILES: tests/run_body_file_roundtrip_probe.py tests/run_body_file_wiring_sabotage_probe.py tools/tier_a_review_gate.py",
+      "claimed_at": "2026-09-22T11:37:13Z",
+      "claimed_at_epoch": 1790077033.534035,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_body_file_roundtrip_probe.py",
+        "tests/run_body_file_wiring_sabotage_probe.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ]
 }
