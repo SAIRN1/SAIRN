@@ -175,25 +175,110 @@ def ref_shas(ref):
     return [s for s in re.split(r'[,\s]+', ref or '') if SHA_RE.match(s)]
 
 
-def classify_own_commit(summary, ref, sha, pos):
+# ── WHOSE QUOTATION IS IT: THE HALF THE FIRST FIX NEVER ASKED ───────────────
+# JOINT FINDING BY hover1 AND hover2 (2026-09-22) against the first version of
+# this classifier, reproduced here before it was acted on. The two suppression
+# signals were `inside a quotation` and `in this entry's ref list`, and NEITHER
+# ASKS WHO IS BEING QUOTED. A log quoting ITSELF -- `Entry 311 says "Committed
+# <sha>, pushed."` -- satisfies both and was fully suppressed: zero violations
+# on a genuinely out-of-scope sha the log claims in its own words.
+#
+# THE REASON STRING WAS THE DEFECT, WRITTEN DOWN. It read "the text is inside a
+# quotation, so it is another session speaking and not this log" -- asserting
+# the speaker having never checked one. That is the same shape this whole file
+# exists to catch, one level up, and it is why the first fix's own
+# recurrence_open already recorded that the two signals were not shown to be
+# independent. They are both CONTAINMENT tests, and a self-quotation satisfies
+# both at once; position was standing in for identity.
+#
+# THE FIX IS NOT A THIRD CONTAINMENT TEST. The quote signal now requires
+# ATTRIBUTION: the NEAREST speaker marker in the sentence before the opening
+# quote must name a session OTHER than the log being read. A first-person
+# marker, this log's own name, or no marker at all all mean the quotation
+# establishes no other speaker, so it cannot suppress anything -- the match
+# falls to DISPUTED, which is reported and still scope-checked.
+#
+# NEAREST, NOT ANYWHERE, and that distinction is the whole point: "cody flagged
+# it; my own log says ..." names another session AND is a self-quote, and an
+# any-match rule would suppress it. Taking the last marker before the quote is
+# an ownership test rather than a proximity one.
+QUOTABLE = ('hank', 'cc', 'cody', 'fourth', 'ted', 'hover', 'hover1', 'hover2',
+            'michael')
+QUOTABLE_RE = re.compile(r'\b(' + '|'.join(QUOTABLE) + r')\b', re.I)
+# Word boundaries matter more than they look: `hover_coverage_ledger.py` must
+# NOT read as the word "hover". `_` is a word character, so \bhover\b does not
+# match inside it -- which is the behaviour wanted, and is asserted rather than
+# assumed by the probe.
+SELF_MARKER = re.compile(
+    r'\bI\b|\bmy\b|\bmine\b|\bmyself\b|\bmy own\b|\bthis log\b|\bits own\b|'
+    r'\bthis record\b|\bmy earlier\b', re.I)
+
+
+def short_session(session):
+    """'C--Users-marsh-Documents-SAIRN-hover2' -> 'hover2'. Identity comes from
+    the directory, as session_of() already establishes, because a log that
+    lied about its own name is what this tool exists to be able to detect."""
+    s = str(session or '').strip().lower()
+    return s.rsplit('-', 1)[-1] if '-' in s else s
+
+
+def quote_attribution(summary, quote_open, own_session):
+    """'other', 'self' or 'none' for the quotation opening at `quote_open`.
+
+    The lead-in is bounded STRUCTURALLY -- back to the nearest sentence break
+    or newline -- rather than by a character count, because the attributing
+    phrase is always in the same sentence as the quote it introduces, and a
+    fixed window is the defect class this platform named as scrubber item 24.
+    """
+    lo = 0
+    for sep in ('\n', '. ', '! ', '? ', '; ', ': '):
+        k = summary.rfind(sep, 0, quote_open)
+        if k >= 0 and k + len(sep) > lo:
+            lo = k + len(sep)
+    lead = summary[lo:quote_open]
+    own = short_session(own_session)
+    # hover1 is hover's other spelling; nothing else aliases.
+    own_names = {own, 'hover1'} if own == 'hover' else {own}
+    marks = [(m.start(), 'self' if m.group(1).lower() in own_names else 'other')
+             for m in QUOTABLE_RE.finditer(lead)]
+    marks += [(m.start(), 'self') for m in SELF_MARKER.finditer(lead)]
+    if not marks:
+        return 'none'
+    return max(marks, key=lambda t: t[0])[1]
+
+
+def classify_own_commit(summary, ref, sha, pos, own_session=None):
     """(verdict, reasons) for one OWN_COMMIT_RE hit at `pos` in `summary`.
 
     verdict is 'own', 'cited' or 'disputed'. `reasons` is empty for 'own' and
     otherwise names every signal that fired, in words, so a suppression can be
     read and disagreed with rather than taken on trust.
     """
-    reasons = []
-    if any(a < pos < b for a, b in quoted_spans(summary)):
-        reasons.append('the text is inside a quotation, so it is another '
-                       'session speaking and not this log')
+    reasons, notes = [], []
+    span = next(((a, b) for a, b in quoted_spans(summary) if a < pos < b), None)
+    if span:
+        who = quote_attribution(summary, span[0], own_session)
+        if who == 'other':
+            reasons.append('the text is inside a quotation the sentence '
+                           'ATTRIBUTES to another session, so it is that '
+                           'session speaking and not this log')
+        else:
+            # A REJECTED SIGNAL IS SAID OUT LOUD, not left as an absence. A
+            # reader seeing DISPUTED needs to know the quotation was found and
+            # DECLINED, not that there was no quotation.
+            notes.append('the match IS inside a quotation, but the sentence '
+                         'attributes it to %s rather than to another session, '
+                         'so it establishes no other speaker and does not '
+                         'suppress anything'
+                         % ('this log itself' if who == 'self' else 'nobody'))
     if any(_sha_prefix_match(sha, r) for r in ref_shas(ref)):
         reasons.append("the sha is in this entry's own ref list, which is what "
                        'the entry AUDITED rather than what it wrote')
     if len(reasons) >= 2:
-        return 'cited', reasons
+        return 'cited', reasons + notes
     if reasons:
-        return 'disputed', reasons
-    return 'own', reasons
+        return 'disputed', reasons + notes
+    return 'own', notes
 
 
 def git(*args):
@@ -754,8 +839,12 @@ def _selflog_one(rows, path, session, hover_commits, violations, could_not_run):
             blob = summary + ' ' + (r.get('ref') or '')
             for m in OWN_COMMIT_RE.finditer(blob):
                 sha = m.group(1)
+                # `session` is the OWNING DIRECTORY, not anything the entry
+                # says about itself -- the same identity source session_of()
+                # already uses, and for the same reason: a log that named its
+                # own session could clear its own commits by writing "hover2".
                 verdict, why = classify_own_commit(
-                    summary, r.get('ref') or '', sha, m.start())
+                    summary, r.get('ref') or '', sha, m.start(), session)
                 if sha not in seen or RANK[verdict] > RANK[seen[sha][0]]:
                     seen[sha] = (verdict, r.get('seq'), why)
         claimed = {s for s, v in seen.items() if v[0] in ('own', 'disputed')}

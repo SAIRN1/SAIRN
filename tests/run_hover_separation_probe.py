@@ -644,6 +644,97 @@ ok('G14 a one-signal DISPUTED sha that is out of scope is STILL reported, '
    'and labelled disputed rather than asserted as the auditor\'s own',
    len(_dv) == 1 and 'DISPUTED' in _dv[0][2], (_dv, _drep))
 
+# ── G15-G21: WHOSE QUOTATION IS IT ────────────────────────────────────────
+# JOINT FINDING BY hover1 AND hover2 on the first version of this fix, filed
+# 2026-09-22 and REPRODUCED HERE BEFORE IT WAS ACTED ON, both of the ways they
+# reported it. The two suppression signals were `inside a quotation` and `in
+# this entry's ref list`, and NEITHER ASKS WHO IS BEING QUOTED. A log quoting
+# ITSELF -- "Entry 311 says \"Committed <sha>, pushed.\"" -- satisfies both and
+# was fully suppressed: 0 violations on a genuinely out-of-scope sha the log
+# claims in its own words.
+#
+# THE REASON STRING WAS THE DEFECT WRITTEN DOWN. It read "the text is inside a
+# quotation, so it is another session speaking and not this log" -- asserting
+# the speaker, having never checked. That is the same shape as the bug this
+# whole file exists for, one level up, and it is why the first fix's own
+# recurrence_open already said the two signals were not shown to be
+# independent: they are both containment tests, and a self-quotation satisfies
+# both at once.
+#
+# The quote signal now requires ATTRIBUTION: the nearest speaker marker in the
+# sentence before the opening quote must name a DIFFERENT session. A
+# first-person marker, this log's own name, or no marker at all means the
+# quotation establishes no other speaker and cannot suppress anything.
+_SELF_Q = ('Re-reading my own earlier entry to confirm the record is straight. '
+           'Entry 311 says "Committed %s, pushed." and I am restating it here.'
+           % _oos[:8])
+_v4, _why4 = A.classify_own_commit(_SELF_Q, _oos[:8], _oos[:8],
+                                   _SELF_Q.index(_oos[:8]), 'hover')
+ok('G15 a SELF-quotation with the sha in ref is DISPUTED, not CITED -- a log '
+   'quoting itself is not another speaker', _v4 == 'disputed', (_v4, _why4))
+ok('G16 ...and the surviving signal is the REF one, so the QUOTE signal is '
+   'what was withheld rather than the whole classification collapsing',
+   'ref list' in _why4[0], _why4)
+ok('G16b ...and the declined quote signal is SAID OUT LOUD, so DISPUTED does '
+   'not read as "there was no quotation here"',
+   any('IS inside a quotation' in r and 'does not suppress' in r
+       for r in _why4), _why4)
+# THE LEAD-IN IS BOUNDED BY THE SENTENCE, so "my own earlier entry" one
+# sentence back does NOT attribute the quote -- it reports `nobody`, which is
+# true of the attributing sentence and lands on the same safe verdict. This
+# arm drives the in-sentence self-marker so the 'self' wording is exercised
+# somewhere rather than only reasoned about.
+_SELF_SAME = ('The chain is straight and my own entry 311 says "Committed %s, '
+              'pushed." which I am restating.' % _oos[:8])
+_v4b, _why4b = A.classify_own_commit(_SELF_SAME, _oos[:8], _oos[:8],
+                                     _SELF_SAME.index(_oos[:8]), 'hover')
+ok('G16c a self-marker in the SAME sentence is named as such -- the quote is '
+   'attributed to this log itself',
+   _v4b == 'disputed' and any('this log itself' in r for r in _why4b),
+   (_v4b, _why4b))
+
+_NOBODY_Q = ('The record shows what was done. It says "Committed %s, pushed." '
+             'and that stands.' % _oos[:8])
+_v5, _why5 = A.classify_own_commit(_NOBODY_Q, _oos[:8], _oos[:8],
+                                   _NOBODY_Q.index(_oos[:8]), 'hover')
+ok('G17 an UNATTRIBUTED quotation -- no speaker named at all -- is DISPUTED, '
+   'not CITED', _v5 == 'disputed', (_v5, _why5))
+
+# CONTROL. Without this, G15 and G17 are satisfied by a rule that never
+# attributes anything, which would make every real citation a violation.
+_OTHER_Q = ('Re-checked whether the contest had settled: cody\'s status now '
+            'shows "guard FIXED and pushed %s... Next: hank\'s review" '
+            '(moved on).' % _oos[:8])
+_v6, _why6 = A.classify_own_commit(_OTHER_Q, _oos[:8], _oos[:8],
+                                   _OTHER_Q.index(_oos[:8]), 'hover')
+ok('G18 CONTROL: a quotation the sentence ATTRIBUTES to another session is '
+   'still CITED, so G15/G17 are discriminating rather than a rule that '
+   'suppresses nothing', _v6 == 'cited', (_v6, _why6))
+
+# ONE HOVER INSTANCE QUOTING THE OTHER IS A REAL CITATION. hover2 is not
+# hover1, and collapsing them would re-introduce the bug in reverse.
+_H2 = ('Checked the peer record. hover2\'s log says "Committed %s, pushed." '
+       'so the pass is covered.' % _oos[:8])
+ok('G19 hover1 quoting hover2 IS another speaker -- the instances are not '
+   'collapsed',
+   A.classify_own_commit(_H2, _oos[:8], _oos[:8], _H2.index(_oos[:8]),
+                         'hover')[0] == 'cited',
+   A.classify_own_commit(_H2, _oos[:8], _oos[:8], _H2.index(_oos[:8]), 'hover'))
+ok('G20 ...and hover2\'s OWN log quoting that same sentence is a self-quote, '
+   'so the answer depends on WHICH log is being read',
+   A.classify_own_commit(_H2, _oos[:8], _oos[:8], _H2.index(_oos[:8]),
+                         'hover2')[0] == 'disputed',
+   A.classify_own_commit(_H2, _oos[:8], _oos[:8], _H2.index(_oos[:8]), 'hover2'))
+
+# END TO END, the shape hover1 reproduced: a real out-of-scope sha, self-quoted.
+_self_rows = _chain([(_SELF_Q, _oos[:8])])
+_sv, _sc = [], []
+_srep = A._selflog_one(_self_rows, 'fixture.jsonl',
+                       'C--Users-marsh-Documents-SAIRN-hover', [], _sv, _sc)
+ok('G21 END TO END: the self-quoted out-of-scope sha now REACHES the verdict '
+   'as a violation instead of being suppressed to zero',
+   len(_sv) == 1 and 'DISPUTED' in _sv[0][2], (_sv, _srep))
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:
