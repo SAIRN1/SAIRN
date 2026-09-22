@@ -1865,6 +1865,16 @@
       "claimed_at_epoch": 1790031959.655383,
       "status": "released",
       "released_at": "2026-09-21T23:21:56Z"
+    },
+    {
+      "id": "fourth-1790064344",
+      "session": "fourth",
+      "subject": "sairnlaw-provisioning-closeout",
+      "task": "FILES: docs/SAIRN-OPEN-WORK-INDEX.md SAIRN-ACTIVE-WORK-fourth.md sql/sairnlaw_data_extended_schema.sql -- close cc's provisioning flag with live evidence, and correct the stale security header in that file which says all nineteen resources are licence-key-only when fifteen now answer 401 NO_SESSION.",
+      "claimed_at": "2026-09-22T08:05:44Z",
+      "claimed_at_epoch": 1790064344.9595466,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
