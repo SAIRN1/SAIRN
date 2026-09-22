@@ -109,12 +109,44 @@ particular is the app CLAUDE.md calls the canonical demo licence.
   first if you want SAIRNroofing verification on an audit licence rather than on
   the customer one.
 
-**One app has no employee auth at all:**
+**One app has employee auth but no credential yet — CORRECTED 2026-09-22, and
+both halves of what stood here were wrong, in OPPOSITE directions:**
 
-- `SAIRNvet` (`SV-PINNACLE-2026`) has no `*-auth.js` endpoint anywhere in `api/`.
-  There is no login to give you because there is no login. Its data calls hit
-  `sd-data`'s session gate and get 403. That is a real gap in that app, not a
-  credentials problem, and it is not fixed here.
+> The text this replaces read: *"`SAIRNvet` (`SV-PINNACLE-2026`) has no
+> `*-auth.js` endpoint anywhere in `api/`. There is no login to give you because
+> there is no login. Its data calls hit `sd-data`'s session gate and get 403."*
+>
+> **It was true on 2026-09-03 and stopped being true on 2026-09-13**, when
+> `29b1f1d5` shipped `api/sv-auth.js`, `ROLES_BY_APP.sairnvet`,
+> `AUTH_TABLE_BY_APP.sairnvet` and `sql/sairnvet_employee_auth_schema.sql` —
+> under its own subject line *"the last app without it held the DEA register."*
+>
+> **THE SECOND SENTENCE WAS NEVER TRUE AT ALL, and it is the more dangerous of
+> the two.** SAIRNvet's data calls did **not** get 403 from a session gate.
+> There was no session gate: all 41 `SV_RESOURCES` — including `sv_controlled`,
+> the DEA-relevant controlled-substance register — answered **200** to a bare
+> licence key, with no session token of any kind. A reader consulting this file
+> to find out whether SAIRNvet was protected would have been told it was, by a
+> document written in good faith. **That is why this correction is kept in full
+> rather than quietly overwritten:** the identical expired premise was ALSO
+> sitting in `api/sd-data.js` as the stated reason the gate was absent, at least
+> one session cited it to reach a wrong conclusion, and a stale line in two
+> places is a pattern rather than a typo. Gate landed 2026-09-22 (`6fb6d696`,
+> found and built by hover2).
+
+- **Endpoint:** `/api/sv-auth`. **Licence:** `SV-PINNACLE-2026`. **Roles:**
+  `owner`, `dvm`, `tech`, `assistant`, `manager`, `frontdesk`.
+- **There is still no credential to publish here, and the reason is not a
+  credentials problem.** `sql/sairnvet_employee_auth_schema.sql` **has not been
+  run** against the live database. Measured 2026-09-22, not inferred: `login`
+  answers **503 `NOT_PROVISIONED`** for sairnvet, while `sairnlegacy` and
+  `sairndental` — which carry the same gate — answer **401
+  `INVALID_CREDENTIALS`**, so their auth tables exist and SAIRNvet's does not.
+- **Until that file is run, SAIRNvet is unusable by design:** nobody can obtain
+  a session, so every one of the 41 resources answers 401. Run the schema, then
+  `bootstrap` mints the first owner without needing a pre-existing credential —
+  and add the row to the table above **only once it has actually been driven**,
+  the same standard every other row here was held to.
 
 ---
 
