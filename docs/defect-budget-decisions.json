@@ -1,0 +1,22 @@
+{
+  "criteria_version": "2026-09-15.1",
+  "window_mode": "rolling",
+  "window_reason": "ROLLING, decided by Michael 2026-09-22. Recent history is what predicts the next month, and this platform's defect record is dominated by one long discovery marathon rather than by steady operation -- under PERMANENT that marathon would sit in the denominator for ever, the band would be ALL HANDS permanently, and the policy would stop discriminating between a quiet month and a bad one, which is the failure this tool's own header names. The known cost of ROLLING is accepted and is the reason this reason is long: a long-standing defect ages out of the window without anybody fixing it and the budget recovers for free. That is tolerable ONLY because the defect register is append-only and every record keeps its own date, so an aged-out defect is still readable -- it stops counting against the budget, it does not stop existing. THE CALIBRATION IS EXPLICITLY NOT DECIDED HERE AND MUST BE REVISITED. BUDGET_PER_WINDOW is 60 while the observed rate is about 317 weighted defects per 30 days, so BOTH windows read 0.0% remaining and the most extreme band on this first reading -- which means the budget is wrong, not that the platform is in crisis, and the tool says so itself. Setting the budget to the observed rate would be tuning the criteria to flatter the corpus. So the window MODE is settled and the BUDGET is not: revisit BUDGET_PER_WINDOW once a steady non-marathon baseline exists -- a stretch of ordinary operation rather than intensive discovery, where finding defects is not itself the work. Until then the band this arms is a READING and not a gate: no hook consults this tool, verified, so nothing is frozen by recording the decision.",
+  "stamps": [
+    {
+      "at": "2026-09-22T09:27:21Z",
+      "criteria_version": "2026-09-15.1",
+      "window_mode": "rolling",
+      "window_days": 30,
+      "budget_per_window": 60.0,
+      "records_counted": 220,
+      "records_in_register": 221,
+      "weighted_spent": 483.25,
+      "remaining_pct": 0.0,
+      "band": "ALL HANDS",
+      "register_digest": "73673843f353e6be"
+    }
+  ],
+  "overrides": [],
+  "window_decided_at": "2026-09-22T09:27:21Z"
+}

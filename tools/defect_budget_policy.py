@@ -411,11 +411,39 @@ def main(argv):
     pct = roll_pct if mode == 'rolling' else perm_pct
     last = (dec.get('stamps') or [{}])[-1].get('band')
     band, action, approaching = band_with_margin(pct, last)
+    # ── THE QUALIFIER GOES ON THE INSTRUCTION, NOT TEN LINES ABOVE IT ────────
+    # Added 2026-09-22, when the window decision was recorded. Deciding the
+    # window ARMS a band, and on an uncalibrated budget that band is the most
+    # extreme one -- so this block printed "NEW VERTICAL WORK: NOT PERMITTED",
+    # a platform-wide instruction, out of a budget the UNCALIBRATED notice above
+    # calls wrong in the same run.
+    #
+    # NOTHING ENFORCES IT, which was checked rather than assumed: no hook or
+    # gate consults this module. So the risk is not a frozen platform, it is the
+    # other failure this file already names in its own words -- an alarm nobody
+    # can act on is read as decoration, and the next genuinely red reading
+    # beside it is read the same way.
+    #
+    # THE ARITHMETIC IS UNTOUCHED. Same band, same percentage, same action; the
+    # qualifier is a label on the lines that give the instruction, and it
+    # disappears by itself the moment the budget is calibrated, because it is
+    # derived from the same condition the notice above uses rather than from a
+    # flag somebody has to remember to clear.
+    uncal = bool(obs) and (raw_band(roll_pct)[0] == BANDS[-1][1]
+                           and raw_band(perm_pct)[0] == BANDS[-1][1])
+    tag = '  [UNCALIBRATED -- ADVISORY, NOT IN FORCE]' if uncal else ''
     print('  WINDOW MODE: %s -- %s' % (mode, dec.get('window_reason', '')[:90]))
-    print('  BAND       : %s  (%.1f%% remaining)' % (band, pct))
-    print('  ACTION     : %s' % action)
-    print('  NEW VERTICAL WORK: %s'
-          % ('PERMITTED' if band in NEW_WORK_ALLOWED else 'NOT PERMITTED'))
+    print('  BAND       : %s  (%.1f%% remaining)%s' % (band, pct, tag))
+    print('  ACTION     : %s%s' % (action, tag))
+    print('  NEW VERTICAL WORK: %s%s'
+          % ('PERMITTED' if band in NEW_WORK_ALLOWED else 'NOT PERMITTED', tag))
+    if uncal:
+        print('  WHY THAT TAG: the band above is computed from '
+              'BUDGET_PER_WINDOW, which the notice further up reports as wrong '
+              'for this corpus. A reading, not an instruction -- and nothing '
+              'consults this tool, so nothing is frozen by it. It clears itself '
+              'when the budget is calibrated against a steady, non-marathon '
+              'baseline; it is not a flag anybody has to remember to remove.')
     if approaching:
         print('  APPROACHING %s -- held at %s because the number is within %.0f '
               'points of the boundary. The margin delays LEAVING a band as well '
