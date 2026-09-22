@@ -10650,6 +10650,59 @@
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
     },
     {
+      "commit": "467baf7493e0",
+      "date": "2026-09-22",
+      "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
+      "files": [
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_separation_audit.py"
+      ],
+      "lines_added": 290,
+      "lines_removed": 4,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/hover_separation_audit.py OWN_COMMIT_RE matched a sha inside hover1's quotation of cody's status line (entry 404), so a commit the auditor CITED was reported as a SEPARATION VIOLATION against cc's 270c60ed. Fixed by giving the verdict a third state (OWN/CITED/DISPUTED) requiring two independent signals to suppress, rather than narrowing the regex -- a narrowed rule fails silently on the next phrasing, and in an attribution audit a false negative is invisible.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "792117dd16e6",
+        "date": "2026-09-15",
+        "subject": "feat(process): the hover auditor's separation becomes mechanical -- and both alleged breaches did not happen",
+        "lag_days": 7
+      },
+      "citation_note": "1.2 is about grep not telling code from text that DESCRIBES code. This is the same shape one step over: OWN_COMMIT_RE could not tell the log's own statement from the log QUOTING another session's statement. Arguable rather than clean because 1.2's worked example is source-vs-comment, not speaker attribution inside prose.",
+      "phase_note": "Design, not coding: the regex does exactly what it was written to do. What was wrong was the decision to treat one phrase match as an attribution verdict, which was made when the tool was designed and is stated in its own comment.",
+      "contributing_factors": [
+        {
+          "factor": "OWN_COMMIT_RE keyed on the phrase committed/pushed <sha> alone. That answers 'does this text say it' and was read as 'does this log claim it', which are different questions the regex has no way to tell apart.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Attribution now has three states (OWN/CITED/DISPUTED). The regex is unchanged on purpose; the VERDICT gained the distinction the regex cannot make."
+        },
+        {
+          "factor": "The self-log's summary field carries both the auditor's own statements and verbatim quotations of other sessions' status lines, with no structural marker separating them. Every reader of that field has to infer the speaker.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not fixed here, and not fixable from this clone: adding a speaker field to the self-log would change the hover clone's own record format, which a build agent must not touch. Flagged to hover1 and hover2 instead."
+        },
+        {
+          "factor": "Nothing exercised the attribution step for over a year of entries: while the multi-log defect made both tools refuse, the code path was never reached, so the false positive existed without being reportable.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_hover_separation_probe.py section G, 14 arms, drives _selflog_one directly with synthetic chained logs -- including the same real out-of-scope sha claimed unambiguously (violation still reported) and quoted-plus-audited (not a violation), so the fix cannot be confused with disarming the tool."
+        }
+      ],
+      "recurrence_open": "The two suppression signals are not shown to be independent -- they agreed exactly once in 415 entries and disagreed never, which is one data point, not a measurement. And there is exactly ONE real citation-shaped match on this platform, so the criteria are locked against synthetic fixtures rather than validated against a population. A citation phrased without a quotation and without a ref entry is still classified OWN and would still produce a false violation."
+    },
+    {
       "commit": "9320ed8f8e1b",
       "date": "2026-09-22",
       "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
