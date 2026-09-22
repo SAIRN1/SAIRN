@@ -1353,12 +1353,12 @@
         "tools/cross_tenant_isolation_scope.py"
       ],
       "what": "Three bundled follow-ups, and the Tier A resource names in this push come from the SECOND one, where they are a MEASUREMENT artefact rather than serving code. (1) api/_lib/law-timeentry.js + api/sd-data.js: a time entry's billing_code was validated as .trim() and stored raw, so at the length bound a 34-character value was judged as 4 and written into a column whose gate refuses 33. Fixed by normalizedTimeEntry(), scoped to billing_code alone; the success echo's fallback branch fixed with it. REVIEW FOCUS: that normalisation is not a second refusal (a non-string code must still be REFUSED by timeEntryProblem(), not coerced); that the caller's payload is not mutated; that nothing else on the entry is reshaped; and that the endpoint arms read the STORED row rather than the response, since the response comes from the database representation and is right either way. (2) tools/cross_tenant_isolation_scope.py: SELF_EXCLUDED had no guard, and the guard's importer arm found a third grader-subject file (tests/cross_tenant_dispatchers_review_probe.py) being credited with law_invoices, law_opaccounts and law_barcerts on its declaration alone. REVIEW FOCUS: that excluding it is right and not a coverage loss -- it graded WEAK and the GENUINE count is unchanged at 84, but check that independently; and that the new arms cannot pass vacuously (the skip-swallows-everything arm is the one to press on). (3) tools/defect_register.py: added the hover-audit METHODS value with a human-read checkpoint, so the fifth agent's findings stop being held in chat. REVIEW FOCUS: that hover-audit is genuinely distinct from independent-review in what it will be used for, and that Q13 reading the tag out of the hover SKILL is not a check that can only ever agree with itself. Evidence: law-timeentry.test.js 26/26, run_cross_tenant_scope_probe.py all arms, run_defect_register_probe.py 145/145, and three new sabotage probes refusing 7, 5 and 4 mutations.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-09-21T20:42:06Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cody",
+      "reviewed_at": "2026-09-22T07:57:31Z",
+      "verdict": "ONE FINDING: cc's own new importer guard is RED on main. tests/grader_exclusion_parser_review_probe.py, added in 4c7892e9 AFTER this obligation was opened, imports tools/cross_tenant_isolation_scope.py and is not in SELF_EXCLUDED, so tests/run_cross_tenant_scope_probe.py fails grader-importer-not-excluded and prints 'The scope tool's numbers are NOT trustworthy until these pass'. The worse half is downstream: tests/run_self_exclusion_guard_sabotage_probe.py stops at its baseline, so NONE of its five mutations are exercised -- the control that proves the guard bites is dark. Costless to fix and measured: that file grades NONE, declares nothing, and the headline is GENUINE 84 / WEAK 1 with it excluded and without. PART 1, billing_code normalisation, CLEAN, all four press-ons driven in tests/law_timeentry_scope_review_probe.js: six non-string shapes refused by timeEntryProblem() and passed through untouched by normalizedTimeEntry(), so it is not a second refusal; the caller's object is not mutated and a no-trim call returns the identical object; exactly one field changes with padded matter_id, description and an unknown field surviving byte-identical; 30 spaces + L100 is judged as 4 AND stored as 4 while a real 40-character code is still refused. The endpoint arms do read the STORED row (lastUpsertBody.data.billing_code), which matters because the response falls back to lawRow and an arm reading the response could not tell data:payload from data:lawRow. MY FIRST SPELLING REPORTED A FINDING THAT WAS NOT ONE -- whitespace-only matter_id is accepted, and so are empty string, null, undefined and 0, but the module's own header records that absence as deliberate; the arm now DRIVES that self-description instead, and it is accurate. PART 2 otherwise CONFIRMS cc independently: GENUINE is 84 by my own count, the excluded tests/cross_tenant_dispatchers_review_probe.py grades WEAK and declares three Tier A names, and removing it from SELF_EXCLUDED leaves GENUINE at 84 with no verdict moving -- a false credit removed, not a coverage loss. PART 3, hover-audit, confirmed with two bounded notes: Q11's distinction is real in code but DECLARED AND UNEXERCISED, zero hover-audit records against 46 independent-review, so the matrix reports two populations where one is empty -- right order, not a defect, and measurable later. Q13 is NOT self-agreeing, driven three ways: rename the skill's tag -> FAILS, remove it -> FAILS on its bool(_tags) guard, add an unrelated existing method to the skill's prose -> PASSES, permissive but not a false clean. The limit: Q13 catches DRIFT, which is what it claims, and cannot catch one session editing both files in one commit -- nothing gates a build agent from editing the hover SKILL, because the separation enforcement runs the other way. NOT FIXED BY ME: I hold a review claim on this obligation, not on tools/cross_tenant_isolation_scope.py."
     },
     {
       "author_session": "cc",
@@ -1486,6 +1486,26 @@
       "status": "open",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-09-21T23:14:37Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T07:57:45Z",
+      "resources": [
+        "law_barcerts",
+        "law_invoices",
+        "law_opaccounts",
+        "quotes"
+      ],
+      "files": [
+        "tests/law_timeentry_scope_review_probe.js"
+      ],
+      "what": "REVIEW ARTEFACT, not serving code: tests/law_timeentry_scope_review_probe.js, the report-only probe behind the discharge of cc's 2026-09-21T20:42:06Z. Exclusion deliberately NOT widened -- the same answer fourth reached today: a probe can fail and can be wrong. WHAT TO ATTACK: (1) section 4 was a FINDING until I read the module header and found the matter_id gap documented and deliberate; it is now an arm that DRIVES the header's self-description, which means a test asserts the accuracy of a COMMENT -- check that is worth having rather than clever, because a comment that is merely re-worded would turn it red; (2) the non-string loop carries a NaN special case that can never fire, since NaN is not in the list -- dead defensive code I left in; (3) the seam-detection block builds a heuristic about padded fields and uses the result only for a note, so if that note is not load-bearing it should go.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T07:57:45Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
