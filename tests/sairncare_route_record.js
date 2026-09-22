@@ -380,6 +380,38 @@ async function main() {
     // invites the duplicate row it exists to prevent.
     ok('...and it warns that a RETRY and a CORRECTION look identical to the endpoint',
       /retry and a correction look identical/.test(msg), msg.slice(0, 220));
+
+    // ── AND THE SAME STANDARD ACROSS EVERY alf_ APPEND-ONLY REFUSAL ──────
+    // Added 2026-09-22 with the three siblings. This arm is DERIVED, not a
+    // list: it finds every ALREADY_RECORDED in api/sd-data.js, keeps the ones
+    // whose enclosing resource is alf_*, and requires each to name a
+    // correction path. A hand-written list of five would go stale the moment a
+    // sixth append-only alf_ resource is added, and would go stale SILENTLY --
+    // which is the whole failure mode this suite keeps running into.
+    //
+    // IT ALSO CORRECTS A MISCOUNT OF MINE: the open-work row first said FOUR
+    // siblings needed this and named alf_observations, which is not a resource
+    // -- it was alf_op_audits read off its own message text, and that one
+    // already said "Record a new entry instead". Three needed it, not four.
+    {
+      const re = /code: 'ALREADY_RECORDED', message: '([^']*)'/g;
+      const missing = [];
+      let found = 0, m;
+      while ((m = re.exec(api)) !== null) {
+        const before = api.slice(0, m.index);
+        const owners = before.match(/resource === '([a-z_]+)'/g) || [];
+        const owner = owners.length
+          ? owners[owners.length - 1].replace(/resource === '|'/g, '') : '?';
+        if (!/^alf_/.test(owner)) continue;
+        found += 1;
+        if (!/NEW entry|NEW signal|NEW record|NEW decision|Record a new entry/.test(m[1])) {
+          missing.push(owner);
+        }
+      }
+      ok('EVERY alf_ append-only refusal names a correction path, derived not listed',
+        found >= 5 && missing.length === 0,
+        'checked ' + found + ', missing: ' + (missing.join(', ') || 'none'));
+    }
   }
 
   console_warn('\n' + (failed ? failed + ' ARM(S) FAILED' : 'ALL ARMS PASS'));

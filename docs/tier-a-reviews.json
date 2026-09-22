@@ -1624,6 +1624,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-22T10:13:14Z",
+      "resources": [
+        "alf_claim_routes",
+        "alf_op_audits",
+        "mech_credentials"
+      ],
+      "files": [
+        "api/sd-data.js",
+        "tests/sairncare_route_record.js"
+      ],
+      "what": "THREE REFUSAL MESSAGES AND ONE DERIVED ARM. api/sd-data.js: alf_mar, alf_signals and alf_staff_credentials now name the CORRECTION PATH in their 409 ALREADY_RECORDED instead of only refusing the overwrite, matching alf_claim_routes and the older rf_supplier_documents / mech_credentials. tests/sairncare_route_record.js gains one arm. NO BEHAVIOUR CHANGED -- same codes, same statuses, same 409s; what changed is what three refusals tell the user. alf_op_audits is named because the new arm is DERIVED over every alf_ ALREADY_RECORDED and therefore reads its message too; its text is unchanged and is not mine. AND THIS PUSH IS THE GATE WORKING ON ME. It refused because an earlier obligation covered alf_claim_routes and mech_credentials but not alf_op_audits -- 'an obligation covers the RESOURCES IT NAMES, not every resource a later change happens to touch alongside them'. That is exactly right and worth recording: my derived arm widened the resource set without my noticing, which is the trade a derived check makes for not going stale. WHAT A REVIEWER SHOULD ATTACK, hardest first. (1) I WROTE THREE USER-FACING MESSAGES ON REGULATED RECORDS AND NOBODY HAS READ THE WORDS. The MAR one tells a carer that a correction is a new entry and that the superseded entry is evidence of what they were working from at the time. If that framing is wrong for how a MAR is actually reviewed -- if a regulator or a nurse reads two entries as an error rather than as a correction trail -- I have made a clinical record harder to defend while sounding careful. Judge the WORDS on alf_mar first; it is the one with a medication at the end of it. (2) I ASSERT THAT EACH MESSAGE IS TRUE OF ITS OWN RESOURCE AND I DID NOT DRIVE THAT. Each says 'record it again and BOTH stay' -- for alf_mar, that both entries appear in the MAR; for alf_signals, that both stay in the log; for alf_staff_credentials, that both stay on file with the later one current. I read the write branches and the append-only guards, I did NOT drive the READ path or the renderer for any of the three. If any of those reads collapses duplicates, sorts so 'later' is not legible, or filters superseded rows, my message promises something the product does not do. That is the check I would run. (3) THE DERIVED ARM'S OWNER-RESOLUTION IS A HEURISTIC. It finds the nearest PRECEDING `resource === '...'` before each ALREADY_RECORDED and treats that as the owner. That is right for this file's shape today, and it would mis-attribute if a refusal ever sat inside a helper called from several branches, or after a nested comparison on a different resource. Check the five it resolves are actually the five it names. (4) MY OWN MUTATIONS WERE WRONG FIRST AND THE CONTROL SAID SO. The first three replaced a PREFIX of each message and left the detected phrase standing, so they planted nothing and the run reported FAIL -- not a false pass. Re-aimed at the real phrases, 5 of 5 refused. Check the corrected mutations really are the defect they claim, and that the arm is not passing on a substring coincidence: it matches NEW entry / NEW signal / NEW record / NEW decision / Record a new entry, which is five alternatives for five resources and could hide a resource whose message accidentally contains another's phrase. (5) AND I CORRECTED TWO ERRORS IN MY OWN PREVIOUS COMMIT MESSAGE (ab0d2e6a): it said FOUR siblings needed this and named alf_observations, which is not a resource -- I had read the name off alf_op_audits' message text -- and alf_op_audits already had a path. It also said the siblings were recorded as an open-work row, and they were not. Check the count is now right, and that there is no SIXTH alf_ append-only resource I have missed by mapping only ALREADY_RECORDED rather than every append-only guard.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T10:13:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

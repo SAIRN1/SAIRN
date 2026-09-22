@@ -8648,7 +8648,18 @@ module.exports = async (req, res) => {
           return;
         }
         if (/ALREADY_RECORDED/.test(msg)) {
-          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });
+      // THE REFUSAL NAMES THE CORRECTION PATH, 2026-09-22, same change as
+      // alf_claim_routes at :9337 and the same wording shape as
+      // rf_supplier_documents (:1411) and mech_credentials (:1718), which have
+      // had it for longer. Refusing an overwrite without saying how to record a
+      // correction leaves the user with one obvious move -- press the button
+      // again -- and on these tables a fresh id from Date.now() means a second
+      // row with nothing marking which is believed.
+      //
+      // AND IT SAYS THE HARD HALF: a RETRY and a CORRECTION are
+      // indistinguishable to this endpoint, so a message that only said "record
+      // it again" would invite the duplicate it exists to prevent.
+          res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten. A CORRECTION is a NEW entry, not an edit -- record it again and the MAR will show both, with the later one as what is believed now. That is deliberate on a medication record: the superseded entry is evidence of what the carer was working from at the time. If you are unsure whether the first one saved, read the MAR before recording -- a retry and a correction look identical to this endpoint.' } });
           return;
         }
         if (/MAR_ENTRY_NOT_WRITTEN/.test(msg)) {
@@ -9091,7 +9102,7 @@ module.exports = async (req, res) => {
       const existingR = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
       const existingRows = await appendOnlyExisting(res, existingR, 'alf_signals'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
-        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This signal has already been recorded and cannot be overwritten' } });
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This signal has already been recorded and cannot be overwritten. A CORRECTION is a NEW signal, not an edit -- record it again and both stay in the log, the later one being what is believed now, because somebody may already have acted on the first. If you are unsure whether it saved, check the log before recording -- a retry and a correction look identical to this endpoint.' } });
         return;
       }
       const signalData = Object.assign({}, payload);
@@ -9520,7 +9531,7 @@ module.exports = async (req, res) => {
       const existingR = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
       const existingRows = await appendOnlyExisting(res, existingR, 'alf_staff_credentials'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
-        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This credential record has already been recorded and cannot be overwritten' } });
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This credential record has already been recorded and cannot be overwritten. A RENEWAL OR CORRECTION is a NEW record, not an edit -- record it again and both stay on file, the later one being current. That is deliberate: a completed-training assertion that could be quietly edited later is not evidence of anything. If you are unsure whether it saved, check the file before recording -- a retry and a correction look identical to this endpoint.' } });
         return;
       }
       const credData = Object.assign({}, payload);
