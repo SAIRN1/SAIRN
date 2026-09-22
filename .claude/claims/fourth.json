@@ -2049,6 +2049,20 @@
       "files": [
         "tools/confidentiality_candidate_flagger.py"
       ]
+    },
+    {
+      "id": "fourth-1790088723",
+      "session": "fourth",
+      "subject": "hover-audit-git-branch",
+      "task": "the git-side violation branch in attribute() is structurally dead -- a scope breach can never reach it FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
+      "claimed_at": "2026-09-22T14:52:03Z",
+      "claimed_at_epoch": 1790088723.0537274,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_hover_separation_probe.py",
+        "tools/hover_separation_audit.py"
+      ]
     }
   ]
 }
