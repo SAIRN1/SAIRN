@@ -11257,6 +11257,60 @@
       "recurrence_open": "THE APP IS NOW DOWN, DELIBERATELY, AND THIS IS NOT CLOSED UNTIL THE MIGRATION RUNS. sql/sairnvet_employee_auth_schema.sql has NOT been run against the live database -- measured, not inferred: /api/sv-auth login answers 503 NOT_PROVISIONED for sairnvet while sairnlegacy and sairndental, which already carry this gate, answer 401 INVALID_CREDENTIALS. So nobody can obtain a session and all 41 resources answer 401 from the moment this deploys. Only Michael can run that file. Second item, unrelated to the outage: docs/2026-09-03-demo-credentials.md line 114 still asserts SAIRNvet has no auth endpoint -- the same expired premise in a second place, and no SAIRNvet row exists in that table. Third: no mechanism re-checks a justification comment against its premise, which is the factor recorded as PLANNED above."
     },
     {
+      "commit": "90c1a9c3ef94",
+      "date": "2026-09-22",
+      "subject": "fix(sairncare): derive_charges could list one day's doses differently on two identical runs -- and my own review overstated why",
+      "files": [
+        "api/_lib/care-charges.js",
+        "api/sd-data.js",
+        "tests/sairncare/test-care-charges.js"
+      ],
+      "lines_added": 130,
+      "lines_removed": 3,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js derive_charges: two of its three event-source reads (alf_mar, alf_activities) carried no order= clause, and api/_lib/care-charges.js sorted the derived lines on DATE ALONE. Array.prototype.sort is stable, so same-day rows kept insertion order -- the concatenation order of the three sources, and within each source whatever order the server returned. Two identical regenerations of one month could therefore list the same day's doses in different sequences, on a table whose first column is Date. The unpriced list, rendered with dates under 'Documented but NOT billed', was not sorted at all. NO MONEY WAS WRONG: the total is a sum and reconcileAgainstInvoice keys on event_id, so both the invoice total and the regenerate-diff were order-independent throughout.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The reads and the date-only sort were written together with the feature; there is no commit at which ordering regressed. The defect is an absence that was present from the first version, which is why an injection sha would be misleading."
+      },
+      "citation_note": "The append-only read-order convention is the nearest standing practice, and this table is NOT covered by it: tools/append_only_read_order_scan.py derives its population by DB grant and by application contract, and alf_mar is append-only by a THIRD signal -- the alf_check_and_insert_mar_entry RPC -- so it sits outside the scanned set. The rule that would have caught it does not yet exist in a form that includes this table.",
+      "contributing_factors": [
+        {
+          "factor": "The sort key was DATE ALONE on rows whose only sub-day precision exists in one of three sources, so ties were inevitable and their resolution was invisible",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A (date, event_id) tiebreak applied to both lines and unpriced; the id is used rather than a timestamp because two of the three sources have no time to sort on and sorting on one would invent an order for the others"
+        },
+        {
+          "factor": "Two of the three source reads had no order= clause, so insertion order was server order",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "order=created_at.asc on both the alf_mar and alf_activities reads -- asc rather than the desc used by the five trail reads, because these become invoice lines read chronologically"
+        },
+        {
+          "factor": "The scanner built to find exactly this class could not see the table, because its population is derived two ways and this table is append-only by a third",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Derive the population a THIRD way, from the check-and-insert RPCs -- there are exactly two on the platform and both their tables (alf_mar, law_trusttx) are currently outside the scanned set. Not done here: tools/append_only_read_order_scan.py is hank_s file and hank_s call, and the gap is recorded in the review verdict that found it."
+        },
+        {
+          "factor": "My own review of that scanner OVERSTATED this finding -- I reported the lines as unsorted when they were date-sorted, and had not traced whether the regenerate-diff keyed on id or position",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Traced before fixing rather than after: the diff keys on event_id, so the audit trail was never at risk. The narrower true claim and the correction are both in the fix commit rather than left standing in the verdict."
+        }
+      ],
+      "recurrence_open": "The tiebreak makes THIS output deterministic. It does not establish that any other multi-source derivation on the platform sorts on a key fine enough to resolve its own ties, and nothing enumerates those."
+    },
+    {
       "commit": "9320ed8f8e1b",
       "date": "2026-09-22",
       "subject": "fix(auth): the last admin could be DEMOTED instead of deactivated, on four apps hardened against deactivation hours earlier",
@@ -11372,6 +11426,36 @@
       "recurrence_open": "The replacement detects the ONLY breach shape git can see, and that shape is genuinely narrow: an auditor commit that touches NO signature file and only platform code is still 'unattributed' and still invisible to the git half. That is the tool's original stated limit -- git alone cannot prove the negative -- and it is unchanged. The self-log remains the only thing that can close it, which means a breach the auditor simply does not record is undetectable by either half. Zero mixed-signature commits exist today, so the new path is ARMED AND UNEXERCISED against real data and rests entirely on synthetic fixtures. Finding B is folded into this record and is separately incomplete: the attribution vocabulary is a closed list of session names, so a quotation attributing by ROLE rather than by name still resolves to nobody."
     },
     {
+      "commit": "b3797733c152",
+      "date": "2026-09-22",
+      "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
+      "files": [
+        "api/_lib/deadline-engine.js",
+        "api/_lib/deadline-period-count.test.js"
+      ],
+      "lines_added": 230,
+      "lines_removed": 2,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "api/_lib/deadline-engine.js read Number(x.count.value) at four sites with no check. That coercion maps a real zero, an empty string, null and an empty array all to 0, and zero is a LEGITIMATE count here (Md. Rule 2-311(b) has a zero-count limb), so an absent or malformed period count produced ok:true and a legal deadline ON THE TRIGGER DATE with a detail line reading 'counted 0 calendar days'. A non-numeric count gave NaN, addDays returned an Invalid Date, and that propagated as a date-shaped value nothing downstream questioned. NOT OBSERVED IN LIVE RULE DATA -- the reachability is through a malformed or incomplete rule definition, and no such rule is in the repo today.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/shape_antipattern_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The Number() coercion predates the multi-limb resolver and no commit introduced the gap: the guard was never present at any point in the file's history, so there is no injection commit to cite."
+      },
+      "citation_note": "Adjacent rather than identical: no check ran and reported a pass -- instead a coercion silently produced a value indistinguishable from a valid one, so every downstream check passed honestly on a number that meant nothing. Same family: a could-not-tell folded into an answer.",
+      "phase_note": "The coercion and the absence of any guard were written together; there was never a version of this code that validated the count and then stopped.",
+      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
+    },
+    {
       "commit": "bd7f90fcce71",
       "date": "2026-09-22",
       "subject": "fix(sairnsenior): the reclassification sweep reads its corpus now -- DEEM 1, PERMIT 5, where it had printed zero from every directory it was ever run in",
@@ -11435,36 +11519,6 @@
         }
       ],
       "recurrence_open": "Nothing sweeps the OTHER one-off audit tools for the same shape. docs/TOOLING-INVENTORY.md marks several as 'one-off audits against a point in time, not standing checks', and that class is exactly the one nobody re-runs and nobody controls -- this tool had no probe at all until today. A census of tools that print a verdict without printing what they read has not been done."
-    },
-    {
-      "commit": "b3797733c152",
-      "date": "2026-09-22",
-      "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
-      "files": [
-        "api/_lib/deadline-engine.js",
-        "api/_lib/deadline-period-count.test.js"
-      ],
-      "lines_added": 230,
-      "lines_removed": 2,
-      "app": "sairnlaw",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "api/_lib/deadline-engine.js read Number(x.count.value) at four sites with no check. That coercion maps a real zero, an empty string, null and an empty array all to 0, and zero is a LEGITIMATE count here (Md. Rule 2-311(b) has a zero-count limb), so an absent or malformed period count produced ok:true and a legal deadline ON THE TRIGGER DATE with a detail line reading 'counted 0 calendar days'. A non-numeric count gave NaN, addDays returned an Invalid Date, and that propagated as a date-shaped value nothing downstream questioned. NOT OBSERVED IN LIVE RULE DATA -- the reachability is through a malformed or incomplete rule definition, and no such rule is in the repo today.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tools/shape_antipattern_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The Number() coercion predates the multi-limb resolver and no commit introduced the gap: the guard was never present at any point in the file's history, so there is no injection commit to cite."
-      },
-      "citation_note": "Adjacent rather than identical: no check ran and reported a pass -- instead a coercion silently produced a value indistinguishable from a valid one, so every downstream check passed honestly on a number that meant nothing. Same family: a could-not-tell folded into an answer.",
-      "phase_note": "The coercion and the absence of any guard were written together; there was never a version of this code that validated the count and then stopped.",
-      "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
     },
     {
       "commit": "cd2662fae046",
