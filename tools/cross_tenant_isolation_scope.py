@@ -532,6 +532,23 @@ SELF_EXCLUDED = (
     # this tuple into the computation the importer arm already performs is
     # still open, and this entry is evidence for it rather than against it.
     'tests/grader_exclusion_parser_review_probe.py',
+    # THE SEVENTH, AND IT IS THE FIRST ONE THE TOOL CAUGHT ON ITS OWN AUTHOR
+    # MID-EDIT (2026-09-22). This probe drives the untabled-declaration branch,
+    # so it necessarily CARRIES a `CROSS-TENANT-ISOLATION:` line as a fixture
+    # literal -- and its C8 arm, which counts how many real files take that
+    # branch, came back 1 and named THIS FILE. The arm meant to measure the
+    # corpus measured itself, in the same run, and said so.
+    #
+    # MEASURED BEFORE ADDING, the test every entry above is held to: excluded,
+    # the corpus has ZERO files taking the untabled branch; unexcluded, it has
+    # one, and that one is a probe whose fixtures name `fx_alpha`/`fx_beta`,
+    # resources that do not exist. A false entry removed, not coverage lost.
+    #
+    # AND IT IS THE SEVENTH, which is the note above's own point arriving
+    # again on schedule. The open-work row for replacing this tuple with the
+    # computation the importer arm already performs is still open; this entry
+    # is more evidence for it.
+    'tests/run_cross_tenant_untabled_declaration_probe.py',
 )
 
 # ── WHICH RESOURCES A GENUINE FILE COVERS IS DECLARED, NOT GUESSED ──────────
@@ -706,13 +723,45 @@ def tests_naming(names):
                 UNDECLARED.append((rel, 'DECLARES what its own table does not drive',
                                    sorted(undriven)))
                 declared = declared & driven
-        elif declared and driven is None:
-            # No table to check against. NOT silently trusted and NOT silently
-            # refused -- the third state, said out loud, because a suite written
-            # without a table would otherwise lose every credit it has earned.
+        declared_unchecked = False
+        if declared and driven is None:
+            # ── NO TABLE TO CHECK AGAINST: REPORTED, AND NO LONGER CREDITED
+            #    AS GENUINE (2026-09-22) ──────────────────────────────────────
+            # d538f1e8 closed this for files that DO carry a table: a name in
+            # the declaration and nowhere in the driven set is reported and
+            # intersected away. The untabled half kept the report and NOT the
+            # intersection, so a declaration nothing could check still earned
+            # full GENUINE credit -- the strongest verdict this tool issues,
+            # resting on a claim it had no way to verify.
+            #
+            # A SEPARATE THIRD GRADE WAS CONSIDERED AND REJECTED. `rank()`
+            # collapses hits through gap = {'GENUINE':0,'WEAK':2,'NONE':3}[best],
+            # so a new string reaches a dict lookup with no key for it and the
+            # tool dies on the first file that hits this branch -- swapping a
+            # silent over-credit for a crash, in a branch nobody exercises.
+            # WEAK is the honest existing value and it already means exactly
+            # this: the file has a real cross-tenant arm, and the tool cannot
+            # confirm THIS resource is one of the things it covers. Identical
+            # treatment to a GENUINE file that does not declare the resource
+            # at all, for the identical reason.
+            #
+            # CREDIT IS REDUCED, NOT REMOVED, and the file is still named in
+            # UNDECLARED with the explanation -- a suite legitimately written
+            # without a table should not lose everything it earned, and the
+            # reader needs to know which of the two it is looking at.
+            #
+            # MEASURED BEFORE AND AFTER, 2026-09-22: ZERO files on this corpus
+            # take this branch, so the tool's output is byte-identical today.
+            # That is stated rather than hidden, and an arm pins it: this is a
+            # LATENT fail-open, fixed before it fires, not a change to any
+            # current verdict. A fix whose output is identical is exactly the
+            # kind that gets quietly reverted as pointless.
+            declared_unchecked = True
             UNDECLARED.append((rel, 'DECLARES coverage and carries no table to '
-                               'cross-check it against -- credited on the '
-                               'declaration alone', sorted(declared)))
+                               'cross-check it against -- credited WEAK rather '
+                               'than GENUINE, because a declaration this tool '
+                               'cannot check is a claim and not evidence',
+                               sorted(declared)))
         for n in names:
             # WORD BOUNDARIES, not `in`. `'invoices' in body` is true of any
             # file naming `law_invoices` or `sdn_invoices`, so the bare Tier A
@@ -722,7 +771,15 @@ def tests_naming(names):
             # storage prefix, in a different tool.
             if not re.search(r'(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])' % re.escape(n), body):
                 continue
-            if g == 'GENUINE' and n in declared:
+            if g == 'GENUINE' and n in declared and declared_unchecked:
+                # See the branch above. The file has a genuine arm; what it
+                # covers rests on a declaration with no table behind it.
+                hits[n].append((rel, 'WEAK',
+                                why + '; DECLARED, but the file carries NO TABLE '
+                                'for this tool to cross-check the declaration '
+                                'against, so the coverage of %s is a claim '
+                                'rather than something driven' % n))
+            elif g == 'GENUINE' and n in declared:
                 hits[n].append((rel, 'GENUINE', why + '; DECLARED'))
             elif g == 'GENUINE':
                 hits[n].append((rel, 'WEAK',
