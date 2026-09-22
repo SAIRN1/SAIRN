@@ -1835,6 +1835,21 @@
       "files": [
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "cody-1790111813",
+      "session": "cody",
+      "subject": "sairnmechanical",
+      "task": "mech_docs stores raw AI-extracted document text unredacted -- add a real redaction pass before storage FILES: sairnmechanical.html api/sd-data.js api/_lib/mech-redact.js",
+      "claimed_at": "2026-09-22T21:16:53Z",
+      "claimed_at_epoch": 1790111813.442881,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/mech-redact.js",
+        "api/sd-data.js",
+        "sairnmechanical.html"
+      ]
     }
   ]
 }
