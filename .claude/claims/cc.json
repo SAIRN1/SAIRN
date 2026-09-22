@@ -2081,6 +2081,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cc-1790071554",
+      "session": "cc",
+      "subject": "harness-stage-doc",
+      "task": "FILES: tests/sabotage_harness.py -- document the worktree-at-HEAD staging limitation in the harness header, one source instead of scattered comments",
+      "claimed_at": "2026-09-22T10:05:54Z",
+      "claimed_at_epoch": 1790071554.174013,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/sabotage_harness.py"
+      ]
     }
   ]
 }
