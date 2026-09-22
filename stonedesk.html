@@ -7388,7 +7388,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     }
     if(typeof sd_invoices!=='undefined'&&n){
       ltv=sd_invoices.filter(function(iv){return iv.customer&&iv.customer.toLowerCase()===n;})
-        .reduce(function(s,iv){return s+(iv.amount||0);},0);
+        .reduce(function(s,iv){return s+(Number(iv.amount)||0);},0);
     }
     return {jobs:jobs,ltv:ltv,lastJob:lastJob};
   }
@@ -8062,7 +8062,7 @@ window.sdPhotosExport=function(){
   function updateKPIs(d){
     var conn=d.filter(function(x){return x.status==="Connected";});
     var pend=d.filter(function(x){return x.status==="Pending Setup";});
-    var errs=d.reduce(function(a,x){return a+(x.errors||0);},0);
+    var errs=d.reduce(function(a,x){return a+(Number(x.errors)||0);},0);
     document.getElementById("integ-connected").textContent=conn.length;
     document.getElementById("integ-syncing").textContent=conn.filter(function(x){return x.sync!=="—";}).length;
     document.getElementById("integ-errors").textContent=errs;
@@ -10129,15 +10129,15 @@ window.sdRMExport=function(){
     var now=new Date(), monthPrefix=now.toISOString().slice(0,7);
 
     var invMTD=invoices.filter(function(i){return (i.date||'').startsWith(monthPrefix);});
-    var revMTD=invMTD.reduce(function(s,i){return s+(i.amount||0);},0);
+    var revMTD=invMTD.reduce(function(s,i){return s+(Number(i.amount)||0);},0);
     var arOutstanding=invoices.filter(function(i){return i.status!=='Paid';}).reduce(function(s,i){return s+(i.balance||0);},0);
     var jobsCompletedMTD=jobs.filter(function(j){return j.stage==='installed'&&j.installedAt&&j.installedAt.startsWith(monthPrefix);}).length;
-    var margin=finJobs.length?Math.round(finJobs.reduce(function(s,j){return s+(j.margin||0);},0)/finJobs.length):null;
+    var margin=finJobs.length?Math.round(finJobs.reduce(function(s,j){return s+(Number(j.margin)||0);},0)/finJobs.length):null;
 
     // Trailing 6 calendar months of real invoiced revenue
     var months=[];
     for(var i=5;i>=0;i--){var d=new Date(now.getFullYear(),now.getMonth()-i,1);months.push({label:d.toLocaleString('en-US',{month:'short'}),prefix:d.toISOString().slice(0,7)});}
-    var revByMonth=months.map(function(m){return {label:m.label,rev:invoices.filter(function(iv){return (iv.date||'').startsWith(m.prefix);}).reduce(function(s,iv){return s+(iv.amount||0);},0)};});
+    var revByMonth=months.map(function(m){return {label:m.label,rev:invoices.filter(function(iv){return (iv.date||'').startsWith(m.prefix);}).reduce(function(s,iv){return s+(Number(iv.amount)||0);},0)};});
 
     // Job count by material this month (real, but a count -- not a revenue
     // split, since invoices don't carry a material field to join against)
@@ -33733,8 +33733,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function render(){
     var d=load();
     document.getElementById('con-total').textContent=d.length;
-    document.getElementById('con-active').textContent=d.reduce(function(a,x){return a+(x.active||0);},0);
-    var rev=d.reduce(function(a,x){return a+(x.ytd||0);},0);
+    document.getElementById('con-active').textContent=d.reduce(function(a,x){return a+(Number(x.active)||0);},0);
+    var rev=d.reduce(function(a,x){return a+(Number(x.ytd)||0);},0);
     document.getElementById('con-revenue').textContent='$'+rev.toLocaleString();
     document.getElementById('con-avg').textContent=d.length?'$'+Math.round(rev/d.length).toLocaleString():'$0';
     var tierColors={Platinum:'#fef3c7',Preferred:'#dbeafe',Premium:'#f3e8ff',Standard:'#f3f4f6'};
@@ -36026,8 +36026,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function save(d){return st('sd_waste',d);}
   function render(){
     var d=load();
-    var totalLbs=d.reduce(function(a,x){return a+(x.lbs||0);},0);
-    var totalCost=d.reduce(function(a,x){return a+(x.cost||0);},0);
+    var totalLbs=d.reduce(function(a,x){return a+(Number(x.lbs)||0);},0);
+    var totalCost=d.reduce(function(a,x){return a+(Number(x.cost)||0);},0);
     var repur=d.filter(function(x){return x.type.includes('Repurposed')||x.type.includes('Donated');});
     document.getElementById('waste-mtd').textContent=totalLbs+' lbs';
     document.getElementById('waste-cost').textContent='$'+totalCost.toLocaleString();
@@ -36499,7 +36499,7 @@ document.addEventListener('DOMContentLoaded', function() {
     out.style.display='block';out.textContent='Calculating...';
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
     var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
-    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company. Actual tracked data: revenue minus expenses (profit) of $'+Math.round(profit).toLocaleString()+' this period ('+invoices.length+' invoices, '+bills.length+' bills on file -- if this looks sparse, say more data is needed rather than guessing). Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
@@ -36512,7 +36512,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
     var entries=(typeof taxEntries!=='undefined')?taxEntries:[];
     var salesTaxYTD=entries.reduce(function(s,e){return s+(e.tax||0);},0);
-    var profit=invoices.reduce(function(s,i){return s+(i.amount||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial;padding:20px}h1{color:'+sdThemeColor('--a','#1B3A6B')+'}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>'+escHtml(sdShopName())+' — Tax Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
