@@ -2522,8 +2522,8 @@
       "task": "review discharge of fourth OWN_COMMIT_RE attribution obligation FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py -- review-only, no edits to either",
       "claimed_at": "2026-09-22T13:16:22Z",
       "claimed_at_epoch": 1790082982.648668,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T13:20:22Z",
       "files": [
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
