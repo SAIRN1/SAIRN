@@ -10460,7 +10460,7 @@
       ],
       "lines_added": 240,
       "lines_removed": 2,
-      "app": "platform",
+      "app": "PLATFORM",
       "layer": "tooling",
       "severity": "high",
       "detection_method": "user-report",
@@ -11109,6 +11109,65 @@
         }
       ],
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
+    },
+    {
+      "commit": "90b108f455b9",
+      "date": "2026-09-22",
+      "subject": "wip: seam remake derivation (message rewritten before push)",
+      "files": [
+        "stonedesk.html",
+        "tests/run_seam_remake_derivation_sabotage_probe.py",
+        "tests/seam_remake_derivation.js"
+      ],
+      "lines_added": 288,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html Seam AI: every row sdSeamAnalyze() wrote carried remake:false, set at both insert sites and never set true by anything, and three user-facing readers derived from it -- First-Pass Approval read 100% for every shop forever, Remake Issues read 0, and the CSV exported No in a column headed Remake Risk. The sd_remakes log that would answer it already existed and was never wired to the panel. Beside it, Material Savings read a bare d.length*180 with no benchmark or source.",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "02ed4702b48d",
+        "date": "2026-07-26",
+        "subject": "Fix 5 panels with missing nav-render hooks (ap, employees, itadmin, template, templates) and remove fabricated KPIs on seamai/veinmatch",
+        "lag_days": 58
+      },
+      "citation_note": "1.7 is written about a sampling WINDOW exempting what it does not reach. Both sweeps here exempted by SCOPE instead -- 02ed4702 swept the hardcoded percentages and left both currency constants; 5571e5a0 swept Vein Match's Material Savings tile and left the identically-labelled Seam AI one three weeks later. Same shape, a scan covering N of M and reporting clean, arriving by a different route, so it is recorded as arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "remake was a BOOLEAN FROZEN AT INSERT TIME, and the event it describes happens afterwards -- a seam is analysed, then weeks later the job is or is not remade. No value written at insert could ever have been right.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "seamHadRemake() derives it at read time from sd_remakes, matching on normalised job name and requiring the remake to be logged on or after the analysis date; the stored field is removed from both insert sites and is ignored even where old rows still carry it."
+        },
+        {
+          "factor": "the sd_remakes log already carried customer, material, reason and cost per remake and was simply never wired to this panel, so the fix needed no new data, no new store and no new write path -- only a read.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the panel reads sd_remakes from localStorage rather than the sdRemakes global, so it does not depend on another script block's load order; saveSD5() keeps the two in step."
+        },
+        {
+          "factor": "02ed4702 replaced the hardcoded '94%' with arithmetic over the frozen field. That made a fabricated number look COMPUTED, which is strictly worse than the literal it replaced -- a reader who checks for a hardcoded percentage finds a filter and a division and stops.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/seam_remake_derivation.js asserts both directions of the derivation plus four source-text arms, because a call site can revert to the constant while every unit assertion about the derivation still passes."
+        },
+        {
+          "factor": "two separate fabrication sweeps each stopped one tile short. 02ed4702 stripped the phantom ||6 and ||8 baselines and the hardcoded percentages and left BOTH currency constants; 5571e5a0 removed Vein Match's Material Savings figure three weeks later and left the identically-labelled Seam AI tile beside it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_seam_remake_derivation_sabotage_probe.py, 5 mutations, all refused -- three make the derivation more permissive (the direction that flatters the tile and nobody checks) and two restore the constants, which only a source-text arm can see."
+        }
+      ],
+      "recurrence_open": "Nothing here sweeps the OTHER panels. The same four-tile shape exists across StoneDesk and the other apps, and only two of these tiles have ever been audited -- both of them in this one panel pair. A cross-panel census of KPI tiles whose value is a constant times a row count has not been run."
     }
   ],
   "started": "2026-09-09",

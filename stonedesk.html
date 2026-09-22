@@ -33126,12 +33126,52 @@ document.addEventListener('DOMContentLoaded', function() {
     if(sdEnsureRowIds(d,'SA',['date','job','loc'])) save(d);
     return d;
   }
+  // ── THE REMAKE FLAG WAS A CONSTANT, AND THREE TILES WERE READING IT ──────
+  // Every row this panel has ever written carries `remake:false`, set at both
+  // insert sites and never set true by anything. So "First-Pass Approval"
+  // read 100% and "Remake Issues" read 0 for every shop, forever, and the CSV
+  // exported "No" in a column headed Remake Risk. A number with no function
+  // behind it is Guardian Check 0b whether or not it is a currency figure.
+  //
+  // THE REAL LOG ALREADY EXISTS AND IS NOT WIRED TO THIS PANEL. sd_remakes is
+  // written by sdRMAdd() with `customer` holding the job name and a `reason`
+  // from a fixed seven-value vocabulary. Read from STORAGE rather than the
+  // sdRemakes global so this block does not depend on another script block's
+  // load order -- saveSD5() writes sd_remakes through st() on every change.
+  function seamRemakeLog(){
+    try{return JSON.parse(localStorage.getItem('sd_remakes')||'[]');}catch(e){return[];}
+  }
+  function seamKey(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,' ');}
+  // DERIVED AT READ TIME, NEVER STORED, and that is the point rather than a
+  // style choice: the remake happens AFTER the analysis, so a boolean frozen
+  // at insert can only ever be false. ON OR AFTER the analysis date -- a
+  // remake logged before the seam was analysed is not one the analysis failed
+  // to prevent. A row with no date is counted, because an unknown date must
+  // not quietly clear a real remake.
+  function seamHadRemake(x,rms){
+    var job=seamKey(x&&x.job);
+    if(!job) return false;
+    var on=String((x&&x.date)||'');
+    for(var i=0;i<rms.length;i++){
+      var r=rms[i];
+      if(seamKey(r&&r.customer)!==job) continue;
+      var made=String((r&&r.createdAt)||'').slice(0,10);
+      if(!on||!made||made>=on) return true;
+    }
+    return false;
+  }
   function updateKPIs(){
     var d=seamEnsureIds();
+    var rms=seamRemakeLog();
+    var hit=d.filter(function(x){return seamHadRemake(x,rms);}).length;
     document.getElementById('seam-analyzed').textContent=d.length;
-    document.getElementById('seam-approved').textContent=d.length?Math.round((d.filter(function(x){return !x.remake;}).length/d.length)*100)+'%':'--';
-    document.getElementById('seam-remakes').textContent=d.filter(function(x){return x.remake;}).length;
-    document.getElementById('seam-savings').textContent='$'+(d.length*180).toLocaleString();
+    document.getElementById('seam-approved').textContent=d.length?Math.round(((d.length-hit)/d.length)*100)+'%':'--';
+    document.getElementById('seam-remakes').textContent=hit;
+    // NOTHING MEASURES THIS. It read `d.length * 180` -- a bare constant with
+    // no benchmark, no source and no comment, presented as dollars saved. The
+    // sibling Vein Match panel already blanks its identically-labelled tile to
+    // '--' (see veinUpdateKPIs); that sweep simply never reached this panel.
+    document.getElementById('seam-savings').textContent='--';
     seamRenderSaved(d);
   }
   // THE LIST FOUR KPI TILES NEVER HAD. Newest first, and it says plainly
@@ -33179,7 +33219,9 @@ document.addEventListener('DOMContentLoaded', function() {
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
       var d=seamEnsureIds();
-      d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
+      // No `remake` field. A boolean written here can only ever be false --
+      // the remake happens later -- so it is DERIVED by seamHadRemake().
+      d.push({job:job,mat:mat,loc:loc,date:sdLocalToday()});
       // Set on the way in, so an analysis run today is syncable and deletable
       // immediately rather than waiting for a later pass.
       sdEnsureRowIds(d,'SA',['date','job','loc']);
@@ -33190,7 +33232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +'For '+mat+', match adhesive color to background tone. '
         +'Recommend butterfly joint at corners for maximum strength.<br><br>'
         +'<strong>Technique:</strong> Level slab surfaces to within 1/32", use dual-component epoxy, allow 45-minute cure before polishing.';
-      var d=seamEnsureIds();d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
+      var d=seamEnsureIds();d.push({job:job,mat:mat,loc:loc,date:sdLocalToday()});
       sdEnsureRowIds(d,'SA',['date','job','loc']);
       save(d);updateKPIs();
     });
@@ -33205,8 +33247,11 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   window.sdSeamExport=function(){
     var d=load();
-    var rows=[['Job','Material','Location','Date','Remake Risk']];
-    d.forEach(function(x){rows.push([x.job||'',x.mat||'',x.loc||'',x.date||'',(x.remake?'Yes':'No')]);});
+    var rms=seamRemakeLog();
+    var rows=[['Job','Material','Location','Date','Remake Logged']];
+    // RENAMED FROM "Remake Risk", because that is not what this column can
+    // say. It is a fact about what was logged afterwards, not a prediction.
+    d.forEach(function(x){rows.push([x.job||'',x.mat||'',x.loc||'',x.date||'',(seamHadRemake(x,rms)?'Yes':'No')]);});
     var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='seam-analysis-log-'+sdLocalToday()+'.csv';a.click();
