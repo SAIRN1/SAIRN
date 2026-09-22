@@ -164,6 +164,49 @@ out = run(MIXED, NEW_HDR)
 check('8. one migrated row and one not-yet-migrated row coexist and BOTH parse',
       'RESOURCE_ROWS:2' in out and 'ROWS_MIGRATED_TWO_AXIS:1 of 2' in out, out[-400:])
 
+# ── 9-11. §2.3: THE MIGRATED ROW MAY NOT CARRY THE FALSE CLAIM FORWARD ────
+# The old default B sentence asserted "Employee-auth-gated" -- an ACCESS-CONTROL
+# fact, not a content judgement -- and it was false for all 41 SV_RESOURCES
+# rows, which have no session gate at all. The check binds to MIGRATED rows
+# only, so these arms are the only thing that can execute it: the live file is
+# 0-of-387 migrated and would report a confident pass over a dead branch.
+GATE_CLAIM = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a competitor '
+              '| Evidence for alpha |\n'
+              '| `alpha_two` | **B** | **B** | operational data lost | nothing elevated '
+              '| Employee-auth-gated operational data: neither money nor a regulated '
+              'record |\n')
+out = run(GATE_CLAIM, NEW_HDR)
+check('9. a MIGRATED row still asserting "Employee-auth-gated" is REFUSED',
+      'ASSERTS A GATE' in out and 'PROBLEMS:0' not in out, out[-400:])
+
+# THE PAIRED NEGATIVE, because arm 9 alone is satisfied by a check that refuses
+# every migrated row. §2.3's own replacement sentence must PASS.
+CONF_B_DEFAULT = ('Internal, role-restricted data with no elevated confidentiality '
+                  'class -- no PII, PHI, privileged communication, or '
+                  'financial-account detail on this row. Classified by the stated B '
+                  'rule rather than individually read')
+CLEAN = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a competitor '
+         '| Evidence for alpha |\n'
+         '| `alpha_two` | **B** | **B** | Operational data lost or wrong: neither money '
+         'nor a regulated record | nothing elevated | ' + CONF_B_DEFAULT + ' |\n')
+out = run(CLEAN, NEW_HDR)
+check('10. THE PAIRED NEGATIVE: the §2.3 replacement sentence is ACCEPTED, so arm 9 '
+      'is not a check that refuses every migrated row',
+      'ASSERTS A GATE' not in out and 'ROWS_MIGRATED_TWO_AXIS:2 of 2' in out,
+      out[-400:])
+
+# AND AN UN-MIGRATED ROW IS COUNTED, NOT REFUSED. 264 live rows carry that
+# sentence today; firing on all of them is the atomic unreviewable diff §3.4
+# step 1 exists to avoid. But a check that will not fire until a row moves must
+# not read like one that passed, so the outstanding number is printed.
+STALE = ('| `alpha_one` | **A** | money moves wrongly | Evidence for alpha |\n'
+         '| `alpha_two` | **B** | operational data lost | Employee-auth-gated '
+         'operational data: neither money nor a regulated record |\n')
+out = run(STALE, OLD_HDR)
+check('11. an UN-migrated row asserting a gate is COUNTED and printed, not refused',
+      'ROWS_STILL_ASSERTING_A_GATE:1' in out and 'ASSERTS A GATE' not in out,
+      out[-400:])
+
 print('\n%d failure(s)' % len(fails))
 for f in fails:
     print('  - ' + f)

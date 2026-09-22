@@ -30,10 +30,15 @@ reach is worse than none:
                 registry disagree in either direction; a rollup count that does
                 not match the rows under it; a tier outside A/B/C; a Tier A row
                 with no evidence; resource rows under an app that claims not to
-                be re-tiered yet.
+                be re-tiered yet; and -- on a row that has MIGRATED to the
+                two-axis shape -- a sentence still asserting that an
+                access control gate exists (§2.3).
 
   IT CANNOT SEE whether a tier is RIGHT. Nothing mechanical can. That is what
-                the evidence column is for.
+                the evidence column is for. It also cannot see whether the gate
+                a row asserts actually EXISTS -- it only refuses the assertion,
+                on migrated rows, because that claim was false for 41 rows and
+                nothing in this table ever verified it.
 """
 import io
 import os
@@ -51,6 +56,42 @@ REGISTER = os.environ.get('SAIRN_TIER_REGISTER') or os.path.join(
     REPO, 'docs', 'CRITICALITY-TIERS.md')
 RESOURCES = os.path.join(REPO, 'api', '_resources')
 VALID_TIERS = ('A', 'B', 'C')
+
+# ── §2.3: THE B BOILERPLATE MADE TWO CLAIMS AND ONE OF THEM WAS FALSE ──────
+# The default B sentence -- "Employee-auth-gated operational data: neither
+# money nor a regulated record" -- packs an ACCESS-CONTROL claim and a CONTENT
+# claim into one sentence. The content half is a judgement the stated B rule
+# supports. The access-control half is a CODE FACT, and it was false for all 41
+# SV_RESOURCES rows: SAIRNvet has no per-employee authentication at all, `role`
+# is a self-selected dropdown, and api/sd-data.js says so in its own comment.
+# Re-verified against the handler 2026-09-22 -- still no session gate, by a
+# RECORDED decision rather than an oversight, pending the app's missing auth
+# subsystem. So the sentence was not describing something that had regressed;
+# it was asserting something nothing had ever checked.
+#
+# THIS TABLE MUST NOT ASSERT A CODE FACT IT DOES NOT VERIFY. That is the whole
+# finding, and the enforceable half of it is this: a row that has MIGRATED to
+# the two-axis shape may not carry the assertion forward.
+ACCESS_CONTROL_CLAIM = re.compile(
+    r'auth-gated|auth gated|employee-auth|session-gated|session gate', re.I)
+
+# WHY THE CHECK BINDS ONLY TO MIGRATED ROWS, stated rather than discovered.
+# 260 un-migrated B rows carry that sentence right now. Firing on all of them
+# turns this checker red in one step on a 387-row hand-edited file -- the
+# atomic unreviewable diff §3.4 step 1 exists to avoid, and a red gate nobody
+# can clear is a gate people switch off. Binding it to migration makes the
+# sentence get fixed as each row moves, by the person moving it.
+#
+# THE COST OF THAT IS A CHECK THAT TESTS NOTHING UNTIL A ROW MOVES, which is
+# the eighth cross-domain discipline exactly -- nothing announces the day a
+# check stops testing anything, and a check that has not STARTED reads
+# identically to one that passed. So the outstanding count is DERIVED from the
+# table and PRINTED on every run, clean or not.
+
+
+def asserts_access_control(*cells_):
+    """The false-claim half of the old boilerplate, wherever it sits in a row."""
+    return bool(ACCESS_CONTROL_CLAIM.search(' '.join(c or '' for c in cells_)))
 
 
 def cells(line):
@@ -309,6 +350,7 @@ def main(argv):
     for names in reg.values():
         all_registered |= names
     migrated = 0
+    stale_boilerplate = []
     for name, tier, conf, worst, worst_read, ev in rows:
         if name not in all_registered:
             problems.append('NOT A RESOURCE  %s has a row and is not registered in any '
@@ -327,8 +369,23 @@ def main(argv):
             problems.append('NO EVIDENCE  %s is Tier A with an empty evidence cell -- '
                             'that is a label, not a tier.' % name)
         if conf is None:
-            continue                      # not migrated yet; nothing below applies
+            # Not migrated. The row is allowed to keep the old sentence for now,
+            # but the debt is COUNTED rather than tolerated silently -- see the
+            # note on ACCESS_CONTROL_CLAIM for why this is a printed number and
+            # not a problem line.
+            if asserts_access_control(worst, ev):
+                stale_boilerplate.append(name)
+            continue
         migrated += 1
+        # ── §2.3: A MIGRATED ROW MAY NOT CARRY THE FALSE HALF FORWARD ──────
+        if asserts_access_control(worst, worst_read, ev):
+            problems.append('ASSERTS A GATE  %s has migrated to the two-axis shape '
+                            'and still asserts an access-control fact ("auth-gated" '
+                            'or similar). That half of the old B sentence was FALSE '
+                            'for all 41 SV_RESOURCES rows and nothing in this table '
+                            'verifies it. State what the data IS; whether a gate '
+                            'exists is a code fact this file does not assert.'
+                            % name)
         if conf not in VALID_TIERS:
             problems.append('BAD CONFIDENTIALITY  %s has confidentiality %r, not one '
                             'of %s' % (name, conf, '/'.join(VALID_TIERS)))
@@ -373,6 +430,13 @@ def main(argv):
         # Printed so a partial migration is VISIBLE rather than inferred --
         # the same reason the file's own NOT YET RE-TIERED status exists.
         print('ROWS_MIGRATED_TWO_AXIS:%d of %d' % (migrated, len(rows)))
+        # PRINTED CLEAN OR NOT. This is the §2.3 debt: un-migrated rows still
+        # asserting a gate nothing verifies. It is not a problem line, because
+        # firing on all of them at once is the unreviewable diff §3.4 avoids --
+        # but a check that will not fire until a row moves must not be
+        # indistinguishable from one that passed, so the number is stated.
+        print('ROWS_STILL_ASSERTING_A_GATE:%d (un-migrated; the migrated ones are '
+              'refused above)' % len(stale_boilerplate))
         print('RESOURCE_ROWS:%d' % len(rows))
         print('RETIERED_APPS:%d' % sum(
             1 for a in rollup if 'NOT YET RE-TIERED' not in rollup[a]['status']))
