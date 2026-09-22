@@ -2076,8 +2076,8 @@
       "task": "FILES: docs/CRITICALITY-TIERS.md -- exec_context law_portalmessages sv_soapnotes B to A on the incident clause, counts re-derived from the table",
       "claimed_at": "2026-09-22T09:47:41Z",
       "claimed_at_epoch": 1790070461.2241879,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T09:53:16Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
