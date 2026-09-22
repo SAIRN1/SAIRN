@@ -11132,6 +11132,59 @@
       "factors_unknown_reason": "Not yet analysed as a multi-factor failure. The immediate cause is a missing parse at four call sites, but the reason it survived is a separate question about a coercion that destroys the distinction it needed to preserve."
     },
     {
+      "commit": "4be7aa8978ff",
+      "date": "2026-09-22",
+      "subject": "fix(sairnlaw): the trust panel said \"all three balances match\" from one leg that CANNOT fail and one that was never made",
+      "files": [
+        "sairnlaw.html",
+        "tests/law_trust_reconcile_wiring_probe.py"
+      ],
+      "lines_added": 438,
+      "lines_removed": 25,
+      "app": "SAIRNlaw",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "sairnlaw.html trust panel rendered 'Reconciled -- all three balances match' on IOLTA client trust money from a verdict that could not fail. reconcileTrust() computed ledgerVsClient by comparing a ledger total against a per-client sum that PARTITIONS THE SAME ARRAY -- including the rows with no client_id, which form their own group and are summed like any other -- so leg one was a tautology disturbed only by float summation order. ledgerVsBank was null until a bank statement was entered and matches read null as agreement, so a firm that had never entered a statement saw a green THREE-WAY verdict with no third leg and no falsifiable second one. The dashboard suppressed its Trust Alert on the same value, reporting 'Nothing needs attention' precisely when nothing had been checked. api/_lib/law-trust-reconcile.js -- the correct reconciler, written to replace exactly this function and naming it by line number -- existed and was never called: the only occurrence of 'law_trust_reconcile' in the app was a code comment.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tautological reconcileTrust() predates the reconciler that replaced it; git log -S on ledgerVsClient would name a commit, but the DEFECT is the pair (tautology retained + replacement unwired) and the second half has no single introducing commit -- api/_lib/law-trust-reconcile.js was added correct and simply never called."
+      },
+      "citation_note": "PR 1.11 is the nearest standing rule (a check reporting a pass it never performed) but it is about a check failing OPEN when a dependency is absent. This is a verdict that is arithmetically incapable of the value it claims to test for, plus a correct replacement that shipped unwired. The fabricated-KPI rule is about numbers with no function behind them; this is a BOOLEAN with a function behind it that can only return true.",
+      "contributing_factors": [
+        {
+          "factor": "A unit test on the engine cannot see an absent caller. tests/law_trust_reconcile_probe.py was GREEN the whole time the panel was broken",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/law_trust_reconcile_wiring_probe.py added -- 13 arms, 4 of which mutate a copy to put the defect back and assert the probe refuses it"
+        },
+        {
+          "factor": "The verdict was computed from two quantities derived from one array, so no test data could ever make it false",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The verdict is now the server engine status; the client function is renamed trustFigures() and returns figures only -- the rename makes a missed caller throw instead of reading a stale matches"
+        },
+        {
+          "factor": "null was read as agreement. An uncompared leg and an agreeing leg were the same value",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The server engine refuses a single boolean and returns AGREES/DISAGREES/PARTIAL/CANNOT_RECONCILE; the UI adds UNAVAILABLE and none of the four non-AGREES states renders as agreement"
+        },
+        {
+          "factor": "A correct replacement was built and the wiring was left for later, with nothing recording that it was outstanding",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Not closed here. The general question -- what records that a built engine has no caller -- is wider than this resource. cc had already found this specific instance and logged it as a review obligation rather than a defect; that routing is what left it open."
+        }
+      ],
+      "recurrence_open": "The wiring probe covers THIS engine. Nothing enumerates the other api/_lib/ engines to ask which of them have no caller, and that is the class rather than the instance."
+    },
+    {
       "commit": "cd2662fae046",
       "date": "2026-09-22",
       "subject": "fix(claims): the matcher decides on the DECLARED FILE SET, and the word overlap becomes a warning",
@@ -11224,6 +11277,52 @@
       "citation_note": "No standing rule in docs/SAIRN-PROCESS-RULES.md names this shape, and saying so is more honest than reaching for one that nearly fits. The closest is PR 1.11 fail-closed, which is about a check that cannot run reporting a pass -- not about an authorisation boundary that was never drawn. What this actually was: a DOCUMENTED, DELIBERATE residual of a phased rollout whose trigger condition was written down and then not re-checked for six days. The rule that would have caught it does not exist yet and would be about deferred work carrying a re-check date rather than a re-check condition -- a condition nobody is scheduled to evaluate is indistinguishable from a decision nobody made.",
       "phase_note": "DESIGN rather than coding: the code did exactly what it was written to do and the comment beside it described the gap accurately. The defect was in the DECISION to ship a phased rollout whose second phase had a condition rather than an owner and a date. Not `unknown` -- the phase is identifiable and naming it unknown would understate how findable this was.",
       "factors_unknown_reason": "--rule"
+    },
+    {
+      "commit": "f48e7d575d77",
+      "date": "2026-09-22",
+      "subject": "fix(tests): re-anchor the as-of mutation -- it planted NOTHING and had been red on a stale anchor",
+      "files": [
+        "tests/law_trust_reconcile_probe.py"
+      ],
+      "lines_added": 17,
+      "lines_removed": 2,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "tests/law_trust_reconcile_probe.py arm 4 anchored on a two-line form of the as-of boundary that stopped existing when outstanding-item clearance tracking landed inside that branch on 2026-09-18. The mutation planted NOTHING, the harness reported ANCHOR-0, and the arm sat RED -- correctly signalling a stale anchor, but for a reason with nothing to do with the as-of property it guards, so the suite carried a permanent failure that teaches a reader to expect one.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The anchor was correct when written; it was invalidated by the 2026-09-18 clearance-tracking change to api/_lib/law-trust-reconcile.js, which had no reason to know a probe string depended on its line layout. No single commit introduced a defect."
+      },
+      "citation_note": "The eighth cross-domain discipline (nothing announces the day a check stops testing anything) is the closest, and this is its sub-case where the check DOES announce it -- the harness's ANCHOR-0 is exactly the loud failure that discipline asks for. The defect is that the announcement was left standing rather than acted on.",
+      "contributing_factors": [
+        {
+          "factor": "The mutation anchored on two adjacent STATEMENTS rather than on the condition that expresses the property",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Re-anchored on the boundary itself -- neutering the condition removes the as-of comparison and leaves the clearance tracking untouched"
+        },
+        {
+          "factor": "A red arm with a stale anchor is indistinguishable at a glance from a red arm with a real finding, so it survives",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The harness already prints ANCHOR-0 and that is what identified it in under a minute; no tooling change needed, the signal was there"
+        },
+        {
+          "factor": "A string-literal anchor into another file creates a dependency the other file cannot see",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Inherent to sabotage-style mutation testing. The mitigation already in place is that a non-matching anchor FAILS LOUDLY rather than silently passing, which is the property worth having."
+        }
+      ],
+      "recurrence_open": "Other probes in tests/ carry string anchors into files they do not own. Nothing sweeps for anchors that no longer match; this one was found because its arm was red, which only works for anchors inside a harness that reports ANCHOR-0."
     },
     {
       "commit": "f9e9628f4762",
