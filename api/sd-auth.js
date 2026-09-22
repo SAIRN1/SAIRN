@@ -36,6 +36,12 @@
 
 const { validateLicenseKey } = require('./_lib/license');
 const { writeAuditLog } = require('./_lib/audit');
+// Imported for soleRoleDemotionRefusal() ONLY. This endpoint runs its own
+// hand-written set_active and is deliberately NOT wired onto the shared
+// engine -- api/_lib/last-admin-sole-role.test.js pins that fact by name.
+// Importing one guard is not wiring the lifecycle; writing a fifth copy of
+// that guard here would be the thing worth avoiding.
+const lifecycle = require('./_lib/employee-lifecycle');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest, ROLES } = require('./_lib/auth');
 
 const AUDIT_TABLE = 'stonedesk_audit_log';
@@ -290,6 +296,36 @@ module.exports = async (req, res) => {
       // Managers may not mint another Owner — only an existing Owner can.
       if (role === 'owner' && caller.role !== 'owner') {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an existing Owner can grant Owner access' } });
+        return;
+      }
+      // ── A ROLE CHANGE CAN EMPTY THE LICENCE, AND set_active's GUARD ──
+      // ── DOES NOT SEE IT (2026-09-21) ─────────────────────────────────
+      // set_active refuses deactivating the last Owner. This upsert writes the
+      // role column on (license_hash, employee_id), so demoting that same
+      // person is a route the deactivation guard never watches. Measured
+      // across api/*-auth.js before this landed: 17 setup paths, ONE guarded,
+      // and four reachable -- this is one of the four.
+      //
+      // SHARED rather than copied: api/_lib/employee-lifecycle.js owns it, so
+      // the four apps cannot drift, and the same function refuses a soleRole
+      // that names no real role rather than counting zero holders and letting
+      // the write through.
+      //
+      // NOT IN bootstrap, deliberately: that path mints the FIRST credential
+      // on a licence and cannot demote anybody. Guarding it would refuse the
+      // one call that creates the Owner this guard exists to protect.
+      const demote = await lifecycle.soleRoleDemotionRefusal({
+        provisioningRoles: PROVISIONING_ROLES, soleRole: SOLE_ROLE,
+        soleLabel: 'Owner', newRole: role, employee_id: employee_id,
+        // This endpoint has no TABLE constant -- it spells sd_employee_auth
+        // inline at each of its five call sites. Passed as a literal here
+        // rather than introducing a constant, which would be an unrelated
+        // change to five other lines in a file under its own review.
+        licHash: licHash, table: 'sd_employee_auth', rest: rest, headers: headers
+      });
+      if (demote) {
+        if (demote.upstream) return upstream(res, demote.upstream);
+        res.status(demote.status).json(demote.body);
         return;
       }
       const { pin_hash, pin_salt } = hashPin(pin);

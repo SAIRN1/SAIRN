@@ -257,6 +257,32 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an existing Owner can grant Owner access' } });
         return;
       }
+      // ── A ROLE CHANGE CAN EMPTY THE LICENCE, AND set_active's GUARD ──
+      // ── DOES NOT SEE IT (2026-09-21) ─────────────────────────────────
+      // set_active refuses deactivating the last Owner. This upsert writes the
+      // role column on (license_hash, employee_id), so demoting that same
+      // person is a route the deactivation guard never watches. Measured
+      // across api/*-auth.js before this landed: 17 setup paths, ONE guarded,
+      // and four reachable -- this is one of the four.
+      //
+      // SHARED rather than copied: api/_lib/employee-lifecycle.js owns it, so
+      // the four apps cannot drift, and the same function refuses a soleRole
+      // that names no real role rather than counting zero holders and letting
+      // the write through.
+      //
+      // NOT IN bootstrap, deliberately: that path mints the FIRST credential
+      // on a licence and cannot demote anybody. Guarding it would refuse the
+      // one call that creates the Owner this guard exists to protect.
+      const demote = await lifecycle.soleRoleDemotionRefusal({
+        provisioningRoles: PROVISIONING_ROLES, soleRole: SOLE_ROLE,
+        soleLabel: 'Owner', newRole: role, employee_id: employee_id,
+        licHash: licHash, table: TABLE, rest: rest, headers: headers
+      });
+      if (demote) {
+        if (demote.upstream) return upstream(res, demote.upstream);
+        res.status(demote.status).json(demote.body);
+        return;
+      }
       const { pin_hash, pin_salt } = hashPin(pin);
       const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
         method: 'POST',

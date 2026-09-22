@@ -469,11 +469,47 @@ test('and none of them has quietly been migrated onto the shared helper', () => 
   // would then belong. Without this, PRE_EXISTING is a place a migration can
   // hide. Found while reconciling two sessions' independent fixes for
   // sv-auth.js on 2026-09-13.
+  // ── NARROWED FROM `require` TO THE CALL, 2026-09-21, AND THE INTENT IS
+  // ── UNCHANGED ──────────────────────────────────────────────────────────
+  // This asserted that a PRE_EXISTING endpoint does not `require` the helper
+  // at all, which was a correct proxy for "has not been migrated" only while
+  // the helper exported nothing a non-migrated endpoint would want. It now
+  // exports soleRoleDemotionRefusal(), a single guard for the OTHER route to
+  // zero provisioners -- the setup role change -- and api/sd-auth.js imports
+  // exactly that while keeping its own hand-written set_active.
+  //
+  // THE PROPERTY WORTH ASSERTING WAS NEVER THE IMPORT. It is whether the
+  // endpoint's set_active has been handed to the shared engine, because that
+  // is what decides whether WIRED's assertions speak for it. So the check is
+  // now `lifecycle.setActive(` and nothing else, which is the same question
+  // asked of the thing it was always about.
+  //
+  // RELAXING A CHECK TO FIT A CHANGE IS THE SHAPE THIS PLATFORM WARNS ABOUT,
+  // so: the migration this arm exists to catch still fails it. An endpoint
+  // that moves onto the engine calls setActive() -- there is no way to be
+  // migrated without it -- and the arm below drives that rather than leaving
+  // it as a claim.
   PRE_EXISTING.forEach((f) => {
-    assert.strictEqual(/require\('\.\/_lib\/employee-lifecycle'\)/.test(read(f)), false,
-      f + ' now REQUIRES the shared helper -- move it to WIRED, where its wiring ' +
-      'is actually checked, rather than leaving it listed as pre-existing');
+    assert.strictEqual(/lifecycle\.setActive\(/.test(read(f)), false,
+      f + ' now calls the shared setActive() -- move it to WIRED, where its ' +
+      'wiring is actually checked, rather than leaving it listed as pre-existing');
   });
+});
+
+test('...and that narrowed check still catches a real migration', () => {
+  // The arm above was relaxed from "does not import the module" to "does not
+  // call setActive". A relaxation is only safe if the thing it was written to
+  // catch still fails, so that is driven here against the real source of a
+  // PRE_EXISTING endpoint rather than asserted in prose.
+  const f = PRE_EXISTING[0];
+  const migrated = read(f).replace(
+    /action === 'set_active'/,
+    "action === 'set_active' && await lifecycle.setActive(ctx)");
+  assert.notStrictEqual(migrated, read(f),
+    'the injection found no set_active in ' + f + ' -- this arm is not testing '
+    + 'what it says it tests');
+  assert.strictEqual(/lifecycle\.setActive\(/.test(migrated), true,
+    'a migrated ' + f + ' would slip past the narrowed check');
 });
 
 test('the still-open list is accurate: those endpoints really have no set_active', () => {
