@@ -2642,6 +2642,19 @@
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "tools/cross_tenant_isolation_scope.py"
       ]
+    },
+    {
+      "id": "hank-1790114514",
+      "session": "hank",
+      "subject": "obligations-batch",
+      "task": "discharge three obligations oldest-first: cc 20:57:47Z reclassification sweep, cody 21:00:33Z derive_charges ordering, cody 21:36:25Z mech-redact. Review-only, no edits. FILES: docs/tier-a-reviews.json -- reads tools/reclassification_sweep.py api/sd-data.js api/_lib/mech-redact.js api/_lib/care-charges.js",
+      "claimed_at": "2026-09-22T22:01:54Z",
+      "claimed_at_epoch": 1790114514.472938,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ]
 }
