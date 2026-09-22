@@ -11111,9 +11111,9 @@
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
     },
     {
-      "commit": "90b108f455b9",
+      "commit": "04412beed2a4",
       "date": "2026-09-22",
-      "subject": "wip: seam remake derivation (message rewritten before push)",
+      "subject": "fix(stonedesk): \"First-Pass Approval: 100%\" was a constant, and two fabrication sweeps each stopped one tile short of it",
       "files": [
         "stonedesk.html",
         "tests/run_seam_remake_derivation_sabotage_probe.py",
