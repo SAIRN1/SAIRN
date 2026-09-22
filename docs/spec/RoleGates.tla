@@ -59,7 +59,24 @@ VARIABLES
     appOf,       \* [Employees -> Apps]      which app the credential belongs to
     session      \* [Employees -> Apps \cup {NoApp}]  which app a token was minted for
 
-NoApp == CHOOSE x : x \notin Apps
+\* NoApp WAS AN UNBOUNDED CHOOSE AND TLC CANNOT EVALUATE ONE (fixed
+\* 2026-09-22, the first time this spec was actually run through a model
+\* checker). It read:
+\*
+\*     NoApp == CHOOSE x : x \notin Apps
+\*
+\* CHOOSE with no set to range over has nothing to enumerate, so TLC stops
+\* at "attempted to evaluate an unbounded CHOOSE" while computing the
+\* INITIAL STATES -- 0 states generated. The spec could not be checked at
+\* all, which is exactly what "NOT MODEL-CHECKED" in the open-work row
+\* meant and nobody had yet discovered was blocking rather than merely
+\* undone.
+\*
+\* A CONSTANT with an ASSUME is the standard way to spell "some value
+\* outside Apps": the model supplies it, and the ASSUME keeps the claim
+\* honest instead of leaving it implied.
+CONSTANT NoApp
+ASSUME NoApp \notin Apps
 
 vars == <<active, roleOf, appOf, session>>
 

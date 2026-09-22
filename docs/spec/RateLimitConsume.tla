@@ -30,7 +30,11 @@
 (* a sample but a proof over that bound -- and exhibits the violating      *)
 (* schedule rather than asserting one exists.                              *)
 (***************************************************************************)
-EXTENDS Naturals, FiniteSets
+\* Integers, NOT Naturals (fixed 2026-09-22). Line 46 defines NoRead == -1
+\* and Naturals has NO UNARY MINUS, so this spec DID NOT PARSE: TLC stopped
+\* at "Couldnt resolve prefix operator -." before generating a single state.
+\* Found the first time it was run through a model checker.
+EXTENDS Integers, FiniteSets
 
 CONSTANTS
     Requests,   \* the concurrent callers

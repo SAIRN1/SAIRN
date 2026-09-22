@@ -24,3 +24,9 @@ sql/_scratch_*
 # a reviewer who can read them in the repo is not reviewing blind, and the
 # round would produce a measured agreement rate that means nothing.
 .blind-review-sealed.json
+
+# TLC's working directory and the third-party jar tools/run_tlc.py needs.
+# The jar is 2.3MB and fetched on demand -- run_tlc.py prints the curl line
+# and exits 2 when it is absent, which is COULD NOT RUN and never a pass.
+docs/spec/states/
+tools/vendor/
