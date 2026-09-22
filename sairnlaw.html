@@ -2809,9 +2809,36 @@ function rDash(){
   dl.forEach(function(d){
     if(d.status==='Pending'&&d.due_date<today)attention.push({t:H(matterLabel(d.matter_id))+' -- "'+H(d.title)+'" is overdue',b:'Overdue',c:'br'});
   });
-  var recon=reconcileTrust();
-  if(!recon.matches)attention.push({t:'Trust reconciliation mismatch detected -- see Trust Accounting',b:'Trust Alert',c:'br'});
-  $('d-attention').innerHTML=attention.length?attention.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing needs attention</div>';
+  // ── THE DASHBOARD USED TO SUPPRESS THIS ALERT ON A TAUTOLOGY ───────────
+  // `if(!recon.matches)` -- and `matches` was true whenever no bank statement
+  // had been entered, which is the state a firm that has never reconciled is
+  // in. So the one screen a partner glances at said "Nothing needs attention"
+  // precisely when nothing had been checked.
+  //
+  // IT IS RENDERED SYNCHRONOUSLY AND THEN AMENDED, on purpose. The server
+  // answer arrives late; holding the whole attention list for it would leave
+  // overdue deadlines invisible while a network request runs. So the list
+  // paints without the trust row and the row is appended when the answer
+  // lands -- and the row it appends can say "not verified", which the old one
+  // had no way to express.
+  var paint=function(extra){
+    var all=attention.concat(extra||[]);
+    $('d-attention').innerHTML=all.length?all.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px">Nothing needs attention</div>';
+  };
+  paint();
+  trustReconcileServer().then(function(v){
+    if(v.ok){
+      var d=v.result;
+      if(d.status==='DISAGREES')paint([{t:'Trust reconciliation DISAGREES -- see Trust Accounting',b:'Trust Alert',c:'br'}]);
+      else if(d.status!=='AGREES')paint([{t:'Trust reconciliation is incomplete ('+H(d.status)+', '+d.legs_compared+' of 2 legs compared) -- see Trust Accounting',b:'Not verified',c:'bw'}]);
+      else if(d.negative_clients&&d.negative_clients.length)paint([{t:'A client trust ledger is NEGATIVE -- see Trust Accounting',b:'Trust Alert',c:'br'}]);
+      return;
+    }
+    // A role that cannot run the check is not told about a control that is
+    // not theirs. Any OTHER failure is surfaced, because "we could not check
+    // the trust account" is exactly the thing a silent dashboard hides.
+    if(!v.forbidden)paint([{t:'Trust reconciliation could not be run, so the trust balances are unverified',b:'Not verified',c:'bw'}]);
+  });
 
   var upcoming=dl.filter(function(d){return d.status==='Pending';}).slice().sort(function(a,b){return (a.due_date||'').localeCompare(b.due_date||'');}).slice(0,5);
   $('d-deadlines').innerHTML=upcoming.length?upcoming.map(function(d){
@@ -3194,7 +3221,35 @@ function trustLedgerBalance(tx){
 function clientLedgerBalance(clientId,tx){
   return tx.filter(function(t){return t.client_id===clientId&&t.status!=='Voided';}).reduce(function(s,t){return s+(t.type==='Deposit'?Number(t.amount)||0:-(Number(t.amount)||0));},0);
 }
-function reconcileTrust(){
+// ── THIS USED TO RETURN A VERDICT AND THE VERDICT COULD NOT FAIL ──────────
+// It was `reconcileTrust()` and it returned `matches`. Both are gone, and the
+// RENAME IS THE POINT: a caller this change missed now throws a ReferenceError
+// instead of quietly reading a `matches` that is true when nothing was
+// compared. Three call sites existed; all three are moved below.
+//
+// WHAT WAS WRONG WITH IT, in the words of the file written to replace it.
+// api/_lib/law-trust-reconcile.js:22-38 dissects this exact function by name:
+//
+//   clientSum PARTITIONS THE SAME ARRAY ledgerBal SUMS WHOLE -- every row
+//   belongs to exactly one client group, INCLUDING the rows with no client_id,
+//   which form their own group and are summed like any other. So
+//   `ledgerVsClient` is a tautology that can only be disturbed by float
+//   summation order.
+//
+// And the second leg was worse. `ledgerVsBank` is null when no bank statement
+// has been entered, and `matches` treated null as agreement -- so a firm that
+// had never entered a statement saw, at :3588, the words
+//
+//   "Reconciled -- all three balances match"
+//
+// on client trust money, from ONE comparison that cannot fail and ONE that was
+// never made. Not a wrong number: a green three-way verdict with no third leg
+// and no falsifiable second one, on the single figure a bar association audits.
+//
+// THE FIGURES THEMSELVES ARE FINE AND ARE KEPT. Displaying the ledger balance,
+// the client-ledger sum and the entered bank balance is useful and honest. What
+// this function must never again do is decide whether they AGREE.
+function trustFigures(){
   var tx=trustTransactions();
   var ledgerBal=trustLedgerBalance(tx);
   var clientIds=Array.from(new Set(tx.map(function(t){return t.client_id;})));
@@ -3202,13 +3257,52 @@ function reconcileTrust(){
   var statements=bankStatements();
   var latestStatement=statements.length?statements.slice().sort(function(a,b){return (a.statement_date||'').localeCompare(b.statement_date||'');}).slice(-1)[0]:null;
   var bankBal=latestStatement?Number(latestStatement.bank_balance)||0:null;
-  // Round to cents before comparing -- floating point arithmetic on money
-  // otherwise produces false-mismatch noise (0.1+0.2!==0.3 class of bug).
-  var round2=function(n){return Math.round(n*100)/100;};
-  var ledgerVsClient=round2(ledgerBal)===round2(clientSum);
-  var ledgerVsBank=bankBal===null?null:round2(ledgerBal)===round2(bankBal);
-  return {ledgerBal:ledgerBal,clientSum:clientSum,bankBal:bankBal,ledgerVsClient:ledgerVsClient,ledgerVsBank:ledgerVsBank,
-    matches:ledgerVsClient&&(ledgerVsBank===null||ledgerVsBank===true)};
+  return {ledgerBal:ledgerBal,clientSum:clientSum,bankBal:bankBal,
+    statementDate:latestStatement?(latestStatement.statement_date||''):''};
+}
+
+// ── THE REAL RECONCILIATION, WHICH EXISTED AND NOTHING CALLED ─────────────
+// api/_lib/law-trust-reconcile.js has been on this platform since #46/#47 and
+// `sairnlaw.html` never invoked it once -- the only occurrence of the string
+// `law_trust_reconcile` in this file was a COMMENT. A correct reconciler
+// nothing calls is not a control; it is a file.
+//
+// FOUR OUTCOMES, AND "COULD NOT CHECK" IS ONE OF THEM. The server returns
+// AGREES / DISAGREES / PARTIAL / CANNOT_RECONCILE and deliberately refuses a
+// single boolean. This adds UNAVAILABLE for the cases where the request never
+// produced an answer at all, and it is NEVER rendered as agreement.
+//
+// THE ROLE CASE IS SEPARATED FROM THE FAILURE CASE ON PURPOSE. The endpoint is
+// owner-only (api/sd-data.js:12439, and the open question of whether `attorney`
+// belongs in that set is recorded there, not decided here) while this app shows
+// the Trust tab to every signed-in role. An attorney opening this panel gets
+// 403, and that is a PERMISSION answer, not a reconciliation answer -- shown as
+// "not available to your role", never as a discrepancy and never as agreement.
+// The last answer the SERVER gave, so the AI explanation explains the
+// reconciliation that was actually performed rather than re-deriving one on
+// this device. null means no server answer is in hand -- and the explain
+// button is only offered on a server DISAGREES, so it cannot be null there.
+var lawTrustLastResult=null;
+var LAW_RECON_STATUS={
+  AGREES:{cls:'bg',icon:'&#10003;',label:'Reconciled'},
+  DISAGREES:{cls:'br',icon:'&#9888;',label:'Discrepancy'},
+  PARTIAL:{cls:'bw',icon:'&#9888;',label:'Partly reconciled'},
+  CANNOT_RECONCILE:{cls:'bw',icon:'&#9888;',label:'Could not reconcile'}
+};
+function trustReconcileServer(){
+  // The device figure is sent as the CLIENT leg -- integer cents, matching the
+  // engine's own arithmetic, so a rounding difference here cannot manufacture
+  // the discrepancy the leg exists to find.
+  var f=trustFigures();
+  var localCents=Math.round(f.clientSum*100);
+  return sdnData('read','law_trust_reconcile',{client_total_cents:localCents}).then(function(d){
+    if(d&&d.status)return {ok:true,result:d};
+    var e=lawLastErr['law_trust_reconcile']||{};
+    var code=e.code||'UNKNOWN';
+    return {ok:false,code:code,
+      forbidden:(code==='HTTP_403'||code==='FORBIDDEN'),
+      message:e.message||'The reconciliation could not be run.'};
+  });
 }
 function trMatterChange(){
   var matterId=$('trmatter').value;
@@ -3352,10 +3446,35 @@ async function saveBankStatement(){
   toast(syncResult?'Bank statement recorded':lawWriteFailText('law_bankstatements','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function explainReconciliation(){
-  var r=reconcileTrust();
+  // ── IT USED TO BE HANDED THE TAUTOLOGY AS A FACT ────────────────────────
+  // The old prompt said "Ledger matches client-ledger sum: true" -- a value
+  // that is true by arithmetic -- and the system prompt tells the model these
+  // are "real, already-computed numbers" it must "never second-guess". So the
+  // model was instructed to trust a leg that cannot fail, on trust accounting,
+  // and to explain around it. Now it is given the SERVER's legs, including the
+  // ones that were not compared and the engine's own reason for each.
+  var v=lawTrustLastResult;
+  if(!v||!v.ok||!v.result){
+    // Refused rather than re-derived on this device. Explaining a
+    // reconciliation nobody performed is the defect one layer up.
+    $('tr-reconcile-result').insertAdjacentHTML('beforeend','<div class="cb" style="margin-top:10px;background:var(--bg);border-radius:8px">No server reconciliation is in hand, so there is nothing to explain. Re-open this panel as the firm owner.</div>');
+    return;
+  }
+  var d=v.result;
+  var f=trustFigures();
   $('tr-explain-btn').textContent='Asking Claude...';$('tr-explain-btn').disabled=true;
   try{
-    var trPrompt='Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.';
+    var legLines=Object.keys(d.legs||{}).map(function(k){
+      var leg=d.legs[k];
+      return k+': '+(leg.structural?'structural identity, not a comparison'
+        :(leg.agrees===null?'NOT COMPARED':(leg.agrees?'agrees':'DISAGREES')))
+        +(leg.why?(' ('+leg.why+')'):'');
+    }).join(' ');
+    var trPrompt='Server-side IOLTA reconciliation result. Overall status: '+d.status
+      +'. Falsifiable legs compared: '+d.legs_compared+' of 2. '+legLines
+      +' Trust ledger balance: '+fmt(f.ledgerBal)+'. Sum of client ledgers: '+fmt(f.clientSum)
+      +'. Bank statement balance: '+(f.bankBal===null?'not yet entered':fmt(f.bankBal))
+      +'. Explain what this indicates and what to check. Do not treat a leg marked NOT COMPARED as agreement.';
     var rr=await lawAuth('ai_generate',{max_tokens:300,
       // LAW_CITATION_RULE APPENDED 2026-09-14. It was absent, and this is the
       // surface where its absence mattered most: trust accounting is client
@@ -3578,23 +3697,61 @@ function rTrust(){
   lawRenderDemoNotice('tr-demo-notice','trust');
   fillMatterSelects();
   var tx=trustTransactions();
-  var r=reconcileTrust();
+  var r=trustFigures();
   $('tr-bankbal').textContent=r.bankBal===null?'Not entered':fmt(r.bankBal);
   $('tr-ledgerbal').textContent=fmt(r.ledgerBal);
   $('tr-clientsum').textContent=fmt(r.clientSum);
   var resultBox=$('tr-reconcile-result');
   var explainBtn=$('tr-explain-btn');
-  if(r.matches){
-    resultBox.innerHTML='<div class="badge bg" style="font-size:13px;padding:6px 14px">&#10003; Reconciled -- all three balances match</div>';
-    explainBtn.style.display='none';
-  }else{
-    var issues=[];
-    if(!r.ledgerVsClient)issues.push('Trust ledger balance does not match the sum of individual client ledgers -- this indicates a data inconsistency and should never happen from normal use.');
-    if(r.ledgerVsBank===false)issues.push('Trust ledger balance does not match the entered bank statement balance -- check for uncleared checks/deposits or a missing entry.');
-    resultBox.innerHTML='<div class="badge br" style="font-size:13px;padding:6px 14px">&#9888; Mismatch detected</div><ul style="margin:10px 0 0 18px;color:var(--danger);font-size:13px">'+
-      issues.map(function(i){return '<li>'+H(i)+'</li>';}).join('')+'</ul>';
-    explainBtn.style.display='inline-block';
-  }
+  // NOT VERIFIED IS THE STARTING STATE, not a blank. Rendering nothing while
+  // the request is in flight reads as "no problems found" on a panel titled
+  // Three-Way Reconciliation, which is the thing this whole change is about.
+  resultBox.innerHTML='<div class="badge bw" style="font-size:13px;padding:6px 14px">Checking with the server&hellip;</div>';
+  explainBtn.style.display='none';
+  lawTrustLastResult=null;
+  trustReconcileServer().then(function(v){
+    lawTrustLastResult=v;
+    if(!v.ok){
+      // A permission answer and a failure answer are different sentences.
+      // Neither is agreement, and neither offers the AI explanation -- there
+      // is no discrepancy to explain, because nothing was compared.
+      resultBox.innerHTML='<div class="badge bw" style="font-size:13px;padding:6px 14px">Not verified</div>'+
+        '<div style="margin-top:8px;color:var(--muted);font-size:13px">'+
+        (v.forbidden
+          ? 'Trust reconciliation runs on the server and is available to the firm owner. The balances above are this device’s own figures and have not been checked against the server ledger or the bank statement.'
+          : 'The reconciliation could not be run, so the balances above are unverified: '+H(v.message))+
+        '</div>';
+      explainBtn.style.display='none';
+      return;
+    }
+    var d=v.result;
+    var meta=LAW_RECON_STATUS[d.status]||{cls:'bw',icon:'&#9888;',label:H(d.status)};
+    var notes=[];
+    // Every leg names itself, including the ones that were NOT compared. The
+    // old panel could only say "mismatch" or nothing; a leg that was never run
+    // is the answer a bookkeeper most needs and the one it never gave.
+    Object.keys(d.legs||{}).forEach(function(k){
+      var leg=d.legs[k];
+      var nm=k.replace(/_/g,' ');
+      // `why` is the engine's own field name. It carries the sentence a
+      // bookkeeper actually acts on -- "no usable bank statement on file, so
+      // this leg was NOT COMPARED" -- and dropping it would reduce this panel
+      // back to a colour.
+      var why=leg.why?(' -- '+leg.why):'';
+      if(leg.structural)notes.push(nm+': structural identity, reported and NOT counted as a comparison');
+      else if(leg.agrees===null)notes.push(nm+': NOT COMPARED'+why);
+      else if(leg.agrees===false)notes.push(nm+': DISAGREES'+why);
+      else notes.push(nm+': agrees'+why);
+    });
+    if(d.negative_clients&&d.negative_clients.length)notes.push('NEGATIVE client balance on '+d.negative_clients.length+' client ledger(s) -- that is a failure of the disbursement control, not a reconciliation difference');
+    if(d.unattributed_present)notes.push('Some transactions carry no client -- they are their own bucket, neither folded into a client nor dropped');
+    if(d.unreadable_rows)notes.push(d.unreadable_rows+' row(s) could not be read as money and were not reconciled');
+    resultBox.innerHTML='<div class="badge '+meta.cls+'" style="font-size:13px;padding:6px 14px">'+meta.icon+' '+meta.label+
+      ' &mdash; '+d.legs_compared+' of 2 falsifiable legs compared</div>'+
+      '<ul style="margin:10px 0 0 18px;font-size:13px;color:var(--muted)">'+
+      notes.map(function(i){return '<li>'+H(i)+'</li>';}).join('')+'</ul>';
+    explainBtn.style.display=(d.status==='DISAGREES')?'inline-block':'none';
+  });
   var clientIds=Array.from(new Set(tx.map(function(t){return t.client_id;})));
   $('tr-client-ledgers').innerHTML=clientIds.length?clientIds.map(function(cid){
     return '<div class="srow"><span class="slbl">'+H(clientLabel(cid))+'</span><span class="sval">'+fmt(clientLedgerBalance(cid,tx))+'</span></div>';
