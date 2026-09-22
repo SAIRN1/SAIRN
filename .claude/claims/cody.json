@@ -1692,8 +1692,8 @@
       "task": "criticality tier moves grd_boq_rates and the funeral vital records cluster",
       "claimed_at": "2026-09-22T10:12:43Z",
       "claimed_at_epoch": 1790071963.8420587,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:17:20Z",
       "files": null
     }
   ]
