@@ -2528,6 +2528,22 @@
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
       ]
+    },
+    {
+      "id": "hank-1790083257",
+      "session": "hank",
+      "subject": "sairnvet",
+      "task": "SV_RESOURCES session gate -- land hover2 staged fix, live-reproduce the hole first FILES: api/sd-data.js sairnvet.html api/sd-data-sv-session-gate.test.js tests/run_sv_session_gate_sabotage_probe.py",
+      "claimed_at": "2026-09-22T13:20:57Z",
+      "claimed_at_epoch": 1790083257.1860447,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-sv-session-gate.test.js",
+        "api/sd-data.js",
+        "sairnvet.html",
+        "tests/run_sv_session_gate_sabotage_probe.py"
+      ]
     }
   ]
 }
