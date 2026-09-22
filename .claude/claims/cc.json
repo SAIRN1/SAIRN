@@ -2269,6 +2269,20 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "cc-1790109300",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "fix reclassification_sweep corpus anchoring and the three fail-open readers FILES: tools/reclassification_sweep.py tests/run_reclassification_sweep_probe.py",
+      "claimed_at": "2026-09-22T20:35:00Z",
+      "claimed_at_epoch": 1790109300.8859584,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_reclassification_sweep_probe.py",
+        "tools/reclassification_sweep.py"
+      ]
     }
   ]
 }
