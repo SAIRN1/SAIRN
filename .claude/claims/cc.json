@@ -2323,6 +2323,20 @@
         "stonedesk.html",
         "tools/truthy_sum_baseline.json"
       ]
+    },
+    {
+      "id": "cc-1790116367",
+      "session": "cc",
+      "subject": "sairnbuild",
+      "task": "two uncoerced money folds in rDrawsTbl FILES: sairnbuild.html tools/truthy_sum_baseline.json",
+      "claimed_at": "2026-09-22T22:32:47Z",
+      "claimed_at_epoch": 1790116367.5225863,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "sairnbuild.html",
+        "tools/truthy_sum_baseline.json"
+      ]
     }
   ]
 }
