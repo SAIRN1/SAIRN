@@ -2154,8 +2154,8 @@
       "task": "tier_a_review_gate body-file route so open and discharge bodies never pass through a shell FILES: tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py",
       "claimed_at": "2026-09-22T11:31:27Z",
       "claimed_at_epoch": 1790076687.112854,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T11:36:57Z",
       "files": [
         "tests/run_tier_a_review_gate_probe.py",
         "tools/tier_a_review_gate.py"
