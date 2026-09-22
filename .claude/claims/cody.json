@@ -1858,8 +1858,8 @@
       "task": "sf_donor_awards sf_members sf_donor_tiers still reachable on the licence key alone -- extend the SF session gate FILES: api/sd-data.js",
       "claimed_at": "2026-09-22T21:56:09Z",
       "claimed_at_epoch": 1790114169.5444493,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T22:08:36Z",
       "files": [
         "api/sd-data.js"
       ]
