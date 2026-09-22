@@ -446,6 +446,27 @@ def main(argv):
             problems.append('NO EVIDENCE  %s is Tier A with an empty evidence cell -- '
                             'that is a label, not a tier.' % name)
         if conf is None:
+            # ── §3.4 STEP 4, ARMED 2026-09-22 WHEN THE LAST ROW MIGRATED ────
+            # While the migration was in flight this was a silent skip, and it
+            # had to be: firing on 387 un-migrated rows is the atomic
+            # unreviewable diff step 1 exists to avoid.
+            #
+            # NOW THAT 387 OF 387 CARRY BOTH AXES, THE SAME SKIP IS A
+            # FAIL-OPEN. A row added tomorrow in the old four-cell shape would
+            # read as "not migrated yet", quietly bypass the computed-tier
+            # cross-check, the per-axis evidence requirement and the
+            # access-control refusal, and look exactly like a row that had
+            # passed all three. That is the shape CLAUDE.md PR §1.11 names.
+            #
+            # THE COMPATIBILITY BRANCH IN parse() IS KEPT RATHER THAN DELETED,
+            # deliberately: deleting it would make an old-shape row unparseable
+            # and it would vanish from the table entirely, which is the same
+            # silence one layer down. It is parsed, then refused BY NAME.
+            problems.append('NOT MIGRATED  %s is in the old four-cell shape. '
+                            'Every row carries both axes as of 2026-09-22, so a '
+                            'four-cell row is a new row that skipped them -- and '
+                            'a skipped check reads exactly like a passed one.'
+                            % name)
             if asserts_access_control(worst, ev):
                 stale_boilerplate.append(name)
             continue

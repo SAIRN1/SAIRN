@@ -102,11 +102,20 @@ def row_problems(out):
     return [k for k in ROW_PROBLEMS if k in out]
 
 
+# ── ARM 1 CHANGED 2026-09-22 WHEN THE MIGRATION COMPLETED ────────────────
+# It used to assert the old four-cell shape raises NO row-level problem, which
+# was right while 387 rows were still in it. §3.4 step 4 arms the opposite once
+# every row carries both axes: an old-shape row is now a NEW row that skipped
+# the axis checks, and a skipped check reads exactly like a passed one.
+# IT MUST STILL PARSE. The compatibility branch is kept rather than deleted --
+# an unparseable row would vanish from the table instead of being refused,
+# which is the same silence one layer down. Both halves are asserted together.
 out = run(OLD_ROWS, OLD_HDR)
-check('1. the OLD four-cell shape still parses and raises no row-level problem',
-      'RESOURCE_ROWS:2' in out and not row_problems(out),
-      'row problems: %s\n%s' % (row_problems(out), out[-400:]))
-check('   ...and reports 0 of 2 migrated, so a partial migration is visible',
+check('1. the OLD four-cell shape still PARSES (both rows are seen)',
+      'RESOURCE_ROWS:2' in out, out[-400:])
+check('   ...and is now REFUSED by name rather than skipped',
+      'NOT MIGRATED' in out and 'PROBLEMS:0' not in out, out[-400:])
+check('   ...and still reports 0 of 2 migrated, so the count stays honest',
       'ROWS_MIGRATED_TWO_AXIS:0 of 2' in out, out[-300:])
 
 out = run(NEW_ROWS, NEW_HDR)
@@ -161,8 +170,10 @@ MIXED = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a compet
          '| Evidence for alpha |\n'
          '| `alpha_two` | **B** | operational data lost | rule |\n')
 out = run(MIXED, NEW_HDR)
-check('8. one migrated row and one not-yet-migrated row coexist and BOTH parse',
-      'RESOURCE_ROWS:2' in out and 'ROWS_MIGRATED_TWO_AXIS:1 of 2' in out, out[-400:])
+check('8. one migrated row and one not-yet-migrated row coexist and BOTH parse '
+      '(the un-migrated one is refused, not lost)',
+      'RESOURCE_ROWS:2' in out and 'ROWS_MIGRATED_TWO_AXIS:1 of 2' in out
+      and 'NOT MIGRATED' in out, out[-400:])
 
 # ── 9-11. §2.3: THE MIGRATED ROW MAY NOT CARRY THE FALSE CLAIM FORWARD ────
 # The old default B sentence asserted "Employee-auth-gated" -- an ACCESS-CONTROL
