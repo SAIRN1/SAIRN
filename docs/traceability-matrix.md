@@ -545,6 +545,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; `api/sd-data-law-phase2-session.test.js` asserts the deactivated case with `notStrictEqual(status, 200)`, which cannot tell a DEACTIVATED credential from NO SESSION** | **FOUND 2026-09-22 (Cody), reviewing fourth&rsquo;s `08:48:28Z` obligation &mdash; the author flagged the arm as weak and asked; this is the measured answer** &mdash; driven against the real handler w | `api/sd-data-law-phase2-session.test.js` |
 | **&#9989; All eleven `senServerWinsMerge` call sites are pinned &mdash; and the three a resource grep cannot see carry TWO resources each, so the real coverage was fourteen** | **CLOSED 2026-09-22 (Hank)** &mdash; new `api/_lib/sairnsenior-hydrate-delegation.test.js` **16 arms**, new `tests/run_sairnsenior_hydrate_delegation_probe.py` **22 mutations ALL REFUSED** | `api/_lib/sairnsenior-hydrate-delegation.test.js`, `tests/run_sairnsenior_hydrate_delegation_probe.py`, `tests/server_wins_hydration.js` |
 | **~~&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation~~ &mdash; SUPERSEDED: it was EIGHT of ELEVEN, and all are now pinned** | **CLOSED 2026-09-22 (Hank).** Opened by fourth with a correct direction and an undercount; the live row is the **&#9989; All eleven** one above | `api/_lib/sairnsenior-hydrate-delegation.test.js`, `tests/run_sairnsenior_hydrate_delegation_probe.py` |
 | **&#9888; FIVE of the eight server-wins hydrates have NO arm pinning delegation &mdash; rewriting one back to additive-only would break nothing** | **MEASURED 2026-09-21 (Fourth), NOT FIXED** &mdash; found while re-aiming the three arms that WERE pinned; the other five were never checked by anybody | `tests/server_wins_hydration.js` |
@@ -599,11 +600,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 71 test files are traced to no stated requirement
+### 72 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 583 of 654 traced, 89.1%.
+For context and not as the headline: 583 of 655 traced, 89.0%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -612,8 +613,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 298 |
-| `declared` | 244 |
-| `declared+index` | 33 |
+| `declared` | 243 |
+| `declared+index` | 34 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -625,7 +626,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 13 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 58 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 59 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 13 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -690,6 +691,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnlaw_citation_rule_probe.py`
 - `tests/sairnlaw_trust_clearance.js`
 - `tests/sairnlegacy_reservation_reverify_probe.js`
+- `tests/sairnsenior_hydrate_delegation_review_probe.js`
 - `tests/sd_agent_budget_probe.py`
 - `tests/sd_data_dental_provider_scope_probe.py`
 - `tests/sd_data_food_temp_unevaluated_probe.py`
@@ -719,8 +721,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 654   tests/**, api/** (both walked)
-  open-work rows citing a test       326   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 655   tests/**, api/** (both walked)
+  open-work rows citing a test       327   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
