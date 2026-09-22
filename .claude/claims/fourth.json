@@ -2071,8 +2071,8 @@
       "task": "discharge cc 2026-09-22T13:51:10Z -- review the material-correlated job-risk engine. REVIEW-ONLY, no edits to stonedesk.html. FILES: docs/tier-a-reviews.json -- reads stonedesk.html tests/material_risk_engine.js tests/run_material_risk_engine_sabotage_probe.py",
       "claimed_at": "2026-09-22T15:20:03Z",
       "claimed_at_epoch": 1790090403.881695,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:42:26Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
