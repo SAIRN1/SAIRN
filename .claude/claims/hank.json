@@ -2544,6 +2544,21 @@
         "sairnvet.html",
         "tests/run_sv_session_gate_sabotage_probe.py"
       ]
+    },
+    {
+      "id": "hank-1790086889",
+      "session": "hank",
+      "subject": "docs-stale-premise",
+      "task": "correct the expired sairnvet auth premise where it is not held by another session FILES: api/sd-data.js docs/2026-09-03-demo-credentials.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-22T14:21:29Z",
+      "claimed_at_epoch": 1790086889.454709,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "docs/2026-09-03-demo-credentials.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
