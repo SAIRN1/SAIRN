@@ -509,6 +509,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9888; The session-gate probe&rsquo;s arm 1 proves the ALLOWLIST, not the gate &mdash; 26 of its 28 verbs answer 400 from a validator ten thousand lines earlier** | **OPEN 2026-09-22, NOT FIXED** &mdash; Finding 1 of Fourth&rsquo;s review of cody&rsquo;s `2026-09-21T22:38:40Z` obligation; visible in the probe&rsquo;s own printed note list | `tests/sairnlegacy_session_gate_review_probe.js` |
 | **&#128308; `reserveUnit()` writes `leg_merch_units` with NO session token, so merchandise reservation has been refused 401 since the LEG_RESOURCES gate landed** | **FOUND 2026-09-21 (Cody), reviewing cc&rsquo;s `leg_invoices` obligation &mdash; NOT FIXED BY ME** &mdash; the transport fix attached `X-SD-Auth` inside `sdnData()`; `sairnlegacy.html:2649` deliberat | `tests/sairnlegacy_session_gate_review_probe.js` |
 | **36 resources &mdash; the second most on the platform &mdash; ONE suite, and the reservation lock that stops one casket being promised to two families had never been tested** | **CLOSED 2026-09-14 (CC)**, both gates. `tests/sairnlegacy_reservation_lock.js` (47 arms, driven against the real handler AND the real client) and `tests/sairnlegacy_fault_probe.py` (15 mutations, eve | `tests/sairnlegacy_fault_probe.py`, `tests/sairnlegacy_reservation_lock.js` |
 
@@ -708,7 +709,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 642   tests/**, api/** (both walked)
-  open-work rows citing a test       322   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       323   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
