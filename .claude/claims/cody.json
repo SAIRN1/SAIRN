@@ -1822,6 +1822,19 @@
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
       ]
+    },
+    {
+      "id": "cody-1790110359",
+      "session": "cody",
+      "subject": "sairncare",
+      "task": "alf_mar derive_charges unordered append-only read -- the third-signal gap hank's scanner could not see FILES: api/sd-data.js",
+      "claimed_at": "2026-09-22T20:52:39Z",
+      "claimed_at_epoch": 1790110359.7694538,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js"
+      ]
     }
   ]
 }
