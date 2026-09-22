@@ -2626,6 +2626,22 @@
       "files": [
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "hank-1790110667",
+      "session": "hank",
+      "subject": "hank-queue",
+      "task": "queue: route payroll findings to cody in the index; EQA SessionStart hook clone-relative; cross_tenant_isolation_scope untabled-resource GENUINE credit gap; sv_labresults and law_portalesign B->A tier fixes FILES: docs/SAIRN-OPEN-WORK-INDEX.md .claude/settings.json tools/cross_tenant_isolation_scope.py docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-22T20:57:47Z",
+      "claimed_at_epoch": 1790110667.2274086,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tools/cross_tenant_isolation_scope.py"
+      ]
     }
   ]
 }
