@@ -1956,8 +1956,8 @@
       "task": "discharge cody obligation 2026-09-22T10:05:29Z on sen_claims. Reads tests/sairnsenior_hydrate_delegation_review_probe.js and sairnsenior.html. Writes docs/tier-a-reviews.json, the open-work index and my worklog.",
       "claimed_at": "2026-09-22T10:42:20Z",
       "claimed_at_epoch": 1790073740.5911388,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T10:53:37Z",
       "files": null
     }
   ]
