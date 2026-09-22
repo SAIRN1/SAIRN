@@ -1939,6 +1939,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-22T20:57:47Z",
+      "resources": [
+        "quotes"
+      ],
+      "files": [
+        "tests/run_reclassification_sweep_probe.py"
+      ],
+      "what": "tools/reclassification_sweep.py v3, plus tests/run_reclassification_sweep_probe.py\nand tests/run_reclassification_sweep_sabotage_probe.py. Register record filed\nagainst the fix commit.\n\nTHE TIER A MATCH IS A PROSE MATCH AND I AM RECORDING IT RATHER THAN REWORDING\nIT. The gate fired on the resource `quotes`, which occurs in this change\nexactly once, at tests/run_reclassification_sweep_probe.py:239, inside a\nCOMMENT, as the ordinary English verb:\n\n    # tool whose docstring necessarily quotes its own former defect. The AST\n\nNo serving code for `quotes` is touched by this commit, and one grep confirms\nit. This is the same false positive recorded on cody's preamble this morning\n-- the tier gate matches resource names in prose -- and the standing decision\non this platform is to record rather than reword, because rewording a comment\nto get past a matcher is how a gate gets hollowed out.\n\nWHAT ACTUALLY CHANGED, and what a reviewer should press on:\n\n(1) THE HEADLINE IS THE MEASUREMENT, NOT THE CODE. The tool printed\n`TALLY: {'DEEM': 0, 'ROLE': 0, 'PERMIT': 0}` from every directory it could\nsensibly be run in, having read either 22 app HTML files or nothing at all.\nIt now reads 32 of 32 captures and reports DEEM 1, PERMIT 5, in AK, ND, NH,\nSC and WY. PRESS ON THIS: those five PERMIT hits and the one DEEM hit are now\nevidence in a worker-classification position that previously had none from\nthis tool. I have NOT assessed whether they are correct in context -- I read\none of them, the WY \"considered employees\" hit, and it is about officers of a\njoint community board being employees of a participating county, NOT about\ncaregivers. That is a FALSE POSITIVE in substance, and I left it, because\nthis sweep is a finder that prints 260 characters of context so a person\ndecides. A reviewer who thinks a finder that surfaces off-topic hits is worse\nthan no finder should say so.\n\n(2) THE DENOMINATOR CHOICE IS MINE AND IT IS ARGUABLE. I anchored the default\ncorpus to docs/sources under the repo, recursively. The alternative was\ndocs/sources/sairnsenior specifically. I chose the wider root so a future\napp's captures are swept without a code change; the cost is that a capture\nbelonging to some other app would be swept by a tool whose regexes are about\ncaregiver classification, and the output would name a file in a directory\nnobody expected. Today there is exactly one app under docs/sources, so\nneither choice is distinguishable by running it.\n\n(3) THE SIZE FLOOR IS UNCHANGED AND I DID NOT MEASURE IT. Files under 400\nbytes are still skipped -- now reported rather than silent. 400 was already\nthere and I kept it. Nothing establishes that a real statute capture cannot\nbe 380 bytes, and a state with a one-paragraph rule would be dropped with a\nline of output nobody reads. I am naming this rather than waiting to be told.\n\n(4) THE UNREADABLE PATH EXITS 1 WHILE THE TALLY STILL PRINTS. That is a\ndeliberate trade: throwing away 31 good files because one is corrupt would\nmake the tool useless, so the tally covers what was read and the exit code\nplus `swept N of M` says so. A reviewer may reasonably argue a partial sweep\nshould print NO tally at all, the way zero files now does. I think the\ndenominator makes it honest; I could be wrong.\n\n(5) THE PROBE'S OWN TWO ERRORS ARE LEFT VISIBLE IN ITS COMMENTS rather than\ntidied: a glob check that fired on the comment explaining the old defect\n(PR 1.2, in the control for a tool whose docstring must quote its own former\ndefect), and an unreadable-file fixture 130 bytes long that was caught by the\nsize floor and never reached the reader. Both were found by the sabotage\ncontrol, not by review.\n\nEVIDENCE: 23 arms, all synthetic fixtures, both directions, including a\nnegative arm so a match-everything tool fails. 5 mutations, all refused,\nbaseline green, byte-identical restore verified. The control found two SILENT\narms on its first run -- nothing exercised the default corpus, and no fixture\nwas a PDF -- and both were fixed in the suite. python escape hygiene 488\nfiles clean; sabotage_control_check unchanged at 73 guarded / 3 unguarded.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-22T20:57:47Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

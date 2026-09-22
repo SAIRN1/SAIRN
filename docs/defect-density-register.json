@@ -11372,6 +11372,71 @@
       "recurrence_open": "The replacement detects the ONLY breach shape git can see, and that shape is genuinely narrow: an auditor commit that touches NO signature file and only platform code is still 'unattributed' and still invisible to the git half. That is the tool's original stated limit -- git alone cannot prove the negative -- and it is unchanged. The self-log remains the only thing that can close it, which means a breach the auditor simply does not record is undetectable by either half. Zero mixed-signature commits exist today, so the new path is ARMED AND UNEXERCISED against real data and rests entirely on synthetic fixtures. Finding B is folded into this record and is separately incomplete: the attribution vocabulary is a closed list of session names, so a quotation attributing by ROLE rather than by name still resolves to nobody."
     },
     {
+      "commit": "bd7f90fcce71",
+      "date": "2026-09-22",
+      "subject": "fix(sairnsenior): the reclassification sweep reads its corpus now -- DEEM 1, PERMIT 5, where it had printed zero from every directory it was ever run in",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_reclassification_sweep_probe.py",
+        "tests/run_reclassification_sweep_sabotage_probe.py",
+        "tools/reclassification_sweep.py"
+      ],
+      "lines_added": 524,
+      "lines_removed": 30,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/reclassification_sweep.py globbed the CURRENT DIRECTORY non-recursively while its corpus sits two directories deep, so it never read a single statute capture and printed TALLY: {DEEM 0, ROLE 0, PERMIT 0} from every location it was run in -- a confident zero on the question of which states deem a caregiver an employee, which is evidence behind a compliance position. Three further fail-open readers turned an unreadable document into one containing no match. After the fix: DEEM 1, PERMIT 5, swept 32 of 32.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The unanchored glob is present in the first version of the file this repo carries; git -S cannot date the moment a relative glob stopped matching the corpus, because the corpus was reorganised into per-state directories separately and no commit records the two facts together."
+      },
+      "citation_note": "1.11 is written about a check that depends on ANOTHER TOOL folding could-not-run into passed, and the pypdf branch is that rule exactly -- an absent library returned empty text and every PDF swept as clean. The corpus half is the same family by a different route: a scan that covered ZERO of thirty-two and printed a verdict rather than a refusal. Recorded as arguable because 1.11 names a missing dependency and the wider defect here is a missing corpus.",
+      "contributing_factors": [
+        {
+          "factor": "glob.glob('*.txt') was unanchored and non-recursive while the corpus lives two directories deep under docs/sources/<app>/<STATE>/, so the set of files swept was whatever happened to be in the caller's current directory -- 22 app HTML files from the repo root, and zero from any sensible location.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the root is derived from the tool's own path (docs/sources under the repo) and walked with os.walk; an explicit path argument still overrides it. An AST-parsed arm asserts no glob.glob call and no glob import survive."
+        },
+        {
+          "factor": "THE OUTPUT OF A SWEEP THAT READ NOTHING WAS INDISTINGUISHABLE FROM THE OUTPUT OF A SWEEP THAT FOUND NOTHING. `TALLY: {'DEEM': 0, 'ROLE': 0, 'PERMIT': 0}` printed either way, with no file count beside it and no refusal, and on a worker-classification question a zero reads as 'no state deems these workers employees'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "zero files exits 2 with COULD NOT RUN and prints no tally at all; every real tally is followed by `swept N of M candidate file(s) under <root>`, so a zero always arrives with its denominator."
+        },
+        {
+          "factor": "Three separate readers turned an unreadable document into a document containing no match -- `except Exception: return ''` on the PDF branch and on the .docx branch, plus a bare `except Exception: continue` in the main loop. An absent pypdf would have swept EVERY PDF in the corpus as clean.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a dedicated Unreadable exception is raised rather than an empty string returned, so no caller can treat it as text; unreadable documents are listed by name with their reason, excluded from the denominator, and the run exits 1. The missing-library case is worded separately from the corrupt-document case."
+        },
+        {
+          "factor": "NOTHING EVER CHECKED THE TOOL AGAINST A FIXTURE. It had no probe and no control, so a zero tally had no arm to contradict it, and the only evidence that it worked was that it ran without error -- which it did, every time, on nothing.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_reclassification_sweep_probe.py (23 arms, synthetic fixtures in both directions including a negative arm so a match-everything tool fails) and tests/run_reclassification_sweep_sabotage_probe.py (5 mutations, all refused). The control found two silent arms in the probe on its first run -- nothing exercised the default corpus, and no fixture was a PDF -- and both were fixed in the suite rather than dropped."
+        },
+        {
+          "factor": "The tool's own v1-to-v2 history recorded that Delaware 'was found by reading, not by sweeping', which is what a sweep that reads nothing looks like from outside -- and it was read as a statement about regex coverage rather than as a signal about the sweep itself.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "A single anomaly consistent with two explanations is not evidence for either, and demanding that a prior session have drawn the right inference from it would be hindsight. What makes it findable now is the file count printed beside the tally, which the earlier reading had nothing to check against."
+        }
+      ],
+      "recurrence_open": "Nothing sweeps the OTHER one-off audit tools for the same shape. docs/TOOLING-INVENTORY.md marks several as 'one-off audits against a point in time, not standing checks', and that class is exactly the one nobody re-runs and nobody controls -- this tool had no probe at all until today. A census of tools that print a verdict without printing what they read has not been done."
+    },
+    {
       "commit": "b3797733c152",
       "date": "2026-09-22",
       "subject": "fix(deadlines): an absent period count became a legal deadline on the trigger date itself -- and the obvious guard refused a real Maryland rule",
