@@ -44,8 +44,22 @@ MUTATIONS = [
      "NOT_PROVISIONED and upstream()'s codeless 502 reach the biller wearing "
      "the engine's own clothes",
      APP,
-     "      if(!r.ok)return {ok:false,error:{code:'HTTP_'+r.status,",
-     "      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,"),
+     # -- ANCHORED ON alfRoute's WHOLE BLOCK, NOT ON THE LINE (2026-09-22) --
+     # This anchored on the bare `if(!r.ok)return ...` line, which was UNIQUE
+     # in sairncare.html until ad6a6b9d gave alfPostRaw the SAME normalisation
+     # -- the same fix, correctly, in the file's other transport. The line then
+     # occurred twice, the harness reported ANCHOR-2, and this control went RED
+     # ON MAIN. The harness is right to refuse: an ambiguous anchor plants in
+     # whichever copy came first and asserts something about a line nobody chose.
+     #
+     # THE FIRST TWO LINES ARE IDENTICAL IN BOTH TRANSPORTS and so is the third;
+     # only the FOURTH differs -- alfRoute's BAD_RESPONSE says 'nothing was
+     # routed'. So the anchor is all four lines, read out of the real file by the
+     # script that wrote this rather than retyped, and asserted UNIQUE before
+     # being written here. alfPostRaw's copy has its own control in
+     # tests/run_sairncare_transport_refusal_sabotage_probe.py.
+     "      if(!r.ok)return {ok:false,error:{code:'HTTP_'+r.status,\n        message:(d.error&&d.error.message)||'The server refused this request.'}};\n      return d;\n    }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response — nothing was routed.'}};});",
+     "      if(!r.ok&&!d.error)return {ok:false,error:{code:'HTTP_'+r.status,\n        message:(d.error&&d.error.message)||'The server refused this request.'}};\n      return d;\n    }).catch(function(){return {ok:false,error:{code:'BAD_RESPONSE',message:'The server returned an unreadable response — nothing was routed.'}};});"),
 
     ("2. THE ONE THAT READS AS CORRECT: the consumer's own no-code guard is "
      "removed while the producer still stamps, so every end-to-end arm keeps "
