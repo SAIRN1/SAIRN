@@ -2076,6 +2076,19 @@
       "files": [
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "fourth-1790091818",
+      "session": "fourth",
+      "subject": "sairnlaw-biz-tier",
+      "task": "law_optx and sb_exps sibling tier corrections on the money limb FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-22T15:43:38Z",
+      "claimed_at_epoch": 1790091818.2553782,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
