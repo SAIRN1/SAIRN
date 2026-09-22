@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**208 files in `tools/`.** By what actually invokes them:
+**209 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 38 | nothing runs these at all |
+| **UNWIRED** | 39 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 2 |
-| CHECKER | 144 |
+| CHECKER | 145 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
 | LIVE | 20 |
@@ -46,13 +46,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 13 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 6 wired nowhere at all, and 7
+**The number to act on: 14 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 7 wired nowhere at all, and 7
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 13, by name, so this is actionable rather than a statistic:
+The 14, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -66,6 +66,7 @@ The 13, by name, so this is actionable rather than a statistic:
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
 | `resource_reachability_check.py` | UNWIRED | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. |
 | `role_gate_invariants.js` | SUITE-ONLY | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close |
+| `role_gate_mc_config.py` | UNWIRED | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction |
 | `run_tlc.py` | UNWIRED | a TLA+ spec in docs/spec that has stopped being consistent with ITSELF -- which is a different question from whether the code matches it, and is the half role_gate_invariants.js structurally cannot ask because it never evaluates the spec. THE FIRST REAL RUN, 2026-09-22, FOUND A BLOCKING DEFECT IN BOTH SPECS: RoleGates.tla had an unbounded CHOOSE that TLC cannot evaluate (0 states generated) and RateLimitConsume.tla defined -1 under EXTENDS Naturals and did not parse at all. Encodes the EXPECTED outcome per run rather than treating green as success -- RacySpec MUST violate the cap, because exhibiting that schedule is what it is for, and a run where it held would mean the spec had stopped modelling the race. NOT a gate and cannot be one: TLC needs a JVM and a 2.3MB jar that is not vendored, so it exits 2 COULD NOT RUN rather than 0 when either is missing |
 | `sairn_self_state.py` | UNWIRED | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name |
 | `stale_row_sweep.py` | SUITE-ONLY | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file |
@@ -330,7 +331,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (38)
+## UNWIRED (39)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -369,6 +370,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
 | `resource_reachability_check.py` | CHECKER | for every REGISTERED resource, does any client name it -- the question that finds a capability the platform describes as BUILT while no user can reach it. It exists because the narrower check it replaces could not have found the second instance: the SAIRNmechanical `eligibility` defect was caught by enumerating extraActions and asking whether each verb was sent, and SAIRNdental `dnt_rollup` needs no extra action -- it is a plain read, so that check never looked at it. A PANEL CENSUS CANNOT FIND EITHER: SAIRNdental was 22 panels / 22 nav targets / 22 sidebar ids, three identical sets, precisely because the roll-up was in none of the three. A FINDING IS "no client names this", never "delete it" -- a resource fed by a cron or read by another server endpoint is legitimately here and needs somebody to SAY so. IT CARRIES A CALIBRATION ARM, which is what makes its zeros mean anything: a substring search that finds nothing proves nothing, because a bad path produces the same output as a genuinely unreachable resource for every resource at once, so it reports how many of each app it DID find and an app below a stated floor is CANNOT TELL rather than N findings. ITS OWN FIRST RUN WAS WRONG AND SAYS SO: it read only <app>.html and reported StoneDesk sd_hr_certs (Tier A) as unreachable when stonedesk-hr.html names it, caught by hand-reading every finding before publishing the number. It CANNOT see a name built by concatenation, a caller behind a dead flag, or whether the panel works. | &mdash; |
+| `role_gate_mc_config.py` | CHECKER | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction | &mdash; |
 | `run_tlc.py` | CHECKER | a TLA+ spec in docs/spec that has stopped being consistent with ITSELF -- which is a different question from whether the code matches it, and is the half role_gate_invariants.js structurally cannot ask because it never evaluates the spec. THE FIRST REAL RUN, 2026-09-22, FOUND A BLOCKING DEFECT IN BOTH SPECS: RoleGates.tla had an unbounded CHOOSE that TLC cannot evaluate (0 states generated) and RateLimitConsume.tla defined -1 under EXTENDS Naturals and did not parse at all. Encodes the EXPECTED outcome per run rather than treating green as success -- RacySpec MUST violate the cap, because exhibiting that schedule is what it is for, and a run where it held would mean the spec had stopped modelling the race. NOT a gate and cannot be one: TLC needs a JVM and a 2.3MB jar that is not vendored, so it exits 2 COULD NOT RUN rather than 0 when either is missing | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
@@ -405,7 +407,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      208   git ls-files tools/
+  tools on disk                      209   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY

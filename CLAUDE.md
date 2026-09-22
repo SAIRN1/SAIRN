@@ -132,6 +132,20 @@ piecemeal before being named: **PR §1.11**.
 
 - Use `python`, **not** `python3` — `python3` resolves to the Microsoft Store
   stub, not the real install at `C:\Python314\python.exe`.
+- **TLC (the TLA+ model checker) needs two things this repo does NOT carry,
+  and both are ONE-TIME per clone.** `tools/run_tlc.py` exits **2 COULD NOT
+  RUN** — never 0 — when either is missing, and prints these lines itself:
+
+      winget install --id Microsoft.OpenJDK.17    # needs an elevated prompt
+      curl -sSL -o tools/vendor/tla2tools.jar \
+        https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
+
+  `tools/vendor/` is **gitignored on purpose**: the jar is 2.3MB of third-party
+  binary and vendoring it would put it in every clone and every diff. The cost
+  is that a clone without network access cannot model-check, which is why
+  `run_tlc.py` is **not** a push gate — `tools/role_gate_invariants.js` is the
+  one that runs everywhere. A JRE is enough; `javac` is not needed.
+
 - **Line endings, ONE-TIME per clone.** `.gitattributes` is repo-wide so stored
   blobs are LF, but the working-tree half is **not retroactive** and `git
   status` stays clean the whole time, so nothing will ever prompt you. Run once,
