@@ -1775,6 +1775,32 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-22T13:40:41Z",
+      "resources": [
+        "law_trusttx",
+        "sf_accounts",
+        "sf_ledger",
+        "sf_vendor_prices",
+        "sv_billing",
+        "sv_controlled",
+        "sv_patients",
+        "sv_soapnotes"
+      ],
+      "files": [
+        "api/sd-data-sv-session-gate.test.js",
+        "api/sd-data.js",
+        "tests/run_sv_session_gate_sabotage_probe.py"
+      ],
+      "what": "sairnvet SECURITY: all 41 SV_RESOURCES entries in api/sd-data.js -- including sv_controlled (DEA-relevant controlled-substance register), sv_patients and sv_soapnotes -- were readable AND writable on a bare licence key with no session check. FOUND AND BUILT BY hover2; I reproduced it live with a control and landed it. The gate is one verifySessionToken(token, licHash, 'sairnvet') before the dispatch, so neither verb is reachable without it, placed BEFORE the pre-existing sv_controlled witness lock. Client half: svData() now attaches X-SD-Auth. WHAT A REVIEWER SHOULD ATTACK: (1) I AM NOT THE AUTHOR AND THAT CUTS BOTH WAYS -- I reviewed hover2's diff rather than writing it, which is independence, but I also did not design it, so 'it looked right to me' is weaker evidence than usual; re-derive the placement yourself rather than reading my commit message. (2) COVERAGE BEYOND THE MAP: I checked api/sv-witness.js (a separate routable endpoint touching the same register -- all four actions already route through activeCaller(), so NOT a second hole) and found no other sv_ path in the dispatcher. If there is a third reachable path to these tables I did not find it, that is the finding. (3) THE OUTAGE IS DELIBERATE AND ARGUABLE: sql/sairnvet_employee_auth_schema.sql has NOT been run live (/api/sv-auth login answers 503 NOT_PROVISIONED, while sairnlegacy and sairndental answer 401 INVALID_CREDENTIALS), so from deploy nobody can sign in and all 41 resources answer 401. I landed anyway on fail-closed grounds -- a loud app recoverable in one SQL run beats an open DEA register. Argue the other side if you think it is wrong. (4) MY LIVE REPRODUCTION RETURNED ZERO ROWS on SV-PINNACLE-2026, so I demonstrated reachability, not exfiltration; hover2's run on their tenant returned rows. Arms (both hover2's): api/sd-data-sv-session-gate.test.js 19/19, tests/run_sv_session_gate_sabotage_probe.py 12/12 with 7 mutations refused. FILES: api/sd-data.js sairnvet.html api/sd-data-sv-session-gate.test.js tests/run_sv_session_gate_sabotage_probe.py",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-22T13:40:41Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
