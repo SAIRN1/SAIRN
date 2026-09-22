@@ -1695,6 +1695,17 @@
       "status": "released",
       "released_at": "2026-09-22T10:17:20Z",
       "files": null
+    },
+    {
+      "id": "cody-1790072289",
+      "session": "cody",
+      "subject": "platform",
+      "task": "defect register hover peer check session clone field on hover-audit records",
+      "claimed_at": "2026-09-22T10:18:09Z",
+      "claimed_at_epoch": 1790072289.2219043,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
