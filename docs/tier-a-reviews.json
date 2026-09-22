@@ -1895,6 +1895,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-22T15:27:43Z",
+      "resources": [
+        "alf_incidents",
+        "alf_op_audits",
+        "dnt_credentials",
+        "rf_certifications",
+        "rf_claim_agreements",
+        "rf_claim_photos"
+      ],
+      "files": [
+        "tests/run_append_only_read_order_probe.py",
+        "tools/append_only_read_order_scan.py"
+      ],
+      "what": "append-only read-order scanner: tools/append_only_read_order_scan.py (NEW, report-only) and tests/run_append_only_read_order_probe.py (NEW, 11 arms), plus one open-work row.\n\nTHE GATE TRIGGER IS SPURIOUS AND I AM SAYING SO RATHER THAN OVERRIDING -- the third instance today of scrubber item 24, after fourth flagged it twice. `dnt_credentials`, `rf_claim_agreements` and `rf_claim_photos` appear in these two files ONLY as prose naming what the scan found, and as findings in the open-work row. Neither file touches any dispatcher, any resource, or any write path: both are read-only over api/sd-data.js and sql/, the scanner has one io.open call, and the probe writes only inside its own tempfile.mkdtemp fixtures. THE OBLIGATION IS STILL WANTED; only its reason is wrong.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first:\n\n(1) THE POPULATION IS THE WHOLE TOOL. It is derived TWICE -- by DB grant (`select, insert` with no update/delete/truncate) = 21, and by application contract (`appendOnlyExisting(res, existingR, '<table>')`) = 5, union 23, overlap 3 -- because a grant-only test MISSES `alf_incidents` and `alf_op_audits`, which are append-only by contract and carry UPDATE for `merge-duplicates`. IF THERE IS A THIRD WAY A TABLE IS APPEND-ONLY ON THIS PLATFORM, MY POPULATION IS SHORT AND THE SCAN REPORTS CLEAN OVER WHATEVER IT MISSED. That is the failure I would attack first. I know of one candidate I did NOT model: a table whose append-only-ness is enforced by a check-and-insert RPC rather than by either signal -- `alf_check_and_insert_mar_entry` and `law_check_and_insert_disbursement` both exist, and `alf_mar` is in NEITHER of my two derivations because of it.\n\n(2) THE OWN-KEY LIST IS HAND-WRITTEN AND IT IS WHERE I ALREADY GOT IT WRONG TWICE. A read keyed on the row's own unique id is a single-row lookup and ordering it is meaningless; a read keyed on a PARENT id is still a list. My first draft used a `&\\w*_id=eq\\.` wildcard, which threw away `rf_claim_photos` and `rf_proposals` -- real parent-keyed list reads -- and hid four reads from the count. My second draft was missing `agreement_id`, so a single-row existence check came out as a false finding. Both are fixed and both have paired arms (C5/C6), but the list is still hand-written: a new own-key column added to the platform is a SILENT EXCLUSION until somebody adds it here. Argue whether it should be derived from the schemas instead.\n\n(3) MY VERDICTS ON THE SIX UNORDERED READS ARE JUDGEMENTS, NOT MEASUREMENTS. I called five of them non-defects by reading their consumers: `rf_certifications:5924`, `:7847` and `dnt_credentials:12331` feed `latestBy()`, which compares `recorded_at` and breaks ties on `entry_id`, so it never takes \"the last row in the list\"; `rf_claim_photos:7304` selects one column to build a membership set; `rf_claim_agreements:8452` sorts client-side by `executed_at` then `.pop()`. Re-derive at least one of those rather than reading my summary -- if any is order-sensitive after all, it is an unreported defect wearing a cleared verdict, which is worse than the scan not having run.\n\n(4) THE ONE REAL FINDING may be overstated and should be checked as such. `rf_claim_agreements:8376` with `sairnroofing.html:2806`: no server `order=`, `rows.map(...)` with no `.sort(` and no `reverse()`, and `created_at` rendered `.slice(0,10)`. I claim it matters MORE than the SAIRNcare instance because the chain is `executed`/`rescinded` on a signed contingency agreement whose cancellation window is statutory, and the same panel renders \"cancellation window OPEN INDEFINITELY\" as a red badge. That consequence claim is mine and is the part to disagree with.\n\n(5) THE SCANNER REPORTS AND DELIBERATELY DOES NOT GATE, and a reviewer could say that is too weak. My reasoning: five of six unordered reads were correct, so a gate would have denied five real pushes on its first run. The counter-argument -- that a report nothing consults is the \"tool that exists but never runs\" shape CLAUDE.md names -- is real and I have not answered it. Nothing wires this scanner to anything yet.\n\nMEASURED HERE: probe 11/11, every positive arm PAIRED with a control requiring the opposite answer (C2 pins C1 to the clause and not the table; C4 pins C3 to the contract marker; C6 pins C5 to the own-key/parent-key distinction). C7 drives a commented-out query and requires it NOT to count. C8, C9 and C10 assert that an absent sql/, an empty population and an unreadable dispatcher each exit 2 rather than reporting a clean platform. C11 asserts a table with no locatable read lands in the third state rather than in \"ordered\".\n\nFILES: tools/append_only_read_order_scan.py tests/run_append_only_read_order_probe.py docs/SAIRN-OPEN-WORK-INDEX.md",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-22T15:27:43Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
