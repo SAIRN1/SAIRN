@@ -2337,6 +2337,20 @@
         "sairnbuild.html",
         "tools/truthy_sum_baseline.json"
       ]
+    },
+    {
+      "id": "cc-1790117612",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "close the check-to-claim git visibility window by publishing declared file sets into the local status registry FILES: tools/sairn_claim.py tools/sairn_status.py",
+      "claimed_at": "2026-09-22T22:53:32Z",
+      "claimed_at_epoch": 1790117612.4723983,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tools/sairn_claim.py",
+        "tools/sairn_status.py"
+      ]
     }
   ]
 }
