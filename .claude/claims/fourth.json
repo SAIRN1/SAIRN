@@ -2063,6 +2063,19 @@
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
       ]
+    },
+    {
+      "id": "fourth-1790090403",
+      "session": "fourth",
+      "subject": "sd-risk-review",
+      "task": "discharge cc 2026-09-22T13:51:10Z -- review the material-correlated job-risk engine. REVIEW-ONLY, no edits to stonedesk.html. FILES: docs/tier-a-reviews.json -- reads stonedesk.html tests/material_risk_engine.js tests/run_material_risk_engine_sabotage_probe.py",
+      "claimed_at": "2026-09-22T15:20:03Z",
+      "claimed_at_epoch": 1790090403.881695,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ]
 }
