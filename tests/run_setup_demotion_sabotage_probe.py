@@ -38,8 +38,12 @@ from sabotage_harness import run_probe                           # noqa: E402
 
 SUITE = os.path.join('api', '_lib', 'setup-demotion-guard.test.js')
 LIB = os.path.join('api', '_lib', 'employee-lifecycle.js')
+# sf-auth.js joined this list on 2026-09-22, when its INLINE copy of the guard
+# was folded onto the shared function. It wrote the check first and was the one
+# app the per-endpoint arms could not speak for; now it is a caller like the
+# other four and a mutation that drops its call must go red like theirs.
 APPS = [os.path.join('api', a) for a in
-        ('grd-auth.js', 'sb-auth.js', 'scp-auth.js', 'sd-auth.js')]
+        ('grd-auth.js', 'sb-auth.js', 'scp-auth.js', 'sd-auth.js', 'sf-auth.js')]
 
 REFUSE = """  if (target && target.active === true && target.role === sole
       && activeSole.length <= 1) {"""
@@ -92,6 +96,30 @@ for app in APPS:
         % (len(MUTATIONS) + 1, os.path.basename(app)),
         app, CALL_HEAD,
         "      const demote = null && await lifecycle.soleRoleDemotionRefusal({"))
+
+MUTATIONS.append((
+    "%d. ONE APP'S REFUSAL SENTENCE IS REPLACED BY ANOTHER'S -- the guard "
+    "still refuses, the status and the code are unchanged, and a SAIRNfreedom "
+    "governing officer is told to add an Owner to a shop"
+    % (len(MUTATIONS) + 1),
+    os.path.join('api', 'sf-auth.js'),
+    "        soleMessage: 'This is the only active governing officer on this license. '",
+    "        soleMessage: 'This is the only active Owner on this license. '"))
+
+# ── AND OMITTING IT ALTOGETHER IS A REFUSAL, NOT A GENERIC SENTENCE ───────
+# The first design defaulted the message. tools/sairn_seam_check.py refused the
+# push for exactly that -- a field that falls back to a default is SILENT, and
+# silent is how a refusal reaches a customer in words their app does not use.
+# The engine now refuses 500 GUARD_MISCONFIGURED instead, so this mutation
+# checks the suite notices a caller that stops passing one at all.
+MUTATIONS.append((
+    "%d. A CALLER STOPS PASSING ITS REFUSAL SENTENCE -- under the first design "
+    "that was a generic message nobody would notice; it is now a refusal that "
+    "names itself, and the suite has to see the difference"
+    % (len(MUTATIONS) + 1),
+    os.path.join('api', 'grd-auth.js'),
+    "        soleMessage: 'This is the only active Owner on this license. Changing their role '",
+    "        _dropped: 'This is the only active Owner on this license. Changing their role '"))
 
 sys.exit(run_probe(
     SUITE, MUTATIONS,

@@ -385,11 +385,39 @@ async function soleRoleDemotionRefusal(ctx) {
   const activeSole = all.filter((x) => x.active === true && x.role === sole);
   if (target && target.active === true && target.role === sole
       && activeSole.length <= 1) {
-    return refusal(409, 'LAST_ADMIN',
-      'This is the only active ' + (ctx.soleLabel || sole) + ' on this license. '
-      + 'Changing their role would leave the license with none and lock everyone '
-      + 'out with no way back in through the app. Provision another first, then '
-      + 'change this one.');
+    // ── THE LOGIC IS SHARED; THE WORDS ARE NOT (2026-09-22) ──────────────
+    // `soleMessage` exists because consolidating api/sf-auth.js's inline copy
+    // onto this function would otherwise have cost a customer-facing sentence
+    // written in that app's own vocabulary -- SAIRNfreedom has POSTS with
+    // GOVERNING OFFICERS holding CAPABILITIES, and you APPOINT one; the
+    // generic wording below says license, role and provision. A refusal that
+    // uses words the app does not use sends somebody looking for a screen that
+    // is not there, and this platform has recorded that cost before.
+    //
+    // WHAT IS SHARED IS THE PART THAT CAN DRIFT DANGEROUSLY: who counts, what
+    // "still ours" means, whether an inactive holder is cover, and the order
+    // of the read. A message is a string; a second copy of the condition is a
+    // second thing to get wrong.
+    // ── REQUIRED, NOT DEFAULTED, AND tools/sairn_seam_check.py IS WHY ────
+    // The first spelling of this made `soleMessage` optional with a generic
+    // fallback. The seam check refused the push and its sentence is the whole
+    // argument: a field that "falls back to a default" is SILENT, and silent
+    // is not safe -- it is how SAIRNlaw ran Florida deadlines five days late
+    // for five days with both suites green. A caller that forgets the message
+    // would have shipped a refusal in words its app does not use, and nothing
+    // would have said so.
+    //
+    // So every caller states its own sentence, and omitting it is a
+    // misconfiguration refused the same way a soleRole naming no real role is.
+    // There is no default branch left to take.
+    if (!ctx.soleMessage) {
+      return refusal(500, 'GUARD_MISCONFIGURED',
+        'The last-admin guard found the only active ' + sole + ' and has no '
+        + 'refusal message to return. The endpoint must pass soleMessage in its '
+        + 'own vocabulary. Refusing rather than inventing one; no credential was '
+        + 'changed.');
+    }
+    return refusal(409, 'LAST_ADMIN', ctx.soleMessage);
   }
   return null;
 }

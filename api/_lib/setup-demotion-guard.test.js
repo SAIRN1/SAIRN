@@ -27,7 +27,8 @@ const fs = require('fs');
 const path = require('path');
 
 const LC = require('./employee-lifecycle.js');
-const APPS = ['grd-auth.js', 'sb-auth.js', 'scp-auth.js', 'sd-auth.js'];
+const APPS = ['grd-auth.js', 'sb-auth.js', 'scp-auth.js', 'sd-auth.js',
+  'sf-auth.js'];
 
 let pass = 0, fail = 0;
 function section(s) { console.log('\n' + s); }
@@ -46,7 +47,11 @@ const ROSTER = [
 
 function ctx(o) {
   return Object.assign({
-    provisioningRoles: ['owner', 'admin'], soleRole: 'owner', soleLabel: 'Owner',
+    provisioningRoles: ['owner', 'admin'], soleRole: 'owner',
+    // REQUIRED, not defaulted -- the engine refuses 500 without it. See the
+    // seam-check note in employee-lifecycle.js: a field with a silent default
+    // is how a refusal ends up in words the app does not use.
+    soleMessage: 'This is the only active Owner on this license.',
     licHash: 'L', table: 't', rest: (q) => 'http://x/' + q, headers: {}
   }, o);
 }
@@ -164,10 +169,18 @@ async function withRoster(rows, fn) {
   authMod.verifySessionToken = (tok) => (tok ? JSON.parse(tok) : null);
 
   const ENDPOINTS = [
-    { file: 'grd-auth.js', app: 'sairngrounds', second: 'superintendent' },
-    { file: 'sb-auth.js', app: 'sairnbiz', second: 'hr' },
-    { file: 'scp-auth.js', app: 'sairnscape', second: 'crew_lead' },
-    { file: 'sd-auth.js', app: 'stonedesk', second: 'admin' }
+    { file: 'grd-auth.js', app: 'sairngrounds', second: 'superintendent',
+      sole: 'owner' },
+    { file: 'sb-auth.js', app: 'sairnbiz', second: 'hr', sole: 'owner' },
+    { file: 'scp-auth.js', app: 'sairnscape', second: 'crew_lead', sole: 'owner' },
+    { file: 'sd-auth.js', app: 'stonedesk', second: 'admin', sole: 'owner' },
+    // ── THE FIFTH, ADDED WHEN ITS INLINE COPY WAS FOLDED IN (2026-09-22) ──
+    // sf-auth.js wrote this guard FIRST, inline, when it was the only app that
+    // needed one. It is now a caller of the shared function like the others,
+    // so it is driven like the others -- a consolidation that is not driven is
+    // a claim that the two implementations agreed.
+    { file: 'sf-auth.js', app: 'sairnfreedom', second: 'records.write',
+      sole: 'post.govern' }
   ];
 
   function fakeRes() {
@@ -203,7 +216,7 @@ async function withRoster(rows, fn) {
         method: 'POST',
         headers: {
           authorization: 'Bearer testkey',
-          'x-test-token': JSON.stringify({ employee_id: 'OWN', role: 'owner' })
+          'x-test-token': JSON.stringify({ employee_id: 'OWN', role: ep.sole })
         },
         body: {
           action: 'setup', employee_id: targetId, pin: '123456', role: newRole
@@ -216,12 +229,16 @@ async function withRoster(rows, fn) {
   }
 
   for (const ep of ENDPOINTS) {
+    // Each app's OWN sole role, not a hardcoded 'owner'. SAIRNfreedom's is
+    // post.govern, and a fixture that said owner would have driven a roster
+    // with no sole-role holder at all -- every arm would then pass because
+    // nothing could be the last one.
     const only = [
-      { employee_id: 'OWN', role: 'owner', active: true },
+      { employee_id: 'OWN', role: ep.sole, active: true },
       { employee_id: 'TWO', role: ep.second, active: true }
     ];
 
-    await t(ep.file + ': demoting the ONLY owner through setup is REFUSED and NOT written',
+    await t(ep.file + ': demoting the ONLY ' + ep.sole + ' through setup is REFUSED and NOT written',
       async () => {
         const r = await drive(ep, only, 'OWN', ep.second);
         assert.strictEqual(r.upserted, null,
@@ -233,9 +250,9 @@ async function withRoster(rows, fn) {
         assert.strictEqual(r.body.error.code, 'LAST_ADMIN');
       });
 
-    await t(ep.file + ': ...with a SECOND active owner the same call is allowed',
+    await t(ep.file + ': ...with a SECOND active ' + ep.sole + ' the same call is allowed',
       async () => {
-        const two = only.concat([{ employee_id: 'OWN2', role: 'owner', active: true }]);
+        const two = only.concat([{ employee_id: 'OWN2', role: ep.sole, active: true }]);
         const r = await drive(ep, two, 'OWN', ep.second);
         assert.ok(r.upserted, 'a safe demotion was refused: ' + r.status
           + ' ' + JSON.stringify(r.body));
@@ -266,7 +283,45 @@ async function withRoster(rows, fn) {
     });
   }
 
-  await t('the four are exactly the apps that name a sole role AND upsert a role', async () => {
+  await t('sf-auth.js keeps ITS OWN refusal wording through the shared guard', async () => {
+    // The logic is shared; the vocabulary is not. SAIRNfreedom has POSTS with
+    // GOVERNING OFFICERS holding CAPABILITIES that you APPOINT, and the shared
+    // function's default sentence says license, role and provision. Folding the
+    // implementations together without this would have quietly replaced a
+    // customer-facing refusal with one using words the app does not use.
+    const ep = ENDPOINTS.filter((e) => e.file === 'sf-auth.js')[0];
+    const only = [
+      { employee_id: 'OWN', role: ep.sole, active: true },
+      { employee_id: 'TWO', role: ep.second, active: true }
+    ];
+    const r = await drive(ep, only, 'OWN', ep.second);
+    assert.strictEqual(r.status, 409);
+    assert.strictEqual(
+      r.body.error.message,
+      'This is the only active governing officer on this license. '
+      + 'Changing their capability would leave the post with none and lock '
+      + 'everyone out with no way back in through the app. Appoint another '
+      + 'governing officer first, then change this one.',
+      'the consolidation changed the sentence a governing officer reads: '
+      + JSON.stringify(r.body.error.message));
+  });
+
+  await t('...and every other app states its own sentence too', async () => {
+    const ep = ENDPOINTS.filter((e) => e.file === 'grd-auth.js')[0];
+    const only = [
+      { employee_id: 'OWN', role: ep.sole, active: true },
+      { employee_id: 'TWO', role: ep.second, active: true }
+    ];
+    const r = await drive(ep, only, 'OWN', ep.second);
+    assert.strictEqual(r.status, 409);
+    assert.match(r.body.error.message, /only active Owner on this license/,
+      'got ' + JSON.stringify(r.body.error.message));
+    assert.match(r.body.error.message, /leave the property with none/,
+      'grd-auth states its OWN sentence now rather than taking a shared '
+      + 'default: ' + JSON.stringify(r.body.error.message));
+  });
+
+  await t('the five are exactly the apps that name a sole role AND upsert a role', async () => {
     // Derived, so a FIFTH such app cannot appear without this suite noticing.
     const dir = path.join(__dirname, '..');
     const reachable = fs.readdirSync(dir).filter((f) => /-auth\.js$/.test(f)).filter((f) => {
@@ -280,10 +335,12 @@ async function withRoster(rows, fn) {
         && setup.indexOf('on_conflict=license_hash,employee_id') !== -1
         && /body: JSON\.stringify\(\{[\s\S]{0,400}\brole\b/.test(setup);
     }).sort();
-    assert.deepStrictEqual(reachable, APPS.concat(['sf-auth.js']).sort(),
+    assert.deepStrictEqual(reachable, APPS.slice().sort(),
       'the set of endpoints that name a sole role and upsert a role in setup has '
-      + 'changed. A new one is UNGUARDED until it is wired; sf-auth.js carries its '
-      + 'own inline copy and is expected here. Got: ' + reachable.join(', '));
+      + 'changed. A new one is UNGUARDED until it is wired. This list used to '
+      + 'carry sf-auth.js as an EXCEPTION, because it held its own inline copy of '
+      + 'the guard; that copy was folded onto the shared function on 2026-09-22 '
+      + 'and the exception went with it. Got: ' + reachable.join(', '));
   });
 
   console.log('\n' + (fail ? 'FAILED' : 'ok') + '  setup demotion guard: '

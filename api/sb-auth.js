@@ -267,7 +267,15 @@ module.exports = async (req, res) => {
       // one call that creates the Owner this guard exists to protect.
       const demote = await lifecycle.soleRoleDemotionRefusal({
         provisioningRoles: PROVISIONING_ROLES, soleRole: SOLE_ROLE,
-        soleLabel: 'Owner', newRole: role, employee_id: employee_id,
+        newRole: role, employee_id: employee_id,
+        // STATED, not defaulted. tools/sairn_seam_check.py refuses a field
+        // the engine reads and the call site leaves undefined, because a
+        // silent default is how a refusal ends up in words this app does
+        // not use and nothing says so.
+        soleMessage: 'This is the only active Owner on this license. Changing their role '
+          + 'would leave the business with none and lock everyone out with no '
+          + 'way back in through the app. Add another Owner first, then change '
+          + 'this one.',
         licHash: licHash, table: TABLE, rest: rest, headers: headers
       });
       if (demote) {

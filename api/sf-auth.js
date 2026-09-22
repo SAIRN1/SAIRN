@@ -358,29 +358,40 @@ module.exports = Object.assign(async (req, res) => {
       // nine wired onto api/_lib/employee-lifecycle.js -- that helper owns
       // set_active and not setup. Fixing ten apps belongs in its own claim
       // with its own review; this closes the hole in the app being built.
-      if (SF_ROLES.indexOf(role) !== -1 && role !== SOLE_ROLE) {
-        const beforeR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) +
-          '&select=employee_id,role,active'), { headers });
-        const beforeRows = await beforeR.json();
-        if (!beforeR.ok) return upstream(res, beforeRows);
-        const all = Array.isArray(beforeRows) ? beforeRows : [];
-        const target = all.filter(function (x) { return x.employee_id === employee_id; })[0];
-        const activeGovernors = all.filter(function (x) {
-          return x.active === true && x.role === SOLE_ROLE;
-        });
-        if (target && target.active === true && target.role === SOLE_ROLE
-            && activeGovernors.length <= 1) {
-          res.status(409).json({
-            error: {
-              code: 'LAST_ADMIN',
-              message: 'This is the only active governing officer on this license. '
-                + 'Changing their capability would leave the post with none and lock '
-                + 'everyone out with no way back in through the app. Appoint another '
-                + 'governing officer first, then change this one.'
-            }
-          });
-          return;
-        }
+      // ── FOLDED ONTO THE SHARED GUARD (2026-09-22) ──────────────────────
+      // This was the FIRST implementation of this check and it was written
+      // here, inline, because at the time it was the only app that had one.
+      // Four more apps needed it the next day, so the logic moved to
+      // api/_lib/employee-lifecycle.js and this became the fifth copy of a
+      // security decision -- which is the duplication this platform pays for
+      // repeatedly. Folding it in DELETES a copy rather than adding one.
+      //
+      // THE BEHAVIOUR IS UNCHANGED AND THAT IS ASSERTED, not assumed: the
+      // shared function reads the same roster, counts only ACTIVE holders of
+      // the sole role, refuses only when the target is still one of them, and
+      // skips the read entirely when the new role IS the sole role. The one
+      // thing it adds is refusing 500 GUARD_MISCONFIGURED when SOLE_ROLE names
+      // no real provisioning role, which this copy could not do -- it would
+      // have counted zero governors and let the write through.
+      //
+      // THE WORDS STAY THIS APP'S OWN. `soleMessage` carries the sentence that
+      // was here verbatim, because SAIRNfreedom has POSTS with GOVERNING
+      // OFFICERS holding CAPABILITIES that you APPOINT, and the generic
+      // wording says license, role and provision. The logic is shared; the
+      // vocabulary is not.
+      const demote = await lifecycle.soleRoleDemotionRefusal({
+        provisioningRoles: PROVISIONING_ROLES, soleRole: SOLE_ROLE,
+        newRole: role, employee_id: employee_id,
+        licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        soleMessage: 'This is the only active governing officer on this license. '
+          + 'Changing their capability would leave the post with none and lock '
+          + 'everyone out with no way back in through the app. Appoint another '
+          + 'governing officer first, then change this one.'
+      });
+      if (demote) {
+        if (demote.upstream) return upstream(res, demote.upstream);
+        res.status(demote.status).json(demote.body);
+        return;
       }
       const { pin_hash, pin_salt } = hashPin(pin);
       const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
