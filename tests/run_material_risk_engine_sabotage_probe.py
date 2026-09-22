@@ -77,6 +77,33 @@ MUTATIONS = [
     ('the health score stops reading the verdict', APP,
      "  if(matRisk&&matRisk.level==='red')score-=20;\n",
      "  if(false)score-=20;\n"),
+
+    # ── THE RENDERER. The engine SHIPPED with `unmatched` reaching no screen --
+    # ── a correct producer with no reader. These four make sure the way back
+    # ── to that state is loud.
+
+    # 7. The exact regression this commit fixes, restored.
+    ('the unmatched list stops being rendered', APP,
+     "  if(r.unmatched&&r.unmatched.length){\n",
+     "  if(false){\n"),
+
+    # 8. The renderer stays perfect and the panel stops calling it -- [0040] in
+    #    one line, and invisible to every arm that tests the renderer directly.
+    ('the remakes panel stops calling the renderer', APP,
+     "  zone.innerHTML=html+(typeof sdRenderMaterialRisk==='function'?sdRenderMaterialRisk():'');\n",
+     "  zone.innerHTML=html;\n"),
+
+    # 9. A material name is text the shop typed and it goes into innerHTML.
+    ('the unmatched material name stops being escaped', APP,
+     "        return '&bull; <strong>'+escHtml(u.material)+'</strong> &mdash; '+u.remakes+' remake(s)'+(u.cost?', $'+Math.round(u.cost).toLocaleString():'');\n",
+     "        return '&bull; <strong>'+u.material+'</strong> &mdash; '+u.remakes+' remake(s)'+(u.cost?', $'+Math.round(u.cost).toLocaleString():'');\n"),
+
+    # 10. The refusal goes quiet. A shop seeing nothing cannot tell "ran and
+    #     found nothing" from "waiting on you", which is the whole reason the
+    #     unavailable branch prints at all.
+    ('an unavailable report renders nothing instead of saying why', APP,
+     "  if(!r.available){\n",
+     "  if(false){\n"),
 ]
 
 if __name__ == '__main__':

@@ -49,7 +49,11 @@ function grab(startMarker, endMarker) {
 
 const ctx = { console, Date, Math, JSON, String, Number, Array, Object, sdCustomers: [], sdRemakes: [] };
 vm.createContext(ctx);
+// The REAL escHtml, not a stub: the renderer prints material names the shop typed, and a stub
+// would make the escaping arm below assert against itself.
+vm.runInContext(grab('function escHtml(s){', 'window.escHtml=escHtml;'), ctx);
 vm.runInContext(grab('var SD_MATRISK_MIN_JOBS = 4;', 'function runAlertScan() {'), ctx);
+vm.runInContext(grab('function sdRenderMaterialRisk(rep){', '\n// == EXECUTIVE SUITE'), ctx);
 const { sdMaterialRisk, sdMaterialRiskFor, sdMatKey,
         SD_MATRISK_MIN_JOBS, SD_MATRISK_MIN_REMAKES,
         SD_MATRISK_YELLOW_X, SD_MATRISK_RED_X } = ctx;
@@ -204,5 +208,57 @@ ok(/Health score reduced by/.test(html),
 const engine = grab('var SD_MATRISK_MIN_JOBS = 4;', 'function runAlertScan() {');
 eq(/sd_jobs|sdJobs/.test(engine), false, 'the engine never reads sd_jobs, whose material is always empty');
 eq(/sdFinJobs|sd_fin_jobs/.test(engine), false, 'nor sd_fin_jobs, which is optional bookkeeping');
+
+// ── THE RENDERER. The engine shipped with `unmatched` reaching NO SCREEN -- a correct
+// ── producer with no reader, which is [0040]'s shape. These arms exist so it cannot go
+// ── unreachable again quietly.
+const { sdRenderMaterialRisk } = ctx;
+ok(typeof sdRenderMaterialRisk === 'function', 'the renderer was extracted');
+
+// The refusal is PRINTED. A shop that sees nothing cannot tell "the check ran and found
+// nothing" from "the check is waiting on you".
+let h = sdRenderMaterialRisk(run([], []));
+ok(/no verdict yet/.test(h), 'an unavailable report renders its refusal rather than nothing');
+ok(/no customer record carries a material/.test(h), 'and prints which reason it was');
+ok(h.indexOf('' + SD_MATRISK_MIN_JOBS) !== -1, 'and what it is waiting for');
+
+// THE GAP THIS COMMIT CLOSES.
+h = sdRenderMaterialRisk(run(custs({ Granite: 20 }),
+      remakes([['Granite', 'cut_error'], ['Granite', 'cut_error'],
+               ['Calacatta Gold', 'material_defect', 900]])));
+ok(/Calacatta Gold/.test(h), 'an unmatched material is RENDERED, not merely computed');
+ok(/in no material.{0,10}s rate/.test(h), 'and says plainly that it is in no rate');
+ok(/900/.test(h), 'and names the cost that sits outside the analysis');
+
+// Flagged materials render with the figures behind the verdict, not just a colour.
+h = sdRenderMaterialRisk(run(custs({ Granite: 20, Marble: 5 }),
+      remakes([['Marble', 'material_defect', 400], ['Marble', 'material_defect', 300],
+               ['Marble', 'edge_error', 100], ['Marble', 'material_defect', 200]])));
+ok(/Marble/.test(h), 'the flagged material is named');
+ok(/80% of 5 job/.test(h), 'with its own rate and denominator');
+ok(/16%/.test(h), "and the shop's own baseline it was judged against");
+ok(/material defect/.test(h), 'and the dominant failure mode, underscores unpicked');
+ok(/Granite/.test(h) === false, 'an ok material is not listed as a risk');
+
+// The third list was unreachable too. Shipping `unmatched` alone would repeat the half-sweep
+// that left First-Pass Approval at 100% beside a tile cleaned twice in this same file.
+h = sdRenderMaterialRisk(run(custs({ Granite: 20, Marble: 3 }),
+      remakes([['Marble', 'cut_error'], ['Marble', 'cut_error'],
+               ['Granite', 'cut_error'], ['Granite', 'cut_error']])));
+ok(/Not enough jobs to judge yet/.test(h), 'insufficient materials are rendered too');
+ok(/Marble/.test(h), 'and named');
+
+// ── A MATERIAL NAME IS TEXT THE SHOP TYPED, and it is going into innerHTML.
+h = sdRenderMaterialRisk(run(custs({ Granite: 20 }),
+      remakes([['Granite', 'cut_error'], ['Granite', 'cut_error'],
+               ['<img src=x onerror=alert(1)>', 'other', 50]])));
+eq(/<img src=x/.test(h), false, 'a hostile material name is not emitted raw');
+ok(/&lt;img src=x/.test(h), '...it is escaped, through the real escHtml');
+
+// ── AND THE RENDERER IS ACTUALLY CALLED. The whole point of this commit.
+ok(/zone\.innerHTML=html\+\(typeof sdRenderMaterialRisk==='function'\?sdRenderMaterialRisk\(\):''\)/.test(html),
+   'runRemakeAlerts appends the report to the remakes panel');
+ok(/if\(reds\.length\) html=/.test(html),
+   '...without replacing the urgency banner it already rendered');
 
 console.log(n + ' assertions pass');

@@ -28262,16 +28262,86 @@ function renderRemakes(){
   }).join('');
 }
 
+// [0072] THE MATERIAL VERDICT IS RENDERED HERE, IN THE PANEL THAT OWNS THE DATA.
+// It shipped computed-and-unreachable: sdMaterialRisk() returned `materials`, `unmatched` and
+// `insufficient`, and the only consumers were an alert on the CUSTOMERS panel and the health
+// score in a modal. `unmatched` in particular reached no screen at all -- which is [0040]'s
+// shape exactly, a correct producer with no reader, and it was flagged against my own work
+// rather than found later.
+//
+// THE REMAKES PANEL IS THE RIGHT HOME AND THE REASON IS NOT TIDINESS. The person who can ACT
+// on an unmatched material is whoever typed it into the remake form: the fix is a spelling, on
+// a record in this panel. Putting it on the customers panel would tell the wrong person.
+//
+// `insufficient` IS RENDERED TOO, and that is deliberate rather than scope creep. Shipping
+// `unmatched` alone would leave the third of the report's three lists unreachable -- the same
+// half-a-sweep that left "First-Pass Approval" at 100% beside a tile that had been cleaned,
+// twice, in this same file. The whole card, or none of it.
 function runRemakeAlerts(){
   var zone=document.getElementById('remake-alerts-zone');
   if(!zone) return;
   var open=sdRemakes.filter(r=>r.status==='open');
   var reds=open.filter(r=>remakeUrgency(r)==='red');
   var yellows=open.filter(r=>remakeUrgency(r)==='yellow');
-  if(reds.length) zone.innerHTML='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' remake(s) OVERDUE — management approval required</span></div>';
-  else if(yellows.length) zone.innerHTML='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' remake(s) approaching time limit</span></div>';
-  else if(open.length) zone.innerHTML='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All remakes within time limits</span></div>';
-  else zone.innerHTML='';
+  var html='';
+  if(reds.length) html='<div class="urgency-banner red"><span class="urgency-icon">🚨</span><span>'+reds.length+' remake(s) OVERDUE — management approval required</span></div>';
+  else if(yellows.length) html='<div class="urgency-banner yellow"><span class="urgency-icon">⚠️</span><span>'+yellows.length+' remake(s) approaching time limit</span></div>';
+  else if(open.length) html='<div class="urgency-banner green"><span class="urgency-icon">✅</span><span>All remakes within time limits</span></div>';
+  zone.innerHTML=html+(typeof sdRenderMaterialRisk==='function'?sdRenderMaterialRisk():'');
+}
+
+// Returns HTML, takes no DOM. Split out so the [0072] report has one renderer that can be
+// asserted on directly, rather than a block buried inside a function that also reads urgency.
+function sdRenderMaterialRisk(rep){
+  if(typeof sdMaterialRisk!=='function') return '';
+  var r=rep||sdMaterialRisk();
+  if(!r) return '';
+  var out='';
+  var box=function(bg,bd,tx,body){
+    return '<div style="background:'+bg+';border:1px solid '+bd+';color:'+tx+';border-radius:10px;padding:10px 14px;margin-top:10px;font-size:12px;line-height:1.6">'+body+'</div>';
+  };
+  // THE REFUSAL IS SHOWN, NOT HIDDEN. "Not enough data to have an opinion" printed plainly is
+  // the difference between a shop knowing the check is waiting on them and a shop assuming it
+  // ran and found nothing.
+  if(!r.available){
+    out+=box('var(--card)','var(--border)','var(--muted)',
+      '<strong>Material risk: no verdict yet.</strong> '+escHtml(String(r.reason||''))+'. '+
+      'Rates need at least '+SD_MATRISK_MIN_JOBS+' job(s) of a material and '+SD_MATRISK_MIN_REMAKES+' remake(s) on it.');
+  } else {
+    var flagged=r.materials.filter(function(m){return m.level==='red'||m.level==='yellow';});
+    if(flagged.length){
+      out+=box('#FEF3C7','#FCD34D','#92400E',
+        '<strong>Material risk &mdash; against this shop&rsquo;s own '+Math.round(r.baseline.rate*100)+'% baseline ('+r.baseline.remakes+' remake(s) over '+r.baseline.jobs+' job(s)):</strong><br>'+
+        flagged.map(function(m){
+          return (m.level==='red'?'&#128308; ':'&#128993; ')+'<strong>'+escHtml(m.material)+'</strong> &mdash; '+
+            Math.round(m.rate*100)+'% of '+m.jobs+' job(s) ('+m.remakes+' remake(s)'+
+            (m.cost?', $'+Math.round(m.cost).toLocaleString():'')+')'+
+            (m.topReason?', mostly '+escHtml(String(m.topReason).replace(/_/g,' ')):'');
+        }).join('<br>'));
+    }
+  }
+  // THE ONE THAT REACHED NO SCREEN. A remake whose material matches no job is excluded from
+  // BOTH sides of every rate, so its cost silently leaves the analysis -- and what remains
+  // reads like a shop with nothing wrong. The money is named so it is not lost with it.
+  if(r.unmatched&&r.unmatched.length){
+    var lost=r.unmatched.reduce(function(s,u){return s+(u.cost||0);},0);
+    out+=box('#FEE2E2','#FCA5A5','#991B1B',
+      '<strong>'+r.unmatched.reduce(function(s,u){return s+u.remakes;},0)+' remake(s) are in no material&rsquo;s rate.</strong> '+
+      'These materials appear on remakes but on no customer record, so they are counted on neither side'+
+      (lost?' and $'+Math.round(lost).toLocaleString()+' of remake cost sits outside the analysis':'')+
+      '. Usually a spelling that does not match the intake list:<br>'+
+      r.unmatched.map(function(u){
+        return '&bull; <strong>'+escHtml(u.material)+'</strong> &mdash; '+u.remakes+' remake(s)'+(u.cost?', $'+Math.round(u.cost).toLocaleString():'');
+      }).join('<br>'));
+  }
+  if(r.insufficient&&r.insufficient.length){
+    out+=box('var(--card)','var(--border)','var(--muted)',
+      '<strong>Not enough jobs to judge yet:</strong> '+
+      r.insufficient.map(function(u){
+        return escHtml(u.material)+' ('+u.remakes+' remake(s) over '+u.jobs+' job(s))';
+      }).join(', ')+'. Needs '+SD_MATRISK_MIN_JOBS+' job(s) of a material before a rate means anything.');
+  }
+  return out;
 }
 
 // == EXECUTIVE SUITE ===========================================
