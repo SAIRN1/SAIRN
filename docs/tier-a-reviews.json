@@ -1732,6 +1732,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-22T12:02:38Z",
+      "resources": [
+        "alf_claim_routes",
+        "alf_incidents",
+        "alf_op_audits",
+        "alf_staff_credentials",
+        "rf_certifications"
+      ],
+      "files": [
+        "api/alf-append-only-read-order.test.js",
+        "api/sd-data.js",
+        "tests/run_alf_read_order_sabotage_probe.py"
+      ],
+      "what": "sairncare: six append-only trail reads in api/sd-data.js gained an explicit order= clause (alf_mar, alf_incidents, alf_signals, alf_claim_routes, alf_staff_credentials, alf_op_audits). No read filter, no gate, no write path and no payload shape changed -- only the ORDER rows come back in. Direction is desc for the five created_at trails and recorded_at.desc for alf_signals; the reason is that every SAIRNcare renderer that sorts this data sorts newest-first, and alf_claim_routes does not sort at all. WHAT A REVIEWER SHOULD ATTACK: (1) the desc choice -- the wider file uses asc for append-only supersede chains, so argue whether any of these six is that shape; (2) the 400 path -- each of these reads answers a 400 with {ok:true,data:[],provisioned:false}, so an order column that does not exist in the LIVE database would render as 'the table is NOT SET UP' rather than an error, which is why the live read-back matters more than the schema files; (3) whether api/alf-append-only-read-order.test.js parsing TABLES out of api/alf-append-only-fail-closed.test.js is genuinely drift-proof or just moves the staleness. Arms: new suite 9/9, tests/run_alf_read_order_sabotage_probe.py 7 mutations all refused. FILES: api/sd-data.js api/alf-append-only-read-order.test.js tests/run_alf_read_order_sabotage_probe.py",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-22T12:02:38Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
