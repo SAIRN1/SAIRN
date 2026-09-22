@@ -583,6 +583,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **&#9989; An `admin` could deactivate the last active `owner` &mdash; the FOURTH instance of the last-admin defect, in a Tier A auth path, behind a comment calling it &ldquo;unreachable by construction&rdquo;** | **FIXED 2026-09-21 (Hank)** &mdash; `GUARD_ROLES = [SOLE_ROLE]` in `api/sd-auth.js`; new `api/sd-auth-last-admin.test.js` **8 arms**, new `tests/run_sd_auth_last_admin_sabotage_probe.py` **8 mutations | `api/sd-auth-last-admin.test.js`, `tests/run_sd_auth_last_admin_sabotage_probe.py` |
 | **~~&#128308; THE SAME DEFECT IS LIVE IN StoneDesk &mdash; an `admin` can deactivate the last `owner`~~ &mdash; SUPERSEDED, it was fixed the same evening** | **CLOSED 2026-09-21 (Hank).** Kept rather than deleted so the FOUND&rarr;FIXED sequence stays on file; the live row is the **&#9989; StoneDesk** one above | `api/sd-auth-last-admin.test.js`, `tests/run_sd_auth_last_admin_sabotage_probe.py` |
+| **&#9888; `sd_jobs.material` is written as the EMPTY STRING at its only creation site and set by nothing &mdash; the schedule’s per-job material field is a frozen blank** | **MEASURED 2026-09-22 (cc) while choosing a denominator for `[0072]`, and NOT FIXED &mdash; the engine routed around it instead.** The one site that creates a `sdJobs` record writes `material: ''` lit | `tests/material_risk_engine.js` |
 | **The pricing backtest had NO suite at all, which is why it spent its whole life mis-parsing uploads &mdash; suite and negative control both built** | **BUILT 2026-09-18 (Fourth)** &mdash; `tests/stonedesk_pricing_backtest.js` 13 arms, `tests/stonedesk_pricing_backtest_mutation_control.js` 14 assertions, 5 mutations all caught | `tests/stonedesk_pricing_backtest.js`, `tests/stonedesk_pricing_backtest_mutation_control.js` |
 | **`tests/stonedesk_server_backup.js` had been RED on `main` since item 97 landed and nobody had read the red** | **FIXED 2026-09-16 (Hank)** &mdash; the `soft_delete` spread assertion now names the seven SAIRNcode resources. 23/23 green | `tests/stonedesk_server_backup.js` |
 | **Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise was wrong, which is stated before anything was built** | **BUILT 2026-09-15 (Hank)** &mdash; `9bc2dd2b`. `tests/stonedesk_inside_corner_radius.js` 14 arms + `tests/stonedesk_fixture_catalog.js` 15 arms | `tests/stonedesk_fixture_catalog.js`, `tests/stonedesk_inside_corner_radius.js` |
@@ -614,17 +615,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 598 of 671 traced, 89.1%.
+For context and not as the headline: 600 of 673 traced, 89.2%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 598 citations come from
+### Where the 600 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 306 |
-| `declared` | 245 |
-| `declared+index` | 39 |
+| `declared` | 246 |
+| `declared+index` | 40 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -732,8 +733,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 671   tests/**, api/** (both walked)
-  open-work rows citing a test       337   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 673   tests/**, api/** (both walked)
+  open-work rows citing a test       338   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

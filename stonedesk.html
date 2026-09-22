@@ -24620,9 +24620,154 @@ function hoursAgo(dateStr) {
   return (Date.now() - new Date(dateStr).getTime()) / 3600000;
 }
 
+// == [0072] MATERIAL-CORRELATED JOB RISK ========================================================
+// Until now StoneDesk's risk detection was material-BLIND. runAlertScan() had two time rules
+// (quote age, warranty expiry) and custOpenDetail()'s health score had three (staleness, stale
+// quote, balance owed). Not one of them read `material`, while the shop's whole business is
+// that Calacatta and Uba Tuba do not behave the same on a saw.
+//
+// THE DATA WAS ALREADY BEING WRITTEN AND NOTHING CORRELATED IT. sdRMAdd() records, per remake,
+// the material, a `reason` from a fixed seven-value vocabulary (RM_CAUSE_TO_REASON) and a cost.
+// The only consumer was sdRMAI(), which serialises the records into a Claude prompt and asks it
+// to find root causes -- a different answer every run, nothing stored, nothing thresholded,
+// nothing testable. A prompt is not a mechanism on this platform.
+//
+// ── THE THRESHOLD IS RELATIVE, AND THAT IS THE WHOLE DESIGN DECISION ──────────────────────────
+// An absolute "flag above 15%" would be a number nobody here measured, which is the fabrication
+// this panel pair has already been audited for twice. So a material is judged against THE SHOP'S
+// OWN baseline remake rate, computed from the same two collections. A shop that remakes 2% of
+// jobs and a shop that remakes 20% both get an answer about which of THEIR materials is worse
+// than THEIR normal. The multipliers below are a choice and are stated as one.
+//
+// ── THE DENOMINATOR, AND WHY IT IS sdCustomers ────────────────────────────────────────────────
+// Three collections carry a per-job material and only one of them is usable:
+//   sd_jobs      -- written `material:''` at its only creation site and set by nothing. A rate
+//                   built on it would divide by a field that is always empty, which is exactly
+//                   the frozen-field defect fixed in the Seam AI panel this same session.
+//   sd_fin_jobs  -- real, but optional bookkeeping many shops never fill in.
+//   sdCustomers  -- real, populated at intake, and ALREADY grouped by material four lines below
+//                   in computePricingInsight(). Same population, same field, same minimum.
+// SD_MATRISK_MIN_JOBS is 4 deliberately: it is the floor computePricingInsight() already chose
+// for exactly this shape, and two different minimums for "enough jobs of this material to say
+// anything" would be two answers to one question.
+//
+// ── WHAT IT REFUSES TO DO ─────────────────────────────────────────────────────────────────────
+// Material names are typed in two places by two people -- a select at intake, a free-text input
+// on the remake form -- so they are matched on a NORMALISED key (case and whitespace) and on
+// nothing else. No fuzzy matching, no stemming: "Quartzite" and "Quartz" are different rocks and
+// a matcher that merged them would be confidently wrong about the one distinction that matters
+// most to a fabricator. A material with remakes and NO matching jobs is reported as UNMATCHED
+// rather than dropped, because a silent zero here reads exactly like a clean shop.
+//
+// ── THE LIMITATION, WRITTEN HERE RATHER THAN DISCOVERED LATER ─────────────────────────────────
+// The baseline INCLUDES the material being judged, so a material that dominates a shop's work
+// cannot be flagged against a baseline it largely defines -- a single-material shop always
+// scores ratio 1.0 and is never flagged. That is deliberate rather than an oversight: "worse
+// than your normal" is not a statement that can be made about the thing that IS your normal,
+// and leaving one out would make a 5-job material's verdict swing on its own two remakes. The
+// cost is real and is named: a shop running 90% engineered quartz will not see quartz flagged
+// however badly it goes. The RATE and the COST are still reported for every qualifying
+// material, so the figure is there to read even when the verdict stays 'ok'.
+var SD_MATRISK_MIN_JOBS = 4;
+// One remake is an incident. Two is the smallest thing that can be a pattern, and without this
+// floor a single remake against 4 jobs is a 25% rate that would outrank everything.
+var SD_MATRISK_MIN_REMAKES = 2;
+// Multiples of the shop's OWN baseline. Chosen, not derived -- 2x is "clearly worse than your
+// normal", 3x is "this is the thing to fix first". Stated so a reader can disagree with the
+// number rather than with a hidden constant.
+var SD_MATRISK_YELLOW_X = 2;
+var SD_MATRISK_RED_X = 3;
+
+function sdMatKey(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+
+// Returns a REPORT, not a number. `available:false` carries the reason, because "no elevated
+// material" and "not enough data to have an opinion" are different answers and collapsing them
+// is how a risk engine goes quiet without anybody noticing.
+function sdMaterialRisk() {
+  var custs = (typeof sdCustomers !== 'undefined' && sdCustomers) ? sdCustomers : [];
+  var rms = (typeof sdRemakes !== 'undefined' && sdRemakes) ? sdRemakes : [];
+  var jobsBy = {}, labelBy = {};
+  custs.forEach(function (c) {
+    var k = sdMatKey(c && c.material);
+    if (!k) return;
+    jobsBy[k] = (jobsBy[k] || 0) + 1;
+    if (!labelBy[k]) labelBy[k] = String(c.material).trim();
+  });
+  var rmBy = {}, costBy = {}, reasonBy = {};
+  rms.forEach(function (r) {
+    var k = sdMatKey(r && r.material);
+    if (!k) return;
+    rmBy[k] = (rmBy[k] || 0) + 1;
+    costBy[k] = (costBy[k] || 0) + (Number(r.cost) || 0);
+    if (!reasonBy[k]) reasonBy[k] = {};
+    var why = String((r && r.reason) || 'other');
+    reasonBy[k][why] = (reasonBy[k][why] || 0) + 1;
+    if (!labelBy[k]) labelBy[k] = String(r.material).trim();
+  });
+  var totalJobs = 0, totalRemakes = 0;
+  Object.keys(jobsBy).forEach(function (k) { totalJobs += jobsBy[k]; totalRemakes += (rmBy[k] || 0); });
+  // A material with remakes and no jobs of that name -- a deleted customer, or the two
+  // vocabularies disagreeing. Named rather than silently excluded from both sides.
+  var unmatched = Object.keys(rmBy).filter(function (k) { return !jobsBy[k]; }).map(function (k) {
+    return { material: labelBy[k], remakes: rmBy[k], cost: costBy[k] || 0 };
+  });
+  if (!totalJobs) {
+    return { available: false, reason: 'no customer record carries a material yet', unmatched: unmatched,
+             materials: [], insufficient: [], baseline: null };
+  }
+  if (!totalRemakes) {
+    return { available: false, reason: 'no remake has been logged against a material that has jobs',
+             unmatched: unmatched, materials: [], insufficient: [], baseline: null };
+  }
+  var baseRate = totalRemakes / totalJobs;
+  var materials = [], insufficient = [];
+  Object.keys(jobsBy).forEach(function (k) {
+    var jobs = jobsBy[k], remakes = rmBy[k] || 0;
+    if (jobs < SD_MATRISK_MIN_JOBS) {
+      if (remakes) insufficient.push({ material: labelBy[k], jobs: jobs, remakes: remakes });
+      return;
+    }
+    var rate = remakes / jobs;
+    var ratio = baseRate > 0 ? rate / baseRate : 0;
+    var level = 'ok';
+    if (remakes >= SD_MATRISK_MIN_REMAKES) {
+      if (ratio >= SD_MATRISK_RED_X) level = 'red';
+      else if (ratio >= SD_MATRISK_YELLOW_X) level = 'yellow';
+    }
+    var reasons = reasonBy[k] || {};
+    var top = Object.keys(reasons).sort(function (a, b) {
+      return reasons[b] - reasons[a] || (a < b ? -1 : a > b ? 1 : 0);
+    })[0] || null;
+    materials.push({
+      material: labelBy[k], jobs: jobs, remakes: remakes, rate: rate, ratio: ratio, level: level,
+      cost: costBy[k] || 0, topReason: top, topReasonCount: top ? reasons[top] : 0
+    });
+  });
+  materials.sort(function (a, b) { return b.ratio - a.ratio || b.remakes - a.remakes; });
+  return {
+    available: true, baseline: { jobs: totalJobs, remakes: totalRemakes, rate: baseRate },
+    materials: materials, insufficient: insufficient, unmatched: unmatched
+  };
+}
+
+// The one lookup the two call sites below need. Returns null when this material has no
+// qualified verdict -- which is NOT the same as 'ok' and must not be rendered as one.
+function sdMaterialRiskFor(material, report) {
+  var k = sdMatKey(material);
+  if (!k) return null;
+  var rep = report || sdMaterialRisk();
+  if (!rep || !rep.available) return null;
+  for (var i = 0; i < rep.materials.length; i++) {
+    if (sdMatKey(rep.materials[i].material) === k) return rep.materials[i];
+  }
+  return null;
+}
+
 function runAlertScan() {
   const alerts = [];
   const now = Date.now();
+  // [0072] Computed ONCE per scan rather than per customer: it walks both collections.
+  const matRisk = sdMaterialRisk();
   // Scan customers for pending approvals
   sdCustomers.forEach(c => {
     if (c.status === 'quoted' && c.createdAt) {
@@ -24631,6 +24776,24 @@ function runAlertScan() {
         alerts.push({level:'red', msg:'🔴 ' + c.name + ' — quote pending approval ' + Math.floor(hrs) + 'h (OVERDUE)', panel:'customers', id:c.id});
       } else if (hrs >= 12) {
         alerts.push({level:'yellow', msg:'🟡 ' + c.name + ' — quote pending approval ' + Math.floor(hrs) + 'h', panel:'customers', id:c.id});
+      }
+    }
+    // [0072] THE FIRST RULE IN THIS SCAN THAT READS THE MATERIAL. Scoped to work that has not
+    // been fabricated yet -- a flag on a completed job is history the shop cannot act on, and
+    // an alert nobody can act on is one they learn to dismiss. The message carries the numbers
+    // it was computed from, so the shop can disagree with the verdict rather than just see it.
+    if (c.material && ['quoted','approved','templated'].indexOf(c.status) !== -1) {
+      const mr = sdMaterialRiskFor(c.material, matRisk);
+      if (mr && (mr.level === 'red' || mr.level === 'yellow')) {
+        const pct = Math.round(mr.rate * 100);
+        const base = Math.round(matRisk.baseline.rate * 100);
+        const why = mr.topReason ? (' — mostly ' + String(mr.topReason).replace(/_/g, ' ')) : '';
+        alerts.push({
+          level: mr.level,
+          msg: (mr.level === 'red' ? '🔴 ' : '🟡 ') + c.name + ' — ' + mr.material + ' remakes on ' +
+               pct + '% of jobs vs ' + base + '% shop-wide (' + mr.remakes + ' of ' + mr.jobs + ')' + why,
+          panel: 'customers', id: c.id
+        });
       }
     }
   });
@@ -24931,6 +25094,15 @@ function custOpenDetail(id) {
   if(daysSince>14)score-=20;
   if(c.status==='quoted'&&hoursAgo(c.createdAt)>24)score-=30;
   if(totalOwed>0)score-=15;
+  // [0072] The fourth rule, and the first one about the JOB rather than about how long it has
+  // been sitting. -10/-20 is deliberately below the -30 a stale quote costs: a material with a
+  // bad history is a reason to watch a job, not a reason to call the customer at risk. A null
+  // verdict -- unknown material, too few jobs, no remakes anywhere -- subtracts NOTHING, which
+  // is not the same as subtracting zero for a good verdict and is why the reason line below
+  // only renders when there is one.
+  var matRisk=(typeof sdMaterialRiskFor==='function')?sdMaterialRiskFor(c.material):null;
+  if(matRisk&&matRisk.level==='red')score-=20;
+  else if(matRisk&&matRisk.level==='yellow')score-=10;
   score=Math.max(0,score);
   var healthColor=score>=80?'#16a34a':score>=50?'#ca8a04':'#dc2626';
   var healthLabel=score>=80?'Healthy':score>=50?'Needs Attention':'At Risk';
@@ -24943,6 +25115,17 @@ function custOpenDetail(id) {
       '<div class="kpi"><div class="kpi-val" style="color:#dc2626;font-size:16px">$'+totalOwed.toLocaleString()+'</div><div class="kpi-label">Balance Owed</div></div>'+
       '<div class="kpi"><div class="kpi-val" style="color:'+healthColor+';font-size:16px">'+score+'</div><div class="kpi-label">Health: '+healthLabel+'</div></div>'+
     '</div>'+
+    // [0072] SAY WHY THE SCORE MOVED. A number that silently dropped 20 points is the quiet
+    // wrong answer this codebase keeps paying for; the figures behind the verdict are printed
+    // so the shop can disagree with it. Renders only when there IS a qualified verdict.
+    (matRisk&&(matRisk.level==='red'||matRisk.level==='yellow')
+      ? '<div style="background:'+(matRisk.level==='red'?'#FEE2E2':'#FEF3C7')+';border:1px solid '+(matRisk.level==='red'?'#FCA5A5':'#FCD34D')+';color:'+(matRisk.level==='red'?'#991B1B':'#92400E')+';border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:12px">'+
+          '<strong>Material risk: '+escHtml(matRisk.material)+'</strong> &mdash; remade on '+Math.round(matRisk.rate*100)+'% of '+matRisk.jobs+' job(s) ('+matRisk.remakes+' remake(s)'+
+          (matRisk.cost?', $'+Math.round(matRisk.cost).toLocaleString()+' cost':'')+')'+
+          (matRisk.topReason?', mostly '+escHtml(String(matRisk.topReason).replace(/_/g,' ')):'')+
+          '. Health score reduced by '+(matRisk.level==='red'?20:10)+'.'+
+        '</div>'
+      : '')+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Contact</div>'+
       '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:12px">'+

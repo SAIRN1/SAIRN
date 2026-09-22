@@ -1801,6 +1801,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-22T13:51:10Z",
+      "resources": [
+        "sd_fin_jobs"
+      ],
+      "files": [
+        "stonedesk.html",
+        "tests/material_risk_engine.js"
+      ],
+      "what": "[0072] MATERIAL-CORRELATED JOB-RISK ENGINE in stonedesk.html, plus\ntests/material_risk_engine.js and tests/run_material_risk_engine_sabotage_probe.py.\n\nREAD THIS FIRST: THE TIER A MATCH IS A PROSE MATCH AND I AM RECORDING IT\nRATHER THAN REWORDING IT. The gate fired on `sd_fin_jobs`, which appears in\nthis change only inside a COMMENT and a TEST ASSERTION, both of which say the\nengine deliberately does NOT read it. tests/material_risk_engine.js carries\n`eq(/sdFinJobs|sd_fin_jobs/.test(engine), false, ...)` -- an arm whose whole\npurpose is to prove the resource is untouched. No serving code for\nsd_fin_jobs is changed by this commit, and a reviewer can confirm that in one\ngrep. This is the fifth recorded instance of the tier gate matching a\nresource name in prose; rewording the comment to get past the matcher is the\nthing this platform has said not to do, so the obligation is opened instead.\n\nWHAT ACTUALLY CHANGED, and what a reviewer should press on:\n\n(1) THE DENOMINATOR CHOICE IS THE WHOLE DESIGN AND IT IS ARGUABLE. Per-material\nremake RATE needs jobs-per-material. I used sdCustomers because it is\npopulated at intake and is already grouped by material four lines away in\ncomputePricingInsight(). I rejected sd_jobs because its only creation site\nwrites `material:''` and nothing sets it -- filed as its own open-work row --\nand sd_fin_jobs because it is optional bookkeeping many shops never fill in.\nPRESS ON THIS: is sdCustomers really one row per JOB? A repeat customer with\ntwo kitchens is one customer record, so the denominator is closer to\n\"customers of that material\" than \"jobs of that material\", and the rate is\ntherefore an over-estimate wherever repeat business exists. I believe that is\nthe right trade for a first version and I did not measure it. If you disagree,\nsay so -- the fix is a different denominator, not a different threshold.\n\n(2) THE BASELINE INCLUDES THE MATERIAL BEING JUDGED. Stated in the header and\nasserted by an arm, so a single-material shop always scores ratio 1.0 and is\nnever flagged. I chose this over leave-one-out because leave-one-out lets a\n5-job material's verdict swing on its own two remakes. The cost is real: a\nshop running 90% engineered quartz will never see quartz flagged however badly\nit goes. Is that the right side of the trade?\n\n(3) THE MULTIPLIERS ARE CHOSEN, NOT DERIVED. Yellow 2x, red 3x, floors of 4\njobs and 2 remakes. The 4 is not invented -- it is the floor\ncomputePricingInsight() already uses for this same shape. The 2x/3x are mine.\nNothing on this platform measures what multiple of a shop's baseline is\nactually actionable, so these are judgement and are labelled as judgement in\nthe code. A reviewer who thinks 2x is too eager should say what evidence would\nsettle it.\n\n(4) MATCHING IS CASE-AND-WHITESPACE ONLY, ON PURPOSE. The intake material is a\nSELECT and the remake material is a free-text INPUT, so the two vocabularies\ncan disagree. I refuse to fuzzy-match: Quartz and Quartzite are different\nrocks. The consequence is that a typo produces an UNMATCHED entry rather than\na merged one, which is reported with its count and cost rather than dropped.\nPRESS ON: is unmatched surfaced anywhere a shop would actually see it? Today\nit is in the report object and NOT rendered. That is a real gap and I am\nnaming it rather than waiting to be told.\n\n(5) WIRING. runAlertScan() computes the report once per scan and adds an alert\nfor quoted/approved/templated customers only -- a flag on a fabricated job is\nhistory. custOpenDetail() subtracts 20 (red) or 10 (yellow), below the 30 a\nstale quote costs, and prints the figures behind the deduction. Six\nsource-text arms assert the wiring, because an engine nothing reads is [0040]\nexactly.\n\nEVIDENCE: 51 assertions in tests/material_risk_engine.js, extracted from the\nreal stonedesk.html rather than restated. 6 mutations in the sabotage probe,\nall refused, baseline green, byte-identical restore verified; four of the six\nmake the engine more willing to answer, which is the direction that matters.\ncheckblocks 131 blocks 0 failed; missing-DOM id set identical to HEAD (137\nbefore, 137 after).",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-22T13:51:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
