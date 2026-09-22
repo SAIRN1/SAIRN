@@ -2107,6 +2107,19 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "cc-1790072590",
+      "session": "cc",
+      "subject": "sairnbiz-tier-ap-bud-invs",
+      "task": "FILES: docs/CRITICALITY-TIERS.md -- sb_ap sb_bud sb_invs B to A on the money limb, counts re-derived from the table",
+      "claimed_at": "2026-09-22T10:23:10Z",
+      "claimed_at_epoch": 1790072590.0621781,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
