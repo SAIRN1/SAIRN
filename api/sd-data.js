@@ -66,6 +66,10 @@ const senEvvReadiness = require('./_lib/sen-evv-readiness');
 // Pure; every fetch and every gate for it lives in the sen_visits payroll
 // branch, same functional-core split as senEvvReadiness one line up.
 const senPayroll = require('./_lib/sen-payroll');
+// Pure; the gate and the write live in the mech_docs branch. SERVER-SIDE
+// BECAUSE THE CLIENT COPY IS A CONVENIENCE: sairnmechanical.html calls the same
+// function so the local row is redacted too, but this call is the boundary.
+const mechRedact = require('./_lib/mech-redact');
 // SAIRNsenior EVV aggregators (2026-08-27). Must stay in sync with the selector in
 // sairnsenior.html's Settings panel -- these are the four real state EVV aggregators
 // plus an honest 'other', because several states run their own and forcing a wrong
@@ -12009,15 +12013,54 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
+      // ── mech_docs IS REDACTED HERE, AND HERE IS THE BOUNDARY ────────────
+      // `scanDoc()` asks the model to "EXTRACT: Every field -- names, dates,
+      // amounts, codes, reference numbers" off work orders, contracts,
+      // permits and INVOICES, and `saveDoc()` stored the raw answer verbatim
+      // and synced it. A customer's name, site address and phone reached this
+      // table because a technician photographed a work order.
+      //
+      // THE APP CALLS THE SAME FUNCTION AND THAT CALL IS NOT THE CONTROL. A
+      // client-side redactor is a convenience, never a boundary -- the same
+      // sentence this file already applies to hidden buttons and role checks.
+      // Text that reaches the table has been through this pass regardless of
+      // what the caller sent, including a caller that is not the app.
+      //
+      // IT IS NOT A REFUSAL. A document that still contains something after
+      // the pass is stored, redacted as far as this can, with the residue
+      // named on the row -- because refusing the write would lose the
+      // technician's work and teach people to stop scanning, and a feature
+      // nobody uses protects nothing.
+      let mPayload = payload;
+      if (resource === 'mech_docs') {
+        const red = mechRedact.redactDocumentText(payload.text);
+        mPayload = Object.assign({}, payload, {
+          text: red.text,
+          // Carried ON THE ROW, not just returned, so a reader of the stored
+          // record can see what the pass did and what it could not do. A row
+          // that looked redacted with no account of its limits is the false
+          // confidence this whole change exists to avoid.
+          redaction: {
+            applied_at: nowISO(),
+            redactions: red.redactions,
+            complete: red.complete,
+            note: red.note
+          }
+        });
+      }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + mIdCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnmechanical', [mIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnmechanical', [mIdCol]: String(mPayload.id), data: mPayload, updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNmechanical record tables are not set up yet \u2014 run sql/sairnmechanical_records_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      // `mPayload`, NOT `payload`, on the fallback arm. Returning the raw
+      // request body would hand the client back the UNREDACTED text it sent
+      // whenever the store did not echo a row -- so the app would render, and
+      // re-cache locally, exactly what this branch just stripped.
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : mPayload });
       return;
     }
 

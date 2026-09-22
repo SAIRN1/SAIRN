@@ -1546,16 +1546,70 @@ Plain ASCII formatting only.`,
 // so it gets wired rather than relabelled. Stores the extracted text locally --
 // there is no server data layer for this app yet, and the toast says so rather
 // than implying a sync.
+// ── REDACTION BEFORE STORAGE (2026-09-22) ────────────────────────────────
+// scanDoc()'s prompt asks the model to "EXTRACT: Every field -- names, dates,
+// amounts, codes, reference numbers" off work orders, maintenance contracts,
+// permits, inspection reports and INVOICES. This function stored that answer
+// VERBATIM and the next line synced it, so a customer's name, site address and
+// phone reached a server table because a technician photographed a work order.
+//
+// THIS COPY IS THE CONVENIENCE AND api/sd-data.js IS THE BOUNDARY. The same
+// pass runs server-side on the mech_docs write path regardless of what any
+// caller sends; this one exists so the LOCAL row is redacted too rather than
+// sitting unredacted in localStorage until a sync it may never get.
+//
+// KEPT IN STEP BY SHAPE, NOT BY TRUST: the rules below mirror
+// api/_lib/mech-redact.js, and a single-file HTML app cannot require() it. The
+// duplication is real and is named here rather than discovered later -- if the
+// two ever disagree, THE SERVER'S ANSWER IS THE ONE STORED, and this one only
+// decides what this device shows before the round trip.
+var MECH_REDACT_NOTE = 'Names written in ordinary prose are NOT removed -- only '
+  + 'labelled name fields, emails, phones, addresses, SSN/EIN and card-length '
+  + 'digit runs are. Amounts, model numbers and equipment serials are kept '
+  + 'deliberately. Treat this as REDUCED, never as anonymous.';
+function mechRedactLocal(text){
+  if(typeof text!=='string'||!text)return{text:'',redacted:false};
+  var n=0,out=text;
+  out=out.replace(/^([ \t]*(?:customer|client|contact|technician|tech|installer|owner|occupant|tenant|signed[ _]?by|signature|attn|attention|prepared[ _]?for|bill[ _]?to|ship[ _]?to|homeowner|caller|requested[ _]?by)[ \t]*[:\-][ \t]*)(.+)$/gim,
+    function(m,label,value){
+      var v=String(value).trim();
+      if(!v||v.indexOf('REDACTED]')!==-1)return m;
+      n++;return label+'[NAME REDACTED]';
+    });
+  [[/\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g,'[EMAIL REDACTED]'],
+   [/\b(?:\d[ -]?){13,19}\b/g,'[CARD/ACCOUNT REDACTED]'],
+   [/\b\d{3}-\d{2}-\d{4}\b/g,'[SSN REDACTED]'],
+   [/\b\d{2}-\d{7}\b/g,'[EIN REDACTED]'],
+   [/(?:\+?1[ .-])?(?:\(\d{3}\)[ .-]?|\d{3}[ .-])\d{3}[ .-]\d{4}\b/g,'[PHONE REDACTED]'],
+   [/\b\d{1,6}\s+(?:[A-Za-z0-9.'-]+\s+){0,5}(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Ct|Court|Way|Pl|Place|Ter|Terrace|Cir|Circle|Hwy|Highway|Pkwy|Parkway|Suite|Ste|Unit|Apt)\b\.?/gi,'[ADDRESS REDACTED]']
+  ].forEach(function(r){
+    out=out.replace(r[0],function(m){
+      if(m.indexOf('REDACTED]')!==-1)return m;
+      n++;return r[1];
+    });
+  });
+  return{text:out,redacted:n>0};
+}
 function saveDoc(){
   var el=document.getElementById('doc-out');
   var txt=el?(el.textContent||'').trim():'';
   if(!txt){showToast('Nothing to save yet -- scan a document first');return;}
+  var red=mechRedactLocal(txt);
   var arr=[];try{arr=JSON.parse(localStorage.getItem(APP_ID+'_docs')||'[]');}catch(e){arr=[];}
-  arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:txt});
+  arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:red.text,
+    redaction:{local:true,redacted:red.redacted,complete:false,note:MECH_REDACT_NOTE}});
   try{localStorage.setItem(APP_ID+'_docs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}
   if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_docs',arr[0]);
-  showToast('Saved on this device');
+  // ── THE TOAST SAID "Saved on this device" WHILE THE LINE ABOVE SYNCED IT.
+  // The comment above this function said the same -- "there is no server data
+  // layer for this app yet" -- and that stopped being true when mech_docs was
+  // registered in api/_resources/sairnmechanical.js and mechPushRecord started
+  // pushing it. A message that understates where a document went is the wrong
+  // direction to be wrong in for a scanned work order.
+  showToast(red.redacted
+    ? 'Saved and synced -- identifiers removed. Names in prose are not.'
+    : 'Saved and synced. Nothing matched a redaction rule; names in prose are never removed.');
 }
 function saveTakeoff(){
   var el=document.getElementById('bp-out');
