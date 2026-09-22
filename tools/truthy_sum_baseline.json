@@ -84,8 +84,6 @@
     "sairnbuild.html::c.budget": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnbuild.html::c.committed": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnbuild.html::c.labour_hrs": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
-    "sairnbuild.html::d.amount": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
-    "sairnbuild.html::d.amount_received": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnbuild.html::l.photos": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnbuild.html::p.amount": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnbuild.html::r.deal_value": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",

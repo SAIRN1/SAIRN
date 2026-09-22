@@ -5505,8 +5505,8 @@ function drawScope(){
 function drawMoney(v){var n=Number(v);return isFinite(n)?n:0;}
 function rDrawsTbl(){
   var list=drawScope();
-  var outstanding=list.filter(function(d){return d.status==='requested';}).reduce(function(s,d){return s+(d.amount||0);},0);
-  var received=list.reduce(function(s,d){return s+(d.amount_received||0);},0);
+  var outstanding=list.filter(function(d){return d.status==='requested';}).reduce(function(s,d){return s+drawMoney(d.amount);},0);
+  var received=list.reduce(function(s,d){return s+drawMoney(d.amount_received);},0);
   // HELD IS GROSS AND OUTSTANDING IS WHAT IS STILL WITHHELD.
   var retHeld=list.reduce(function(s,d){return s+drawMoney(d.retainage_held);},0);
   var retReleased=list.reduce(function(s,d){return s+drawMoney(d.retainage_released);},0);
@@ -7405,7 +7405,7 @@ function jobWIP(j){
   var costToDate=actualFor(j.id),estTotal=budgetFor(j.id),revised=revisedValue(j);
   var pct=estTotal>0?Math.min(1,costToDate/estTotal):0;
   var earned=Math.round(pct*revised);
-  var billed=bldDraws().filter(function(d){return d.job_id===j.id;}).reduce(function(s,d){return s+(d.amount_received||0);},0);
+  var billed=bldDraws().filter(function(d){return d.job_id===j.id;}).reduce(function(s,d){return s+drawMoney(d.amount_received);},0);
   return{costToDate:costToDate,estTotal:estTotal,pct:pct,earned:earned,billed:billed,overUnder:billed-earned};
 }
 // Now derived from subDocIssues() rather than carrying its own copy of the
