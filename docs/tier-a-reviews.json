@@ -1855,6 +1855,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T14:59:24Z",
+      "resources": [
+        "sc_claims"
+      ],
+      "files": [
+        "api/_lib/sairncode-kx-accumulator.js",
+        "api/_resources/sairncode.js",
+        "api/sd-data.js",
+        "sairncode.html",
+        "tests/sairncode_kx_accumulator_wiring_probe.py"
+      ],
+      "what": "sairncode KX per-beneficiary therapy accumulator. GENUINE Tier A: it reads every sc_claims row for the licence and returns per-beneficiary health-care payment totals, and its output decides whether a coder appends the KX modifier -- an attestation of medical necessity submitted to Medicare. THREE THINGS FOR A SECOND READER, all of them judgement rather than mechanics. (1) THE ASYMMETRY ARGUMENT, which every rule in the file rests on: understating year-to-date means KX omitted where required -> claim denied, visible and resubmittable; overstating means KX applied where not required -> a false attestation. I concluded the safe direction is to UNDERSTATE and label the figure a floor, which is why a row with no allowed_amount is excluded rather than accumulated at its billed amount. Confirm that is the right way round for a billing-compliance product, because everything else follows from it. (2) THE BOUNDARY CASE: at EXACTLY the threshold the verdict is AT_OR_OVER, not BELOW. The transmittal denies claims ABOVE the amount; I put the boundary inside the attested side. Check that against the source. (3) THE BENEFICIARY KEY IS AN INTERNAL PRACTICE ID AND NOT AN MBI -- deliberate, to avoid putting a government identifier in the sc_claims jsonb blob for no functional gain, at the cost that two practices cannot ever reconcile the same beneficiary. Also worth checking: that a failed computation genuinely cannot reach a not_required verdict (no rows is not zero dollars, unknown year is not the latest year, 401/503 are not clearances), and that the hand-entered override survives ONLY as a labelled override.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T14:59:24Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
