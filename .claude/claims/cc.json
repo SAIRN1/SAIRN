@@ -2120,6 +2120,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cc-1790073612",
+      "session": "cc",
+      "subject": "sairncare-route-probe-anchor",
+      "task": "FILES: tests/run_sairncare_route_record_sabotage_probe.py -- mutation 1 went ANCHOR-2 when my alfPostRaw fix added a second identical line; disambiguate it to alfRoute",
+      "claimed_at": "2026-09-22T10:40:12Z",
+      "claimed_at_epoch": 1790073612.8535633,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_sairncare_route_record_sabotage_probe.py"
+      ]
     }
   ]
 }
