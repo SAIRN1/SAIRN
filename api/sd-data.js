@@ -781,13 +781,70 @@ module.exports = async (req, res) => {
       //    locks every real call out of the general ledger, which was driven
       //    and confirmed before the order was chosen.
       //
-      //    ONLY THESE THREE. The other 32 sf_ resources stay ungated: the
-      //    finding was about Tier A, widening it further is a product decision
-      //    about who may see a duty roster or a bottle count, and nobody has
-      //    made that one.
-      'sf_accounts':      ['read', 'write'],
-      'sf_ledger':        ['read', 'write'],
-      'sf_vendor_prices': ['read', 'write'],
+      //    THIS SAID "ONLY THESE THREE" UNTIL 2026-09-22, and the sentence that
+      //    justified it was: "the finding was about Tier A, widening it further
+      //    is a product decision about who may see a duty roster or a bottle
+      //    count, and nobody has made that one." The first half was right. THE
+      //    SECOND HALF DESCRIBED THE REMAINDER WRONGLY, and that is why the
+      //    decision it deferred could not be made well: "a duty roster or a
+      //    bottle count" does not cover minors' names, felony and gambling
+      //    disqualification flags, or a charitable-disbursement payee under ORC
+      //    2915. Somebody reading that line to decide would have been deciding
+      //    about the wrong set.
+      //
+      //    EIGHT MORE ARE GATED BELOW. hover2 audited all 35 resources; Michael
+      //    made the call. Each one carries the reason it is here, because a
+      //    gate with no recorded reason is the next session's mystery:
+      //
+      //      sf_operators           the sharpest field in the whole audit --
+      //                             name + DOB + a FELONY flag and a GAMBLING
+      //                             disqualification flag on one row. A
+      //                             criminal-history assertion about a named
+      //                             volunteer.
+      //      sf_gaming_expenses     payee name + amount. ORC 2915.10(A)(2) and
+      //                             (C) make this the record a charitable-gaming
+      //                             licensee must keep and produce.
+      //      sf_disbursements       the giving side of the same statute -- payee
+      //                             and amount on a charitable disbursement.
+      //      sf_donations           donor name + amount. Same shape as
+      //                             disbursements pointed the other way, and
+      //                             donor identity is not public by default.
+      //      sf_youth_participants  MINORS. Names of children in post youth
+      //                             programmes, which needs no further argument.
+      //      sf_staff               DOB, and the app age-gates off it.
+      //      sf_waivers             health and military-status disclosure.
+      //      sf_service_appointments a member tied to a VA-adjacent referral
+      //                             outcome -- who sought help and for what.
+      //
+      //    THE REMAINING 24 STAY UNGATED AND THAT IS STILL A DECISION NOBODY HAS
+      //    MADE, not a decision that they are fine. sf_members and sf_signatures
+      //    in particular carry identity; they were named in the 2026-09-22
+      //    finding and are NOT in this batch, so the open-work row stays open.
+      //
+      //    STILL BLOCKED, AND STATED RATHER THAN IMPLIED: these lines answer 403
+      //    to every call that does not carry a session, and
+      //    sql/sairnfreedom_employee_auth_schema.sql HAS NOT BEEN RUN against
+      //    the live database -- /api/sf-auth login answers 503 NOT_PROVISIONED,
+      //    measured 2026-09-22. So no real caller can hold a session and every
+      //    gated resource here answers 403 until that file is run. That is the
+      //    same trade SAIRNvet took the same day and it is deliberate: an app
+      //    that refuses loudly is recoverable in one SQL run, and a
+      //    criminal-history flag reachable with a browser-readable bearer token
+      //    is not. Unlike 2026-09-21 -- when the client half genuinely did not
+      //    exist yet and arming the gate first would have been the wrong order
+      //    -- sairnfreedom.html ALREADY attaches X-SD-Auth whenever a token is
+      //    held, so nothing else needs to land first.
+      'sf_accounts':            ['read', 'write'],
+      'sf_disbursements':       ['read', 'write'],
+      'sf_donations':           ['read', 'write'],
+      'sf_gaming_expenses':     ['read', 'write'],
+      'sf_ledger':              ['read', 'write'],
+      'sf_operators':           ['read', 'write'],
+      'sf_service_appointments': ['read', 'write'],
+      'sf_staff':               ['read', 'write'],
+      'sf_vendor_prices':       ['read', 'write'],
+      'sf_waivers':             ['read', 'write'],
+      'sf_youth_participants':  ['read', 'write'],
       'slabs':   ['read', 'write', 'reserve'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
@@ -868,9 +925,25 @@ module.exports = async (req, res) => {
       'law_clients': 'sairnlaw',
       'law_matters': 'sairnlaw',
       'law_deadlines': 'sairnlaw',
+      // THE SECOND HALF OF THE SAME CHANGE, and the comment above is the reason
+      // this list is not left behind: a resource added to SD_SESSION_GATED and
+      // NOT here resolves expectedApp to 'stonedesk' and refuses every correctly
+      // signed-in caller with FORBIDDEN "sign in first". It fails closed and
+      // confusingly, which is the hardest failure to read. Eight added
+      // 2026-09-22 alongside their gate entries; api/sd-data-sf-session-gate.test.js
+      // asserts the two lists AGREE rather than asserting either one's contents,
+      // because the defect is always the disagreement.
       'sf_accounts': 'sairnfreedom',
+      'sf_disbursements': 'sairnfreedom',
+      'sf_donations': 'sairnfreedom',
+      'sf_gaming_expenses': 'sairnfreedom',
       'sf_ledger': 'sairnfreedom',
-      'sf_vendor_prices': 'sairnfreedom'
+      'sf_operators': 'sairnfreedom',
+      'sf_service_appointments': 'sairnfreedom',
+      'sf_staff': 'sairnfreedom',
+      'sf_vendor_prices': 'sairnfreedom',
+      'sf_waivers': 'sairnfreedom',
+      'sf_youth_participants': 'sairnfreedom'
     };
     // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
     // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
