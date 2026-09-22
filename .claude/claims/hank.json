@@ -2435,6 +2435,16 @@
       "claimed_at_epoch": 1790064823.9285057,
       "status": "released",
       "released_at": "2026-09-22T08:41:54Z"
+    },
+    {
+      "id": "hank-1790068629",
+      "session": "hank",
+      "subject": "tooling",
+      "task": "tier-a-review-gate body-file flag for free text verdicts",
+      "claimed_at": "2026-09-22T09:17:09Z",
+      "claimed_at_epoch": 1790068629.473198,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
