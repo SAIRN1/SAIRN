@@ -1684,6 +1684,17 @@
       "claimed_at_epoch": 1790064254.7085814,
       "status": "released",
       "released_at": "2026-09-22T08:50:36Z"
+    },
+    {
+      "id": "cody-1790071963",
+      "session": "cody",
+      "subject": "platform",
+      "task": "criticality tier moves grd_boq_rates and the funeral vital records cluster",
+      "claimed_at": "2026-09-22T10:12:43Z",
+      "claimed_at_epoch": 1790071963.8420587,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
