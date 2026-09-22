@@ -10451,6 +10451,59 @@
       "recurrence_open": "Nothing enumerates resources whose group-level justification does not match their actual content, and the twenty siblings were not individually re-examined here beyond confirming they are shop records. The criticality register still rates this resource on durability rather than confidentiality, which is the entry that made the ungated design look reasonable."
     },
     {
+      "commit": "2154f6330dcb",
+      "date": "2026-09-22",
+      "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
+      "files": [
+        "tests/run_sairn_status_probe.py",
+        "tools/sairn_status.py"
+      ],
+      "lines_added": 240,
+      "lines_removed": 2,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "tools/sairn_status.py --note replaced the whole note field on every set that passed it, with no append, no diff, no confirmation and no warning, destroying two notes addressed to other sessions on 2026-09-22. Fixed by making --note append with a UTC stamp, adding --note-replace for explicit replacement, refusing both ambiguous flag combinations, and re-reading the row from disk to confirm the write rather than reporting from intent.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "21268b33ba86",
+        "date": "2026-09-16",
+        "subject": "feat(process): the shared status registry -- a directory, not a file, and the concurrency claim is measured",
+        "lag_days": 6
+      },
+      "citation_note": "1.5 is the confident line printed after the error. Here the confident line is printed after a SUCCESS that lost data rather than after an error, which is the same defect with no error to ignore -- so the citation is arguable, not clean. The fix is 1.5's fix: re-read and confirm rather than report from what was intended.",
+      "phase_note": "Design. The replace-on-write behaviour is what payload() was written to do and is stated on its own line; what was wrong was choosing a single replaceable string as the carrier for a cross-session channel, which was decided when the registry was built.",
+      "contributing_factors": [
+        {
+          "factor": "The `note` field is a single string with no append path, so the only way to add to it was to send the whole thing back -- and any author who sent less than the whole thing destroyed the rest.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "--note now APPENDS with a UTC-stamped separator; --note-replace carries the rare full replacement and is the sanctioned way to prune."
+        },
+        {
+          "factor": "The write reported success without ever checking what was stored. 'It exited 0' and 'it stored what I sent' were two claims and only one was checked, so the loss was silent at the writing end as well as the reading end.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "cmd_set re-reads the row from disk after writing, confirms the sent text is present, echoes it back, and exits 2 COULD NOT RUN on a mismatch."
+        },
+        {
+          "factor": "This registry is the platform's fastest cross-session channel -- CLAUDE.md sends every session here FIRST because it is current without a fetch -- and it was the one channel with no durability and no audit. Nothing distinguishes 'nobody wrote to me' from 'what was written to me was replaced'.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Anything meant for another session goes in docs/SAIRN-OPEN-WORK-INDEX.md as well as the note. Named as a standing habit in tool-bugs item 12 rather than enforced, because no check can tell a note meant for another session from one meant for self."
+        }
+      ],
+      "recurrence_open": "Growth is warned about, not bounded -- a note can still be appended to past the point where every reader's 100-character preview makes it undeliverable, and only the author's attention stops that. And nothing can distinguish a note meant for another session from one meant for self, so the 'also put it in the open-work index' habit is unenforced and will be skipped under time pressure, which is when it matters most."
+    },
+    {
       "commit": "270c60ed76a2",
       "date": "2026-09-22",
       "subject": "fix(cross-tenant-scope): the importer guard was red on main, and the one-line fix it asked for was refused by the arm next to it",
@@ -10591,6 +10644,67 @@
       "recurrence_open": "Every mutation anchor in every probe on this platform is a string match against code somebody else keeps editing, and their health is only observable when the suite baseline is green. Nothing reports how long a probe has been unable to run."
     },
     {
+      "commit": "357612ce4d37",
+      "date": "2026-09-22",
+      "subject": "fix(sairncare): the trail's \"On\" column showed a date, and the refusal it serves promises the reader can tell which one is later",
+      "files": [
+        "SAIRN-ACTIVE-WORK-hank.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "tests/run_sairncare_route_record_sabotage_probe.py",
+        "tests/sairncare_route_record.js"
+      ],
+      "lines_added": 174,
+      "lines_removed": 18,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "prRenderRecorded() in sairncare.html rendered the alf_claim_routes trail's 'On' column as String(created_at).slice(0,10) -- DATE ONLY. The 409 ALREADY_RECORDED that this trail exists to serve tells the biller: 'record it again and the trail will show both, with the later one as what is believed now.' Two determinations recorded the same day carried IDENTICAL text, so the reader could not tell which was later EVEN WITH BOTH IN FRONT OF THEM -- the app made a promise in a refusal message that its own display could not keep. Paired with the unordered read in the same trail (b58fb38b/f9e9628f); either alone left the promise half-true, which is why the open-work row required both halves. Fixed by a new fstamp() that parses the timestamptz and renders in the READER'S LOCAL ZONE: slicing the raw ISO string to 16 characters would have been a one-character diff and would print an unmarked UTC clock face, which is worse than a date alone because it looks local and is not.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "3c28b9eac4c2",
+        "date": "2026-09-18",
+        "subject": "feat(sairncare): the billing determination is recorded now -- and two of the four \"unreachable\" resources turned out to have real answers",
+        "lag_days": 4
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md covers a UI that renders a value at lower precision than the guarantee its own error message makes. The nearest neighbours are about checks that stopped checking, not about a display that never had the precision it promised. Recorded as not-citable rather than stretched onto 1.1, which would put a false citation in the corpus the rule-coverage figures are computed from.",
+      "contributing_factors": [
+        {
+          "factor": "The trail column was written with the same date-only slice used elsewhere in the file for DATE fields a person typed, without distinguishing those from a timestamptz the server stamped. Same-looking helpers, different sources, different obligations.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "New fstamp() alongside fdate(), with a header stating the distinction: fdate takes a typed date string and is RIGHT to show only a date; fstamp takes a server timestamp on an append-only trail and must carry its time."
+        },
+        {
+          "factor": "The refusal message and the renderer that serves it are in two different files (api/sd-data.js and sairncare.html) and nothing connected the promise to the display. The promise was added later than the display and nobody re-read the display against it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tests/sairncare_route_record.js now drives BOTH -- the same suite asserts the 409 names the correction path and that the rendered On column carries a time, so the promise and the thing that keeps it fail together."
+        },
+        {
+          "factor": "The existing suite already drove the real prRenderRecorded and was fully green, because every assertion it made was about content (row present, resident resolved, outcome labelled) and none about precision. Nothing errors when a timestamp is truncated.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "A time-carrying arm plus mutation 11 in tests/run_sairncare_route_record_sabotage_probe.py, which restores the date-only slice and is refused. Worth noting what mutation 11 does NOT break: nothing errors and every other arm still passes, which is why the assertion had to be written for it specifically."
+        },
+        {
+          "factor": "fstamp renders in the local zone, so any test asserting a literal expected string would pass or fail on the RUNNER TIMEZONE rather than on the code -- a test that measures the machine.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The arm asserts a CLOCK COMPONENT rather than a literal, and deliberately does not assert the day, because a far-western zone moves it."
+        }
+      ],
+      "recurrence_open": "Only the alf_claim_routes trail was checked and fixed. The same date-only-slice-of-a-server-timestamp shape may exist on other SAIRNcare panels and in other apps; nothing scans for it, and no arm would catch the next one. The credentials renderer at sairncare.html deliberately keeps a date-only render because its field is a completed_on DATE rather than a trail stamp -- that judgement was made by reading, not by a rule, so it is not protected either."
+    },
+    {
       "commit": "37bf15fd9811",
       "date": "2026-09-22",
       "subject": "fix(auth): a soleRole naming no real role turned the last-admin guard OFF, and the one comment describing that said the opposite",
@@ -10650,55 +10764,6 @@
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
     },
     {
-      "commit": "6508ca3885f8",
-      "date": "2026-09-22",
-      "subject": "fix(criticality): a row with an INVENTED tier matched neither branch and was dropped in silence",
-      "files": [
-        "tools/criticality_tier_check.py"
-      ],
-      "lines_added": 23,
-      "lines_removed": 4,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "probe-control",
-      "summary": "criticality_tier_check.py parse(): the rollup-vs-resource disambiguator was spelled ^\\*\\*([ABC])\\*\\*$, so a resource row carrying an INVENTED tier (| `sd_invoices` | **CRITICAL** |) matched neither branch -- not a resource row because the letter is wrong, not a rollup row because cell 1 is not a bare integer -- and was dropped in silence. The BAD TIER check, which exists to stop a second tier vocabulary starting, became unreachable by exactly the rows it was written for, and the register reported the resource as having NO ROW rather than a wrong one.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "tests/run_criticality_tier_probe.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "924a861bad7a",
-        "date": "2026-09-22",
-        "subject": "feat(criticality): step 1 of the two-axis migration -- the parser, both shapes, and the mis-parse found before a row moved",
-        "lag_days": 0
-      },
-      "citation_note": "No standing rule names 'a disambiguator narrowed to the valid vocabulary makes the invalid-vocabulary check unreachable'. Closest is PR 1.11 (a check that reports a pass it never performed), but that one is about a MISSING dependency, not about a parser silently discarding its own subject.",
-      "contributing_factors": [
-        {
-          "factor": "The disambiguator and the validator were written to the same vocabulary, so narrowing one silently narrowed what the other could ever see",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "RESOURCE_CELL1 now matches any bold token; validating the letter stays with BAD TIER, which is the only place it belongs"
-        },
-        {
-          "factor": "parse() drops an unrecognised row rather than reporting it, so a mis-parse is indistinguishable from an absent row",
-          "kind": "detection",
-          "action_status": "planned",
-          "action": "Report a row whose cell 0 is a backticked name and which matches neither branch as UNREADABLE ROW instead of skipping it. Not done here -- scoped out deliberately so this fix stays the one-line disambiguator change the probe proved."
-        },
-        {
-          "factor": "The change landed in the same session that wrote it, with the probe not re-run before commit -- arm 4 would have caught it immediately",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Both criticality probes now run before commit on this file, and arm 4 is green"
-        }
-      ],
-      "recurrence_open": "The actions close THIS narrowing. They do not close the general shape: any other consumer of the register that anchors on the valid vocabulary rather than on row structure can lose a row the same way, and nothing enumerates those consumers."
-    },
-    {
       "commit": "467baf7493e0",
       "date": "2026-09-22",
       "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
@@ -10750,6 +10815,55 @@
         }
       ],
       "recurrence_open": "The two suppression signals are not shown to be independent -- they agreed exactly once in 415 entries and disagreed never, which is one data point, not a measurement. And there is exactly ONE real citation-shaped match on this platform, so the criteria are locked against synthetic fixtures rather than validated against a population. A citation phrased without a quotation and without a ref entry is still classified OWN and would still produce a false violation."
+    },
+    {
+      "commit": "6508ca3885f8",
+      "date": "2026-09-22",
+      "subject": "fix(criticality): a row with an INVENTED tier matched neither branch and was dropped in silence",
+      "files": [
+        "tools/criticality_tier_check.py"
+      ],
+      "lines_added": 23,
+      "lines_removed": 4,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "probe-control",
+      "summary": "criticality_tier_check.py parse(): the rollup-vs-resource disambiguator was spelled ^\\*\\*([ABC])\\*\\*$, so a resource row carrying an INVENTED tier (| `sd_invoices` | **CRITICAL** |) matched neither branch -- not a resource row because the letter is wrong, not a rollup row because cell 1 is not a bare integer -- and was dropped in silence. The BAD TIER check, which exists to stop a second tier vocabulary starting, became unreachable by exactly the rows it was written for, and the register reported the resource as having NO ROW rather than a wrong one.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "tests/run_criticality_tier_probe.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "924a861bad7a",
+        "date": "2026-09-22",
+        "subject": "feat(criticality): step 1 of the two-axis migration -- the parser, both shapes, and the mis-parse found before a row moved",
+        "lag_days": 0
+      },
+      "citation_note": "No standing rule names 'a disambiguator narrowed to the valid vocabulary makes the invalid-vocabulary check unreachable'. Closest is PR 1.11 (a check that reports a pass it never performed), but that one is about a MISSING dependency, not about a parser silently discarding its own subject.",
+      "contributing_factors": [
+        {
+          "factor": "The disambiguator and the validator were written to the same vocabulary, so narrowing one silently narrowed what the other could ever see",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "RESOURCE_CELL1 now matches any bold token; validating the letter stays with BAD TIER, which is the only place it belongs"
+        },
+        {
+          "factor": "parse() drops an unrecognised row rather than reporting it, so a mis-parse is indistinguishable from an absent row",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Report a row whose cell 0 is a backticked name and which matches neither branch as UNREADABLE ROW instead of skipping it. Not done here -- scoped out deliberately so this fix stays the one-line disambiguator change the probe proved."
+        },
+        {
+          "factor": "The change landed in the same session that wrote it, with the probe not re-run before commit -- arm 4 would have caught it immediately",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Both criticality probes now run before commit on this file, and arm 4 is green"
+        }
+      ],
+      "recurrence_open": "The actions close THIS narrowing. They do not close the general shape: any other consumer of the register that anchors on the valid vocabulary rather than on row structure can lose a row the same way, and nothing enumerates those consumers."
     },
     {
       "commit": "9320ed8f8e1b",
@@ -10812,59 +10926,6 @@
         }
       ],
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
-    },
-    {
-      "commit": "2154f6330dcb",
-      "date": "2026-09-22",
-      "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
-      "files": [
-        "tests/run_sairn_status_probe.py",
-        "tools/sairn_status.py"
-      ],
-      "lines_added": 240,
-      "lines_removed": 2,
-      "app": "platform",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "user-report",
-      "summary": "tools/sairn_status.py --note replaced the whole note field on every set that passed it, with no append, no diff, no confirmation and no warning, destroying two notes addressed to other sessions on 2026-09-22. Fixed by making --note append with a UTC stamp, adding --note-replace for explicit replacement, refusing both ambiguous flag combinations, and re-reading the row from disk to confirm the write rather than reporting from intent.",
-      "rules": [
-        "1.5"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "21268b33ba86",
-        "date": "2026-09-16",
-        "subject": "feat(process): the shared status registry -- a directory, not a file, and the concurrency claim is measured",
-        "lag_days": 6
-      },
-      "citation_note": "1.5 is the confident line printed after the error. Here the confident line is printed after a SUCCESS that lost data rather than after an error, which is the same defect with no error to ignore -- so the citation is arguable, not clean. The fix is 1.5's fix: re-read and confirm rather than report from what was intended.",
-      "phase_note": "Design. The replace-on-write behaviour is what payload() was written to do and is stated on its own line; what was wrong was choosing a single replaceable string as the carrier for a cross-session channel, which was decided when the registry was built.",
-      "contributing_factors": [
-        {
-          "factor": "The `note` field is a single string with no append path, so the only way to add to it was to send the whole thing back -- and any author who sent less than the whole thing destroyed the rest.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "--note now APPENDS with a UTC-stamped separator; --note-replace carries the rare full replacement and is the sanctioned way to prune."
-        },
-        {
-          "factor": "The write reported success without ever checking what was stored. 'It exited 0' and 'it stored what I sent' were two claims and only one was checked, so the loss was silent at the writing end as well as the reading end.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "cmd_set re-reads the row from disk after writing, confirms the sent text is present, echoes it back, and exits 2 COULD NOT RUN on a mismatch."
-        },
-        {
-          "factor": "This registry is the platform's fastest cross-session channel -- CLAUDE.md sends every session here FIRST because it is current without a fetch -- and it was the one channel with no durability and no audit. Nothing distinguishes 'nobody wrote to me' from 'what was written to me was replaced'.",
-          "kind": "latent-condition",
-          "action_status": "planned",
-          "action": "Anything meant for another session goes in docs/SAIRN-OPEN-WORK-INDEX.md as well as the note. Named as a standing habit in tool-bugs item 12 rather than enforced, because no check can tell a note meant for another session from one meant for self."
-        }
-      ],
-      "recurrence_open": "Growth is warned about, not bounded -- a note can still be appended to past the point where every reader's 100-character preview makes it undeliverable, and only the author's attention stops that. And nothing can distinguish a note meant for another session from one meant for self, so the 'also put it in the open-work index' habit is unenforced and will be skipped under time pressure, which is when it matters most."
     },
     {
       "commit": "b3797733c152",
