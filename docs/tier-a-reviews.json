@@ -1755,6 +1755,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-22T13:28:54Z",
+      "resources": [
+        "grd_boq_rates",
+        "law_portalmessages",
+        "quotes"
+      ],
+      "files": [
+        "tests/run_two_axis_tier_parser_probe.py",
+        "tools/criticality_tier_check.py"
+      ],
+      "what": "two-axis criticality migration, spec 3.2 + 3.3 + 3.4 step 3 and 4: all 99 Tier A rows read individually for confidentiality, all 387 rows migrated to the six-cell shape, and the four-cell shape now refused by name rather than silently skipped. WHAT TRIPPED THIS GATE IS RESOURCE NAMES IN COMMENTS AND FIXTURES, NOT CODE PATHS: grd_boq_rates and law_portalmessages appear in tools/criticality_tier_check.py only inside the comments explaining the two 2.3 refinements they forced, and in the probe's synthetic fixtures reproducing them; 'quotes' matches the word inside QUOTE_SPANS/strip_quotations. Neither file reads, writes or gates any resource -- they check a markdown register. REVIEWER SHOULD CONFIRM TWO THINGS: (1) those names are inert text, and (2) the substantive judgement calls, which ARE real and are the reason a second reader matters -- that health-care PAYMENT records are PHI and so thirteen dental/ALF/SAIRNcode/senior billing rows are Confidentiality-A rather than the B that spec 3.2's literal first-pass rule would have given them; that sairnlaw rows are read under the duty of confidentiality and not only privilege, with law_opaccounts deliberately left at B; and that the CITATION escape hatch in asserts_access_control genuinely narrows the check rather than hollowing it out.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-22T13:28:54Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
