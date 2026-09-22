@@ -1816,8 +1816,8 @@
       "task": "classify_own_commit speaker attribution -- a self-confessed out-of-scope commit is suppressed when the confession quotes its own sha FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
       "claimed_at": "2026-09-22T15:35:38Z",
       "claimed_at_epoch": 1790091338.9737203,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:39:06Z",
       "files": [
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
