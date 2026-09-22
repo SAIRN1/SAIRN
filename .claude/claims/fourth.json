@@ -2030,8 +2030,8 @@
       "task": "OWN_COMMIT_RE speaker attribution -- hover1+hover2 joint finding, a SELF-quotation satisfies both suppression signals FILES: tools/hover_separation_audit.py tests/run_hover_separation_probe.py",
       "claimed_at": "2026-09-22T13:30:19Z",
       "claimed_at_epoch": 1790083819.4361892,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T13:44:14Z",
       "files": [
         "tests/run_hover_separation_probe.py",
         "tools/hover_separation_audit.py"
