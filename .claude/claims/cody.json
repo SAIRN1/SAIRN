@@ -1706,6 +1706,17 @@
       "status": "released",
       "released_at": "2026-09-22T10:29:29Z",
       "files": null
+    },
+    {
+      "id": "cody-1790073267",
+      "session": "cody",
+      "subject": "platform",
+      "task": "python syntaxwarning invalid escape sweep and hygiene guard",
+      "claimed_at": "2026-09-22T10:34:27Z",
+      "claimed_at_epoch": 1790073267.1885178,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
