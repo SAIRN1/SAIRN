@@ -475,6 +475,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#9989; FIFTEEN of SAIRNlaw&rsquo;s eighteen server resources have NEVER EXISTED on the deployed database &mdash; every gate written for them has been running against a table that is not there** | **LIVE NOW, MEASURED 2026-09-21 (cc)** while trying to close the live half of the `billing_code` trim fix. Not a code defect &mdash; the same deploy-ordering gap as the SAIRNcare/SAIRNbuild row above, | `tests/app_session_isolation.js` |
 | **&#9888; `grab()` in the sairnlaw review probe asserts the anchor and the terminator and NOTHING about what lies between &mdash; and a brace-balance check provably does not close it** | **FOUND AND DRIVEN 2026-09-21 (Hank), NOT FIXED** &mdash; the finding from my Tier A review of fourth&rsquo;s `2026-09-21T19:02:10Z` obligation | `tests/sairnlaw_trust_clearance_review_probe.js` |
 | **Independent review of the `law_trusttx` 409 `CLEARANCE_NOT_STORED` refusal (Cody) &mdash; the handler cannot tell a first insert from a retry, and the refusal asserts it is the retry** | **REVIEWED 2026-09-21 (Fourth)** &mdash; `tests/sairnlaw_clearance_refusal_review_probe.js`, report-only, exit 0. **1 finding, NOT fixed by me** | `tests/sairnlaw_clearance_refusal_review_probe.js` |
 | **&#9888; `law_trusttx`: a cheque that was JUST POSTED to the trust ledger is reported as &ldquo;Nothing was saved&rdquo; &mdash; and the wording invites a biller to enter it twice** | **OPEN 2026-09-21, NOT FIXED &mdash; SPEC SETTLED, READY TO LAND** &mdash; Finding 1 of Fourth&rsquo;s Tier A review of cody&rsquo;s `2026-09-21T14:53:05Z` obligation. Driven with two genuinely differ | `api/sd-data-law-trusttx-clearance.test.js`, `tests/sairnlaw_clearance_refusal_review_probe.js` |
@@ -707,7 +708,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 639   tests/**, api/** (both walked)
-  open-work rows citing a test       321   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       322   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

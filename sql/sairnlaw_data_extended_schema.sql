@@ -30,15 +30,49 @@
 -- document -- including -ies -> -y, so law_timeentries is timeentry_id.
 --
 -- SECURITY MODEL, STATED PLAINLY BECAUSE ONE OF THESE IS HEALTH INFORMATION.
--- These tables are gated on the LICENCE KEY ONLY, exactly like the four in
--- sairnlaw_data_schema.sql -- including law_trusttx, which is client trust
--- money. SAIRNlaw has real per-employee auth (api/law-auth.js) and its
+--
+-- CORRECTED 2026-09-22 AND THE OLD TEXT IS KEPT BELOW, because it was quoted
+-- back as current fact the day this file was applied and it is no longer true.
+-- It said these fifteen are gated on the LICENCE KEY ONLY. MEASURED LIVE
+-- against the deployed endpoint, with a browser UA through tools/sairn_http.py
+-- so a Vercel challenge could not be mistaken for an answer:
+--
+--   all FIFTEEN of these          -> 401 NO_SESSION
+--   law_trusttx                   -> 403 FORBIDDEN
+--   law_clients, law_matters,
+--   law_deadlines                 -> 200 ok:true, provisioned:true
+--   an invented resource name     -> 400 "resource must be one of ..."
+--
+-- So the session gate DID land for these fifteen, and for law_trusttx. What
+-- remains licence-only is THREE resources, not nineteen: law_clients,
+-- law_matters and law_deadlines -- which is exactly the PHASE_1_UNGATED list
+-- tests/app_session_isolation.js already asserts, minus law_trusttx, which
+-- that suite records as PHASE 2 DONE (2026-09-16).
+--
+-- WHY THE CORRECTION MATTERS IN THIS DIRECTION: a schema file that UNDERSTATES
+-- its own protection tells the next reader the data is more exposed than it is,
+-- and the reasonable response to that sentence is to go and add a gate that is
+-- already there. The old text was accurate when written and nothing announced
+-- the day it stopped being -- the standing failure this platform keeps
+-- recording.
+--
+-- WHAT IS STILL TRUE: law_pimedical carries provider names and billed amounts
+-- on a personal-injury matter, and the three ungated resources include
+-- law_matters, which names the client and the matter. The remaining gap is
+-- three resources wide and is tracked in docs/SAIRN-OPEN-WORK-INDEX.md; the
+-- phase-1 split is deliberate and sequenced, not an oversight -- flipping the
+-- last three in one commit would break a staff member mid-session on a cached
+-- page, which is the reasoning api/sd-data.js records for the rollout.
+--
+-- THE SUPERSEDED TEXT, VERBATIM, so this correction can be checked rather than
+-- trusted: "These tables are gated on the LICENCE KEY ONLY, exactly like the
+-- four in sairnlaw_data_schema.sql -- including law_trusttx, which is client
+-- trust money. SAIRNlaw has real per-employee auth (api/law-auth.js) and its
 -- sdnData() does not send the session token at all, so gating these fifteen
 -- while the original four stay open would be a split posture rather than a
 -- protection. The whole-app gap is recorded as its own row in
 -- docs/SAIRN-OPEN-WORK-INDEX.md; it is one coherent change across all
--- nineteen, not a thing to do by halves here. law_pimedical carries provider
--- names and billed amounts on a personal-injury matter.
+-- nineteen, not a thing to do by halves here."
 --
 -- NO `delete` GRANT ANYWHERE IN THIS FILE, and do NOT add one when fixing a
 -- missing grant. The platform removed explicit delete grants from every
