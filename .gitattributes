@@ -79,6 +79,25 @@ archive/** text eol=lf
 *.csv   text eol=lf
 *.txt   text eol=lf
 *.svg   text eol=lf
+# ── TLA+ SPECS AND THEIR MODEL CONFIGS, ADDED 2026-09-22 ─────────────────────
+# The same false-alarm class this whole file exists to stop, in two extensions
+# that did not exist when it was written. Found by hover1 as a DRIFT report on
+# a worktree nobody had touched.
+#
+# MEASURED, not inferred: all 7 tracked files under docs/spec/ have blobs with
+# ZERO carriage returns and working-tree copies that are fully CRLF --
+# MCRoleGates.tla 0 vs 120, RoleGates.tla 0 vs 229, RateLimitConsume.tla 0 vs
+# 194, and 8 apiece in the three .cfg model configs. `git check-attr` returned
+# `text: unspecified` for both extensions, so core.autocrlf=true was deciding,
+# and `git status` stayed clean the whole time because the clean filter
+# converts on the way in. Nothing was ever going to prompt.
+#
+# THIS IS THE `*.js` FIX OF 2026-09-03 NEVER EXTENDED, which is the eighth
+# discipline in docs/2026-09-13-cross-domain-disciplines.md: nothing announces
+# the day a rule stops covering the tree it was written for. The rule did not
+# break -- the repo grew two extensions past it.
+*.tla   text eol=lf
+*.cfg   text eol=lf
 .gitignore      text eol=lf
 .gitattributes  text eol=lf
 .vercelignore   text eol=lf
