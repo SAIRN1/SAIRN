@@ -2500,6 +2500,20 @@
         "api/_lib/wip-accounting.js",
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "hank-1790077467",
+      "session": "hank",
+      "subject": "sairncare",
+      "task": "append-only trail ordering three reads FILES: api/sd-data.js sairncare.html",
+      "claimed_at": "2026-09-22T11:44:27Z",
+      "claimed_at_epoch": 1790077467.878606,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "sairncare.html"
+      ]
     }
   ]
 }
