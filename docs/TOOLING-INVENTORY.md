@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**209 files in `tools/`.** By what actually invokes them:
+**210 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 39 | nothing runs these at all |
+| **UNWIRED** | 40 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 2 |
-| CHECKER | 145 |
+| CHECKER | 146 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
 | LIVE | 20 |
@@ -46,19 +46,20 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 14 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 7 wired nowhere at all, and 7
+**The number to act on: 15 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 7
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 14, by name, so this is actionable rather than a statistic:
+The 15, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `bypass_log.py` | UNWIRED | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it |
 | `cross_tenant_isolation_scope.py` | SUITE-ONLY | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling |
 | `csv_formula_injection_check.py` | UNWIRED | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it |
+| `defect_budget_gate.py` | UNWIRED | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
@@ -331,7 +332,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (39)
+## UNWIRED (40)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -343,6 +344,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `bypass_log.py` | CHECKER | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it | &mdash; |
 | `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
 | `csv_formula_injection_check.py` | CHECKER | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it | &mdash; |
+| `defect_budget_gate.py` | CHECKER | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
@@ -407,7 +409,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      209   git ls-files tools/
+  tools on disk                      210   git ls-files tools/
   hook entries                         9   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
