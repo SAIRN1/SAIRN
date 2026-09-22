@@ -2471,6 +2471,21 @@
         "docs/spec/MCRoleGates.tla",
         "tools/run_tlc.py"
       ]
+    },
+    {
+      "id": "hank-1790073931",
+      "session": "hank",
+      "subject": "item90",
+      "task": "shape antipattern fixes FILES: api/_lib/deadline-engine.js api/_lib/resilience.js api/_lib/wip-accounting.js",
+      "claimed_at": "2026-09-22T10:45:31Z",
+      "claimed_at_epoch": 1790073931.8476045,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/deadline-engine.js",
+        "api/_lib/resilience.js",
+        "api/_lib/wip-accounting.js"
+      ]
     }
   ]
 }
