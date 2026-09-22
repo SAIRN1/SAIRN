@@ -2110,3 +2110,84 @@ outage ends the moment the migration runs.
 expired premise**: `docs/2026-09-03-demo-credentials.md:114` still says SAIRNvet
 has no auth endpoint, and that table carries no SAIRNvet row — not fixed here,
 because it needs a real credential to exist first.
+
+---
+
+## 2026-09-22 — SAIRNfreedom: eight more resources gated, and the deferral that held them open described the wrong set
+
+**The task arrived as "confirm whether these landed, and if they got lost in the
+pace, land them now." They had not got lost.** I raised
+`sf_youth_participants` and `sf_disbursements` earlier today and explicitly did
+not act — *"the product decision is Michael's and is flagged rather than
+pre-empted."* The work was correctly waiting on an answer. **Re-derived before
+building rather than taken on report:** `SD_SESSION_GATED` held exactly the
+three 2026-09-21 entries at HEAD, and the only commits naming
+`sf_youth_participants` were my own comment correction (`c4f258f4`) and the
+original backup feature. Saying that plainly matters more than the eight lines
+of code that followed.
+
+**EIGHT GATED**, each with its reason recorded beside it in the file rather than
+only here: `sf_operators` (name + DOB + a **felony** flag and a **gambling
+disqualification** flag on one row — a criminal-history assertion about a named
+volunteer), `sf_gaming_expenses` and `sf_disbursements` (payee + amount, ORC
+2915.10(A)(2) and (C)), `sf_donations` (donor + amount), `sf_youth_participants`
+(**minors**), `sf_staff` (DOB, which the app age-gates off), `sf_waivers`
+(health and military-status disclosure), `sf_service_appointments` (a member
+tied to a VA-adjacent referral outcome).
+
+**THE DEFERRAL WAS LEGITIMATE AND ITS DESCRIPTION WAS NOT, and that distinction
+is the finding.** The comment holding these open read: *"widening it further is
+a product decision about who may see a duty roster or a bottle count, and nobody
+has made that one."* Deferring to Michael was right. But "a duty roster or a
+bottle count" does not cover minors' names, a felony flag, or an ORC 2915 payee
+— **anyone reading that line to make the decision would have been deciding about
+the wrong set.** That is a different failure from the stale premise I corrected
+in SAIRNvet this morning: that comment became false; this one was accurate about
+its own reasoning and wrong about its subject matter from the day it was
+written. Registered `not-citable` with that reason rather than stretched onto
+PR §2.3, which would blur two failure modes in the corpus the rule-coverage
+figures are computed from.
+
+**LIVE, BOTH DIRECTIONS, AND THE SECOND CONTROL IS THE ONE I WOULD HAVE SKIPPED
+A MONTH AGO.** Before: all eight **200** on a bare licence key while `sf_ledger`
+— gated since 2026-09-21, same dispatcher, identical treatment — answered **403
+FORBIDDEN**. After: all eight **403**, plus a write probe **403 before any store
+call**. Then the control that runs the *other* way: `sf_members` and
+`sf_signatures`, deliberately **not** in the approved batch, still answer **200
+provisioned:true** — which is what proves the gate is per-resource rather than a
+sweep. A gate that quietly widened would have passed every "is it gated"
+assertion I wrote.
+
+**ZERO ROWS EVERY TIME, said out loud.** The probes demonstrate that nothing
+stops a caller **reaching** the resource. They do not demonstrate that regulated
+data left, and the commit, the register record and the index row all say so.
+
+**WHAT I CANNOT VERIFY AND WILL NOT CLAIM.**
+`sql/sairnfreedom_employee_auth_schema.sql` has not been run —
+`/api/sf-auth` login answers **503 NOT_PROVISIONED**. So the half I drove is
+*"no session is refused."* The half nobody can drive is *"a real session
+**passes** the gate"*, and until that file runs it is **impossible**, not merely
+unrun. Same trade SAIRNvet took this morning and the same reasoning: an app that
+refuses loudly is recoverable in one SQL run; a criminal-history flag reachable
+with a browser-readable bearer token is not.
+
+**THE ARM ASSERTS SET EQUALITY, NOT A LIST**, and that is the decision worth
+keeping. `SD_SESSION_GATED` says a resource needs a session; a second map says
+which app's session counts. The file's own comment records what a disagreement
+does — expectedApp falls back to `stonedesk` and every correctly signed-in
+caller is refused with FORBIDDEN *"sign in first"*, failing **closed and
+confusingly**, which is the failure that gets a security change reverted as
+broken rather than fixed forward. A hardcoded list of eleven would go stale at
+the twelfth resource **and would pass while the second map was forgotten**,
+which is the real defect. Probe mutation 2 is exactly that and it is refused.
+
+**AND THE ARM DEFENDS THE BATCH BOUNDARY IN BOTH DIRECTIONS**, which I flagged
+to the reviewer as the thing to attack first: it asserts `sf_members` and
+`sf_signatures` are **absent**. If the right answer was to gate those two as
+well, my arm now actively defends the wrong line and has to be edited rather
+than extended. That is a real cost of pinning a product decision in a test, and
+it is better than the alternative — a boundary nothing records, which is how
+this one drifted in the first place.
+
+**STILL OPEN:** the migration (Michael only), and **24 ungated `sf_` resources**
+— a decision nobody has made, not a decision that they are fine.
