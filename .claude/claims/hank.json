@@ -2621,8 +2621,8 @@
       "task": "discharge cody 2026-09-22T15:18:11Z obligation -- review the SAIRNsenior payroll engine, FLSA weighted-average regular rate, the EVV/scheduling field split and the floor semantics. Review-only, no edits. FILES: docs/tier-a-reviews.json -- reads api/_lib/sen-payroll.js api/sd-data.js sairnsenior.html",
       "claimed_at": "2026-09-22T20:39:46Z",
       "claimed_at_epoch": 1790109586.9065118,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T20:52:31Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
