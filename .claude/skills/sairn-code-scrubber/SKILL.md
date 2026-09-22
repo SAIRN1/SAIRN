@@ -175,3 +175,44 @@ from the one the phrase came from. `tests/run_sd_auth_last_admin_sabotage_probe.
 mutation 7 is the control shape for this class: it re-asserts the removed comment
 and **changes no code**, and the suite must still refuse it, because the sentence
 is what carried the defect through review.
+
+## 23. A command that reports nothing and did nothing -- `git commit -F -` inside a compound
+`git add -A && git commit -q -F - <<'EOF' ... EOF` **silently produces no
+commit** when it is chained with `&&` or `;` into a longer compound command,
+and `-q` means it says nothing on the way past. The shell moves on, the next
+command in the chain runs against a tree that still has every change unstaged,
+and **the work is still on disk** -- so nothing looks wrong until a `git log`
+or a `git status` much later.
+
+**MEASURED: FOUR TIMES IN ONE SESSION, 2026-09-21/22**, three of them noticed
+only because a later `git status --porcelain` was non-empty when it should have
+been clean, and one noticed only after a rebase had already moved past it. Two
+of the four were followed immediately by `git rebase`, which then rewrote a
+DIFFERENT session's commit, because `--amend` in the same chain landed on
+whatever HEAD had become. **The recovery cost is far above the typing saved.**
+
+**IT IS THE SILENT-FAILURE SHAPE, not a git quirk.** The command's exit status
+and its effect disagree, and the flag that makes it quiet is the same flag
+everyone reaches for in a script. Related to item 18 (a shell metacharacter
+surviving into content nobody re-reads) and to the same root: **content built
+through a quoted or piped shell argument, in a command whose success nobody
+re-reads.**
+
+**THE RULE, and it is two steps, not one.**
+
+1. **Write the message to a FILE and pass the path** -- `git commit -F
+   <path>`, never `-F -`. CLAUDE.md already says to build multi-line content
+   in a file rather than a quoted shell argument (item 18's rule); this is the
+   same rule, and the commit message is the case it is most often skipped for.
+2. **VERIFY THE COMMIT LANDED before doing anything else** -- `git log
+   --oneline -1` and read the subject, in the same breath, **not chained behind
+   another `&&`**. A commit is not a thing you can assume happened because the
+   shell did not complain. *"It exited 0"* and *"it committed"* are two claims
+   and only one of them was checked.
+
+**AND NEVER `--amend` INSIDE A REBASE PAUSE.** If a chained commit fails during
+a rebase, the amend that follows applies to whatever commit the rebase has
+currently checked out -- which is somebody else's. That happened twice on
+2026-09-21 and both times the fix was `git rebase --abort` and a clean redo.
+When a rebase stops, run `git status` and read which commit you are on **before**
+running anything that writes.
