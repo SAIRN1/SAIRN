@@ -1884,8 +1884,8 @@
       "task": "apply hank's routed correction: rf_proposals confidentiality B->A on the decision-row signature FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-22T22:49:08Z",
       "claimed_at_epoch": 1790117348.248812,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T22:51:25Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
