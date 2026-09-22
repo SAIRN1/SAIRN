@@ -10814,7 +10814,7 @@
       "recurrence_open": "sf-auth.js still carries its own inline copy of this guard, so two implementations of one security decision exist; this one is modelled on it so they cannot disagree today, and folding sf-auth onto the shared function is a separate claim. The 12 setup paths that do NOT name a sole role were not audited -- they have no sole role to lose today, but nothing stops one being added without the guard. And the guard is a read followed by an upsert with nothing between, so two concurrent demotions each see two owners and both are allowed; set_active has the identical structure, so the whole last-admin family is check-then-write."
     },
     {
-      "commit": "af2fc48a71d3",
+      "commit": "2154f6330dcb",
       "date": "2026-09-22",
       "subject": "fix(status): --note APPENDS by default; --note-replace is the explicit override -- the field that ate two real messages",
       "files": [
