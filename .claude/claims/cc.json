@@ -2250,8 +2250,8 @@
       "task": "defect_register external commit citation format and validated app enum FILES: tools/defect_register.py tests/run_defect_register_probe.py",
       "claimed_at": "2026-09-22T14:48:30Z",
       "claimed_at_epoch": 1790088510.2659378,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T15:38:44Z",
       "files": [
         "tests/run_defect_register_probe.py",
         "tools/defect_register.py"
