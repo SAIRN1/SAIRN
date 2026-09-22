@@ -2304,8 +2304,8 @@
       "task": "run_push_verify_probe fixture is missing sairn_session_identity so every claim call inside it dies FILES: tests/claims/run_push_verify_probe.py",
       "claimed_at": "2026-09-22T21:30:12Z",
       "claimed_at_epoch": 1790112612.4074478,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-22T22:05:48Z",
       "files": [
         "tests/claims/run_push_verify_probe.py"
       ]
