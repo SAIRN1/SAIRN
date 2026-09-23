@@ -2219,6 +2219,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-23T12:44:44Z",
+      "resources": [
+        "exec_context"
+      ],
+      "files": [
+        "tests/run_criticality_tier_probe.py"
+      ],
+      "what": "criticality_tier_check.py now reconciles the rollup LIST as well as the count, in both directions, with arms 9 and 10 in run_criticality_tier_probe.py. WHAT TO ATTACK: (1) the scope decision -- only backticked names that are REGISTERED RESOURCES OF THAT APP are judged, so a cell that DESCRIBES its resources instead of naming them passes unverified; decide whether that silent third state should be reported rather than tolerated. (2) the new stale branch shipped with a KeyError crash that arm 2 caught -- confirm the scoping fix (listed & present) cannot hide a real defect rather than just the crash. (3) arm 9's first anchor dropped a name the cell mentions twice and measured nothing; check arm 10 does not have the mirror-image flaw. NOTE ON WHY THIS OBLIGATION EXISTS AT ALL: the push gate matched the resource name exec_context inside a COMMENT in the probe file, not in code serving it. The obligation is worth recording on its own merits -- this is a new gate over the whole register -- but the match was on prose.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T12:44:44Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
