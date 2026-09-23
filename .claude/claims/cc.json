@@ -2406,6 +2406,19 @@
         "tests/run_sabotage_control_probe.py",
         "tools/sabotage_control_check.py"
       ]
+    },
+    {
+      "id": "cc-1790168162",
+      "session": "cc",
+      "subject": "sairncode",
+      "task": "sc_telehealth B to A on the money limb plus the two water_features rows individually read at unchanged B FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T12:56:02Z",
+      "claimed_at_epoch": 1790168162.261373,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
