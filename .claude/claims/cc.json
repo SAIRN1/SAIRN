@@ -2414,8 +2414,8 @@
       "task": "sc_telehealth B to A on the money limb plus the two water_features rows individually read at unchanged B FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T12:56:02Z",
       "claimed_at_epoch": 1790168162.261373,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:05:34Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
