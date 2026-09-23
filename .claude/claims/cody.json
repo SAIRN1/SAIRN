@@ -1897,8 +1897,8 @@
       "task": "the visualizer's slab picker lists a session-cached array, so a slab another device reserved still shows in-stock and a metered render is spent on it FILES: stonedesk.html",
       "claimed_at": "2026-09-22T23:01:41Z",
       "claimed_at_epoch": 1790118101.8451092,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T09:40:59Z",
       "files": [
         "stonedesk.html"
       ]
@@ -1910,8 +1910,8 @@
       "task": "visualizer slab picker refreshes before listing stale reservation FILES: stonedesk.html",
       "claimed_at": "2026-09-23T08:49:37Z",
       "claimed_at_epoch": 1790153377.001406,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T09:40:59Z",
       "files": [
         "stonedesk.html"
       ]
