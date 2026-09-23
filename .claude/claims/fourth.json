@@ -2209,8 +2209,8 @@
       "task": "cross-app rollup count+list re-derivation sweep, then the full sairnfreedom individually-read re-audit FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T12:30:16Z",
       "claimed_at_epoch": 1790166616.0372531,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T12:54:14Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
