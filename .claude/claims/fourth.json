@@ -2235,8 +2235,8 @@
       "task": "land sd_business_snapshots B/B with the argued evidence FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T14:01:29Z",
       "claimed_at_epoch": 1790172089.030841,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T17:57:55Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
