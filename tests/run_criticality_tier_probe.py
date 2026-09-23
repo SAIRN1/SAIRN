@@ -15,6 +15,27 @@ this repo established that a probe which edits tracked files is
 indistinguishable from residue when it dies, and the register is a file a reader
 would trust on sight.
 
+── EVERY ANCHOR IN THIS FILE IS DERIVED, AND THAT IS NOT A PREFERENCE ──────
+THIS FILE HAS GONE STALE TWICE, both times because somebody correctly
+re-tiered a row. The arms anchored on app rows in 2026-09-10; arm 6 anchored
+on a hardcoded `| **10** |` and went red on 2026-09-22 when StoneDesk's A
+count moved to 12. A count is a FACT ABOUT THE TABLE, so an arm that types it
+beside the table is asserting that nobody will do the work this register
+exists to record.
+
+AND THE FAMILY IS WIDER THAN THIS FILE. Measured by cody, 2026-09-23: FOUR
+anchor-staleness incidents in ONE day -- 14fa1a4d (session_gate_table_probe),
+395d4040 (route-record ANCHOR-2), e9797e02 (arm 6 here) and f48e7d57 (arm 4
+here, landed after the first note was written). TWO OF THE FOUR ARE IN THIS
+FILE. The family also carries tool-bugs item 11, ec64365a. My own note said
+three in two days and understated it in both dimensions.
+
+So the standing rule for anything added here: READ the value out of the
+fixture, ASSERT the read found exactly one thing, and ASSERT the mutation
+changed the bytes. An arm that plants nothing must fail LOUDLY about its
+ANCHOR and never quietly about its subject -- a red arm nobody can act on is
+how a probe stops being read at all.
+
 Run: python tests/run_criticality_tier_probe.py
 """
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
@@ -76,6 +97,24 @@ try:
           'a checker that implies more reach than it has is worse than none')
 
     def mutate(new_text, label, marker):
+        # ── ONE SITE, EVERY ARM: A MUTATION THAT PLANTED NOTHING IS A
+        # ── FAILURE ABOUT THE ANCHOR, NOT ABOUT THE SUBJECT ──────────────
+        # Arm 6 read `roll.replace('| **10** |', ...)`. When StoneDesk's A
+        # count moved to 12 the replace matched NOTHING, the document written
+        # here was byte-identical to the original, the checker passed --
+        # correctly, it had nothing to complain about -- and the arm reported
+        # FAIL because the marker never appeared. A red arm about the wrong
+        # thing is how a probe stops being read.
+        #
+        # one_row() already refuses an anchor that matches zero or many ROWS.
+        # This is the other half and it covers every arm at once, including
+        # arms not written yet: whatever an arm did to the text, the text has
+        # to have CHANGED.
+        assert new_text != ORIGINAL, (
+            'ANCHOR STALE: %r produced a document identical to the original, '
+            'so nothing was planted and the arm below would be measuring an '
+            'unmutated register. Re-derive the anchor from the fixture rather '
+            'than typing it.' % label)
         io.open(DOC, 'w', encoding='utf-8', newline='').write(new_text)
         rc2, out2 = run(wt)
         check(label, rc2 == 1 and marker in out2,
@@ -138,14 +177,48 @@ try:
     # number, and it ASSERTS the edit landed. A mutation that plants nothing
     # must be a loud failure about the ANCHOR, never a quiet one about the
     # subject.
+    # ── THE HAZARD I NAMED WAS NOT THE HAZARD (cody, routed 2026-09-23) ───
+    # My note asked whether this takes the wrong cell if a row grows more
+    # `| **N** |`-shaped cells. MEASURED BY CODY: 0 of 404 backticked rows
+    # carry more than one, and the Status cell's bolded PROSE cannot match --
+    # the pattern needs a pipe-delimited span of pure digits. Bolding the B or
+    # C count is harmless too, because the A count is still leftmost.
+    #
+    # WHAT ACTUALLY BREAKS IT IS BOLDING CELL 1, the registered-resources
+    # count, which puts a pure-number bold cell BEFORE the A count. Driven on
+    # the real stonedesk row:
+    #
+    #   | `stonedesk` |   36  | **12** | ...   the bare pattern takes 12  (right)
+    #   | `stonedesk` | **36**| **12** | ...   the bare pattern takes 36  (WRONG)
+    #
+    # 36 is the resources count. The arm would then plant 43 against a row
+    # whose A count is 12, the checker would refuse it for the right reason by
+    # accident, and the arm would pass while testing something else.
+    #
+    # SO THE A CELL IS ANCHORED TO THE ONE BEFORE IT rather than to being
+    # first. `| N | **N** |` is the A count BY POSITION -- the bolded number
+    # immediately after a plain number -- and under the hazard above it matches
+    # NOTHING and the assert fires. Loud about the anchor, never quiet about
+    # the subject, which is this file's standing rule for its own reason.
+    #
+    # AND THE MATCH MUST BE UNIQUE. Measured across the real table: 16 rollup
+    # rows, and the shape occurs exactly once in every one of them. A second
+    # occurrence means the row is not what this arm thinks it is.
     roll = one_row('| `stonedesk` |')
-    m6 = re.search(r'\| \*\*(\d+)\*\* \|', roll)
-    assert m6, ('fixture invalid: the stonedesk rollup row carries no '
-                '| **N** | A-count cell -- the row shape changed and this arm '
-                'is not testing what it says it tests: %r' % roll)
+    _m6 = re.findall(r'\| \d+ \| \*\*\d+\*\* \|', roll)
+    assert len(_m6) == 1, (
+        'fixture invalid: the stonedesk rollup row carries %d cells shaped '
+        '`| N | **N** |` and this arm needs exactly one. Either the row lost '
+        'its A-count cell or something before it was bolded -- either way the '
+        'arm is not testing what it says it tests: %r' % (len(_m6), roll))
+    m6 = re.search(r'\| \d+ \| \*\*(\d+)\*\* \|', roll)
     a_count = int(m6.group(1))
     wrong = a_count + 7           # any number the rows cannot support
-    rolled = roll.replace(m6.group(0), '| **%d** |' % wrong, 1)
+    # The pair is matched for POSITION and only the bolded half is rewritten,
+    # so the resources count it is anchored to is left exactly as it was.
+    rolled = roll.replace(m6.group(0),
+                          m6.group(0).replace('**%d**' % a_count,
+                                              '**%d**' % wrong, 1), 1)
     assert rolled != roll, 'the rollup mutation did not land'
     mutate(ORIGINAL.replace(roll, rolled, 1),
            'a rollup count that contradicts the rows is refused (A=%d -> %d)'
