@@ -10935,53 +10935,6 @@
       "recurrence_open": "Only soleRole is validated. provisioningRoles, roleLabel and table are also caller-supplied strings the engine trusts, and a wrong provisioningRoles would refuse every caller (loud) while a wrong table would read an empty roster and make every guard vacuous in the same silent direction as this defect. Neither was audited here."
     },
     {
-      "commit": "7acf4659eee2",
-      "date": "2026-09-22",
-      "subject": "fix(sairnbuild): three money folds routed through the coercion helper that was already two lines above them",
-      "files": [
-        "sairnbuild.html",
-        "tools/truthy_sum_baseline.json"
-      ],
-      "lines_added": 3,
-      "lines_removed": 5,
-      "app": "sairnbuild",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "sairnbuild.html rDrawsTbl(): `outstanding` and `received` summed d.amount and d.amount_received with `s + (x || 0)` while the two figures beside them, retHeld and retReleased, went through drawMoney() -- defined on the line immediately above the function. `|| 0` does not coerce: a non-empty string is truthy, the guard never fires and `+` concatenates. A third site at line 7408 summed d.amount_received the same way on the job-detail view.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": "truthy_sum_check.py",
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "All three folds predate tools/truthy_sum_baseline.json's grandfathering pass of 2026-09-11, which dated none of its fifty-one keys, and `git -S` on a fragment as common as this one cannot separate the commit that introduced a fold from the commits that reformatted the line around it."
-      },
-      "citation_note": "No numbered process rule covers a JavaScript coercion hazard; same reasoning as the stonedesk record filed an hour earlier. The nearest standing statement is an auto-memory about a quiet wrong number beating a loud crash, which is not a numbered section.",
-      "contributing_factors": [
-        {
-          "factor": "rDrawsTbl() computes four figures from the same draw records and drawMoney() is defined on the line immediately above it, yet two of the four went through the helper and two did not. Outstanding draws and cash received on a construction job are money; `|| 0` does not coerce, so a string field would have concatenated.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "all three sites -- 5508, 5509 and 7408 -- now call drawMoney(), which is `var n=Number(v);return isFinite(n)?n:0;` and is stricter than Number(x)||0 because it also rejects Infinity. No second coercion spelling was introduced into a function that already had one."
-        },
-        {
-          "factor": "THE THIRD SITE WAS FOUND BY THE CHECKER'S STALENESS REPORT, NOT BY READING. After 5509 was fixed the tool reported sairnbuild.html::d.amount newly stale but NOT d.amount_received -- which could only mean that field was still uncoerced elsewhere. It was: line 7408, `billed` on the job-detail view, the same field summed the same way.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the baselined-but-absent count is now a signal that gets read rather than a line at the bottom of the output: a key going stale while its FIELD still has occurrences is the specific evidence of a half-applied fix."
-        },
-        {
-          "factor": "These three sat beside a correctly coerced fold for as long as the grandfathering has existed, and the checker never failed on them because all three keys were in the baseline carrying the words NOT ASSESSED.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "The baseline is the design -- a checker reporting 82 occurrences forever would gate nothing. What this case shows is narrower and is recorded rather than fixed: a grandfathered key sitting two lines from a coerced one is a stronger signal than a grandfathered key on its own, and nothing ranks them. Building that ranking on the strength of one instance would be a tool written from a single data point."
-        }
-      ],
-      "recurrence_open": "Twenty-three uncoerced folds remain in sairnbuild.html across fourteen other fields -- c.committed, c.actual, c.budget, c.amount, p.amount, t.hours, r.deal_value and more -- all grandfathered and all still carrying NOT ASSESSED. This commit fixed the three that sat beside an existing coercion helper and did not touch the rest, because sweeping fourteen figures in one unreviewed change is a different and larger decision."
-    },
-    {
       "commit": "467baf7493e0",
       "date": "2026-09-22",
       "subject": "fix(hover): a sha the auditor CITED was counted as one it CLAIMS -- attribution gains a third state",
@@ -11355,6 +11308,53 @@
         }
       ],
       "recurrence_open": "THE APP IS NOW DOWN, DELIBERATELY, AND THIS IS NOT CLOSED UNTIL THE MIGRATION RUNS. sql/sairnvet_employee_auth_schema.sql has NOT been run against the live database -- measured, not inferred: /api/sv-auth login answers 503 NOT_PROVISIONED for sairnvet while sairnlegacy and sairndental, which already carry this gate, answer 401 INVALID_CREDENTIALS. So nobody can obtain a session and all 41 resources answer 401 from the moment this deploys. Only Michael can run that file. Second item, unrelated to the outage: docs/2026-09-03-demo-credentials.md line 114 still asserts SAIRNvet has no auth endpoint -- the same expired premise in a second place, and no SAIRNvet row exists in that table. Third: no mechanism re-checks a justification comment against its premise, which is the factor recorded as PLANNED above."
+    },
+    {
+      "commit": "7acf4659eee2",
+      "date": "2026-09-22",
+      "subject": "fix(sairnbuild): three money folds routed through the coercion helper that was already two lines above them",
+      "files": [
+        "sairnbuild.html",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 3,
+      "lines_removed": 5,
+      "app": "sairnbuild",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnbuild.html rDrawsTbl(): `outstanding` and `received` summed d.amount and d.amount_received with `s + (x || 0)` while the two figures beside them, retHeld and retReleased, went through drawMoney() -- defined on the line immediately above the function. `|| 0` does not coerce: a non-empty string is truthy, the guard never fires and `+` concatenates. A third site at line 7408 summed d.amount_received the same way on the job-detail view.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "truthy_sum_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "All three folds predate tools/truthy_sum_baseline.json's grandfathering pass of 2026-09-11, which dated none of its fifty-one keys, and `git -S` on a fragment as common as this one cannot separate the commit that introduced a fold from the commits that reformatted the line around it."
+      },
+      "citation_note": "No numbered process rule covers a JavaScript coercion hazard; same reasoning as the stonedesk record filed an hour earlier. The nearest standing statement is an auto-memory about a quiet wrong number beating a loud crash, which is not a numbered section.",
+      "contributing_factors": [
+        {
+          "factor": "rDrawsTbl() computes four figures from the same draw records and drawMoney() is defined on the line immediately above it, yet two of the four went through the helper and two did not. Outstanding draws and cash received on a construction job are money; `|| 0` does not coerce, so a string field would have concatenated.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "all three sites -- 5508, 5509 and 7408 -- now call drawMoney(), which is `var n=Number(v);return isFinite(n)?n:0;` and is stricter than Number(x)||0 because it also rejects Infinity. No second coercion spelling was introduced into a function that already had one."
+        },
+        {
+          "factor": "THE THIRD SITE WAS FOUND BY THE CHECKER'S STALENESS REPORT, NOT BY READING. After 5509 was fixed the tool reported sairnbuild.html::d.amount newly stale but NOT d.amount_received -- which could only mean that field was still uncoerced elsewhere. It was: line 7408, `billed` on the job-detail view, the same field summed the same way.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the baselined-but-absent count is now a signal that gets read rather than a line at the bottom of the output: a key going stale while its FIELD still has occurrences is the specific evidence of a half-applied fix."
+        },
+        {
+          "factor": "These three sat beside a correctly coerced fold for as long as the grandfathering has existed, and the checker never failed on them because all three keys were in the baseline carrying the words NOT ASSESSED.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The baseline is the design -- a checker reporting 82 occurrences forever would gate nothing. What this case shows is narrower and is recorded rather than fixed: a grandfathered key sitting two lines from a coerced one is a stronger signal than a grandfathered key on its own, and nothing ranks them. Building that ranking on the strength of one instance would be a tool written from a single data point."
+        }
+      ],
+      "recurrence_open": "Twenty-three uncoerced folds remain in sairnbuild.html across fourteen other fields -- c.committed, c.actual, c.budget, c.amount, p.amount, t.hours, r.deal_value and more -- all grandfathered and all still carrying NOT ASSESSED. This commit fixed the three that sat beside an existing coercion helper and did not touch the rest, because sweeping fourteen figures in one unreviewed change is a different and larger decision."
     },
     {
       "commit": "90c1a9c3ef94",
@@ -12141,6 +12141,65 @@
         }
       ],
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
+    },
+    {
+      "commit": "39947e7dc93c",
+      "date": "2026-09-23",
+      "subject": "fix(stonedesk): the visualizer's slab picker listed a session-cached array -- a slab another device reserved still showed in-stock and a metered render was spent on it",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html",
+        "tests/viz_slab_list_freshness.js"
+      ],
+      "lines_added": 278,
+      "lines_removed": 15,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "StoneDesk's photo-to-quote visualizer listed slabs from sdSlabs, the localStorage array, filtered to status:'in-stock'. The filter is right; the input is not. slabSyncFromSupabase() runs only from loadSlabs(), behind the _slabLoaded once-per-session guard, so the picker showed whatever was cached when the app started. A slab another device reserved an hour earlier still read in-stock. THE DOUBLE SALE WAS NEVER THE EXPOSURE and that is why this looked closed: api/sd-data.js's slabs/reserve branch is a real compare-and-swap that refuses a conflict with 409 and uses a plain INSERT rather than the write branch's upsert, so two devices racing an unsynced slab collide on the unique index. What a stale list costs is a METERED render -- the panel tracks viz-kpi-used/cap/left, so a rep picks the held slab, SPENDS a render showing the customer their kitchen in that stone, and only finds out at Quote This. The money is safe; the render and the conversation are not. Fixed by awaiting the sync before listing, and by giving slabSyncFromSupabase() a {ok, reason} return so a failed or empty refresh renders the cached list WITH a line saying the reservations on it may be out of date rather than silently passing it off as current.",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2da640cb0ac6",
+        "date": "2026-08-04",
+        "subject": "feat: Visualize on Your Kitchen -- photo upload + AI material-swap render (Phase 1)",
+        "lag_days": 50
+      },
+      "contributing_factors": [
+        {
+          "factor": "vizRenderSlabList() filtered sdSlabs, the localStorage array, which slabSyncFromSupabase() only ever refreshes from loadSlabs() behind the _slabLoaded once-per-session guard. The filter was correct; its input was as old as app start.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the picker now awaits slabSyncFromSupabase() before it lists"
+        },
+        {
+          "factor": "the _slabLoaded guard is CORRECT for the slab module -- its own comment says the flag belongs to the load, not to one of its callers -- and a second consumer in a different panel inherited that once-per-session lifetime without ever deciding it wanted one.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "sweep every other reader of sdSlabs for the same inherited once-per-session lifetime, and decide per reader whether it wants one -- not yet run; this fix covers the visualizer only"
+        },
+        {
+          "factor": "slabSyncFromSupabase() ended in catch(e){} and returned undefined, so a caller could not distinguish a confirmed list from a cached one -- there was no third state to check even if somebody had thought to.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "it now returns {ok, reason}, and the empty-array branch is reported rather than counted as a sync"
+        },
+        {
+          "factor": "the server-side compare-and-swap was built first and is correct, which made the feature read as closed. The reviewed question was 'can two devices sell one slab' -- answered, no -- and not 'what does a rep see before they get there'.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "no check catches a correct guard placed one step later than the cost it was meant to prevent; the register entry is the record"
+        }
+      ],
+      "recurrence_open": "This fixes the ONE reader. Nothing enforces that a future panel reading sdSlabs refreshes first, and nothing measures how often a rep actually hits a stale row -- so the frequency this was worth fixing at is still unmeasured."
     }
   ],
   "started": "2026-09-09",
