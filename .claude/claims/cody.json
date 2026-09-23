@@ -2062,6 +2062,19 @@
       "files": [
         "tests/run_two_axis_tier_parser_probe.py"
       ]
+    },
+    {
+      "id": "cody-1790186937",
+      "session": "cody",
+      "subject": "sf-tips-research",
+      "task": "answer 45B(b)(2) customary and Ohio conformity in the tips doc FILES: docs/2026-09-17-sairnfreedom-tips-tax-treatment.md",
+      "claimed_at": "2026-09-23T18:08:57Z",
+      "claimed_at_epoch": 1790186937.0153797,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-17-sairnfreedom-tips-tax-treatment.md"
+      ]
     }
   ],
   "refusals": [
