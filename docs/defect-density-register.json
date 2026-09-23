@@ -12202,6 +12202,57 @@
       "recurrence_open": "This fixes the ONE reader. Nothing enforces that a future panel reading sdSlabs refreshes first, and nothing measures how often a rep actually hits a stale row -- so the frequency this was worth fixing at is still unmeasured."
     },
     {
+      "commit": "5d760b4b87ef",
+      "date": "2026-09-23",
+      "subject": "fix(sairnlaw): the dashboard was silent on a 403, and silence meant two things",
+      "files": [
+        "sairnlaw.html"
+      ],
+      "lines_added": 27,
+      "lines_removed": 4,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "SAIRNlaw dashboard was SILENT when the trust reconciliation returned 403, so for a non-owner an empty trust row could mean either 'the reconciliation ran and agreed' or 'this control is not yours' and nothing on the dashboard distinguished them. The Trust panel said the honest sentence; the dashboard is the surface people scan and the panel is the one opened deliberately, so a role that never opened the Trust tab never met it.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "2978d404805c",
+        "date": "2026-08-09",
+        "subject": "fix: SAIRNlaw -- all 6 remaining WARNING findings",
+        "lag_days": 45
+      },
+      "citation_note": "No standing rule names 'a deliberate silence indistinguishable from an all-clear'. The nearest is the silent-failure family, but nothing here failed -- the control ran and correctly refused this role. The gap is that the ABSENCE of an alarm carried two meanings.",
+      "phase_note": "The 403 branch was written deliberately, on the reasoning that a role which cannot run a control is not told about it. That is right about the RESULT and wrong about the SILENCE, so the defect is in the design decision rather than in its implementation.",
+      "contributing_factors": [
+        {
+          "factor": "The dashboard and the Trust panel were written as separate surfaces and only the PANEL was ever asked what a non-owner should see. The panel got a correct, explicit sentence for the 403 case; the dashboard got a branch that skipped the row entirely.",
+          "kind": "process",
+          "action": "The 403 case now paints its own row on the dashboard. Where a control has two surfaces, the question 'what does a role that cannot run this see HERE' has to be answered on each surface, not once.",
+          "action_status": "done"
+        },
+        {
+          "factor": "AN OMITTED ROW HAS NO AUTHOR AND NO REVIEWER. Every other trust outcome produced a visible sentence somebody wrote and somebody could disagree with. This one produced nothing, so there was no text in the diff or on the screen for a reviewer to read.",
+          "kind": "technical",
+          "action": "Both branches of the failure path now emit a row, so the not-your-control case is a sentence in the source that a reviewer can argue with rather than an early return.",
+          "action_status": "done"
+        },
+        {
+          "factor": "Silence is the one UI state that cannot be inspected for correctness by looking at it. A wrong badge is visible; a missing row is indistinguishable from a healthy one, and on THIS panel a missing row means 'nothing needs attention'.",
+          "kind": "technical",
+          "action": "Recorded as the generalisable shape rather than fixed here: on any dashboard whose empty state reads as an all-clear, a deliberate non-render needs the same scrutiny as a rendered claim. Not turned into a checker -- no mechanical test can tell an intended omission from an unintended one.",
+          "action_status": "not-actionable",
+          "note": "Not actionable as a CHECK, and that is the decision rather than a deferral. A deliberate non-render and an accidental one are byte-identical, so no static tool can separate them, and a tool that flagged every early return on a dashboard would produce noise nobody reads. It is recorded as a SHAPE to carry into review instead: on a surface whose empty state reads as an all-clear, an omission is a claim and needs the same scrutiny as a rendered one."
+        }
+      ],
+      "recurrence_open": "Every other SAIRN dashboard that hides a row a role cannot act on is unexamined. This fix is one surface in one app -- nothing was swept, and no checker can find the shape, because a deliberate non-render and an accidental one are byte-identical. The recurrence question is open across the platform and is stated here rather than implied closed by a single corrective action."
+    },
+    {
       "commit": "f27a9cd5ed4c",
       "date": "2026-09-23",
       "subject": "fix(auth): all seventeen auth endpoints took a licence for ANY app -- a StoneDesk key got 200 from SAIRNvet, and check_license is the gate that exists to stop exactly that",
