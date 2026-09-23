@@ -2195,8 +2195,8 @@
       "task": "sb_train law_bankstatements sc_query B->A individual reads, then the full rf_ re-audit pass FILES: docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-23T11:18:05Z",
       "claimed_at_epoch": 1790162285.680307,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:32:33Z",
       "files": [
         "docs/CRITICALITY-TIERS.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md"
