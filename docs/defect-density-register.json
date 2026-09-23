@@ -12202,7 +12202,7 @@
       "recurrence_open": "This fixes the ONE reader. Nothing enforces that a future panel reading sdSlabs refreshes first, and nothing measures how often a rep actually hits a stale row -- so the frequency this was worth fixing at is still unmeasured."
     },
     {
-      "commit": "5d760b4b87ef",
+      "commit": "25197855d190",
       "date": "2026-09-23",
       "subject": "fix(sairnlaw): the dashboard was silent on a 403, and silence meant two things",
       "files": [
