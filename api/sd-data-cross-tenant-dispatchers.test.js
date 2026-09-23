@@ -15,8 +15,28 @@
 //   bld_costs, bld_incidents, bld_price_points, bld_sub_bids,
 //   leg_certs, leg_invoices, leg_preneed,
 //   sf_accounts, sf_ledger, sf_vendor_prices,
-//   sdn_discounts, sdn_invoices,
-//   sd_hr_certs, sd_hr_employees
+//   sdn_discounts, sdn_invoices, sdn_contracts,
+//   sd_hr_certs, sd_hr_employees,
+//   bld_jobs, bld_checks, bld_pos, bld_change_orders, bld_lien_waivers,
+//   bld_subs, bld_timesheet, bld_photo_analyses,
+//   dnt_referrals, dnt_procedure_types, dnt_recall_outreach,
+//   law_timeentries, law_clecredits, law_optx, law_pimedical,
+//   law_mattertasks, law_matterdocs, law_mattermilestones,
+//   sc_auth_requests, sc_coded_items, sc_hcc
+//
+// THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
+// in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
+// all -- and LAW_RESOURCES had no unit in this file whatsoever, which is
+// what an absent DISPATCHER looks like from the coverage side: not one
+// resource missed, seven at once.
+//
+// AND THE PROSE HAS TO GO HERE RATHER THAN INSIDE THE LIST.
+// declared_coverage() reads the CONTIGUOUS run of comment lines after the
+// header above, so a paragraph inserted mid-list truncates the declaration
+// silently -- the first attempt parsed 47 names against 68 driven, and
+// every name after the paragraph credited nothing. The tool caught it by
+// still reporting the new rows WEAK with 'does not DECLARE bld_jobs',
+// which reads like a missing name and was a missing PARSE.
 //
 // sd_quote_requests is deliberately ABSENT from that list even though the plan
 // groups it with SD_LOCAL_RESOURCES: it has its OWN named branch with its own
@@ -231,16 +251,39 @@ const UNITS = [
     ['dnt_txplans', 'txplan_id',
       { patient_id: 'P-1', title: 'Plan',
         status: 'proposed',
-        items: [{ procedure_type_id: 'PT-1', fee: 100 }] }]] },
+        items: [{ procedure_type_id: 'PT-1', fee: 100 }] }],
+    ['dnt_referrals', 'referral_id',
+      { direction: 'outgoing', patient_name: 'A Patient',
+        external_party: 'Dr Example, Oral Surgery',
+        reason: 'Third molar evaluation', date: '2026-09-01',
+        status: 'Pending' }],
+    ['dnt_procedure_types', 'procedure_type_id',
+      { cdt_code: 'D1110', description: 'Prophylaxis, adult' }],
+    ['dnt_recall_outreach', 'outreach_id',
+      { procedure_type_id: 'PT-1', patient_id: 'P-1', on: '2026-09-01',
+        channel: 'phone', outcome: 'booked' }]] },
   { map: 'SV_RESOURCES', app: 'sairnvet', role: 'owner', members: [
     ['sv_audit_log', 'audit_log_id'], ['sv_billing', 'billing_id'],
     ['sv_compliance', 'compliance_id'], ['sv_controlled', 'controlled_id'],
     ['sv_patients', 'patient_id']] },
   { map: 'BLD_RESOURCES', app: 'sairnbuild', role: 'owner', members: [
     ['bld_costs', 'cost_id'], ['bld_incidents', 'incident_id'],
-    ['bld_price_points', 'price_point_id'], ['bld_sub_bids', 'sub_bid_id']] },
+    ['bld_price_points', 'price_point_id'], ['bld_sub_bids', 'sub_bid_id'],
+    // ── EIGHT MORE, 2026-09-23. Every one is Tier A and every one sat in
+    //    cross_tenant_isolation_scope's NONE bucket -- a Tier A resource with
+    //    no cross-tenant arm at all. They go through the SAME generic
+    //    dispatcher as the four above, which is exactly why each is driven
+    //    SEPARATELY rather than assumed: the risk this catches is a resource
+    //    wired to a bespoke branch that forgot the filter, and that is
+    //    invisible until the resource itself is driven.
+    ['bld_jobs', 'job_id'], ['bld_checks', 'check_id'],
+    ['bld_pos', 'po_id'], ['bld_change_orders', 'change_order_id'],
+    ['bld_lien_waivers', 'lien_waiver_id'], ['bld_subs', 'sub_id'],
+    ['bld_timesheet', 'timesheet_id'],
+    ['bld_photo_analyses', 'photo_analysis_id']] },
   { map: 'SDN_RESOURCES', app: 'sairndesign', role: 'owner', members: [
-    ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id']] },
+    ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
+    ['sdn_contracts', 'contract_id']] },
   { map: 'LEG_RESOURCES', app: 'sairnlegacy', role: 'owner', members: [
     ['leg_certs', 'cert_id'], ['leg_invoices', 'invoice_id'],
     ['leg_preneed', 'preneed_id']] },
@@ -248,7 +291,21 @@ const UNITS = [
     ['sc_ar', 'entry_id'], ['sc_claims', 'entry_id'],
     ['sc_compliance', 'entry_id'], ['sc_credential_scope', 'entry_id'],
     ['sc_denial', 'entry_id'], ['sc_denial_events', 'entry_id'],
-    ['sc_revenue', 'entry_id']] },
+    ['sc_revenue', 'entry_id'],
+    ['sc_auth_requests', 'entry_id'], ['sc_coded_items', 'entry_id'],
+    ['sc_hcc', 'entry_id']] },
+  // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
+  // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
+  // what an absent UNIT looks like from the coverage side: not one resource
+  // missed, a whole dispatcher never driven. law_trusttx and the other phase-2
+  // rows are gated separately and are covered elsewhere.
+  { map: 'LAW_RESOURCES', app: 'sairnlaw', role: 'owner', members: [
+    ['law_timeentries', 'timeentry_id',
+      { matter_id: 'M-1', billing_code: 'L110', hours: 1, rate: 250, billable: true }],
+    ['law_clecredits', 'clecredit_id'],
+    ['law_optx', 'optx_id'], ['law_pimedical', 'pimedical_id'],
+    ['law_mattertasks', 'mattertask_id'], ['law_matterdocs', 'matterdoc_id'],
+    ['law_mattermilestones', 'mattermilestone_id']] },
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
