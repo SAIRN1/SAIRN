@@ -108,7 +108,7 @@ jobs:
           --health-retries 20
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install pg_dump 15 and age
         run: |
@@ -243,7 +243,7 @@ jobs:
       # If the clones move, move this with them. Verified before changing:
       # `node --check tools/restore_coherence_check.js` parses on v24.16.0 and
       # the script reaches its own COULD-NOT-RUN refusal rather than throwing.
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '24'
 

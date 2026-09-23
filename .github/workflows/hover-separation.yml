@@ -48,7 +48,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out with history
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           # The check reads a COMMIT RANGE, so a shallow clone would make it
           # unable to see the commits it is meant to judge -- and "could not

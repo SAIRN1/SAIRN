@@ -101,7 +101,7 @@ jobs:
       # at HEAD only. It does NOT walk history, so a full clone of a repo
       # carrying a 2.6 MB stonedesk.html and 901 archived commits would be
       # bought for nothing.
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
