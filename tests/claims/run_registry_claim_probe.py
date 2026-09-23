@@ -102,18 +102,28 @@ def write_row(regdir, session, files, subject='their-batch',
 
 
 tmp = tempfile.mkdtemp(prefix='regclaim-probe-')
-MINE = 'my work FILES: docs/CRITICALITY-TIERS.md'
+# ── A PATH NO REAL SESSION WILL EVER CLAIM, AND THE PROBE TAUGHT ME ──
+# This was docs/CRITICALITY-TIERS.md, the file from the incident, which
+# reads well and is not hermetic: hank took a REAL claim on it while this
+# was being written, and three arms went red against a tool behaving
+# perfectly -- including the one asserting that an ABSENT registry
+# changes nothing, which was blocked by a GIT claim it had nothing to do
+# with. The second non-hermetic fixture in this file in one session.
+# The incident is in the header where it belongs; the fixtures use a
+# path that cannot collide with live work.
+FIXTURE_FILE = 'docs/zz-registry-probe-fixture-only.md'
+MINE = 'my work FILES: ' + FIXTURE_FILE
 try:
     # ── 1. THE DEFECT ITSELF. A claim that is in NO git repository anywhere
     # ── blocks, because the other session wrote it locally six seconds ago.
     reg = os.path.join(tmp, 'live')
     os.makedirs(reg)
-    write_row(reg, 'hank', ['docs/CRITICALITY-TIERS.md'])
+    write_row(reg, 'hank', [FIXTURE_FILE])
     rc, out = run(reg, 'check', 'tooling', MINE, '--no-fetch')
     ok('a claim visible ONLY in the registry BLOCKS', 'BLOCKED' in out, out[:300])
     ok('...naming the session that holds it', 'hank' in out, out[:300])
     ok('...and the declared file they collide on',
-       'docs/CRITICALITY-TIERS.md' in out, out[:300])
+       FIXTURE_FILE in out, out[:300])
     ok('...and SAYING it is not on origin/main, because that changes what to '
        'do about it', 'LIVE STATUS REGISTRY' in out and 'not been pushed' in out,
        out[:400])
@@ -129,14 +139,14 @@ try:
     # ── removed, which is worse than no row.
     old = os.path.join(tmp, 'stale')
     os.makedirs(old)
-    write_row(old, 'hank', ['docs/CRITICALITY-TIERS.md'], age_h=9.0)
+    write_row(old, 'hank', [FIXTURE_FILE], age_h=9.0)
     rc, out = run(old, 'check', 'tooling', MINE, '--no-fetch')
     ok('a registry claim older than the expiry does not block', 'BLOCKED' not in out, out[:300])
 
     # ── 4. A RELEASED CLAIM IS NOT A CLAIM, even in the fast path.
     rel = os.path.join(tmp, 'released')
     os.makedirs(rel)
-    write_row(rel, 'hank', ['docs/CRITICALITY-TIERS.md'], status='released')
+    write_row(rel, 'hank', [FIXTURE_FILE], status='released')
     rc, out = run(rel, 'check', 'tooling', MINE, '--no-fetch')
     ok('a RELEASED registry claim does not block', 'BLOCKED' not in out, out[:300])
 
@@ -300,7 +310,7 @@ try:
     # the pid is one nothing on this machine can be running.
     dead = os.path.join(tmp, 'dead')
     os.makedirs(dead)
-    write_row(dead, 'hank', ['docs/CRITICALITY-TIERS.md'])
+    write_row(dead, 'hank', [FIXTURE_FILE])
     _p = os.path.join(dead, 'hank.json')
     _row = json.load(io.open(_p, encoding='utf-8'))
     _row['claude_pid'] = 999999
@@ -331,8 +341,8 @@ try:
     # ── paths outside the prose cannot remove the accident silently.
     sys.path.insert(0, os.path.join(ROOT, 'tools'))
     import sairn_claim as C
-    hit = C.overlaps({'subject': 'zzz', 'task': 'FILES: docs/CRITICALITY-TIERS.md'},
-                     'qqq', 'FILES: docs/CRITICALITY-TIERS.md')
+    hit = C.overlaps({'subject': 'zzz', 'task': 'FILES: ' + FIXTURE_FILE},
+                     'qqq', 'FILES: ' + FIXTURE_FILE)
     ok('overlaps() reports the shared FILE explicitly, not only its word '
        'fragments', any(str(h).startswith('FILE:') for h in hit), sorted(hit))
 
