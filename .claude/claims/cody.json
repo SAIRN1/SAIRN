@@ -2128,6 +2128,19 @@
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "docs/competitive-gap-audit-sairncode.md"
       ]
+    },
+    {
+      "id": "cody-1790192644",
+      "session": "cody",
+      "subject": "tips-row-correct",
+      "task": "correct the sairnfreedom counsel row -- its two deferred items are answered FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T19:44:04Z",
+      "claimed_at_epoch": 1790192644.0433488,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ],
   "refusals": [
