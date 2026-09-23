@@ -2420,6 +2420,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T18:35:15Z",
+      "resources": [
+        "rf_draws",
+        "rf_proposals",
+        "rf_supplier_documents",
+        "sdn_pos"
+      ],
+      "files": [
+        "api/sd-data-bespoke-branch-isolation.test.js"
+      ],
+      "what": "sdn_pos re-tiered B -> A on the money limb, and its isolation arms, 2026-09-23 (79ba500a). docs/CRITICALITY-TIERS.md, docs/SAIRN-OPEN-WORK-INDEX.md and api/sd-data-bespoke-branch-isolation.test.js. NO app source changed.\n\nREVIEW THESE FIVE THINGS:\n\n(1) THE TIER IS A JUDGEMENT -- DISAGREE WITH IT DIRECTLY. The argument is that `total_cost` is COMPUTED AND THEN STORED (sairndesign.html:2907), is summed from the STORED value into a Total Committed KPI (:2949, label at :582), and sits on an order already issued to a vendor (setPOStatus Draft->Sent->Confirmed->Received) downstream of an APPROVED client proposal (:2886). Check every one of those line citations resolves, and check the counter-argument I did NOT make: that a PO here is a purely internal worksheet the studio never sends. If that is true the money limb weakens considerably.\n\n(2) CONFIDENTIALITY LEFT AT B on the ground that wholesale cost is the studio's own commercial position and no third party's protected data sits on the row -- the bld_pos / grd_boq_rates call. Check `vendor` and `project_id` carry nothing identifying a private individual, because sdn_referrals in the same app was moved to Confidentiality-A for exactly that (a non-customer's personal phone number).\n\n(3) THE BIGGER FINDING IS THE ONE TO VERIFY HARDEST, because I found it by an arm I could not write rather than by looking: SDN_RESOURCES verifies NO SESSION on either leg (api/sd-data.js:10019 read, :10028 write), so all 18 SAIRNdesign resources are authorised by the licence key alone and five are now Tier A. CONFIRM THAT INDEPENDENTLY -- grep for verifySessionToken anywhere in that branch's enclosing scope, check SD_SESSION_GATED and ROLES_BY_APP, and check sairndesign.html does not send X-SD-Auth. If I am wrong about this the open-work row I filed is a false alarm on a whole app.\n\n(4) AND CHECK THE LIMIT I PUT ON THAT FINDING, because an overstated one is as bad: I claim the TENANT boundary is intact (license_hash is derived from the bearer key, so one studio cannot read another's rows) and only identity WITHIN a studio is absent. Attack that -- is there any path by which the licence key alone reaches another tenant's rows?\n\n(5) sdn_pos's arms are in api/sd-data-bespoke-branch-isolation.test.js and that is a MISFILING I named rather than hid: it is an ordinary SDN_RESOURCES member whose arms belong in the dispatcher suite, placed here only because that suite was under an active claim. Decide whether that was the right call or whether it should have waited, and whether \"it moves when the claim clears\" is a promise anything will enforce.\n\nDISCLOSED: the [S] arms for sdn_pos are SKIPPED and print the reason, because there is no session to attack. The skip is declared per resource (`gated: false`) rather than inferred from a failing arm -- an absent gate a suite quietly skips looks identical to one it forgot.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-23T18:35:15Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
