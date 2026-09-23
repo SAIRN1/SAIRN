@@ -2222,8 +2222,8 @@
       "task": "sairngrounds partial re-audit -- grd_progress_photos grd_irr_zones grd_irr_controllers properties FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T13:28:57Z",
       "claimed_at_epoch": 1790170137.9733977,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:33:46Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
