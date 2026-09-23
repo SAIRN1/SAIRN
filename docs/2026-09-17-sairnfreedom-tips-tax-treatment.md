@@ -185,11 +185,9 @@ is the **federal** side of that same coupling and belongs beside it.
   member-volunteer creates a distinct question was not determined.
 - **Ohio conformity to §224.** Whether Ohio's income tax follows the federal
   qualified-tips deduction was not researched. Federal-only here.
-- **FICA tip credit (§45B).** §9a.2 named "tip credit" and it is **not answered
-  here**. §45B is a credit against employer social security tax on tips, and
-  whether a §501(c)(19) post with little or no income tax liability can use it is
-  a different question from whether tips are taxable. Named so it is not read as
-  covered.
+- ~~**FICA tip credit (§45B).**~~ **ANSWERED 2026-09-23 — see §7 below.** The
+  answer is not a number, it is that the credit is only reachable in the state
+  this document's headline is about avoiding.
 - **Form 8027.** Whether a post canteen is ever a "large food or beverage
   establishment" (the >10-employee test) was not determined.
 
@@ -201,3 +199,107 @@ is the **federal** side of that same coupling and belongs beside it.
 required, and here are seven rules for them."** The blocking half is discharged.
 The five items in §5 are narrower questions that block specific features, not the
 tip record itself.
+
+---
+
+## 7. The FICA tip credit (§45B) — answered 2026-09-23 (Fourth)
+
+**§9a.2 named "tip credit" and §5 left it open. This closes it.** The question
+as posed was *"whether a §501(c)(19) post with little or no income tax liability
+can use it."* It can, in exactly one circumstance — **and that circumstance is
+the one §1 of this document says a post is trying to avoid.**
+
+### 7.1 Sources — primary, retrieved 2026-09-23
+
+Retrieved as TEXT, not as hashed PDFs, and that difference is stated rather than
+glossed: §0's sources are hashed files, these are statutory text read from the
+US Code. Anyone relying on this should read the section itself.
+
+| Source | Retrieved from |
+|---|---|
+| **26 U.S.C. §45B** — credit for employer social security taxes paid on tips | `law.cornell.edu/uscode/text/26/45B` |
+| **26 U.S.C. §38** — general business credit, components and limitation | `law.cornell.edu/uscode/text/26/38` |
+| **26 U.S.C. §39** — carryback and carryforward of unused credit | `law.cornell.edu/uscode/text/26/39` |
+| **26 U.S.C. §511** — tax on unrelated business income of exempt organisations | `law.cornell.edu/uscode/text/26/511` |
+| **US DOL**, federal minimum wage history | `dol.gov/agencies/whd/minimum-wage/history/chart` |
+
+### 7.2 The chain, and every link is from the statute
+
+1. **§45B(a)** allows a credit equal to the *excess employer social security
+   tax* paid on tips.
+2. **§38(b)(11)** lists it verbatim — *"the employer social security credit
+   determined under section 45B(a)"* — as a component of the **general business
+   credit**. That is the decisive fact and it is what the original question was
+   circling.
+3. **§38(c)(1)** limits the general business credit to *"the excess (if any) of
+   the taxpayer's net income tax over the greater of (A) the tentative minimum
+   tax … or (B) 25 percent of so much of the taxpayer's net regular tax
+   liability as exceeds $25,000."* **No income tax, no credit** — it is
+   non-refundable by construction.
+4. **§511(a)(1)** imposes tax on unrelated business taxable income *"computed as
+   provided in section 11"*, and **§511(a)(2)(A)** applies it to any
+   §501(a)-exempt organisation **other than one described in §501(c)(1)**. A
+   §501(c)(19) post is squarely inside that.
+
+**So a post's only chapter-1 income tax is UBIT, and §45B is only usable against
+it.**
+
+### 7.3 The finding, which is not the arithmetic
+
+**§45B is reachable by a post ONLY to the extent the canteen produces unrelated
+business taxable income — the exact thing §1 of this document says a tip jar
+puts in question.** A post claiming the credit is, in substance, asserting it
+has UBTI to credit against.
+
+That makes the credit a **poor reason to introduce tipping** and a **bad first
+question to ask about it**. The order of operations is: settle whether the
+canteen's volunteer-labour exclusion survives, then ask about §45B — never the
+reverse. Building a "tip credit" field that invites a post to chase the credit
+would push the decision the wrong way round.
+
+**The credit is not lost if unusable, merely deferred, and for most posts that
+is indistinguishable from nothing.** **§39(a)(1)** carries an unused general
+business credit **1 year back and 20 years forward**. A post with no UBTI
+carries it for twenty years and then loses it.
+
+### 7.4 Two things that surprised the intuition, both from the text
+
+- **The minimum-wage floor is FROZEN.** §45B(b)(1) computes the excess against
+  the minimum wage *"in the case of food or beverage establishments, as in
+  effect on January 1, 2007."* **DOL confirms that rate was $5.15/hour** (in
+  effect since 1 September 1997; next changed to $5.85 on 24 July 2007). So the
+  credit is measured against a floor nearly two decades stale — for a canteen
+  paying anything at or near a current wage, **essentially every tipped dollar
+  is inside the credit**, which makes the credit larger than it sounds and
+  changes nothing about §7.3.
+- **The scope is wider than "restaurants".** §45B(b)(2) reaches tips for
+  providing, delivering or serving food or beverages **and** certain personal
+  services — barbering, nail care, esthetics, body and spa treatments — where
+  tipping is customary. A post canteen is inside the food-and-beverage limb on
+  its face; the customary-tipping test is factual and is **not** settled here.
+
+### 7.5 Two coordination rules a build must not ignore
+
+- **§45B(c), no double benefit:** *"No deduction shall be allowed under this
+  chapter for any amount taken into account in determining the credit."* The
+  employer FICA on those tips cannot be both deducted and credited.
+- **§45B(d), election out:** the section *"shall not apply to a taxpayer for any
+  taxable year if such taxpayer elects to have this section not apply."* The
+  credit is elective, so "did the post elect out" is a real field on a real
+  return, not a hypothetical.
+
+### 7.6 What is STILL not answered, kept in the §5 register's spirit
+
+- **Whether FICA paid on EXEMPT-function tips can generate a credit usable
+  against UBIT arising from a different activity.** The chain in §7.2 shows the
+  credit lands in the same chapter as the §511 tax; it does **not** show that a
+  credit generated outside the unrelated trade or business may offset it. That
+  is the single question a post's CPA must answer before anyone relies on §7.3,
+  and inventing an answer here would be exactly what §5 refuses to do.
+- **Whether a members-only canteen meets the "customary" tipping test** of
+  §45B(b)(2). Factual, not researched.
+- **Ohio conformity.** Federal only, same as §5.
+
+**NOT TAX ADVICE.** This is internal research on statutory structure, written so
+a build decision can be made and so a professional can be asked a narrow
+question instead of an open one.
