@@ -773,10 +773,211 @@ def released_hours_ago(c):
 
 def overlaps(c, subj, task):
     """Shared significant token between the two claims. Conservative on
-    purpose: it flags for a human read, it does not decide."""
+    purpose: it flags for a human read, it does not decide.
+
+    ── A DECLARED FILE IN COMMON IS AN OVERLAP IN ITS OWN RIGHT (2026-09-22) ─
+    The loop in cmd_check does `if not shared: continue` BEFORE it reaches
+    file_verdict(), so a file intersection with no shared vocabulary would
+    never have been examined at all -- which the comment there already claimed
+    was impossible. In practice it could not happen, because the path is IN
+    the task string and tokenises: two claims naming docs/CRITICALITY-TIERS.md
+    both yield `docs` and `criticality`. So this was true by accident of
+    spelling rather than by construction, and a future FILES: syntax that
+    stored paths outside the prose would have removed the accident silently.
+    The intersection is now returned as its own signal so it cannot.
+    """
     mine = tokens(subj, task)
     theirs = tokens(c.get('subject'), c.get('task'))
-    return mine & theirs
+    shared = mine & theirs
+    a, b = declared_files(task), declared_files(c.get('task'))
+    if a and b:
+        shared = shared | {'FILE:' + p for p in (a & b)}
+    return shared
+
+
+# ── THE EARLY-WARNING SOURCE: CLAIMS THAT HAVE NOT REACHED ORIGIN YET ───────
+# MEASURED, from the claim records, and the reason this exists:
+#
+#   cody  criticality-tiers  claimed 22:12:27Z  FILES: docs/CRITICALITY-TIERS.md
+#   hank  tier-batch         claimed 22:12:33Z  FILES: docs/CRITICALITY-TIERS.md
+#
+# Six seconds apart, both declaring the same file, both proceeding, seven rows
+# of that file re-tiered twice. THE MATCHER WAS RIGHT AND BLIND: a claim is
+# published by committing and PUSHING it, so hank's check read a fetch taken
+# before cody's push landed. The window is a git round-trip wide.
+#
+# tools/sairn_status.py is already outside git, already written locally,
+# already read with no fetch -- so sairn_claim now publishes its active claims
+# there too, and reads the other sessions' at check time. Same facts, one on
+# the slow authoritative path and one on the fast advisory path.
+#
+# IT IS AN EARLY WARNING, NOT A SECOND SOURCE OF TRUTH. git stays
+# authoritative: a registry row is a machine-local file that no other clone on
+# another machine can see, and a session that never publishes simply does not
+# appear. Everything below therefore fails OPEN -- an unreadable, absent or
+# empty registry produces no claims and changes nothing.
+def _in_own_clone():
+    """Is this process running in the clone this session's registry row names?
+
+    THE REGISTRY IS MACHINE-GLOBAL AND PROBES DRIVE THIS TOOL INSIDE THROWAWAY
+    CLONES, so without this a sandbox inherits -- and on the write side can
+    OVERWRITE -- the live claims of whichever real session shares its identity.
+    Found by two existing suites going red, not by design: a probe's synthetic
+    claim was blocked by hank's real tier-batch, which made the verdict depend
+    on what another session happened to be doing.
+
+    Unknowable answers NO. That is fail-open for the read and the safe
+    direction for the write.
+    """
+    # AN EXPLICIT SAIRN_STATUS_DIR IS A DELIBERATE HARNESS SIGNAL and is
+    # trusted, exactly as session_lock_check.LOCK_DIR and
+    # sairn_status.STATUS_DIR already document their own overrides. Nothing in
+    # production sets it, so a real run always falls through to the clone-path
+    # test below. Without this the guard also blocked the ONE probe that
+    # legitimately points this tool at a synthetic registry.
+    if os.environ.get('SAIRN_STATUS_DIR'):
+        return True
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        mine = os.path.join(sairn_status.STATUS_DIR, session_name() + '.json')
+        with open(mine, encoding='utf-8') as fh:
+            home = (json.load(fh) or {}).get('clone')
+        return bool(home) and (os.path.normcase(os.path.abspath(home))
+                               == os.path.normcase(os.path.abspath(REPO)))
+    except Exception:                                            # noqa: BLE001
+        return False
+
+
+def registry_claims(me):
+    """Pseudo-claims from other sessions' status rows. [] on any failure.
+
+    Shaped exactly like a git claim so it flows through is_active(),
+    overlaps(), block_reason() and file_verdict() untouched -- a second code
+    path for the same judgement is a second answer waiting to diverge. The
+    `_registry` marker is the only difference, and it exists so a refusal can
+    SAY which source it came from.
+    """
+    # ── A SANDBOX MUST NOT INHERIT THE MACHINE'S LIVE REGISTRY ────────────
+    # FOUND BY TWO EXISTING SUITES GOING RED, not by design. Probes drive this
+    # tool inside throwaway clones, and the registry is machine-global -- so
+    # the first version had a probe's synthetic claim blocked by hank's REAL
+    # tier-batch, and the verdict depended on what another session happened to
+    # be doing at the time. A test whose result moves with unrelated live work
+    # is not a test.
+    #
+    # THE DISCRIMINATOR IS THE CLONE PATH, taken from this session's own row.
+    # The registry already records which directory each session is working in;
+    # if this process is running somewhere else, it is a sandbox and gets no
+    # early warning. Real runs happen in the real clone and are unaffected.
+    # Unknowable -> skip, which is the fail-open direction.
+    if not _in_own_clone():
+        return []
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        rows = sairn_status.read_claims(exclude=me)
+    except Exception:                                            # noqa: BLE001
+        return []
+    out = []
+    for sess, c in rows:
+        if not isinstance(c, dict) or c.get('status') != 'active':
+            continue
+        out.append({
+            'session': sess,
+            'subject': c.get('subject') or '',
+            'task': c.get('task') or '',
+            'claimed_at': c.get('claimed_at'),
+            'claimed_at_epoch': c.get('claimed_at_epoch') or 0,
+            'status': 'active',
+            'released_at': None,
+            'files': c.get('files'),
+            '_registry': True,
+            '_file': '(status registry -- not yet on origin/main)',
+        })
+    return out
+
+
+def _registry_block_rows(args):
+    """The registry-sourced blocks for this attempt, as audit rows. [] if none.
+
+    RE-DERIVED RATHER THAN CAPTURED FROM cmd_check, and that is deliberate
+    even though it repeats a few lines: threading a side-channel out of the
+    check would make an advisory read carry state for a writer, and the next
+    session to change one would not know the other existed. This asks the same
+    question again against the same inputs.
+    """
+    me = session_name()
+    subj, task = args.subject, ' '.join(args.task)
+    rows = []
+    try:
+        for c in registry_claims(me):
+            if not is_active(c) or not overlaps(c, subj, task):
+                continue
+            why = block_reason(subj, task, c.get('subject'), c.get('task'))
+            # NAMED DIFFERENTLY FROM cmd_check's `fv, fshared` ON PURPOSE. An
+            # indented copy of that exact line CONTAINS the eight-space
+            # spelling as a substring, so adding this function made
+            # run_fileset_matcher_sabotage_probe.py's anchor match twice and
+            # that probe reported ANCHOR-2 -- a control disarmed by a change
+            # in an unrelated function, which is the anchor-staleness class
+            # this platform already records. Different names, one anchor.
+            verdict, hit_files = file_verdict(task, c.get('task'))
+            if verdict == 'clear':
+                continue
+            if verdict != 'refuse' and not why:
+                continue
+            rows.append({
+                'refused_at': iso(now()),
+                'my_subject': subj,
+                'my_task': task,
+                'other_session': c.get('session'),
+                'other_subject': c.get('subject'),
+                'other_task': c.get('task'),
+                'other_claimed_at': c.get('claimed_at'),
+                'shared_files': sorted(hit_files) or None,
+                'source': 'status-registry',
+                'why': ('same declared FILES' if verdict == 'refuse' else why),
+                'note': ('That claim was NOT on origin/main when this refusal '
+                         'was made. The registry row is machine-local and is '
+                         'not in git, which is why this row exists.'),
+            })
+    except Exception:                                            # noqa: BLE001
+        return []
+    return rows
+
+
+def publish_registry_claims(doc):
+    """Mirror this session's ACTIVE claims into its own status row.
+
+    Best effort by design. The return value is reported to the caller so a
+    failure is visible, and is never a reason to fail a claim: the git copy is
+    what the system has always run on.
+    """
+    # SAME SANDBOX GUARD AS THE READ SIDE, and this half is the dangerous one.
+    # Without it a probe running in a throwaway clone publishes its FIXTURE
+    # claims into this machine's real registry row -- overwriting the live
+    # claims of the session that owns it with synthetic ones. The read side
+    # merely gave a wrong answer; this side corrupts shared state, and it was
+    # one suite away from doing so unnoticed.
+    # None means SKIPPED BY DESIGN, False means it was tried and failed. The
+    # first version returned False for both, so every in-process probe -- which
+    # is a sandbox and correctly gets no mirror -- printed a warning that the
+    # mirror had failed. A caller cannot act on a warning that fires when
+    # nothing is wrong, and one suite matched on the output and went red.
+    if not _in_own_clone():
+        return None
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import sairn_status
+        active = [{'subject': c.get('subject'), 'task': c.get('task'),
+                   'claimed_at': c.get('claimed_at'),
+                   'claimed_at_epoch': c.get('claimed_at_epoch'),
+                   'files': c.get('files'), 'status': 'active'}
+                  for c in doc.get('claims', []) if is_active(c)]
+        return sairn_status.publish_claims(session_name(), active)
+    except Exception:                                            # noqa: BLE001
+        return False
 
 
 # ── THE DUPLICATE THIS TOOL COULD NOT SEE: YOUR OWN CLAIMS (2026-09-17) ─────
@@ -1219,6 +1420,22 @@ def push_verified():
 
 
 def cmd_check(args, quiet=False):
+    # ── THE MIRROR IS REFRESHED ON EVERY CHECK, WHICH IS HOW A ROLLOUT
+    # ── SELF-HEALS ────────────────────────────────────────────────────────
+    # Publishing only at claim time was the first version and it had a hole
+    # this session hit immediately: a claim taken BEFORE this change shipped
+    # never reaches the registry, and neither does one taken on the retry path
+    # -- which short-circuits once the claim is already on origin. Both leave
+    # a session holding real work that the fast path cannot see.
+    #
+    # `check` is the command every session runs most, it already writes
+    # nothing to git, and this writes only that session's OWN row. So the
+    # mirror converges on its own rather than needing every clone to take a
+    # fresh claim first.
+    try:
+        publish_registry_claims(load_mine())
+    except Exception:                                            # noqa: BLE001
+        pass
     fetched, ferr = False, ''
     if not args.no_fetch:
         # Read claims as they exist on origin/main, not just locally -- a claim
@@ -1241,7 +1458,15 @@ def cmd_check(args, quiet=False):
     # already holds -- that would make `check` before `claim` fail on the
     # legitimate retry path. The gate belongs where the duplicate is created.
     self_hits = []
-    for c in load_all(from_origin=not args.no_fetch):
+    # THE REGISTRY ROWS JOIN THE SAME LIST rather than getting their own pass.
+    # A claim that is on origin appears in both; the de-dup below keeps the git
+    # one, because that is the authoritative record and the one whose age and
+    # release state can be trusted.
+    _git = load_all(from_origin=not args.no_fetch)
+    _seen = {(c.get('session'), c.get('subject'), c.get('task')) for c in _git}
+    _reg = [c for c in registry_claims(me)
+            if (c.get('session'), c.get('subject'), c.get('task')) not in _seen]
+    for c in _git + _reg:
         if c.get('session') == me:
             if is_active(c):
                 reason, kind = self_overlap(task, c.get('task'))
@@ -1286,6 +1511,17 @@ def cmd_check(args, quiet=False):
                 # had to argue with.
                 print('  blocked by: %s' % reason)
                 print('  also share: %s' % ', '.join(sorted(shared)))
+                # WHERE THE EVIDENCE CAME FROM. A registry-sourced block is a
+                # claim that is NOT on origin/main yet -- six seconds old, or
+                # six minutes, or never pushed at all. The other session may
+                # still be mid-claim. That changes what to do about it, so it
+                # is said rather than left to look like an ordinary refusal.
+                if c.get('_registry'):
+                    print('  source    : the LIVE STATUS REGISTRY, not '
+                          'origin/main -- that claim has not been pushed yet')
+                    print('              (this is the early warning; confirm '
+                          'with %s rather than waiting for a fetch)'
+                          % c.get('session'))
                 print()
             print('DO NOT start this. Flag it back to the coordinating chat '
                   'session and let it decide who runs it.')
@@ -1424,6 +1660,51 @@ def cmd_claim(args):
               'it is the COLLISION half above that is only as current as the '
               'last fetch.')
     elif rc != 0:
+        # ── A REGISTRY-SOURCED REFUSAL IS RECORDED IN GIT (2026-09-22) ────
+        # The registry lives outside every clone, so a refusal that came from
+        # it leaves NO trace the hover auditors can reach -- and "the tool
+        # stopped me" is exactly the kind of claim this platform does not
+        # accept without an artefact. So the refusal is appended to this
+        # session's own claims file and committed: same file, same ownership,
+        # already audited, no new surface.
+        #
+        # ONLY REGISTRY-SOURCED ONES. A block from a git claim is already
+        # reconstructible from that claim, and writing a record for every
+        # ordinary refusal would fill the file with rows that prove nothing.
+        # WRITTEN, NOT COMMITTED, AND THE FIRST VERSION GOT THAT WRONG. It
+        # called save_mine(), which commits and pushes -- so a REFUSAL started
+        # creating commits, and two existing suites went red within the hour
+        # for exactly the right reason: the refusal path had always been
+        # read-only against git, and tests/claims/run_push_verify_probe.py
+        # asserts that a blocked claim writes nothing it can publish.
+        #
+        # The row is appended to this session's own claims file and rides out
+        # with the NEXT claim or release, which already commits that same
+        # file. THE RESIDUAL IS REAL AND IS NAMED RATHER THAN HIDDEN: a
+        # session that is refused and then never claims again leaves the row
+        # uncommitted, so it is printed here too -- the operator's transcript
+        # is the other place a hover auditor can reach it.
+        _refused = _registry_block_rows(args)
+        if _refused:
+            try:
+                _d = load_mine()
+                _d['session'] = session_name()
+                _d.setdefault('refusals', []).extend(_refused)
+                with open(my_file(), 'w', encoding='utf-8') as _fh:
+                    json.dump(_d, _fh, indent=2)
+                    _fh.write('\n')
+                print('\nRecorded in .claude/claims/%s.json under "refusals" '
+                      '-- UNCOMMITTED. It lands with your next claim or '
+                      'release, which commits that file anyway.'
+                      % session_name())
+            except Exception as _e:                              # noqa: BLE001
+                print('\nNOTE: the refusal could not be recorded (%s), so it '
+                      'exists only in this transcript.' % _e)
+            for _r in _refused:
+                print('  REFUSAL RECORD: %s held %r on %s (registry, not yet '
+                      'on origin)' % (_r['other_session'], _r['other_subject'],
+                                      ', '.join(_r.get('shared_files') or [])
+                                      or 'overlapping work'))
         return rc
     subj, task = args.subject, ' '.join(args.task)
     doc = load_mine()
@@ -1610,6 +1891,15 @@ def cmd_claim(args):
         # claim on the lexical path and is worth being able to count.
         'files': sorted(declared_files(task) or []) or None,
     })
+    # ── PUBLISHED TO THE LIVE REGISTRY BEFORE THE GIT ROUND-TRIP ──────────
+    # This is the whole point of the change and the ORDER is the point of the
+    # order: the registry write is local and lands in milliseconds, the push
+    # below takes seconds. Doing it first makes the window this closes as
+    # small as it can be. If the push then fails the claim is not a claim --
+    # but a registry row saying "cc is trying to claim these files" is exactly
+    # what another session needs to see in that moment, and cmd_release drops
+    # it when the work closes.
+    _reg_ok = publish_registry_claims(doc)
     ok = save_mine(doc, 'chore(claims): %s claims %s -- %s' % (session_name(), subj, task),
                    push=not args.no_push)
     if not ok:
@@ -1628,6 +1918,14 @@ def cmd_claim(args):
         return 3
     print('\nCLAIMED. Release it when the work closes:')
     print('  python tools/sairn_claim.py release %s' % subj)
+    # REPORTED, NEVER FATAL. A session whose registry write failed is running
+    # on exactly the guarantees this tool had yesterday, and it should know
+    # that rather than assume the fast path is protecting it.
+    if _reg_ok is False:
+        print('\nNOTE: this claim was NOT mirrored into the live status '
+              'registry, so other clones will not see it until they fetch. '
+              'That is the behaviour this tool had before 2026-09-22 and is '
+              'not an error -- it is a smaller safety margin, said out loud.')
     if stale_check:
         # The push just proved the remote is reachable NOW, which means the
         # collision check can finally be made for real -- and it is the cheap
@@ -1663,6 +1961,13 @@ def cmd_release(args):
         print('  releasing: %s -- %s' % (c['subject'], c['task']))
     # Released claims are kept, not deleted: "who ran this gate and when" is the
     # question the next session asks, and a deleted row cannot answer it.
+    #
+    # THE REGISTRY MIRROR IS REWRITTEN FIRST, and it keeps only what is still
+    # ACTIVE. A stale row blocking work that finished is worse than no row at
+    # all -- it is the failure mode the four-hour expiry exists to bound, with
+    # the expiry removed -- so the release goes out on the fast path before the
+    # slow one, exactly as the claim did.
+    publish_registry_claims(doc)
     ok = save_mine(doc, 'chore(claims): %s releases %s' % (session_name(), subj),
                    push=not args.no_push)
     if not ok:

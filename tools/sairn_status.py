@@ -75,6 +75,7 @@ is machine-local: `~/SAIRN-SESSION-LOCKS` is not shared between machines, which
 is the same limit the lock files already have.
 """
 import argparse
+import glob
 import io
 import json
 import os
@@ -136,6 +137,92 @@ def path_for(name):
 # assumed -- see write_status() and read_one().
 _RETRIES = 6
 _BACKOFF = 0.02
+
+
+# ── THE SIX-SECOND WINDOW, AND WHY CLAIMS LIVE HERE TOO (2026-09-22) ───────
+# MEASURED, from the claim records themselves:
+#
+#   cody  criticality-tiers  claimed 22:12:27Z  FILES: ['docs/CRITICALITY-TIERS.md']
+#   hank  tier-batch         claimed 22:12:33Z  FILES: ['docs/CRITICALITY-TIERS.md']
+#
+# Six seconds apart, both DECLARING THE SAME FILE, and both proceeded. Seven
+# rows of docs/CRITICALITY-TIERS.md were then re-tiered twice, independently,
+# to the same verdict -- reassuring about the verdicts, pure waste as work.
+#
+# THE MATCHER WAS NOT AT FAULT AND THAT IS THE WHOLE POINT. sairn_claim.py
+# decides on the declared file set and would have refused instantly. It could
+# not see cody's claim because a claim is published by COMMITTING AND PUSHING
+# it, and hank's check read a fetch that predated cody's push landing. The
+# window is a git round-trip wide and no amount of matcher precision closes it.
+#
+# THIS REGISTRY IS ALREADY OUTSIDE GIT, already written locally, already read
+# with no fetch. So a session's ACTIVE CLAIMS are published here at claim time
+# as well -- the same fact, on the fast path, visible to every other clone the
+# moment the file is replaced. The git copy stays authoritative and unchanged;
+# this is an EARLY WARNING, not a second source of truth.
+#
+# OWNERSHIP-PER-KEY IS PRESERVED EXACTLY. A session writes only its own row,
+# which is the property that makes this registry safe to write without
+# locking, and `claims` is just another key inside that row.
+def publish_claims(name, claims):
+    """Write `claims` onto this session's OWN row. Returns True on success.
+
+    A LIBRARY CALL RATHER THAN A SUBCOMMAND, deliberately: the caller is
+    sairn_claim.py, the payload contains task prose with backticks and pipes
+    in it, and this platform has lost text to shell command substitution four
+    times in two days. Nothing here goes near a shell.
+
+    FAILS SOFT AND SAYS SO. Every caller must treat False as "the early
+    warning is unavailable" and carry on with the git-published claims, which
+    are what the tool has always used. An unwritable registry must never be
+    the reason a session cannot claim work.
+    """
+    try:
+        p = path_for(name)
+        prev = {}
+        if os.path.exists(p):
+            with io.open(p, encoding='utf-8') as fh:
+                prev = json.load(fh)
+        prev['claims'] = list(claims or [])
+        prev['claims_updated'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+        prev.setdefault('session', name)
+        write_status(name, prev)
+        return True
+    except Exception:                                            # noqa: BLE001
+        return False
+
+
+def read_claims(exclude=None):
+    """[(session, claim_dict)] from every OTHER session's row.
+
+    Returns [] on any failure -- an unreadable registry is an absent early
+    warning, never a refusal. A row with no `claims` key is a session running
+    a build of sairn_claim.py that does not publish yet, which is the ordinary
+    state during a rollout and is not an error.
+    """
+    out = []
+    # NO try/except AROUND THE GLOB, and that is measured rather than assumed.
+    # One was written here and then removed: glob.glob() returns [] for a
+    # directory that does not exist rather than raising, so nothing this
+    # function is actually given could reach the handler. The negative control
+    # planted a `raise` in it and ran SILENT -- a guard indistinguishable from
+    # its own absence, which is PR 1.1 and is the second one of mine this
+    # session has deleted rather than kept for comfort. The reachable guard is
+    # the per-file one below, and that is the one the arms hold.
+    names = sorted(glob.glob(os.path.join(STATUS_DIR, '*.json')))
+    for full in names:
+        sess = os.path.splitext(os.path.basename(full))[0]
+        if exclude and sess == exclude:
+            continue
+        try:
+            with io.open(full, encoding='utf-8') as fh:
+                row = json.load(fh)
+        except Exception:                                        # noqa: BLE001
+            continue
+        for c in (row.get('claims') or []):
+            if isinstance(c, dict):
+                out.append((sess, c))
+    return out
 
 
 def write_status(name, payload):
