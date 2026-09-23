@@ -2153,8 +2153,8 @@
       "task": "leg_gplservices and leg_florists -- the two A candidates found while reading leg_merch_catalog and leg_floristorders FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T10:05:35Z",
       "claimed_at_epoch": 1790157935.4987748,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T10:13:32Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
