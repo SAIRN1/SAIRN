@@ -2660,7 +2660,6 @@
       "verdict": null
     },
     {
-<<<<<<< HEAD
       "author_session": "cc",
       "opened_at": "2026-09-23T20:55:16Z",
       "resources": [
@@ -2701,7 +2700,11 @@
       "status": "open",
       "reviewer_owner": "fourth",
       "owner_assigned_at": "2026-09-23T20:55:16Z",
-=======
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
       "author_session": "hank",
       "opened_at": "2026-09-23T23:16:12Z",
       "resources": [
@@ -2723,7 +2726,6 @@
       "status": "open",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-09-23T23:16:12Z",
->>>>>>> efe1b3b6 (chore(docs): regenerate for the SAIRNdesign session gate)
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
