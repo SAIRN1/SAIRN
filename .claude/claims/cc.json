@@ -2392,6 +2392,37 @@
       "files": [
         "tests/run_criticality_tier_probe.py"
       ]
+    },
+    {
+      "id": "cc-1790166773",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "sabotage_control_check cannot() refusal vocabulary -- the review-probe family's guard is invisible to GUARDS FILES: tools/sabotage_control_check.py tests/run_sabotage_control_probe.py",
+      "claimed_at": "2026-09-23T12:32:53Z",
+      "claimed_at_epoch": 1790166773.735546,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_sabotage_control_probe.py",
+        "tools/sabotage_control_check.py"
+      ]
+    }
+  ],
+  "refusals": [
+    {
+      "refused_at": "2026-09-23T12:30:47Z",
+      "my_subject": "sairnscape",
+      "my_task": "scp_water_features and grd_water_features individually read -- both stay B, the premise that grd is already A is false FILES: docs/CRITICALITY-TIERS.md",
+      "other_session": "fourth",
+      "other_subject": "tiers-rollup",
+      "other_task": "cross-app rollup count+list re-derivation sweep, then the full sairnfreedom individually-read re-audit FILES: docs/CRITICALITY-TIERS.md",
+      "other_claimed_at": "2026-09-23T12:30:16Z",
+      "shared_files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
 }
