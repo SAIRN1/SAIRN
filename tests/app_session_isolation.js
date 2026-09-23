@@ -152,7 +152,24 @@ const POSTURE = {
   stonedesk:       { gate: 'SOME', auth: true,  why: 'DOCUMENTED at SD_LOCAL_RESOURCES: the shared shop record; personnel and financial data gate elsewhere' },
   sairnmechanical: { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 2 of 6 gate and nothing records why the other four do not' },
   sairndesign:     { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 1 of 18 gates (the assignment rule); nothing records the posture for the rest' },
-  sairnvet:        { gate: 'NONE', auth: true,  why: 'DOCUMENTED at SV_RESOURCES: SAIRNvet has NO per-employee authentication -- role is a self-selected dropdown, never server-verified. A gate here would gate on a session that does not exist' },
+  // CORRECTED 2026-09-23. It recorded NONE with the reason 'SAIRNvet has NO
+  // per-employee authentication -- role is a self-selected dropdown, never
+  // server-verified. A gate here would gate on a session that does not
+  // exist'. Every clause of that is now false, and the tripwire is what
+  // said so: api/sv-auth.js exists, and api/sd-data.js:10502 refuses EVERY
+  // SV_RESOURCES resource with 401 NO_SESSION unless
+  // verifySessionToken(token, licHash, 'sairnvet') holds.
+  //
+  // AND THE CAVEAT THAT GATE SHIPPED WITH IS NOW CLOSED. Its own comment
+  // said 'whether the auth migration has actually been run against the live
+  // database is not verified by this change -- confirm that before this
+  // reaches production, or every real call answers NOT_PROVISIONED instead
+  // of the refusal a signed-out user expects.' CONFIRMED 2026-09-23 against
+  // the live deployment: bootstrap on SV-PINNACLE-2026 returned 200 with a
+  // session token, login with that credential returned 200, and a second
+  // bootstrap returned 409 ALREADY_PROVISIONED. The table exists and the
+  // refusal is the real one.
+  sairnvet:        { gate: 'ALL',  auth: true,  why: 'DOCUMENTED at SV_RESOURCES and VERIFIED LIVE 2026-09-23: every resource requires a verified sairnvet session (api/sd-data.js:10502, 401 NO_SESSION), and the employee-auth migration is confirmed run -- bootstrap 200, login 200, re-bootstrap 409' },
   sairnfreedom:    { gate: 'NONE', auth: false, why: 'DOCUMENTED at SF_RESOURCES: no per-employee authentication either' },
   // READS are still licence-only on all 28 and that is what this column
   // measures. The WRITE posture is no longer NONE: on 2026-09-14 Michael
