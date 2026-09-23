@@ -150,12 +150,34 @@ function main() {
     // A regex that matched but captured nothing would leave TABLES empty, and
     // every per-table assertion below would then vacuously pass over zero
     // tables -- a green run that checked nothing. This is the guard against
-    // that, and it is why the count is a lower bound rather than an exact 6:
-    // a seventh trail added to the sibling must not fail HERE, it must fail in
+    // that, and it must stay a LOWER bound rather than an exact count: a
+    // seventh trail added to the sibling must not fail HERE, it must fail in
     // the per-table assertions where the message names the table.
-    assert.ok(TABLES.length >= 6,
-      'expected at least the 6 known SAIRNcare trails from the sibling, parsed ' +
-      TABLES.length + ': ' + JSON.stringify(TABLES));
+    //
+    // THE BOUND USED TO BE THE LITERAL `>= 6`, AND THAT WAS THE ONE NUMBER IN
+    // THIS FILE NOT DERIVED FROM ANYTHING (corrected 2026-09-23, from the
+    // review of hank's 2026-09-22T12:02:38Z obligation). It typed a count
+    // beside a list it otherwise parses, so a legitimate DROP to five trails
+    // would have failed this arm about its own fixture rather than about its
+    // subject -- the anchor-staleness class this repo recorded four times in a
+    // single day, including arm 6 of tests/run_criticality_tier_probe.py.
+    //
+    // ORDER_COLUMN is the right floor because it is the file's own declaration
+    // of every trail it knows how to check, and the very next test asserts the
+    // other direction (every sibling table must appear in ORDER_COLUMN). The
+    // two together pin the sets equal without either one naming a number.
+    const DECLARED = Object.keys(ORDER_COLUMN);
+    assert.ok(DECLARED.length > 0,
+      'ORDER_COLUMN is empty, so this arm has no floor to check against and ' +
+      'every per-table assertion below would pass vacuously.');
+    assert.ok(TABLES.length >= DECLARED.length,
+      'parsed ' + TABLES.length + ' trail(s) from the sibling but this file ' +
+      'declares an ordering column for ' + DECLARED.length + '. A trail ' +
+      'declared here and absent from the sibling means the parse lost rows, ' +
+      'or the sibling dropped a trail and this file was not updated -- either ' +
+      'way the per-table assertions below would be checking fewer trails than ' +
+      'this file believes exist. Parsed: ' + JSON.stringify(TABLES) +
+      '; declared: ' + JSON.stringify(DECLARED));
   });
 
   test('every trail in the sibling list has an ordering column declared here', () => {
