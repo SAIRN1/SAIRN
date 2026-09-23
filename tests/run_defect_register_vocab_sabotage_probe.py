@@ -99,6 +99,29 @@ MUTATIONS = [
     ('the external line counts are fabricated rather than zero', TOOL,
      "                'lines_added': 0, 'lines_removed': 0,\n",
      "                'lines_added': 1, 'lines_removed': 1,\n"),
+
+    # ── 6 AND 7: THE FILE ROUTE (2026-09-23) ────────────────────────────────
+    # It exists because a summary lost three backtick spans to a shell. Both
+    # of these put the text back on the shell's path without erroring.
+
+    # 6. The route stops being tried at all, so every --x-file is read as an
+    #    unknown flag and the field falls back to whatever followed --x.
+    # AIMED AT THE HELPER, NOT THE CALLERS. The obvious anchor --
+    # `from_file = read_text_arg(argv, name)` -- appears TWICE, once in each
+    # argument reader, and the harness correctly reported ANCHOR-2. Disabling
+    # the helper itself is also the truer mutation: it removes the route for
+    # every caller at once, which is what a revert would look like.
+    ('the file route stops being consulted', TOOL,
+     "    if flag not in argv:\n        return None",
+     "    if True:\n        return None"),
+
+    # 7. THE QUIET ONE. A file that is not UTF-8 is decoded lossily instead of
+    #    refused, so the record stores text that LOOKS fine and is not the
+    #    author's -- the same silent corruption the route exists to remove,
+    #    arriving through the route itself.
+    ('a non-UTF-8 body is decoded lossily instead of refused', TOOL,
+     "        text = raw.decode('utf-8')",
+     "        text = raw.decode('utf-8', 'replace')"),
 ]
 
 if __name__ == '__main__':

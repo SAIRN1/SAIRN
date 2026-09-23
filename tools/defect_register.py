@@ -600,12 +600,97 @@ def app_lines():
     return out
 
 
+# ── EVERY PROSE FIELD GETS A FILE ROUTE, NOT JUST ONE (2026-09-23) ─────────
+# TOOL-BUGS ITEM 5, FOURTH INSTANCE, MEASURED IN THIS FILE. `--add` had no
+# file route, so a summary typed at a shell lost three backtick spans to
+# command substitution and landed reading:
+#
+#   "folds of the shape , seven of them money"
+#   "the guard never fires and  concatenates"
+#   "a fragment as common as  cannot separate"
+#
+# The words deleted were the CODE SHAPES -- the fold, the operator, the
+# fragment -- which is the specific damage this class does: a summary about a
+# coercion bug with the three coercion terms removed still reads as English
+# and means nothing. Repaired in place afterwards, with the loss recorded.
+#
+# A SINGLE `--body-file` WOULD NOT HAVE BEEN ENOUGH, and that is why this is
+# not a copy of tools/tier_a_review_gate.py's flag. `--add` takes EIGHT free
+# text fields -- summary, rule-note, recurrence-open, injection-unknown,
+# phase-note, single-factor-note, limits and the JSON of --factors -- and any
+# of them can carry a backtick. One flag would have closed one of eight.
+#
+# SO THE ROUTE IS A CONVENTION AT THE ARGUMENT READER: any `--x` may be given
+# as `--x-file <path>` instead. Nothing is enumerated, so a field added
+# tomorrow has the route the day it exists rather than the day somebody
+# remembers to add it.
+#
+# READ AS BYTES AND DECODED EXPLICITLY, deliberately: a file written by one
+# session and read by another is where an encoding assumption becomes a
+# corrupted record, and this platform has paid for cp1252 defaults 358 times
+# in one sweep.
+#
+# BOTH FORMS AT ONCE IS A REFUSAL, and that is a deliberate difference from
+# tier_a_review_gate, which silently prefers the file. Two values for one
+# field means one of them was meant and the tool cannot know which; picking
+# either is a guess about the author's intent, printed as a record.
+class ArgFile(Exception):
+    pass
+
+
+def read_text_arg(argv, name):
+    """The `--name-file` value for `--name`, or None if it was not given.
+
+    Raises ArgFile with a reason for anything it cannot honestly return --
+    absent, unreadable, not UTF-8, empty. An absent body is NOT an empty one,
+    and a register that stored the difference as `""` would be recording a
+    field nobody wrote.
+    """
+    flag = name + '-file'
+    if flag not in argv:
+        return None
+    if name in argv:
+        raise ArgFile('both %s and %s were given. Two values for one field '
+                      'means one of them was meant and this cannot know '
+                      'which -- pass one.' % (name, flag))
+    i = argv.index(flag)
+    if len(argv) <= i + 1:
+        raise ArgFile('%s needs a path' % flag)
+    path = argv[i + 1]
+    if not os.path.isfile(path):
+        raise ArgFile('%s %r does not exist. Nothing was recorded -- an '
+                      'absent value is not an empty one.' % (flag, path))
+    try:
+        with open(path, 'rb') as fh:
+            raw = fh.read()
+    except OSError as e:
+        raise ArgFile('%s %r could not be read: %s' % (flag, path, e))
+    try:
+        text = raw.decode('utf-8')
+    except UnicodeDecodeError as e:
+        raise ArgFile('%s %r is not UTF-8 (%s). Refusing rather than storing '
+                      'a lossy decode.' % (flag, path, e))
+    if not text.strip():
+        raise ArgFile('%s %r is empty. A field with no content is a blank, '
+                      'not a record.' % (flag, path))
+    return text.strip()
+
+
 def cmd_add(argv):
     def opt(name, required=True):
+        # THE FILE ROUTE IS TRIED FIRST so `--x-file` works for every `--x`
+        # without any field being listed anywhere. See read_text_arg().
+        try:
+            from_file = read_text_arg(argv, name)
+        except ArgFile as e:
+            print('%s' % e)
+            sys.exit(2)
+        if from_file is not None:
+            return from_file
         if name in argv:
             return argv[argv.index(name) + 1]
         if required:
-            print('missing %s' % name)
+            print('missing %s (or %s-file <path>)' % (name, name))
             sys.exit(2)
         return ''
 
@@ -933,10 +1018,19 @@ def today():
 
 def cmd_confirm(argv):
     def opt(name, required=True):
+        # THE FILE ROUTE IS TRIED FIRST so `--x-file` works for every `--x`
+        # without any field being listed anywhere. See read_text_arg().
+        try:
+            from_file = read_text_arg(argv, name)
+        except ArgFile as e:
+            print('%s' % e)
+            sys.exit(2)
+        if from_file is not None:
+            return from_file
         if name in argv:
             return argv[argv.index(name) + 1]
         if required:
-            print('missing %s' % name)
+            print('missing %s (or %s-file <path>)' % (name, name))
             sys.exit(2)
         return ''
 

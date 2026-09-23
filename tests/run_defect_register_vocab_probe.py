@@ -198,8 +198,16 @@ try:
 
     rc, out = run(wt, '--check')
     check('BB14 --check PASSES with an external citation in the file', rc, 0)
+    # NOT A HARDCODED COUNT. This read `external citations: 1`, which was true
+    # the day it was written and stopped being true the moment a real external
+    # record landed in the register the probe copies in -- the count went to 2
+    # and the arm failed against a tool doing exactly the right thing. A
+    # number in an assertion that tracks live data is a staleness bomb; the
+    # question was always whether THIS citation is listed separately.
     check('BB15 ...and counts it SEPARATELY rather than folding it into '
-          '"every commit resolves"', 'external citations: 1' in out, True)
+          '"every commit resolves"',
+          'external citations:' in out
+          and 'external:hover2-audit-log:a1b2c3d4e5f6' in out, True)
     check('BB16 ...saying plainly that it was not verified',
           'NOT verified' in out, True)
 
@@ -214,6 +222,118 @@ try:
           still[0]['commit'] if still else None,
           'external:hover2-audit-log:a1b2c3d4e5f6')
 
+
+    # ── BC. THE FILE ROUTE (2026-09-23, tool-bugs item 5) ──────────────────
+    # --add had no file route, so a summary typed at a shell lost three
+    # backtick spans to command substitution and landed reading "folds of the
+    # shape , seven of them money". The words deleted were the CODE SHAPES,
+    # which is the specific damage: a summary about a coercion bug with the
+    # coercion terms removed still reads as English and means nothing.
+    #
+    # A SINGLE --body-file WOULD HAVE CLOSED ONE FIELD OF EIGHT. --add takes
+    # summary, rule-note, recurrence-open, injection-unknown, phase-note,
+    # single-factor-note, limits and the JSON of --factors. So the route is a
+    # CONVENTION at the argument reader -- any --x may be given as --x-file --
+    # and these arms hold that convention rather than a list of flags.
+    HOSTILE = (
+        "The guard is `senServerWinsMerge` and the fold is `s + (x || 0)`." + chr(10) +
+        "Cost: $(git rev-parse HEAD) must stay literal, and so must ${HOME}." + chr(10) +
+        "$USER expands to EMPTY in a shell -- the shape that leaves no trace." + chr(10) +
+        "Nested: $(echo `echo inner`), a backslash \\ and a quote \" here."
+    )
+    bf = os.path.join(wt, 'bodyfile.txt')
+    io.open(bf, 'w', encoding='utf-8', newline='').write(HOSTILE)
+
+    common = ('--layer', 'tooling', '--severity', 'low', '--method',
+              'code-review', '--rule', 'not-citable', '--rule-note',
+              'probe fixture, no standing rule is being tested here',
+              '--phase', 'coding', '--injection-unknown', 'probe fixture',
+              '--factors-unknown', 'probe fixture')
+
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM',
+                  '--summary-file', bf, *common)
+    check('BC1 a summary given as --summary-file is ACCEPTED', rc, 0)
+    doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)), encoding='utf-8'))
+    hit = [r for r in doc['records'] if r.get('summary', '').startswith('The guard is')]
+    check('BC2 exactly one record was written', len(hit), 1)
+    if hit:
+        got = hit[0]['summary']
+        check('BC3 it is byte-for-byte what the file held -- no shell ever '
+              'saw it', got, HOSTILE.strip())
+        for shape in ('`senServerWinsMerge`', '`s + (x || 0)`',
+                      '$(git rev-parse HEAD)', '${HOME}', '$USER',
+                      '$(echo `echo inner`)'):
+            check('BC4 survives literally: %s' % shape, shape in got, True)
+
+    # EVERY FIELD, NOT ONE. --factors is JSON and --recurrence-open is prose;
+    # both go through the same reader, which is the whole point of doing it at
+    # the argument layer rather than adding one flag.
+    fj = os.path.join(wt, 'factors.json')
+    io.open(fj, 'w', encoding='utf-8', newline='').write(
+        '[{"factor": "a factor holding `backticks` and $(substitution)",'
+        ' "kind": "technical", "action_status": "done",'
+        ' "action": "proved by reading it back"}]')
+    ro = os.path.join(wt, 'recurrence.txt')
+    io.open(ro, 'w', encoding='utf-8', newline='').write(
+        'the recurrence keeps `its backticks` and $(this) too')
+    real2 = git(wt, 'log', '-2', '--format=%H', '--', 'api/', 'tools/'
+                ).stdout.strip().split(chr(10))[-1][:12]
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'PLATFORM',
+                  '--summary', 'a second probe fixture for the file route',
+                  '--layer', 'tooling', '--severity', 'low', '--method',
+                  'code-review', '--rule', 'not-citable', '--rule-note',
+                  'probe fixture', '--phase', 'coding',
+                  '--injection-unknown', 'probe fixture',
+                  '--factors-file', fj, '--recurrence-open-file', ro,
+                  # ONE factor needs a stated reason, which is the register's
+                  # own rule and nothing to do with the file route -- the
+                  # first version of this arm omitted it and failed for a
+                  # reason the arm is not about.
+                  '--single-factor-note',
+                  'probe fixture: one factor is enough to prove the JSON '
+                  'came through a file rather than a shell')
+    check('BC5 --factors-file and --recurrence-open-file are accepted too', rc, 0)
+    doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)), encoding='utf-8'))
+    hit = [r for r in doc['records']
+           if r.get('summary') == 'a second probe fixture for the file route']
+    if hit:
+        check('BC6 the factor JSON was parsed, not stored as text',
+              hit[0]['contributing_factors'][0]['factor'].startswith('a factor holding `back'), True)
+        check('BC7 and the recurrence kept its backticks',
+              '`its backticks`' in (hit[0].get('recurrence_open') or ''), True)
+
+    # THE REFUSALS. An absent value is not an empty one, and a register that
+    # stored the difference as "" would be recording a field nobody wrote.
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM',
+                  '--summary-file', os.path.join(wt, 'no-such-file.txt'), *common)
+    check('BC8 a --x-file that does not exist is REFUSED', rc, 2)
+    check('BC9 and says an absent value is not an empty one',
+          'absent value is not an empty one' in out, True)
+
+    empty = os.path.join(wt, 'empty.txt')
+    io.open(empty, 'w', encoding='utf-8').write('   ' + chr(10))
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM',
+                  '--summary-file', empty, *common)
+    check('BC10 an empty --x-file is REFUSED', rc, 2)
+
+    latin = os.path.join(wt, 'latin.txt')
+    io.open(latin, 'wb').write(u'a summary about r\xe9sum\xe9 handling'.encode('latin-1'))
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM',
+                  '--summary-file', latin, *common)
+    check('BC11 a --x-file that is not UTF-8 is REFUSED rather than decoded '
+          'lossily', rc, 2)
+
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM',
+                  '--summary', 'inline', '--summary-file', bf, *common)
+    check('BC12 BOTH --x and --x-file is REFUSED rather than one silently '
+          'winning -- two values for one field means one of them was meant '
+          'and this cannot know which', rc, 2)
+    check('BC13 and the refusal names both forms',
+          '--summary and --summary-file' in out, True)
+
+    rc, out = run(wt, '--add', '--commit', real, '--app', 'PLATFORM', *common)
+    check('BC14 a missing required field advertises the file route',
+          '--summary-file <path>' in out, True)
 
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)
