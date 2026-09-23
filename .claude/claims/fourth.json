@@ -2182,8 +2182,8 @@
       "task": "rf_safety_equipment rf_supplier_documents sc_dme sv_reminders sdn_referrals B->A individual reads from the hover rounds FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T11:06:46Z",
       "claimed_at_epoch": 1790161606.2307765,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:13:25Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
