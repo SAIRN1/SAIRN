@@ -2780,8 +2780,8 @@
       "task": "sc_prebill and sv_referrals B->A individual reads FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T10:50:10Z",
       "claimed_at_epoch": 1790160610.3169837,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T10:54:40Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
