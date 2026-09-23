@@ -1,5 +1,26 @@
 // api/sairndental/complaint-respond.test.js
-// CROSS-TENANT-ISOLATION: none (this file's isolation arm covers dnt_complaints, which is Tier B; it credits no Tier A resource and is correct not to)
+// CROSS-TENANT-ISOLATION: dnt_complaints
+//
+// THAT LINE READ `none (...this file's isolation arm covers dnt_complaints,
+// which is Tier B; it credits no Tier A resource and is correct not to)`
+// UNTIL 2026-09-23, AND THE REASON WENT STALE RATHER THAN THE DECLARATION.
+// dnt_complaints was re-tiered to A, so a `none` whose whole justification was
+// "the resource is Tier B" stopped being true -- and nothing checks the PROSE
+// inside a `none (...)`, which is the escape hatch's blind spot. The arm below
+// had been covering a Tier A resource, uncredited, since the day it moved.
+//
+// Found while working cross_tenant_isolation_scope's WEAK bucket: this file
+// grades GENUINE, and the tool reported it as a genuine arm that declares
+// nothing for dnt_complaints. That report was right and had been right for
+// however long the re-tier has been in.
+
+// The resource this file's isolation arm drives, in the shape
+// tools/cross_tenant_isolation_scope.py cross-checks a declaration against --
+// a declaration nothing can verify is a claim, not evidence. Used below rather
+// than decorative: the id column comes from here.
+const UNITS = [
+  ['dnt_complaints', 'complaint_id']
+];
 // Plain node:assert tests. Run: node api/sairndental/complaint-respond.test.js
 
 const assert = require('assert');
@@ -112,17 +133,18 @@ async function main() {
     // return practice B's row, and the handler would incorrectly
     // succeed instead of 404 -- which is exactly the regression this
     // test exists to catch.
+    var idCol = UNITS[0][1];
     var rows = [
-      { license_hash: 'practice-A-hash', complaint_id: 'A-COMP-1', access_token: 'tok-a', data: { messages: [] } },
-      { license_hash: 'practice-B-hash', complaint_id: 'B-COMP-1', access_token: 'tok-b', data: { messages: [] } }
+      { license_hash: 'practice-A-hash', [idCol]: 'A-COMP-1', access_token: 'tok-a', data: { messages: [] } },
+      { license_hash: 'practice-B-hash', [idCol]: 'B-COMP-1', access_token: 'tok-b', data: { messages: [] } }
     ];
     global.fetch = async function (url) {
       var u = String(url);
       var mHash = u.match(/license_hash=eq\.([^&]+)/);
-      var mId = u.match(/complaint_id=eq\.([^&]+)/);
+      var mId = u.match(new RegExp(idCol + '=eq\.([^&]+)'));
       var matches = rows.filter(function (r) {
         if (mHash && r.license_hash !== decodeURIComponent(mHash[1])) return false;
-        if (mId && r.complaint_id !== decodeURIComponent(mId[1])) return false;
+        if (mId && r[idCol] !== decodeURIComponent(mId[1])) return false;
         return true;
       });
       return { ok: true, json: async function () { return matches; } };

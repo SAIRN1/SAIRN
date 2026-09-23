@@ -48,7 +48,9 @@
 //   leg_merch_catalog, sc_fraud, sc_prebill, sc_providers, sc_query, sc_rac,
 //   sc_telehealth, sv_referrals, sv_reminders, sv_scribe_consent, sb_train,
 //   sdn_referrals, law_bankstatements, rf_company_programs,
-//   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits
+//   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits,
+//   sc_dme, sf_members, sb_ap, leg_custodylog, leg_deathrecords, bld_draws,
+//   sd_exec_msgs
 //
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.
@@ -385,7 +387,11 @@ const UNITS = [
     // them would have been a session creating a gap and reporting a finding.
     ['bld_inspections', 'inspection_id'],
     ['bld_toolbox_talks', 'toolbox_talk_id'],
-    ['bld_warranty', 'warranty_id']] },
+    ['bld_warranty', 'warranty_id'],
+    // WEAK -> covered. bld_draws has its own branch for `wip` and
+    // `release_retainage`, but its READ and WRITE go through this map, and
+    // this map is what these arms drive.
+    ['bld_draws', 'draw_id']] },
   { map: 'SDN_RESOURCES', app: 'sairndesign', role: 'owner', members: [
     ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
     ['sdn_contracts', 'contract_id'], ['sdn_referrals', 'referral_id']] },
@@ -400,7 +406,11 @@ const UNITS = [
     // split-limb gap the register records three times.
     ['leg_floristorders', 'floristorder_id'], ['leg_florists', 'florist_id'],
     ['leg_gplservices', 'gplservice_id'],
-    ['leg_merch_catalog', 'merch_catalog_id']] },
+    ['leg_merch_catalog', 'merch_catalog_id'],
+    // WEAK -> covered. Both were named by the session-gate suites, which are
+    // about WHO may call rather than WHOSE rows come back.
+    ['leg_custodylog', 'custodylog_id'],
+    ['leg_deathrecords', 'deathrecord_id']] },
   { map: 'SC_RESOURCES', app: 'sairncode', role: 'admin', members: [
     ['sc_ar', 'entry_id'], ['sc_claims', 'entry_id'],
     ['sc_compliance', 'entry_id'], ['sc_credential_scope', 'entry_id'],
@@ -421,7 +431,10 @@ const UNITS = [
     // one straight into the NONE bucket.
     ['sc_fraud', 'entry_id'], ['sc_prebill', 'entry_id'],
     ['sc_providers', 'entry_id'], ['sc_query', 'entry_id'],
-    ['sc_rac', 'entry_id'], ['sc_telehealth', 'entry_id']] },
+    ['sc_rac', 'entry_id'], ['sc_telehealth', 'entry_id'],
+    // WEAK -> covered, 2026-09-23. It was named only by files that exercise no
+    // tenant boundary at all.
+    ['sc_dme', 'entry_id']] },
   // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
   // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
   // what an absent UNIT looks like from the coverage side: not one resource
@@ -558,7 +571,13 @@ const UNITS = [
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
-    ['sd_order_history', 'order_id'], ['sd_pricing_rules', 'pricing_rule_id']] },
+    ['sd_order_history', 'order_id'], ['sd_pricing_rules', 'pricing_rule_id'],
+    // WEAK -> covered. sd_exec_msgs is a member of this map with an EXTRA
+    // gate wrapped round both legs (owner/admin only, the executive channel),
+    // which the unit's `owner` role satisfies. It is the row the register
+    // names as what the B tier's weak point looks like when it fires -- it
+    // sat at B for eleven days on "an internal message lost".
+    ['sd_exec_msgs', 'exec_msg_id']] },
   // ── THIS BRANCH HAD NO SESSION GATE, AND NOW IT DOES (2026-09-21) ───────
   // The first version of this entry read `app: null, role: null` and recorded
   // why: SF_RESOURCES went straight from the map test to the query,
@@ -601,7 +620,11 @@ const UNITS = [
     ['sf_sessions', 'session_id'], ['sf_shifts', 'shift_id'],
     ['sf_staff', 'staff_id'], ['sf_tickets', 'ticket_id'],
     ['sf_vehicles', 'vehicle_id'], ['sf_waivers', 'waiver_id'],
-    ['sf_youth_participants', 'youth_participant_id']] },
+    ['sf_youth_participants', 'youth_participant_id'],
+    // WEAK -> covered. api/sf-session-gate.test.js reads the query but has
+    // only ONE tenant in it, which is the shape the grader calls "looks like
+    // one": it passes a handler whose filter is present and wrong.
+    ['sf_members', 'member_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [
     ['sb_bud', 'bud_id'], ['sb_exps', 'exp_id'], ['sb_invs', 'inv_id'],
     ['sb_incidents', 'incident_id'], ['sb_payruns', 'payrun_id'],
@@ -611,7 +634,10 @@ const UNITS = [
       { emp: 'E-1', week: '2026-09-21', hours: [8, 8, 8, 8, 8, 0] }],
     // Promoted B -> A on both axes 2026-09-23: `exp` is not a label, it is
     // the alarm sbCertStatus() derives a CRITICAL finding from.
-    ['sb_train', 'train_id']] },
+    ['sb_train', 'train_id'],
+    // WEAK -> covered. api/sd-data-sb-void-role.test.js reads the query and
+    // asserts a refusal, with one tenant.
+    ['sb_ap', 'ap_id']] },
   { map: 'SD_HR', app: 'stonedesk', role: 'owner', members: [
     ['sd_hr_employees', 'employee_key'], ['sd_hr_certs', 'cert_key']] }
 ];
