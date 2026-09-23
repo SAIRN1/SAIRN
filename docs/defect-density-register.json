@@ -12194,6 +12194,58 @@
       "recurrence_open": "Every other SAIRN dashboard that hides a row a role cannot act on is unexamined. This fix is one surface in one app -- nothing was swept, and no checker can find the shape, because a deliberate non-render and an accidental one are byte-identical. The recurrence question is open across the platform and is stated here rather than implied closed by a single corrective action."
     },
     {
+      "commit": "3922ef4649e5",
+      "date": "2026-09-23",
+      "subject": "fix(sairnvet): the no-fallback check's comment stripper is a scanner, not a regex -- a `//` inside a string took the rest of the line",
+      "files": [
+        "api/sairnvet-transcribe.test.js",
+        "tests/sairnvet_scribe_review_probe.js"
+      ],
+      "lines_added": 202,
+      "lines_removed": 44,
+      "app": "sairnvet",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "The comment stripper in api/sairnvet-transcribe.test.js could hide the code the check exists to find. The no-fallback check strips comments before asserting that the SAIRNvet scribe module contains no reference to the browser SpeechRecognition API -- the module's own header names that API in order to reject it, so stripping is necessary. The stripper was two regexes, and the line-comment one guarded `//` with `[^:]`, which protects `http://` and nothing else: a `//` inside a STRING, REGEX or TEMPLATE literal took the entire rest of that line with it, including any SpeechRecognition reference after it. So a real fallback branch written after a string containing `//` on the same line would have passed the ban. Replaced with a character scanner tracking string/template/regex/line-comment/block-comment state, because whether a `/` opens a comment, opens a regex or is a division depends on what came before it and that is a state machine rather than a pattern. MEASURED LATENT AT THE TIME: no line in the shipped scribe module had the dangerous shape, so nothing was actually hidden -- that is a property of the source, not of the check, and the next module is not obliged to keep it.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "68a9d4bc794a",
+        "date": "2026-09-23",
+        "subject": "feat(sairnvet): the ambient scribe -- consent flow, capture UI and a transcription contract that refuses every request, which is the feature",
+        "lag_days": 0
+      },
+      "citation_note": "1.2 is \"Grep cannot tell code from text that describes code\" and this is the same boundary failing in the other direction: the tool that exists to tell them apart could not, so it removed CODE while trying to remove TEXT. Cited as arguable rather than clean because 1.2's incidents are about a check reading prose AS code, and this one read code AS prose -- same distinction, opposite error, and no section states the converse directly.",
+      "contributing_factors": [
+        {
+          "factor": "A lexical question -- is this `/` a comment, a regex or a division -- was answered with a regex, which cannot carry the state the answer depends on",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "replaced with a character scanner tracking string, template, regex, line-comment and block-comment state; the one remaining heuristic (regex vs division by previous meaningful character) is named in the source and fails LOUD rather than silent"
+        },
+        {
+          "factor": "The shipped fixture tested four cases and every one of them was a shape the regex handled; nothing in it attacked the guard clause itself",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the fixture now carries nine cases -- five attacks including the two that defeated V1, four comment shapes -- plus a paired positive arm that fails a stripper which passes the attacks by doing nothing"
+        },
+        {
+          "factor": "The defect was invisible to every check that mattered because the source it was pointed at happened not to contain the dangerous shape, so a green suite was evidence about the module rather than about the checker",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "No action: a rule that every source-reading check must be driven against adversarial fixtures rather than only against the live source would be real, but writing one off a single instance is over-fitting. Recorded as a factor so a second instance has something to join."
+        }
+      ],
+      "recurrence_open": "The scanner is not a parser. Regex-versus-division is still decided by the previous meaningful character, which is the standard heuristic and can be wrong on exotic input; the failure direction is a FALSE REPORT rather than a hidden reference, and a fixture drives that direction, but it is not a proof. Nothing prevents the same regex-for-a-lexical-question shape appearing in another source-reading check on this platform, and several exist."
+    },
+    {
       "commit": "39947e7dc93c",
       "date": "2026-09-23",
       "subject": "fix(stonedesk): the visualizer's slab picker listed a session-cached array -- a slab another device reserved still showed in-stock and a metered render was spent on it",
@@ -12372,6 +12424,63 @@
       "recurrence_open": "The checker still cannot see a fold with NO fallback at all. Its pattern is the truthy-guard shape, plus (x || 0); taxRender's invTotal was the bare shape, s + i.amount, and was invisible to it by construction rather than by configuration. Widening truthy_sum_check.py to that shape is a separate change and was NOT made here, so the gap is named rather than assumed covered. AND 46 GRANDFATHERED ENTRIES REMAIN: each is a hazard nobody has assessed, and this defect is the first demonstration that the list hides real ones rather than only theoretical ones -- two of its entries were a live money bug on a tax report."
     },
     {
+      "commit": "fc2ee8f136b3",
+      "date": "2026-09-23",
+      "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "sairnvet.html",
+        "tests/sv_boarding_revenue_coercion.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 177,
+      "lines_removed": 3,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "SAIRNvet's Revenue MTD KPI folded `s + (b.rate || 0) * days` across every booking in the month. Dispatched as the same uncoerced-fold defect fixed in stonedesk.html the same day, and it is NOT that class: `*` has no string overload, so the multiplication coerces before the addition sees the value. Driven, rates of \"500\" and \"250\" over 3 days give 2250, where the bare fold gives the string \"0500250\". WHAT WAS REAL IS SMALLER: the multiplication rescues a numeric STRING and not a junk value. \"abc\" * 3 is NaN, one NaN poisons the whole reduce, and the KPI rendered \"$NaN\" -- every other booking's revenue vanishing with it, which is a worse outcome than a single wrong row. Wrapped in Number(x) || 0 so one bad row costs that row. sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map carrying the recorded reason \"NOT ASSESSED -- whether it is a defect depends on whether anything can put a STRING in this field\", a deferral that was honest and was never resolved; it has now been assessed (a string CAN arrive, sv_boarding is server-synced) and the entry is removed. The criticality-tier row written the same morning cited the uncoerced fold as evidence of concatenation risk and was corrected in the same commit.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The fold predates the baseline file, which was generated 2026-09-11 and already contained this entry. Nothing dates the line itself, and picking the commit that introduced renderBoarding would name the feature rather than the defect -- the NaN behaviour was present from the first version and was never a regression."
+      },
+      "citation_note": "1.1 is about a check that cannot fail. The grandfathered entry made this one unable to fail for twelve days, which is that shape via configuration rather than via a broken predicate. Cited as arguable.",
+      "contributing_factors": [
+        {
+          "factor": "The Revenue MTD fold read `s + (b.rate || 0) * days`. The `|| 0` guard does not coerce, but the MULTIPLICATION does -- so the string case this shape is usually reported for was never live here. What the multiplication does not rescue is a non-numeric value: \"abc\" * 3 is NaN, and one NaN poisons the entire reduce.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "wrapped in Number(x) || 0 so one bad row costs that row rather than the whole KPI"
+        },
+        {
+          "factor": "sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map with the recorded reason NOT ASSESSED -- explicitly deferring the question of whether a string could reach the field. The deferral was honest and it was never resolved, so the checker reported CLEAN over it for twelve days.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "assessed and removed by name, 46 to 45; a string CAN reach it because sv_boarding is server-synced, and it is harmless here for a reason now written down"
+        },
+        {
+          "factor": "IT WAS DISPATCHED AS THE WRONG DEFECT CLASS, and accepting that framing would have produced a fix with a false rationale attached. The dispatch called it the same class as the StoneDesk tax folds; driving it showed 2250 where the concatenation class gives \"0500250\".",
+          "kind": "process",
+          "action_status": "done",
+          "action": "measured before changing anything, and the tier row that carried the wrong rationale was corrected in the same commit rather than left standing"
+        },
+        {
+          "factor": "truthy_sum_check.py reports `+ (x || 0) * y` even though its own docstring states multiplication is safe. That is deliberate -- it is a HAZARD reporter, not a defect detector -- but it means a report from it cannot be read as a defect without driving the expression.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "narrowing it to exclude a following `*` would hide the case where somebody later removes the multiplication; the over-report is the safe direction and the tool already says so"
+        }
+      ],
+      "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
+    },
+    {
       "commit": "70192c7f64c7",
       "date": "2026-09-23",
       "subject": "fix(sd-data): two alf reads ordered by created_at and never returned it -- give the caller the column it is ordered by",
@@ -12427,58 +12536,6 @@
         }
       ],
       "recurrence_open": "Only the six SAIRNcare trails were examined. Every other read on this platform that carries an order= clause is unchecked against the same question -- does the caller receive the column it is ordered by -- and the answer is invisible from the source, so a grep cannot settle it. No sweep was run."
-    },
-    {
-      "commit": "3922ef4649e5",
-      "date": "2026-09-23",
-      "subject": "fix(sairnvet): the no-fallback check's comment stripper is a scanner, not a regex -- a `//` inside a string took the rest of the line",
-      "files": [
-        "api/sairnvet-transcribe.test.js",
-        "tests/sairnvet_scribe_review_probe.js"
-      ],
-      "lines_added": 202,
-      "lines_removed": 44,
-      "app": "sairnvet",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "The comment stripper in api/sairnvet-transcribe.test.js could hide the code the check exists to find. The no-fallback check strips comments before asserting that the SAIRNvet scribe module contains no reference to the browser SpeechRecognition API -- the module's own header names that API in order to reject it, so stripping is necessary. The stripper was two regexes, and the line-comment one guarded `//` with `[^:]`, which protects `http://` and nothing else: a `//` inside a STRING, REGEX or TEMPLATE literal took the entire rest of that line with it, including any SpeechRecognition reference after it. So a real fallback branch written after a string containing `//` on the same line would have passed the ban. Replaced with a character scanner tracking string/template/regex/line-comment/block-comment state, because whether a `/` opens a comment, opens a regex or is a division depends on what came before it and that is a state machine rather than a pattern. MEASURED LATENT AT THE TIME: no line in the shipped scribe module had the dangerous shape, so nothing was actually hidden -- that is a property of the source, not of the check, and the next module is not obliged to keep it.",
-      "rules": [
-        "1.2"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "68a9d4bc794a",
-        "date": "2026-09-23",
-        "subject": "feat(sairnvet): the ambient scribe -- consent flow, capture UI and a transcription contract that refuses every request, which is the feature",
-        "lag_days": 0
-      },
-      "citation_note": "1.2 is \"Grep cannot tell code from text that describes code\" and this is the same boundary failing in the other direction: the tool that exists to tell them apart could not, so it removed CODE while trying to remove TEXT. Cited as arguable rather than clean because 1.2's incidents are about a check reading prose AS code, and this one read code AS prose -- same distinction, opposite error, and no section states the converse directly.",
-      "contributing_factors": [
-        {
-          "factor": "A lexical question -- is this `/` a comment, a regex or a division -- was answered with a regex, which cannot carry the state the answer depends on",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "replaced with a character scanner tracking string, template, regex, line-comment and block-comment state; the one remaining heuristic (regex vs division by previous meaningful character) is named in the source and fails LOUD rather than silent"
-        },
-        {
-          "factor": "The shipped fixture tested four cases and every one of them was a shape the regex handled; nothing in it attacked the guard clause itself",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "the fixture now carries nine cases -- five attacks including the two that defeated V1, four comment shapes -- plus a paired positive arm that fails a stripper which passes the attacks by doing nothing"
-        },
-        {
-          "factor": "The defect was invisible to every check that mattered because the source it was pointed at happened not to contain the dangerous shape, so a green suite was evidence about the module rather than about the checker",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "No action: a rule that every source-reading check must be driven against adversarial fixtures rather than only against the live source would be real, but writing one off a single instance is over-fitting. Recorded as a factor so a second instance has something to join."
-        }
-      ],
-      "recurrence_open": "The scanner is not a parser. Regex-versus-division is still decided by the previous meaningful character, which is the standard heuristic and can be wrong on exotic input; the failure direction is a FALSE REPORT rather than a hidden reference, and a fixture drives that direction, but it is not a proof. Nothing prevents the same regex-for-a-lexical-question shape appearing in another source-reading check on this platform, and several exist."
     },
     {
       "commit": "f27a9cd5ed4c",

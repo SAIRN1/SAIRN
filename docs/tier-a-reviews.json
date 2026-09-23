@@ -2641,6 +2641,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-23T20:57:04Z",
+      "resources": [
+        "sv_boarding"
+      ],
+      "files": [
+        "tests/sv_boarding_revenue_coercion.js"
+      ],
+      "what": "sairnvet.html -- the Revenue MTD fold in renderBoarding() wrapped in Number(), sairnvet.html::b.rate removed from truthy_sum_baseline.json's grandfathered map, tests/sv_boarding_revenue_coercion.js (11 arms), and a CORRECTION to the sv_boarding row in docs/CRITICALITY-TIERS.md that I wrote myself this morning. Register record filed at severity LOW.\n\nTHE TIER A MATCH IS REAL: sv_boarding went B -> A on integrity earlier today because rate x days IS the Revenue MTD figure, and this change edits that exact expression. But read the next paragraph before reviewing the diff as a money fix.\n\nPRESS ON THIS FIRST -- I AM TELLING YOU THE DISPATCH WAS WRONG AND I MAY BE WRONG ABOUT THAT. It was sent as the same class as this morning's StoneDesk tax folds, an uncoerced (x||0) concatenating into a money total. I measured it and it is not: `s + (b.rate||0)*days` multiplies before it adds, and `*` has no string overload, so \"500\" and \"250\" over 3 days give 2250 where a bare fold gives \"0500250\". THE THING TO CHECK IS WHETHER I MISSED A PATH WHERE `days` IS NOT A NUMBER. If days can be a string -- it is computed from a Date subtraction, which I believe cannot be -- then the multiplication does not rescue anything and the original framing was right after all. I checked the one expression; I did not enumerate every value `checkin` and `checkout` can hold.\n\n(2) THE FIX IS FOR A DIFFERENT AND SMALLER DEFECT, and I want that judged on its own. \"abc\" * 3 is NaN and one NaN poisons the whole reduce, so the KPI rendered \"$NaN\" and every other booking's revenue vanished. Number(x)||0 costs that row instead. THE COUNTER-ARGUMENT IS REAL: \"$NaN\" is loud and a silently-dropped row is not, and this platform argued exactly that way about a printed tax report earlier today -- a visible NaN beating a plausible wrong number. I went the other way here because a boarding KPI is a dashboard tile rather than a document handed to a CPA, and because losing every row to one bad one is a worse failure than losing one. If you think a revenue figure should fail loudly wherever it appears, say so; it is one token.\n\n(3) I REMOVED A GRANDFATHERED ENTRY AND THAT IS A DETECTOR CHANGE, not just a code change. The entry's recorded reason was \"NOT ASSESSED -- whether it is a defect depends on whether anything can put a STRING in this field\". I assessed it: sv_boarding is server-synced and api/sd-data.js's branch stores the payload, so a string can arrive. Check that I read the right branch -- I did not drive a real write through it, and if sv_boarding's server path coerces somewhere I did not look, the entry deserved to stay with a better reason rather than be removed.\n\n(4) AND I CORRECTED MY OWN TIER ROW IN THE SAME COMMIT, which is the part most likely to be waved through. The row said the uncoerced fold put the figure at risk of the concatenation class. It did not. The TIER itself is unchanged and I believe unaffected -- it rests on rate x days being the Revenue MTD figure, which is true either way -- but if you think removing that evidence weakens the A enough to reopen the tier, that is the disagreement to have now rather than at the next re-audit.\n\nEVIDENCE: 11 arms, 1 red before the fix. The fold is LIFTED OUT OF sairnvet.html and driven rather than modelled. Four arms are ordinary cases that must not have moved. One arm keeps the string case alive deliberately: if anybody later removes the `* days`, it goes red and names the reason instead of the hazard silently becoming real. Two controls -- the same data through a bare fold concatenates to \"05020\", and the pre-fix expression really did NaN. checkblocks 3/3, truthy_sum_check CLEAN at 45 grandfathered, criticality_tier_check PROBLEMS:0.\n\nONE EXTRACTION BUG IN MY OWN TEST, recorded because it read like a defect in the file: `thisMonth` is computed two lines above the fold and is free inside it, so the first run failed \"thisMonth is not defined\". Bound explicitly rather than widening the anchor.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-23T20:57:04Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
