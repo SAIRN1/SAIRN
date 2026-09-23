@@ -280,7 +280,7 @@ one paragraph marking the transition.
 
 ---
 
-## 9. What is STILL not built, as of 2026-09-23
+## 9. What is STILL not built, as of 2026-09-23 (items 6 and 7 discharged the same day)
 
 Kept separate from §10 on purpose, because "built" and "working" are different
 claims and the gap between them is where this document would otherwise start
@@ -311,20 +311,24 @@ lying.
 5. **Nothing here has been exercised against a real browser.** The capture path
    is unreachable, so `getUserMedia`, `MediaRecorder`, the interrupt guards and
    the banner have been syntax-checked and reasoned about, **not run**.
-6. **The `sv_scribe_consent_no_audio` CHECK constraint has never executed**, and
-   Guardian check 29 is explicit that this is the gap that matters: a schema
-   constraint is only proven by a real write against the real endpoint, because
-   a unit test calling the business function never reaches the database. The
-   table does not exist on the live database — `sql/sairnvet_data_schema.sql` is
-   a migration nobody has run. **Both arms must be run before the constraint is
-   trusted:** a row containing `"audio":` must be refused, and an ordinary
-   consent row must be accepted. A constraint that refuses everything looks
-   identical to one that works until the first real consent is recorded.
-7. **The whole table is unprovisioned**, so today a consent record saves locally
-   and its server backup answers `NOT_PROVISIONED`. The app already degrades
-   honestly there — but a practice relying on this as evidence has one copy, in
-   one browser, which is the failure `sql/sairnvet_data_schema.sql` was written
-   about in the first place.
+6. ~~**The `sv_scribe_consent_no_audio` CHECK constraint has never executed.**~~
+   **DISCHARGED 2026-09-23. Michael ran the migration and reported BOTH ARMS
+   PASSING** — an insert carrying audio data refused with a constraint
+   violation, and an ordinary consent insert accepted. Both arms matter and
+   were both run: *a constraint that refuses everything looks identical to one
+   that works until the first real consent is recorded.* Guardian check 29 is
+   satisfied by a real write against the real database, which is the only thing
+   that could satisfy it.
+7. ~~**The whole table is unprovisioned.**~~ **DISCHARGED 2026-09-23 by the same
+   migration.** A consent record now reaches the server, so the practice's
+   evidence is no longer a single copy in a single browser profile — which is
+   the failure `sql/sairnvet_data_schema.sql` was written about in the first
+   place.
+
+**Items 6 and 7 are struck through rather than deleted.** A gaps section that
+quietly loses its closed items reads as though it never had them, and the value
+of this list is partly that a reader can see which risks were carried
+deliberately and for how long. **Items 1 to 5 are still open and still real.**
 
 ---
 
