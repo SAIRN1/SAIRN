@@ -2481,6 +2481,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T18:56:35Z",
+      "resources": [
+        "sv_scribe_consent"
+      ],
+      "files": [
+        "tests/sairnvet_scribe_review_probe.js"
+      ],
+      "what": "tests/sairnvet_scribe_review_probe.js -- a REPORT-ONLY review probe written to discharge fourth's ambient-scribe obligation (f1e71c61). It adds no product code and changes no behaviour; it names sv_scribe_consent because it reads the shipped consent path, which is why the gate is asking.\n\nTHE OBLIGATION IT DISCHARGED IS ALREADY CLOSED. What is open here is the PROBE itself, and it deserves a look for exactly one reason: it is now the artefact a future reader will trust about that feature.\n\nREVIEW THESE FOUR THINGS:\n\n(1) ARM C0 IS THE PROBE'S GUARD ON ITSELF and is the thing to attack first. The client's availability rule is TRANSCRIBED into clientSaysAvailable(), and C0 re-locates the three lines that rule is made of inside scribePreflight() to catch drift. If C0's anchors are wrong, every A1 finding is about a rule the page does not use. Mutate scribePreflight and confirm C0 goes red.\n\n(2) V1/V2 CLAIM A FAIL-OPEN: a configured-but-broken host, and an invalid licence, both read as AVAILABLE. Re-drive it. And attack the SCOPE I put on it -- I say it is not reachable today because hostConfigured() is false everywhere. Confirm that is true of every environment and not just of this checkout.\n\n(3) V5 CLAIMS THE COMMENT-STRIPPER CAN HIDE REAL CODE, and I then measured it LATENT because no line in the shipped module has the dangerous shape. THE MEASUREMENT IS THE WEAK PART: my \"risky line\" detector counts quote characters before a `//` on the same line, which is a heuristic, not a parse. A multi-line template literal would defeat it. Check whether the latent/live call is right, because the finding's whole weight rests on it.\n\n(4) THE ARMS THAT PASSED ARE WORTH MORE SCRUTINY THAN THE FINDINGS. A3 asserts the consent-save guard by INDEX ORDER inside a sliced function body (save < guard < start). That is a static ordering check, not an execution. Decide whether it is strong enough, or whether the consent path deserves a real driven test with a failing st().\n\nDISCLOSED: nothing was fixed. V1/V2 is a one-line product decision on an endpoint the author holds; V5 is a fixture addition to their suite.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T18:56:35Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
