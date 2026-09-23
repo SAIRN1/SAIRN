@@ -2101,6 +2101,19 @@
       "status": "released",
       "released_at": "2026-09-23T19:13:15Z",
       "files": null
+    },
+    {
+      "id": "cody-1790191489",
+      "session": "cody",
+      "subject": "skill-symlink-record",
+      "task": "record the skill-store symlink migration in the upgrade audit row FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T19:24:49Z",
+      "claimed_at_epoch": 1790191489.2406933,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ],
   "refusals": [
