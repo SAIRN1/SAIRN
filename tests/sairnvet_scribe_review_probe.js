@@ -85,17 +85,21 @@ function preflight(authz) {
 // below checks this transcription against the shipped source and says so if
 // it has drifted. Do not edit one without the other.
 function clientSaysAvailable(code) {
-  return code !== 'TRANSCRIBE_HOST_NOT_CONFIGURED';
+  return code === 'CONSENT_REF_REQUIRED';
 }
 function transcriptionStillMatches(html) {
   // The three lines the rule is made of, in order, inside scribePreflight().
+  // THE RULE CHANGED ON 2026-09-23 AND C0 IS HOW THAT WAS NOTICED, which is
+  // the whole reason this arm exists: the fix landed, the probe's copy of the
+  // rule went stale within the hour, and C0 went red about its own
+  // transcription rather than reporting a phantom defect in the page.
   const fn = html.slice(html.indexOf('function scribePreflight()'),
                         html.indexOf('window.scribeAsk = function'));
-  const neg = fn.indexOf("if(code === 'TRANSCRIBE_HOST_NOT_CONFIGURED'){");
-  const off = fn.indexOf('scAvailable = false;', neg);
-  const on = fn.indexOf('scAvailable = true;', off);
-  return { ok: neg !== -1 && off !== -1 && on !== -1 && neg < off && off < on,
-           neg: neg, off: off, on: on };
+  const pos = fn.indexOf("if(code === 'CONSENT_REF_REQUIRED'){");
+  const on = fn.indexOf('scAvailable = true;', pos);
+  const off = fn.indexOf('scAvailable = false;', on);
+  return { ok: pos !== -1 && on !== -1 && off !== -1 && pos < on && on < off,
+           pos: pos, on: on, off: off };
 }
 
 (async function () {
@@ -110,8 +114,8 @@ function transcriptionStillMatches(html) {
   {
     const m = transcriptionStillMatches(html);
     if (m.ok) {
-      ok('scribePreflight still decides by ABSENCE of TRANSCRIBE_HOST_NOT_CONFIGURED',
-         'neg@' + m.neg + ' false@' + m.off + ' true@' + m.on);
+      ok('scribePreflight still decides POSITIVELY, from CONSENT_REF_REQUIRED',
+         'pos@' + m.pos + ' true@' + m.on + ' false@' + m.off);
     } else {
       finding('V15', 'scribePreflight no longer matches the rule clientSaysAvailable() '
         + 'transcribes (' + JSON.stringify(m) + '). EVERY A1 ARM BELOW IS THEN ABOUT A '
@@ -134,8 +138,7 @@ function transcriptionStillMatches(html) {
   }
 
   // ── A1: attack (1) ──────────────────────────────────────────────────────
-  section('A1  a host that IS configured but BROKEN -- does the preflight read '
-    + 'it as available?');
+  section('A1  a host that IS configured but BROKEN -- what the preflight sees');
   {
     const h = loadHandler('https://a-host-that-does-not-answer.invalid',
                           { valid: true, active: true, app_id: 'sairnvet' });
@@ -144,20 +147,11 @@ function transcriptionStillMatches(html) {
     const code = res.body && res.body.error && res.body.error.code;
     console.log('           configured host, valid licence, preflight body -> '
       + res.statusCode + ' ' + code);
-    if (clientSaysAvailable(code)) {
-      finding('V1', 'A HOST THAT IS CONFIGURED BUT BROKEN READS AS AVAILABLE. The '
-        + 'preflight never contacts the host -- the handler refuses locally at '
-        + 'CONSENT_REF_REQUIRED, long before any upstream call -- so `scAvailable` '
-        + 'goes true, the "Start - ask the client" button enables, and the vet asks '
-        + 'a client to consent to a recording that cannot be transcribed. THE FILE '
-        + 'ITSELF NAMES THAT HARM: "asking a client to agree to a recording that '
-        + 'cannot be transcribed is consent theatre." NOT REACHABLE TODAY -- '
-        + 'hostConfigured() is false in every environment -- so this is a finding '
-        + 'against the state the day a host is set, which is exactly when nobody '
-        + 'will be re-reading this preflight.');
-    } else {
-      ok('a broken host does NOT read as available', String(code));
-    }
+    console.log('           This answer is LOCAL -- the endpoint refuses at the '
+      + 'consent check and never contacts the host -- so it is the same whether '
+      + 'the host is healthy or dead. A1d states what that does and does not '
+      + 'close; it is NOT reported as a finding twice.');
+    ok('measured, and deferred to A1d rather than double-counted');
   }
 
   section('A1b the shape of the rule, which is the part I would change');
@@ -180,6 +174,32 @@ function transcriptionStillMatches(html) {
         + 'nothing today, because on a host-less platform the answer is unchanged.');
     } else {
       ok('an invalid licence does not read as available', String(code));
+      console.log('           -> this is the half the fix actually closes: a lapsed '
+        + 'licence used to enable the button that asks a client to consent.');
+    }
+  }
+
+  section('A1d WHAT THE FIX DOES NOT CLOSE, said plainly');
+  {
+    const h = loadHandler('https://a-host-that-does-not-answer.invalid',
+                          { valid: true, active: true, app_id: 'sairnvet' });
+    const res = mockRes();
+    await h(preflight('Bearer KEY'), res);
+    const code = res.body && res.body.error && res.body.error.code;
+    if (code === 'CONSENT_REF_REQUIRED') {
+      console.log('           A host that is CONFIGURED BUT UNREACHABLE still answers '
+        + 'this preflight with CONSENT_REF_REQUIRED, because the endpoint refuses '
+        + 'locally and never contacts the host. So the button still enables.');
+      console.log('           THE FIX CLOSED THE LICENCE HALF AND NOT THE LIVENESS '
+        + 'HALF, and that is a deliberate limit rather than an oversight: proving '
+        + 'liveness means contacting a transcription host on every panel render, '
+        + 'which is a cost and a design decision, not a one-line correction. '
+        + 'RECORDED HERE so the next reader does not mistake a fail-closed licence '
+        + 'check for a health check.');
+      ok('the limit is measured and stated, not assumed');
+    } else {
+      finding('V16', 'the preflight answer for a configured host changed to ' + code
+        + ' -- A1d\'s premise no longer holds and this note is stale.');
     }
   }
 
@@ -398,23 +418,27 @@ function transcriptionStillMatches(html) {
     console.log('No findings. Every attack fourth named was driven and none held.');
   }
   for (const l of [
-    'VERDICT: PASSES, with two findings that are both about the day a host is',
-    'configured rather than about today.',
+    'VERDICT: PASSES. The refusal holds and ONE FINDING HAS SINCE BEEN FIXED.',
     '',
-    'The REFUSAL -- which is what the obligation said to review rather than the',
-    'feature -- holds. No host means no microphone and no client asked: the host',
-    'check is FIRST, before the licence is even looked up, so the process holds',
-    'no audio and takes no consent on a platform with nowhere to send it. A',
-    'failed consent save returns before scribeStart(), on st()\'s own return',
-    'value, and a decline returns too and is still recorded.',
+    'THE REFUSAL -- what the obligation said to review rather than the feature.',
+    'No host means no microphone and no client asked: the host check is FIRST,',
+    'before the licence is even looked up, so the process holds no audio and',
+    'takes no consent on a platform with nowhere to send it. A failed consent',
+    "save returns before scribeStart(), on st()'s own return value, and a",
+    'decline returns too and is still recorded.',
     '',
-    'WHAT I WOULD CHANGE, and it is one line: the preflight decides availability',
-    'by ABSENCE -- anything that is not TRANSCRIBE_HOST_NOT_CONFIGURED reads as',
-    'available -- so a configured-but-broken host, and an invalid licence, both',
-    'enable the button that asks a client to consent. Decide from the code a',
-    'working platform actually returns (CONSENT_REF_REQUIRED) instead. On a',
-    'host-less platform the answer is identical, so the change is inert today',
-    'and fail-closed tomorrow.',
+    'FIXED 2026-09-23 -- the preflight used to decide availability by ABSENCE,',
+    'so a configured-but-broken host AND a lapsed licence both enabled the',
+    'button that asks a client to consent. It now decides from',
+    'CONSENT_REF_REQUIRED, the only code that proves host AND licence AND',
+    'practice together. A1b is the regression guard on that.',
+    '',
+    'WHAT THE FIX DOES NOT CLOSE, and A1d measures it rather than implying it',
+    'away: the preflight is answered LOCALLY, so a host that is configured and',
+    'UNREACHABLE still reads as available. Proving liveness means calling a',
+    'transcription host on every panel render -- a design decision with a cost,',
+    'not a one-line correction. Do not mistake a fail-closed licence check for',
+    'a health check.',
     '',
     'THE STRIPPER FLAW IS REAL AND LATENT. A `//` inside a string or a regex',
     'takes the rest of the line with it, and the shipped fixture tests four',

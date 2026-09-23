@@ -9901,18 +9901,49 @@ function scribePreflight(){
     .then(function(r){ return r.json().then(function(d){ return { status:r.status, body:d }; }); })
     .then(function(res){
       var code = (res.body && res.body.error && res.body.error.code) || '';
+      // ── DECIDED BY THE CODE A WORKING PLATFORM RETURNS, NOT BY THE ABSENCE
+      // ── OF ONE FAILURE (corrected 2026-09-23) ──────────────────────────
+      // This read: "anything that is NOT TRANSCRIBE_HOST_NOT_CONFIGURED means
+      // a host IS configured". That is an allowlist written as a denylist,
+      // and it was the one fail-open in a file where every refusal is NAMED.
+      // Driven in tests/sairnvet_scribe_review_probe.js: with a host
+      // configured, a VALID licence returns 400 CONSENT_REF_REQUIRED and an
+      // INVALID one returns 403 LICENSE_INVALID -- and the old rule enabled
+      // the button for BOTH. So a host that was configured but broken, and a
+      // practice whose licence had lapsed, each got as far as asking a client
+      // to consent to a recording that could never be transcribed. This
+      // module's own header calls that consent theatre.
+      //
+      // CONSENT_REF_REQUIRED IS THE ONLY CODE THAT PROVES THE WHOLE CHAIN.
+      // The endpoint checks host, then licence, then consent_ref, in that
+      // order -- so reaching the consent check means the host is configured
+      // AND the licence is valid AND this is the practice it belongs to.
+      // Every other answer is a reason NOT to ask a client anything.
+      //
+      // IT IS INERT TODAY AND THAT IS WHY IT IS SAFE TO LAND: with no host
+      // configured anywhere the answer is still TRANSCRIBE_HOST_NOT_CONFIGURED
+      // and the button is still disabled. The change only bites on the day a
+      // host is set, which is exactly the day nobody re-reads this function.
+      if(code === 'CONSENT_REF_REQUIRED'){
+        scAvailable = true;
+        statusEl.textContent = 'Available. The client is asked at the start of each visit.';
+        btn.disabled = false;
+        return;
+      }
+      scAvailable = false;
       if(code === 'TRANSCRIBE_HOST_NOT_CONFIGURED'){
-        scAvailable = false;
         statusEl.innerHTML = '<strong>Not available on this practice yet.</strong> ' +
           escHtml(res.body.error.message);
         return;
       }
-      // Anything that is NOT the host refusal means a host IS configured and
-      // the request failed for some other reason (licence, consent reference,
-      // no audio -- all expected for a preflight that carries none of them).
-      scAvailable = true;
-      statusEl.textContent = 'Available. The client is asked at the start of each visit.';
-      btn.disabled = false;
+      // Any OTHER refusal is still a refusal. The message is shown when the
+      // endpoint sent one -- it names which thing is missing, which is the
+      // whole point of the structured refusals -- and a generic sentence is
+      // used when it did not, rather than a blank panel.
+      statusEl.innerHTML = '<strong>Not available.</strong> ' +
+        escHtml((res.body && res.body.error && res.body.error.message) ||
+          ('The server answered ' + res.status + ' without a reason, so the scribe stays off.')) +
+        ' Dictation is unaffected.';
     })
     .catch(function(){
       // COULD NOT TELL IS NOT AVAILABLE. A network failure here leaves the
