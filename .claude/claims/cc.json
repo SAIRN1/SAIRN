@@ -2365,6 +2365,20 @@
         "tools/sairn_claim.py",
         "tools/sairn_status.py"
       ]
+    },
+    {
+      "id": "cc-1790161798",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "body-file route for defect_register --add so long prose never passes through a shell FILES: tools/defect_register.py tests/run_defect_register_vocab_probe.py",
+      "claimed_at": "2026-09-23T11:09:58Z",
+      "claimed_at_epoch": 1790161798.9913719,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_defect_register_vocab_probe.py",
+        "tools/defect_register.py"
+      ]
     }
   ]
 }
