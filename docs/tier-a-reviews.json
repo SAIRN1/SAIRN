@@ -2621,6 +2621,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-23T20:47:17Z",
+      "resources": [
+        "quotes",
+        "sc_settings",
+        "sd_quote_requests"
+      ],
+      "files": [
+        "api/sd-data-tombstone-propagation.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "api/sd-data.js: NEW 'tombstones' action on sd_customers, sd_quote_requests and the seven soft-delete SAIRNcode resources. Returns the ids carrying _deleted_at so a deletion made on one device can reach another -- every hydrate on this platform is additive by id, so an absence is not a signal and device B keeps a deleted record forever. WHAT TO ATTACK, hardest first: (1) THIS IS A NEW DOOR. It shares each branch's existing gate rather than adding one, but the SAIRNcode read is LICENCE-ONLY -- confirm that returning the ids of removed rows on a licence key is genuinely no wider than the read beside it, which returns every live row on the same credential. If you disagree, this action should be gated even though the read is not. (2) the predicate is not.is.null and the read's is unchanged at is.null -- confirm by reading, not by the arms, that no branch now returns deleted rows to an ordinary read. (3) NO CLIENT APPLIES THESE YET. The mechanism exists and nothing consumes it, which is the 'registry entry without a caller' shape this platform names as a claim nothing backs -- decide whether that should have blocked the commit. (4) deleted_at is returned and _deleted_by deliberately is not; argue the other side if you think an offline client needs to know who.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T20:47:17Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
