@@ -2658,6 +2658,51 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-23T20:55:16Z",
+      "resources": [
+        "sc_anesthesia",
+        "sc_anesthesia_base_units",
+        "sc_ar",
+        "sc_auth",
+        "sc_auth_requests",
+        "sc_claims",
+        "sc_coded_items",
+        "sc_compliance",
+        "sc_credential_scope",
+        "sc_denial",
+        "sc_denial_events",
+        "sc_dme",
+        "sc_drg",
+        "sc_eligibility",
+        "sc_fraud",
+        "sc_hcc",
+        "sc_prebill",
+        "sc_providers",
+        "sc_query",
+        "sc_rac",
+        "sc_revenue",
+        "sc_settings",
+        "sc_telehealth"
+      ],
+      "files": [
+        "api/_resources/sairncode.js",
+        "api/sd-data.js",
+        "sairncode.html",
+        "tests/run_pinned_list_drift_probe.py",
+        "tests/run_tier_a_replaceability_probe.py",
+        "tests/sairncode_gates.js",
+        "tests/sairncode_gates_mutation_control.js"
+      ],
+      "what": "SAIRNcode's Tier A write gate and soft-delete list went from 7 names to 23, closing eight days in which sixteen Tier A resources -- including named-patient PHI (sc_hcc, sc_eligibility) and the QP status that picks a CMS conversion factor (sc_providers) -- were writable on the licence key alone and hard-deletable. a49edd00. Both gates derive from ONE array in api/_resources/sairncode.js; tests/sairncode_gates.js had been RED for eight days saying so and is not in GUARD_TESTS, so nothing blocked on it.\n\nATTACK THESE SIX:\n(1) THE ONE PRODUCT DECISION I TOOK RATHER THAN ASKED. sc_coded_items is Tier A now, so gating it to admin|biller would lock CODERS out of the resource named for their job -- and the sc_claims coder-exclusion is argued on sc_coded_items being open to them. I added a per-resource override admitting coder, following the sc_compliance/auditor precedent. If Michael wants sc_coded_items admin|biller like the rest, the override comes out and the sc_claims cell in this suite needs re-arguing. Say which.\n(2) FIFTEEN CLIENT REMOVE PATHS CHANGED VERB AND I DROVE NONE OF THEM IN A BROWSER. delete -> soft_delete on fifteen call sites, each with a scSoftRemoveToast. The server branch is generic over resource and every sc_ table has the same entry_id/data shape, so no schema change is needed -- but the only evidence here is the suite, which stubs the transport. A real remove on one of the sixteen against the deployed function is the check I did not run.\n(3) TWO CONTROLS NOW ASSERT THE OPPOSITE OF WHAT THEY ASSERTED THIS MORNING: an unsigned sc_auth_requests write is 401 where it expected 200, and sc_coded_items needs a session. I restated both in BOTH directions so neither passes on a branch that stopped gating at all -- check the restatement did not quietly widen anything.\n(4) sc_settings IS ACCEPTED AS REFUSAL-AWARE THROUGH A DIFFERENT MECHANISM, and I widened the pairing assertion to a named list of three spellings to allow it. That is exactly the shape of a test being loosened to fit the code. The defence is that scSaveSettings rolls the local write BACK, which scWriteRefusalText does not, plus a new arm driving its three outcomes directly -- judge whether that defence holds or whether I bent a control.\n(5) FIVE STALE PINS MOVED IN OTHER FILES and each is a new claim: sairncode_gates.js's WRITE_GATED table and three counts, run_pinned_list_drift_probe.py's live count replaced by a register-equals-pin equality, run_tier_a_replaceability_probe.py's seven names, four re-anchored mutations, and app_session_isolation.js's prose. One of those mutations CHANGED MEANING -- read that one twice.\n(6) THE PUSH GATE STILL DOES NOT RUN tests/sairncode_gates.js. I did not add it to GUARD_TESTS, because that is a blocking-registry decision with a wall-time cost and it is not mine to take unilaterally. So the exact conditions that let this sit for eight days are still in place.\n\nFILES: api/_resources/sairncode.js api/sd-data.js sairncode.html tests/sairncode_gates.js tests/sairncode_gates_mutation_control.js tests/run_pinned_list_drift_probe.py tests/run_tier_a_replaceability_probe.py tests/app_session_isolation.js",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-23T20:55:16Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
