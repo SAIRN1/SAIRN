@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**214 files in `tools/`.** By what actually invokes them:
+**215 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 40 | nothing runs these at all |
+| **UNWIRED** | 41 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | ADVISORY | 3 |
 | CHECKER | 149 |
 | GENERATOR | 18 |
-| LIBRARY | 23 |
+| LIBRARY | 24 |
 | LIVE | 20 |
 | REPORTER | 1 |
 
@@ -338,7 +338,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (40)
+## UNWIRED (41)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -381,6 +381,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `role_gate_mc_config.py` | CHECKER | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction | &mdash; |
 | `run_tlc.py` | CHECKER | a TLA+ spec in docs/spec that has stopped being consistent with ITSELF -- which is a different question from whether the code matches it, and is the half role_gate_invariants.js structurally cannot ask because it never evaluates the spec. THE FIRST REAL RUN, 2026-09-22, FOUND A BLOCKING DEFECT IN BOTH SPECS: RoleGates.tla had an unbounded CHOOSE that TLC cannot evaluate (0 states generated) and RateLimitConsume.tla defined -1 under EXTENDS Naturals and did not parse at all. Encodes the EXPECTED outcome per run rather than treating green as success -- RacySpec MUST violate the cap, because exhibiting that schedule is what it is for, and a run where it held would mean the spec had stopped modelling the race. NOT a gate and cannot be one: TLC needs a JVM and a 2.3MB jar that is not vendored, so it exits 2 COULD NOT RUN rather than 0 when either is missing | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
+| `sairn_clickthrough_driver.js` | LIBRARY | a nav entry that opens nothing, a panel that renders blank, an error thrown on open, or a control naming a function that does not exist at RUNTIME -- in a SIGNED-IN app, which is the half no static checker reaches and which Guardian's own Known Scope Limitation names. Run in the browser, FOREGROUND TAB ONLY: hidden-tab setTimeout throttling stops every render hook and reports 67 blank panels that are fine | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_self_state.py` | CHECKER | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
@@ -415,7 +416,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      214   git ls-files tools/
+  tools on disk                      215   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY

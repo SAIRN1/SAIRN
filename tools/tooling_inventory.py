@@ -677,6 +677,13 @@ PURPOSES = {
     'gh_verify.py': ('LIBRARY', 'whether a commit is really on the remote'),
     'load_deadline_seed.py': ('LIVE', 'loads a deadline seed into a live licence'),
     'sairn_dom_snapshot.js': ('LIBRARY', 'a rendered-DOM snapshot, run in the browser'),
+    'sairn_clickthrough_driver.js': ('LIBRARY',
+        'a nav entry that opens nothing, a panel that renders blank, an error '
+        'thrown on open, or a control naming a function that does not exist at '
+        'RUNTIME -- in a SIGNED-IN app, which is the half no static checker '
+        'reaches and which Guardian\'s own Known Scope Limitation names. Run in '
+        'the browser, FOREGROUND TAB ONLY: hidden-tab setTimeout throttling '
+        'stops every render hook and reports 67 blank panels that are fine'),
     'strict_args_harness.js': ('LIBRARY', 'proves the engine really discards a mutated parameter under strict mode'),
     'verify-session-token-app-scope.js': ('LIBRARY', 'the semgrep rule body for the app-scope check'),
     'posthook.cjs': ('LIBRARY', 'the Node half of a PostToolUse hook'),
