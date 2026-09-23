@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-23.1'
+CRITERIA_VERSION = '2026-09-23.2'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -232,17 +232,59 @@ def strip_comments(src, js):
 NEVER_A_FILE = re.compile(r'\.replace\(\s*tzinfo\s*=')
 
 
+# ── A BRACKET INSIDE A STRING LITERAL IS NOT A BRACKET (2026-09-23) ─────────
+# logical_lines() counts ( ) [ ] to decide where an expression ends. A lone
+# paren inside a STRING is not part of the expression, and ONE unbalanced one
+# means the depth never returns to zero -- so every remaining line in the file
+# joins into a single logical line and the pairing below sees one blob.
+#
+# MEASURED RATHER THAN FEARED. tests/app_session_isolation_probe.py describes
+# its mutations in prose, several sentences carrying a bare `(` or `)`, and the
+# WHOLE FILE collapsed into one logical line beginning `MUTATIONS = [`. It
+# stayed in the population only because its replace happened to sit INSIDE the
+# write call, where the other detector arm could still see it. The moment that
+# probe was improved -- the replace assigned to a name, checked for a no-op,
+# then written -- it fell OUT of the population altogether and the headline
+# read 75/74 where it had read 76/75. A control that did the harder thing
+# scored better by vanishing, which is the SAME INVERTED SIGNAL this file
+# already records four times above, in a fifth spelling.
+#
+# THE FIX IS SUBSTITUTION, NOT AN ALLOWLIST -- this platform's own standing
+# lesson from sairn_dead_button_audit.py, where `List(` inside a prompt string
+# was read as an undefined function and the right answer was to blank string
+# literals before scanning rather than to name the words that tripped it.
+# Literals are blanked to spaces OF THE SAME LENGTH, so offsets are unchanged,
+# and only the depth count reads the blanked copy -- every downstream regex
+# still sees the real text.
+STRINGISH = re.compile(
+    '|'.join([
+        r"'''.*?'''",
+        r'""".*?"""',
+        r"'(?:\\.|[^'\\\n])*'",
+        r'"(?:\\.|[^"\\\n])*"',
+    ]), re.S)
+
+
+def blank_strings(line):
+    """Every string literal replaced by spaces of the same length."""
+    return STRINGISH.sub(lambda m: ' ' * len(m.group(0)), line)
+
+
 def logical_lines(code):
     """Join continuations so an expression split across lines is one unit.
 
     `open(p,'w').write(` on one line and `src.replace(old,new))` on the next is
     the commonest shape in this repo, and a line-at-a-time reader sees a bare
     replace with no write anywhere near it.
+
+    Depth is counted on a copy with STRING LITERALS BLANKED -- see the note
+    above. The emitted line is the real one.
     """
     out, buf, depth = [], '', 0
     for raw in code.split('\n'):
         buf = raw if not buf else buf + ' ' + raw.strip()
-        depth += raw.count('(') + raw.count('[') - raw.count(')') - raw.count(']')
+        bare = blank_strings(raw)
+        depth += bare.count('(') + bare.count('[') - bare.count(')') - bare.count(']')
         if depth <= 0:
             out.append(buf)
             buf, depth = '', 0

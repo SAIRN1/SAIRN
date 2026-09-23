@@ -58,6 +58,27 @@ def arm(name, ok, detail=''):
     return bool(ok)
 
 
+# ── THE THIRD STATE, ADDED 2026-09-23 ────────────────────────────────────────
+# Arm 4 sabotages the installed hook with `b.replace(b'\n', b'\r\n')` and then
+# requires --check to refuse it as CRLF. NOTHING CHECKED THAT THE SABOTAGE
+# APPLIED, and this is the one arm where a no-op is invisible rather than loud:
+# if the installed hook ever arrives ALREADY CRLF, or with no newline in it at
+# all, the replace changes nothing -- and --check still refuses, still says
+# CRLF, and arm 4 still passes. It would be reporting that the byte check
+# survives a mutation that was never made.
+#
+# That is the same shape as the defect this whole probe exists for: an answer
+# about the wrong thing, wearing a green tick. So a mutation that did not land
+# is a COULD-NOT-RUN and exits 3 -- never folded into the pass, and not folded
+# into FAILURES either, because nothing about the tool under test is broken.
+CANNOT = []
+
+
+def cannot(why):
+    print('  CANNOT ' + why)
+    CANNOT.append(why)
+
+
 def clone():
     tmp = tempfile.mkdtemp(prefix='sairn-hookchk-')
     TEMPS.append(tmp)
@@ -143,7 +164,17 @@ def main():
                        capture_output=True)
         hp = os.path.join(d, '.githooks', 'pre-push')
         b = io.open(hp, 'rb').read()
-        io.open(hp, 'wb').write(b.replace(b'\n', b'\r\n'))
+        lf = b'\n'
+        if lf not in b:
+            cannot('the installed hook carries no LF at all, so the CRLF '
+                   'mutation below is a NO-OP and arm 4 would pass without '
+                   'having exercised the byte check. Could-not-run, not a pass.')
+        crlf = b.replace(lf, b'\r\n')
+        if crlf == b:
+            cannot('the CRLF mutation changed nothing -- the installed hook is '
+                   'already CRLF, so --check refusing it proves nothing about '
+                   'this arm. Could-not-run, not a pass.')
+        io.open(hp, 'wb').write(crlf)
         rc, out = check(d)
         arm('a CRLF hook is still refused, and still named as CRLF -- the byte '
             'check was not replaced by the fire test',
@@ -166,6 +197,10 @@ def main():
             shutil.rmtree(t, ignore_errors=True)
 
     print('')
+    if CANNOT:
+        print('%d ARM(S) COULD NOT BE DRIVEN -- see CANNOT above. Exit 3: not a '
+              'pass, and not a failure of the tool under test.' % len(CANNOT))
+        return 3
     if FAILURES:
         print('%d ARM(S) FAILED' % len(FAILURES))
         return 1

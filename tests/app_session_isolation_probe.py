@@ -96,9 +96,15 @@ MUTATIONS = [
      "registry, so attorney IOLTA trust money is reachable on the licence key "
      "alone again -- the exact state this suite reported as healthy for as long "
      "as it was asserting `!== 401`",
+     # ANCHOR REPAIRED 2026-09-23. It matched law_trusttx as the LAST entry in
+     # SD_SESSION_GATED, closing brace and all. The map has since grown past it
+     # -- law_clients, law_matters and law_deadlines followed it in when phase
+     # 2 completed -- so the brace is no longer adjacent and this anchor had
+     # matched NOTHING for some time. The entry line, comma included, is the
+     # stable spelling, and deleting it is exactly what this mutation means.
      API,
-     "      'law_trusttx': ['read', 'write']\n    };",
-     "    };"),
+     "      'law_trusttx': ['read', 'write'],\n",
+     ""),
 
     ("2. only the READ is gated. The quiet half: a trust ledger that can be "
      "read by anyone holding the licence key errors nowhere, and the write "
@@ -127,9 +133,14 @@ MUTATIONS = [
      "The ORIGINAL defect needed BOTH halves: this list error AND reachability "
      "expressed as `!== 401`, which is why mutating the assertion alone is "
      "WITHDRAWN below rather than counted",
+     # ANCHOR REPAIRED 2026-09-23. PHASE_2_GATED held only law_trusttx when
+     # this was written; `ce835a7e` completed phase 2 and it now holds all
+     # four, so the one-element spelling stopped matching. The intent is
+     # unchanged -- law_trusttx falls back into STILL_UNGATED, which demands
+     # 200 and gets the gate's 403.
      SUITE,
-     "  const PHASE_2_GATED = ['law_trusttx'];",
-     "  const PHASE_2_GATED = [];"),
+     "  const PHASE_2_GATED = ['law_trusttx', 'law_clients', 'law_matters', 'law_deadlines'];",
+     "  const PHASE_2_GATED = ['law_clients', 'law_matters', 'law_deadlines'];"),
 
     # ── 7, 8, 9: THE "SAME REASON" TEST ────────────────────────────────────
     # The original arm did not fail because it was pointed at the wrong thing;
@@ -178,9 +189,25 @@ MUTATIONS = [
      "to take the gate off. This is the mutation that was SILENT until the "
      "expectedApp arms were added -- every other arm drives with NO session, "
      "and a no-session refusal is the same 403 whichever app the gate expected",
+     # ── ANCHOR REPAIRED 2026-09-23, AND THE NEW GUARD IS WHAT FOUND IT ──────
+     # It read `const SD_GATE_APP = { 'law_trusttx': 'sairnlaw' };` -- the map
+     # as a one-liner. SD_GATE_APP has since grown to fourteen sf_* entries
+     # plus law_matters and law_deadlines across forty lines, so that string
+     # has not matched for some time. str.replace did nothing, the pre-fix
+     # suite ran against CLEAN source, and the arm was counted.
+     #
+     # AND THE OLD GUARD REPORTED IT AS THE WRONG THING. A missing anchor went
+     # into the same bucket as "the old form caught it too", so the run exited
+     # 1 under the sentence "1 same-reason mutation(s) were ALSO caught before
+     # the repair" -- a claim about the suite, printed for a stale table in
+     # this file. It is now a CANNOT and exit 3.
+     #
+     # The anchor is the ENTRY rather than the whole map: removing
+     # law_trusttx's line is exactly the reversion this mutation is about, it
+     # survives the map growing, and it matches exactly once (checked).
      API,
-     "    const SD_GATE_APP = { 'law_trusttx': 'sairnlaw' };",
-     "    const SD_GATE_APP = {};"),
+     "      'law_trusttx': 'sairnlaw',\n",
+     ""),
 ]
 
 # ── AND THE OTHER DIRECTION, WHICH IS THE ONLY EVIDENCE THAT MATTERS ────────
@@ -247,7 +274,29 @@ def old_form_is_blind():
     if add.returncode != 0:
         print('COULD NOT RUN the pre-fix control: ' + (add.stderr or ''))
         return 3
-    bad, ran = [], 0
+    bad, ran, unrun = [], 0, []
+
+    # ── THE ANCHOR GUARD, AND WHY IT IS A THIRD STATE RATHER THAN A FINDING ──
+    # This loop mutates api/sd-data.js by `api_clean.replace(o, n, 1)`. When a
+    # refactor moves the anchor, str.replace does NOTHING and returns the
+    # string unchanged -- so the pre-fix suite runs against CLEAN source, exits
+    # 0, and the arm prints BLIND. A mutation that never applied would be
+    # counted as evidence that the repair mattered, which is the exact shape of
+    # the defect this whole probe was written about: green for a reason nobody
+    # asked for.
+    #
+    # IT WAS ALREADY GUARDED AND THE GUARD ANSWERED THE WRONG QUESTION. The old
+    # form appended a missing anchor to `bad`, which made the run exit 1 under
+    # the message "N same-reason mutation(s) were ALSO caught before the
+    # repair" -- a sentence about the suite, printed for a condition that is
+    # about this file's own table. Everywhere else in this function a
+    # could-not-run exits 3. Folding one into a finding is how a stale table
+    # gets read as a result.
+    def cannot(which, why):
+        print('  CANNOT %s' % which[:92])
+        print('         %s' % why)
+        unrun.append(which)
+
     try:
         api_clean = io.open(os.path.join(repo, API), encoding='utf-8').read()
         io.open(os.path.join(wt, SUITE), 'w', encoding='utf-8',
@@ -272,12 +321,30 @@ def old_form_is_blind():
         for name, rel, o, n in MUTATIONS:
             if not any(name.startswith(p) for p in SAME_REASON):
                 continue
-            if rel != API or o not in api_clean:
-                print('  COULD NOT RUN  %s -- anchor missing' % name[:40])
-                bad.append(name)
+            if rel != API:
+                cannot(name, 'this same-reason mutation does not target %s, so '
+                             'the pre-fix counterfactual cannot be driven for '
+                             'it at all.' % API)
+                continue
+            if o not in api_clean:
+                cannot(name, 'ANCHOR MISSING in %s. The replace below would be '
+                             'a no-op, the pre-fix suite would run against '
+                             'CLEAN source, and this arm would print BLIND '
+                             'having tested nothing. Could-not-run, not a pass '
+                             'and not a finding.' % API)
+                continue
+            mutated = api_clean.replace(o, n, 1)
+            # BELT AND BRACES, AND NOT REDUNDANT: the anchor check above proves
+            # the needle is present, this proves the write actually differs. An
+            # anchor equal to its replacement would satisfy the first and still
+            # be a no-op.
+            if mutated == api_clean:
+                cannot(name, 'the mutation changed nothing -- anchor present '
+                             'but the replacement is identical to it. BLIND '
+                             'would be meaningless.')
                 continue
             io.open(os.path.join(wt, API), 'w', encoding='utf-8',
-                    newline='').write(api_clean.replace(o, n, 1))
+                    newline='').write(mutated)
             r = subprocess.run(['node', os.path.join(wt, SUITE)], cwd=wt,
                                capture_output=True, text=True, encoding='utf-8',
                                errors='replace')
@@ -290,6 +357,11 @@ def old_form_is_blind():
                     newline='').write(api_clean)
     finally:
         _git('-C', repo, 'worktree', 'remove', '--force', wt)
+    if unrun:
+        print('')
+        print('%d same-reason mutation(s) COULD NOT BE DRIVEN -- see CANNOT '
+              'above. That is exit 3, not a pass and not a finding.' % len(unrun))
+        return 3
     if not ran:
         print('  COULD NOT RUN: no same-reason mutation was executed. Exit 3.')
         return 3
