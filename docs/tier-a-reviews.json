@@ -2518,6 +2518,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-23T19:00:42Z",
+      "resources": [
+        "law_bankstatements",
+        "rf_company_programs",
+        "sc_anesthesia_base_units",
+        "sc_auth",
+        "sdn_referrals"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "sc_anesthesia_base_units and sc_auth promoted B -> A on INTEGRITY only (confidentiality individually read, left at B), read out of sairncode.html, plus their two isolation arms in the same commit so the promotion did not grow the NONE bucket. 34f7e6f1.\n\nATTACK THESE FOUR:\n(1) THE TWO PROMOTIONS ARE JUDGEMENTS AND THE FIRST ONE HAS A REAL COUNTER-ARGUMENT I DID NOT TAKE. sc_anesthesia_base_units never touches money directly -- it fills a field a human can overwrite, and the value is COPIED into sc_anesthesia at save, so the stored case is what prices the claim. Someone could argue the reference table is decoration and sc_anesthesia is where the money lives. I took A because the auto-fill arrives with a green 'source: X' citation, which is a claim of verification, and because the register's A criteria say money AND anything upstream of it. Argue the other side if it holds.\n(2) THE CONFIDENTIALITY HALF IS WHERE I AM MOST LIKELY WRONG, and it is the half that is quiet because nothing moved. sc_auth's `proc` is free text with no validation; I left confidentiality at B on the ground that the field is labelled 'Procedure' and the UI invites no identifier. If any export, AI prompt or report in sairncode.html joins sc_auth to a patient or a claim, the row is A and my reasoning is wrong. Check the joins, not the schema.\n(3) THE LINE CITATIONS ARE THE EVIDENCE AND I READ THEM ONCE. :4857 :4872 :4875 :4892 :4955 :4974 :4980 :4985 for the base-units money path; :2493-2496 :5186 :5199 :5233 for sc_auth. sairncode.html is 12,761 lines and three sessions are editing it -- confirm each line still says what the cell claims.\n(4) THE TWO NEW ISOLATION ARMS COST ONE LINE EACH AND INHERIT SC_RESOURCES' filter, so the only thing each independently establishes is that the resource is still IN that map with idCol entry_id. The sabotage control's SC mutation now reddens 24 arms including these two, which is real but is shared-code-path evidence, not per-member evidence.\n\nFILES: docs/CRITICALITY-TIERS.md api/sd-data-cross-tenant-dispatchers.test.js",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T19:00:42Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
