@@ -339,16 +339,51 @@ bar without stating the shape is how a future session either fabricates a hash
 to satisfy it or quietly drops the citation.** Both are worse than saying which
 kind of source this is.
 
-**WHAT IS PROPOSED, NOT DECIDED:** the bar reads *"hash what is a file; for
-anything else, name the publisher, the retrieval date and the provision, and
-say which of the two it is."* Retroactive application to prior documents is a
-separate and much larger question — there are dozens — and is **not** proposed
-here.
+### 8.1 ANSWERED 2026-09-23 (Fourth) — GOING FORWARD ONLY, with a shape clause
 
-**THIS IS FLAGGED RATHER THAN APPLIED.** §0 is another session's standard on
-another session's document, and rewriting somebody else's evidentiary rule
-because my own section could not meet it is the wrong direction to resolve it
-from. Michael's call, or the author's.
+**THE STANDARD IS:** *hash what is a FILE; for anything else, name the
+publisher, the retrieval date and the provision, and **say which of the two it
+is.*** Adopted for this document, and proposed as the platform convention for
+research documents from here on.
+
+**RETROACTIVE APPLICATION IS REJECTED, AND THE REASON IS NOT COST.** The
+obvious argument against a sweep is that there are dozens of prior documents.
+That argument is true and it is the weaker one. The real one:
+
+> **A HASH COMPUTED TODAY FOR A SOURCE READ THREE WEEKS AGO PINS TODAY'S BYTE
+> IDENTITY TO A CLAIM MADE THEN.** It proves nothing about what was actually
+> read, and it READS as though it does. Backfilling hashes into old documents
+> would manufacture exactly the evidence a hash is supposed to be — and this
+> document's own headline is that *the law moved while this sat deferred*, so
+> a byte identity captured after the move would be evidence of the wrong day.
+
+**A retroactive hash is worse than no hash.** No hash says "unverified"; a
+backfilled one says "verified" and is wrong about when.
+
+**SO WHAT DOES A PRIOR DOCUMENT GET?** Not a backfilled hash. If somebody
+revisits one and the sources matter, it gets a **re-read with a fresh retrieval
+date** — which is the same discipline §7 applied to §9a.2 and the reason this
+document exists at all.
+
+### 8.2 The deference in the paragraph below was reasonable and was WRONG, and that is worth more than the answer
+
+The superseded text read: *"§0 is another session's standard on another
+session's document, and rewriting somebody else's evidentiary rule because my
+own section could not meet it is the wrong direction to resolve it from.
+Michael's call, or the author's."*
+
+**THE PREMISE WAS FALSE. §0 IS THIS CLONE'S OWN STANDARD ON THIS CLONE'S OWN
+DOCUMENT** — the header says *2026-09-17 (**Fourth**)* and
+`git log --diff-filter=A` on this file returns one commit, `9ffad7a9`. So the
+deference was owed to nobody, and it deferred a question the deferring session
+was entitled to answer.
+
+**IT COST A WEEK OF THE QUESTION SITTING OPEN, AND THE CHECK WAS ONE COMMAND.**
+Recorded here rather than silently corrected, because "another session wrote
+this" is an assumption that feels like caution and is cheap to test. **The
+retroactive half is still genuinely not mine** — that one reaches dozens of
+other sessions' documents, and it is rejected above on its merits rather than
+deferred.
 
 ---
 
@@ -356,6 +391,14 @@ from. Michael's call, or the author's.
 
 **This is not a research gap. It is a question this platform cannot answer from
 primary sources, and it should go to the post's CPA or tax counsel as written.**
+
+> **NOW FILED IN `docs/SAIRN-OPEN-WORK-INDEX.md` AS WELL, 2026-09-23, AND IT WAS
+> NOT BEFORE.** §7.6 said moving this out of the research register mattered
+> because *"burying it in prose is how it stays unasked"* — and then it was
+> left in prose, in §9 of a dated document, with nothing in the index pointing
+> at it. **The section that named the failure mode committed it.** A question
+> that must leave the building needs a row in the place people look for work,
+> not a heading in the place the research lives.
 
 ### 9.1 The question
 
