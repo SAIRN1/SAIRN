@@ -1990,8 +1990,8 @@
       "task": "sf_gaming_expenses conf B->A plus the two held sairncode rows sc_providers and sc_fraud FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T13:06:23Z",
       "claimed_at_epoch": 1790168783.3075488,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:10:50Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
