@@ -22,7 +22,17 @@
 //   dnt_referrals, dnt_procedure_types, dnt_recall_outreach,
 //   law_timeentries, law_clecredits, law_optx, law_pimedical,
 //   law_mattertasks, law_matterdocs, law_mattermilestones,
-//   sc_auth_requests, sc_coded_items, sc_hcc
+//   sc_auth_requests, sc_coded_items, sc_hcc,
+//   sv_coggins, sv_dental, sv_imaging, sv_labresults, sv_lameness,
+//   sv_peerconsults, sv_portal, sv_reproduction, sv_soapnotes, sv_surgery,
+//   sv_teleconsults, sv_vitals, sv_wellness, sv_equinedental, sv_prepurchase,
+//   leg_aftercare, leg_catererorders, leg_cases, leg_cremations,
+//   leg_dispatches, leg_documents,
+//   sf_signatures, sf_donor_awards, sf_donor_tiers,
+//   sb_bud, sb_exps, sb_invs,
+//   law_portalesign, law_portalmessages,
+//   bld_equipment, bld_referrals,
+//   sen_clients, sen_authorizations, sen_franchise_agreements, law_clients
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -263,10 +273,19 @@ const UNITS = [
       { procedure_type_id: 'PT-1', patient_id: 'P-1', on: '2026-09-01',
         channel: 'phone', outcome: 'booked' }]] },
   { map: 'SV_RESOURCES', app: 'sairnvet', role: 'owner', members: [
+    ['sv_coggins', 'coggins_id'], ['sv_dental', 'dental_id'],
+    ['sv_imaging', 'imaging_id'], ['sv_labresults', 'labresult_id'],
+    ['sv_lameness', 'lameness_id'], ['sv_peerconsults', 'peerconsult_id'],
+    ['sv_portal', 'portal_id'], ['sv_reproduction', 'reproduction_id'],
+    ['sv_soapnotes', 'soapnote_id'], ['sv_surgery', 'surgery_id'],
+    ['sv_teleconsults', 'teleconsult_id'], ['sv_vitals', 'vital_id'],
+    ['sv_wellness', 'wellness_id'], ['sv_equinedental', 'equinedental_id'],
+    ['sv_prepurchase', 'prepurchase_id'],
     ['sv_audit_log', 'audit_log_id'], ['sv_billing', 'billing_id'],
     ['sv_compliance', 'compliance_id'], ['sv_controlled', 'controlled_id'],
     ['sv_patients', 'patient_id']] },
   { map: 'BLD_RESOURCES', app: 'sairnbuild', role: 'owner', members: [
+    ['bld_equipment', 'equipment_id'], ['bld_referrals', 'referral_id'],
     ['bld_costs', 'cost_id'], ['bld_incidents', 'incident_id'],
     ['bld_price_points', 'price_point_id'], ['bld_sub_bids', 'sub_bid_id'],
     // ── EIGHT MORE, 2026-09-23. Every one is Tier A and every one sat in
@@ -285,6 +304,9 @@ const UNITS = [
     ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
     ['sdn_contracts', 'contract_id']] },
   { map: 'LEG_RESOURCES', app: 'sairnlegacy', role: 'owner', members: [
+    ['leg_aftercare', 'aftercare_id'], ['leg_catererorders', 'catererorder_id'],
+    ['leg_cases', 'case_id'], ['leg_cremations', 'cremation_id'],
+    ['leg_dispatches', 'dispatch_id'], ['leg_documents', 'document_id'],
     ['leg_certs', 'cert_id'], ['leg_invoices', 'invoice_id'],
     ['leg_preneed', 'preneed_id']] },
   { map: 'SC_RESOURCES', app: 'sairncode', role: 'admin', members: [
@@ -300,12 +322,42 @@ const UNITS = [
   // missed, a whole dispatcher never driven. law_trusttx and the other phase-2
   // rows are gated separately and are covered elsewhere.
   { map: 'LAW_RESOURCES', app: 'sairnlaw', role: 'owner', members: [
+    ['law_portalesign', 'portalesign_id'], ['law_portalmessages', 'portalmessage_id'],
     ['law_timeentries', 'timeentry_id',
       { matter_id: 'M-1', billing_code: 'L110', hours: 1, rate: 250, billable: true }],
     ['law_clecredits', 'clecredit_id'],
     ['law_optx', 'optx_id'], ['law_pimedical', 'pimedical_id'],
     ['law_mattertasks', 'mattertask_id'], ['law_matterdocs', 'matterdoc_id'],
     ['law_mattermilestones', 'mattermilestone_id']] },
+  // ── THE BESPOKE BRANCHES (added 2026-09-23) ────────────────────────────
+  // These four do NOT go through a generic dispatcher. Each has its own named
+  // branch with its own role narrowing, which is why they are worth driving: a
+  // generic-map member inherits a filter written once; a bespoke branch is a
+  // second place the same filter has to be written correctly.
+  //
+  // ROLE MATTERS HERE IN A WAY IT DOES NOT FOR THE GENERIC MAPS. sen_clients
+  // narrows to assigned clients for anyone outside SEN_CLIENT_BROAD_READ_ROLES
+  // = {owner, billing, coordinator, scheduler}, so a caregiver role would make
+  // the [L] arm pass for the WRONG reason -- one row because of the assignment
+  // filter rather than because of the tenant filter. `owner` is used so the
+  // only thing that can narrow the result is license_hash.
+  { map: 'sen_clients (bespoke, assignee-narrowed)', app: 'sairnsenior', role: 'owner',
+    members: [['sen_clients', 'client_id']] },
+  { map: 'sen_authorizations (bespoke)', app: 'sairnsenior', role: 'owner',
+    members: [['sen_authorizations', 'auth_id',
+      { client_id: 'C-1', client_name: 'A Client', auth_number: 'AUTH-1',
+        service_code: 'S5125', units_authorized: 10, minutes_per_unit: 15,
+        start_on: '2026-09-01', end_on: '2026-12-31' }]] },
+  { map: 'sen_franchise_agreements (bespoke)', app: 'sairnsenior', role: 'owner',
+    members: [['sen_franchise_agreements', 'agreement_id',
+      { branch_id: 'BR-1', unit_code: 'U-1', franchisee_name: 'A Franchisee',
+        royalty_pct: 5, ad_fund_pct: 2, effective_on: '2026-01-01',
+        royalty_base: 'collected' }]] },
+  // law_clients' READ carries no session check at all -- the documented
+  // SAIRNlaw phase-2 gap, recorded in the open-work index, and a DIFFERENT
+  // question from tenant isolation. This asserts the tenant filter only.
+  { map: 'law_clients (bespoke, phase-2 ungated)', app: 'sairnlaw', role: 'owner',
+    members: [['law_clients', 'client_id']] },
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
@@ -330,9 +382,12 @@ const UNITS = [
   // capability would reach the query; this one is used because it is the one
   // bootstrap mints.
   { map: 'SF_RESOURCES', app: 'sairnfreedom', role: 'post.govern', members: [
+    ['sf_signatures', 'signature_id'], ['sf_donor_awards', 'donor_award_id'],
+    ['sf_donor_tiers', 'donor_tier_id'],
     ['sf_accounts', 'account_id'], ['sf_ledger', 'ledger_id'],
     ['sf_vendor_prices', 'vendor_price_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [
+    ['sb_bud', 'bud_id'], ['sb_exps', 'exp_id'], ['sb_invs', 'inv_id'],
     ['sb_incidents', 'incident_id'], ['sb_payruns', 'payrun_id'],
     ['sb_po', 'po_id'], ['sb_recv', 'recv_id'],
     // week must be a real MONDAY and hours exactly six finite 0..24 values.
