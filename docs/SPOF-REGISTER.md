@@ -27,6 +27,50 @@ This page counted OPEN / ACCEPTED / RETIRED from day one, and that is a **snapsh
 
 Raising the threshold would also shrink this list without a single fix landing. The threshold lives in one place (`SPOF_THRESHOLD`) for exactly that reason, and moving it invalidates the baseline: **change one and the other must be re-derived in the same commit.**
 
+## 11 → 32, and 19 of those 21 are NOT growth — measured 2026-09-23
+
+**The baseline line above is unchanged and must stay that way.** What follows is
+the reading of it, because *"21 more"* is the kind of number that gets quoted as
+decay when most of it is the instrument improving.
+
+| | count | what it is |
+|---|---|---|
+| **A gap in the baseline itself** | **19** | `api/_resources/index.js` and the eighteen app registries. Created **2026-08-21**, and **21 registry files were already on disk on 2026-09-14**, the day the baseline was taken — checked with `git ls-tree` at that commit, not assumed. They were above the threshold then and were not counted. |
+| **Genuine growth** | **2** | `env:SD_AUTH_SECRET_PREVIOUS` and `env:SD_ENCRYPTION_KEY`, both added to `api/_lib/auth.js` on **2026-09-17**, three days after the baseline. |
+
+**So the platform acquired two chokepoints in nine days and the register
+discovered nineteen it had always had.** Those are different facts and only one
+of them is about the platform getting worse.
+
+**WHY THIS IS NOT A REASON TO RE-BASELINE.** The frozen denominator exists so
+progress is a fraction against a fixed total, and moving it to make the
+arithmetic tidy is exactly what it was frozen to prevent. The honest record is
+a baseline of 11 with a written note that it undercounted by 19, which is what
+this section is.
+
+**WHAT IS NOT ESTABLISHED:** *why* the baseline missed them. The graph may not
+have traversed `api/_resources/` then, or the register may have been written
+from a partial run. Nothing here determines which, and the distinction matters
+for whether other components are still uncounted today.
+
+### 0 RETIRED in nine days, and what retirement would actually take
+
+**No row has moved to RETIRED since this register opened.** That is not the
+checker failing — it refuses RETIRED while the component is still above the
+threshold, so a retirement has to be a real fix. The eight OPEN rows and what
+each needs:
+
+| OPEN row | What retirement requires |
+|---|---|
+| `env:SUPABASE_URL`, `env:SUPABASE_SERVICE_ROLE_KEY` | Splitting the single Supabase project, or per-app credentials against it. **A product and spend decision, not an engineering task**, and it is dispatched as one decision with items 61 and 69 in `docs/SAIRN-OPEN-WORK-INDEX.md`. |
+| `env:SD_AUTH_SECRET` | Per-app signing keys. The overlap window (2026-09-17) removed the rotation COST but not the concentration — one secret still signs every app's sessions. |
+| `env:SD_ENCRYPTION_KEY` | Per-tenant or per-purpose keys, so one leak is not every firm's second factor. |
+| `env:OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_ISSUER_URL`, `OIDC_REDIRECT_URI` | One risk seen four times. Retirement means a second identity provider or a documented fallback, not four separate fixes. |
+
+**None of these is retirable by editing this file**, and that is the point of
+recording them here: the list shrinks when the platform changes, and until then
+a row saying OPEN is telling the truth.
+
 ## The threshold, and what the number means
 
 **Blast radius ≥ 10 production modules** (`SPOF_THRESHOLD` in `tools/dependency_graph.py`). Blast radius is how many modules **transitively require** the component — how many stop working if it does. 144 production modules are in the graph, so ten is roughly 7%.
@@ -72,6 +116,27 @@ Measured 2026-09-14 against `tools/dependency_graph.py` (module + environment gr
 | `api/_lib/auth.js` | CC | ACCEPTED | 33 | — | **One session/token implementation shared by every app, and that is deliberate.** This is the "one deep module" principle the platform has already applied twice this week. **Compensating control:** `api/_lib/auth.test.js` exists and the module fails closed — an unverifiable token is no session, not a session. **Why it is on this page anyway:** a bug here is a bug in 33 endpoints simultaneously, which is a fact about how carefully it must be changed rather than an argument for duplicating it. |
 | `api/_lib/calendar-date.js` | CC | ACCEPTED | 20 | — | **Added to this register by the register, not by a person** — it appeared above the threshold on 2026-09-14 with no row, and `--register` refused the run until one was written. That is the mechanism working on its first real test rather than on a fixture. **What it is:** one module owning *what is a calendar date, and how do two of them compare*, from item 94. **It is ACCEPTED for the reason it exists:** `isDate` was defined FOURTEEN TIMES across `api/`, byte-identical and all wrong the same way — the failure mode of copying rather than importing, where one fix would have been fourteen. A wide blast radius here is the *point*: it is the number that used to be fourteen separate radii nobody could see. **Compensating control:** it is a pure function with no state and no I/O, and its failure mode is a refusal rather than a wrong date. **What would change this:** nothing should; it is listed so its width is a known fact rather than a surprise the next time somebody reads the graph. |
 | `api/_lib/employee-lifecycle.js` | CC | ACCEPTED | 13 | — | The shared credential-deactivation lifecycle — `set_active`, last-admin refusal, no self-deactivation, deactivated-caller re-check. **Shared on purpose:** the same gap was found and fixed independently in three apps before this existed, which is the argument against thirteen copies. **Compensating control:** `sairn-app-scaffold` names this lifecycle as required in v1, so a new app inherits it rather than re-deriving it. |
+| `api/_resources/index.js` | **CC** | ACCEPTED | 46 | — | **THE REGISTRY LAYER, AND THE EIGHTEEN ROWS BELOW ARE ONE RISK SEEN NINETEEN TIMES.** It `require()`s all eighteen app registries at load and merges them, so every module that reaches any registry reaches all of them and their blast radii are the SAME 46-47 modules — not nineteen independent concentrations. Listed separately because the checker works per component and a row is what makes each one visible; read as one. **ACCEPTED rather than OPEN, and the reason is the opposite of the Supabase rows':** this layer EXISTS to be a chokepoint. `api/sd-data.js` used to carry one shared RESOURCES map that every app appended to, and it was the cause of every merge conflict on that file; splitting it per app and merging at load is the fix. The compensating control is `api/_resources/app-boundary.test.js`, which drives the real handler and refuses a cross-app resource. **WHAT WOULD HAVE TO CHANGE:** nothing, unless the merge itself gains logic that can fail. A registry that only declares names cannot break at runtime in a way a test does not catch; the day it computes something, this becomes OPEN |
+| `api/_resources/sairnbiz.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnbiz's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnbuild.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnbuild's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairncare.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairncare's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairncash.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairncash's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairncode.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairncode's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairndental.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairndental's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairndesign.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairndesign's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnfreedom.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnfreedom's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairngrounds.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairngrounds's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnlaw.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnlaw's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnlegacy.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnlegacy's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnmechanical.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnmechanical's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnroofing.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnroofing's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnscape.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnscape's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnsenior.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnsenior's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/sairnvet.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares sairnvet's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/shared.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares shared's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `api/_resources/stonedesk.js` | **CC** | ACCEPTED | 47 | `api/_resources/index.js` | **One of the eighteen — see the index row above.** Declares stonedesk's resource names and is merged at load. Blast 47 is the registry layer's radius, not this file's own | 
+| `env:SD_AUTH_SECRET_PREVIOUS` | **Michael** | ACCEPTED | 35 | `env:SD_AUTH_SECRET` | **THE OUTGOING SIGNING KEY, AND ITS PRESENCE IS A MITIGATION RATHER THAN A RISK.** Accepted on verify and never used to sign (`api/_lib/auth.js:365`); it is the overlap window that removed the universal-logout cost from rotating `SD_AUTH_SECRET`. Blast 35 is `api/_lib/auth.js`'s radius, shared with every secret that module reads. **ACCEPTED, not OPEN:** its ABSENCE is the normal state — it is set only during a changeover and cleared after one `SESSION_TTL_MS` — so it cannot be a standing single point of failure. **WHAT WOULD CHANGE IT:** being left set permanently, which keeps a retired key valid forever. Nothing currently checks that it was cleared |
+| `env:SD_ENCRYPTION_KEY` | **Michael** | OPEN | 35 | — | **NOT a duplicate of the signing secret — it was SPLIT OUT of it on 2026-09-17 so that a session-signing leak would stop also decrypting secrets at rest.** AES-256-GCM key for attorney MFA/TOTP secrets and a stored Stedi API key. Blast 35 is `api/_lib/auth.js`'s radius. **OPEN BECAUSE THERE IS NO REVOKE:** a leak decrypts every ciphertext already written, and those sit in Supabase whether the key changes or not — containment is re-enrolling every attorney MFA secret and rotating the Stedi key at Stedi. **WHAT WOULD HAVE TO CHANGE:** per-tenant or per-purpose keys, so one leak is not every firm's second factor. **AND ONE THING IS NOT ESTABLISHED:** whether it is SET in Vercel at all. `api/_lib/auth.js` says *“until `SD_ENCRYPTION_KEY` is set this deploy changes nothing”* — if unset, the duty is still `SD_AUTH_SECRET`'s and this row describes a split that has not happened in production |
 
 **Nothing is RETIRED yet.** That is the honest state on the day the register was created, and it is stated rather than left as an empty section somebody reads as "all clear".
 
