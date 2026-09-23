@@ -34,7 +34,9 @@
 //   bld_equipment, bld_referrals,
 //   sen_clients, sen_authorizations, sen_franchise_agreements, law_clients,
 //   grd_boq_rates, grd_cart_orders, grd_invasive_sightings, grd_rounds,
-//   grd_training_courses, grd_training_completions, rf_entities
+//   grd_training_courses, grd_training_completions, rf_entities,
+//   sc_anesthesia, sen_referrals, sen_applicants, sen_referral_sources,
+//   sen_training_rules, sen_training_records
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -317,7 +319,7 @@ const UNITS = [
     ['sc_denial', 'entry_id'], ['sc_denial_events', 'entry_id'],
     ['sc_revenue', 'entry_id'],
     ['sc_auth_requests', 'entry_id'], ['sc_coded_items', 'entry_id'],
-    ['sc_hcc', 'entry_id']] },
+    ['sc_hcc', 'entry_id'], ['sc_anesthesia', 'entry_id']] },
   // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
   // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
   // what an absent UNIT looks like from the coverage side: not one resource
@@ -377,6 +379,14 @@ const UNITS = [
   { map: 'rf_entities (bespoke)', app: 'sairnroofing', role: 'owner', members: [
     ['rf_entities', 'entity_id',
       { entity_id: 'X-1', legal_name: 'A Entity', entity_type: 'llc' }]] },
+  // SEN_REFERRAL_RESOURCES is its own small map with its own gate -- the
+  // file's words: "a caregiver is out, the coordinator who screens the call is
+  // in". `owner` is used for the same reason as the sen_clients unit: so the
+  // only thing that can narrow the result is license_hash.
+  { map: 'SEN_REFERRAL_RESOURCES', app: 'sairnsenior', role: 'owner', members: [
+    ['sen_referrals', 'referral_id'], ['sen_applicants', 'applicant_id'],
+    ['sen_referral_sources', 'source_id'], ['sen_training_rules', 'rule_id'],
+    ['sen_training_records', 'record_id']] },
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
