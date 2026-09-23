@@ -1172,6 +1172,90 @@ def cmd_list():
     return 0
 
 
+# ── --validate: IS THE FILE SOUND? NOT "IS THE QUEUE CLEAN?" ───────────────
+# Added 2026-09-23. `--list` returns 1 when any obligation is past the 24h
+# deadline, and that is correct for a human reading the queue -- it is how a
+# session notices work nobody has closed.
+#
+# IT IS WRONG AS A MERGE VALIDATOR, AND IT WAS BEING USED AS ONE.
+# docs/tier-a-reviews.json declares `["tools/tier_a_review_gate.py", "--list"]`
+# in its merge_policy, and tools/sairn_rebase_resolve.py refuses any merge whose
+# validator exits non-zero, printing "merged cleanly, and then its own validator
+# rejected the result". So a perfectly correct union-by-identity merge of this
+# ledger was REFUSED whenever anybody, anywhere, held an obligation older than a
+# day -- which is most of the time, and is the state the deadline exists to make
+# VISIBLE rather than a reason to block a rebase.
+#
+# TWO DIFFERENT QUESTIONS WERE SHARING ONE EXIT CODE:
+#   "is this file structurally sound"      -- what a merge validator needs
+#   "does the queue contain overdue work"  -- what a person needs
+#
+# Fixing it by changing --list's exit code would have been the wrong direction:
+# that code is the only mechanical signal that an obligation is being ignored,
+# and silencing it to unblock a rebase trades a real alarm for a convenience.
+# So a SECOND mode is added and the merge policy points at it.
+#
+# IT EXITS 0 OR 2 AND NEVER 1, deliberately. A validator with three outcomes
+# invites exactly the conflation this replaces. 2 is COULD NOT RUN -- unreadable,
+# unparseable, or the wrong shape -- and 0 is sound.
+# Every status any writer in this file can set. _discharge() is the only
+# function that assigns one, and it has exactly two callers: cmd_discharge
+# ('reviewed') and cmd_auto_discharge ('reviewed-by-record'). 'open' is
+# written at --open. Derived by reading those three sites rather than by
+# sampling the ledger, so a status nothing writes cannot creep in here.
+STATUSES = ('open', 'reviewed', 'reviewed-by-record')
+
+
+def cmd_validate():
+    try:
+        data = load_reviews()
+    except CouldNotTell as e:
+        sys.stderr.write(str(e) + '\n')
+        return 2
+    records = data.get('records')
+    bad = []
+    seen = set()
+    for i, r in enumerate(records):
+        if not isinstance(r, dict):
+            bad.append('record %d is not an object' % i)
+            continue
+        # The identity the merge policy unions on. A record missing either half
+        # cannot be de-duplicated, so two clones would silently keep both copies
+        # -- which is the failure a union-by-identity merge exists to prevent,
+        # arriving through the ledger instead of through the merge.
+        key = (r.get('author_session'), r.get('opened_at'))
+        if not key[0] or not key[1]:
+            bad.append('record %d has no author_session/opened_at -- the merge '
+                       'identity this ledger unions on' % i)
+            continue
+        if key in seen:
+            bad.append('two records share the identity %r, so a union-by-identity '
+                       'merge cannot tell them apart' % (key,))
+        seen.add(key)
+        # THE VOCABULARY IS READ OUT OF THE WRITERS, NOT GUESSED. The first
+        # version of this check typed ('open', 'discharged') and refused 109 of
+        # 127 real records on their first run -- the actual closed status is
+        # `reviewed`, and --auto-discharge writes a third, `reviewed-by-record`,
+        # which is deliberately weaker and says so in its own verdict text. A
+        # validator that refuses the file it is meant to certify is worse than
+        # none; driving it against the real ledger is what caught it.
+        st = r.get('status')
+        if st not in STATUSES:
+            bad.append('record %r has status %r, which is outside %s'
+                       % (key[1], st, (STATUSES,)))
+    if bad:
+        sys.stderr.write('docs/tier-a-reviews.json is NOT sound:' + '\n')
+        for b in bad:
+            sys.stderr.write('  ' + b + '\n')
+        return 2
+    print('tier-a-reviews.json: %d record(s), identities unique, statuses in '
+          'vocabulary.' % len(records))
+    print('    This says the FILE is sound. It says nothing about whether the '
+          'queue is clear -- run --list for that, which exits 1 on an overdue '
+          'obligation and is the reason this mode exists separately.')
+    return 0
+
+
 # ── AUTO-DISCHARGE: CAPTURE THE REVIEW THAT ALREADY HAPPENED ────────────────
 # Michael's decision, and the case for it is measured: 27 obligations open, and
 # at least one of them had SEVEN real defects found and fixed against it
@@ -1589,6 +1673,8 @@ def main(argv):
         sys.stderr.write('--discharge <author-session> [opened_at] <verdict '
                          'sentence>   [--takeover]\n')
         return 1
+    if '--validate' in argv:
+        return cmd_validate()
     if '--list' in argv:
         return cmd_list()
     if '--auto-discharge' in argv:
