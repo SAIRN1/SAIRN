@@ -35,6 +35,7 @@ SEVEN MUTATIONS. Three of them are the ones that read as correct:
     this as fixed. The arm strips comment lines before scanning for exactly this
     reason and the mutation is here to prove the stripping actually runs.
 """
+import io
 import os
 import sys
 
@@ -45,9 +46,49 @@ SUITE = os.path.join('api', 'alf-append-only-read-order.test.js')
 SRC = os.path.join('api', 'sd-data.js')
 SIBLING = os.path.join('api', 'alf-append-only-fail-closed.test.js')
 
-MAR_READ = ("      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) "
-            "+ '&select=entry_id,resident_id,assigned_employee_id,entry_type,data"
-            "&order=created_at.desc'), { headers });")
+# -- THE ANCHORS ARE DERIVED FROM THE SOURCE, NOT TYPED (2026-09-23) --------
+# MAR_READ used to be a hand-copied literal of the alf_mar list read, and arm
+# 4's anchor was a second hand-copy of the select+order substring inside it.
+# Adding `created_at` to that select -- a real, correct change, made because
+# the read ordered by a column it did not return -- broke all three arms that
+# quoted it. They failed LOUDLY about ANCHOR-0, which is the harness working,
+# and they failed about the PROBE rather than about its subject, which is the
+# anchor-staleness class this repo keeps recording.
+#
+# So the anchor is read out of api/sd-data.js and asserted UNIQUE. A zero or
+# multiple match raises HERE, naming the anchor, instead of producing arms that
+# mutate nothing and report a green sweep over a read they never found -- which
+# is precisely the defect arm 5 exists to catch, one level up.
+def _mar_read(path):
+    src = io.open(path, encoding='utf-8').read()
+    hits = [ln for ln in src.split('\n')
+            if ln.lstrip().startswith("const r = await fetch(rest('alf_mar?license_hash=eq.'")
+            and "&order=created_at.desc'), { headers });" in ln]
+    if len(hits) != 1:
+        raise SystemExit(
+            'ANCHOR STALE: the alf_mar list read matched %d line(s) in %s and '
+            'these arms need exactly 1. Either the read moved, or a second one '
+            'was added -- re-derive the anchor rather than typing it, and do '
+            'not let the arms below mutate nothing.' % (len(hits), path))
+    return hits[0]
+
+
+MAR_READ = _mar_read(SRC)
+
+# The select+order argument INSIDE that line, derived from it for the same
+# reason. Arm 4 flips only the direction, so it must anchor on exactly the
+# quoted argument the real line carries -- including any column added since.
+_i = MAR_READ.find("'&select=")
+_j = MAR_READ.find("'", _i + 1)
+if _i < 0 or _j < 0:
+    raise SystemExit('ANCHOR STALE: no quoted &select=... argument inside the '
+                     'alf_mar read that was just matched.')
+MAR_SELECT_DESC = MAR_READ[_i:_j + 1]
+if '&order=created_at.desc' not in MAR_SELECT_DESC:
+    raise SystemExit('ANCHOR STALE: the alf_mar select argument carries no '
+                     '&order=created_at.desc, so arm 4 would flip nothing.')
+MAR_SELECT_ASC = MAR_SELECT_DESC.replace('created_at.desc', 'created_at.asc')
+MAR_SELECT_NONE = MAR_SELECT_DESC.replace('&order=created_at.desc', '')
 
 MUTATIONS = [
     ("1. THE ORIGINAL DEFECT RESTORED on the worst of the six: alf_claim_routes "
@@ -82,17 +123,16 @@ MUTATIONS = [
      "to asc, so same-day entries tie-break oldest-first underneath a renderer "
      "that is sorting them newest-first",
      SRC,
-     "'&select=entry_id,resident_id,assigned_employee_id,entry_type,data&order=created_at.desc'",
-     "'&select=entry_id,resident_id,assigned_employee_id,entry_type,data&order=created_at.asc'"),
+     MAR_SELECT_DESC,
+     MAR_SELECT_ASC),
 
     ("5. THE FIX IS STILL THERE BUT THE ARM CAN NO LONGER SEE IT: the alf_mar "
      "read is hoisted into a local, so the arm finds ZERO list reads for that "
      "table. A sweep over a read it never found is not a pass and must say so",
      SRC,
      MAR_READ,
-     ("      const marSel = 'alf_mar?license_hash=eq.' + enc(licHash) "
-      "+ '&select=entry_id,resident_id,assigned_employee_id,entry_type,data"
-      "&order=created_at.desc';\n"
+     ("      const marSel = 'alf_mar?license_hash=eq.' + enc(licHash) + "
+      + MAR_SELECT_DESC + ";\n"
       "      const r = await fetch(rest(marSel), { headers });")),
 
     ("6. THE CLAUSE SURVIVES AS PROSE ONLY: alf_mar's order= is deleted from the "
@@ -101,9 +141,8 @@ MUTATIONS = [
      SRC,
      MAR_READ,
      ("      // ordered &order=created_at.desc -- see the header above\n"
-      "      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) "
-      "+ '&select=entry_id,resident_id,assigned_employee_id,entry_type,data'), "
-      "{ headers });")),
+      "      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + "
+      + MAR_SELECT_NONE + "), { headers });")),
 
     ("7. A SEVENTH TRAIL APPEARS UPSTREAM with no ordering declared. The arm "
      "takes its table list from the sibling ON PURPOSE so this cannot be missed; "

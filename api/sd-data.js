@@ -8801,7 +8801,31 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Medication records are not available to your role' } });
         return;
       }
-      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data&order=created_at.desc'), { headers });
+      // -- ORDERED BY A COLUMN THE CALLER NEVER RECEIVED (2026-09-23) ------
+      // This read has ordered by `created_at` since the append-only ordering
+      // pass and did NOT select it, so the client was handed rows in an order
+      // it had no way to verify and no way to re-derive. FOUND BY A LIVE
+      // READ-BACK against the deployed endpoint, not by reading the query:
+      // the source shows an order clause and looks complete, and only the
+      // returned rows show the column is absent.
+      //
+      // IT MATTERS MORE HERE THAN ON A DISPLAY LIST, because sairncare.html's
+      // client read for this resource is a HYDRATE: it merges server rows
+      // into a PERSISTED LOCAL ARRAY in the order they arrive and writes that
+      // array back. So the server's ordering became the order on disk while
+      // the field that explains it was dropped in transit.
+      //
+      // `created_at` is now selected AND mapped onto the record. Every
+      // consumer that cares about order already sorts explicitly, so nothing
+      // depends on this -- which is exactly why the caller should have it: a
+      // sort needs a key, and until now the only key with a defined order was
+      // one the client could not see.
+      //
+      // NOT DONE FOR THE OTHER FOUR TRAILS, because they do not need it:
+      // alf_claim_routes, alf_staff_credentials and alf_op_audits already
+      // select created_at, and alf_signals already selects recorded_at, which
+      // is the column it orders by. Two reads were missing it, not six.
+      const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,assigned_employee_id,entry_type,data,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -8809,7 +8833,7 @@ module.exports = async (req, res) => {
       if (!ALF_MAR_BROAD_ROLES[session.role]) {
         out = out.filter((r) => r.assigned_employee_id === session.employee_id);
       }
-      const data = out.map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, entry_type: r.entry_type, assigned_employee_id: r.assigned_employee_id || '' }, r.data));
+      const data = out.map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, entry_type: r.entry_type, assigned_employee_id: r.assigned_employee_id || '', created_at: r.created_at }, r.data));
       res.status(200).json({ ok: true, data, provisioned: true });
       return;
     }
@@ -9161,11 +9185,35 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The incident log is not available to your role' } });
         return;
       }
-      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data&order=created_at.desc'), { headers });
+      // -- ORDERED BY A COLUMN THE CALLER NEVER RECEIVED (2026-09-23) ------
+      // This read has ordered by `created_at` since the append-only ordering
+      // pass and did NOT select it, so the client was handed rows in an order
+      // it had no way to verify and no way to re-derive. FOUND BY A LIVE
+      // READ-BACK against the deployed endpoint, not by reading the query:
+      // the source shows an order clause and looks complete, and only the
+      // returned rows show the column is absent.
+      //
+      // IT MATTERS MORE HERE THAN ON A DISPLAY LIST, because sairncare.html's
+      // client read for this resource is a HYDRATE: it merges server rows
+      // into a PERSISTED LOCAL ARRAY in the order they arrive and writes that
+      // array back. So the server's ordering became the order on disk while
+      // the field that explains it was dropped in transit.
+      //
+      // `created_at` is now selected AND mapped onto the record. Every
+      // consumer that cares about order already sorts explicitly, so nothing
+      // depends on this -- which is exactly why the caller should have it: a
+      // sort needs a key, and until now the only key with a defined order was
+      // one the client could not see.
+      //
+      // NOT DONE FOR THE OTHER FOUR TRAILS, because they do not need it:
+      // alf_claim_routes, alf_staff_credentials and alf_op_audits already
+      // select created_at, and alf_signals already selects recorded_at, which
+      // is the column it orders by. Two reads were missing it, not six.
+      const r = await fetch(rest('alf_incidents?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,data,created_at&order=created_at.desc'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id }, r.data));
+      const data = (rows || []).map((r) => Object.assign({ id: r.entry_id, resident_id: r.resident_id, created_at: r.created_at }, r.data));
       res.status(200).json({ ok: true, data, provisioned: true });
       return;
     }
