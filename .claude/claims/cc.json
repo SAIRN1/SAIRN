@@ -2482,8 +2482,8 @@
       "task": "SC_TIER_A_WRITE_GATED/SC_TIER_A_SOFT_DELETE_ONLY still holds 7 names against the register's 23 Tier A sc_ rows -- 16 writable on the licence key alone and hard-deletable FILES: api/_resources/sairncode.js api/sd-data.js tests/sairncode_gates.js",
       "claimed_at": "2026-09-23T20:19:35Z",
       "claimed_at_epoch": 1790194775.7985954,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T20:22:13Z",
       "files": [
         "api/_resources/sairncode.js",
         "api/sd-data.js",
