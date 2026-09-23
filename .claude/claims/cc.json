@@ -2427,8 +2427,8 @@
       "task": "discharge cody obligation 2026-09-22T11:45:33Z on sd_exec_msgs -- review only FILES: docs/tier-a-reviews.json",
       "claimed_at": "2026-09-23T13:12:19Z",
       "claimed_at_epoch": 1790169139.642974,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:38:45Z",
       "files": [
         "docs/tier-a-reviews.json"
       ]
