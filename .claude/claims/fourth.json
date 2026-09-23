@@ -2248,8 +2248,8 @@
       "task": "continue the sairngrounds re-audit -- the remaining unread rows, grd_water_features excluded FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T17:58:36Z",
       "claimed_at_epoch": 1790186316.3385358,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T18:11:52Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
