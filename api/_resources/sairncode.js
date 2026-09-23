@@ -195,15 +195,49 @@ const RESOURCES = [
 // Tier A sc_* rows in that register exactly, in both directions, so a tier
 // added there without a change here FAILS rather than drifting.
 //
-// sc_denial_events IS IN THIS LIST AND IS NOT IN SC_TIER_A_WRITE_GATED, which
-// is a real inconsistency in the WRITE gate and not a mistake here. The
-// register tiers it A -- "the event history an appeal is argued from" -- and
-// the write gate, decided separately on 2026-09-14, names six. Flagged in the
-// open-work row rather than silently widened, because widening a role gate is
-// a different decision from narrowing a destroy verb.
+// sc_denial_events WAS IN THIS LIST AND NOT IN SC_TIER_A_WRITE_GATED, which was
+// a real inconsistency in the WRITE gate. It is gone now, because api/sd-data.js
+// derives SC_TIER_A_WRITE_GATED FROM THIS ARRAY -- the two lists cannot disagree
+// any more, which is what closing that gap actually looked like.
+//
+// ── SEVEN BECAME TWENTY-THREE, 2026-09-23, AND THE PIN IS WHAT FOUND IT ─────
+// The paragraph above says this array is pinned to docs/CRITICALITY-TIERS.md by
+// tests/sairncode_gates.js "so a tier added there without a change here FAILS
+// rather than drifting". It did exactly that, and then the failure sat. Sixteen
+// resources were re-tiered A between 2026-09-15 and 2026-09-23 -- sc_dme,
+// sc_drg, sc_eligibility, sc_hcc, sc_auth_requests, sc_coded_items,
+// sc_anesthesia, sc_fraud, sc_prebill, sc_providers, sc_query, sc_rac,
+// sc_telehealth, sc_settings, sc_anesthesia_base_units and sc_auth -- and for
+// eight days every one of them was WRITABLE ON THE LICENCE KEY ALONE and
+// HARD-DELETABLE, because both gates derive from this array and this array did
+// not move.
+//
+// A PIN THAT FIRES AND IS NOT ACTED ON IS A DIFFERENT FAILURE FROM AN ABSENT
+// PIN, and the difference is worth naming rather than quietly fixing: the
+// mechanism worked. `tests/sairncode_gates.js` is not in GUARD_TESTS, so its
+// red never blocked a push, and nothing else reads it. The mechanism is the
+// half this platform is good at; the half that failed was that nobody was
+// required to look.
+//
+// WHAT WAS EXPOSED IS NOT ABSTRACT. sc_hcc is a named patient joined to a
+// diagnosis grouping and its dollar value. sc_eligibility is a named patient
+// joined to payer and plan. sc_providers carries the QP status that picks
+// between two CMS conversion factors, so a write from anybody holding the
+// licence string could change what every unit billed under that provider is
+// worth. Those three are the reason this is a security fix and not tidying.
+//
+// THE CLIENT HALF LANDED IN THE SAME COMMIT, because narrowing a verb here
+// without moving the callers is how a working remove button becomes a silent
+// refusal: sairncode.html's fifteen `scData('delete', ...)` calls on these
+// resources now call 'soft_delete' and toast that the record is retained.
+// sc_settings has no remove button, which is why fifteen and not sixteen.
 const SC_TIER_A_SOFT_DELETE_ONLY = [
-  'sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',
-  'sc_denial', 'sc_denial_events', 'sc_revenue'
+  'sc_anesthesia', 'sc_anesthesia_base_units', 'sc_ar', 'sc_auth',
+  'sc_auth_requests', 'sc_claims', 'sc_coded_items', 'sc_compliance',
+  'sc_credential_scope', 'sc_denial', 'sc_denial_events', 'sc_dme',
+  'sc_drg', 'sc_eligibility', 'sc_fraud', 'sc_hcc', 'sc_prebill',
+  'sc_providers', 'sc_query', 'sc_rac', 'sc_revenue', 'sc_settings',
+  'sc_telehealth'
 ];
 
 module.exports = {

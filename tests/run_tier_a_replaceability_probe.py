@@ -148,10 +148,25 @@ if rhits == 1:
         code3, out3, _ = run_json()
         d3 = json.loads(out3) if code3 == 0 else {}
         h3 = sorted(h[0] for h in d3.get('hard_delete', []))
-        check('defeating the per-resource test makes all seven hard-deletable '
-              'again -- the tool DOES detect this, it is not blind',
-              h3 == ['sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',
-                     'sc_denial', 'sc_denial_events', 'sc_revenue'], h3)
+        # ── DERIVED FROM THE PIN, NOT THE SEVEN NAMES (2026-09-23) ──────────
+        # This listed the seven literally. The pinned list went from 7 to 23 on
+        # 2026-09-23 and the arm failed naming a set that was simply out of
+        # date -- a hardcoded expectation inside the probe that exists to prove
+        # a hardcoded list is dangerous. The mutation defeats the per-resource
+        # test, so EVERY name in the pinned list becomes hard-deletable again,
+        # whatever that list currently holds; reading it from the same file the
+        # mutation targets is the only expectation that cannot go stale.
+        expect3 = sorted(re.findall(
+            r"'([a-z_]+)'",
+            re.search(r'const SC_TIER_A_SOFT_DELETE_ONLY = \[(.*?)\];',
+                      rsrc, re.S).group(1)))
+        check('the expectation was derived from the registry, not typed (%d)'
+              % len(expect3), len(expect3) > 0,
+              'SC_TIER_A_SOFT_DELETE_ONLY could not be parsed, so the arm below '
+              'would compare against an empty set and pass vacuously')
+        check('defeating the per-resource test makes all %d hard-deletable '
+              'again -- the tool DOES detect this, it is not blind' % len(expect3),
+              h3 == expect3, h3)
         reg_mutated_ok = True
     finally:
         io.open(REGISTRY, 'w', encoding='utf-8', newline='').write(rsrc)

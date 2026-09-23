@@ -180,6 +180,45 @@ const WRITE_GATED = {
   // third opinion rather than a second copy -- and it failed the moment the
   // posture changed, which is the direction that failure should run.
   sc_denial_events: 'admin|biller',
+  // ── SEVEN BECAME TWENTY-THREE, 2026-09-23 ─────────────────────────────────
+  // THE TABLE ABOVE IS THE CLAIM AND THE HANDLER IS THE FACT, which is why it
+  // is spelled out one resource at a time rather than generated from the same
+  // list the handler uses -- a table derived from its own subject agrees with
+  // itself by construction and checks nothing.
+  //
+  // Sixteen sc_* resources were re-tiered A between 2026-09-15 and 2026-09-23,
+  // and because SC_TIER_A_WRITE_GATED derives from the pinned Tier A list, all
+  // sixteen SHOULD have become write-gated automatically. They did not, because
+  // the pinned list itself had not been updated -- so for eight days every one
+  // of them accepted a write carrying the LICENCE KEY ALONE and could be
+  // hard-deleted. This suite's arm 1 was RED for those eight days and nothing
+  // required anybody to look.
+  //
+  // THREE OF THE SIXTEEN ARE WHY THIS IS NOT BOOKKEEPING: sc_hcc is a named
+  // patient joined to a diagnosis grouping and its dollar value; sc_eligibility
+  // is a named patient joined to payer and plan; sc_providers carries the QP
+  // status that selects between two CMS conversion factors, so a write from
+  // anybody holding the licence string changes what every unit billed under
+  // that provider is worth.
+  sc_anesthesia: 'admin|biller',
+  sc_anesthesia_base_units: 'admin|biller',
+  sc_auth: 'admin|biller',
+  // AND IT MOVES OUT OF CONDITIONALLY_WRITE_GATED BELOW. Its sign-off gate is
+  // still admin-only and still narrower than this; what changed is that an
+  // ORDINARY write now needs a session too, so it is unconditionally gated and
+  // the conditional table no longer describes it.
+  sc_auth_requests: 'admin|biller',
+  sc_coded_items: 'admin|biller',
+  sc_dme: 'admin|biller',
+  sc_drg: 'admin|biller',
+  sc_eligibility: 'admin|biller',
+  sc_fraud: 'admin|biller',
+  sc_hcc: 'admin|biller',
+  sc_prebill: 'admin|biller',
+  sc_providers: 'admin|biller',
+  sc_query: 'admin|biller',
+  sc_rac: 'admin|biller',
+  sc_telehealth: 'admin|biller',
 };
 // Read from api/sd-data.js rather than retyped, for the same reason
 // SB_VOID_ROLES is read out of sairnbiz.html in tests/sairnbiz_void_not_delete.js:
@@ -231,13 +270,48 @@ const TIER_A_OVERRIDES = (() => {
   }
   return out;
 })();
-const rolesFor = (resource) => TIER_A_OVERRIDES[resource] || TIER_A_ROLES;
+// ── AND ONE RESOURCE IS NARROWED BY A SECOND GATE IN A DIFFERENT BRANCH ────
+// sc_settings passes the Tier A gate as `admin|biller` and is then refused by
+// its OWN admin-only branch a few lines below it, which has been there since
+// 2026-08-20 and is not in SC_TIER_A_WRITE_ROLES_BY_RESOURCE. So the EFFECTIVE
+// allowed set is the intersection, and nothing expressed that until sc_settings
+// joined the Tier A list on 2026-09-23 -- at which point the "every ALLOWED
+// role reaches storage" control failed 46/47, correctly, on a biller that the
+// handler was right to refuse.
+//
+// DERIVED FROM THE BRANCH, NOT TYPED, and it FAILS CLOSED: if that check is
+// reworded or removed, the regex stops matching and this suite refuses rather
+// than quietly widening sc_settings back to admin|biller. Same discipline as
+// TIER_A_ROLES and TIER_A_OVERRIDES above -- read the handler, never a copy.
+const SECOND_GATE_NARROWING = (() => {
+  const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
+  const m = /if \(resource === 'sc_settings'\) \{[\s\S]{0,400}?scSetCaller\.role !== '(\w+)'/
+    .exec(src);
+  assert.ok(m,
+    "sc_settings' own role check was not found in api/sd-data.js. It narrowed "
+    + 'the Tier A gate to a single role; if it is gone, sc_settings is now '
+    + 'writable by every Tier A role and that is a posture change nobody '
+    + 'declared. Refusing rather than assuming either way.');
+  return { sc_settings: [m[1]] };
+})();
+const rolesFor = (resource) =>
+  SECOND_GATE_NARROWING[resource] || TIER_A_OVERRIDES[resource] || TIER_A_ROLES;
 // Gated only on a specific payload shape. Creating a draft, editing before
 // review and logging a payer decision after the fact are all open; making a
 // request SUBMISSION-READY is not. Section 4 drives both halves.
-const CONDITIONALLY_WRITE_GATED = {
-  sc_auth_requests: 'admin, on sign-off writes only (signedOffBy set, or status=submitted)',
-};
+//
+// ── EMPTY SINCE 2026-09-23, AND KEPT RATHER THAN DELETED ───────────────────
+// sc_auth_requests was the only entry. It is now UNCONDITIONALLY write-gated
+// as a Tier A resource, so a plain write no longer reads as open and the
+// conditional description stopped being true. The sign-off gate itself is
+// unchanged and is still narrower than the resource gate -- section 4 drives
+// both halves and asserts a biller can do an ordinary write while being
+// refused sign-off, which is the property this table existed to keep visible.
+//
+// The table stays because the SHAPE is real and the next resource to grow a
+// payload-conditional gate belongs here; an empty table with a reason reads
+// differently from a deleted one.
+const CONDITIONALLY_WRITE_GATED = {};
 
 console.log('SAIRNcode: the three server-side gates, and the posture of the '
             + 'other 27\n');
@@ -535,12 +609,31 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
        + wrongLic.code);
     // AND THE SAME THREE ON A RESOURCE THAT STILL HARD-DELETES, so the cross-app
     // property is proved on BOTH verbs rather than only on the one that changed.
-    const crossHard = await call(h, { resource: 'sc_dme', action: 'delete',
-                                      payload: { id: 'X1' },
-                                      token: token('admin', 'stonedesk') });
-    ok(crossHard.code === 403 && !crossHard.sawUpstream,
-       'a StoneDesk ADMIN session cannot delete sc_dme either -- the hard-delete '
-       + 'branch checks the app claim the same way: ' + crossHard.code);
+    //
+    // ── THE FIXTURE IS DERIVED NOW, AND IT WAS PINNED (2026-09-23) ──────────
+    // This read `resource: 'sc_dme'`, hardcoded, in a file whose whole job is
+    // that the soft-delete list is DERIVED rather than typed. sc_dme was
+    // re-tiered A, moved into SOFT_ONLY, and this arm started failing with 400
+    // -- the envelope gate correctly refusing a verb the registry no longer
+    // grants -- under a message claiming the app check had let a StoneDesk
+    // admin through. A pinned fixture inside a derived suite is the same drift
+    // one layer down, and it reported the right behaviour as a wrong one.
+    const stillHard = SC.resources.filter((r) => SOFT_ONLY.indexOf(r) === -1);
+    if (!stillHard.length) {
+      ok(false, 'COULD NOT DRIVE the hard-delete cross-app arm: every SAIRNcode '
+         + 'resource is now soft-delete-only, so there is nothing left that '
+         + 'hard-deletes. That is a real state and this arm must be RETIRED '
+         + 'deliberately rather than left passing vacuously.');
+    } else {
+      const hardFixture = stillHard[0];
+      const crossHard = await call(h, { resource: hardFixture, action: 'delete',
+                                        payload: { id: 'X1' },
+                                        token: token('admin', 'stonedesk') });
+      ok(crossHard.code === 403 && !crossHard.sawUpstream,
+         'a StoneDesk ADMIN session cannot delete ' + hardFixture + ' either -- '
+         + 'the hard-delete branch checks the app claim the same way: '
+         + crossHard.code);
+    }
   }
 
   // ── 2. sc_settings WRITE ──────────────────────────────────────────────────
@@ -613,12 +706,34 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
   // request. Nothing tested either.
   section('4. sc_auth_requests sign-off: the role, and whose name is recorded');
   {
-    const ungated = await call(h, { resource: 'sc_auth_requests', action: 'write',
-                                    payload: { id: 'A1', status: 'draft', note: 'x' } });
-    ok(ungated.code === 200 && ungated.sawUpstream,
-       'CONTROL: an ORDINARY sc_auth_requests write needs no session at all -- '
-       + 'the gate below is scoped to sign-off, and this arm proves it is not '
-       + 'simply gating the whole resource');
+    // ── THIS CONTROL ASSERTED THE OPPOSITE UNTIL 2026-09-23, AND IT WAS RIGHT
+    // ── TO. It read "an ORDINARY sc_auth_requests write needs no session at
+    // all", expecting 200 from an unauthenticated caller, and its job was to
+    // prove the sign-off gate below is SCOPED rather than gating the whole
+    // resource. sc_auth_requests was re-tiered A on 2026-09-22 and the Tier A
+    // write gate now covers it, so an unsigned write is refused 401 -- the old
+    // expectation is now a statement that the security fix did not happen.
+    //
+    // THE CONTROL'S REAL PURPOSE SURVIVES AND IS RESTATED RATHER THAN DELETED:
+    // the sign-off gate must still be NARROWER than the resource gate. So the
+    // pair below is (a) no session at all is refused 401 by the Tier A gate,
+    // and (b) a signed-in BILLER -- a role the Tier A gate allows and the
+    // sign-off gate does not -- can still do an ordinary write. If (b) ever
+    // fails, the sign-off gate has swallowed the whole resource, which is the
+    // thing this arm has always existed to catch.
+    const unsigned = await call(h, { resource: 'sc_auth_requests', action: 'write',
+                                     payload: { id: 'A1', status: 'draft', note: 'x' } });
+    ok(unsigned.code === 401 && !unsigned.sawUpstream,
+       'an ORDINARY sc_auth_requests write with NO session is refused 401 by the '
+       + 'Tier A write gate -- it was 200 until 2026-09-23, on a resource holding '
+       + "a named beneficiary's authorisation request: " + unsigned.code);
+    const ordinary = await call(h, { resource: 'sc_auth_requests', action: 'write',
+                                     payload: { id: 'A1', status: 'draft', note: 'x' },
+                                     token: token('biller') });
+    ok(ordinary.code === 200 && ordinary.sawUpstream,
+       'CONTROL: a signed-in biller CAN still do an ordinary write -- the sign-off '
+       + 'gate below is scoped to sign-off and has not swallowed the resource: '
+       + ordinary.code);
 
     for (const role of ROLES.filter((r) => r !== 'admin')) {
       const byName = await call(h, { resource: 'sc_auth_requests', action: 'write',
@@ -632,10 +747,20 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
       ok(byStatus.code === 403 && !byStatus.sawUpstream,
          '...and so is a ' + role + ' moving status to submitted');
     }
+    // AND A CALLER WITH NO SESSION -- REFUSED 401 NOW, NOT 403, AND THE CHANGE
+    // IS THE RIGHT DIRECTION. Until 2026-09-23 the sign-off gate was the only
+    // thing refusing this, so an unauthenticated caller got FORBIDDEN. The Tier
+    // A write gate now fires first and answers NO_SESSION, which is the more
+    // accurate of the two: "you are not signed in" and "your role may not do
+    // this" are different problems, and api/sd-data.js keeps them distinct on
+    // purpose. Asserted as "refused, and by the resource gate" rather than
+    // loosened to "refused somehow" -- which gate answered is the fact that
+    // would change if either were removed.
     const anon = await call(h, { resource: 'sc_auth_requests', action: 'write',
                                  payload: { id: 'A1', status: 'submitted' } });
-    ok(anon.code === 403 && !anon.sawUpstream,
-       'and so is a caller with no session at all');
+    ok(anon.code === 401 && !anon.sawUpstream,
+       'and so is a caller with no session at all -- 401 from the Tier A write '
+       + 'gate, which now fires before the sign-off gate: ' + anon.code);
 
     // THE FORGED NAME. An admin may sign off -- and the name recorded must be
     // the SESSION's employee_id, never the string the client sent.
@@ -688,9 +813,14 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // sc_auth_requests gates only the sign-off write, so a plain write to it is
     // open like the other 26 ordinary writes. Counting it as gated would report 2 of 28 when
     // the true unconditional figure is 1.
+    // Vacuously true while CONDITIONALLY_WRITE_GATED is empty, and that is the
+    // correct reading rather than a hole: sc_auth_requests left this table on
+    // 2026-09-23 because its ordinary write is now gated too. The arm stays so
+    // the next payload-conditional gate is measured the same way, and the table
+    // above says why it is empty.
     ok(Object.keys(CONDITIONALLY_WRITE_GATED).every((r) => writeOpen.indexOf(r) !== -1),
-       'and sc_auth_requests reads as OPEN to a plain write, because its gate is '
-       + 'conditional -- section 4 is where that condition is driven');
+       'every CONDITIONALLY write-gated resource reads as OPEN to a plain write -- '
+       + Object.keys(CONDITIONALLY_WRITE_GATED).length + ' such resource(s) today');
     // A gate that APPEARS must fail this as loudly as one that disappears. The
     // table is the claim; the handler is the fact; disagreement is a finding
     // either way, and reporting only one direction is how a posture drifts
@@ -702,12 +832,25 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // self-adjusting: a count derived from the handler agrees with the handler
     // by construction and could never report a gate appearing or disappearing,
     // which is the only thing this arm is for.
-    ok(writeOpen.length === 20,
-       '20 resources still accept an ordinary write with the licence key alone '
-       + '-- the 28 minus the seven Tier A ones and sc_settings, with '
-       + 'sc_auth_requests counted OPEN because its gate is conditional, which '
-       + 'is what "the rest stay as-is" means measured rather than asserted '
-       + '(got ' + writeOpen.length + ')');
+    //
+    // 20 -> 5 on 2026-09-23, AND THIS IS THE BIGGEST MOVE THIS NUMBER WILL EVER
+    // MAKE. Sixteen resources were re-tiered A over the preceding eight days and
+    // the pinned list had not followed, so all sixteen sat in THIS population --
+    // accepting a write on the licence key alone -- including a named patient
+    // joined to a diagnosis and its dollar value (sc_hcc), a named patient
+    // joined to payer and plan (sc_eligibility), and the QP status that picks
+    // between two CMS conversion factors (sc_providers).
+    //
+    // THE FIVE THAT REMAIN ARE THE FIVE THAT ARE NOT TIER A, and they are the
+    // same five that still hard-delete: sc_scrubrules, sc_encoder,
+    // sc_specialty_checks, sc_specialty_checklists, sc_pctc. So this number and
+    // the partition in arm 1 now have to agree, which is a second way to notice
+    // a drift in either.
+    ok(writeOpen.length === 5,
+       '5 resources still accept an ordinary write with the licence key alone -- '
+       + 'the 28 minus the 23 Tier A ones. They are the same five that still '
+       + 'hard-delete, so this figure and the partition in arm 1 must agree '
+       + '(got ' + writeOpen.length + ': ' + writeOpen.join(', ') + ')');
     // THE ARM THAT WAS INVERTED BY THE DECISION, and it is left visibly
     // inverted rather than deleted. It used to read "the six named Tier A
     // resources are ALL among the open ones, which is why the row is open".
@@ -739,7 +882,7 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
   // not a discovery: these accepted a write from the licence key alone until
   // the gate landed -- six of them on 2026-09-14 and the seventh, which the
   // hand-written list had missed, on 2026-09-15.
-  section('6. the SEVEN Tier A billing resources require a role to WRITE');
+  section('6. the Tier A billing resources require a role to WRITE');
   {
     // SIX -> SEVEN on 2026-09-15. The gate was a hand-written list of six and
     // the register says seven; sc_denial_events was the one missing, and a live
@@ -747,8 +890,19 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // the other six answered 401 NO_SESSION. The handler derives the list from
     // the pinned Tier A set now, so this arm is checking the DERIVATION rather
     // than a copy -- and section 1 is what pins that set to the register.
-    ok(TIER_A_GATED.length === 7,
-       'the handler gates exactly seven resources -- ' + TIER_A_GATED.join(', '));
+    //
+    // SEVEN -> TWENTY-THREE on 2026-09-23, and the COUNT IS NOT WRITTEN HERE
+    // ANY MORE. A literal number in this arm is the fourth copy of a list that
+    // already exists in three places, and it is the copy that would go stale
+    // silently -- which is exactly what happened: sixteen resources were
+    // re-tiered A over eight days, the pinned list did not follow, and section
+    // 1 went red while this arm kept agreeing with a seven that was no longer
+    // anybody's claim. The count is derived from the pin; section 1 is what
+    // makes the pin equal the register, in both directions.
+    ok(TIER_A_GATED.length === SC.tierASoftDeleteOnly.length
+       && TIER_A_GATED.length > 0,
+       'the handler gates exactly the pinned Tier A set -- '
+       + TIER_A_GATED.length + ': ' + TIER_A_GATED.join(', '));
     ok(TIER_A_GATED.indexOf('sc_denial_events') !== -1,
        'sc_denial_events is gated -- it was the seventh Tier A resource and the '
        + 'hand-written list of six left it open to the licence key alone');
@@ -857,11 +1011,34 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
                                         payload: { id: 'W1' }, token: token('coder') });
     ok(coderClaims.code === 403 && !coderClaims.sawUpstream,
        '...driven: a coder session is refused 403 on sc_claims');
+    // ── THE SPLIT SURVIVED THE TIER CHANGE, AND IT NEARLY DID NOT ──────────
+    // This read "sc_coded_items is still UNGATED" and drove a write with no
+    // token at all. sc_coded_items was re-tiered A -- the row carries a
+    // verbatim quote from a clinical note -- so on 2026-09-23 it joined the
+    // Tier A write gate and that write became a 401. Left alone, the tier
+    // change would have locked a coder out of the resource named for their own
+    // job, which is the wrong-shaped gate the sc_compliance/auditor exception
+    // already exists to avoid, and it would have pulled the floor out from
+    // under the sc_claims decision asserted immediately above.
+    //
+    // SO THE CONTROL IS RESTATED, NOT RELAXED: a session is now required (the
+    // security half of the tier change), and a CODER is still one of the roles
+    // that may write it (the split the sc_claims exclusion is argued on). Both
+    // halves are driven, because asserting only the second would pass on a
+    // branch that had stopped gating at all.
+    const coderCodedAnon = await call(h, { resource: 'sc_coded_items', action: 'write',
+                                           payload: { id: 'W1' } });
+    ok(coderCodedAnon.code === 401 && !coderCodedAnon.sawUpstream,
+       'sc_coded_items needs a session now -- it holds a verbatim quote from a '
+       + 'clinical note and took a write on the licence key alone until '
+       + '2026-09-23: ' + coderCodedAnon.code);
     const coderCoded = await call(h, { resource: 'sc_coded_items', action: 'write',
-                                       payload: { id: 'W1' } });
+                                       payload: { id: 'W1' }, token: token('coder') });
     ok(coderCoded.code === 200 && coderCoded.sawUpstream,
-       'CONTROL: sc_coded_items -- the coder\'s own resource -- is still ungated, '
-       + 'which is what makes the exclusion above a split rather than a lockout');
+       'CONTROL: and a signed-in CODER still reaches storage on sc_coded_items -- '
+       + 'their own resource. That is what makes the sc_claims exclusion above a '
+       + 'split rather than a lockout, and it is why the tier change carries a '
+       + 'per-resource role override rather than the shared admin|biller list');
 
     // 401 AND 403 ARE DIFFERENT PROBLEMS WITH DIFFERENT FIXES and collapsing
     // them sends a support call to the wrong place. Asserted rather than assumed
@@ -986,21 +1163,77 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
        'CONTROL: and so does no recorded error at all');
 
     // THE PAIRING ASSERTION. A helper nothing calls is worse than no helper:
-    // it reads as covered. Every one of the six write sites must route its
-    // failure branch through it, and the other twenty must NOT -- on those, the
-    // original sentence is still accurate.
+    // it reads as covered. Every write-gated resource must route its failure
+    // branch through a refusal-aware path, and no OTHER resource may -- on
+    // those, the original "until resolved" sentence is still accurate.
+    //
+    // ── TWO HELPERS, NOT ONE, AND THE SECOND IS THE STRONGER (2026-09-23) ───
+    // sc_settings does not call scWriteRefusalText and must not be made to.
+    // scSaveSettings() checks FORBIDDEN/NO_SESSION itself, ROLLS BACK the local
+    // write it had already made, and answers through scSettingsSaveMessage(),
+    // which separates saved / refused / stored-but-unsynced into three
+    // outcomes. That is strictly more than the helper does, and demanding one
+    // spelling would have meant replacing a better mechanism with a worse one
+    // to satisfy a test. Enumerated rather than matched loosely, so a resource
+    // still cannot opt out silently: a new helper has to be named here.
+    // The third spelling is an INLINE refusal check rather than a helper, and
+    // it is sc_settings again: scSaveSettings() tests the code itself right
+    // under the await, because it has to DECIDE WHETHER TO ROLL BACK before
+    // it can phrase anything. Its scSettingsSaveMessage() call is real but
+    // sits 2,245 characters further on, outside the window every other
+    // resource is measured in -- and widening the window for one resource
+    // would weaken the pairing for all twenty-two. The inline test is the
+    // honest in-window evidence, and the dedicated arm below drives the
+    // three-outcome message directly rather than matching text for it.
+    const REFUSAL_AWARE = ['scWriteRefusalText(', 'scSettingsSaveMessage(',
+                           "err.code === 'FORBIDDEN'"];
+    let viaHelper = 0;
     for (const resource of TIER_A_GATED) {
       const at = html.indexOf("scData('write', '" + resource + "'");
       ok(at > 0, resource + ' has a write call site in sairncode.html');
-      const window_ = html.slice(at, at + 1400);
-      ok(/scWriteRefusalText\(/.test(window_),
-         '...and its failure branch routes through scWriteRefusalText');
+      const window_ = html.slice(at, at + 1800);
+      const used = REFUSAL_AWARE.filter((h) => window_.indexOf(h) !== -1);
+      ok(used.length > 0,
+         '...and its failure branch is refusal-aware, via ' + used.join(' / '));
+      if (window_.indexOf('scWriteRefusalText(') !== -1) viaHelper += 1;
+    }
+    // THE OTHER DIRECTION, AND IT IS THE HALF THE OLD MAGIC NUMBER WAS FOR.
+    // The count used to be `TIER_A_GATED.length + 1`, which stopped being true
+    // the moment one gated resource used the other helper. Derived from what
+    // was actually measured above, so it still fails if the helper creeps onto
+    // a resource where the transient sentence remains accurate -- that call
+    // site would be outside every window counted here.
+    // ── sc_settings' THREE OUTCOMES, DRIVEN RATHER THAN GREPPED ───────────
+    // The window above proves it TESTS for a refusal. This proves it SAYS
+    // something different for each outcome, which is the property that matters:
+    // saved / refused / stored-here-only must never collapse into two, and a
+    // refusal must carry the server's own words rather than a local paraphrase.
+    {
+      const sctx = { scSettingsSaveMessage: null };
+      require('vm').createContext(sctx);
+      require('vm').runInContext(
+        grab('function scSettingsSaveMessage(res, whatSaved) {'), sctx);
+      const savedMsg = sctx.scSettingsSaveMessage({ synced: true }, 'Practice name');
+      const refusedMsg = sctx.scSettingsSaveMessage(
+        { synced: false, refused: true,
+          error: { code: 'FORBIDDEN', message: 'Only a Compliance Admin can change practice-level settings.' } },
+        'Practice name');
+      const localMsg = sctx.scSettingsSaveMessage({ synced: false, refused: false }, 'Practice name');
+      ok(savedMsg !== refusedMsg && refusedMsg !== localMsg && savedMsg !== localMsg,
+         'sc_settings tells its three outcomes apart -- saved / refused / stored '
+         + 'on this device only are three different sentences, never two');
+      ok(refusedMsg.indexOf('Only a Compliance Admin') !== -1,
+         '...and the refusal carries the SERVER\'s own words: ' + refusedMsg.slice(0, 60));
+      ok(!/until resolved|will not see it/.test(refusedMsg),
+         '...and does NOT promise the refusal resolves itself, which is the whole '
+         + 'reason this pairing exists');
     }
     const uses = (html.match(/scWriteRefusalText\(/g) || []).length;
-    ok(uses === TIER_A_GATED.length + 1,
-       'the helper is called exactly ' + TIER_A_GATED.length + ' times plus its '
-       + 'own definition -- ' + uses + '. A 7th caller would mean it crept onto '
-       + 'a resource where the original sentence is still true');
+    ok(uses === viaHelper + 1,
+       'scWriteRefusalText is called exactly once per gated write site that uses '
+       + 'it, plus its own definition -- ' + viaHelper + ' + 1 = ' + uses + '. A '
+       + 'caller outside those sites would mean it crept onto a resource where '
+       + '"until resolved" is still true');
   }
 
   console.log('\nALL ' + n + ' ASSERTIONS PASS');

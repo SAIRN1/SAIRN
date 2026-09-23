@@ -3196,15 +3196,25 @@ function scCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
             showToast('Only Compliance Admin can delete records');
             return false;
         }
-        // ── THE SEVEN TIER A RECORDS ARE HIDDEN, NOT DESTROYED (2026-09-15) ──
-        // Item 97, Michael's decision. These seven now call 'soft_delete' and
-        // the row survives with a `_deleted_at` marker, excluded from every
-        // subsequent read. The button is an unlabelled x and never SAID
-        // "permanently", so nothing on screen was false -- but a Compliance
-        // Admin removing a claim or a compliance finding needs to know the
-        // record is retained, because that is exactly the fact a retention
-        // policy or an erasure request turns on. Saying nothing would leave
-        // them to assume the ordinary meaning.
+        // ── THE TIER A RECORDS ARE HIDDEN, NOT DESTROYED (2026-09-15) ────────
+        // Item 97, Michael's decision. These call 'soft_delete' and the row
+        // survives with a `_deleted_at` marker, excluded from every subsequent
+        // read. The button is an unlabelled x and never SAID "permanently", so
+        // nothing on screen was false -- but a Compliance Admin removing a
+        // claim or a compliance finding needs to know the record is retained,
+        // because that is exactly the fact a retention policy or an erasure
+        // request turns on. Saying nothing would leave them to assume the
+        // ordinary meaning.
+        //
+        // SEVEN BECAME TWENTY-TWO ON 2026-09-23, and the count is deliberately
+        // NOT written into this sentence any more. api/_resources/sairncode.js
+        // owns the list; sixteen resources were re-tiered A between 2026-09-15
+        // and 2026-09-23 and the server list had not moved, so for eight days
+        // they were hard-deletable AND writable on the licence key alone.
+        // Fifteen remove paths moved here in the same commit -- twenty-two
+        // rather than twenty-three because sc_settings has no remove button.
+        // A number in a comment beside a list in another file is the drift this
+        // codebase has paid for more than once; the list is the source.
         function scSoftRemoveToast(what){
             showToast(what + ' hidden. The record is RETAINED on the server and '
                 + 'excluded from this view -- Tier A records are never destroyed.');
@@ -4185,8 +4195,9 @@ How to answer:
         }
         async function removeFraudAlert(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_fraud', { id: id });
+            var result = await scData('soft_delete', 'sc_fraud', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Fraud alert');
             saveFraudAlerts(getFraudAlerts().filter(function(f){return f.id!==id;}));
             renderFraud();
             renderDashboard();
@@ -4207,7 +4218,7 @@ How to answer:
             document.getElementById('frd-add-desc').value = '';
             document.getElementById('frd-add-conf').value = '';
             document.getElementById('frd-add-amount').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Fraud alert logged' : 'Fraud alert logged on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Fraud alert logged' : scWriteRefusalText('Fraud alert logged on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function renderDashboard(){
@@ -4286,8 +4297,9 @@ How to answer:
         }
         async function removeScrubEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_prebill', { id: id });
+            var result = await scData('soft_delete', 'sc_prebill', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Pre-bill scrub finding');
             saveScrubEntries(getScrubEntries().filter(function(p){return p.id!==id;}));
             renderPrebill();
         }
@@ -4308,7 +4320,7 @@ How to answer:
             document.getElementById('pb-add-error').value = '';
             document.getElementById('pb-add-value').value = '';
             document.getElementById('pb-add-time').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Scrub entry added' : 'Scrub entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Scrub entry added' : scWriteRefusalText('Scrub entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // ================================================================
@@ -4470,8 +4482,9 @@ How to answer:
         }
         async function removeHccEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_hcc', { id: id });
+            var result = await scData('soft_delete', 'sc_hcc', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('HCC entry');
             saveHccEntries(getHccEntries().filter(function(h){return h.id!==id;}));
             renderHcc();
         }
@@ -4490,7 +4503,7 @@ How to answer:
             document.getElementById('hcc-add-cat').value = '';
             document.getElementById('hcc-add-patient').value = '';
             document.getElementById('hcc-add-value').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'HCC entry added' : 'HCC entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'HCC entry added' : scWriteRefusalText('HCC entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getDrgEntries(){
@@ -4526,8 +4539,9 @@ How to answer:
         }
         async function removeDrgEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_drg', { id: id });
+            var result = await scData('soft_delete', 'sc_drg', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('DRG entry');
             saveDrgEntries(getDrgEntries().filter(function(d){return d.id!==id;}));
             renderDrg();
         }
@@ -4546,7 +4560,7 @@ How to answer:
             document.getElementById('drg-add-code').value = '';
             document.getElementById('drg-add-patient').value = '';
             document.getElementById('drg-add-payment').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DRG entry added' : 'DRG entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DRG entry added' : scWriteRefusalText('DRG entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getQueryEntries(){
@@ -4583,8 +4597,9 @@ How to answer:
         }
         async function removeQueryEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_query', { id: id });
+            var result = await scData('soft_delete', 'sc_query', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Query entry');
             saveQueryEntries(getQueryEntries().filter(function(q){return q.id!==id;}));
             renderQuery();
         }
@@ -4605,7 +4620,7 @@ How to answer:
             document.getElementById('qry-add-physician').value = '';
             document.getElementById('qry-add-type').value = '';
             document.getElementById('qry-add-value').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Query added' : 'Query added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Query added' : scWriteRefusalText('Query added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getEncoderCodes(){
@@ -4760,8 +4775,9 @@ How to answer:
         }
         async function removeRacEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_rac', { id: id });
+            var result = await scData('soft_delete', 'sc_rac', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('RAC determination');
             saveRacEntries(getRacEntries().filter(function(r){return r.id!==id;}));
             renderRac();
         }
@@ -4778,7 +4794,7 @@ How to answer:
             renderRac();
             document.getElementById('rac-add-ref').value = '';
             document.getElementById('rac-add-amount').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Audit entry added' : 'Audit entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Audit entry added' : scWriteRefusalText('Audit entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getTelehealthEntries(){
@@ -4814,8 +4830,9 @@ How to answer:
         }
         async function removeTelehealthEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_telehealth', { id: id });
+            var result = await scData('soft_delete', 'sc_telehealth', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Telehealth entry');
             saveTelehealthEntries(getTelehealthEntries().filter(function(t){return t.id!==id;}));
             renderTelehealth();
         }
@@ -4836,7 +4853,7 @@ How to answer:
             document.getElementById('th-add-pos').value = '';
             document.getElementById('th-add-mod').value = '';
             document.getElementById('th-add-value').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Telehealth entry added' : 'Telehealth entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Telehealth entry added' : scWriteRefusalText('Telehealth entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getAnesthesiaEntries(){
@@ -4914,8 +4931,9 @@ How to answer:
         }
         async function removeAnesthesiaEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_anesthesia', { id: id });
+            var result = await scData('soft_delete', 'sc_anesthesia', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Anaesthesia case');
             saveAnesthesiaEntries(getAnesthesiaEntries().filter(function(a){return a.id!==id;}));
             renderAnesthesia();
         }
@@ -4947,8 +4965,9 @@ How to answer:
         }
         async function removeAsaBaseUnit(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_anesthesia_base_units', { id: id });
+            var result = await scData('soft_delete', 'sc_anesthesia_base_units', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Base-unit reference');
             saveAsaBaseUnits(getAsaBaseUnits().filter(function(r){return r.id!==id;}));
             renderAsaBaseUnits();
         }
@@ -4965,7 +4984,7 @@ How to answer:
             document.getElementById('abu-add-cpt').value = '';
             document.getElementById('abu-add-units').value = '';
             document.getElementById('abu-add-source').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Reference added' : 'Reference added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Reference added' : scWriteRefusalText('Reference added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
         // Fires on the CPT field losing focus -- checks the practice's own
         // verified reference table and auto-fills Base Units if a real
@@ -5018,7 +5037,7 @@ How to answer:
             document.getElementById('an-add-qp').value = '';
             document.getElementById('an-add-cf').value = '';
             document.getElementById('an-base-lookup-note').textContent = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Anesthesia case added' : 'Anesthesia case added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Anesthesia case added' : scWriteRefusalText('Anesthesia case added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // ================================================================
@@ -5225,8 +5244,9 @@ How to answer:
         }
         async function removeAuthEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_auth', { id: id });
+            var result = await scData('soft_delete', 'sc_auth', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Authorization');
             saveAuthEntries(getAuthEntries().filter(function(a){return a.id!==id;}));
             renderAuth();
         }
@@ -5246,7 +5266,7 @@ How to answer:
             document.getElementById('auth-add-proc').value = '';
             document.getElementById('auth-add-exp').value = '';
             document.getElementById('auth-add-units').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Authorization added' : 'Authorization added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Authorization added' : scWriteRefusalText('Authorization added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // ================================================================
@@ -5319,12 +5339,13 @@ How to answer:
             document.getElementById('authreq-add-patient').value = '';
             document.getElementById('authreq-add-procedure').value = '';
             document.getElementById('authreq-add-submitted').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Request logged' : 'Request logged on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Request logged' : scWriteRefusalText('Request logged on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
         async function removeAuthRequestEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_auth_requests', { id: id });
+            var result = await scData('soft_delete', 'sc_auth_requests', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Authorization request');
             saveAuthRequestEntries(getAuthRequestEntries().filter(function(r){return r.id!==id;}));
             renderAuthRequests();
         }
@@ -6255,12 +6276,13 @@ How to answer:
             var synced = saved ? await scData('write', 'sc_eligibility', list[list.length - 1]) : null;
             renderEligibility();
             if (!saved) showToast('Check ran, but the history entry could not be saved locally');
-            else if (!synced) showToast('Check ran — history saved on this device only, server sync failed');
+            else if (!synced) showToast(scWriteRefusalText('Check ran — history saved on this device only, server sync failed'));
         }
         async function removeEligibilityEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_eligibility', { id: id });
+            var result = await scData('soft_delete', 'sc_eligibility', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Eligibility check');
             saveEligibilityEntries(getEligibilityEntries().filter(function(e){return e.id!==id;}));
             renderEligibility();
         }
@@ -6486,8 +6508,9 @@ How to answer:
         }
         async function removeProviderEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_providers', { id: id });
+            var result = await scData('soft_delete', 'sc_providers', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Provider record');
             saveProviderEntries(getProviderEntries().filter(function(p){return p.id!==id;}));
             renderProviders();
             renderCredentialScopes();
@@ -6512,7 +6535,7 @@ How to answer:
             document.getElementById('prov-add-license').value = '';
             document.getElementById('prov-add-qp').value = '';
             document.getElementById('prov-add-perf').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Provider added' : 'Provider added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Provider added' : scWriteRefusalText('Provider added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // Claims Management (2026-08-19 audit) -- real CRUD, same shape as
@@ -7167,7 +7190,7 @@ How to answer:
                     ? (base.review_status === 'needs_human_review'
                         ? 'Captured and flagged for human coder review'
                         : 'Captured with citation')
-                    : 'Captured on this device only -- server sync failed, will not appear on other devices until resolved'));
+                    : scWriteRefusalText('Captured on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // A real human decision, recorded with who and when. This is the
@@ -7197,8 +7220,9 @@ How to answer:
 
         async function removeCodedItem(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_coded_items', { id: id });
+            var result = await scData('soft_delete', 'sc_coded_items', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Coded item');
             saveCodedItems(getCodedItems().filter(function(r){ return r.id !== id; }));
             renderCodedItems();
         }
@@ -11433,8 +11457,9 @@ How to answer:
         }
         async function removeDmeRecord(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_dme', { id: id });
+            var result = await scData('soft_delete', 'sc_dme', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('DME record');
             saveDmeRecords(getDmeRecords().filter(function(d){return d.id!==id;}));
             renderDme();
         }
@@ -11454,7 +11479,7 @@ How to answer:
             document.getElementById('dme-add-code').value = '';
             document.getElementById('dme-add-desc').value = '';
             document.getElementById('dme-add-dos').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DME record added' : 'DME record added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'DME record added' : scWriteRefusalText('DME record added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
         function dmeBox(targetId, r, source){
             var style = (r.status === 'undetermined') ? DU_STYLE_STOP

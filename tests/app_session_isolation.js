@@ -161,7 +161,17 @@ const POSTURE = {
   // biller session to WRITE, and tests/sairncode_gates.js drives that. So this
   // row is no longer NOT DOCUMENTED: the read posture is a decision now, not
   // an omission, and the open question is narrower than it was.
-  sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on the six Tier A billing resources require admin or biller (SC_TIER_A_WRITE_ROLES in api/sd-data.js, driven by tests/sairncode_gates.js). This column measures READS only, which is why it still says NONE' },
+  //
+  // SIX BECAME TWENTY-THREE ON 2026-09-23, and the NUMBER IS GONE from the row
+  // below rather than corrected to a new literal. Sixteen sc_* resources were
+  // re-tiered A over the preceding eight days; the write gate derives from the
+  // pinned Tier A list, so all sixteen should have been covered automatically
+  // and were not, because the pin itself had not moved. They accepted a write
+  // on the licence key alone for eight days. The count now lives in exactly
+  // one place -- api/_resources/sairncode.js -- and this row names the
+  // mechanism instead of the size, because a size written here is a fifth copy
+  // and would have gone stale the same way.
+  sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on every Tier A resource require admin or biller (SC_TIER_A_WRITE_GATED, derived from the pinned list in api/_resources/sairncode.js and driven by tests/sairncode_gates.js -- the count deliberately lives there and not here). This column measures READS only, which is why it still says NONE' },
   sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
   sairnscape:      { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/scp-auth.js exists; scp_quotes and invoices are Tier A' },
   // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in

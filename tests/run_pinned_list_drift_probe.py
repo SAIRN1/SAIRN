@@ -23,6 +23,7 @@ else's work on a branch four sessions share.
 """
 import io
 import os
+import re
 import subprocess
 import sys
 
@@ -46,8 +47,35 @@ by_app, all_tier_a = d.tier_a_by_app(owner)
 check('the registry yields resources (%d)' % len(resources), len(resources) > 300, len(resources))
 check('the register yields Tier A rows (%d)' % len(all_tier_a), len(all_tier_a) > 50, len(all_tier_a))
 sc = by_app.get('sairncode', set())
-check('sairncode has SEVEN Tier A resources, which is the number the '
-      'hand-written gate got wrong', len(sc) == 7, sorted(sc))
+# ── THE SEVEN WAS PINNED HERE AND IT MOVED TO 23 ON 2026-09-23 ──────────────
+# This read `len(sc) == 7`: a LIVE count written as a literal, inside a probe
+# whose entire subject is lists that go stale. Sixteen sc_* rows were re-tiered
+# A over the following eight days and this arm went red -- correctly, and for a
+# reason that has nothing to do with what it is testing, which is whether the
+# fixtures below are being judged against real data.
+#
+# DERIVED AGAINST THE PIN INSTEAD, which is a stronger claim than any number:
+# the register's Tier A sc_* set must EQUAL api/_resources/sairncode.js's
+# pinned list. tests/sairncode_gates.js asserts that same equality from the
+# other side, so a disagreement here means the two have drifted and every
+# fixture below is being scored against a register the code does not implement.
+# Fails CLOSED if the pin cannot be read at all.
+_pinned = None
+try:
+    _src = io.open(os.path.join(REPO, 'api/_resources/sairncode.js'),
+                   encoding='utf-8').read()
+    _m = re.search(r'const SC_TIER_A_SOFT_DELETE_ONLY = \[(.*?)\];', _src, re.S)
+    _pinned = set(re.findall(r"'([a-z_]+)'", _m.group(1))) if _m else None
+except Exception as _e:                                          # noqa: BLE001
+    _pinned = None
+check('the pinned Tier A list could be read out of api/_resources/sairncode.js',
+      bool(_pinned),
+      'COULD NOT RUN: without it there is nothing to compare the register to, '
+      'and every arm below would be judged against one side only')
+check('the register and the pin name the same sairncode Tier A set (%d)' % len(sc),
+      _pinned == sc,
+      'register-only: %s / pin-only: %s'
+      % (sorted(sc - (_pinned or set())), sorted((_pinned or set()) - sc)))
 
 
 def classify_one(text, rel='api/fixture.js'):
@@ -67,8 +95,14 @@ GATE_OF_SIX = ("const SC_TIER_A_WRITE_GATED = [\n"
 cls, missing = classify_one(GATE_OF_SIX)
 check('SC_TIER_A_WRITE_GATED as it shipped is PARTIAL-TIER-A',
       cls == 'PARTIAL-TIER-A', '%s %s' % (cls, missing))
-check('...and it names sc_denial_events as the one missing',
-      missing == ['sc_denial_events'], missing)
+# AMONG the missing, not THE missing. This fixture replays the literal that
+# shipped on 2026-09-14 and is scored against TODAY's register, so the missing
+# set grows every time a row is re-tiered A -- one name on 2026-09-15,
+# seventeen on 2026-09-23. The NAME is what this arm is about; the SIZE of the
+# set is a property of the register's growth, and asserting it pinned a second
+# live count inside a historical replay.
+check('...and it names sc_denial_events among the missing (%d missing today)'
+      % len(missing), 'sc_denial_events' in missing, missing)
 
 # The probe's own copy of the same list, which survived the handler fix by a day.
 PROBE_SIX = ("    SIX = ['sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', "
@@ -76,7 +110,7 @@ PROBE_SIX = ("    SIX = ['sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', "
 cls, missing = classify_one(PROBE_SIX, 'tools/fixture_probe.py')
 check('the live probe\'s own SIX is PARTIAL-TIER-A too -- the same list, one '
       'file over, and the reason a green run covered six of seven',
-      cls == 'PARTIAL-TIER-A' and missing == ['sc_denial_events'],
+      cls == 'PARTIAL-TIER-A' and 'sc_denial_events' in missing,
       '%s %s' % (cls, missing))
 
 print('\n3. CONTROLS -- it stays quiet on the things it must not flag')

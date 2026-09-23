@@ -363,7 +363,11 @@ const MUTATIONS = [
   {
     name: 'the auditor override is deleted, so the role whose job is '
         + 'compliance cannot record a finding',
-    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n};",
+    // RE-ANCHORED 2026-09-23. The map gained a second entry -- sc_coded_items,
+    // so the tier change did not lock a coder out of their own resource -- and
+    // both arms using this anchor reported ANCHOR-0 on the next run, which is
+    // this harness doing exactly what it is for.
+    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_coded_items: ['admin', 'biller', 'coder'],\n};",
     replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {};",
   },
   {
@@ -380,8 +384,12 @@ const MUTATIONS = [
   },
   {
     name: 'coder is admitted to sc_claims -- the other decision reversed',
-    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n};",
-    replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_claims: ['admin', 'biller', 'coder'],\n};",
+    // RE-ANCHORED 2026-09-23. The map gained a second entry -- sc_coded_items,
+    // so the tier change did not lock a coder out of their own resource -- and
+    // both arms using this anchor reported ANCHOR-0 on the next run, which is
+    // this harness doing exactly what it is for.
+    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_coded_items: ['admin', 'biller', 'coder'],\n};",
+    replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_coded_items: ['admin', 'biller', 'coder'],\n  sc_claims: ['admin', 'biller', 'coder'],\n};",
   },
   {
     // ── RE-ANCHORED 2026-09-15, AND THE HARNESS IS WHAT REPORTED IT ───────
@@ -397,17 +405,26 @@ const MUTATIONS = [
     // Re-anchored onto the registry, which is where the list lives now, with
     // SINGLE-LINE anchors because api/_resources/sairncode.js is CRLF in this
     // working tree while api/sd-data.js is LF.
-    registry: true,
-    name: 'sc_coded_items is gated too, so the coder exclusion becomes a '
-        + 'lockout rather than a split',
-    find: "  'sc_denial', 'sc_denial_events', 'sc_revenue'",
-    replace: "  'sc_denial', 'sc_denial_events', 'sc_revenue', 'sc_coded_items'",
+    // ── THE SAME DEFECT, RELOCATED 2026-09-23 ──────────────────────────────
+    // This used to ADD sc_coded_items to the gated list, because the lockout
+    // risk was the resource becoming gated at all. sc_coded_items was re-tiered
+    // A and IS gated now -- correctly, it holds a verbatim clinical-note quote
+    // -- and the lockout is prevented by the per-resource role override that
+    // admits `coder`. So the mutation that recreates the defect is REMOVING
+    // that override, not adding the resource. Same lockout, one file over,
+    // and the anchor is no longer in the registry.
+    name: 'the sc_coded_items override is deleted, so the coder exclusion from '
+        + 'sc_claims becomes a lockout rather than a split',
+    find: "  sc_coded_items: ['admin', 'biller', 'coder'],\n",
+    replace: "",
   },
   {
     registry: true,
+    // RE-ANCHORED 2026-09-23: the list went from 7 names to 23 and is sorted,
+    // so its first line changed. sc_anesthesia is the dropped one now.
     name: 'one resource is quietly dropped from the gated list',
-    find: "  'sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',",
-    replace: "  'sc_claims', 'sc_compliance', 'sc_credential_scope',",
+    find: "  'sc_anesthesia', 'sc_anesthesia_base_units', 'sc_ar', 'sc_auth',",
+    replace: "  'sc_anesthesia_base_units', 'sc_ar', 'sc_auth',",
   },
   // ── THE CLIENT HALF ────────────────────────────────────────────────────────
   // A refusal the server states and the client renders as "server sync failed,

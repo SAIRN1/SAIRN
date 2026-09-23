@@ -236,8 +236,24 @@ const SC_TIER_A_WRITE_GATED = SC_TIER_A_SOFT_DELETE_ONLY;
 // about, granted silently by a one-word edit. The shared list stays the default
 // and the exception is named; a reader can see at a glance that exactly one
 // resource departs from it and why.
+//
+//   sc_coded_items -- `coder` is ADDED, 2026-09-23, and it is the SAME
+//     wrong-shaped-gate argument as sc_compliance one paragraph up. The
+//     resource is named for the coder's job, and tests/sairncode_gates.js has
+//     asserted since 2026-09-14 that sc_coded_items stays open to a coder --
+//     that is the half that makes excluding `coder` from sc_claims a SPLIT
+//     rather than a lockout, and the sc_claims decision is argued on it.
+//
+//     THE TIER A GATE STILL APPLIES AND THAT IS THE POINT: sc_coded_items was
+//     re-tiered A because the row carries a VERBATIM QUOTE FROM A CLINICAL
+//     NOTE, so it now needs a real employee session where it used to accept
+//     the licence key alone. What this override changes is WHICH signed-in
+//     roles may write it, not whether a session is required. Without it the
+//     tier change would silently have locked coders out of their own panel,
+//     which is a product decision nobody made.
 const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {
   sc_compliance: ['admin', 'biller', 'auditor'],
+  sc_coded_items: ['admin', 'biller', 'coder'],
 };
 function scTierAWriteRoles(resource) {
   return SC_TIER_A_WRITE_ROLES_BY_RESOURCE[resource] || SC_TIER_A_WRITE_ROLES;
