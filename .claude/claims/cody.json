@@ -2049,6 +2049,19 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "cody-1790186339",
+      "session": "cody",
+      "subject": "probe-row-problems",
+      "task": "derive the row problem labels from the checker source instead of hand-typing five FILES: tests/run_two_axis_tier_parser_probe.py",
+      "claimed_at": "2026-09-23T17:58:59Z",
+      "claimed_at_epoch": 1790186339.1131275,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_two_axis_tier_parser_probe.py"
+      ]
     }
   ],
   "refusals": [
