@@ -2057,8 +2057,8 @@
       "task": "derive the row problem labels from the checker source instead of hand-typing five FILES: tests/run_two_axis_tier_parser_probe.py",
       "claimed_at": "2026-09-23T17:58:59Z",
       "claimed_at_epoch": 1790186339.1131275,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T18:03:01Z",
       "files": [
         "tests/run_two_axis_tier_parser_probe.py"
       ]
