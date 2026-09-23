@@ -2544,6 +2544,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-23T19:37:00Z",
+      "resources": [
+        "law_clients",
+        "law_deadlines",
+        "law_matters",
+        "law_trusttx"
+      ],
+      "files": [
+        "tests/app_session_isolation_probe.py"
+      ],
+      "what": "Guarded the last two unguarded sabotage controls, repaired three dead anchors the new guard immediately exposed, and fixed the blind spot in tools/sabotage_control_check.py that made the better-written probe invisible. 039bf2b7. Touches law_trusttx, law_matters, law_deadlines and law_clients only through tests/app_session_isolation_probe.py's MUTATION TABLE -- no app or API source changed.\n\nATTACK THESE FIVE:\n(1) THE THREE REPAIRED ANCHORS ARE THE RISK, because a repaired anchor is a NEW claim about what the mutation means. Mutation 1 now deletes the SD_SESSION_GATED ENTRY LINE rather than matching law_trusttx as the map's last element; mutation 5 removes law_trusttx from a four-element PHASE_2_GATED rather than emptying a one-element one; mutation 6 deletes SD_GATE_APP's law_trusttx line rather than emptying the whole map. Each is narrower than what it replaced. Check each still expresses the defect its prose describes, and not a weaker neighbour.\n(2) I PROVED PRESENT-UNIQUE-AND-CHANGING, NOT CAUGHT. All nine anchors match exactly once and produce a file that differs -- measured. NONE of them was proven to make the suite go red, because tests/app_session_isolation.js is RED at HEAD on an unrelated sairnvet posture mismatch, so the probe stops at its own baseline arm. That is the honest limit of this commit and it is the thing most likely to hide a wrong repair.\n(3) THE TOOL FIX CHANGES A CRITERIA VERSION AND THEREFORE EVERY NUMBER DOWNSTREAM. logical_lines() now blanks string literals before counting brackets. Population 76 -> 80, none dropped, blind lock 28/28. Re-run it rather than taking those figures, and check the four newly-visible probes were genuinely invisible before rather than newly matched for a bad reason.\n(4) THE cannot() SPELLING WAS CHOSEN PARTLY BECAUSE THE DETECTOR RECOGNISES IT, and that is worth being suspicious of. Judge the guards as guards: does app_session_isolation_probe.py really refuse on a missing anchor, and does install_git_hooks_check_probe.py really refuse on a no-op CRLF mutation? A guard written to be SEEN is the failure mode this whole tool exists to catch, one level up.\n(5) tests/rebase_resolve_merge_control.py is now visible and UNGUARDED. It is the control on tools/sairn_rebase_resolve.py, which every clone uses to merge docs/tier-a-reviews.json -- including this obligation. Not mine to fix; flagged so it does not sit.\n\nFILES: tests/app_session_isolation_probe.py tests/install_git_hooks_check_probe.py tools/sabotage_control_check.py",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T19:37:00Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
