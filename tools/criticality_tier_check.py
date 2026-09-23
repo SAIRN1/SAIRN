@@ -28,11 +28,15 @@ reach is worse than none:
 
   IT CAN SEE    an app with no rollup line; a re-tiered app whose rows and
                 registry disagree in either direction; a rollup count that does
-                not match the rows under it; a tier outside A/B/C; a Tier A row
-                with no evidence; resource rows under an app that claims not to
-                be re-tiered yet; and -- on a row that has MIGRATED to the
-                two-axis shape -- a sentence still asserting that an
-                access control gate exists (§2.3).
+                not match the rows under it; **a rollup LIST that does not match
+                the Tier A rows under it, in BOTH directions** (2026-09-23 --
+                the count half had been guarded since this file was written and
+                the list half never was, and a sweep found the list drifted in
+                six of sixteen apps while every count was correct); a tier
+                outside A/B/C; a Tier A row with no evidence; resource rows
+                under an app that claims not to be re-tiered yet; and -- on a
+                row that has MIGRATED to the two-axis shape -- a sentence still
+                asserting that an access control gate exists (§2.3).
 
   IT CANNOT SEE whether a tier is RIGHT. Nothing mechanical can. That is what
                 the evidence column is for. It also cannot see whether the gate
@@ -422,6 +426,52 @@ def main(argv):
                     problems.append('COUNT        %s rollup says %s=%s, the rows say %s. '
                                     'A summary that disagrees with its own detail is worse '
                                     'than no summary.' % (app, label, want, got))
+            # ── THE ROLLUP LIST (2026-09-23) ──────────────────────────────
+            # The COUNT half of this row has been guarded since this file was
+            # written. THE LIST HALF NEVER WAS, and the header below did not
+            # claim it either -- which was honest and is now out of date.
+            #
+            # MEASURED before this was added: the list had drifted in SIX of
+            # sixteen apps while EVERY COUNT WAS CORRECT. That is the opposite
+            # way round from the obvious guess, and the reason is mechanical
+            # rather than about care: a count is one integer that a checker
+            # re-derives and refuses, so it stayed right; a list is prose that
+            # nothing read, so it rotted. The guarded half was fine and the
+            # unguarded half was not, which is the whole argument for guarding
+            # this one too.
+            #
+            # SCOPE, STATED SO IT IS NOT OVERREAD: only backticked names that
+            # are REGISTERED RESOURCES OF THIS APP are judged. A rollup cell may
+            # legitimately name a file, another app's resource, or a plain-words
+            # description, and this refuses to guess about any of those. So a
+            # rollup that DESCRIBES its resources instead of naming them is not
+            # flagged -- it is simply unverifiable, which is its own problem and
+            # not one a set comparison can state.
+            listed = {n for n in re.findall(r'`([\w.-]+)`', rollup[app]['status'])
+                      if n in names}
+            a_rows = {n for n in present if by_name[n][1] == 'A'}
+            for n in sorted(a_rows - listed):
+                problems.append('LIST MISSING %s/%s is Tier A and is not named in the '
+                                'rollup list. Whatever promoted it updated the COUNT and '
+                                'not the sentence -- which is how a summary stops being '
+                                'readable while still adding up.' % (app, n))
+            # ── ONLY NAMES THAT HAVE A ROW, and the reason is a real crash ──
+            # The first version of this iterated `listed - a_rows` and read
+            # `by_name[n]`. Delete a resource row and that name is still in the
+            # rollup list with no row behind it -- KeyError, traceback, exit 1,
+            # and the NO TIER problem that was the actual finding never printed.
+            # `run_criticality_tier_probe.py` arm 2 caught it on the first run:
+            # the arm went red about the marker while the tool was dying. A
+            # checker that CRASHES on a register it is meant to describe fails
+            # in the one way it must not -- loudly about the wrong thing.
+            #
+            # A listed name with no row is ALREADY reported, as NO TIER above.
+            # Saying it twice in two vocabularies would make one defect look
+            # like two.
+            for n in sorted((listed & present) - a_rows):
+                problems.append('LIST STALE   %s/%s is named in the rollup list and is '
+                                'Tier %s. Being in that list IS a claim the row is A.'
+                                % (app, n, by_name[n][1]))
         else:
             for n in sorted(present):
                 problems.append('HALF DONE    %s/%s has a resource row while the rollup '

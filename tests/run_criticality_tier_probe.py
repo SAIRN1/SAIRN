@@ -237,6 +237,63 @@ try:
     mutate(ORIGINAL.replace(cash + '\n', '', 1),
            'an app with a registry and NO ROLLUP LINE is refused', 'NO ROLLUP')
 
+    # ── ARMS 9 AND 10: THE ROLLUP LIST, BOTH DIRECTIONS (added 2026-09-23) ──
+    # The list half of a rollup row was unguarded from the day this file was
+    # written until today, and a sweep found it drifted in SIX of sixteen apps
+    # while every COUNT was correct. These two arms exist so that cannot go
+    # unnoticed again -- and they are PAIRED deliberately, because a check that
+    # only catches a forgotten name would pass a list that names a row which is
+    # no longer A, which is the direction that makes a reader confidently wrong.
+    #
+    # BOTH ANCHORS ARE DERIVED FROM THE FIXTURE. This file records four
+    # anchor-staleness incidents in one day, two of them in this file, so the
+    # names below are read out of the stonedesk rollup rather than typed.
+    _listed = re.findall(r'`([a-z_0-9]+)`', roll.split('**RE-TIERED**')[-1])
+    assert len(_listed) >= 2, (
+        'fixture invalid: the stonedesk rollup names %d resources and these arms '
+        'need at least 2. If that cell went back to describing its resources in '
+        'plain words instead of naming them, these arms are not testing what they '
+        'say -- and neither is the checker.' % len(_listed))
+
+    # ARM 9 -- a Tier A row the list forgot.
+    #
+    # THE NAME MUST OCCUR EXACTLY ONCE IN THE CELL, and the first version of
+    # this arm did not check that. It dropped `exec_context`, which the cell's
+    # trailing note names a SECOND time in prose, so the set the checker builds
+    # still contained it, the register still passed, and the arm reported FAIL
+    # about the checker when the fault was its own anchor. Caught on the first
+    # run. Same family as the four anchor-staleness incidents this file records
+    # -- a probe that mutates a name appearing twice is measuring nothing.
+    _once = [n for n in _listed if roll.count('`%s`' % n) == 1]
+    assert _once, (
+        'fixture invalid: every resource named in the stonedesk rollup appears '
+        'more than once in that cell, so dropping any one of them leaves the '
+        'name present and this arm would assert against an unchanged set')
+    _drop = _once[0]
+    _rolled9 = roll.replace('`%s`, ' % _drop, '', 1)
+    assert _rolled9 != roll, 'the list mutation did not land for `%s`' % _drop
+    assert '`%s`' % _drop not in _rolled9, (
+        '`%s` survived the drop, so the arm is not testing a missing name' % _drop)
+    mutate(ORIGINAL.replace(roll, _rolled9, 1),
+           'a Tier A row MISSING from the rollup list is refused (dropped `%s`)' % _drop,
+           'LIST MISSING')
+
+    # ARM 10 -- a name in the list that is no longer Tier A. The planted name is
+    # read out of the RESOURCE ROWS, so it is a real B row of this app rather
+    # than an invented string the checker would ignore as prose.
+    _b = [l for l in ORIGINAL.split('\n')
+          if re.match(r'^\| `(sd_|stonedesk_|exec_|style_|jobs|locations|memory|slabs)[a-z_0-9]*` \| \*\*B\*\* \|', l)]
+    assert _b, ('fixture invalid: no Tier B stonedesk row found to plant, so arm 10 '
+                'would be asserting against nothing')
+    _plant = re.match(r'^\| `([a-z_0-9]+)`', _b[0]).group(1)
+    assert _plant not in _listed, (
+        'fixture invalid: %r is already in the rollup list, so planting it would '
+        'change nothing' % _plant)
+    mutate(ORIGINAL.replace(roll, roll.replace('**RE-TIERED**',
+                                               '**RE-TIERED** `%s`,' % _plant, 1), 1),
+           'a rollup list naming a row that is NOT Tier A is refused (planted `%s`)' % _plant,
+           'LIST STALE')
+
     check('the register was restored byte for byte after every arm',
           io.open(DOC, encoding='utf-8', newline='').read() == ORIGINAL)
 finally:
