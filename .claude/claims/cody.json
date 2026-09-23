@@ -1954,6 +1954,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cody-1790167074",
+      "session": "cody",
+      "subject": "route-sc-tiers",
+      "task": "route sc_providers and sc_fraud finished arguments to fourth in the open work index FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T12:37:54Z",
+      "claimed_at_epoch": 1790167074.7898788,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ],
   "refusals": [
