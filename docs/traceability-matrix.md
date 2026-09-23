@@ -465,6 +465,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Independent review of `569b2689` (CC's write-failure voice fix) found four things: a raw browser exception could REPLACE the sentence saying nothing was saved, the ledger dropped rows on an UNREACHABLE server, `submitCompleteVisit()` announced success when the appointment write failed, and the suite had two holes | **CLOSED 2026-09-08 (CC)** &mdash; all four fixed, and running the mutation probe found a fifth and a sixth that reading had not | `tests/sairndental_write_failure_probe.py` |
 | ~~`dnt_settings` is a whole-record PUT, so two workstations saving inside one round trip still end last-write-wins~~ | **CLOSED 2026-09-04 (CC) on Michael's decision** — switched to PATCH, and the race is proven closed rather than argued closed | `api/sd-data-dental-settings-patch.test.js`, `tests/suite_control_backfill_probe.py` |
 
+### sairndesign
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| **&#128308; ALL 18 SAIRNdesign resources are authorised by the LICENCE KEY ALONE &mdash; `SDN_RESOURCES` verifies NO SESSION on either leg, and FIVE of them are now Tier A** | **FOUND 2026-09-23 (Hank) while adding `sdn_pos`&rsquo;s isolation arms, NOT FIXED.** Found because the arm that attacks the SIGNATURE could not be written: there is no signature. Identical shape to t | `api/sd-data-bespoke-branch-isolation.test.js` |
+
 ### sairnfreedom
 
 | Requirement | Status | Proved by |
@@ -631,8 +637,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 308 |
-| `declared` | 262 |
-| `declared+index` | 44 |
+| `declared` | 261 |
+| `declared+index` | 45 |
 | `GUARD_TESTS+index` | 5 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -752,7 +758,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 706   tests/**, api/** (both walked)
-  open-work rows citing a test       345   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       346   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

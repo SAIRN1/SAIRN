@@ -5,7 +5,7 @@
 //   B's rows.
 //
 // CROSS-TENANT-ISOLATION: dnt_appointments, law_matters, rf_draws,
-//   rf_proposals, rf_supplier_documents
+//   rf_proposals, rf_supplier_documents, sdn_pos
 //
 // Run:  node api/sd-data-bespoke-branch-isolation.test.js
 //
@@ -38,6 +38,18 @@
 //   conflict-key shape   dnt_appointments, law_matters, rf_draws
 //   body-field shape     rf_proposals, rf_supplier_documents
 //
+// ── AND ONE PASSENGER, WHICH IS SAID RATHER THAN QUIETLY FILED ───────────
+// sdn_pos IS NOT A BESPOKE BRANCH. It is an ordinary SDN_RESOURCES member and
+// its arms belong in api/sd-data-cross-tenant-dispatchers.test.js beside its
+// siblings. It is here for one reason: it was promoted B -> A in the same
+// session as these eight, that promotion put it straight into the isolation
+// NONE bucket, and the dispatcher suite was under another session's active
+// claim. A session that promotes a row and reports the resulting gap as a
+// finding has made the platform worse and called it work -- so the arm lands
+// here, with the misfiling named, and MOVES to the dispatcher suite when that
+// claim clears. Do not read its presence in this file as a claim about its
+// shape.
+//
 // ── WHAT THIS DOES NOT DO ─────────────────────────────────────────────────
 // It does not test the DATABASE, and it does not test the ROLE gates on these
 // branches. `owner` is used throughout so no role rule can narrow an answer
@@ -58,13 +70,19 @@ const HASH_B = 'tenant-B-hash';
 
 // The resources this suite drives, in the shape
 // tools/cross_tenant_isolation_scope.py cross-checks a declaration against.
-// [resource, table-id column, app, role, other-app-for-the-collision-arm]
+// [resource, table-id column, app, role, other-app-for-the-collision-arm,
+//  gated?]  -- `gated: false` means the branch verifies NO SESSION AT ALL, so
+//  there is no signature for the [S] arms to attack. It is DECLARED per
+//  resource rather than inferred from a failing arm, because an absent gate
+//  that a suite quietly skips looks identical to one it forgot.
 const UNITS = [
   ['dnt_appointments', 'appointment_id', 'sairndental', 'owner', 'sairnvet'],
   ['law_matters', 'matter_id', 'sairnlaw', 'owner', 'sairnbiz'],
   ['rf_draws', 'draw_id', 'sairnroofing', 'owner', 'sairnbuild'],
   ['rf_proposals', 'proposal_id', 'sairnroofing', 'owner', 'sairnbuild'],
-  ['rf_supplier_documents', 'document_id', 'sairnroofing', 'owner', 'sairnbuild']
+  ['rf_supplier_documents', 'document_id', 'sairnroofing', 'owner', 'sairnbuild'],
+  // The passenger -- see the header. A plain SDN_RESOURCES member.
+  ['sdn_pos', 'po_id', 'sairndesign', 'owner', 'sairnbuild', false]
 ];
 
 let pass = 0, fail = 0;
@@ -205,7 +223,8 @@ const READ = {
   law_matters: { payload: {} },
   rf_draws: { payload: {} },
   rf_proposals: { payload: { job_id: 'J-1' } },
-  rf_supplier_documents: { payload: {} }
+  rf_supplier_documents: { payload: {} },
+  sdn_pos: { payload: {} }
 };
 function seed(resource, licHash, id, tenant) {
   const base = { license_hash: licHash, data: { tenant: tenant } };
@@ -214,6 +233,9 @@ function seed(resource, licHash, id, tenant) {
   }
   if (resource === 'law_matters') {
     return Object.assign(base, { matter_id: id });
+  }
+  if (resource === 'sdn_pos') {
+    return Object.assign(base, { po_id: id });
   }
   if (resource === 'rf_draws') {
     return Object.assign(base, { draw_id: id, job_id: 'J-1', draw_no: 1,
@@ -254,7 +276,8 @@ const MARKER = {
   // select list.
   rf_draws: function (x) { return x && x.data && x.data.tenant; },
   rf_proposals: function (x) { return x && x.tenant; },
-  rf_supplier_documents: function (x) { return x && x.supplier_ref; }
+  rf_supplier_documents: function (x) { return x && x.supplier_ref; },
+  sdn_pos: function (x) { return x && x.tenant; }
 };
 function markers(res, resource) {
   const of = MARKER[resource];
@@ -279,7 +302,9 @@ const WRITE = {
                            po_number: 'PO-1', supplier: 'A Supplier',
                            doc_date: '2026-09-01',
                            lines: [{ item_code: 'X', description: 'A line',
-                                     qty: 1, unit_price: 10 }] }
+                                     qty: 1, unit_price: 10 }] },
+  sdn_pos: { id: 'PO-B', po_number: 'PO-000001', project_id: 'PJ-1',
+             vendor: 'A Vendor', item_ids: ['S-1'], total_cost: 100 }
 };
 // Which of the two write shapes each resource has. Stated per resource rather
 // than sniffed from the response, so a branch that CHANGES shape breaks this
@@ -287,7 +312,8 @@ const WRITE = {
 const CONFLICT_KEY = {
   dnt_appointments: 'on_conflict=license_hash,appointment_id',
   law_matters: 'on_conflict=license_hash,matter_id',
-  rf_draws: 'on_conflict=license_hash,draw_id'
+  rf_draws: 'on_conflict=license_hash,draw_id',
+  sdn_pos: 'on_conflict=license_hash,po_id'
 };
 
 (async function () {
@@ -373,6 +399,19 @@ const CONFLICT_KEY = {
           'a license_hash INSIDE the payload reached the stored row');
       });
 
+    if (unit[5] === false) {
+      console.log('  --   ' + resource + ' [S] NOT COVERED, AND THE REASON IS A '
+        + 'FINDING: the ' + app + ' dispatcher verifies NO SESSION AT ALL. There '
+        + 'is no signature for these arms to attack, because the LICENCE KEY -- '
+        + 'shipped to the browser and readable by anyone who can open the page -- '
+        + 'is the whole authorisation for every resource in that map, including '
+        + 'the five now at Tier A. THE TENANT BOUNDARY STILL HOLDS and the [L] '
+        + 'and [W] arms above assert it: the hash is derived from the key, so one '
+        + "studio's key cannot read another's rows. What is absent is identity "
+        + 'WITHIN a studio, which is a different question and is filed as open '
+        + 'work rather than asserted here.');
+      continue;
+    }
     await test(resource + ' [S] tenant B\'s token against tenant A\'s licence is '
       + 'refused', async () => {
         const calls = [];
