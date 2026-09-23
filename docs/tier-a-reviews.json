@@ -2564,6 +2564,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-23T19:58:58Z",
+      "resources": [
+        "grd_invoices",
+        "law_invoices",
+        "rf_proposals"
+      ],
+      "files": [
+        "tests/run_sync_write_result_probe.py",
+        "tools/sync_write_result_check.py"
+      ],
+      "what": "NEW CHECKER tools/sync_write_result_check.py plus tests/run_sync_write_result_probe.py: find server writes whose result is thrown away. Audit 284 consumed, 1 discarded, 6 benign sink, 3 unreadable across twelve apps; the one discard is deliberate and documented in sairngrounds. The resource names that tripped the push gate sit in FIXTURES and COMMENTS, not in code serving them. ATTACK (1) the tool was WRONG FOUR TIMES before it was clean -- 242, 12, 3 and 3 false positives, all from reading a LINE where the codebase writes a CONSTRUCT. Look for a FIFTH class rather than trusting four is the end. (2) continues_open_construct() looks back at most 3 non-blank lines and treats a trailing open bracket, paren, comma or operator as consuming -- decide whether that can mark a genuinely bare write as READ, the fail-open direction. (3) BENIGN_RESOURCES suppresses shared_knowledge from the finding count: confirm it is counted and printed rather than hidden, and that no other resource can be smuggled in by the same substring match. (4) call_tail() gives up after 40 lines and reports UNREADABLE -- confirm that third state is never folded into a pass.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T19:58:58Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
