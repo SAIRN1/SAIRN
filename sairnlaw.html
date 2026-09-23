@@ -2834,10 +2834,33 @@ function rDash(){
       else if(d.negative_clients&&d.negative_clients.length)paint([{t:'A client trust ledger is NEGATIVE -- see Trust Accounting',b:'Trust Alert',c:'br'}]);
       return;
     }
-    // A role that cannot run the check is not told about a control that is
-    // not theirs. Any OTHER failure is surfaced, because "we could not check
-    // the trust account" is exactly the thing a silent dashboard hides.
-    if(!v.forbidden)paint([{t:'Trust reconciliation could not be run, so the trust balances are unverified',b:'Not verified',c:'bw'}]);
+    // ── SILENCE MEANT TWO THINGS AND ONLY ONE OF THEM WAS INTENDED ────────
+    // This branch used to read `if(!v.forbidden)paint(...)` on the reasoning
+    // that a role which cannot run the check is not told about a control that
+    // is not theirs. That is right about the RESULT and wrong about the
+    // SILENCE, and the review that opened this (cody's 2026-09-22T13:48:31Z
+    // obligation, discharged 2026-09-23) named why:
+    //
+    //   For a non-owner, an empty trust row on this dashboard could mean
+    //   "the reconciliation ran and agreed" or "this control is not yours",
+    //   and NOTHING on the dashboard distinguished them. The Trust panel says
+    //   the honest sentence -- but the dashboard is the surface people scan
+    //   and the panel is the one they open deliberately, so a role that never
+    //   opens the Trust tab never met it.
+    //
+    // THE FIX IS A LINE, NOT A FIGURE, and the distinction is the whole point:
+    // it discloses the STATE OF THE CONTROL and no balance, no leg, no verdict
+    // and no discrepancy -- there is nothing to disclose, because nothing was
+    // computed. So it leaks nothing an owner-only endpoint was protecting, and
+    // it cannot be read as an alarm about the account.
+    //
+    // NOT THE SAME BADGE AS A FAILURE, deliberately. A failure says the
+    // balances are UNVERIFIED, which is a problem somebody should act on. This
+    // says the check is somebody else's, which is not. Same neutral colour,
+    // different sentence, and neither is 'Trust Alert'.
+    paint([v.forbidden
+      ? {t:'Trust reconciliation is run on the server for the firm owner and is not visible to your role',b:'Not your control',c:'bw'}
+      : {t:'Trust reconciliation could not be run, so the trust balances are unverified',b:'Not verified',c:'bw'}]);
   });
 
   var upcoming=dl.filter(function(d){return d.status==='Pending';}).slice().sort(function(a,b){return (a.due_date||'').localeCompare(b.due_date||'');}).slice(0,5);
