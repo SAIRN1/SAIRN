@@ -40,7 +40,7 @@
 //   bld_inspections, bld_toolbox_talks, bld_warranty,
 //   sc_drg, sc_eligibility, sf_service_appointments,
 //   rf_bonding, rf_job_hazard_assessments, rf_locations, rf_roof_sections,
-//   rf_warranty_tiers, subcontractors
+//   rf_warranty_tiers, subcontractors, dnt_settings, sc_settings
 //
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.
@@ -325,7 +325,12 @@ const UNITS = [
       { cdt_code: 'D1110', description: 'Prophylaxis, adult' }],
     ['dnt_recall_outreach', 'outreach_id',
       { procedure_type_id: 'PT-1', patient_id: 'P-1', on: '2026-09-01',
-        channel: 'phone', outcome: 'booked' }]] },
+        channel: 'phone', outcome: 'booked' }],
+    // Promoted C -> A on 2026-09-23 by another session's tier pass: the row
+    // carries `booking_slug`, the tenant key an unauthenticated public
+    // booking and complaint surface resolves by. The upsert key is
+    // `settings_id`, not `id` -- the payload's `id` is stringified into it.
+    ['dnt_settings', 'settings_id']] },
   { map: 'SV_RESOURCES', app: 'sairnvet', role: 'owner', members: [
     ['sv_coggins', 'coggins_id'], ['sv_dental', 'dental_id'],
     ['sv_imaging', 'imaging_id'], ['sv_labresults', 'labresult_id'],
@@ -388,7 +393,12 @@ const UNITS = [
     // Promoted B -> A on 2026-09-23 by another session's tier pass. Added the
     // same day rather than left in the NONE bucket -- see the BLD note below
     // for why a promotion and its arm belong together.
-    ['sc_drg', 'entry_id'], ['sc_eligibility', 'entry_id']] },
+    ['sc_drg', 'entry_id'], ['sc_eligibility', 'entry_id'],
+    // sc_settings is a member of the same map with EXTRA gates on the write
+    // side only -- admin-only, plus a retention floor. Neither narrows the
+    // READ, so the arms below drive it exactly like its siblings and the
+    // unit's existing `admin` role is what gets past the write gate.
+    ['sc_settings', 'entry_id']] },
   // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
   // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
   // what an absent UNIT looks like from the coverage side: not one resource
