@@ -2229,8 +2229,8 @@
       "task": "reconcile the sairnvet posture record in app_session_isolation with the live gate FILES: tests/app_session_isolation.js",
       "claimed_at": "2026-09-23T23:28:12Z",
       "claimed_at_epoch": 1790206092.5713105,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T23:32:36Z",
       "files": [
         "tests/app_session_isolation.js"
       ]
