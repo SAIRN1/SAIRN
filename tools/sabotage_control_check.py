@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-16.2'
+CRITERIA_VERSION = '2026-09-23.1'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -187,8 +187,36 @@ GUARDS = (
     #
     # And the refusal must follow within one line: `if x not in y: continue` is
     # control flow, and the second negative fixture holds that line.
+    # ── `cannot(` IS A REFUSAL VERB TOO, ADDED 2026-09-23, AND IT IS THE
+    # ── FIFTH TIME THIS TOOL HAS UNDER-CREDITED A WELL-WRITTEN CONTROL ────
+    # The REVIEW-PROBE family -- five files -- reports a could-not-drive
+    # through a local `cannot(n, why)` helper rather than by raising, because
+    # these probes answer a numbered press-on and have to say WHICH one could
+    # not be driven while still running the others. That is a better refusal
+    # than `raise`, not a worse one: it names the arm, keeps the exit code
+    # separate from a finding, and lets the remaining arms report.
+    #
+    # tests/cross_tenant_grader_declaration_review_probe.py carries BOTH
+    # halves of the guard in that spelling --
+    #
+    #     if target not in real:
+    #         cannot(2, 'the loop line ... was reworded; this arm has no
+    #                    target and is NOT reporting agreement it did not
+    #                    check')
+    #     if neutered == real:
+    #         cannot(2, 'the mutation did not land')
+    #
+    # -- and was reported UNGUARDED. The vocabulary was the only thing
+    # missing, which is the same inverted signal this file's own comments
+    # record four times above: a detector that knows one spelling reports
+    # every other spelling as ABSENT, and absent reads as unguarded.
+    #
+    # NOTHING ELSE IS WIDENED. The structural narrowing is untouched -- both
+    # operands still have to be bare identifiers, so `if 'x' not in
+    # os.environ: cannot(...)` is still a config check and still refused by
+    # the negative fixture that already holds that shape.
     re.compile(r"\b[A-Za-z_]\w*\s+not\s+in\s+[A-Za-z_]\w*\s*:\s*\n?"
-               r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\()", re.I),
+               r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\(|cannot\()", re.I),
 )
 
 
@@ -341,6 +369,14 @@ FIXTURES = [
      'reported',
      "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n"
      "hits = out.count('FINDING')\nassert hits == 1\n", False),
+    ('the review-probe family refuses through cannot() rather than raise, '
+     'and that is a guard',
+     "src = open(p).read()\nif old not in src:\n    cannot(2, 'no target')\n"
+     "    return\nopen(p,'w').write(src.replace(old,new,1))\n", True),
+    ('NEGATIVE: cannot() on a CONFIG value guards no sabotage -- the string '
+     'literal and the dotted attribute are what separate them, not the verb',
+     "if 'KEY' not in os.environ:\n    cannot(9, 'unconfigured')\n    return\n"
+     "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n", False),
     ('CONTROL: a probe that writes a FRESH fixture is not judged at all',
      "open(p,'w').write('| A | B |\\n')\n", None),
     ('CONTROL: a probe that only reads is not judged',
