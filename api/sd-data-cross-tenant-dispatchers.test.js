@@ -55,10 +55,15 @@
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.
 // All three re-project their rows into a FIXED shape before responding, so
-// the `owner` probe the [L] arm above reads back does not survive the
-// response and no fixture here can make it. Same reason bld_tna and
-// exec_context have their own files. Declaring them here would have been a
-// claim this file's own table cannot back -- which the tool checks.
+// the id the [L] arm reads back does not survive the response and no fixture
+// here can make it. Same reason bld_tna and exec_context have their own files.
+// (Until 2026-09-23 this said the `owner` probe, which was the weaker of the
+// two reasons: `owner` was in no branch's select list AT ALL, so the arms only
+// ever saw it because the mock ignored `select=`. The id is the column that
+// genuinely does survive everywhere except a fixed projection, which is what
+// makes these three, and only these three, unrepresentable here.) Declaring
+// them here would have been a claim this file's own table cannot back --
+// which the tool checks.
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -162,6 +167,25 @@ function mockRes() {
 // everything is `eqs` empty, which is the no-filter case the negative control
 // at the bottom asserts. No query shape makes it return FEWER rows.
 //
+// ── THAT PARAGRAPH WAS TRUE ABOUT ROWS AND FALSE ABOUT COLUMNS (2026-09-23) ─
+// It is stated over ROWS, and for rows it holds. `select=` is a SECOND axis and
+// it ran the other way: the mock used to ignore `select=` entirely and hand the
+// handler every column the fixture carried, which does not return more ROWS --
+// it makes a content assertion PASS that PostgREST would have failed.
+//
+// FOUND ON rf_entities. Its branch answers with the ROW rather than row.data,
+// so the shared fixture carries `owner` at the top level too -- but the handler
+// selects ENT_SELECT (api/sd-data.js:8093), and `owner` IS NOT IN IT. Against
+// real PostgREST that read comes back {entity_id, data} and the arm's
+// `owners` is [null]. The arm was green on a column production never returns.
+//
+// SO THE MOCK NOW PROJECTS, and `the mock honours select=` at the bottom is the
+// negative control on that -- the same arm api/sd-data-sen-settings-isolation
+// .test.js already carried, which is the half of this the platform had and this
+// file did not. A column absent from the fixture is simply absent from the
+// projection rather than null-filled: the probe then vanishes and the arm fails
+// LOUDLY, which is the direction this comment is about.
+//
 // AND EVERY ARM ASSERTS A'S ROW IS PRESENT, not only that B's is absent:
 // `String(r[col]) === value` means a filter on a column the fixtures do not
 // carry matches nothing and yields [], which an absence-only assertion would
@@ -172,9 +196,12 @@ function postgrestMock(rows, calls) {
     calls.push({ url: u, opts: opts || null });
     const q = u.indexOf('?') >= 0 ? u.slice(u.indexOf('?') + 1) : '';
     const eqs = [];
+    let select = null;
     q.split('&').forEach(function (part) {
       const m = part.match(/^([a-z0-9_]+)=eq\.(.*)$/);
-      if (m) eqs.push([m[1], decodeURIComponent(m[2])]);
+      if (m) { eqs.push([m[1], decodeURIComponent(m[2])]); return; }
+      const s = part.match(/^select=(.*)$/);
+      if (s) select = decodeURIComponent(s[1]).split(',').map(function (x) { return x.trim(); });
     });
     // ── A CREDENTIAL LOOKUP IS NOT THE QUERY UNDER TEST (2026-09-21) ─────
     // api/sd-data.js's session gate re-checks that the signed-in employee is
@@ -202,6 +229,11 @@ function postgrestMock(rows, calls) {
     }
     const matches = rows.filter(function (r) {
       return eqs.every(function (kv) { return String(r[kv[0]]) === kv[1]; });
+    }).map(function (r) {
+      if (!select || select.indexOf('*') !== -1) return r;
+      const out = {};
+      select.forEach(function (c) { if (c in r) out[c] = r[c]; });
+      return out;
     });
     return { ok: true, status: 200, json: async function () { return matches; } };
   };
@@ -475,25 +507,57 @@ const UNITS = [
       { branch_id: 'BR-1', unit_code: 'U-1', franchisee_name: 'A Franchisee',
         royalty_pct: 5, ad_fund_pct: 2, effective_on: '2026-01-01',
         royalty_base: 'collected' }]] },
-  // law_clients' READ carries no session check at all -- the documented
-  // SAIRNlaw phase-2 gap, recorded in the open-work index, and a DIFFERENT
-  // question from tenant isolation. This asserts the tenant filter only.
-  { map: 'law_clients (bespoke, phase-2 ungated)', app: 'sairnlaw', role: 'owner',
+  // ── law_clients IS GATED, AND THIS COMMENT SAID IT WAS NOT (fixed 2026-09-23)
+  // It read "law_clients' READ carries no session check at all -- the documented
+  // SAIRNlaw phase-2 gap ... This asserts the tenant filter only." That was true
+  // when it was written and is not true now: the phase-2 gap was CLOSED, and
+  // api/sd-data.js carries the closure plus its reasoning at :926-937 --
+  // SD_SESSION_GATED has `'law_clients': ['read', 'write']` at :937 and
+  // SD_GATE_APP pins it to 'sairnlaw' at :961.
+  //
+  // THE CONFIG WAS ALREADY RIGHT; ONLY THE PROSE WAS WRONG, which is the worse
+  // half to get wrong. `app: 'sairnlaw'` means this arm has been passing THROUGH
+  // the session gate the whole time, so the comment understated its own coverage
+  // and told the next reader a closed gap was open. A stale comment that claims
+  // LESS than the code does is still a comment nobody can trust.
+  { map: 'law_clients (bespoke, session-gated)', app: 'sairnlaw', role: 'owner',
     members: [['law_clients', 'client_id']] },
   // ── SAIRNgrounds HAD NO UNIT HERE EITHER (added 2026-09-23) ────────────
   // The same absent-dispatcher shape LAW_RESOURCES had: six Tier A resources
   // in the NONE bucket together because nothing drove the app at all. Each of
   // these six reads `select=data` with NO session check -- that is a separate
   // question from tenant isolation and is not what these arms assert.
-  { map: 'GRD (named branches)', app: 'sairngrounds', role: 'owner', members: [
+  //
+  // ── AND `app: null` IS WHY THAT SENTENCE IS NOW WORTH SOMETHING (2026-09-23)
+  // It first read `app: 'sairngrounds', role: 'owner'`, which signed an
+  // X-SD-Auth header and sent it to six branches that never look at one. The
+  // prose above said the gate was absent while the CONFIG said it was present,
+  // and the config is the half a machine reads. That is precisely what mockReq
+  // forbids in its own words a few hundred lines up -- "inventing a credential
+  // the handler never asks for ... would hide that the gate is absent".
+  //
+  // THE COST WAS A TRIPWIRE THAT COULD NOT FIRE, not a style point. Verified in
+  // api/sd-data.js: none of the six appears in SD_SESSION_GATED (:765-940) and
+  // every read branch (:3189, :3243, :3264, :3390, :3411, :3432) goes straight
+  // from the resource test to the fetch, as do all six writes. So with a token
+  // being sent, the day somebody gates these six, these arms stay GREEN and
+  // nothing records that the gate arrived. With `app: null` they answer 403,
+  // land in UNREACHED, and force the config to be updated deliberately -- which
+  // is exactly what SF_RESOURCES describes below as "the third state doing
+  // exactly its job", and it is the only difference between a disclosure and a
+  // tripwire.
+  { map: 'GRD (named branches, NO session gate)', app: null, role: null, members: [
     ['grd_boq_rates', 'rate_id'],
     ['grd_cart_orders', 'order_id', { property_id: 'PR-1' }],
     ['grd_invasive_sightings', 'sighting_id', { property_id: 'PR-1' }],
     ['grd_rounds', 'round_id', { property_id: 'PR-1' }],
     ['grd_training_courses', 'course_id'],
     ['grd_training_completions', 'completion_id']] },
-  // rf_entities returns the ROW rather than row.data, which is why the shared
-  // fixture now carries `owner` at both levels -- see listRead().
+  // rf_entities returns the ROW rather than row.data. That used to be handled
+  // by carrying an `owner` marker at both levels; it is handled now by probing
+  // the ID, which both shapes carry and ENT_SELECT actually returns -- see
+  // tenantOf(). The two-level marker was green only on a mock that ignored
+  // `select=`.
   { map: 'rf_entities (bespoke)', app: 'sairnroofing', role: 'owner', members: [
     ['rf_entities', 'entity_id',
       { entity_id: 'X-1', legal_name: 'A Entity', entity_type: 'llc' }]] },
@@ -531,9 +595,12 @@ const UNITS = [
       { app_id: 'sairnroofing' }],
     // FOUR MORE, 2026-09-23, the last of the rf bespoke branches in the NONE
     // bucket. Each spreads the fetched row into its response
-    // (`Object.assign({}, x, {evaluation})`), so the shared owner probe
-    // survives and no dedicated file is needed -- unlike rf_settings and
-    // rf_jobs, whose responses are FIXED projections.
+    // (`Object.assign({}, x, {evaluation})`), so the shared probe survives and
+    // no dedicated file is needed -- unlike rf_settings and rf_jobs, whose
+    // responses are FIXED projections. THREE OF THESE FOUR WENT RED the day
+    // the mock started honouring `select=`: the spread is real, but what it
+    // spreads is the SELECTED row, and `owner` was never in any of those
+    // select lists. The id is, which is why the probe is the id now.
     ['rf_company_programs', 'program_id',
       { program_id: 'B-1', manufacturer: 'A Maker', program_name: 'Gold' }],
     ['rf_job_warranties', 'warranty_id',
@@ -554,8 +621,9 @@ const UNITS = [
     ['sen_referral_sources', 'source_id'], ['sen_training_rules', 'rule_id'],
     ['sen_training_records', 'record_id'],
     // ── sen_visits, 2026-09-23, AND ITS COVERAGE HERE IS PARTIAL ON PURPOSE
-    // The QUERY filter is what these arms assert, and `owner` survives its
-    // response because it spreads `r.data`. But this branch ALSO narrows the
+    // The QUERY filter is what these arms assert, and the id survives its
+    // response: it selects `visit_id,assigned_employee_id,data` and re-projects
+    // to `{id: r.visit_id, ...}`. But this branch ALSO narrows the
     // fetched rows in memory -- `assigned_employee_id === session.employee_id`
     // for any role outside SEN_VISIT_SCHEDULER_ROLES -- which is the same
     // shape bld_tna and rf_jobs needed their own COLLISION arms for: two
@@ -654,11 +722,36 @@ const UNREACHED = [];
 // invisible one.
 function seedPair(idCol, rowExtras) {
   return [
-    Object.assign({ license_hash: HASH_A, [idCol]: 'A-1', owner: 'A',
-                    data: { id: 'A-1', owner: 'A' } }, rowExtras || {}),
-    Object.assign({ license_hash: HASH_B, [idCol]: 'B-1', owner: 'B',
-                    data: { id: 'B-1', owner: 'B' } }, rowExtras || {})
+    Object.assign({ license_hash: HASH_A, [idCol]: 'A-1',
+                    data: { id: 'A-1' } }, rowExtras || {}),
+    Object.assign({ license_hash: HASH_B, [idCol]: 'B-1',
+                    data: { id: 'B-1' } }, rowExtras || {})
   ];
+}
+
+// ── THE PROBE IS THE ID, NOT AN `owner` COLUMN (2026-09-23) ────────────────
+// It used to be a bare `owner` marker carried at BOTH levels -- top-level for
+// the branches that answer with the ROW, inside `data` for the ones that answer
+// with `row.data`. That was a fixture taught to satisfy two shapes rather than
+// a probe that survives them, and it only worked because the mock ignored
+// `select=`. The moment the mock projects, ELEVEN arms go red: `owner` is in no
+// branch's select list, so against real PostgREST it never comes back.
+//
+// THE ID IS THE ONE COLUMN EVERY BRANCH MUST SELECT -- it is the resource's
+// identity, it is half of every on_conflict key, and no list read can omit it
+// and still be useful. So it survives the row shape, the row.data shape, and
+// any spread in between, with no per-resource knowledge in the harness.
+//
+// AND IT CANNOT MANUFACTURE A PASS. 'A-1'/'B-1' are set by the same line for
+// both tenants; a select that drops the id yields `undefined`, which is not
+// 'A' and fails the arm LOUDLY rather than quietly matching. The one thing it
+// is NOT is a test of the response SHAPE -- that is a different claim, and
+// api/sd-data-roofing-projected-isolation.test.js is where the branches whose
+// shape is the point are driven.
+function tenantOf(x, idCol) {
+  if (!x) return undefined;
+  const id = x[idCol] !== undefined ? x[idCol] : x.id;
+  return typeof id === 'string' ? id.split('-')[0] : undefined;
 }
 
 async function listRead(unit, resource, idCol, rowExtras) {
@@ -690,7 +783,7 @@ async function listRead(unit, resource, idCol, rowExtras) {
             + '(app/role), do not relax the assertion.');
         }
         const got = (res.body && res.body.data) || [];
-        const owners = got.map(function (x) { return x && x.owner; }).sort();
+        const owners = got.map(function (x) { return tenantOf(x, idCol); }).sort();
         assert.deepStrictEqual(owners, ['A'],
           'tenant A read returned ' + JSON.stringify(owners) + ' -- anything other '
           + 'than exactly ["A"] means the license_hash filter is absent, ANDed '
@@ -746,7 +839,7 @@ async function listRead(unit, resource, idCol, rowExtras) {
       if (res.statusCode !== 200) {
         assert.fail('UNREACHED: ' + res.statusCode + ' ' + JSON.stringify(res.body));
       }
-      const owners = ((res.body && res.body.data) || []).map(function (x) { return x && x.owner; });
+      const owners = ((res.body && res.body.data) || []).map(function (x) { return tenantOf(x, firstId); });
       assert.deepStrictEqual(owners, ['B'],
         'tenant B read returned ' + JSON.stringify(owners) + '. BOTH DIRECTIONS ARE '
         + 'DRIVEN DELIBERATELY: a handler hardcoded to one tenant passes every '
@@ -798,6 +891,29 @@ async function listRead(unit, resource, idCol, rowExtras) {
     assert.strictEqual(both.length, 0,
       'two eq. clauses must be ANDed: A\'s hash with B\'s id matches nothing');
   });
+
+  // ── AND THE CONTROL ON THE PROJECTION, which is the arm this file did not
+  // have until 2026-09-23. Without it the mock can quietly stop honouring
+  // `select=` and eleven arms go green again on columns PostgREST never
+  // returns -- which is the state they were in. The sibling suite
+  // api/sd-data-sen-settings-isolation.test.js has carried this arm all along.
+  await test('the mock honours select= -- so every [L] arm reads a real column',
+    async () => {
+      const f = postgrestMock([{ license_hash: HASH_A, entity_id: 'A-1',
+                                 secret: 'not selected', data: { id: 'A-1' } }], []);
+      const projected = await (await f('https://x/rest/v1/t?license_hash=eq.'
+        + HASH_A + '&select=entity_id,data')).json();
+      assert.deepStrictEqual(Object.keys(projected[0]).sort(), ['data', 'entity_id'],
+        'the mock ignored select= and returned '
+        + JSON.stringify(Object.keys(projected[0])) + '. Every [L] arm would then '
+        + 'be reading a column the handler never asked the database for, which is '
+        + 'not the claim -- and it is exactly how rf_entities passed on an `owner` '
+        + 'column that is not in ENT_SELECT.');
+      const starred = await (await f('https://x/rest/v1/t?select=*')).json();
+      assert.ok('secret' in starred[0],
+        'select=* must not project: PostgREST returns the whole row for it, and a '
+        + 'mock that narrowed it would refuse rows the handler really can see.');
+    });
 
   if (UNREACHED.length) {
     console.log('\nUNREACHED -- arms that never got to the tenant filter:');

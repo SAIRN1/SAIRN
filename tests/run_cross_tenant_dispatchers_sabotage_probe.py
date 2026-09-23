@@ -45,6 +45,17 @@ turns BLD's arms red, and this probe reports that as a MISLANDED mutation rather
 than as a caught sabotage. A one-sided control cannot tell those apart, which is
 exactly how the three near-misses got as far as they did.
 
+── AND A SECOND KIND OF MUTATION, IN THE OPPOSITE DIRECTION ───────────────────
+The filter mutations REMOVE a tenant clause. The gate tripwires ADD a session
+check to a branch that has none. The GRD unit is configured `app: null` exactly
+so no credential is invented for six branches that never ask for one -- and the
+entire value of that choice is that the arms cannot survive a gate arriving.
+Before this, the unit sent a signed X-SD-Auth header, so it would have stayed
+green through precisely that change while still carrying a comment saying the
+gate was absent. `app: null` reads like a disclosure either way; the difference
+between a disclosure and a TRIPWIRE is whether anything actually goes red, and
+that is what this section measures rather than asserts.
+
 ── NOTHING IN THE WORKING TREE IS MUTATED ─────────────────────────────────────
 api/sd-data.js is never written. The handler, its _lib/_resources dependencies
 and the suite are copied into a scratch sandbox once, and every mutation is
@@ -253,6 +264,73 @@ try:
         if sha(SAND_SERVING) != sha(SERVING):
             failures.append('%s: the sandbox copy did not restore byte-identically'
                             % label)
+
+    # ── THE SECOND KIND, AND IT MUTATES IN THE OPPOSITE DIRECTION ───────────
+    # Everything above REMOVES a tenant filter and expects red. This ADDS a
+    # session gate to a branch that has none, and expects red for a different
+    # reason: the unit is configured `app: null` precisely so that no credential
+    # is invented for a branch that never asks for one, and the whole value of
+    # that choice is that the arms cannot survive a gate arriving.
+    #
+    # WHY IT NEEDS PROVING RATHER THAN STATING. `app: null` reads like a
+    # disclosure either way. The difference between a disclosure and a TRIPWIRE
+    # is whether anything actually goes red on the day the handler changes, and
+    # the version of this unit that sent a token would have stayed green through
+    # exactly that change while still carrying a comment saying the gate was
+    # absent. So the claim is worth only as much as this section.
+    print('\n=== GATE TRIPWIRES -- `app: null` units must NOT survive a gate ===')
+    GATE = ("      { const _g = verifySessionToken(tokenFromRequest(req), licHash, "
+            "'sairngrounds'); if (!_g) { res.status(403).json({ error: { code: "
+            "'FORBIDDEN', message: 'gate arrived' } }); return; } }")
+    TRIPWIRES = [
+        # grd_boq_rates is the unit's FIRST member, so the once-per-unit
+        # [L-rev] arm drives it too and must go red as well. Naming only the
+        # [L] arm reported a correct result as a MISLANDING on the first run --
+        # the two-sided assertion catching the expectation table rather than
+        # the code, which is the direction it is supposed to fail in.
+        ('grd_boq_rates', 3432, "resource === 'grd_boq_rates' && action === 'read'",
+         ['grd_boq_rates [L]', 'NO session gate) [L-rev]']),
+        ('grd_rounds', 3243, "resource === 'grd_rounds' && action === 'read'",
+         ['grd_rounds [L]']),
+    ]
+    for label, open_line, open_anchor, arms in TRIPWIRES:
+        if open_line - 1 >= len(src_lines) or open_anchor not in src_lines[open_line - 1]:
+            failures.append('%s tripwire: ANCHOR MOVED -- line %d does not carry '
+                            '%r, so no gate was inserted and nothing was proven.'
+                            % (label, open_line, open_anchor))
+            print('  MISS  %-22s anchor not on line %d' % (label, open_line))
+            continue
+        new = src_lines[:open_line] + [GATE] + src_lines[open_line:]
+        io.open(SAND_SERVING, 'w', encoding='utf-8', newline='').write('\n'.join(new))
+        ok, bad, tail = run_suite(sandbox)
+        if ok is None:
+            failures.append('%s tripwire: the suite did not run with the gate '
+                            'inserted:\n%s' % (label, tail))
+            print('  MISS  %-22s suite did not run' % label)
+        else:
+            red = set(bad)
+            want = sorted(a for a in baseline if any(k in a for k in arms))
+            missed = [a for a in want if a not in red]
+            strayed = sorted(a for a in red if a not in want)
+            if not want:
+                failures.append('%s tripwire: matched no baseline arm' % label)
+                print('  MISS  %-22s matched no baseline arm' % label)
+            elif missed:
+                failures.append('%s tripwire: a session gate arrived on this '
+                                'branch and the arm STAYED GREEN: %s. The unit is '
+                                'sending a credential the handler now demands, so '
+                                'the gate landed unrecorded -- which is the exact '
+                                'failure `app: null` exists to make impossible.'
+                                % (label, ', '.join(missed)))
+                print('  MISS  %-22s arm stayed green under a new gate' % label)
+            elif strayed:
+                failures.append('%s tripwire: %d arm(s) outside this branch also '
+                                'went red: %s' % (label, len(strayed), ', '.join(strayed[:4])))
+                print('  MISS  %-22s %d foreign arm(s) red' % (label, len(strayed)))
+            else:
+                print('  ok    %-22s line %-6d gate arrives -> %d arm(s) red, 0 '
+                      'elsewhere' % (label, open_line, len(red)))
+        io.open(SAND_SERVING, 'w', encoding='utf-8', newline='').write('\n'.join(src_lines))
 finally:
     shutil.rmtree(_root, ignore_errors=True)
 
@@ -267,8 +345,10 @@ print('\n=== RESULT ===')
 if failures:
     for f in failures:
         print('  FAIL  %s' % f)
-    print('\n%d of %d mutations were not refused cleanly.' % (len(failures), len(MUTATIONS)))
+    print('\n%d check(s) did not hold across %d filter mutations and %d gate '
+          'tripwires.' % (len(failures), len(MUTATIONS), len(TRIPWIRES)))
     sys.exit(1)
-print('  all %d mutations refused, each in the branch its label names, and no '
-      'other branch disturbed.' % len(MUTATIONS))
+print('  all %d filter mutations refused, each in the branch its label names and '
+      'no other branch disturbed; both `app: null` gate tripwires fired.'
+      % len(MUTATIONS))
 sys.exit(0)
