@@ -40,7 +40,15 @@
 //   bld_inspections, bld_toolbox_talks, bld_warranty,
 //   sc_drg, sc_eligibility, sf_service_appointments,
 //   rf_bonding, rf_job_hazard_assessments, rf_locations, rf_roof_sections,
-//   rf_warranty_tiers, subcontractors, dnt_settings, sc_settings
+//   rf_warranty_tiers, subcontractors, dnt_settings, sc_settings,
+//   sf_disbursements, sf_donations, sf_gaming_expenses, sf_officers,
+//   sf_operators, sf_permit_flags, sf_products, sf_rentals, sf_sessions,
+//   sf_shifts, sf_staff, sf_tickets, sf_vehicles, sf_waivers,
+//   sf_youth_participants, leg_floristorders, leg_florists, leg_gplservices,
+//   leg_merch_catalog, sc_fraud, sc_prebill, sc_providers, sc_query, sc_rac,
+//   sc_telehealth, sv_referrals, sv_reminders, sv_scribe_consent, sb_train,
+//   sdn_referrals, law_bankstatements, rf_company_programs,
+//   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits
 //
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.
@@ -342,7 +350,11 @@ const UNITS = [
     ['sv_prepurchase', 'prepurchase_id'],
     ['sv_audit_log', 'audit_log_id'], ['sv_billing', 'billing_id'],
     ['sv_compliance', 'compliance_id'], ['sv_controlled', 'controlled_id'],
-    ['sv_patients', 'patient_id']] },
+    ['sv_patients', 'patient_id'],
+    // Three more, 2026-09-23. sv_scribe_consent is the consent evidence for
+    // recording an exam room and is brand new today.
+    ['sv_referrals', 'referral_id'], ['sv_reminders', 'reminder_id'],
+    ['sv_scribe_consent', 'scribe_consent_id']] },
   { map: 'BLD_RESOURCES', app: 'sairnbuild', role: 'owner', members: [
     ['bld_equipment', 'equipment_id'], ['bld_referrals', 'referral_id'],
     ['bld_costs', 'cost_id'], ['bld_incidents', 'incident_id'],
@@ -376,13 +388,19 @@ const UNITS = [
     ['bld_warranty', 'warranty_id']] },
   { map: 'SDN_RESOURCES', app: 'sairndesign', role: 'owner', members: [
     ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
-    ['sdn_contracts', 'contract_id']] },
+    ['sdn_contracts', 'contract_id'], ['sdn_referrals', 'referral_id']] },
   { map: 'LEG_RESOURCES', app: 'sairnlegacy', role: 'owner', members: [
     ['leg_aftercare', 'aftercare_id'], ['leg_catererorders', 'catererorder_id'],
     ['leg_cases', 'case_id'], ['leg_cremations', 'cremation_id'],
     ['leg_dispatches', 'dispatch_id'], ['leg_documents', 'document_id'],
     ['leg_certs', 'cert_id'], ['leg_invoices', 'invoice_id'],
-    ['leg_preneed', 'preneed_id']] },
+    ['leg_preneed', 'preneed_id'],
+    // Four more, 2026-09-23. leg_gplservices and leg_florists are the halves
+    // of two pairs whose first half was promoted a day earlier -- the
+    // split-limb gap the register records three times.
+    ['leg_floristorders', 'floristorder_id'], ['leg_florists', 'florist_id'],
+    ['leg_gplservices', 'gplservice_id'],
+    ['leg_merch_catalog', 'merch_catalog_id']] },
   { map: 'SC_RESOURCES', app: 'sairncode', role: 'admin', members: [
     ['sc_ar', 'entry_id'], ['sc_claims', 'entry_id'],
     ['sc_compliance', 'entry_id'], ['sc_credential_scope', 'entry_id'],
@@ -398,7 +416,12 @@ const UNITS = [
     // side only -- admin-only, plus a retention floor. Neither narrows the
     // READ, so the arms below drive it exactly like its siblings and the
     // unit's existing `admin` role is what gets past the write gate.
-    ['sc_settings', 'entry_id']] },
+    ['sc_settings', 'entry_id'],
+    // SIX MORE, 2026-09-23, every one promoted B -> A the same day and every
+    // one straight into the NONE bucket.
+    ['sc_fraud', 'entry_id'], ['sc_prebill', 'entry_id'],
+    ['sc_providers', 'entry_id'], ['sc_query', 'entry_id'],
+    ['sc_rac', 'entry_id'], ['sc_telehealth', 'entry_id']] },
   // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
   // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
   // what an absent UNIT looks like from the coverage side: not one resource
@@ -411,7 +434,10 @@ const UNITS = [
     ['law_clecredits', 'clecredit_id'],
     ['law_optx', 'optx_id'], ['law_pimedical', 'pimedical_id'],
     ['law_mattertasks', 'mattertask_id'], ['law_matterdocs', 'matterdoc_id'],
-    ['law_mattermilestones', 'mattermilestone_id']] },
+    ['law_mattermilestones', 'mattermilestone_id'],
+    // The bank side of the three-way IOLTA reconciliation. Routed, argued and
+    // landed A/B on 2026-09-23, then sat in the NONE bucket.
+    ['law_bankstatements', 'bankstatement_id']] },
   // ── THE BESPOKE BRANCHES (added 2026-09-23) ────────────────────────────
   // These four do NOT go through a generic dispatcher. Each has its own named
   // branch with its own role narrowing, which is why they are worth driving: a
@@ -489,7 +515,23 @@ const UNITS = [
       { tier_id: 'B-1', manufacturer: 'A Maker', tier_name: 'Gold' }],
     ['subcontractors', 'sub_id',
       { sub_id: 'B-1', name: 'A Sub' },
-      { app_id: 'sairnroofing' }]] },
+      { app_id: 'sairnroofing' }],
+    // FOUR MORE, 2026-09-23, the last of the rf bespoke branches in the NONE
+    // bucket. Each spreads the fetched row into its response
+    // (`Object.assign({}, x, {evaluation})`), so the shared owner probe
+    // survives and no dedicated file is needed -- unlike rf_settings and
+    // rf_jobs, whose responses are FIXED projections.
+    ['rf_company_programs', 'program_id',
+      { program_id: 'B-1', manufacturer: 'A Maker', program_name: 'Gold' }],
+    ['rf_job_warranties', 'warranty_id',
+      { warranty_id: 'B-1', job_id: 'J-1', manufacturer: 'A Maker',
+        installed_on: '2026-01-01' }],
+    ['rf_prequal_documents', 'document_id',
+      { document_id: 'B-1', kind: 'emr_letter', issuer: 'An Issuer',
+        effective_on: '2026-01-01' }],
+    ['rf_safety_equipment', 'equipment_id',
+      { equipment_id: 'B-1', kind: 'harness', identifier: 'H-1',
+        in_service_on: '2026-01-01' }]] },
   // SEN_REFERRAL_RESOURCES is its own small map with its own gate -- the
   // file's words: "a caregiver is out, the coordinator who screens the call is
   // in". `owner` is used for the same reason as the sen_clients unit: so the
@@ -497,7 +539,22 @@ const UNITS = [
   { map: 'SEN_REFERRAL_RESOURCES', app: 'sairnsenior', role: 'owner', members: [
     ['sen_referrals', 'referral_id'], ['sen_applicants', 'applicant_id'],
     ['sen_referral_sources', 'source_id'], ['sen_training_rules', 'rule_id'],
-    ['sen_training_records', 'record_id']] },
+    ['sen_training_records', 'record_id'],
+    // ── sen_visits, 2026-09-23, AND ITS COVERAGE HERE IS PARTIAL ON PURPOSE
+    // The QUERY filter is what these arms assert, and `owner` survives its
+    // response because it spreads `r.data`. But this branch ALSO narrows the
+    // fetched rows in memory -- `assigned_employee_id === session.employee_id`
+    // for any role outside SEN_VISIT_SCHEDULER_ROLES -- which is the same
+    // shape bld_tna and rf_jobs needed their own COLLISION arms for: two
+    // agencies both employ an emp-1, so a dropped tenant filter hands a
+    // caregiver another agency's visit, assigned to "them".
+    //
+    // `owner` is used here precisely so that narrowing cannot make the arm
+    // pass for the wrong reason. THE COLLISION ARM IS OWED AND IS NOT HERE --
+    // it needs a non-scheduler role and a shared employee id, which this
+    // harness has no way to express. Recorded so the next reader sees a
+    // stated gap rather than assuming the resource is fully covered.
+    ['sen_visits', 'visit_id']] },
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
@@ -529,14 +586,32 @@ const UNITS = [
     // Promoted B -> A on 2026-09-23 by another session's tier pass -- the row
     // ties a member to a VA-adjacent referral outcome, which is the reason
     // SD_SESSION_GATED already carries it at :879.
-    ['sf_service_appointments', 'service_appointment_id']] },
+    ['sf_service_appointments', 'service_appointment_id'],
+    // ── FIFTEEN MORE, 2026-09-23, AND THIS IS THE WHOLE sf_* RE-AUDIT ──────
+    // Another session read all 27 SAIRNfreedom resources individually and
+    // moved 15 of them -- "one row carried a named volunteer's felony
+    // conviction under 'no PII on this row'". Every one arrived in the NONE
+    // bucket. They are members of the same map as the six above, so they cost
+    // one line each and the filter they share is already proven; what each
+    // arm adds is the guarantee that THIS resource is still IN that map.
+    ['sf_disbursements', 'disbursement_id'], ['sf_donations', 'donation_id'],
+    ['sf_gaming_expenses', 'gaming_expense_id'], ['sf_officers', 'officer_id'],
+    ['sf_operators', 'operator_id'], ['sf_permit_flags', 'permit_flag_id'],
+    ['sf_products', 'product_id'], ['sf_rentals', 'rental_id'],
+    ['sf_sessions', 'session_id'], ['sf_shifts', 'shift_id'],
+    ['sf_staff', 'staff_id'], ['sf_tickets', 'ticket_id'],
+    ['sf_vehicles', 'vehicle_id'], ['sf_waivers', 'waiver_id'],
+    ['sf_youth_participants', 'youth_participant_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [
     ['sb_bud', 'bud_id'], ['sb_exps', 'exp_id'], ['sb_invs', 'inv_id'],
     ['sb_incidents', 'incident_id'], ['sb_payruns', 'payrun_id'],
     ['sb_po', 'po_id'], ['sb_recv', 'recv_id'],
     // week must be a real MONDAY and hours exactly six finite 0..24 values.
     ['sb_ts', 'ts_id',
-      { emp: 'E-1', week: '2026-09-21', hours: [8, 8, 8, 8, 8, 0] }]] },
+      { emp: 'E-1', week: '2026-09-21', hours: [8, 8, 8, 8, 8, 0] }],
+    // Promoted B -> A on both axes 2026-09-23: `exp` is not a label, it is
+    // the alarm sbCertStatus() derives a CRITICAL finding from.
+    ['sb_train', 'train_id']] },
   { map: 'SD_HR', app: 'stonedesk', role: 'owner', members: [
     ['sd_hr_employees', 'employee_key'], ['sd_hr_certs', 'cert_key']] }
 ];
