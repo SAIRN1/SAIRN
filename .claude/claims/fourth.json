@@ -2279,6 +2279,20 @@
       "files": [
         "api/sd-data.js"
       ]
+    },
+    {
+      "id": "fourth-1790191842",
+      "session": "fourth",
+      "subject": "data-overwrite-audit",
+      "task": "fire-and-forget write audit -- find sync writes whose result is discarded, the first half of the data-overwrite scoped pass FILES: tools/sync_write_result_check.py tests/run_sync_write_result_probe.py",
+      "claimed_at": "2026-09-23T19:30:42Z",
+      "claimed_at_epoch": 1790191842.063166,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_sync_write_result_probe.py",
+        "tools/sync_write_result_check.py"
+      ]
     }
   ],
   "refusals": [
