@@ -107,7 +107,7 @@ module.exports = async (req, res) => {
   // licence now reports the licence.
   let lic;
   try {
-    lic = await validateLicenseKey(licenseKey);
+    lic = await validateLicenseKey(licenseKey, APP);
   } catch (err) {
     if (err.code === 'CONFIG') {
       res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
@@ -118,6 +118,16 @@ module.exports = async (req, res) => {
   }
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+  // ── AND IT MUST BE A LICENCE FOR THIS APP (2026-09-23) ──────────────────
+  // Measured live: SD-AUDIT-2026, a StoneDesk licence, got 200 from
+  // /api/sv-auth -- all seventeen of these files checked valid+active and none
+  // checked WHICH APP the key was issued for. Only an explicit 'mismatch'
+  // refuses; an unattributable licence is admitted deliberately. The three
+  // states and why, in api/_lib/license.js's appScope().
+  if (lic.app_scope === 'mismatch') {
+    res.status(403).json({ error: { code: 'LICENSE_WRONG_APP', message: 'This license key is not for this app' } });
+    return;
+  }
 
   let body = req.body;
   if (typeof body === 'string') {

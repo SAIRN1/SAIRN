@@ -276,6 +276,13 @@ module.exports = {
   EXTRA_ACTIONS,
   RESOURCE_NAMES_BY_APP,
   APP_NAMES,
+  // EXPORTED 2026-09-23 so api/_lib/license.js can compare a licence's app_id
+  // to the app it is being presented to WITHOUT writing a second trim/lowercase
+  // beside this one. A licence whose app_id was 'StoneDesk' has already been
+  // read as unattributable once, silently disabling the boundary for it -- the
+  // comment above normApp records it -- and a second copy of that rule is
+  // exactly how that recurs on the other side of the platform.
+  normApp,
   isKnownApp,
   resourceNamesFor,
   resourceListTextFor,

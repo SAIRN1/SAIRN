@@ -39,7 +39,51 @@ function hashLicense(key) {
   return crypto.createHash('sha256').update(key).digest('hex');
 }
 
-async function validateLicenseKey(key) {
+// ── app_scope: WHICH APP IS THIS LICENCE FOR (2026-09-23) ─────────────────
+// `expectedApp` is OPTIONAL and every pre-existing caller omits it. Omitted,
+// the verdict is 'not-asked' and nothing about this function's behaviour
+// changes -- api/sd-data.js, api/sd-render.js and _lib/sd-store.js are
+// byte-identical to yesterday.
+//
+// WHY IT IS A PARAMETER RATHER THAN A NEW EXPORT. Forty-seven test files
+// replace this module in require.cache with a fake exporting only
+// validateLicenseKey. An earlier fix on this file extracted a helper into a
+// new export and broke SIXTEEN suites at once -- undefined at call time, which
+// `node --check` cannot see because it is a runtime error. A new parameter is
+// invisible to a fake that ignores it, and a fake that omits `app_scope` from
+// its return yields undefined, which is not 'mismatch', so a test double fails
+// OPEN rather than refusing every call in a suite that is not about licences.
+//
+// THREE STATES, AND ONLY THE MIDDLE ONE IS REFUSABLE:
+//   'match'          the licence names this app
+//   'mismatch'       it names a DIFFERENT registered app  -> callers refuse
+//   'unattributable' cannot tell -- refusing would be a guess
+//   'not-asked'      the caller did not supply an app
+//
+// UNATTRIBUTABLE IS ADMITTED ON PURPOSE. api/_resources/index.js already took
+// this posture and wrote the reason down: nothing read `lic.app_id` before
+// 2026-09-04, so there is no evidence every live licence has it set, and
+// refusing an unrecognised one breaks a real customer nobody can enumerate.
+// "cannot attribute -> cannot judge". Fail-closed in the wrong direction is
+// still wrong.
+//
+// AND THE JUDGE IS NOT EXEMPT: an `expectedApp` the registry does not know is
+// also 'unattributable'. api/sd-sub-auth.js mints tokens for 'stonedesk_sub',
+// which is not a registered app -- had that name been passed, every judgement
+// would have collapsed to cannot-tell while the endpoint looked guarded.
+//
+// The registry's own normApp does the case/whitespace handling. Requiring it
+// lazily keeps module-load cost and ordering unchanged for the callers that
+// never ask.
+function appScope(licAppId, expectedApp) {
+  if (expectedApp === undefined || expectedApp === null) return 'not-asked';
+  const reg = require('../_resources');
+  if (!reg.isKnownApp(expectedApp)) return 'unattributable';
+  if (!reg.isKnownApp(licAppId)) return 'unattributable';
+  return reg.normApp(licAppId) === reg.normApp(expectedApp) ? 'match' : 'mismatch';
+}
+
+async function validateLicenseKey(key, expectedApp) {
   const out = {
     valid: false,
     active: false,
@@ -50,6 +94,7 @@ async function validateLicenseKey(key) {
     stripe_subscription_id: null,
     subscription_status: null,
     license_hash: null,
+    app_scope: appScope(null, expectedApp),
     key: (typeof key === 'string' ? key : null)
   };
 
@@ -113,6 +158,10 @@ async function validateLicenseKey(key) {
   // Absent, it normalises to null, and the call sites treat null as
   // CANNOT-TELL rather than as either answer.
   out.subscription_status = row.subscription_status || null;
+  // Recomputed now that the row's app_id is known. The initial value above is
+  // the no-row answer, so an unknown key never carries a 'match' or a
+  // 'mismatch' it could be read through.
+  out.app_scope = appScope(out.app_id, expectedApp);
   return out;
 }
 
