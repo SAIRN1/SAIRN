@@ -43,6 +43,23 @@
  *      `window.preventDefault` is of course undefined. Twenty findings, all
  *      the same mistake. The pattern now refuses a name preceded by a dot.
  *
+ *   4. A FIXED WAIT CANNOT MEASURE AN ASYNC RENDER -- AND RE-CLICKING TO
+ *      CHECK MAKES IT WORSE. SAIRNvet's `panel-access` measured 0 controls.
+ *      `svRenderAccess()` writes "Loading sign-ins..." and then fills the
+ *      table from a real `/api/sv-auth` round trip, which takes longer than
+ *      the 320ms wait, so what got measured was the placeholder.
+ *
+ *      THE TRAP IS THE SECOND PASS, not the first. Re-running the driver
+ *      reproduced 0 controls EXACTLY -- which reads as confirmation and is
+ *      the opposite: clicking the control RE-ARMS the render, resets the
+ *      container to the placeholder and refetches. Two passes agreeing meant
+ *      only that the same race was run twice.
+ *
+ *      settle() below is the measurement that is not racing anything: it
+ *      clicks NOTHING, reads every target after the run, and uses
+ *      `textContent` because `innerText` returns '' for a hidden element.
+ *      Settled, `panel-access` is text=302 ctrls=1. ALWAYS report settle().
+ *
  *   3. TEXT INSIDE A STRING LITERAL IS NOT CODE. Even then, `panel-priceintel`
  *      reported Entry / Mid / Premium as missing globals. They are words
  *      inside a quoted ARGUMENT -- material names like 'Granite Entry (Lv
@@ -142,6 +159,33 @@
     // renders chain a second one. Shorter reported blank panels that were not.
     setTimeout(() => { record(arg, label, before, threw); SCT.i++; setTimeout(tick, 15); }, 320);
   })();
+
+  // Lesson 4. Run AFTER the driver finishes, and believe this over report()'s
+  // F2/F4 for anything that fetches. It clicks nothing, so nothing is
+  // re-armed; textContent because innerText is '' on a hidden element.
+  SCT.settle = function () {
+    const out = [];
+    SCT.controls.forEach(({ arg }) => {
+      const el = resolve(arg);
+      if (!el) return;
+      out.push({ arg,
+        text: (el.textContent || '').replace(/\s+/g, ' ').trim().length,
+        ctrls: el.querySelectorAll('button,input,select,textarea,a[href],[onclick]').length });
+    });
+    const moved = out.filter(s => {
+      const r = SCT.rows.find(x => x.arg === s.arg);
+      return r && (r.ctrls !== s.ctrls);
+    }).map(s => { const r = SCT.rows.find(x => x.arg === s.arg);
+      return s.arg + ': ctrls ' + r.ctrls + ' during the run -> ' + s.ctrls + ' settled'; });
+    return {
+      measured: out.length,
+      zeroControlsWhenSettled: out.filter(s => s.ctrls === 0).map(s => s.arg + ' text=' + s.text),
+      thinnest: out.slice().sort((a, b) => a.text - b.text).slice(0, 4)
+        .map(s => s.arg + ' text=' + s.text + ' ctrls=' + s.ctrls),
+      // Every entry here was measured MID-FETCH by the run. They are not findings.
+      measuredMidFetch: moved
+    };
+  };
 
   SCT.report = function () {
     const r = SCT.rows;
