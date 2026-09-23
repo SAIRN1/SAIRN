@@ -2832,8 +2832,8 @@
       "task": "isolation-arms2b -- the owed grader-widening open-work row for cross_tenant_isolation_scope, and closing my own routed law_bankstatements/sc_query row now that c816c8e5 landed it FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-23T11:48:40Z",
       "claimed_at_epoch": 1790164120.7850263,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:58:35Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
