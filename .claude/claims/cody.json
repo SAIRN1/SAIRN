@@ -1949,8 +1949,8 @@
       "task": "sc_drg sc_eligibility sf_service_appointments B->A individual reads out of the app FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T11:37:20Z",
       "claimed_at_epoch": 1790163440.4571555,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:43:54Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
