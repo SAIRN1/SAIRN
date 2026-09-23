@@ -32,7 +32,9 @@
 //   sb_bud, sb_exps, sb_invs,
 //   law_portalesign, law_portalmessages,
 //   bld_equipment, bld_referrals,
-//   sen_clients, sen_authorizations, sen_franchise_agreements, law_clients
+//   sen_clients, sen_authorizations, sen_franchise_agreements, law_clients,
+//   grd_boq_rates, grd_cart_orders, grd_invasive_sightings, grd_rounds,
+//   grd_training_courses, grd_training_completions, rf_entities
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -358,6 +360,23 @@ const UNITS = [
   // question from tenant isolation. This asserts the tenant filter only.
   { map: 'law_clients (bespoke, phase-2 ungated)', app: 'sairnlaw', role: 'owner',
     members: [['law_clients', 'client_id']] },
+  // ── SAIRNgrounds HAD NO UNIT HERE EITHER (added 2026-09-23) ────────────
+  // The same absent-dispatcher shape LAW_RESOURCES had: six Tier A resources
+  // in the NONE bucket together because nothing drove the app at all. Each of
+  // these six reads `select=data` with NO session check -- that is a separate
+  // question from tenant isolation and is not what these arms assert.
+  { map: 'GRD (named branches)', app: 'sairngrounds', role: 'owner', members: [
+    ['grd_boq_rates', 'rate_id'],
+    ['grd_cart_orders', 'order_id', { property_id: 'PR-1' }],
+    ['grd_invasive_sightings', 'sighting_id', { property_id: 'PR-1' }],
+    ['grd_rounds', 'round_id', { property_id: 'PR-1' }],
+    ['grd_training_courses', 'course_id'],
+    ['grd_training_completions', 'completion_id']] },
+  // rf_entities returns the ROW rather than row.data, which is why the shared
+  // fixture now carries `owner` at both levels -- see listRead().
+  { map: 'rf_entities (bespoke)', app: 'sairnroofing', role: 'owner', members: [
+    ['rf_entities', 'entity_id',
+      { entity_id: 'X-1', legal_name: 'A Entity', entity_type: 'llc' }]] },
   { map: 'SD_LOCAL_RESOURCES', app: 'stonedesk', role: 'owner', members: [
     ['sd_aiquotes', 'aiquote_id'], ['sd_fin_jobs', 'fin_job_id'],
     ['sd_invoices', 'invoice_id'], ['sd_negotiated_prices', 'negotiated_price_id'],
@@ -405,8 +424,10 @@ const UNREACHED = [];
 
 async function listRead(unit, resource, idCol) {
   const rows = [
-    { license_hash: HASH_A, [idCol]: 'A-1', data: { id: 'A-1', owner: 'A' } },
-    { license_hash: HASH_B, [idCol]: 'B-1', data: { id: 'B-1', owner: 'B' } }
+    { license_hash: HASH_A, [idCol]: 'A-1', owner: 'A',
+      data: { id: 'A-1', owner: 'A' } },
+    { license_hash: HASH_B, [idCol]: 'B-1', owner: 'B',
+      data: { id: 'B-1', owner: 'B' } }
   ];
   const calls = [];
   const h = loadHandler(HASH_A, unit.app, postgrestMock(rows, calls));
@@ -484,8 +505,10 @@ async function listRead(unit, resource, idCol) {
     const [firstRes, firstId, firstExtras] = unit.members[0];
     await test(unit.map + ' [L-rev] tenant B sees ONLY tenant B rows', async () => {
       const rows = [
-        { license_hash: HASH_A, [firstId]: 'A-1', data: { id: 'A-1', owner: 'A' } },
-        { license_hash: HASH_B, [firstId]: 'B-1', data: { id: 'B-1', owner: 'B' } }
+        { license_hash: HASH_A, [firstId]: 'A-1', owner: 'A',
+          data: { id: 'A-1', owner: 'A' } },
+        { license_hash: HASH_B, [firstId]: 'B-1', owner: 'B',
+          data: { id: 'B-1', owner: 'B' } }
       ];
       const h = loadHandler(HASH_B, unit.app, postgrestMock(rows, []));
       const res = mockRes();
