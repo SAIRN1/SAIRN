@@ -2149,8 +2149,8 @@
       "task": "sv_boarding sf_vehicle_service sv_clients individually read both axes FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T20:15:47Z",
       "claimed_at_epoch": 1790194547.2189367,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T20:27:15Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
