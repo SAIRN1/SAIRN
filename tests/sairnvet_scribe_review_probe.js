@@ -229,26 +229,36 @@ function transcriptionStillMatches(html) {
   // ── A2: attack (2), the comment stripper ────────────────────────────────
   section('A2  the comment-stripper -- can it hide real code?');
   {
-    const m = suiteSrc.match(/const strip = \(s\) => ([^\n]+);/);
+    // RE-POINTED 2026-09-23. This arm used to extract `const strip = (s) =>
+    // ...` and attack the regex. THE REGEX IS GONE -- the suite now carries a
+    // character scanner, stripComments(), written because this arm's own two
+    // attacks defeated the regex. The anchor went stale within the hour and
+    // the arm reported V4 "could not locate -- verified NOTHING, which is not
+    // a pass" rather than a green tick, which is the third state doing its
+    // job on the reviewer's own probe.
+    const m = suiteSrc.match(/function stripComments\(src\) \{[\s\S]*?\n\}/);
     if (!m) {
-      finding('V4', 'could not locate the stripper in api/sairnvet-transcribe.test.js '
-        + '-- this arm verified NOTHING, which is not a pass.');
+      finding('V4', 'could not locate stripComments() in '
+        + 'api/sairnvet-transcribe.test.js -- this arm verified NOTHING, which '
+        + 'is not a pass.');
     } else {
-      console.log('           stripper: ' + m[1].slice(0, 96));
       // eslint-disable-next-line no-new-func
-      const strip = new Function('s', 'return ' + m[1] + ';');
+      const strip = new Function(m[0] + '; return stripComments;')();
       const attacks = [
         ['a // inside a STRING literal',
          "var x = 'a//b'; var SR = window.SpeechRecognition;"],
-        ['a // inside a regex literal',
-         "var re = /\\/\\//; var SR = window.SpeechRecognition;"],
+        ['a // inside a REGEX literal',
+         'var re = /\\/\\//; var SR = window.SpeechRecognition;'],
+        ['a // inside a TEMPLATE literal',
+         'var t = `a//b`; var SR = window.SpeechRecognition;'],
         ['a */ inside a string, before real code',
-         "var s = '*/'; /* c */ var SR = window.SpeechRecognition;"]
+         "var s = '*/'; /* c */ var SR = window.SpeechRecognition;"],
+        ['a division that is not a regex',
+         'var r = a / b; var SR = window.SpeechRecognition;']
       ];
       let hidden = 0;
       attacks.forEach(function (a) {
-        const survived = /SpeechRecognition/.test(strip(a[1]));
-        if (survived) {
+        if (/SpeechRecognition/.test(strip(a[1]))) {
           ok('survives: ' + a[0]);
         } else {
           hidden++;
@@ -257,21 +267,32 @@ function transcriptionStillMatches(html) {
           console.log('             out: ' + strip(a[1]).trim());
         }
       });
+      // THE PAIRED POSITIVE, because a stripper that returns its input
+      // survives every attack above and strips nothing -- which would make
+      // the module check pass on a module whose HEADER names the banned API.
+      const stripsAnything = !/SpeechRecognition/.test(
+        strip('var a = 1; // SpeechRecognition'));
       if (hidden) {
-        finding('V5', hidden + ' of ' + attacks.length + ' attacks HIDE a real '
-          + '`SpeechRecognition` reference from the check. The stripper guards `//` '
-          + 'with `(^|[^:])`, which protects a URL and nothing else -- a `//` inside '
-          + 'a string or a regex takes the REST OF THE LINE with it, including code '
-          + 'the check exists to find. The shipped fixture tests four cases and none '
-          + 'of them is this one, which is what fourth asked me to look for. SEE A2b '
-          + 'BEFORE DECIDING WHAT TO DO ABOUT IT.');
+        finding('V5', hidden + ' of ' + attacks.length + ' attacks still HIDE a '
+          + 'real `SpeechRecognition` reference from the check.');
+      } else if (!stripsAnything) {
+        finding('V5b', 'nothing is hidden, but the stripper does not strip a '
+          + 'plain line comment either -- it is passing the attacks by doing '
+          + 'nothing, which would let the module HEADER fail the ban.');
       } else {
-        ok('the stripper hid nothing', String(attacks.length) + ' attacks');
+        ok('all ' + attacks.length + ' attacks survive AND comments are still '
+           + 'stripped', 'V5 FIXED 2026-09-23');
+        console.log('           -> the regex was replaced with a character '
+          + 'scanner tracking string, template, regex and comment state. A '
+          + 'regex cannot decide whether a `/` opens a comment, opens a regex '
+          + 'or is a division -- that depends on what came before it, which is '
+          + 'a state machine.');
       }
     }
   }
 
-  section('A2b is that flaw LIVE or LATENT? -- measured against the real module');
+  section('A2b the latent/live call that was made BEFORE the fix -- kept as the '
+    + 'record of why it was worth fixing anyway');
   {
     const start = html.indexOf('SAIRNVET AMBIENT SCRIBE (2026-09-23)');
     const region = start >= 0 ? html.slice(start, start + 60000) : '';
@@ -288,11 +309,12 @@ function transcriptionStillMatches(html) {
     });
     if (!risky.length) {
       ok('the shipped scribe module has NO line where a `//` sits inside an open '
-         + 'string', 'so V5 is LATENT, not live');
-      console.log('           -> the flaw cannot hide anything in the source it is '
-        + 'pointed at TODAY. It is a fixture gap and a future hazard, not a present '
-        + 'false pass -- said plainly so this finding is not read as bigger than it '
-        + 'is.');
+         + 'string', 'V5 was LATENT, not live, when it was found');
+      console.log('           -> AND IT WAS FIXED ANYWAY, which is the point worth '
+        + 'keeping: "the source it is pointed at happens not to contain the shape '
+        + 'today" is a property of the SOURCE, not of the CHECK -- and this check is '
+        + 'the only thing standing between a fallback branch and the claim that '
+        + 'there is none.');
     } else {
       finding('V6', risky.length + ' line(s) in the shipped scribe module carry a '
         + '`//` inside an open string literal, so the stripper IS cutting real code '
@@ -440,11 +462,15 @@ function transcriptionStillMatches(html) {
     'not a one-line correction. Do not mistake a fail-closed licence check for',
     'a health check.',
     '',
-    'THE STRIPPER FLAW IS REAL AND LATENT. A `//` inside a string or a regex',
-    'takes the rest of the line with it, and the shipped fixture tests four',
-    'cases and not that one. MEASURED against the real module: no line in it',
-    'has that shape, so nothing is hidden today. A fixture gap, not a false',
-    'pass -- said that way so it is not read as bigger than it is.'
+    'THE STRIPPER FLAW IS FIXED (2026-09-23). A `//` inside a string, a regex',
+    'or a template used to take the rest of the line with it. The regex was',
+    'replaced with a character scanner tracking string, template, regex and',
+    'comment state, because a regex cannot decide whether a `/` opens a',
+    'comment, opens a regex or is a division -- that depends on what came',
+    'before it. Five attacks and four comment cases are now fixtures in the',
+    "suite, with a paired positive so a do-nothing stripper cannot pass them.",
+    'It was measured LATENT when found -- no shipped line had the shape -- and',
+    'fixed anyway: that was a property of the source, not of the check.'
   ]) console.log(l);
   process.exit(0);
 })();

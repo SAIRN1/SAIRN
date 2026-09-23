@@ -148,6 +148,89 @@ test('hostConfigured() is the SINGLE place the host env is read', () => {
 // not "the string is absent from the app", it is "the scribe module does not
 // reach for it".
 
+// ── THE COMMENT STRIPPER, AND WHY IT IS A SCANNER AND NOT A REGEX ─────────
+// The regex version was `s.replace(/\/\*[\s\S]*?\*\//g,' ')` then
+// `.replace(/(^|[^:])\/\/[^\n]*/g,'$1')`, and it HID REAL CODE. The `[^:]`
+// guard protects `http://` and nothing else, so a `//` inside a STRING or a
+// REGEX literal took the whole rest of that line with it -- including the
+// `SpeechRecognition` reference the check exists to find. Two attacks that
+// defeated it, both now fixtures below:
+//
+//     var x = 'a//b'; var SR = window.SpeechRecognition;
+//     var re = /\/\//;  var SR = window.SpeechRecognition;
+//
+// Found by tests/sairnvet_scribe_review_probe.js on 2026-09-23 and measured
+// LATENT at the time -- no line in the shipped scribe module had that shape,
+// so nothing was actually hidden. It is fixed anyway, because "the source it
+// is pointed at happens not to contain the shape today" is a property of the
+// source, not of the check, and this check is the only thing standing between
+// a fallback branch and the claim that there is none.
+//
+// A REGEX CANNOT DO THIS. Whether a `/` opens a comment, opens a regex, or is
+// a division depends on what came before it, and that is a state machine.
+// This is a small one: normal / line-comment / block-comment / single /
+// double / template / regex-literal, walking one character at a time.
+//
+// THE ONE HEURISTIC, NAMED because it is the part that can be wrong: telling
+// a regex literal from division. A `/` starts a regex when the previous
+// meaningful character is one of `( , = : [ ! & | ? { } ; return` or nothing
+// -- the standard rule. It is not a parser and it does not need to be: the
+// worst case of getting it wrong is that a division is treated as a regex,
+// which swallows text up to the next `/` on that line and would make the
+// check REPORT A REFERENCE IT SHOULD HAVE FOUND -- loud, not silent. The
+// fixtures at the bottom drive that direction too.
+function stripComments(src) {
+  let out = '';
+  let i = 0;
+  let prev = '';                     // last emitted non-space character
+  const n = src.length;
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (c === '/' && d === '/') {            // line comment
+      while (i < n && src[i] !== '\n') i++;
+      continue;
+    }
+    if (c === '/' && d === '*') {            // block comment
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+      i += 2;
+      out += ' ';
+      continue;
+    }
+    if (c === '"' || c === "'" || c === '`') {   // string or template
+      const q = c;
+      out += c; i++;
+      while (i < n) {
+        if (src[i] === '\\') { out += src[i] + (src[i + 1] || ''); i += 2; continue; }
+        out += src[i];
+        if (src[i] === q) { i++; break; }
+        i++;
+      }
+      prev = q;
+      continue;
+    }
+    if (c === '/' && /[(,=:[!&|?{};]|^$/.test(prev || '')) {   // regex literal
+      out += c; i++;
+      let inClass = false;
+      while (i < n) {
+        if (src[i] === '\\') { out += src[i] + (src[i + 1] || ''); i += 2; continue; }
+        if (src[i] === '[') inClass = true;
+        else if (src[i] === ']') inClass = false;
+        out += src[i];
+        if (src[i] === '/' && !inClass) { i++; break; }
+        if (src[i] === '\n') { i++; break; }   // unterminated: do not run away
+        i++;
+      }
+      prev = '/';
+      continue;
+    }
+    out += c;
+    if (!/\s/.test(c)) prev = c;
+    i++;
+  }
+  return out;
+}
+
 test('the scribe module in sairnvet.html does not reference SpeechRecognition', () => {
   const app = fs.readFileSync(path.join(__dirname, '..', 'sairnvet.html'), 'utf8');
   const start = app.indexOf('SAIRNVET AMBIENT SCRIBE');
@@ -163,9 +246,7 @@ test('the scribe module in sairnvet.html does not reference SpeechRecognition', 
   // to delete the reasoning rather than keep the rule. The ban is on CODE.
   // This was not foreseen: the first run of this test failed on its own
   // module's header, which is the check working.
-  const code = mod
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  const code = stripComments(mod);
 
   assert.ok(!/SpeechRecognition/.test(code),
     'the scribe must not fall back to the browser speech API that 6.2 rejected');
@@ -173,16 +254,67 @@ test('the scribe module in sairnvet.html does not reference SpeechRecognition', 
     'the scribe must call the first-party endpoint');
 });
 
-// The comment-stripper above must not be able to hide real code. If it ever
-// strips something it should not, this fixture catches it.
-test('the comment-stripper used by the check above does not swallow executable code', () => {
-  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
-  assert.ok(/SpeechRecognition/.test(strip('var SR = window.SpeechRecognition; // the api')),
-    'a real reference must survive stripping');
-  assert.ok(/sairnvet-transcribe/.test(strip("fetch('/api/sairnvet-transcribe', o); // call")),
-    'a url with // inside it must survive stripping');
-  assert.ok(!/SpeechRecognition/.test(strip('// we rejected SpeechRecognition')),
-    'a line comment must be stripped');
-  assert.ok(!/SpeechRecognition/.test(strip('/* we rejected\n SpeechRecognition */')),
-    'a block comment must be stripped');
+// ── THE FIXTURE, AND IT NOW CARRIES THE TWO SHAPES THAT DEFEATED V1 ──────
+// Every case below is a real attack or its paired positive. The two marked
+// WAS BROKEN are the ones the regex version hid: an independent review drove
+// them on 2026-09-23 and both took the rest of the line with them, which
+// would have let a real fallback branch sit behind a string containing `//`
+// and still pass this suite.
+test('the comment-stripper does not swallow executable code', () => {
+  const survives = [
+    ['a reference after a line comment on an earlier line',
+     '// the api\nvar SR = window.SpeechRecognition;'],
+    ['a url containing // on the same line',
+     "fetch('/api/sairnvet-transcribe', o); var SR = window.SpeechRecognition; // call"],
+    ['WAS BROKEN: a // inside a STRING literal',
+     "var x = 'a//b'; var SR = window.SpeechRecognition;"],
+    ['WAS BROKEN: a // inside a REGEX literal',
+     'var re = /\\/\\//; var SR = window.SpeechRecognition;'],
+    ['a // inside a template literal',
+     'var t = `a//b`; var SR = window.SpeechRecognition;'],
+    ['a */ inside a string before real code',
+     "var s = '*/'; /* c */ var SR = window.SpeechRecognition;"],
+    ['an apostrophe inside a double-quoted string',
+     'var s = "it\'s fine"; var SR = window.SpeechRecognition;'],
+    ['a division that is not a regex',
+     'var r = a / b; var SR = window.SpeechRecognition;']
+  ];
+  survives.forEach(function (c) {
+    const out = stripComments(c[1]);
+    // Both tokens the module check reads back: the banned one must still be
+    // FINDABLE (or the ban is unenforceable) and the required one must
+    // survive too (or `the scribe must call the first-party endpoint` could
+    // fail on a stripper rather than on the module).
+    if (/sairnvet-transcribe/.test(c[1])) {
+      assert.ok(/sairnvet-transcribe/.test(out),
+        'the endpoint URL was hidden by the stripper -- ' + c[0]);
+    }
+    assert.ok(/SpeechRecognition/.test(out),
+      'the reference was HIDDEN by the stripper -- ' + c[0] + '\n  in:  ' + c[1]
+      + '\n  out: ' + out);
+  });
+
+  const removed = [
+    ['a line comment', '// we rejected SpeechRecognition'],
+    ['a block comment', '/* we rejected\n SpeechRecognition */'],
+    ['a trailing line comment', 'var a = 1; // SpeechRecognition'],
+    ['a block comment mid-line', 'var a = /* SpeechRecognition */ 1;']
+  ];
+  removed.forEach(function (c) {
+    assert.ok(!/SpeechRecognition/.test(stripComments(c[1])),
+      'a comment survived stripping -- ' + c[0] + ': ' + c[1]);
+  });
+});
+
+// THE PAIRED NEGATIVE CONTROL ON THE SCANNER ITSELF. Every assertion above is
+// satisfied by a stripper that returns its input unchanged -- and that
+// stripper would make the module check pass on a module whose HEADER names
+// SpeechRecognition, which is the exact case stripping exists for. This arm
+// fails such a stripper.
+test('the stripper really strips -- a do-nothing one would fail here', () => {
+  const src = 'var a = 1; // SpeechRecognition\n/* SpeechRecognition */';
+  const out = stripComments(src);
+  assert.ok(out !== src, 'the stripper returned its input unchanged');
+  assert.ok(!/SpeechRecognition/.test(out));
+  assert.ok(/var a = 1;/.test(out), 'it removed code as well as comments');
 });
