@@ -108,6 +108,24 @@ MUTATIONS = [
     ('a shared declared FILE stops being an overlap signal', CLAIM,
      "        shared = shared | {'FILE:' + p for p in (a & b)}",
      "        shared = shared",),
+
+    # ── 7 AND 8: THE HEARTBEAT, IN BOTH DIRECTIONS ─────────────────────
+    # The whole point is that a process answer BEATS AGE both ways. Each
+    # of these reverts one direction and leaves the other working, which
+    # is exactly how a half-applied fix would look from the outside.
+
+    # 7. Back to the fixed timeout for a LIVE session -- the nine-hour
+    #    build reads as abandoned again, and nothing errors.
+    ('a running session stops keeping its own claim alive', CLAIM,
+     "    if alive is True:\n        return True",
+     "    if alive is True:\n        pass"),
+
+    # 8. And a DEAD session keeps its claim for the rest of the four
+    #    hours -- the direction that blocks live work on a crashed
+    #    process, which is the half a bigger timeout makes worse.
+    ('a dead session keeps its claim until the timeout expires', CLAIM,
+     "    if alive is False:\n        return False",
+     "    if alive is False:\n        pass"),
 ]
 
 if __name__ == '__main__':

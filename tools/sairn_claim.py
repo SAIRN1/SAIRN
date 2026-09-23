@@ -714,9 +714,41 @@ def load_all(from_origin=False):
 
 
 def is_active(c):
+    """Is this claim still held?
+
+    ── A FIXED TIMEOUT ANSWERS THE WRONG QUESTION (2026-09-23) ─────────────
+    Four hours from the moment a claim was TAKEN was the only rule here, and
+    it fails in both directions. Measured on this session: a build ran 9.96
+    hours, so its own claim read as abandoned to every other clone for about
+    six of them, while the work was actively going on. The mirror image is
+    just as real -- a session that crashes at minute two holds its claim for
+    the remaining three hours and fifty-eight.
+
+    RAISING THE NUMBER MAKES BOTH HALVES WORSE. The question is not how old
+    the claim is, it is whether the session that took it is still working.
+
+    A GIT CLAIM CANNOT ANSWER THAT and keeps the timeout: it may have come
+    from another machine, where no pid means anything here. A REGISTRY claim
+    can, because the row carries the owning process, and registry_claims()
+    stamps the answer on it:
+
+        _alive True    the process is running -> held, whatever its age
+        _alive False   the process is gone    -> expired NOW, not in 3h58
+        _alive None    unknown -> fall back to the timeout, against the
+                       HEARTBEAT rather than the claim time
+
+    The heartbeat is re-stamped every time that session touches the claim
+    tool, so "still working" is evidence rather than an assumption.
+    """
     if c.get('status') != 'active':
         return False
-    return (now() - c.get('claimed_at_epoch', 0)) < STALE_HOURS * 3600
+    alive = c.get('_alive')
+    if alive is True:
+        return True
+    if alive is False:
+        return False
+    at = c.get('_heartbeat') or c.get('claimed_at_epoch', 0)
+    return (now() - at) < STALE_HOURS * 3600
 
 
 def age_str(c):
@@ -880,10 +912,24 @@ def registry_claims(me):
     except Exception:                                            # noqa: BLE001
         return []
     out = []
+    seen_live = {}
     for sess, c in rows:
         if not isinstance(c, dict) or c.get('status') != 'active':
             continue
+        # ONE liveness read per SESSION, not per claim: it shells out to
+        # inspect a process, and a session holding four claims would pay for
+        # it four times for one answer that cannot differ between them.
+        if sess not in seen_live:
+            try:
+                seen_live[sess] = sairn_status.claim_liveness(sess)
+            except Exception:                                    # noqa: BLE001
+                seen_live[sess] = ('UNKNOWN', 'liveness raised', None)
+        state, why, beat = seen_live[sess]
         out.append({
+            '_alive': (True if state == 'ALIVE'
+                       else False if state == 'DEAD' else None),
+            '_alive_why': why,
+            '_heartbeat': beat,
             'session': sess,
             'subject': c.get('subject') or '',
             'task': c.get('task') or '',
@@ -1522,6 +1568,18 @@ def cmd_check(args, quiet=False):
                     print('              (this is the early warning; confirm '
                           'with %s rather than waiting for a fetch)'
                           % c.get('session'))
+                    # WHY IT IS STILL HELD, rather than leaving the reader to
+                    # assume the four-hour rule. "their process is running" and
+                    # "their last heartbeat was recent" are different facts and
+                    # only the first is worth waiting on.
+                    if c.get('_alive') is True:
+                        print('  still held : that session is RUNNING -- %s'
+                              % (c.get('_alive_why') or ''))
+                    elif c.get('_heartbeat'):
+                        print('  still held : liveness unknown; last heartbeat '
+                              '%s ago, inside the %g-hour window'
+                              % (age_str({'claimed_at_epoch': c['_heartbeat']}),
+                                 STALE_HOURS))
                 print()
             print('DO NOT start this. Flag it back to the coordinating chat '
                   'session and let it decide who runs it.')

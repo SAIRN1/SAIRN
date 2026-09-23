@@ -258,6 +258,72 @@ try:
     finally:
         _st.STATUS_DIR = _real_dir
 
+    # ── 6c. THE HEARTBEAT: STALENESS BY LIVENESS, NOT BY A FIXED TIMEOUT ──
+    # MEASURED on the session that built this: a claim taken for 9.96 hours of
+    # continuous work read as ABANDONED to every other clone for about six of
+    # them, because the only rule was four hours from the moment it was taken.
+    # The same number fails the other way -- a session that crashes at minute
+    # two holds its claim for the remaining three hours and fifty-eight.
+    #
+    # THE CONTRACT IS THE THREE-VALUED `_alive`, so it is asserted directly:
+    # a process answer beats age in BOTH directions, and unknown falls back to
+    # the heartbeat rather than to the claim time.
+    sys.path.insert(0, os.path.join(ROOT, 'tools'))
+    import sairn_claim as _C
+    ten_h = _C.now() - 10 * 3600
+    base = {'status': 'active', 'claimed_at_epoch': ten_h}
+    ok('a TEN-HOUR-OLD claim whose session is still RUNNING is still held -- '
+       'the case that read as abandoned for six hours tonight',
+       _C.is_active(dict(base, _alive=True)) is True)
+    ok('a ONE-MINUTE-OLD claim whose session is GONE is released NOW, not in '
+       'three hours and fifty-nine minutes',
+       _C.is_active({'status': 'active',
+                     'claimed_at_epoch': _C.now() - 60,
+                     '_alive': False}) is False)
+    ok('with liveness UNKNOWN a RECENT HEARTBEAT keeps an old claim held',
+       _C.is_active(dict(base, _alive=None,
+                         _heartbeat=_C.now() - 60)) is True)
+    ok('...and a STALE heartbeat does not, so an abandoned row still expires',
+       _C.is_active(dict(base, _alive=None,
+                         _heartbeat=ten_h)) is False)
+    ok('a claim with NO liveness and NO heartbeat falls back to the claim '
+       'time exactly as before, so a git claim is unaffected',
+       _C.is_active(dict(base)) is False
+       and _C.is_active({'status': 'active',
+                         'claimed_at_epoch': _C.now() - 60}) is True)
+    ok('and a RELEASED claim is still released whatever liveness says -- a '
+       'running process must not resurrect finished work',
+       _C.is_active({'status': 'released', 'claimed_at_epoch': _C.now(),
+                     '_alive': True}) is False)
+
+    # END TO END: a row whose owning process is GONE must stop blocking, and
+    # the pid is one nothing on this machine can be running.
+    dead = os.path.join(tmp, 'dead')
+    os.makedirs(dead)
+    write_row(dead, 'hank', ['docs/CRITICALITY-TIERS.md'])
+    _p = os.path.join(dead, 'hank.json')
+    _row = json.load(io.open(_p, encoding='utf-8'))
+    _row['claude_pid'] = 999999
+    _row['claude_start'] = 1
+    with io.open(_p, 'w', encoding='utf-8') as fh:
+        fh.write(json.dumps(_row, indent=1))
+    rc, out = run(dead, 'check', 'tooling', MINE, '--no-fetch')
+    ok('end to end: a registry claim whose PROCESS IS GONE does not block, '
+       'however recently it was taken', 'BLOCKED' not in out, out[:300])
+
+    # And the heartbeat is actually written by the tool, not just read.
+    beat = os.path.join(tmp, 'beat')
+    os.makedirs(beat)
+    rc, out = run(beat, 'check', 'tooling', 'anything', '--no-fetch')
+    _mine = os.path.join(beat, me + '.json')
+    if os.path.isfile(_mine):
+        _r = json.load(io.open(_mine, encoding='utf-8'))
+        ok('the tool STAMPS a heartbeat, so "still working" is evidence '
+           'rather than an assumption', bool(_r.get('claims_heartbeat')),
+           sorted(_r.keys()))
+    else:
+        ok('the tool STAMPS a heartbeat', False, 'no row written at ' + _mine)
+
     # ── 7. A FILE INTERSECTION IS AN OVERLAP IN ITS OWN RIGHT. Before this
     # ── change the loop skipped on `if not shared: continue` BEFORE reaching
     # ── the file check, which worked only because a path tokenises into the

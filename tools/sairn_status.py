@@ -185,11 +185,78 @@ def publish_claims(name, claims):
                 prev = json.load(fh)
         prev['claims'] = list(claims or [])
         prev['claims_updated'] = time.strftime('%Y-%m-%dT%H:%M:%S')
+        # THE HEARTBEAT, IN EPOCH SECONDS BESIDE THE HUMAN STAMP. The string
+        # above is for a reader; this is what claim_liveness() compares when
+        # the process answer is UNKNOWN, and parsing the string back would be
+        # a second spelling of the same fact waiting to disagree with it.
+        prev['claims_heartbeat'] = time.time()
         prev.setdefault('session', name)
         write_status(name, prev)
         return True
     except Exception:                                            # noqa: BLE001
         return False
+
+
+# ── A FIXED TIMEOUT ANSWERS THE WRONG QUESTION (2026-09-23) ────────────────
+# sairn_claim expires a claim four hours after it was TAKEN. Measured on this
+# session: a build ran 9.96 hours, so its own claim read as abandoned to every
+# other clone for roughly six of them -- while the work was actively going on.
+# The same number fails in the other direction too: a session that crashes at
+# minute two holds its claim for the remaining three hours and fifty-eight.
+#
+# RAISING THE NUMBER MAKES BOTH HALVES WORSE. The honest question is not "how
+# old is this claim" but "is the session that took it still working", and this
+# registry already answers that better than a timeout can -- every row carries
+# claude_pid and claude_start, and session_lock_check.owner_state() owns the
+# recycled-pid defence that makes the answer trustworthy.
+#
+# SO THE HEARTBEAT IS THE ROW ITSELF. It is re-stamped every time the session
+# touches the claim tool, and liveness is read from the process rather than
+# inferred from the stamp:
+#
+#   ALIVE    the process is running -> the claim is active whatever its age
+#   DEAD     the process is gone    -> expired NOW, not in three hours
+#   UNKNOWN  fall back to the heartbeat age against the same STALE_HOURS
+#
+# NO SECOND OPINION ON LIVENESS. owner_state() is imported, exactly as
+# liveness() above imports it, because a second copy of the recycled-pid
+# defence is a second answer to the one thing this must not get wrong.
+def claim_liveness(session):
+    """('ALIVE'|'DEAD'|'UNKNOWN', why, heartbeat_epoch_or_None) for a session.
+
+    UNKNOWN is a real answer and the caller falls back to age on it. Any
+    failure answers UNKNOWN rather than raising: this decides whether to WARN,
+    and a warning system that crashes is worse than one that is vague.
+    """
+    try:
+        with io.open(path_for(session), encoding='utf-8') as fh:
+            row = json.load(fh)
+    except Exception as e:                                       # noqa: BLE001
+        return 'UNKNOWN', 'row unreadable: %s' % e, None
+    # NO mtime FALLBACK, AND THE PROBE IS WHY. The first version used the
+    # row's modification time when no heartbeat key was present, and an arm
+    # asserting that a nine-hour-old claim expires went red -- correctly. The
+    # fixture file had just been written, so its mtime said "this session
+    # touched the registry a second ago" about a session that had done no
+    # such thing. Anything that rewrites the file -- a backup, a sync client,
+    # a probe -- would refresh a heartbeat it knows nothing about, which is a
+    # liveness signal that can be forged by accident.
+    #
+    # An absent heartbeat is therefore NO evidence, and the caller falls back
+    # to the claim time exactly as it did before this existed.
+    beat = row.get('claims_heartbeat')
+    mod = _lockmod()
+    if mod is None:
+        return 'UNKNOWN', 'session_lock_check would not import', beat
+    try:
+        state, why = mod.owner_state(row)
+    except Exception as e:                                       # noqa: BLE001
+        return 'UNKNOWN', 'owner_state raised: %s' % e, beat
+    if state in (mod.ALIVE, mod.SELF):
+        return 'ALIVE', why, beat
+    if state == mod.DEAD:
+        return 'DEAD', why, beat
+    return 'UNKNOWN', why, beat
 
 
 def read_claims(exclude=None):
