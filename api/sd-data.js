@@ -2533,9 +2533,52 @@ module.exports = async (req, res) => {
     // 'soft_delete' shares this branch's session gate; the management check
     // below is applied to it alongside write, because deleting a customer is
     // at least as consequential as editing one.
-    if (resource === 'sd_customers' && (action === 'read' || action === 'write' || action === 'soft_delete')) {
+    if (resource === 'sd_customers' && (action === 'read' || action === 'write' || action === 'soft_delete' || action === 'tombstones')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+
+    // ── TOMBSTONES: A DELETION ON ONE DEVICE REACHED NO OTHER ONE ──────────
+    // (2026-09-23) The soft-delete filter on the read above solves HALF of
+    // this and its own comment says which half: "a customer deleted in the
+    // browser was pushed straight back in on the next load. Filtering at the
+    // query is what makes the deletion stick; THE CLIENT CANNOT DO IT,
+    // because a record it has deleted is a record it no longer knows to skip."
+    //
+    // THE OTHER HALF IS THE OTHER DEVICE. Workstation A deletes a record.
+    // The row is marked and the read stops returning it -- so workstation B,
+    // which hydrated that id last week, is simply never sent it again. Every
+    // hydrate on this platform is ADDITIVE BY ID, so B has nothing to react
+    // to: an absence is not a signal. B keeps the record, renders it, quotes
+    // from it, and no future read will ever change that.
+    //
+    // THE FIX IS TO SEND THE ABSENCE AS A FACT. `tombstones` returns the ids
+    // that carry `_deleted_at`, so a client can remove what it still holds.
+    // A deletion becomes something a device can be TOLD rather than something
+    // it has to notice.
+    //
+    // IT SHARES THIS BRANCH'S GATE RATHER THAN GETTING ITS OWN, the same
+    // decision `soft_delete` took one line up and for the same reason: a
+    // second spelling of an auth check is a second place for it to be wrong,
+    // and this one returns the ids of records a caller may not be entitled to
+    // know existed.
+    //
+    // IT RETURNS IDS AND NOTHING ELSE. The deleted ROW still holds whatever
+    // it held -- a name, an address, a price -- and a caller asking "what was
+    // removed" has no business receiving that. `_deleted_at` rides along
+    // because a client that has been offline needs to know WHEN in order to
+    // decide whether its own local edit is newer; `_deleted_by` does not,
+    // because knowing who deleted a record is a different question with a
+    // different audience.
+      if (action === 'tombstones') {
+        const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
+          '&data->>_deleted_at=not.is.null&select=customer_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (rows || []).map((x) => ({ id: x.customer_id, deleted_at: (x.data || {})._deleted_at || null })) });
+        return;
+      }
       if (action === 'read') {
         // SOFT-DELETED CUSTOMERS ARE NOT RETURNED, and here that filter is
         // load-bearing rather than cosmetic. sdHydrateCustomers() merges the
@@ -2727,11 +2770,26 @@ module.exports = async (req, res) => {
     // decisions for all three verbs, and a second copy of them beside this one
     // is a copy that can drift -- which is how dnt_supplies ended up with a
     // separate branch carrying its own `dntGate`. One gate, three actions.
-    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write' || action === 'soft_delete')) {
+    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write' || action === 'soft_delete' || action === 'tombstones')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!CRM_MANAGEMENT_ROLES[session.role]) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can work the incoming quote requests' } });
+        return;
+      }
+      // TOMBSTONES -- see the block on sd_customers above for why an absence
+      // is not a signal and a deletion has to be SENT. Same gate as the three
+      // verbs beside it, which here already includes the owner/admin check:
+      // the ids of quote requests somebody removed are not a wider audience
+      // than the requests themselves.
+      if (action === 'tombstones') {
+        const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) +
+          '&data->>_deleted_at=not.is.null&select=request_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (rows || []).map((x) => ({ id: x.request_id, deleted_at: (x.data || {})._deleted_at || null })) });
         return;
       }
       if (action === 'read') {
@@ -13182,6 +13240,42 @@ module.exports = async (req, res) => {
           year: accYear,
         });
         res.status(200).json({ ok: true, data: accOut, provisioned: true });
+        return;
+      }
+      // TOMBSTONES FOR THE SEVEN -- see the block on sd_customers above for why
+      // an absence is not a signal.
+      //
+      // GATE PARITY, STATED BECAUSE A NEW ACTION IS A NEW DOOR. The SC read
+      // beside this one is LICENCE-ONLY -- no sc_* entry exists in
+      // SD_SESSION_GATED, and only the Tier A WRITE and sc_settings carry a
+      // session check. So this answers on the same credential as the read it
+      // complements, and it returns STRICTLY LESS than that read does: the ids
+      // of rows that were removed, never their contents. A caller who can list
+      // every live row can already see which ids exist; this adds which ones
+      // stopped existing. If the SC reads are ever session-gated, this action
+      // goes through the same gate in the same commit -- a tombstone list that
+      // outlives its resource's gate is the door this platform keeps finding.
+      //
+      // REFUSED FOR THE OTHER 21 rather than
+      // answering an empty list: they hard-delete, so they carry no marker, and
+      // an empty answer would read as "nothing has been deleted" when the real
+      // answer is "this resource cannot tell you". Same third-state rule the
+      // soft filter one line down states for its own predicate.
+      if (action === 'tombstones') {
+        if (!scIsSoftDeleteOnly(resource)) {
+          res.status(400).json({ error: { code: 'NO_TOMBSTONES',
+            message: resource + ' hard-deletes, so it keeps no tombstone. An empty list '
+              + 'would read as "nothing was deleted" when the truth is that this resource '
+              + 'cannot answer the question.' } });
+          return;
+        }
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+          '&data->>_deleted_at=not.is.null&select=entry_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (rows || []).map((x) => ({ id: x.entry_id, deleted_at: (x.data || {})._deleted_at || null })) });
         return;
       }
       if (action === 'read') {
