@@ -2216,8 +2216,8 @@
       "task": "capture the 21 unregistered components and resume the retirement discipline FILES: docs/SPOF-REGISTER.md",
       "claimed_at": "2026-09-23T23:10:46Z",
       "claimed_at_epoch": 1790205046.0196047,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T23:15:26Z",
       "files": [
         "docs/SPOF-REGISTER.md"
       ]
