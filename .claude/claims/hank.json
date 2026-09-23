@@ -2754,8 +2754,8 @@
       "task": "route the hover disagreement-tracking boundary answer -- self-buildable, but one of three axes is uncomputable today FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-23T10:25:15Z",
       "claimed_at_epoch": 1790159115.4827616,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T10:27:18Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
