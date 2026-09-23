@@ -12320,6 +12320,63 @@
       "recurrence_open": "The checker still cannot see a fold with NO fallback at all. Its pattern is the truthy-guard shape, plus (x || 0); taxRender's invTotal was the bare shape, s + i.amount, and was invisible to it by construction rather than by configuration. Widening truthy_sum_check.py to that shape is a separate change and was NOT made here, so the gap is named rather than assumed covered. AND 46 GRANDFATHERED ENTRIES REMAIN: each is a hazard nobody has assessed, and this defect is the first demonstration that the list hides real ones rather than only theoretical ones -- two of its entries were a live money bug on a tax report."
     },
     {
+      "commit": "d1c7000cc5b8",
+      "date": "2026-09-23",
+      "subject": "fix(sd-data): two alf reads ordered by created_at and never returned it -- give the caller the column it is ordered by",
+      "files": [
+        "api/sd-data.js",
+        "tests/run_alf_read_order_sabotage_probe.py"
+      ],
+      "lines_added": 102,
+      "lines_removed": 15,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "live-verification",
+      "summary": "api/sd-data.js: the alf_mar and alf_incidents list reads ordered by created_at and did not SELECT it, so the client received rows in a server-defined order with no way to verify or re-derive that order. Both client reads are hydrates that merge server rows into a persisted local array in arrival order, so the ordering became the order on disk while the column explaining it was dropped in transit.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f9e9628f4762",
+        "date": "2026-09-22",
+        "subject": "fix(sairncare): six append-only trail reads had no order= clause -- not three, and unordered is not insertion order",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names 'a query ordered by a column it does not return'. The nearest is the append-only read-order family that introduced the order clause, but that rule is about the ORDER being specified and this defect is about the KEY being withheld -- the rule was satisfied and the gap is beside it.",
+      "phase_note": "The order clause was appended to an existing select during the append-only ordering pass and the select was not widened with it. A design decision to order by created_at is correct; not returning it is an omission in carrying that decision out.",
+      "contributing_factors": [
+        {
+          "factor": "The order clause and the select list are two halves of one query and nothing required them to agree. `&order=created_at.desc` was appended to a select that did not carry the column, and the query is valid SQL either way -- PostgREST will order by a column it does not return.",
+          "kind": "technical",
+          "action": "created_at is now selected AND mapped onto the record on both reads, so the key the rows are ordered by travels with them.",
+          "action_status": "done"
+        },
+        {
+          "factor": "IT IS INVISIBLE FROM THE SOURCE. The line shows an order clause and reads as complete; only the RETURNED ROWS show the column is absent. Every review of this change, including the one that approved it, read the query.",
+          "kind": "process",
+          "action": "Found by a live read-back against the deployed endpoint with real credentials, which is the method that surfaced it. Recorded so the next reviewer of an order= clause asks what the caller actually receives rather than what the query says.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The two affected reads are HYDRATES, not display lists -- they merge server rows into a persisted local array in arrival order and write it back. So the missing column was not merely a cosmetic omission: the server's ordering became the order on disk while the field explaining it was dropped in transit.",
+          "kind": "technical",
+          "action": "Fixed on exactly the two reads with that shape. The other four trails already select the column they order by and were deliberately left alone rather than swept.",
+          "action_status": "done"
+        },
+        {
+          "factor": "The sabotage arms guarding this area anchored on a hand-copied literal of the alf_mar query, so a correct change to that query broke three of them. They failed loudly about the ANCHOR rather than passing, which is the harness working -- but it is the fifth recorded instance of an arm typing a value beside the thing it is meant to watch.",
+          "kind": "technical",
+          "action": "The anchors are derived from api/sd-data.js and asserted unique; arm 4's select+order argument and arm 6's order-stripped variant are computed from the matched line instead of typed again. Driven to failure by planting a second identical read.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "Only the six SAIRNcare trails were examined. Every other read on this platform that carries an order= clause is unchecked against the same question -- does the caller receive the column it is ordered by -- and the answer is invisible from the source, so a grep cannot settle it. No sweep was run."
+    },
+    {
       "commit": "f27a9cd5ed4c",
       "date": "2026-09-23",
       "subject": "fix(auth): all seventeen auth endpoints took a licence for ANY app -- a StoneDesk key got 200 from SAIRNvet, and check_license is the gate that exists to stop exactly that",
