@@ -19,6 +19,7 @@ Source: `GUARD_TESTS` in `tools/sairn_push_gate_hook.py`. These are the only tes
 | PLATFORM | no storage wrapper on the platform can fail silently | `tests/st_reports_failure.js` | A write that returns false to nobody and logs nothing is indistinguishable from a write that worked; in SAIRNcare all 28 st() call sites ignored the return and in SAIRNfreedom all 78 did. The bare-catch count is per app and fails ABOVE its number as well as below, so a new silent catch cannot enter a wrapper unnoticed -- it caught exactly that on 2026-09-10 when a server backup added one to SAIRNfreedom. |
 | PLATFORM | the session lock refuses the SECOND live session in a clone, and refuses nobody else | `tests/session_lock_liveness_probe.py` | This became a BLOCKING PreToolUse deny on 2026-09-16, so both ways of being wrong now cost something a warning never did. The under-refusal is the original defect: the SessionStart warning fired correctly on 2026-09-15 and two sessions read it and carried on, because a SessionStart hook cannot deny. The OVER-refusal is the one a bare pid-alive check would have introduced -- pids are recycled, and a dead session whose pid was picked up by something unrelated would lock a clone out permanently with no way for the occupant to tell a ghost from a real collision. Only the start-time comparison separates them, and arm (c2) is the arm most likely to have been left as a comment. The third state is held too: CLAUDE_PID unset or an unreadable process handle must fall back to the 2h staleness rule and block nothing, because failing CLOSED here would brick the session the lock exists to protect. |
 | PLATFORM | the two federal refrigerant rules the engine computes are actually FETCHED and STORED by the endpoint that feeds it | `api/sd-data-mech-assets.test.js` | A SEAM, AND IT WAS BROKEN ON ARRIVAL. api/_lib/mech-assets.js computes 40 CFR 84.106 scope from hfc_gwp_over_53, leak_detected_on and leak_repair_verified_on; api/sd-data.js owns the select list and the write body those three have to travel through, and on 2026-09-17 it named none of them. The engine was complete, its own unit suite was green, and the rule would have reported `unknown_substance` for every asset forever -- a check that CANNOT FIRE, which on screen is indistinguishable from one that fired and found nothing. Neither side is wrong in isolation, which is why this is the seam class and not the author-runs-it class: the next person to edit that select list breaks it again with a change that looks local and leaves both suites green. mech_site_assets was promoted to Tier A in the same commit, and docs/CRITICALITY-TIERS.md holds that a Tier A resource with no guard is a finding -- this is that guard. Also held here: the GWP flag is refused rather than coerced (Boolean('false') is true), and a malformed leak date is refused rather than stored as null, because a silently dropped date shows the technician who just typed one a saved asset with no repair clock running. |
+| sairncode | the ONE array that decides which SAIRNcode records need a session to write and may never be destroyed still equals the Tier A rows in docs/CRITICALITY-TIERS.md, in both directions | `tests/sairncode_gates.js` | THIS ENTRY EXISTS BECAUSE THE TEST WAS ALREADY RIGHT AND ALREADY RED. SC_TIER_A_WRITE_GATED and SC_TIER_A_SOFT_DELETE_ONLY both derive from a single array in api/_resources/sairncode.js. Sixteen sc_* resources were re-tiered A between 2026-09-15 and 2026-09-23 and that array did not follow, so for EIGHT DAYS sc_hcc (a named patient joined to a diagnosis grouping and its dollar value), sc_eligibility (a named patient joined to payer and plan) and sc_providers (the QP status that selects between two CMS CY2026 conversion factors) accepted a write carrying the LICENCE KEY ALONE and could be hard-deleted. This suite asserted the equality the whole time and named all sixteen; nothing invoked it, so nobody was required to look. THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST -- which is a different failure from an absent check, and the only fix for it is this registry. It is also the seam class this list is for in the strictest sense: the two sides are a MARKDOWN REGISTER and a JS ARRAY in different files, edited by different sessions for different reasons, and neither edit looks wrong on its own. Michael's call, 2026-09-23, after the eight days were measured. |
 | PLATFORM | every disclosed coverage gap is actually disclosed, in the channel that was decided on | `api/_lib/deadline-coverage-contract.test.js` | JURISDICTION_COVERAGE is the single channel for a disclosed gap, by Michael's decision of 2026-09-01. Two jurisdictions previously asserted their gaps were row-level and an audit measured that claim false -- 2 of Utah's 9 rows and 2 of Nevada's 10 carried any omission note -- so a caller was told through neither channel. |
 
 ## 2. Mechanically enforced at the push gate
@@ -636,10 +637,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | source | citations |
 |---|---|
-| `index` | 308 |
+| `index` | 307 |
 | `declared` | 267 |
 | `declared+index` | 45 |
-| `GUARD_TESTS+index` | 5 |
+| `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
 
@@ -763,7 +764,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
   app files                           22   git ls-files '*.html'
   test files on disk                 716   tests/**, api/** (both walked)
   open-work rows citing a test       346   docs\SAIRN-OPEN-WORK-INDEX.md
-  GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
+  GUARD_TESTS entries                  9   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py

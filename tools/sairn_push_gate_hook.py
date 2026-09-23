@@ -311,6 +311,27 @@ GUARD_TESTS = [
      'is true), and a malformed leak date is refused rather than stored as '
      'null, because a silently dropped date shows the technician who just typed '
      'one a saved asset with no repair clock running.'),
+    ('tests/sairncode_gates.js',
+     'the ONE array that decides which SAIRNcode records need a session to '
+     'write and may never be destroyed still equals the Tier A rows in '
+     'docs/CRITICALITY-TIERS.md, in both directions',
+     'THIS ENTRY EXISTS BECAUSE THE TEST WAS ALREADY RIGHT AND ALREADY RED. '
+     'SC_TIER_A_WRITE_GATED and SC_TIER_A_SOFT_DELETE_ONLY both derive from a '
+     'single array in api/_resources/sairncode.js. Sixteen sc_* resources were '
+     're-tiered A between 2026-09-15 and 2026-09-23 and that array did not '
+     'follow, so for EIGHT DAYS sc_hcc (a named patient joined to a diagnosis '
+     'grouping and its dollar value), sc_eligibility (a named patient joined '
+     'to payer and plan) and sc_providers (the QP status that selects between '
+     'two CMS CY2026 conversion factors) accepted a write carrying the LICENCE '
+     'KEY ALONE and could be hard-deleted. This suite asserted the equality '
+     'the whole time and named all sixteen; nothing invoked it, so nobody was '
+     'required to look. THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT '
+     'DID NOT EXIST -- which is a different failure from an absent check, and '
+     'the only fix for it is this registry. It is also the seam class this '
+     'list is for in the strictest sense: the two sides are a MARKDOWN '
+     'REGISTER and a JS ARRAY in different files, edited by different sessions '
+     'for different reasons, and neither edit looks wrong on its own. '
+     'Michael\'s call, 2026-09-23, after the eight days were measured.'),
     ('api/_lib/deadline-coverage-contract.test.js',
      'every disclosed coverage gap is actually disclosed, in the channel that '
      'was decided on',
