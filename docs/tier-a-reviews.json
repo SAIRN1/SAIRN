@@ -2584,6 +2584,43 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-23T20:05:11Z",
+      "resources": [
+        "grd_boq_rates",
+        "grd_rounds",
+        "law_clients",
+        "rf_company_programs",
+        "rf_entities",
+        "rf_job_warranties",
+        "rf_prequal_documents",
+        "rf_safety_equipment",
+        "sd_aiquotes",
+        "sd_crm",
+        "sd_email_threats",
+        "sd_exec_msgs",
+        "sd_fin_jobs",
+        "sd_invoices",
+        "sd_negotiated_prices",
+        "sd_order_history",
+        "sd_pricing_rules",
+        "sd_sms_log",
+        "sen_clients",
+        "sen_visits"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "tests/run_cross_tenant_dispatchers_sabotage_probe.py"
+      ],
+      "what": "Three StoneDesk rows read individually and promoted -- sd_crm B->A on BOTH axes, sd_sms_log and sd_email_threats B->A on CONFIDENTIALITY only -- plus their isolation arms and two more sabotage mutations, in the same commit. 9e9c5b63. No app source changed; stonedesk.html and api/sd-data.js were READ only.\n\nATTACK THESE FIVE:\n(1) sd_crm's INTEGRITY-A RESTS ON A DOCUMENTED INCIDENT THAT WAS ALREADY FIXED. The $35,900 invented pipeline is real and recorded at stonedesk.html:30664-30680, but the _crmReadFailed guard closed it on 2026-09-04. If the register's third A limb is meant for LIVE exposure rather than history, this row is A on the money limb alone and the incident limb is decoration -- decide which, because I leaned on the incident first.\n(2) sd_email_threats IS THE THINNEST OF THE THREE AND I ARGUED AGAINST MYSELF ONCE ALREADY. I refused the same free-text argument for sc_auth.proc this morning and accepted it here on the ground that  is a CAPTURE of third-party text rather than something a user typed. If you think that distinction does not hold, this row goes back to B and sc_auth's cell is the precedent you should cite.\n(3) sd_sms_log's CONFIDENTIALITY-A RESTS ON name+phone BEING ALWAYS PRESENT.  is optional -- sdSMSSend() stores 'N/A' when it is blank (:32196). Check whether a row with no phone still carries enough to be A, or whether the cell overstates.\n(4) THE LINE CITATIONS ARE THE EVIDENCE AND stonedesk.html IS 42,651 LINES WITH ANOTHER SESSION EDITING IT. :30664 :30764 :30816 :30870 :2866-2887 for sd_crm; :32129 :32151 :32183 :32196 :32216 for sd_sms_log; :37258 :37268 :37275 :37300 for sd_email_threats. Confirm each still says what the cell claims.\n(5) THE SABOTAGE PROBE NOW LOCATES BRANCHES BY SEARCH RATHER THAN BY LINE NUMBER, and READ_WINDOW=90 is a magic number I picked from the widest current gap (SC's opener to its read is 68 lines). A branch whose filter sits further than 90 lines below its opener would report NO FILTER UNDER OPENER -- loud, not silent -- but check 90 is defensible rather than lucky, and check that deriving the read line cannot pick up a DIFFERENT query inside a branch that issues two.\n\nFILES: docs/CRITICALITY-TIERS.md api/sd-data-cross-tenant-dispatchers.test.js tests/run_cross_tenant_dispatchers_sabotage_probe.py",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-23T20:05:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
