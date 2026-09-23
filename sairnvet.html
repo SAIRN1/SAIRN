@@ -8519,7 +8519,7 @@ function renderBoarding(){
   var thisMonth = today.slice(0,7);
   var revenue = list.filter(function(b){ return b.checkin.slice(0,7)===thisMonth; }).reduce(function(s,b){
     var days = b.service==='Boarding' ? Math.max(1,(new Date(b.checkout)-new Date(b.checkin))/86400000) : 1;
-    return s + (b.rate||0)*days;
+    return s + (Number(b.rate)||0)*days;
   },0);
 
   var kennelTotal = getKennelCount();
