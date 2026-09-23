@@ -2158,6 +2158,22 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "fourth-1790158433",
+      "session": "fourth",
+      "subject": "sairnvet-scribe-build",
+      "task": "ambient scribe consent flow and capture UI plus the self-hosted transcription endpoint contract gated to FAIL CLOSED until the model host exists -- per Michael's go-ahead over cody's audit-wave3 overlap FILES: sairnvet.html api/_resources/sairnvet.js api/sairnvet-transcribe.js docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md",
+      "claimed_at": "2026-09-23T10:13:53Z",
+      "claimed_at_epoch": 1790158433.8895657,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_resources/sairnvet.js",
+        "api/sairnvet-transcribe.js",
+        "docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md",
+        "sairnvet.html"
+      ]
     }
   ]
 }
