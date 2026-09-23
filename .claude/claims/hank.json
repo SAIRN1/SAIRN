@@ -2707,6 +2707,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "hank-1790153758",
+      "session": "hank",
+      "subject": "isolation-arms",
+      "task": "extend the cross-tenant dispatcher suite to cover Tier A resources in the NONE bucket -- BLD, LAW, SDN, DNT, SC FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "claimed_at": "2026-09-23T08:55:58Z",
+      "claimed_at_epoch": 1790153758.8716714,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ]
     }
   ]
 }
