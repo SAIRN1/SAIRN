@@ -2274,8 +2274,8 @@
       "task": "the alf reads order by created_at and do not select it -- give the caller the column it is ordered by FILES: api/sd-data.js",
       "claimed_at": "2026-09-23T18:37:52Z",
       "claimed_at_epoch": 1790188672.2648406,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T19:25:12Z",
       "files": [
         "api/sd-data.js"
       ]
