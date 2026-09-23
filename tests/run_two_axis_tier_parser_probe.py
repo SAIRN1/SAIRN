@@ -19,6 +19,7 @@ resource COUNT: a mis-parse, not a crash, so nothing would have said so. The
 fix disambiguates on cell 1's own shape. This arm is what stops that fix being
 quietly undone.
 """
+import ast
 import io
 import os
 import re
@@ -94,8 +95,82 @@ NEW_ROWS = ('| `alpha_one` | **A** | **A** | money moves wrongly | read by a com
 # What is asserted instead is the PARSER's own output: how many resource rows
 # it found, how many it read as migrated, and the ABSENCE of the specific
 # row-level problem classes this change introduces.
-ROW_PROBLEMS = ('BAD TIER', 'BAD CONFIDENTIALITY', 'COMPUTED TIER MISMATCH',
+# ── THE LABELS ARE READ OUT OF THE CHECKER, NOT TYPED HERE (2026-09-23) ──
+# They used to be a hand-written tuple of five. A list of another file's
+# strings is a second copy of them, and it goes stale the first time somebody
+# adds a sixth -- silently, because a label the probe has never heard of is a
+# problem class it then asserts nothing about, and a skipped assertion reads
+# exactly like a passed one. Same move tests/claims/run_push_verify_probe.py's
+# local_deps() makes for imports: resolve it from the SOURCE.
+#
+# AST, NOT A REGEX. The labels sit inside `problems.append('LABEL  %s ...' %
+# ...)`, and the checker's own prose discusses "the BAD TIER check" in comments
+# three times. A regex over the source would collect those sentences as labels.
+# A parser cannot read a comment as a call. (Same class as the import scan that
+# returned `HEAD`, `a` and `the` from docstrings, recorded twice on this
+# platform now.)
+def checker_problem_labels(path):
+    """Every problem label tools/criticality_tier_check.py can emit."""
+    try:
+        tree = ast.parse(io.open(path, encoding='utf-8').read())
+    except (OSError, SyntaxError) as e:
+        return None, str(e)[:120]
+    out = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        f = node.func
+        if not (isinstance(f, ast.Attribute) and f.attr == 'append'
+                and isinstance(f.value, ast.Name) and f.value.id == 'problems'):
+            continue
+        arg = node.args[0] if node.args else None
+        while isinstance(arg, ast.BinOp):      # 'LABEL  %s ...' % (...)
+            arg = arg.left
+        if isinstance(arg, ast.Constant) and isinstance(arg.value, str):
+            m = re.match(r'^([A-Z][A-Z ]*[A-Z])', arg.value)
+            if m:
+                out.add(m.group(1).strip())
+    return out, None
+
+
+# A SYNTHETIC APP CANNOT SATISFY THESE, so they fire on every fixture by
+# construction and say nothing about the parser. This is the one judgement that
+# stays hand-written, and it is a judgement about what a LABEL means rather
+# than a copy of what the checker says -- the header comment below the fixtures
+# already explains why asserting PROBLEMS:0 here would be asserting that a
+# constructed app is a real one.
+SYNTHETIC_APP_LABELS = frozenset({
+    'NO ROLLUP',        # the fixture app has a registry and no rollup line
+    'GONE',             # ...and every real app has a rollup and no fixture registry
+    'NOT A RESOURCE',   # the fixture's rows are registered in no api/_resources
+})
+
+# The five that were hand-typed here until 2026-09-23. Kept ONLY as a criteria
+# lock: a derivation that silently returned garbage -- or nothing -- would make
+# row_problems() return [] and arm 2 would pass vacuously forever, which is the
+# failure this change could introduce. If the derivation stops finding these,
+# the probe refuses to run rather than reporting a clean parse.
+KNOWN_LABELS = ('BAD TIER', 'BAD CONFIDENTIALITY', 'COMPUTED TIER MISMATCH',
                 'NO EVIDENCE', 'NO WORST CASE')
+
+_labels, _why = checker_problem_labels(TOOL)
+if _labels is None:
+    print('COULD NOT RUN: tools/criticality_tier_check.py would not parse (%s). '
+          'Nothing was verified.' % _why)
+    sys.exit(3)
+_missing = [k for k in KNOWN_LABELS if k not in _labels]
+if _missing:
+    print('COULD NOT RUN: the label derivation lost %s. It reads '
+          "problems.append('LABEL ...') out of the checker; if that shape "
+          'changed, this probe must be updated rather than left asserting the '
+          'absence of nothing. Nothing was verified.' % _missing)
+    sys.exit(3)
+
+# Derived, so a NEW problem class is asserted absent the day it is added. A new
+# APP-level label would land here wrongly and turn arm 2 red -- that is the
+# safe direction and it names the label, where the old tuple would have said
+# nothing at all.
+ROW_PROBLEMS = tuple(sorted(_labels - SYNTHETIC_APP_LABELS))
 
 
 def row_problems(out):
