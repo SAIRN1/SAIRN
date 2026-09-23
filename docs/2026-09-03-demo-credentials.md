@@ -56,6 +56,23 @@ credential that cannot provision anything.
 | SAIRNroofing | `RF-AUDIT-2026` | `sairn-demo-owner` | `17462059` | owner | `/api/rf-auth` |
 | SAIRNbuild | `BLD-PINNACLE-2026` | `sairn-demo-owner` | `35810946` | owner | `/api/bld-auth` |
 | SAIRNcode | `SC-PINNACLE-2026` | `sairn-demo-owner` | `72694103` | **admin** | `/api/sc-auth` |
+| SAIRNvet | `SV-PINNACLE-2026` | `sairn-demo-owner` | `38471260` | owner | `/api/sv-auth` |
+
+**The SAIRNvet row was added 2026-09-23 and did NOT come from the SQL file
+above.** Every other row was seeded; this one was minted through the app's own
+`bootstrap` action against an empty `sv_employee_auth`, the same path a real
+first user takes. That is worth stating because it means this PIN went through
+the endpoint's real `hashPin`, not a hash written into a seed file, and because
+`bootstrap` is now **permanently refused on this licence** — it deliberately
+does not filter on `active`, so a deactivated credential cannot be bootstrapped
+around. Further accounts on `SV-PINNACLE-2026` go through `setup`, and a lost
+owner here is recoverable only by direct database access. That is the same
+condition that lost `SD-AUDIT-2026` in August.
+
+**Read back, not assumed:** `login` with this PIN returned 200 and a session
+token, and a second `bootstrap` returned `409 ALREADY_PROVISIONED`. Both were
+checked, because `bootstrap` returning 200 is a claim about the write and not
+about whether anyone can sign in with the result.
 
 Signing in from a terminal, for any row above:
 
