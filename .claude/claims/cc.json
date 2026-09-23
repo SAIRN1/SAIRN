@@ -2453,8 +2453,8 @@
       "task": "review hank 13:44:34Z NONE-bucket isolation arms, then fix postgrestMock select= honouring, the grd_ UNREACHED tripwire and the stale law_clients comment FILES: docs/tier-a-reviews.json api/sd-data-cross-tenant-dispatchers.test.js",
       "claimed_at": "2026-09-23T17:58:12Z",
       "claimed_at_epoch": 1790186292.5513852,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T18:46:20Z",
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js",
         "docs/tier-a-reviews.json"
