@@ -2798,6 +2798,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "hank-1790161806",
+      "session": "hank",
+      "subject": "route-law-sc",
+      "task": "route law_bankstatements and sc_query to fourth who holds the register -- finished arguments, not just names FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T11:10:06Z",
+      "claimed_at_epoch": 1790161806.751083,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
