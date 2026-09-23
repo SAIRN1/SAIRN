@@ -2767,8 +2767,8 @@
       "task": "the last leftover NONE-bucket resources -- sen_referrals bld_tna exec_context sc_anesthesia, each needing its own branch read FILES: api/sd-data-cross-tenant-dispatchers.test.js",
       "claimed_at": "2026-09-23T10:36:16Z",
       "claimed_at_epoch": 1790159776.8582463,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T10:46:58Z",
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js"
       ]
