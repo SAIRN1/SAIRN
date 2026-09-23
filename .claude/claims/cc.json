@@ -2432,6 +2432,19 @@
       "files": [
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cc-1790170747",
+      "session": "cc",
+      "subject": "tooling",
+      "task": "discharge hank obligations 10:14:39Z and 12:24:19Z -- review only FILES: docs/tier-a-reviews.json",
+      "claimed_at": "2026-09-23T13:39:07Z",
+      "claimed_at_epoch": 1790170747.713506,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/tier-a-reviews.json"
+      ]
     }
   ],
   "refusals": [
