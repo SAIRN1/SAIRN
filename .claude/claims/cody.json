@@ -2242,8 +2242,8 @@
       "task": "sv_invoicing sv_multisite sv_farmcalls individually read both axes FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T23:33:06Z",
       "claimed_at_epoch": 1790206386.9732974,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T23:39:20Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
