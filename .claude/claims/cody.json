@@ -1982,6 +1982,19 @@
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "tools/sairn_clickthrough_driver.js"
       ]
+    },
+    {
+      "id": "cody-1790168783",
+      "session": "cody",
+      "subject": "tiers-three",
+      "task": "sf_gaming_expenses conf B->A plus the two held sairncode rows sc_providers and sc_fraud FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T13:06:23Z",
+      "claimed_at_epoch": 1790168783.3075488,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
