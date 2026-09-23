@@ -2720,6 +2720,19 @@
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js"
       ]
+    },
+    {
+      "id": "hank-1790155873",
+      "session": "hank",
+      "subject": "isolation-bespoke",
+      "task": "cover the bespoke-branch Tier A resources in the isolation NONE bucket -- sen_clients, sen_authorizations, sen_franchise_agreements, law_clients FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "claimed_at": "2026-09-23T09:31:13Z",
+      "claimed_at_epoch": 1790155873.08152,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ]
     }
   ]
 }
