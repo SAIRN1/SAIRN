@@ -1936,8 +1936,8 @@
       "task": "READ-ONLY live click-through of the DEPLOYED stonedesk sairnbiz sairnvet pages -- drives the rendered app in a browser, edits no app source FILES: docs/2026-09-23-wave3-click-through-reverification.md",
       "claimed_at": "2026-09-23T10:10:15Z",
       "claimed_at_epoch": 1790158215.7399967,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:31:19Z",
       "files": [
         "docs/2026-09-23-wave3-click-through-reverification.md"
       ]
