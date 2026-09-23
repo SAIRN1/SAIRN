@@ -2872,8 +2872,8 @@
       "task": "discharge fourth's 12:44:44Z obligation -- criticality_tier_check rollup LIST reconciliation, arms 9 and 10 -- then isolation arms for dnt_settings sc_settings sen_settings FILES: tests/criticality_rollup_list_review_probe.py api/sd-data-cross-tenant-dispatchers.test.js",
       "claimed_at": "2026-09-23T13:08:32Z",
       "claimed_at_epoch": 1790168912.9813519,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T18:02:43Z",
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js",
         "tests/criticality_rollup_list_review_probe.py"
