@@ -2247,6 +2247,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cody-1790207431",
+      "session": "cody",
+      "subject": "tier-sv-petins",
+      "task": "sv_petinsurance individually read both axes FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T23:50:31Z",
+      "claimed_at_epoch": 1790207431.0476916,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
