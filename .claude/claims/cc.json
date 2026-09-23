@@ -2459,6 +2459,21 @@
         "api/sd-data-cross-tenant-dispatchers.test.js",
         "docs/tier-a-reviews.json"
       ]
+    },
+    {
+      "id": "cc-1790189248",
+      "session": "cc",
+      "subject": "tier-draw",
+      "task": "tier re-audit draw: read sc_anesthesia_base_units sc_auth (SAIRNcode) and sd_crm sd_email_threats sd_sms_log (StoneDesk) individually out of the apps, replacing the stated-B-rule sentence with real evidence; then guard the two unguarded controls FILES: docs/CRITICALITY-TIERS.md tests/app_session_isolation_probe.py tests/install_git_hooks_check_probe.py",
+      "claimed_at": "2026-09-23T18:47:28Z",
+      "claimed_at_epoch": 1790189248.19427,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "tests/app_session_isolation_probe.py",
+        "tests/install_git_hooks_check_probe.py"
+      ]
     }
   ],
   "refusals": [
