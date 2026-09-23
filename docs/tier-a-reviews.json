@@ -2358,6 +2358,43 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T17:54:33Z",
+      "resources": [
+        "bld_draws",
+        "bld_warranty",
+        "dnt_complaints",
+        "leg_custodylog",
+        "leg_deathrecords",
+        "leg_merch_catalog",
+        "rf_job_warranties",
+        "rf_prequal_documents",
+        "rf_safety_equipment",
+        "sb_ap",
+        "sb_train",
+        "sc_dme",
+        "sc_rac",
+        "sc_telehealth",
+        "sd_exec_msgs",
+        "sd_order_history",
+        "sd_pricing_rules",
+        "sen_visits",
+        "sf_members",
+        "sf_youth_participants"
+      ],
+      "files": [
+        "api/sairndental/complaint-respond.test.js",
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "Cross-tenant isolation arms for eight of the seventeen WEAK resources, 2026-09-23 (42e93469). Two test files, NO app source changed. WEAK 17 -> 9.\n\nSEVEN ARE ONE-LINE MAP MEMBERS: sc_dme (SC), sf_members (SF), sb_ap (SB), leg_custodylog and leg_deathrecords (LEG), bld_draws (BLD), sd_exec_msgs (SD_LOCAL, behind the executive-channel owner/admin gate).\n\nTHE EIGHTH IS AN EDIT TO THE GRADER'S OWN REFERENCE FILE, api/sairndental/complaint-respond.test.js, and that is the part to review hardest.\n\nREVIEW THESE FIVE THINGS:\n\n(1) I EDITED A REFERENCE_TEST. tools/cross_tenant_isolation_scope.py's self_check() refuses to print ANY verdict if either reference case stops grading GENUINE, so a bad edit here takes the whole measurement down. I changed its declaration from `none (...)` to `dnt_complaints`, added a UNITS table, and rewired the arm's fixture to take its id column from that table. Verify BOTH references still grade GENUINE, and verify the rewiring did not weaken the arm -- the mock must still filter on the id column as well as license_hash, because the arm's whole property is that the two are ANDed.\n\n(2) THE FINDING BEHIND IT IS ABOUT THE `none (...)` ESCAPE HATCH, not about this file. The old reason was \"dnt_complaints, which is Tier B\". The resource was re-tiered to A and the reason silently stopped being true, because nothing reads the prose inside a `none (...)`. DECIDE WHETHER THAT DESERVES A CHECK: a `none` declaration whose reason cites a tier could be cross-referenced against the register. I did not build one -- that is a change to the measurer and needs its own control -- but it is the same class as the stale-anchor family, and it hid real coverage for however long the re-tier has been in.\n\n(3) THE SEVEN MAP MEMBERS COST ONE LINE EACH, so the only thing each independently establishes is that the resource is still IN its map with the right idCol. A wrong idCol still passes the [W] arm, because the assertion is `on_conflict=license_hash,` as a PREFIX. Check every idCol against the map in api/sd-data.js -- I read them out with a regex.\n\n(4) sd_exec_msgs SITS BEHIND AN EXTRA GATE (sdExecGate, owner/admin only) wrapped round both legs of the SD_LOCAL branch. The unit's `owner` role satisfies it. Confirm that is true and that the arm is not passing because the gate refused before the query -- an UNREACHED arm is reported, but check the report rather than trusting it.\n\n(5) THE SABOTAGE CONTROL MISREPORTED ITSELF ON THE REFERENCE ARM. It read stdout only; that harness prints failures to stderr, so a real catch came back \"** NOTHING **\". Re-run it reading BOTH streams. That is the third distinct way a control has misreported itself today (two stale anchors, one unread stream) and it is the reason to re-run rather than read my summary.\n\nDISCLOSED, NOT FIXED: 9 WEAK remain. One is exec_context (a limit of the grader, disclosed in its own DISCLOSED block). The other 8 are bespoke branches -- alf_clients, alf_facility, alf_mar, dnt_appointments, law_matters, rf_draws, rf_proposals, rf_supplier_documents -- each needing its own response-shape read, and none is touched here.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T17:54:33Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
