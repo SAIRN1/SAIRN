@@ -258,6 +258,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
+| **The upgrade audit Michael flagged weeks ago and nobody had ever run &mdash; three npm dependencies behind by 5, 2 and 1 majors, all on live paths** | **MEASURED 2026-09-15 (Hank)**, nothing upgraded. `npm audit --omit=dev` reports **0 vulnerabilities**, so this is CURRENCY and not a known CVE | `tests/run_cron_liveness_probe.py` |
 | **`tier_a_review_gate.py` counted a WORKLOG as code serving a Tier A resource &mdash; closed by SHRINKING the rule, not growing the list** | **FIXED 2026-09-15 (Fourth)** &mdash; `tools/tier_a_review_gate.py`, 5 new arms in `tests/run_tier_a_review_gate_probe.py`, all pass | `tests/run_tier_a_review_gate_probe.py` |
 | **Item 52: the fusion, and the two checkers whose CORRECTOR fails its own sanity check** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/checker_estimate_fusion.py`, `tests/run_estimate_fusion_probe.py` 19 paired arms, green. 46 checkers: 43 FUSED, 1 CORRECTION ONLY, **2 UNCORRECTED** | `tests/run_estimate_fusion_probe.py` |
 | **Item 59: the Gini said 0.971 and it was NOT evidence of clustering &mdash; and my own `k` produced a superspreading figure from pure chance** | **BUILT 2026-09-15 (Fourth)** &mdash; dispersion test + backward tracing in `tools/defect_dispersion.py`, `tests/run_dispersion_probe.py` 18 paired arms, green | `tests/run_dispersion_probe.py` |
@@ -751,7 +752,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 704   tests/**, api/** (both walked)
-  open-work rows citing a test       344   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       345   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  8   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
