@@ -2901,8 +2901,8 @@
       "task": "arm the SDN session gate -- make X-SD-Auth unconditional in sdnData then gate the five Tier A resources, in one commit FILES: sairndesign.html api/sd-data.js api/sd-data-sdn-session-gate.test.js",
       "claimed_at": "2026-09-23T23:09:14Z",
       "claimed_at_epoch": 1790204954.088614,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T23:33:57Z",
       "files": [
         "api/sd-data-sdn-session-gate.test.js",
         "api/sd-data.js",
