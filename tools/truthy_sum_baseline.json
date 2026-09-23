@@ -99,8 +99,6 @@
     "sairnvet.html::b.rate": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "sairnvet.html::c.recipients": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::a.price": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
-    "stonedesk.html::b.amt": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
-    "stonedesk.html::e.tax": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::i.balance": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::j.sqft": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::l.val": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",

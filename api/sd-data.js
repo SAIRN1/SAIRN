@@ -3774,6 +3774,38 @@ module.exports = async (req, res) => {
     }
     if (resource === 'invoices' && action === 'write') {
       if (!payload || !payload.id || !payload.customer_id) { res.status(400).json({ error: { message: 'invoice payload.id and payload.customer_id are required' } }); return; }
+      // ── A NON-NUMERIC `amount` NEVER REACHES THE BLOB (2026-09-23) ──────
+      // This branch validated id and customer_id and stored the rest
+      // verbatim, so a STRING amount landed in the jsonb and every fold that
+      // read it back concatenated instead of adding. Measured on the client
+      // half the same day: bills of "100" and "200" folded to the string
+      // "0100200", profit reported -99450 where 450 was right, and that
+      // number was posted to /api/claude as fact and printed on a tax report.
+      // Coercing on read repairs the readers that exist; it does nothing for
+      // the next one. This is the other half.
+      //
+      // A NUMERIC-LOOKING STRING IS THE DANGEROUS CASE, not "abc". "abc"
+      // renders visibly wrong and somebody asks; "500" folds into a
+      // believable total nobody questions. So it is REFUSED rather than
+      // coerced here -- coercing would be a silent data change, and the
+      // caller is the only party that knows what it meant.
+      //
+      // ABSENT AND NULL ARE DELIBERATELY STILL ACCEPTED, and the reason is
+      // measured rather than assumed. The branch never required `amount`, and
+      // the one live caller -- scpSaveInv() at sairnscape.html:3529 -- sends
+      // Number(input || 0), so it cannot send a string, and for junk input it
+      // sends NaN, which JSON.stringify puts on the wire as null. Refusing
+      // null would break the existing client on the one input it already
+      // handles badly, while the harm this guard exists for cannot arrive
+      // that way: Number(null) || 0 is 0, which is what the readers now do.
+      //
+      // isFinite, NOT typeof: typeof Infinity is 'number', and an Infinity
+      // amount makes every total downstream Infinity.
+      if (payload.amount !== undefined && payload.amount !== null
+          && (typeof payload.amount !== 'number' || !Number.isFinite(payload.amount))) {
+        res.status(400).json({ error: { code: 'INVALID_AMOUNT', message: 'invoice payload.amount must be a finite number, or omitted. A numeric string such as "500" is refused rather than coerced: it would be stored as text and every total that reads it back would concatenate instead of adding.' } });
+        return;
+      }
       const r = await fetch(rest('scp_invoices?on_conflict=license_hash,invoice_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),

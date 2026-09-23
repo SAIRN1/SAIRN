@@ -36528,7 +36528,7 @@ document.addEventListener('DOMContentLoaded', function() {
     out.style.display='block';out.textContent='Calculating...';
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
     var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
-    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(Number(b.amt)||0);},0);
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Give a quick tax overview for a stone fabrication company. Actual tracked data: revenue minus expenses (profit) of $'+Math.round(profit).toLocaleString()+' this period ('+invoices.length+' invoices, '+bills.length+' bills on file -- if this looks sparse, say more data is needed rather than guessing). Cover: estimated annual liability, quarterly payment schedule, 1099 obligations, and top 3 deductions to maximize.'}]})
     }).then(function(r){return r.json();}).then(function(r){
@@ -36540,8 +36540,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var invoices=(typeof sd_invoices!=='undefined')?sd_invoices:[];
     var bills=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
     var entries=(typeof taxEntries!=='undefined')?taxEntries:[];
-    var salesTaxYTD=entries.reduce(function(s,e){return s+(e.tax||0);},0);
-    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(b.amt||0);},0);
+    var salesTaxYTD=entries.reduce(function(s,e){return s+(Number(e.tax)||0);},0);
+    var profit=invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0)-bills.reduce(function(s,b){return s+(Number(b.amt)||0);},0);
     var w=window.open('','_blank');
     w.document.write('<html><head><title>Tax Report</title><style>body{font-family:Arial;padding:20px}h1{color:'+sdThemeColor('--a','#1B3A6B')+'}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px}th{background:#f5f5f5}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h1>'+escHtml(sdShopName())+' — Tax Report</h1><p>'+new Date().toLocaleDateString()+'</p>');
@@ -41326,16 +41326,16 @@ function taxAddEntry(){
 }
 function taxClearEntries(){if(!confirm('Clear all tax entries?'))return;taxEntries=[];sdStore('sd_tax_entries',taxEntries);taxRender();}
 function taxRender(){
-  var invTotal=sd_invoices?sd_invoices.reduce(function(s,i){return s+i.amount;},0):0;
+  var invTotal=sd_invoices?sd_invoices.reduce(function(s,i){return s+(Number(i.amount)||0);},0):0;
   var apBillsReal=(function(){try{return JSON.parse(localStorage.getItem('sd_ap')||'null')||[];}catch(e){return [];}})();
-  var expTotal=apBillsReal.reduce(function(s,b){return s+(b.amt||0);},0);
+  var expTotal=apBillsReal.reduce(function(s,b){return s+(Number(b.amt)||0);},0);
   var profit=invTotal-expTotal;var taxEst=Math.max(0,profit*0.28);
   function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
   sv('tax-kpi-revenue',sdFmt(invTotal));sv('tax-kpi-expenses',sdFmt(expTotal));sv('tax-kpi-profit',sdFmt(profit));sv('tax-kpi-tax-est',sdFmt(taxEst));
   // Legacy panel-tax header ids (tax-ytd/tax-est/tax-due/tax-1099/tax-table/
   // tax-1099-list) -- consolidated here 2026-07-26 so there's one real
   // computation instead of the fabricated one this used to run separately.
-  var salesTaxYTD=taxEntries.reduce(function(s,e){return s+(e.tax||0);},0);
+  var salesTaxYTD=taxEntries.reduce(function(s,e){return s+(Number(e.tax)||0);},0);
   sv('tax-ytd','$'+Math.round(salesTaxYTD).toLocaleString());
   sv('tax-est','$'+Math.round(taxEst).toLocaleString());
   sv('tax-1099','0');
