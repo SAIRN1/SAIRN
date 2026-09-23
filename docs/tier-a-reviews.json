@@ -2108,6 +2108,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T10:14:39Z",
+      "resources": [
+        "grd_boq_rates",
+        "grd_cart_orders",
+        "grd_invasive_sightings",
+        "grd_rounds",
+        "grd_training_completions",
+        "grd_training_courses",
+        "law_clients",
+        "rf_entities",
+        "sen_authorizations",
+        "sen_clients",
+        "sen_franchise_agreements"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "isolation coverage third batch: a SAIRNgrounds unit (6 Tier A resources, absent dispatcher) plus rf_entities. GENUINE 141 to 148, NONE 11 to 7, suite 254/0. TEST ONLY, no defect found. WHAT TO ATTACK: (1) THE SHARED FIXTURE NOW CARRIES owner AT TWO LEVELS and that is a workaround, not a design -- most branches return row.data, rf_entities returns the row, and rather than teach the helper which shape a resource has I made the fixture satisfy both. A reviewer should decide whether that hides a real distinction worth asserting. (2) I GOT IT WRONG IN ONE OF TWO PLACES FIRST: the L-rev arm builds its own rows with the same assumption and I only found it because rf_entities came back [null] while the forward arm passed. Check there is no THIRD fixture with the same assumption that no current resource happens to exercise. (3) The six grd_ reads carry NO session check at all. My arms assert the tenant filter and say nothing about that, deliberately, but confirm the split is stated clearly enough that nobody reads these as covering the gate. (4) rf_entities required entity_id under that name rather than as id -- verify I did not satisfy the validator with something meaningless. FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T10:14:39Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
