@@ -2075,6 +2075,21 @@
       "files": [
         "docs/2026-09-17-sairnfreedom-tips-tax-treatment.md"
       ]
+    },
+    {
+      "id": "cody-1790187770",
+      "session": "cody",
+      "subject": "sd-money-coercion",
+      "task": "stonedesk profit and tax report uncoerced folds b.amt and e.tax plus un-grandfathering them FILES: stonedesk.html tools/truthy_sum_baseline.json tests/sd_tax_money_coercion.js",
+      "claimed_at": "2026-09-23T18:22:50Z",
+      "claimed_at_epoch": 1790187770.8723097,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html",
+        "tests/sd_tax_money_coercion.js",
+        "tools/truthy_sum_baseline.json"
+      ]
     }
   ],
   "refusals": [
