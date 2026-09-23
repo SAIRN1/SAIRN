@@ -1197,11 +1197,40 @@ function sdnFetchTimeoutSignal(){
     return AbortSignal.timeout(SDN_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
+// ── THE SESSION HEADER IS UNCONDITIONAL (2026-09-23) ──────────────────────
+// It used to be `if(withSession && ...)`, and MEASURED BEFORE CHANGING IT:
+// of 30 sdnData() call sites across 19 resources, exactly ONE passed the flag
+// -- sdn_clients. Every other resource, INCLUDING ALL FIVE NOW AT TIER A
+// (sdn_contracts, sdn_discounts, sdn_invoices, sdn_pos, sdn_referrals), sent
+// no session at all, so api/sd-data.js had nothing to verify even when the
+// employee was properly signed in.
+//
+// THIS LINE IS THE PRECONDITION FOR THE GATE, AND IT LANDS IN THE SAME
+// COMMIT AS THE GATE ON PURPOSE. api/sd-data.js's SD_SESSION_GATED comment
+// records the order the hard way twice: SAIRNfreedom's gate was "ARMED LAST,
+// AND DELIBERATELY" because the app could not send a token until four other
+// things existed, and SAIRNlaw's three were held back until it was confirmed
+// that "sdnData() sets X-SD-Auth on EVERY data call whenever a token exists
+// -- it is not conditional on the resource and not conditional on a
+// withSession flag". That sentence is about SAIRNlaw. It was NOT true here
+// until this line, and gating first would have answered 403 to every
+// correctly signed-in designer in the studio.
+//
+// SAFE BY CONSTRUCTION, checked rather than assumed: sdnEnterApp() sets
+// sdnSession BEFORE it calls sdnHydrateAll(), and sdnRestoreSession() does
+// the same on reload, so no sdnData() call can run before a token exists.
+// A call with no token still sends no header and is refused by the gate,
+// which is the correct direction.
+//
+// The `withSession` parameter is KEPT rather than removed from 30 call
+// sites: it is now inert here, and deleting it would be a 30-site diff whose
+// only effect is cosmetic, in the same commit as a security change. It is
+// still read by sdnAuth() below, which is a different endpoint.
 function sdnData(action,resource,payload,withSession){
   var lic=sdnLicenseKey();
   if(!lic)return Promise.resolve(null);
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
-  if(withSession&&sdnSession&&sdnSession.token)h['X-SD-Auth']=sdnSession.token;
+  if(sdnSession&&sdnSession.token)h['X-SD-Auth']=sdnSession.token;
   return fetch(DATA_API,{
     signal: sdnFetchTimeoutSignal(),
     method:'POST',

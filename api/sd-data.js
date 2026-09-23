@@ -952,7 +952,39 @@ module.exports = async (req, res) => {
       //    and readable by anyone who can open the app.
       'law_clients': ['read', 'write'],
       'law_matters': ['read', 'write'],
-      'law_deadlines': ['read', 'write']
+      'law_deadlines': ['read', 'write'],
+      // ── SAIRNDESIGN, 2026-09-23. FIVE TIER A RESOURCES ON A LICENCE KEY ──
+      //    SDN_RESOURCES' read and write branches carried NO session check of
+      //    any kind, so the licence key -- shipped to the browser and readable
+      //    by anyone who can open sairndesign.html -- was the whole
+      //    authorisation for all EIGHTEEN resources in that map. Found while
+      //    writing sdn_pos's isolation arms: the [S] arms could not be
+      //    written, because there was no signature to attack.
+      //
+      //    THE TENANT BOUNDARY WAS NEVER THE PROBLEM and is asserted in
+      //    api/sd-data-bespoke-branch-isolation.test.js -- license_hash is
+      //    derived from the bearer key, so one studio cannot read another's
+      //    rows. This is identity WITHIN a studio, plus the audit half: a
+      //    write with no session has no employee_id to record.
+      //
+      //    ONLY THE FIVE AT TIER A, and the sentence that justifies stopping
+      //    there is the one SAIRNfreedom's entry above already records: the
+      //    finding was about Tier A, and widening it to the other thirteen is
+      //    a product decision about who may see a mood board or a colour
+      //    code, which nobody has made.
+      //
+      //    THE CLIENT HALF LANDED IN THIS COMMIT, NOT BEFORE IT. Measured
+      //    first: 30 sdnData() call sites, 19 resources, and exactly ONE
+      //    passed withSession -- sdn_clients. None of these five did. So the
+      //    header was made unconditional in sairndesign.html in the same
+      //    change; gating first would have answered 403 to every correctly
+      //    signed-in designer, which is the failure SAIRNfreedom's entry was
+      //    armed last to avoid.
+      'sdn_contracts': ['read', 'write'],
+      'sdn_discounts': ['read', 'write'],
+      'sdn_invoices': ['read', 'write'],
+      'sdn_pos': ['read', 'write'],
+      'sdn_referrals': ['read', 'write']
     };
     // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
     // The gate below resolved this as "memory follows the caller, everything
@@ -977,6 +1009,17 @@ module.exports = async (req, res) => {
       'law_clients': 'sairnlaw',
       'law_matters': 'sairnlaw',
       'law_deadlines': 'sairnlaw',
+      // The five added above. WITHOUT THESE FIVE LINES the gate resolves
+      // expectedApp to 'stonedesk' by default and refuses every correctly
+      // signed-in designer with FORBIDDEN "sign in first" -- it fails CLOSED
+      // and confusingly, which is the hardest failure to read, and it is the
+      // defect this table's own comment records for `memory` and then again
+      // for law_trusttx.
+      'sdn_contracts': 'sairndesign',
+      'sdn_discounts': 'sairndesign',
+      'sdn_invoices': 'sairndesign',
+      'sdn_pos': 'sairndesign',
+      'sdn_referrals': 'sairndesign',
       // THE SECOND HALF OF THE SAME CHANGE, and the comment above is the reason
       // this list is not left behind: a resource added to SD_SESSION_GATED and
       // NOT here resolves expectedApp to 'stonedesk' and refuses every correctly

@@ -39,6 +39,14 @@
 //   body-field shape     rf_proposals, rf_supplier_documents
 //
 // ── AND ONE PASSENGER, WHICH IS SAID RATHER THAN QUIETLY FILED ───────────
+// GATED SINCE 2026-09-23. This entry read `false` for one commit, and the [S]
+// arms printed a NOT COVERED line saying the SAIRNdesign dispatcher verified
+// no session at all -- which was true, was the finding that fell out of
+// writing these arms, and has since been fixed: the five Tier A SDN resources
+// are in SD_SESSION_GATED and sairndesign.html now sends X-SD-Auth
+// unconditionally. The flag is flipped rather than the note deleted, because
+// "this arm was once not coverable and now is" is the useful half.
+//
 // sdn_pos IS NOT A BESPOKE BRANCH. It is an ordinary SDN_RESOURCES member and
 // its arms belong in api/sd-data-cross-tenant-dispatchers.test.js beside its
 // siblings. It is here for one reason: it was promoted B -> A in the same
@@ -82,7 +90,7 @@ const UNITS = [
   ['rf_proposals', 'proposal_id', 'sairnroofing', 'owner', 'sairnbuild'],
   ['rf_supplier_documents', 'document_id', 'sairnroofing', 'owner', 'sairnbuild'],
   // The passenger -- see the header. A plain SDN_RESOURCES member.
-  ['sdn_pos', 'po_id', 'sairndesign', 'owner', 'sairnbuild', false]
+  ['sdn_pos', 'po_id', 'sairndesign', 'owner', 'sairnbuild', true]
 ];
 
 let pass = 0, fail = 0;
