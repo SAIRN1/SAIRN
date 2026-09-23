@@ -2489,6 +2489,21 @@
         "api/sd-data.js",
         "tests/sairncode_gates.js"
       ]
+    },
+    {
+      "id": "cc-1790194969",
+      "session": "cc",
+      "subject": "sairncode-tiera-gate",
+      "task": "the SAIRNcode Tier A write gate and soft-delete list still hold 7 names against the register's 23 -- 16 resources writable on the licence key alone and hard-deletable; plus the 15 client remove paths that must move to soft_delete FILES: api/_resources/sairncode.js sairncode.html tests/sairncode_gates.js",
+      "claimed_at": "2026-09-23T20:22:49Z",
+      "claimed_at_epoch": 1790194969.941335,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_resources/sairncode.js",
+        "sairncode.html",
+        "tests/sairncode_gates.js"
+      ]
     }
   ],
   "refusals": [
