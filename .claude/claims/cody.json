@@ -2234,6 +2234,19 @@
       "files": [
         "tests/app_session_isolation.js"
       ]
+    },
+    {
+      "id": "cody-1790206386",
+      "session": "cody",
+      "subject": "tiers-sv-three",
+      "task": "sv_invoicing sv_multisite sv_farmcalls individually read both axes FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T23:33:06Z",
+      "claimed_at_epoch": 1790206386.9732974,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
