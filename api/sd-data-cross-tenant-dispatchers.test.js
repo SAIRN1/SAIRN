@@ -47,7 +47,8 @@
 //   sf_youth_participants, leg_floristorders, leg_florists, leg_gplservices,
 //   leg_merch_catalog, sc_fraud, sc_prebill, sc_providers, sc_query, sc_rac,
 //   sc_telehealth, sv_referrals, sv_reminders, sv_scribe_consent, sb_train,
-//   sdn_referrals, law_bankstatements, rf_company_programs,
+//   sdn_referrals, law_bankstatements, sc_anesthesia_base_units, sc_auth,
+//   rf_company_programs,
 //   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits,
 //   sc_dme, sf_members, sb_ap, leg_custodylog, leg_deathrecords, bld_draws,
 //   sd_exec_msgs
@@ -464,6 +465,14 @@ const UNITS = [
     ['sc_fraud', 'entry_id'], ['sc_prebill', 'entry_id'],
     ['sc_providers', 'entry_id'], ['sc_query', 'entry_id'],
     ['sc_rac', 'entry_id'], ['sc_telehealth', 'entry_id'],
+    // TWO MORE, 2026-09-23, promoted B -> A on the INTEGRITY axis in the same
+    // body of work that adds these arms. sc_anesthesia_base_units feeds a
+    // stored base-unit value into a per-case dollar amount; sc_auth's
+    // expiration date is what decides whether an authorisation still covers
+    // the care being delivered. Both landed in the NONE bucket the moment the
+    // rows read A, and the session that grew that bucket is the one holding
+    // the context to close it.
+    ['sc_anesthesia_base_units', 'entry_id'], ['sc_auth', 'entry_id'],
     // WEAK -> covered, 2026-09-23. It was named only by files that exercise no
     // tenant boundary at all.
     ['sc_dme', 'entry_id']] },
