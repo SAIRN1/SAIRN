@@ -2273,6 +2273,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-23T13:45:24Z",
+      "resources": [
+        "sf_gaming_expenses"
+      ],
+      "files": [
+        "tests/sf_operator_payee_match.js"
+      ],
+      "what": "sairnfreedom.html -- ORC 2915.09(D)(1) direct-route check on the operator roster, plus tests/sf_operator_payee_match.js. Approved to build after being raised as an observation (b2f1ea4e); found while reading sf_gaming_expenses for its confidentiality tier, not by looking for it.\n\nTHE TIER A MATCH IS REAL, NOT A PROSE COLLISION. The gate fired on sf_gaming_expenses and sf_operators, and the change reads BOTH: it folds getGamingExpenses() payees against the operator roster inside operatorEligibility(). sf_operators is A/A (named individuals with DOB and felony/gambling flags) and sf_gaming_expenses went A/A the same day. This is a change to a statutory eligibility determination about a named person, because it is one.\n\nWHAT CHANGED, EXACTLY. Thirty-five lines added to operatorEligibility(), zero removed, no control flow altered elsewhere, no storage, no API, and sfAddExpense() is UNTOUCHED. Before: an operator was flagged under (D)(1) only if they appeared on the PAID canteen roster or carried the manual paidCanteen flag. After: they are also flagged if a gaming-account expense has a payee equal to their name.\n\nPRESS ON THIS FIRST -- IT IS THE ONE JUDGEMENT CALL, AND IT IS THE FALSE-POSITIVE RATE. I matched WHOLE VALUE after trim/lowercase, not substring. A post's commonest legitimate payees are businesses, and a business named after its owner (\"Pat Doe Supply Co\") would be flagged by any substring rule -- which would teach the panel to be ignored, and a prompt nobody reads is worse than no prompt. THE COUNTER-ARGUMENT IS REAL AND I AM NAMING IT RATHER THAN WAITING: whole-value also misses \"Pat Doe\" written as \"Doe, Pat\", or with a middle initial, on either roster. So the check has a KNOWN false-negative surface and I chose it deliberately over a false-positive one. If you think an eligibility check under a statutory bar should err the other way -- flag wide and let the post dismiss -- say so; it is one comparison.\n\n(2) I DID NOT ESTABLISH WHETHER AN OPERATOR IS EVER A LEGITIMATE PAYEE IN PRACTICE. A genuine reimbursement (an operator who bought supplies and was paid back) is not compensation, and the reason text says \"confirm the payee is a separate business or a genuine reimbursement\". But I have no measurement of how often that happens on a real post's ledger, so I cannot say whether this prompt will fire usefully or constantly. Nobody has run a post's real gaming ledger through it. A reviewer who thinks reimbursements are common should push on whether this belongs as a reason at all, versus a softer note.\n\n(3) A PROMPT AND NOT A REFUSAL -- CHECK I GOT THAT BOUNDARY RIGHT. The reason is pushed into the same `reasons` array the canteen match uses, so it DOES clear `eligible` and the operator shows as not eligible until the post confirms. That is the existing shape and I matched it deliberately. But \"eligible: false\" is a stronger statement than \"confirm this\", and if you think a payee match should be surfaced WITHOUT clearing eligibility -- a fourth category the function does not currently have -- that is a real design disagreement and this is the moment to have it.\n\n(4) BOTH ROUTES FIRING PRODUCES TWO REASONS, NOT ONE, and I want that checked. They are different facts -- paid canteen staff, and paid directly from the gaming account -- and a post confirming one has not answered the other. Collapsing them would hide half of what must be explained. The test pins it.\n\nEVIDENCE: tests/sf_operator_payee_match.js 12 arms, 5 RED before the change and 12 green after; SIX of the twelve are negative arms, because a check of this shape earns its keep by being silent on an ordinary supplier ledger. The control removes the new block from the extracted source and re-drives the positive case, so the arms cannot be passing on some other reason carrying the same citation. checkblocks 3 blocks 0 failed; div balance PASS; dead-button audit introduces nothing.\n\nNOT MINE, REPORTED NOT FIXED: nav_panel_check.py FAILS on sairnfreedom.html with DUPLICATE_IDS ['ac-name','ac-tbody'], verified identical with my change stashed. Duplicate ids are a Guardian check 8 hard block.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T13:45:24Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

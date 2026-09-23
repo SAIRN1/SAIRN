@@ -3627,6 +3627,41 @@ function operatorEligibility(o){
                     : 'Recorded as also paid canteen or bar staff')+
       '. Paying the same person for canteen work while they operate the game is the interaction (D)(1) is most easily breached by -- confirm the two roles are genuinely separate and separately paid, or unpaid on the gaming side.' });
   }
+  /* ── THE DIRECT ROUTE, 2026-09-23 ───────────────────────────────────
+     The canteen match above is the INDIRECT route, and it was the only one
+     checked. A cheque drawn on the segregated gaming account and made out to
+     an operator by name is the plainest form of the thing (D)(1) prohibits --
+     "commission, wage, salary, reward, tip, donation, gratuity or other form
+     of compensation" -- and nothing compared a payee to this roster.
+
+     A PROMPT, NOT A VERDICT, deliberately and for the same reason as the
+     canteen match: a payee may legitimately be an operator's BUSINESS, or a
+     landlord who also volunteers. So this raises a reason to confirm. It does
+     not refuse the expense write, and sfAddExpense is untouched.
+
+     WHOLE-VALUE, NOT SUBSTRING. A business named after its owner -- "Pat Doe
+     Supply Co" -- is the commonest legitimate payee a post has, and a
+     substring rule would flag every one of them and teach the panel to be
+     ignored. Same trim/lowercase normalisation the canteen match already uses.
+
+     BOTH EMPTY IS NOT A MATCH. Both sides are free text and either can be
+     blank; without the guard an operator whose name never loaded would match
+     every expense with no payee. */
+  var payeeMatches = 0;
+  var opName = String(o.name||'').trim().toLowerCase();
+  if(opName){
+    getGamingExpenses().forEach(function(e){
+      if(String(e.payee||'').trim().toLowerCase()===opName) payeeMatches++;
+    });
+  }
+  if(payeeMatches){
+    reasons.push({ cite:'ORC 2915.09(D)(1)', text:
+      payeeMatches+' payment'+(payeeMatches===1?'':'s')+' from the gaming account '+
+      (payeeMatches===1?'is':'are')+' made out to this exact name. (D)(1) bars any '+
+      'commission, wage, salary, reward, tip, donation, gratuity or other form of '+
+      'compensation to a bingo game operator -- confirm the payee is a separate business '+
+      'or a genuine reimbursement, not compensation for operating the game.' });
+  }
   return { eligible: reasons.length===0, reasons: reasons, age: age };
 }
 function sfAddOperator(){
