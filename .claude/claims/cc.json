@@ -2400,8 +2400,8 @@
       "task": "sabotage_control_check cannot() refusal vocabulary -- the review-probe family's guard is invisible to GUARDS FILES: tools/sabotage_control_check.py tests/run_sabotage_control_probe.py",
       "claimed_at": "2026-09-23T12:32:53Z",
       "claimed_at_epoch": 1790166773.735546,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T12:43:11Z",
       "files": [
         "tests/run_sabotage_control_probe.py",
         "tools/sabotage_control_check.py"
