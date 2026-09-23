@@ -2199,6 +2199,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T12:24:19Z",
+      "resources": [
+        "bld_inspections",
+        "bld_photo_analyses",
+        "bld_toolbox_talks",
+        "bld_warranty"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "SAIRNbuild full bld_ tier re-audit (a55129fb): 15 B rows read individually out of sairnbuild.html, three promoted -- bld_warranty (money: a hand-entered cost summed into a Total Cost KPI and back-charged to a named trade), bld_inspections (regulated: municipal code determinations, the seeded fail is a missing arc-fault breaker), bld_toolbox_talks (regulated: 29 CFR 1926.21 instruction evidence, and the corrective-action evidence bld_incidents INC-01 asserts). All three then added to api/sd-data-cross-tenant-dispatchers.test.js in the same commit so the promotion did not grow the isolation NONE bucket. REVIEW THESE FIVE THINGS: (1) the three promotions are judgements -- disagree with them directly, and check the field citations resolve (saveWarranty at sairnbuild.html:6874, rWarrantyTbl at :6828, saveInsp at :4290, saveTalk at :6733). (2) THE TWELVE HOLDS ARE THE HALF MOST LIKELY TO BE WRONG, because holding is the quiet outcome -- bld_deliveries is the closest call and I held it against the sb_recv sibling on the ground that it carries no quantity and no amount; bld_rfis and bld_submittals I held because nothing in the app links them to bld_change_orders, which is a claim about the app, so check it. (3) bld_toolbox_talks confidentiality rests on ONE field being a count rather than a names list -- if attendees is ever rendered or stored as names anywhere I did not look, the row is A/A. (4) the count re-derivations: headline 195/189 -> 201/183, B bullet -> 183, its sub-bullet 290 -> 183, not-yet-read 11 -> 10. Re-run the derivation rather than trusting my arithmetic. (5) the three new isolation arms were sabotage-checked by dropping license_hash=eq. from the BLD_RESOURCES read and all three [L] arms failed -- reproduce that rather than taking it from the commit message.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T12:24:19Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
