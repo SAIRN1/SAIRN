@@ -2359,8 +2359,8 @@
       "task": "registry-backed claim visibility FILES: tools/sairn_claim.py tools/sairn_status.py",
       "claimed_at": "2026-09-23T08:52:05Z",
       "claimed_at_epoch": 1790153525.314372,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T11:02:22Z",
       "files": [
         "tools/sairn_claim.py",
         "tools/sairn_status.py"
