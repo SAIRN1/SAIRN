@@ -270,7 +270,23 @@ try:
         'more than once in that cell, so dropping any one of them leaves the '
         'name present and this arm would assert against an unchanged set')
     _drop = _once[0]
-    _rolled9 = roll.replace('`%s`, ' % _drop, '', 1)
+    # ── THE DROP MUST WORK ON THE LAST NAME TOO (repaired 2026-09-23, hank) ──
+    # This was `roll.replace('`name`, ', '', 1)` -- name, comma, space -- which
+    # is how every name in the list is written EXCEPT THE LAST ONE. The arm
+    # went red the day somebody's edit made the first exactly-once name the
+    # final element: `sd_crm` had no trailing `, `, the replace planted
+    # nothing, and the assert below fired. THAT IS THE GUARD WORKING -- a
+    # mutation that planted nothing failing about its ANCHOR rather than
+    # quietly about its subject -- and the anchor was the thing that was
+    # wrong. Found while re-running this control over an unrelated register
+    # edit; it was red at HEAD before that edit and is not caused by it.
+    #
+    # Three spellings tried in order: mid-list, last-in-list, and alone.
+    _rolled9 = roll
+    for _pat in ('`%s`, ' % _drop, ', `%s`' % _drop, '`%s`' % _drop):
+        if _pat in _rolled9:
+            _rolled9 = _rolled9.replace(_pat, '', 1)
+            break
     assert _rolled9 != roll, 'the list mutation did not land for `%s`' % _drop
     assert '`%s`' % _drop not in _rolled9, (
         '`%s` survived the drop, so the arm is not testing a missing name' % _drop)
