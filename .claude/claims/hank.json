@@ -2733,6 +2733,19 @@
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js"
       ]
+    },
+    {
+      "id": "hank-1790157956",
+      "session": "hank",
+      "subject": "isolation-grd",
+      "task": "SAIRNgrounds unit and rf_entities for the isolation NONE bucket FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "claimed_at": "2026-09-23T10:05:56Z",
+      "claimed_at_epoch": 1790157956.722308,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ]
     }
   ]
 }
