@@ -73,6 +73,23 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'sync_write_result_check.py': ('CHECKER',
+        'a SERVER WRITE whose result nobody reads. Every app transport returns '
+        'something falsy when the push did not land, so the failure is already '
+        'computed and correct -- this finds the call sites that never look. A '
+        'fire-and-forget write is indistinguishable from one that succeeded: '
+        'the local copy is saved, the panel re-rendered, and the toast says the '
+        'record is safe. It was, on one device. NOT discarded_verdict_check.py, '
+        'which finds a REFUSAL computed and ignored -- opposite direction and a '
+        'different fix, because a discarded refusal lets something through while '
+        'a discarded write loses data and says it did not. It CANNOT see whether '
+        'the caller of a RETURNED write reads it, nor whether a bound result is '
+        'ever tested, and both limits are printed with every run rather than '
+        'left for a reader to assume the number is complete. Control: '
+        'tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones '
+        'that were failing -- the tool reported 242, then 12, then 3, then 3 '
+        'false positives before it was clean, every time from reading a LINE '
+        'where the codebase had written a CONSTRUCT.'),
     'resource_reachability_check.py': ('CHECKER',
         'for every REGISTERED resource, does any client name it -- the question '
         'that finds a capability the platform describes as BUILT while no user '
