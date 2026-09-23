@@ -2227,6 +2227,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "fourth-1790172089",
+      "session": "fourth",
+      "subject": "tiers-snap",
+      "task": "land sd_business_snapshots B/B with the argued evidence FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T14:01:29Z",
+      "claimed_at_epoch": 1790172089.030841,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
