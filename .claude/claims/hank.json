@@ -2694,6 +2694,19 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "hank-1790153504",
+      "session": "hank",
+      "subject": "tier-held4",
+      "task": "the four held rows, now read out of the app: sc_coded_items sen_authorizations sen_franchise_agreements law_clecredits FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T08:51:44Z",
+      "claimed_at_epoch": 1790153504.6056106,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
