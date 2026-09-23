@@ -20,7 +20,8 @@
 | **anthropic-api** | third-party API identity | **Michael** | billed model access for every app that calls Claude, through api/claude.js and the three endpoints that import callAnthropic | `ANTHROPIC_API_KEY` | repo |
 | **stripe-account** | third-party API identity | **Michael** | live charge and refund authority on the SAIRNcash Stripe account, plus webhook-signature verification | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET` | repo |
 | **resend** | third-party API identity | **Michael** | outbound transactional email -- reminders and the cron watchdog alert, which is one of only two mechanisms on this platform that reaches a human | `RESEND_API_KEY` | repo |
-| **session-signing** | signing key | **Michael** | signs and verifies EVERY app employee session token. One secret, no per-app key and no overlap window, so a rotation logs everyone out of everything at once | `SD_AUTH_SECRET` | repo |
+| **secrets-at-rest** | encryption key | **Michael** | AES-256-GCM key for secrets AT REST -- attorney MFA/TOTP secrets (api/law-auth.js) and a stored Stedi API key (api/sc-credentials.js, api/sc-eligibility.js). Read in one module, api/_lib/auth.js | `SD_ENCRYPTION_KEY` | repo |
+| **session-signing** | signing key | **Michael** | signs and verifies EVERY app employee session token. One secret and no per-app key, so one leak forges sessions everywhere at once. CORRECTED 2026-09-23: it said "and no overlap window, so a rotation logs everyone out of everything at once" -- SD_AUTH_SECRET_PREVIOUS has been accepted on verify since 2026-09-17, so that has not been true for six days | `SD_AUTH_SECRET`, `SD_AUTH_SECRET_PREVIOUS` | repo |
 | **cron-caller** | shared-secret identity | **Michael** | proves a request to a scheduled endpoint came from Vercel Cron rather than from anybody who found the URL | `CRON_SECRET` | repo |
 | **oidc-client** | third-party API identity | **Michael** | the platform's OIDC client. The only one of the four OIDC values whose exposure is a security event rather than a misconfiguration | `OIDC_CLIENT_SECRET` | repo |
 | **quickbooks-oauth** | third-party API identity | **Michael** | QuickBooks OAuth client. NOTE that StoneDesk GAP 6 records QuickBooks integration as deliberately HELD OPEN, so this credential may be provisioned for work nobody is doing | `QB_CLIENT_SECRET` | repo |
@@ -33,7 +34,7 @@
 | **dental-bi-export** | shared-secret identity | **Michael** | the SAIRNdental BI export key -- authorises a bulk data pull out of a PHI-bearing app | `DENTAL_BI_KEY` | repo |
 | **rate-limit-salts** | hashing salt (two variables, one purpose) | **Michael** | salts the hashed identifiers the dental and StoneDesk PUBLIC rate limiters key on. Leaking one makes the stored hashes reversible, so these protect the anonymity of the identifiers rather than access to anything. Two variables under one identity because they are the same decision twice | `DENTAL_RATE_LIMIT_SALT`, `STONEDESK_RATE_LIMIT_SALT` | repo |
 | **github-pat** | VCS token | **Michael** | push to SAIRN1/SAIRN, and read of a PUBLIC repository. ATTESTED ONLY -- it appears nowhere in tracked files by design, so this row cannot be derived and cannot be verified from here | &mdash; | attested |
-| **clone-push-access** | VCS credential (per working copy) | **Michael** | 5 working copies -- SAIRN-cc, SAIRN-cody, SAIRN-fourth, SAIRN-hank, SAIRN-hover -- each a clone of the same remote and each able to push to origin/main, credentialed by the Windows credential manager rather than by anything in this repo. An agent session acts as this identity whenever it pushes, so every commit on main was made by it. **COUNTED FROM DISK, not listed here** -- this row said FOUR and named four while a fifth was pushing, which is the second time that undercount has happened on this platform. Note that the clones are NOT interchangeable: one of them is the hover auditor, which does not build | &mdash; | attested |
+| **clone-push-access** | VCS credential (per working copy) | **Michael** | 6 working copies -- SAIRN-cc, SAIRN-cody, SAIRN-fourth, SAIRN-hank, SAIRN-hover, SAIRN-hover2 -- each a clone of the same remote and each able to push to origin/main, credentialed by the Windows credential manager rather than by anything in this repo. An agent session acts as this identity whenever it pushes, so every commit on main was made by it. **COUNTED FROM DISK, not listed here** -- this row said FOUR and named four while a fifth was pushing, which is the second time that undercount has happened on this platform. Note that the clones are NOT interchangeable: one of them is the hover auditor, which does not build | &mdash; | attested |
 
 ## Open warnings carried on an identity
 
@@ -41,7 +42,7 @@
 
 ## If one of these is compromised
 
-**5 of 22 identities carry a drafted procedure.** Written 2026-09-15 for the identities holding BROAD standing access with no attested rotation and no schedule -- the set where neither of the other two controls is doing anything.
+**6 of 23 identities carry a drafted procedure.** Written 2026-09-15 for the identities holding BROAD standing access with no attested rotation and no schedule -- the set where neither of the other two controls is doing anything.
 
 **A procedure is a THIRD control and does not fix either of the first two.** It tells you what to do AFTER. It does not shorten the window a leaked credential works, and it does not narrow what that credential reaches.
 
@@ -59,9 +60,13 @@ REVOKE: `alter role sairn_backup_reader with password ...` in the Supabase SQL e
 
 REVOKE: Anthropic console -> API keys -> revoke, then issue a replacement, set ANTHROPIC_API_KEY in Vercel and REDEPLOY. BLAST WHILE COMPROMISED: METERED SPEND on this account, which is a financial exposure rather than a data one -- and the model calls carry whatever the apps send, so treat prompt content as exposed too. WHAT BREAKS DURING: every AI feature in every app, until the redeploy. CHECK AFTERWARDS: console usage for the window, which is the one place on this platform where a compromise leaves an independent, billable trace. DRAFTED 2026-09-15; the console steps are NOT verified from here.
 
+### secrets-at-rest
+
+REVOKE: there is no revoke. A leaked encryption key decrypts every ciphertext already written with it, and those ciphertexts are in Supabase whether the key changes or not. CONTAINMENT IS RE-ENCRYPTION PLUS INVALIDATION OF WHAT WAS PROTECTED, not a key change: every attorney MFA/TOTP secret must be re-enrolled and the Stedi API key rotated at Stedi. BLAST WHILE COMPROMISED: the holder can compute any attorney TOTP code, which defeats the second factor on a system holding client trust money, and can use the Stedi key for real-time payer eligibility queries. WHAT BREAKS DURING: nothing at deploy time, and that is the hazard rather than the comfort -- the v2 format means a new key is accepted silently while old values keep decrypting, so a half-finished migration looks identical to a finished one from the outside. WHAT IS NOT ESTABLISHED HERE: whether SD_ENCRYPTION_KEY is actually SET in Vercel. api/_lib/auth.js says "UNTIL SD_ENCRYPTION_KEY IS SET THIS DEPLOY CHANGES NOTHING" -- new writes stay legacy and the duty stays with SD_AUTH_SECRET. If it is unset, this identity does not yet exist in production and the SPLIT HAS NOT HAPPENED; that is a one command check (vercel env ls production) and it is NOT asserted either way from here. DRAFTED 2026-09-23.
+
 ### session-signing
 
-REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE CONTAINMENT IS THE DISRUPTION, and that is why this needs deciding in advance rather than during: one secret signs EVERY app employee session and there is no overlap window, so rotating LOGS EVERYONE OUT OF EVERYTHING AT ONCE, mid-shift, including whoever is handling the incident. BLAST WHILE COMPROMISED: forge a session token for any employee of any app, including an admin -- so the exposure is IMPERSONATION, and every audit row written during the window names whoever the forger chose. WHAT BREAKS DURING: nothing stays broken; everyone signs in again. THE HUMAN DECISION, not drafted here: whether a suspected compromise is enough to rotate, given that the cost is certain and the compromise is not. AN OVERLAP WINDOW -- accept two secrets during a changeover -- would remove that dilemma and is a build, not a procedure. DRAFTED 2026-09-15.
+REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE CONTAINMENT IS THE DISRUPTION, and that is why this needs deciding in advance rather than during: one secret signs EVERY app employee session and there is no overlap window, so rotating LOGS EVERYONE OUT OF EVERYTHING AT ONCE, mid-shift, including whoever is handling the incident. BLAST WHILE COMPROMISED: forge a session token for any employee of any app, including an admin -- so the exposure is IMPERSONATION, and every audit row written during the window names whoever the forger chose. WHAT BREAKS DURING: nothing stays broken; everyone signs in again. THE HUMAN DECISION, not drafted here: whether a suspected compromise is enough to rotate, given that the cost is certain and the compromise is not. AN OVERLAP WINDOW -- accept two secrets during a changeover -- would remove that dilemma and is a build, not a procedure. DRAFTED 2026-09-15. **CORRECTED 2026-09-23: THAT BUILD HAS LANDED AND THIS PARAGRAPH WAS STILL SAYING IT HAD NOT.** api/_lib/auth.js:365 accepts SD_AUTH_SECRET_PREVIOUS on verify and never signs with it, so a rotation no longer logs anyone out: set PREVIOUS to the current secret, change SD_AUTH_SECRET, wait one SESSION_TTL_MS (12h), clear PREVIOUS. The dilemma above -- certain cost against an uncertain compromise -- is GONE, and with it the reason to hesitate. Found because the register REFUSED TO RUN over SD_AUTH_SECRET_PREVIOUS being unattributed; the refusal is what surfaced a stale procedure, which is the whole argument for failing closed on a blank owner.
 
 ### sairncash-firebase-admin
 
@@ -76,8 +81,8 @@ REVOKE: Google Cloud IAM -> the service account -> delete the KEY (not the accou
 ## Derived counts
 
 ```
-  identities registered         22
-  attributed CREDENTIAL vars    18   secrets_inventory.SECRETS
+  identities registered         23
+  attributed CREDENTIAL vars    20   secrets_inventory.SECRETS
   postgres roles created here    1   `create role` in sql/
   attested, not derivable        2
 ```

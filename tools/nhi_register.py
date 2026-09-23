@@ -231,15 +231,76 @@ IDENTITIES = [
         'last_rotated': '',
     },
     {
+        # ADDED 2026-09-23. It was unattributed and the register REFUSED TO RUN
+        # over it, which is the refusal working: this is not a spare copy of
+        # the signing secret, it is a SEPARATE identity that was split out of
+        # SD_AUTH_SECRET on 2026-09-17 precisely so the two stop sharing fate.
+        # api/_lib/auth.js says why in its own words: a leak of the combined
+        # secret "did not only forge sessions, it decrypted every secret at
+        # rest".
+        'id': 'secrets-at-rest',
+        'kind': 'encryption key',
+        'owner': 'Michael',
+        'scope': 'AES-256-GCM key for secrets AT REST -- attorney MFA/TOTP '
+                 'secrets (api/law-auth.js) and a stored Stedi API key '
+                 '(api/sc-credentials.js, api/sc-eligibility.js). Read in one '
+                 'module, api/_lib/auth.js',
+        'credentials': ['SD_ENCRYPTION_KEY'],
+        'source': 'repo',
+        'rotation': 'ROTATABLE ONLY SINCE THE v2 FORMAT, and it is worth '
+                    'stating what it was before: changing the key made every '
+                    'stored ciphertext undecryptable, NOTHING ERRORED AT '
+                    'DEPLOY TIME, and MFA began failing per-attorney as each '
+                    'one next signed in. "Rotate the shared secret" read as '
+                    'routine hygiene and was a data-loss event with a delayed '
+                    'fuse. The ciphertext now carries the key it used '
+                    '(legacy -> sha256(SD_AUTH_SECRET), v2 -> '
+                    'sha256(SD_ENCRYPTION_KEY)), so both decrypt during a '
+                    'backfill. A rotation still needs a re-encrypt pass, and '
+                    'no schedule exists',
+        'last_rotated': '',
+        'compromise': (
+            'REVOKE: there is no revoke. A leaked encryption key decrypts '
+            'every ciphertext already written with it, and those ciphertexts '
+            'are in Supabase whether the key changes or not. CONTAINMENT IS '
+            'RE-ENCRYPTION PLUS INVALIDATION OF WHAT WAS PROTECTED, not a '
+            'key change: every attorney MFA/TOTP secret must be re-enrolled '
+            'and the Stedi API key rotated at Stedi. BLAST WHILE COMPROMISED: '
+            'the holder can compute any attorney TOTP code, which defeats the '
+            'second factor on a system holding client trust money, and can '
+            'use the Stedi key for real-time payer eligibility queries. '
+            'WHAT BREAKS DURING: nothing at deploy time, and that is the '
+            'hazard rather than the comfort -- the v2 format means a new key '
+            'is accepted silently while old values keep decrypting, so a '
+            'half-finished migration looks identical to a finished one from '
+            'the outside. WHAT IS NOT ESTABLISHED HERE: whether '
+            'SD_ENCRYPTION_KEY is actually SET in Vercel. api/_lib/auth.js '
+            'says "UNTIL SD_ENCRYPTION_KEY IS SET THIS DEPLOY CHANGES '
+            'NOTHING" -- new writes stay legacy and the duty stays with '
+            'SD_AUTH_SECRET. If it is unset, this identity does not yet exist '
+            'in production and the SPLIT HAS NOT HAPPENED; that is a one '
+            'command check (vercel env ls production) and it is NOT asserted '
+            'either way from here. DRAFTED 2026-09-23.'
+        ),
+    },
+    {
         'id': 'session-signing',
         'kind': 'signing key',
         'owner': 'Michael',
         'scope': 'signs and verifies EVERY app employee session token. One '
-                 'secret, no per-app key and no overlap window, so a rotation '
-                 'logs everyone out of everything at once',
-        'credentials': ['SD_AUTH_SECRET'],
+                 'secret and no per-app key, so one leak forges sessions '
+                 'everywhere at once. CORRECTED 2026-09-23: it said "and no '
+                 'overlap window, so a rotation logs everyone out of everything '
+                 'at once" -- SD_AUTH_SECRET_PREVIOUS has been accepted on '
+                 'verify since 2026-09-17, so that has not been true for six days',
+        'credentials': ['SD_AUTH_SECRET', 'SD_AUTH_SECRET_PREVIOUS'],
         'source': 'repo',
-        'rotation': 'coordinated. Universal logout',
+        'rotation': 'overlap window, since 2026-09-17: set '
+                    'SD_AUTH_SECRET_PREVIOUS to the current secret, change '
+                    'SD_AUTH_SECRET, wait one SESSION_TTL_MS (12h) for every '
+                    'old token to expire, then clear PREVIOUS. NO universal '
+                    'logout. THE ENTRY BELOW STILL SAYS THERE IS ONE -- see '
+                    'the CORRECTED paragraph in compromise',
         'last_rotated': '',
         'compromise': (
             'REVOKE: set a new SD_AUTH_SECRET in Vercel and redeploy. THE '
@@ -256,7 +317,18 @@ IDENTITIES = [
             'enough to rotate, given that the cost is certain and the '
             'compromise is not. AN OVERLAP WINDOW -- accept two secrets '
             'during a changeover -- would remove that dilemma and is a build, '
-            'not a procedure. DRAFTED 2026-09-15.'
+            'not a procedure. DRAFTED 2026-09-15. '
+            '**CORRECTED 2026-09-23: THAT BUILD HAS LANDED AND THIS '
+            'PARAGRAPH WAS STILL SAYING IT HAD NOT.** api/_lib/auth.js:365 '
+            'accepts SD_AUTH_SECRET_PREVIOUS on verify and never signs with '
+            'it, so a rotation no longer logs anyone out: set PREVIOUS to the '
+            'current secret, change SD_AUTH_SECRET, wait one SESSION_TTL_MS '
+            '(12h), clear PREVIOUS. The dilemma above -- certain cost against '
+            'an uncertain compromise -- is GONE, and with it the reason to '
+            'hesitate. Found because the register REFUSED TO RUN over '
+            'SD_AUTH_SECRET_PREVIOUS being unattributed; the refusal is what '
+            'surfaced a stale procedure, which is the whole argument for '
+            'failing closed on a blank owner.'
         ),
     },
     {
