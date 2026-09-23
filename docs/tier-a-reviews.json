@@ -2395,6 +2395,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T18:22:01Z",
+      "resources": [
+        "alf_clients",
+        "alf_facility",
+        "alf_mar",
+        "dnt_appointments",
+        "law_matters",
+        "rf_draws",
+        "rf_proposals",
+        "rf_supplier_documents"
+      ],
+      "files": [
+        "api/sd-data-alf-isolation.test.js",
+        "api/sd-data-bespoke-branch-isolation.test.js"
+      ],
+      "what": "Cross-tenant isolation arms for the last eight WEAK resources, 2026-09-23 (4d31b011). Two new test files, 54 arms, NO app source changed. WEAK 9 -> 1 (only exec_context left, a disclosed grader limit).\n\napi/sd-data-alf-isolation.test.js -- alf_clients, alf_facility, alf_mar.\napi/sd-data-bespoke-branch-isolation.test.js -- dnt_appointments, law_matters, rf_draws, rf_proposals, rf_supplier_documents.\n\nREVIEW THESE SEVEN THINGS:\n\n(1) THE WRITE-SHAPE SPLIT IS THE LOAD-BEARING DESIGN DECISION AND THE MOST LIKELY PLACE TO BE WRONG. Three of these have NO conflict key -- rf_proposals and rf_supplier_documents are append-only INSERTs, alf_mar writes through rpc/alf_check_and_insert_mar_entry with p_license_hash as an argument. For those I assert the BODY field and additionally assert that NO `on_conflict=` has appeared. ATTACK THAT: is there any route by which one of these three could upsert, or could write a row attributable to another tenant, that neither assertion sees? And confirm the other three really do carry the conflict key I claim (dnt_appointments, law_matters, rf_draws).\n\n(2) THE MARKER FIELD IS STATED PER RESOURCE IN A `MARKER` MAP, not sniffed from the response. That was forced: rf_supplier_documents' SELECT has no `data` column at all, and rf_draws' select has no `tenant` column, so two fixtures came back empty on the first run. CHECK EVERY MARKER against the branch's actual select list and response projection -- a marker reading a field the projection drops makes the arm compare [] against [] and pass an absence for a presence. That is the exact failure these suites exist to avoid and I hit it twice while writing them.\n\n(3) THE alf_mar COLLISION ARM IS THE ONE I WOULD ATTACK FIRST. It claims med_aide is inside ALF_MAR_ROLES (so the branch is reachable) and outside ALF_MAR_BROAD_ROLES (so the answer is narrowed in memory). If either half is wrong the arm passes for the wrong reason -- either it never reached the branch, or it was never narrowed and the collision was not exercised. Same question for alf_clients/caregiver vs ALF_BROAD_READ_ROLES.\n\n(4) alf_mar's WRITE ARM DEPENDS ON A SEEDED RESIDENT under tenant A, because the branch reads alf_clients first and that lookup is itself license_hash-filtered. I argue a resident seeded under B would leave the arm UNREACHED rather than passing. Verify that -- if it can pass with a B resident, the arm is not asserting what it says.\n\n(5) THE `owner` ROLE IS USED ON EVERY ARM THAT IS NOT ABOUT NARROWING, on the claim that no role rule can then shorten an answer for a reason other than license_hash. Check that claim per branch -- alf_facility redacts rate fields from non-management, rf_proposals and rf_supplier_documents have management/broad-read gates, and a role that quietly filters would make a green arm meaningless.\n\n(6) SIX OF THESE EIGHT NOW HAVE ARMS IN A FILE THAT DID NOT EXIST AN HOUR AGO, and both files carry their own copy of the postgrest mock. That is the duplication the dispatcher suite's header warns about, and it is deliberate: api/sd-data-cross-tenant-dispatchers.test.js was under an active claim. DECIDE whether these should be folded back into it once that claim clears, or whether the write-shape split justifies them standing alone.\n\n(7) RE-RUN THE SABOTAGE CONTROLS rather than reading my summary. 16 mutations, anchors asserted unique or line-located, both streams read. Three times today a control misreported itself -- two stale anchors and one unread stream -- so the control deserves the same scrutiny as the subject.\n\nDISCLOSED: neither file tests the DATABASE, and neither tests the ROLE gates on these branches. Those are separate questions and are not covered here.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T18:22:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
