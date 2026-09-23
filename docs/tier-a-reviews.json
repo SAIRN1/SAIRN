@@ -2180,6 +2180,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T11:50:29Z",
+      "resources": [
+        "bld_tna",
+        "exec_context"
+      ],
+      "files": [
+        "api/sd-data-bld-tna-isolation.test.js",
+        "api/sd-data-exec-context-isolation.test.js"
+      ],
+      "what": "bld_tna and exec_context dedicated cross-tenant isolation arms (9ae85897). Two new test files, no app source touched. REVIEW THESE FOUR THINGS SPECIFICALLY: (1) the bld_tna [L-collide] arm is the one that justifies a separate file -- both tenants carry an emp-1 and the in-memory subject filter can make a dropped license_hash look correct; check the fixtures really distinguish tenants and that the assertion is about WHOSE row came back, not how many. (2) the exec_context arms use the REAL api/_lib/auth deliberately, because api/sd-data-exec-context.test.js stubs verifySessionToken and therefore answers yes to the exact question -- check nothing in the new file re-stubs it. (3) [X-sub] was measured to survive the expected-app sabotage (the role gate catches it) and is labelled defence-in-depth rather than an independent proof; check that label is right and that no OTHER arm has the same undisclosed backstop. (4) exec_context still grades NONE in tools/cross_tenant_isolation_scope.py and the file explains why rather than reshaping itself to satisfy the regex -- check that reasoning, because the alternative (widening the grader) is unfiled open work.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-23T11:50:29Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
