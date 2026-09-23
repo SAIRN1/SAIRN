@@ -1902,6 +1902,19 @@
       "files": [
         "stonedesk.html"
       ]
+    },
+    {
+      "id": "cody-1790153377",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "visualizer slab picker refreshes before listing stale reservation FILES: stonedesk.html",
+      "claimed_at": "2026-09-23T08:49:37Z",
+      "claimed_at_epoch": 1790153377.001406,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "stonedesk.html"
+      ]
     }
   ]
 }
