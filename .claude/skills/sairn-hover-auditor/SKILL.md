@@ -3293,6 +3293,155 @@ same file during a sabotage window is the claim system's subject-collision
 problem, not this checker's, and is exactly what
 `claim_collision_scan.py` above is for instead.
 
+## Two INTERFACE SPECS, published for independent parity, not for copying
+
+Both built and tested 2026-09-22/23. Published here -- the one file every
+hover clone shares via git, none of it in `hover-audit-log/`, which is
+private to each clone -- specifically so a SEPARATE hover session can build
+its OWN independent implementation from the CONTRACT below, the same
+"independent, not copied" standard this role already holds itself to when
+re-verifying a build agent's work. What follows is behavior, not code; no
+source is reproduced.
+
+### Spec 1 -- the write-time staleness guard on the self-log's append path
+
+**The real incident this closes.** A finding was logged against a row that
+had ALREADY been fixed on origin/main -- the reading session's own local
+clone had not pulled the fix yet, and nothing caught the gap before the
+conclusion was committed to a hash-chained log where nothing can be
+un-said.
+
+**Interface.** `--source <path>[:<sha>][,<path>[:<sha>]...]` on a finding
+entry.
+- REQUIRED when the entry's target is a platform subject (not this role's
+  own tooling). EXEMPT when the finding is about this role's own
+  operational tooling -- those files live outside every platform repo, are
+  built/run/reported on in the same turn, and there is no earlier "read"
+  moment separate from "log the finding" for a sha comparison to mean
+  anything.
+- `path` alone: the implementation derives, AT THE MOMENT THIS FLAG IS
+  PARSED, the calling clone's own locally-committed blob sha for that path
+  (its own HEAD, not origin/main) -- the honest proxy for "what my own read
+  tool actually returned", because a clone that has not pulled genuinely
+  differs from origin/main's current state, which is precisely the
+  incident shape.
+- `path:sha`: an explicit override, used verbatim -- for the case of
+  reading a file out of a SPECIFIC historical commit rather than the local
+  working tree (this role does this routinely when its own local clone is
+  already known stale).
+
+**The write-time check -- the part that actually matters, and it is
+positional, not optional.** Immediately before the log entry is physically
+written -- after every other validation and gate the tool already runs,
+the last thing that happens before the file is opened -- each captured
+sha is re-derived AGAIN, fresh, against CURRENT origin/main, and compared
+against what was captured earlier. Three outcomes, never two:
+- **fresh** (shas match): logs normally; the entry itself is stamped with
+  the verdict, so a later reader does not have to trust prose.
+- **stale** (a real, resolved mismatch, OR the path answers cleanly that
+  it no longer exists at that ref at all -- both are confirmed signals,
+  not guesses): HARD REFUSES. Nothing is appended. The caller is told
+  plainly which path and why, and to re-read and re-derive before trying
+  again.
+- **could_not_verify** (the remote could not be reached, or git itself
+  could not be run -- genuine infrastructure noise, not a resolved
+  answer): does **not** block the write. This is the one deliberate,
+  named exception to this role's own fail-CLOSED default (PR SS1.11,
+  "a check that depends on another tool must fail CLOSED"), and the
+  reason is stated so it is not mistaken for a contradiction: this is a
+  WRITE-PATH GUARD deciding whether an ALREADY-DERIVED, independently-
+  reasoned finding may be committed, not a CHECK reporting a verdict
+  about the world. Refusing a real, valid finding because a network
+  fetch timed out costs something a resolved "yes it changed" answer
+  does not -- the identical "a gate that must be talked past routinely is
+  a gate people learn to talk past" shape this file already names
+  elsewhere. So: ambiguity never blocks, but it is never silent either --
+  the entry itself is stamped with the ambiguous verdict, visible to
+  every later reader, never indistinguishable from a confirmed-fresh
+  pass.
+
+**Tested against the real incident shape, not a simulated one, before
+being trusted**: two real git clones of one real bare origin, one of them
+receiving a fix the other's local HEAD never pulled -- confirmed the stale
+clone's citation refuses, confirmed the identical citation logs clean
+after a real `git pull`, confirmed a genuinely unreachable origin does not
+block the write and stamps the ambiguity honestly rather than passing it
+off as verified.
+
+### Spec 2 -- live execution, two tiers, Tier 1 authorized by Michael 2026-09-22
+
+**The gap this closes.** Anthropic's own published finding: audit realism
+jumps from roughly 4.6% to roughly 32.8% when checking against real
+deployment conditions instead of synthetic ones. Every finding this role
+had made up to this point was confirmed by reading source against
+documented semantics -- never by actually running anything.
+
+**Tier 0 -- pure-function execution, needs no new authorization.** Given
+an app's HTML file, a function name, and caller-supplied synthetic
+arguments: extract the function's own verbatim source (HTML-parser-based
+extraction over the real `<script>` block boundaries, the same Check-0a
+discipline this file already requires everywhere else -- never a regex
+scan across the whole page) via a brace-balanced scan that tracks
+strings/template-literals/comments so a brace inside one does not desync
+the count, and REFUSES rather than guesses when the span cannot be
+reliably isolated (an unsupported function form, an unterminated
+string/comment at end of scan). Execute the extracted source inside an
+isolated JS context that provides NO ambient `fetch`/`XMLHttpRequest`/
+`WebSocket`/`require`/`process`/`fs` -- so a function that TRIES to reach
+the network gets a real `ReferenceError` from the engine itself, because
+the capability is not there to reach, not because this tool chose to
+intercept it. Read the app source from `origin/main`, fetched fresh, never
+a possibly-stale local working tree. Proven, not assumed: driven against a
+function that calls `fetch()`, one that calls a module-loading builtin,
+and one that reads a process-environment builtin, and all three threw the
+expected reference error inside the sandbox before this was trusted, then
+run for real against a live platform app (not only a fixture) to confirm
+the mechanism holds outside a synthetic test.
+
+**Tier 1 -- real production execution, authorized explicitly, scoped
+strictly.** A GENERIC, reusable version of the pattern build agents
+already use for their own session-gate probes (control arm plus gated
+arm, VERIFIED/FAILED/UNVERIFIED, never folding "could not tell" into a
+pass) -- generalised so this role can independently re-verify ANY app's
+session gate live, rather than trusting a build agent's own probe script
+for the same question. Reuses this platform's own existing HTTP client for
+reaching production (imported live from the platform repo at call time,
+never copied into private tooling -- it carries real, actively-maintained
+logic a frozen copy would silently drift from).
+- **"No writes, ever" is held mechanically, not by promise, and is
+  narrower than the pattern being reused.** The one function that builds
+  an outbound request REFUSES -- raises, sends nothing -- for any action
+  other than a read, before a request is ever constructed. Proven by
+  spying on the real HTTP call and confirming zero requests are sent when
+  a write-shaped action is attempted.
+- **Control arm, then target arm.** A known-ungated resource is read
+  first to prove the endpoint and credential are genuinely live; only
+  then is the resource under test read with the specific
+  under-privileged caller shape being checked (e.g. a licence key with no
+  session token). Both the refusal's STATUS and its ERROR CODE are
+  asserted -- never "anything other than 200" alone -- so a refusal for
+  an unrelated reason is not mistaken for the gate actually under test.
+- **Three states, identically disciplined:** VERIFIED (control succeeded
+  and the target refused with the exact expected status+code), FAILED
+  (control succeeded but the target did not refuse as expected -- a real
+  defect), UNVERIFIED (a bot-mitigation challenge, the control itself did
+  not succeed, or a required credential is not set) -- never two.
+- **A credential-free mode exists and needs no secret**: calling with no
+  Authorization header at all is itself a legitimate, safe refusal check
+  -- does the endpoint refuse an entirely unauthenticated caller -- and
+  was the actual live demonstration run against real production this
+  session, zero credentials, zero write risk, VERIFIED.
+
+**What Tier 1 deliberately is not, and why that line held even under
+direct instruction to build it.** No arm ever constructed a write-shaped
+request, including one this role's own read of the build-agent pattern
+would have accepted as a legitimate exercise of the same envelope (their
+own probes DO send a real write arm, accepting that a broken gate would
+really write, because it is their own code under test). This role has no
+such carve-out and was told so explicitly -- the boundary was narrower
+than the precedent it was built from, on purpose, checked before any code
+was written rather than discovered afterward.
+
 ## Three threats to watch in myself
 
 From the same safety-culture lineage as SUBSAFE: Ignorance, Arrogance, and
