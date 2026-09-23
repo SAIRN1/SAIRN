@@ -33120,14 +33120,43 @@ document.addEventListener('DOMContentLoaded', function() {
   // cross-referenced by Quote Builder/POS/Schedule), filtered to status:'in-stock'. Deliberately
   // NOT the separate panel-slabs Slab Tracker list -- that system is self-contained and isn't
   // wired into the reserve/quote flow this feature's "Quote This" button needs (qbPickSlab()).
-  window.vizRenderSlabList = function(){
+  // ── REFRESHED BEFORE IT IS SHOWN (2026-09-23) ──────────────────────────
+  // This listed `sdSlabs` -- the localStorage array, loaded ONCE per session.
+  // slabSyncFromSupabase() runs inside the slab module's load behind the
+  // `_slabLoaded` guard, whose own comment says the flag "belongs to the load"
+  // so the picker does not re-load on every open. Correct for that module and
+  // wrong here.
+  //
+  // THE DOUBLE-SALE WAS NEVER THE EXPOSURE -- api/sd-data.js's compare-and-swap
+  // already refuses it with a 409, and that is the hard half and it is built.
+  // What a stale list costs is a METERED RENDER: the panel tracks
+  // viz-kpi-used/viz-kpi-cap/viz-kpi-left, so a rep picks a slab another device
+  // reserved an hour ago, SPENDS A RENDER on it, shows the customer their
+  // kitchen in that stone, and only finds out at "Quote This" when the CAS
+  // returns 409. The money is safe; the render and the conversation are not.
+  //
+  // A FAILED REFRESH IS SAID OUT LOUD RATHER THAN HIDDEN. Showing a cached
+  // list as though it were current is the silent-success shape this platform
+  // keeps recording -- so when the sync does not land, the list still renders
+  // (a rep offline in a yard must not be blocked) and it carries a line saying
+  // the reservations on it may be out of date.
+  window.vizRenderSlabList = async function(){
     var el = document.getElementById('viz-slab-list');
+    var fresh = {ok:false, reason:'not attempted'};
+    if (typeof slabSyncFromSupabase === 'function') {
+      try { fresh = await slabSyncFromSupabase(); }
+      catch(e) { fresh = {ok:false, reason:'the refresh failed'}; }
+    }
+    var staleNote = fresh && fresh.ok ? ''
+      : '<div style="margin-bottom:6px;padding:6px 8px;border-radius:6px;background:#fef3c7;border:1px solid #f59e0b;font-size:11px">'
+        + 'Reservations may be out of date &mdash; ' + escHtml((fresh && fresh.reason) || 'the list could not be refreshed')
+        + '. A slab shown here may already be held by another device, and you will not find out until you quote it.</div>';
     var inStock = (typeof sdSlabs !== 'undefined' ? sdSlabs : []).filter(function(s){ return s.status === 'in-stock'; });
     if (!inStock.length) {
-      el.innerHTML = '<div style="font-size:12px;color:var(--muted)">No in-stock slabs found — add some in the slab reservation system first.</div>';
+      el.innerHTML = staleNote + '<div style="font-size:12px;color:var(--muted)">No in-stock slabs found — add some in the slab reservation system first.</div>';
       return;
     }
-    el.innerHTML = inStock.map(function(s){
+    el.innerHTML = staleNote + inStock.map(function(s){
       var label = (typeof slabMaterialLabel==='function' ? slabMaterialLabel(s.material) : (s.material||''));
       // Thumbnail from the bulk slab upload flow (panel-slabs) if this record has one -- purely
       // presentational, so staff/clients can visually tell slabs apart here too, same as the
@@ -38092,9 +38121,20 @@ function saveSlabs(){
 // Delegates rather than re-implementing, so precedence lives in one place.
 function slabLicKey(){ return sdLicenseKey(); }
 
+// ── IT NOW REPORTS WHETHER IT SYNCED (2026-09-23) ────────────────────────
+// The body is unchanged and every existing caller is unaffected -- they all
+// ignore the return value, so behaviour is identical for them. What is new is
+// that a caller CAN ask, because the visualizer's slab picker needs to know
+// the difference between "this list is current" and "this list is whatever
+// was cached at app start", and `catch(e){}` made those two indistinguishable.
+//
+// THE EMPTY-ARRAY BRANCH IS REPORTED, NOT TREATED AS A SYNC. `data.length`
+// being zero means the server returned no slabs, which is a real answer but is
+// NOT a merge -- the cache is left alone, deliberately, and a caller that was
+// told "ok" would believe the local list had just been confirmed.
 async function slabSyncFromSupabase(){
-  if(typeof sdData!=='function') return;
-  var lic=slabLicKey(); if(!lic) return;
+  if(typeof sdData!=='function') return {ok:false, reason:'no transport'};
+  var lic=slabLicKey(); if(!lic) return {ok:false, reason:'not signed in'};
   try{
     var data=await sdData('read','slabs',{});
     if(Array.isArray(data) && data.length){
@@ -38102,8 +38142,10 @@ async function slabSyncFromSupabase(){
       data.forEach(function(s){byId[s.id]=s;});
       sdSlabs=Object.values(byId);
       saveSlabs();
+      return {ok:true, count:data.length};
     }
-  }catch(e){}
+    return {ok:false, reason:'the server returned no slabs'};
+  }catch(e){ return {ok:false, reason:'the server could not be reached'}; }
 }
 
 // ── THE ONLY WAY A SLAB GETS RESERVED (2026-09-02) ─────────────────────────
