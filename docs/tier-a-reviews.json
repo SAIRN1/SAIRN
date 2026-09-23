@@ -2236,6 +2236,43 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T12:52:52Z",
+      "resources": [
+        "bld_inspections",
+        "bld_tna",
+        "bld_toolbox_talks",
+        "bld_warranty",
+        "exec_context",
+        "rf_bonding",
+        "rf_job_hazard_assessments",
+        "rf_jobs",
+        "rf_locations",
+        "rf_roof_sections",
+        "rf_settings",
+        "rf_warranty_tiers",
+        "sc_anesthesia",
+        "sc_drg",
+        "sc_eligibility",
+        "sc_hcc",
+        "sf_service_appointments",
+        "sf_vendor_prices",
+        "sub_assignments",
+        "subcontractors"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js",
+        "api/sd-data-roofing-projected-isolation.test.js"
+      ],
+      "what": "Cross-tenant isolation arms for the twelve resources promoted to Tier A on 2026-09-23 (be3ceb7f). Two test files, NO app source changed. Nine join api/sd-data-cross-tenant-dispatchers.test.js (268->294 arms); three -- rf_settings, sub_assignments, rf_jobs -- get api/sd-data-roofing-projected-isolation.test.js (23 arms) because their responses are FIXED projections that do not carry the shared arm's owner marker. REVIEW THESE SIX THINGS: (1) THE TWO HARNESS GENERALISATIONS ARE THE HIGHEST-RISK PART, because they touch a file covering 150+ members. rowExtras adds columns a branch needs before a seeded row is visible (app_id for subcontractors, status:active for rf_roof_sections); WRITE_PREREQ seeds a foreign row a write path checks first (rf_buildings for rf_roof_sections). I argue both can only cause a LOUD failure -- seedPair applies rowExtras to BOTH tenants from one line, and the [L] arm asserts A's row is PRESENT so an empty result fails. TRY TO BREAK THAT ARGUMENT: find any path where a rowExtras or a WRITE_PREREQ value makes an arm PASS that would otherwise fail. (2) check the six rf bespoke branches really are six separate branches and that each arm drives its own -- a shared-branch assumption here would mean five of the six prove nothing. (3) the rf_jobs collision arm uses role foreman on the claim that it is outside rf-auth BROAD_READ_ROLES {owner,admin,estimator}; if foreman were in that set the arm would pass for the wrong reason. (4) the sub_assignments [L-app] arm asserts a SECOND boundary (app_id) -- check it is not redundant with the license_hash arm on the same fixture. (5) the sabotage control ran 15 mutations and its FIRST run reported ANCHOR MISSING for the SF branch because that query line is byte-identical to BLD's; re-run the control rather than trusting the summary, and check no other anchor is silently hitting the wrong branch. (6) rf_settings' [L-collide] arm rests on the claim that both tenants legitimately hold a setting_key of damage_threshold -- confirm that from the app, not from my fixture.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-23T12:52:52Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
