@@ -2498,6 +2498,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-23T18:47:10Z",
+      "resources": [
+        "invoices",
+        "sd_invoices"
+      ],
+      "files": [
+        "api/sd-data-invoices-amount.test.js",
+        "stonedesk.html",
+        "tests/sd_tax_money_coercion.js"
+      ],
+      "what": "stonedesk.html and api/sd-data.js -- six money folds coerced across THREE tax surfaces, two entries removed from truthy_sum_baseline.json's grandfathered map, and a new 400 INVALID_AMOUNT guard on the invoices write branch. Tests: tests/sd_tax_money_coercion.js (13 arms) and api/sd-data-invoices-amount.test.js (9 arms). Register record filed. Approved as top priority after I reported it while discharging cc's obligation on de7b4838.\n\nTHE TIER A MATCH IS REAL. The gate fired on `invoices`, and the change edits the invoices write branch of api/sd-data.js directly plus every StoneDesk fold that sums an invoice amount. A reviewer should treat this as a change to money arithmetic AND to a storage validator on a Tier A resource, because it is both.\n\nPRESS ON THIS FIRST -- IT IS THE ONE CHOICE I MADE THAT COULD BE WRONG, AND IT IS THE SERVER GUARD'S DIRECTION. I refuse a non-numeric `amount` rather than coercing it: 400 INVALID_AMOUNT. The argument for refusing is that coercing server-side is a silent data change and the caller is the only party that knows what \"500\" meant. THE COUNTER-ARGUMENT IS REAL AND I AM NAMING IT RATHER THAN WAITING: this is a WRITE path, and a refusal means a shop's invoice does not sync. sairnscape.html's scpSaveInv already shows \"Saved on this device only -- server sync failed\" on a falsy result, so a refused write degrades to local-only silently from the user's point of view. If you think a storage validator on a sync path should coerce-and-store rather than refuse, that is a real disagreement and this is the moment.\n\n(2) AND THE SAME QUESTION ON NULL, WHERE I WENT THE OTHER WAY. `amount: null` is ACCEPTED. My reasoning is measured rather than assumed: scpSaveInv sends Number(input || 0), so junk input makes NaN, and JSON.stringify puts NaN on the wire as null -- refusing it would break the existing client on the one input it already handles badly. But that means a junk keystroke still reaches storage as null, and the ONLY thing making that safe is that every reader now coerces. If a reader is added that does not, null is a hole I deliberately left. Check whether you agree the asymmetry between \"500\" refused and null accepted is the right line.\n\n(3) I DID NOT HARDEN THE OTHER FIELDS ON THAT PAYLOAD. The branch still stores `status`, `issued` and anything else the caller sends, verbatim, in the jsonb blob. I guarded `amount` because that is the field the defect ran through. A reviewer who thinks a storage validator should validate the whole shape rather than the one field that bit us is making a fair point, and it is out of this change's scope rather than answered by it.\n\n(4) THE THIRD TAX SURFACE IS THE PART I WOULD RE-CHECK. taxRender()'s invTotal had NO fallback at all -- the bare `s + i.amount` shape, not `s + (x || 0)` -- which truthy_sum_check cannot match by construction. I coerced it, but I did NOT widen the checker to that shape, so the next bare fold is as invisible as this one was. Recorded as planned-not-done in the register. If you think that widening belongs in this change rather than after it, say so.\n\nEVIDENCE: 13 arms red at 8 before the client fix, 9 arms red at 3 before the server fix, all green after. The folds are LIFTED OUT OF stonedesk.html and driven rather than modelled, so a copy cannot drift from what ships; the server arms drive the real handler with PostgREST stubbed and assert what WOULD have reached storage. Controls in both: ordinary numbers, zero, negatives, empty and absent unchanged; plus a control that the pre-fix expressions still reproduce -99450 and \"05025\" so the arms cannot pass for the wrong reason. checkblocks 131/131. truthy_sum_check CLEAN at 46 grandfathered.\n\nNOT MINE, REPORTED NOT FIXED: api/fail-open-triage-2026-09-04.test.js (1 arm) and api/sd-data-session-gate.test.js (2 arms) are red, and both are red IDENTICALLY with this change stashed -- diffed, not asserted.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T18:47:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
