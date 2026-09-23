@@ -12143,7 +12143,7 @@
       "recurrence_open": "The arm covers ONLY SAIRNcare alf_* trails. api/sd-data.js is shared by eleven apps and carries append-only trails for several of them; whether any of those reads are unordered has NOT been checked here and is not guarded. Also still open: a single-column order ties when two rows share the timestamp to the microsecond -- no read in this file uses a tiebreaker and this change does not introduce the first one."
     },
     {
-      "commit": "22d6e34b18cd",
+      "commit": "ef88cb571a3e",
       "date": "2026-09-23",
       "subject": "fix(sairnvet): the scribe preflight decides availability POSITIVELY -- a lapsed licence no longer enables the button that asks a client to consent",
       "files": [
