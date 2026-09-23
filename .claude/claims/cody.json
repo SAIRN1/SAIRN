@@ -2016,8 +2016,8 @@
       "task": "the ORC 2915.09(D)(1) direct-route check -- payee vs operator roster name match as a prompt FILES: sairnfreedom.html tests/sf_operator_payee_match.js",
       "claimed_at": "2026-09-23T13:36:48Z",
       "claimed_at_epoch": 1790170608.8403242,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:47:49Z",
       "files": [
         "sairnfreedom.html",
         "tests/sf_operator_payee_match.js"
