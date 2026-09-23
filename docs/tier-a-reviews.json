@@ -2729,6 +2729,23 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T23:46:08Z",
+      "resources": [
+        "sd_crm"
+      ],
+      "files": [
+        "tests/run_criticality_tier_probe.py"
+      ],
+      "what": "Seven tier rows individually read and re-tiered, plus a one-line repair to somebody else's probe. docs/CRITICALITY-TIERS.md and tests/run_criticality_tier_probe.py. The gate fired on `sd_crm` because that name appears in the probe repair's COMMENT; no StoneDesk resource was touched.\n\nREVIEW THESE SIX THINGS:\n\n(1) SEVEN JUDGEMENTS, AND THE ONE TO ATTACK FIRST IS sen_caregivers BECAUSE IT IS THE ONLY ONE THAT MOVED ON BOTH AXES AND THE ONLY ONE WITH A SAFETY CONSEQUENCE. The integrity argument is that a blank or wrong cpr_expiry yields null from certDaysUntil() and the caregiver therefore appears in NONE of the badge, the 30-day attention item, or the dashboard counts -- a silent removal from a safety alert. CHECK THAT NULL PATH IN ALL THREE CALL SITES (:2593, :1978, :5476), because the whole tier rests on it. If any of them renders a visible \"unknown\" state, the argument weakens to an ordinary missing-data case.\n\n(2) THE CONFIDENTIALITY CALL ON sdn_timeentries IS A DELIBERATE FORK AND THE PLACE I AM MOST LIKELY WRONG. I left it at B on the ground that `billable_rate` is the CHARGE-OUT rate, not the employee's pay, and distinguished it from bld_timesheet (A/A) whose `rate` sits against a job cost code. Argue the other side: if a studio sets billable_rate as a markup on a known pay rate, the row discloses compensation by inference. I did not check whether any SAIRNdesign panel joins timeentries to a pay figure -- CHECK THE JOINS, NOT THE SCHEMA.\n\n(3) sdn_proposals IS THE ONE WITH THE WEAKEST-LOOKING EVIDENCE because the row carries no money field at all. My argument is that item_ids ARE the price via proposalTotal(), and that Approved reserves one-of-a-kind inventory. If you think a resource with no stored figure cannot be money on this register, say so -- it would also unwind part of the sdn_specitems argument.\n\n(4) sen_training_rules IS TIER A FOR A REASON THE REGISTER HAS NOT USED BEFORE: a statute table that decides a compliance verdict, with no money and no person on the row. The closest precedents are sd_pricing_rules and grd_boq_rates, both money. Decide whether \"decides a regulated verdict\" is genuinely the same shape or whether I have stretched an analogy.\n\n(5) THE PROBE REPAIR IS NOT MINE AND IS THE RISKIEST LINE IN THIS COMMIT. arm 9 mutated \"`name`, \" and went red when the chosen name became the last element with no trailing comma. I changed it to try three spellings in order. A repaired anchor is a NEW claim about what the mutation means -- confirm it still expresses \"a Tier A row MISSING from the rollup list\", and not a weaker neighbour. I confirmed it was red at HEAD by stashing, so the defect is pre-existing, but the repair is mine.\n\n(6) COUNTS: 244 A / 144 B, sairndesign 9/9, sairnsenior 12/3, not-yet-read 10 -> 9. Re-derive them rather than trusting my arithmetic; the register's own history is three separate incidents of a count adjusted by the size of an edit instead of re-derived.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-23T23:46:08Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
