@@ -183,8 +183,9 @@ is the **federal** side of that same coupling and belongs beside it.
 - **Member vs nonmember interaction.** Pub. 3386 requires member/nonmember income
   records *and* treats tips as compensation. Whether a member tipping a
   member-volunteer creates a distinct question was not determined.
-- **Ohio conformity to §224.** Whether Ohio's income tax follows the federal
-  qualified-tips deduction was not researched. Federal-only here.
+- ~~**Ohio conformity to §224.**~~ **ANSWERED 2026-09-23 — see §10.** The
+  question was mis-framed: §224 never touches the number Ohio starts from, so
+  there is nothing for Ohio to conform to.
 - ~~**FICA tip credit (§45B).**~~ **ANSWERED 2026-09-23 — see §7 below.** The
   answer is not a number, it is that the credit is only reachable in the state
   this document's headline is about avoiding.
@@ -295,9 +296,12 @@ carries it for twenty years and then loses it.
   different activity. Moved out of this list because a question that must leave
   the building is not the same kind of thing as one nobody has got to yet, and
   burying it in prose is how it stays unasked.
-- **Whether a members-only canteen meets the "customary" tipping test** of
-  §45B(b)(2). Factual, not researched.
-- **Ohio conformity.** Federal only, same as §5.
+- ~~**Whether a members-only canteen meets the "customary" tipping test** of
+  §45B(b)(2).~~ **RESEARCHED 2026-09-23 — see §10.** Still not settled, and
+  §10 says why: the statute supplies no test, and a SECOND hurdle in the same
+  sentence — "customers or clients" — cuts against this document's own
+  exempt-function position.
+- ~~**Ohio conformity.**~~ **ANSWERED 2026-09-23 — see §10.**
 
 **NOT TAX ADVICE.** This is internal research on statutory structure, written so
 a build decision can be made and so a professional can be asked a narrow
@@ -444,3 +448,126 @@ this**, and it is filed as a question to ask rather than a blocker to wait on.
 
 **NOT TAX ADVICE.** Written so a professional can be asked a narrow question
 instead of an open one.
+
+---
+
+## 10. The last two register items — answered 2026-09-23 (Cody)
+
+**Both were in §7's unverified list. One is answered outright; the other is
+researched to the point where the remaining question changes shape — and the
+larger finding is that §7's list was carrying TWO DIFFERENT TESTS under one
+word.**
+
+### 10.0 Sources — primary, retrieved this session
+
+| Source | Retrieved from | What it settles |
+|---|---|---|
+| **26 U.S.C. §45B(b)(2)** | `law.cornell.edu/uscode/text/26/45B` | the credit's own "customary" wording, quoted below |
+| **26 U.S.C. §224(d)(1)** | `law.cornell.edu/uscode/text/26/224` | "qualified tips", and the occupation-list mandate |
+| **26 U.S.C. §63(b)(5)** | `law.cornell.edu/uscode/text/26/63` | where §224's deduction sits relative to AGI |
+| **ORC 5747.01(A)** | `codes.ohio.gov/ohio-revised-code/section-5747.01` | what Ohio's tax starts from |
+| **Final regulations, occupations that customarily and regularly received tips** | Federal Register `2026-07104`, issued **10 Apr 2026**; IRB **2026-18**, 27 Apr 2026 | the §224 test is occupation-keyed, and the list |
+
+**NOT HASHED, AND §8 IS WHY.** §0 sets a bar of "retrieved AND hashed, with
+byte counts". Five of these are statute and regulation text with no PDF to
+hash; hashing the publisher's HTML rendering would pin *their page on the day I
+fetched it*, which is a weaker claim than the citation and reads as a stronger
+one. That is the shape §8 already proposed and did not apply. Stated here rather
+than quietly skipped.
+
+### 10.1 THE FINDING: "customary" is two different tests, and the register had them as one
+
+§7's list read *"whether a members-only canteen meets the 'customary' tipping
+test of §45B(b)(2)"*, and §5's read *"Ohio conformity to §224"*. They sit under
+one word and they are not the same question:
+
+| | **§45B(b)(2)** — the FICA tip credit | **§224(d)(1)** — the qualified-tips deduction |
+|---|---|---|
+| The words | *"if the tipping of employees delivering or serving food or beverages by customers **is customary**"* | *"cash tips received by an individual in an **occupation which customarily and regularly received tips** on or before December 31, 2024"* |
+| What is tested | the **service**, at this establishment, as a fact | the **worker's occupation**, nationally |
+| Who decides | undefined in the statute — facts and a professional | **Treasury, by published list** |
+| Settled? | **no** | **yes, and it is checkable** |
+
+**Conflating them would produce the wrong answer in both directions**: a post
+that decided its canteen fails "customary" could wrongly conclude its
+bartender's tips are not §224 qualified tips, and a post that read the Treasury
+list as settling §45B would claim a credit on a test nobody applied.
+
+### 10.2 §224 — the occupation test is settled, and "bartender" is on the list
+
+§224(d)(1) directed Treasury to publish the list. It has: **final regulations,
+Federal Register 2026-07104, issued 10 April 2026**, listing **more than
+seventy** occupations, each with a three-digit **Treasury Tipped Occupation Code
+(TTOC)**, an occupation title, a description, illustrative examples and related
+SOC codes. **Bartender is among them.**
+
+**THE TEST KEYS TO THE WORKER'S OCCUPATION, NOT THE ESTABLISHMENT'S TYPE** —
+*"To be a qualified tip, the tip must be received by a worker in an occupation
+on the List of Occupations that Receive Tips."* Nothing in that formulation asks
+whether the bar is members-only.
+
+**WHAT THIS DOES NOT DO, and it is the important half:** §224 is a deduction on
+the **individual's** return. It changes nothing about §1 of this document. A tip
+is still compensation, it still destroys the volunteer-labour exclusion for the
+person who received it, and the post's obligation to record and report it is
+unchanged. §224 is about what the bartender may deduct, not about what the post
+may treat as volunteer labour.
+
+### 10.3 Ohio — the question was mis-framed, and the answer is structural
+
+**§224's deduction never reaches Ohio's tax base, so there is nothing to conform
+to.** Two steps, both from primary text:
+
+1. **§63(b)(5)** lists *"the deduction provided in section 224"* among the
+   deductions subtracted **from adjusted gross income** for an individual who
+   does not itemise. It is therefore **below the line: it does not reduce
+   federal AGI.**
+2. **ORC 5747.01(A):** *"'Adjusted gross income' or 'Ohio adjusted gross income'
+   means **federal adjusted gross income**, as defined and used in the Internal
+   Revenue Code, adjusted as provided in this section."*
+
+Ohio starts from a number §224 does not move. So the answer is not "Ohio has not
+conformed" — it is that **conformity is not the operative question**, and a
+conformity update could not change the result on its own. Ohio would have to
+enact its own tips deduction as a 5747.01 adjustment.
+
+**WHAT I DID NOT DO, so the answer is not read wider than the work:** I did not
+enumerate every division of ORC 5747.01's adjustments to confirm none of them
+adds a tips deduction, and I did not read Am. Sub. S.B. 9 (signed 5 Mar 2026,
+Ohio's conformity update for TY2025) line by line. The chain above shows the
+federal deduction cannot arrive in Ohio's base **by conformity**; it does not
+prove Ohio has not legislated one separately. That is a narrower check and it is
+the one worth running before anyone relies on this.
+
+### 10.4 §45B(b)(2) — still not settled, and there is a SECOND hurdle in the same sentence
+
+The statute, verbatim:
+
+> *"In applying paragraph (1) there shall be taken into account only tips
+> received from **customers or clients** in connection with the following
+> services: (A) The providing, delivering, or serving of food or beverages for
+> consumption, if the tipping of employees delivering or serving food or
+> beverages by customers is customary."*
+
+**The register named one hurdle. There are two, and the unnamed one is sharper.**
+
+- **"is customary"** — undefined in the statute, and no regulation supplies a
+  test. It is a fact about the establishment. **Still not settled, and this
+  document cannot settle it.**
+- **"customers or clients"** — a member buying a drink in their own post's
+  canteen. **This interacts badly with §7.3.** §7 concluded the credit is
+  reachable only against UBIT, and the position that keeps a members-only
+  canteen OUT of UBIT is that member sales are exempt-function rather than a
+  trade or business serving customers. **Arguing members are "customers" for
+  §45B argues against the ground the canteen stands on.** That is not a research
+  gap; it is a reason the question may be self-defeating, and it belongs with
+  §9's counsel question rather than in a research list.
+
+**SO THE RECOMMENDATION IS UNCHANGED AND NOW BETTER SUPPORTED:** §7.3's order of
+operations stands — settle the volunteer-labour exclusion first, then ask about
+§45B, never the reverse. A post that has to argue its members are customers to
+reach the credit has answered the first question the wrong way to win the
+second.
+
+**NOT TAX ADVICE.** Statutory structure, so a professional can be asked a narrow
+question instead of an open one.
