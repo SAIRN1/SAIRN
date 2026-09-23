@@ -20,10 +20,11 @@
 // names belong here. The old rule stands: a registry entry without a caller
 // is still a claim nothing backs.
 //
-// FORTY-ONE RESOURCES. One generic read/write pair in api/sd-data.js, not
-// forty-one copy-pasted blocks -- same shape and reasoning as BLD_RESOURCES,
-// SD_RESOURCES and LEG_RESOURCES. See sql/sairnvet_data_schema.sql for the
-// tables and the id-column rule.
+// FORTY-TWO RESOURCES (41 until sv_scribe_consent landed 2026-09-23). One
+// generic read/write pair in api/sd-data.js, not forty-two copy-pasted
+// blocks -- same shape and reasoning as BLD_RESOURCES, SD_RESOURCES and
+// LEG_RESOURCES. See sql/sairnvet_data_schema.sql for the tables and the
+// id-column rule.
 //
 // NAMING: the resource name is the localStorage key verbatim. The client's
 // sync hook keys off the storage key directly, so a rename would need a
@@ -35,7 +36,7 @@
 // the reason it carries no role gate. A session gate here would gate on a
 // session that does not exist. The licence is the whole boundary this app
 // has, and the open-work row "SAIRNvet: no employee authentication subsystem"
-// is where that changes, for all forty-one at once rather than for whichever
+// is where that changes, for all forty-two at once rather than for whichever
 // ones somebody remembered.
 //
 // TWO OF THESE ARE REGULATED RECORDS AND ARE NAMED RATHER THAN BURIED IN THE
@@ -95,6 +96,17 @@ module.exports = {
     'sv_reports',
     'sv_reproduction',
     'sv_scheduling',
+    // ── sv_scribe_consent (2026-09-23) ─────────────────────────────────────
+    // The ambient scribe's consent record: that a client was asked, by which
+    // role and employee, for which visit, which wording they were shown, and
+    // what they ANSWERED -- declines included, because a register that only
+    // records agreements cannot show the ask was ever real.
+    //
+    // NO AUDIO ON THIS ROW AND THERE MUST NEVER BE. A stored FACT of consent
+    // is the practice's defence; a stored RECORDING of the consent re-creates
+    // the exact liability the feature discards audio to avoid. See 5 of
+    // docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md.
+    'sv_scribe_consent',
     'sv_soapnotes',
     'sv_speciesref',
     'sv_staff',
@@ -134,8 +146,9 @@ module.exports = {
   //                            in the open-work index rather than fixed here.
   //   sv_settings           -- device configuration. Already excluded by the
   //                            checker as device state, listed here so the
-  //                            count reconciles: 42 collections measured, 41
-  //                            backed up, 1 excluded above.
+  //                            count reconciles: 43 collections, 42 backed up,
+  //                            1 excluded above. (42/41 until sv_scribe_consent
+  //                            landed 2026-09-23.)
   ],
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker

@@ -19,7 +19,7 @@
 -- about the platform that nothing backs" -- and that stays true: the code now
 -- requests them, so the names go here.
 --
--- FORTY-ONE TABLES, ONE EXCLUDED, and the exclusion is written down in
+-- FORTY-TWO TABLES, ONE EXCLUDED, and the exclusion is written down in
 -- api/_resources/sairnvet.js rather than left as an absence.
 --
 -- ID COLUMN NAMING: mechanical singularisation of the resource name (strip
@@ -663,6 +663,58 @@ create policy "svc only sv_scheduling" on public.sv_scheduling
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 revoke all on public.sv_scheduling from service_role;
 grant select, insert, update on public.sv_scheduling to service_role;
+
+-- Ambient scribe consent (2026-09-23) -- the record that a client was ASKED,
+-- and what they answered. See docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md.
+--
+-- WHAT IS ON THIS ROW: the time, the visit's patient (if one was entered), the
+-- ANSWER (agreed or declined -- both, because a register that stores only
+-- agreements cannot show the ask was ever real), the version of the wording the
+-- client was shown, and the role and employee id of whoever asked.
+--
+-- WHAT IS NEVER ON THIS ROW, and the constraint below enforces it rather than
+-- asking: AUDIO. Not of the consultation, and not of the consent itself. A
+-- stored FACT of consent is the practice's defence; a stored RECORDING of the
+-- consent re-creates the exact liability the feature discards audio to avoid.
+-- The scribe posts audio to api/sairnvet-transcribe.js and to nothing else.
+--
+-- THE CHECK IS A BELT-AND-BRACES GUARD OF THE SAME KIND
+-- sql/biometric_consent_schema.sql uses for its three-year ceiling: application
+-- code is where a rule is applied, the schema is where it cannot be skipped. A
+-- future client that starts attaching a data-URI recording to this row is
+-- refused by the database rather than discovered in a subpoena.
+--
+-- NOT PROVEN WITH A REAL WRITE, AND GUARDIAN CHECK 29 SAYS THAT MATTERS.
+-- Check 29: any change to a schema constraint must be proven against the real
+-- endpoint, because a unit test that calls the business function directly
+-- never touches the constraint. This table has not been created on the live
+-- database -- this file is a migration nobody has run yet -- so the
+-- sv_scribe_consent_no_audio CHECK has been reasoned about and NOT executed.
+-- **Run both arms before trusting it**: insert a row whose data contains
+-- "audio": and confirm the refusal, then insert an ordinary consent row and
+-- confirm it is accepted. A constraint that refuses everything looks identical
+-- to one that works until the first real consent is recorded.
+create table if not exists public.sv_scribe_consent (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnvet',
+  scribe_consent_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, scribe_consent_id),
+  constraint sv_scribe_consent_data_size check (octet_length(data::text) <= 65536),
+  constraint sv_scribe_consent_no_audio check (data::text !~* '(data:audio/|"audio"\s*:)')
+);
+alter table public.sv_scribe_consent enable row level security;
+drop policy if exists "svc only sv_scribe_consent" on public.sv_scribe_consent;
+create policy "svc only sv_scribe_consent" on public.sv_scribe_consent
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
+revoke all on public.sv_scribe_consent from service_role;
+-- No delete, like every table in this file. Here it is load-bearing rather
+-- than uniform: this row is the evidence that consent was obtained, and a
+-- practice that can delete it can delete the proof its recording was lawful.
+grant select, insert, update on public.sv_scribe_consent to service_role;
 
 -- SOAP notes -- the clinical record.
 create table if not exists public.sv_soapnotes (

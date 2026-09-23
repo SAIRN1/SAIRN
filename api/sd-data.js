@@ -10267,7 +10267,7 @@ module.exports = async (req, res) => {
     // compliance register and the CONTROLLED-SUBSTANCE log lived in one browser
     // and nowhere else; a browser-data clear took the clinical record with it.
     //
-    // Forty-one here, one generic read/write pair -- same shape and reasoning
+    // Forty-two here, one generic read/write pair -- same shape and reasoning
     // as BLD_RESOURCES and SD_LOCAL_RESOURCES above. sv_examrooms_turnover is
     // excluded with its reason in api/_resources/sairnvet.js.
     //
@@ -10289,6 +10289,11 @@ module.exports = async (req, res) => {
       sv_portal: 'portal_id', sv_prepurchase: 'prepurchase_id', sv_referrals: 'referral_id',
       sv_reminders: 'reminder_id', sv_reports: 'report_id',
       sv_reproduction: 'reproduction_id', sv_scheduling: 'scheduling_id',
+      // sv_scribe_consent (2026-09-23) -- the ambient scribe's consent record.
+      // NO AUDIO EVER REACHES THIS TABLE: the scribe posts audio to
+      // api/sairnvet-transcribe.js and nowhere else, and this row holds only
+      // the fact of the ask and the answer.
+      sv_scribe_consent: 'scribe_consent_id',
       sv_soapnotes: 'soapnote_id', sv_speciesref: 'speciesref_id', sv_staff: 'staff_id',
       sv_surgery: 'surgery_id', sv_teleconsults: 'teleconsult_id', sv_vitals: 'vital_id',
       sv_wellness: 'wellness_id', sv_whiteboard: 'whiteboard_id',

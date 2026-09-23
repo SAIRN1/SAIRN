@@ -155,6 +155,49 @@
     #pc-preview{width:100%;border-radius:12px;border:2px solid var(--primary);}
     .pc-coach-banner{margin-top:10px;padding:10px 14px;background:rgba(124,58,237,.25);border:1px solid var(--primary);border-radius:8px;color:#fff;font-size:13px;font-weight:600;text-align:center;transition:opacity .2s;}
     .pc-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+    /* ── AMBIENT SCRIBE (2026-09-23) ───────────────────────────────────────
+       THE RECORDING BANNER IS SIZED FOR THE PERSON WHO DID NOT PRESS THE
+       BUTTON. docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md 4.2
+       requires "a visible indicator that cannot be dismissed or minimised,
+       present the whole time, readable from the CLIENT'S side of the table --
+       not a small dot in a corner of the vet's screen." So: fixed to the top
+       of the viewport, full width, 18px, and there is deliberately NO close
+       control on it. The only way it goes away is stopping the recording,
+       which is the button inside it. */
+    .sc-banner{position:fixed;top:0;left:0;right:0;z-index:10000;display:none;
+      align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+      padding:14px 20px;background:#B91C1C;color:#fff;font-size:18px;font-weight:700;
+      box-shadow:0 2px 12px rgba(0,0,0,.35);}
+    .sc-banner.on{display:flex;}
+    .sc-banner-dot{display:inline-block;width:14px;height:14px;border-radius:50%;
+      background:#fff;margin-right:10px;animation:sc-pulse 1.4s ease-in-out infinite;}
+    @keyframes sc-pulse{0%,100%{opacity:1}50%{opacity:.25}}
+    /* STOP is the largest control on the screen while capture runs. 4.2:
+       "STOP is always one tap, from the main view, never behind a menu." */
+    .sc-stop{background:#fff;color:#B91C1C;border:none;border-radius:8px;
+      padding:12px 26px;font-size:18px;font-weight:800;cursor:pointer;min-height:48px;}
+    @media (prefers-reduced-motion: reduce){ .sc-banner-dot{animation:none;} }
+    /* The consent overlay. Full screen on purpose: this is handed across a
+       table to a client, and a dialog floating over a clinical dashboard is
+       harder to read than a page that is only the question. */
+    .sc-modal{position:fixed;inset:0;background:rgba(15,23,42,.97);z-index:9999;
+      display:none;flex-direction:column;overflow-y:auto;}
+    .sc-modal.on{display:flex;}
+    .sc-body{flex:1;display:flex;flex-direction:column;padding:24px 20px;
+      max-width:640px;margin:0 auto;width:100%;box-sizing:border-box;color:#fff;}
+    .sc-body h2{font-size:22px;margin:0 0 4px;}
+    .sc-say{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.25);
+      border-radius:10px;padding:18px 20px;margin:16px 0;font-size:17px;line-height:1.65;}
+    .sc-say li{margin:8px 0;}
+    /* AGREE AND DECLINE ARE THE SAME SIZE, and that is a consent property
+       rather than a style choice: 4.1 says refusal is one tap and costs
+       nothing. A large green "Agree" beside a small grey "No" is a nudge, and
+       a nudged consent is the thing this whole flow exists to avoid. */
+    .sc-answer{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;}
+    .sc-answer button{flex:1 1 220px;min-height:64px;font-size:18px;font-weight:700;
+      border-radius:10px;cursor:pointer;border:2px solid #fff;padding:14px 18px;}
+    .sc-yes{background:#fff;color:#0F172A;}
+    .sc-no{background:transparent;color:#fff;}
   </style>
 <!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
      WHY IT WAS WORTH TURNING ON WITH NO TRAFFIC: the reachability work
@@ -515,6 +558,28 @@
 <div class="card"><div class="sv-tw"><table id="panel-soap-table">
 <thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Recorded by (role)</th><th>Status</th></tr></thead>
 <tbody id="soap-tbody"></tbody></table></div></div>
+<!-- ── AMBIENT SCRIBE (2026-09-23) ──────────────────────────────────────────
+     Placed ABOVE the dictation card rather than replacing anything in it. The
+     scoping document is explicit that push-to-talk dictation stays and that
+     "the feature must never be the only path to a SOAP note" (4.1). -->
+<div class="card" id="sc-card">
+  <h3 style="margin-top:0;">Ambient scribe</h3>
+  <p style="color:var(--text-muted,#666);font-size:13px;line-height:1.6;margin:0 0 12px;">
+    Records the consultation and drafts the SOAP note from it, so you are not typing while you examine.
+    <strong>The client is asked first, every visit</strong> &mdash; not once per practice, and not by you on their behalf.
+    Audio and transcript are both discarded; only a note you accept is kept.
+  </p>
+  <div id="sc-status" style="font-size:13px;line-height:1.6;padding:12px 14px;border-radius:8px;background:var(--bg);margin-bottom:12px;">Checking whether the scribe is available on this practice&hellip;</div>
+  <button class="btn" id="sc-start-btn" onclick="scribeAsk()" disabled>Start &mdash; ask the client</button>
+  <div id="sc-draft-wrap" style="display:none;margin-top:16px;">
+    <div style="font-size:13px;color:var(--text-muted,#666);margin-bottom:6px;">Draft from the consultation &mdash; <strong>read and correct it before you accept</strong>. Nothing is saved to the record until you do.</div>
+    <textarea id="sc-draft" style="width:100%;min-height:220px;"></textarea>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+      <button class="btn" onclick="scribeAcceptDraft()">Accept into SOAP Notes</button>
+      <button class="btn btn-secondary" onclick="scribeDiscardDraft()">Discard this draft</button>
+    </div>
+  </div>
+</div>
 <div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><div id="soap-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="soap-vet-accepted" onchange="onSoapSignoff()"> I have reviewed and edited this note and confirm it as accurate for this patient</label></div></div>
 </div>
 
@@ -818,6 +883,55 @@
 </div>
 <input type="text" id="pc-note" placeholder="Brief case note, e.g. 'lesion on left flank, first noticed 3 days ago'" style="margin-bottom:15px;">
 <button class="btn" onclick="openPeerCam()">📷 Open Camera</button>
+</div>
+
+<!-- ── AMBIENT SCRIBE: THE RECORDING INDICATOR (2026-09-23) ──────────────────
+     Lives OUTSIDE every panel, fixed to the viewport, so it stays on screen
+     whichever panel the vet navigates to while capture is running. There is no
+     dismiss control and that is deliberate -- see the .sc-banner comment in
+     the stylesheet and 4.2 of the scoping document. -->
+<div id="sc-banner" class="sc-banner" role="status" aria-live="assertive">
+  <div><span class="sc-banner-dot"></span>RECORDING — this conversation is being transcribed to draft a clinical note</div>
+  <button class="sc-stop" onclick="scribeStop('vet_stopped')">■ STOP RECORDING</button>
+</div>
+
+<!-- ── AMBIENT SCRIBE: THE CONSENT ASK ──────────────────────────────────────
+     TWO DISTINCT AFFIRMATIONS, and they are separated on purpose. The vet
+     enables the feature; the CLIENT answers. 4.1: "A single button pressed by
+     staff is not consent and must not be built as one." -->
+<div id="sc-consent-modal" class="sc-modal">
+<div class="sc-body">
+  <h2>Ambient scribe — asking the client</h2>
+  <div style="font-size:13px;opacity:.75;margin-bottom:6px;">Step 1 of 2 — the veterinarian</div>
+  <label style="display:flex;gap:10px;align-items:flex-start;font-size:16px;line-height:1.5;cursor:pointer;">
+    <input type="checkbox" id="sc-vet-enable" style="margin-top:4px;flex-shrink:0;width:20px;height:20px;">
+    <span>I am enabling the ambient scribe for this visit, and I will read the statement below to the client before they answer.</span>
+  </label>
+
+  <div style="font-size:13px;opacity:.75;margin:20px 0 6px;">Step 2 of 2 — hand the device to the client</div>
+  <div class="sc-say">
+    <strong>Please read this before you answer.</strong>
+    <ul style="padding-left:20px;margin:10px 0 0;">
+      <li>If you agree, <strong>this conversation will be recorded</strong> while you are in the room.</li>
+      <li>The recording is used to <strong>draft clinical notes</strong> for this visit. The veterinarian reads and corrects the draft before anything is added to the record.</li>
+      <!-- 6.2 item 1: the audio now DOES leave the device, to a FIRST-PARTY
+           endpoint, and this wording must say WHERE rather than imply it goes
+           nowhere. Naming the destination is the whole reason the self-hosted
+           decision was worth its cost -- a notice that had to say "and a
+           speech company hears this" is a notice practices would decline. -->
+      <li>The <strong>audio is not kept</strong>. It is sent to <strong>SAIRN's own transcription service &mdash; not to Google, Amazon, or any other speech company</strong>, turned into text, and deleted straight away. It is never stored on this device, on our servers, or in your pet's file.</li>
+      <li>The <strong>written transcript is not kept</strong> either — only the note the veterinarian accepts.</li>
+      <li>You can <strong>say no</strong>, and you can <strong>stop it at any point</strong> during the visit. Nothing about your care changes either way.</li>
+    </ul>
+  </div>
+  <div id="sc-consent-patient" style="font-size:14px;opacity:.8;margin-bottom:14px;"></div>
+  <div class="sc-answer">
+    <button class="sc-yes" onclick="scribeClientAnswer('agreed')">I agree to be recorded</button>
+    <button class="sc-no" onclick="scribeClientAnswer('declined')">No — do not record</button>
+  </div>
+  <div id="sc-consent-blocked" style="display:none;margin-top:14px;font-size:14px;color:#FCA5A5;"></div>
+  <button onclick="scribeCloseConsent('cancelled')" style="margin-top:22px;background:none;border:none;color:rgba(255,255,255,.7);font-size:15px;cursor:pointer;text-decoration:underline;">Cancel — go back without asking</button>
+</div>
 </div>
 
 <div id="pc-cam-modal" class="pc-cam-modal">
@@ -2087,7 +2201,7 @@ function svIsQuotaError(e){
 // register and the CONTROLLED-SUBSTANCE log lived in one browser and nowhere
 // else. A browser-data clear took the clinical record with it.
 //
-// FORTY-ONE BACKED UP, ONE EXCLUDED. sv_examrooms_turnover is a flat array of
+// FORTY-TWO BACKED UP, ONE EXCLUDED. sv_examrooms_turnover is a flat array of
 // NUMBERS (`log.push(minutes)`), not records -- its reason is written down in
 // api/_resources/sairnvet.js rather than left as an absence.
 //
@@ -2115,7 +2229,12 @@ var SV_SYNCED=[
   'sv_labresults','sv_lameness','sv_mobilevet','sv_multisite','sv_patients',
   'sv_peerconsults','sv_petinsurance','sv_portal','sv_prepurchase',
   'sv_referrals','sv_reminders','sv_reports','sv_reproduction',
-  'sv_scheduling','sv_soapnotes','sv_speciesref','sv_staff','sv_surgery',
+  // sv_scribe_consent ADDED 2026-09-23 with the ambient scribe. It is the
+  // practice's EVIDENCE that a client was asked and what they answered, and it
+  // is the one artefact of that feature that is deliberately kept -- the audio
+  // and the transcript are both discarded. Evidence that lives only in one
+  // browser is the failure this whole backup list was written about.
+  'sv_scheduling','sv_scribe_consent','sv_soapnotes','sv_speciesref','sv_staff','sv_surgery',
   'sv_teleconsults','sv_vitals','sv_wellness','sv_whiteboard',
   'sv_wildliferehab'
 ];
@@ -9692,6 +9811,376 @@ if (document.readyState === 'loading') {
   installVoiceInputTargets();
 }
 })();
+
+// ================================================================
+// SAIRNVET AMBIENT SCRIBE (2026-09-23)
+//
+// READ docs/2026-09-23-sairnvet-ambient-scribe-consent-scoping.md BEFORE
+// CHANGING ANYTHING HERE. Every rule below is a numbered section of it, and
+// each one is a rule because getting it wrong has a legal tail rather than a
+// UX cost.
+//
+// ── WHY THIS IS NOT THE DICTATION MODULE DIRECTLY ABOVE ───────────────────
+// attachVoiceInput() is push-to-talk: the vet starts it, the vet speaks, the
+// vet stops it, and the only voice captured belongs to the person who pressed
+// the button. An ambient scribe inverts all four. It runs continuously, it
+// captures whoever is in the room, it is not addressed to a field, and THE
+// PERSON WHOSE WORDS ARE MOST LEGALLY SENSITIVE -- the client -- never touched
+// the control. Treating the dictation module as precedent for this is the
+// byte-identical-is-not-safe-in-context error this platform records as its
+// seventh cross-domain discipline, so nothing here is shared with it.
+//
+// ── ALL-PARTY CONSENT EVERYWHERE, EVERY VISIT, NO STATE BRANCH (3) ────────
+// The app cannot know which state's law applies -- a licence key carries no
+// verified jurisdiction and an ambulatory vet crosses state lines in a working
+// day. The commonly-quoted eleven all-party states is a list about PHONE
+// CALLS; an exam room is an IN-PERSON conversation and the split states split
+// the other way (Missouri is all-party in person and is not on that list;
+// Connecticut and Nevada are the reverse). So there is no jurisdiction logic
+// in this module at all, and there must never be: asking every time is correct
+// in every state including the ones the naive list gets wrong.
+//
+// ── IT FAILS CLOSED, AND THE CHECK RUNS BEFORE THE CLIENT IS ASKED ────────
+// 6.2 decided transcription runs on a SELF-HOSTED model -- not the browser's
+// SpeechRecognition, which ships audio to a Google service, and not a paid
+// third-party ASR. That host does not exist yet, so api/sairnvet-transcribe.js
+// refuses every request. This module PREFLIGHTS that refusal on load and
+// disables the button, so with no host we never open a microphone and never
+// put a consent question to a client we could not honour. Asking somebody to
+// agree to a recording that cannot be transcribed is consent theatre.
+//
+// THERE IS NO FALLBACK BRANCH IN THIS MODULE AND THERE MUST NEVER BE ONE.
+// api/sairnvet-transcribe.test.js reads the source between this banner and the
+// closing one and fails if `SpeechRecognition` appears inside it. A temporary
+// fallback to the exact vendor 6.2 rejected is how that decision gets reversed
+// without anybody deciding it.
+// ================================================================
+(function(){
+'use strict';
+
+var SC_ENDPOINT = '/api/sairnvet-transcribe';
+
+// The version of the words actually shown to the client. Stored on every
+// consent record: a consent is to a specific statement, and "they consented"
+// is not evidence of anything if nobody can say what they were told.
+var SC_STATEMENT_VERSION = '2026-09-23.1';
+
+// idle -> asking -> capturing -> drafting. Nothing else is a state.
+var scState = 'idle';
+var scConsent = null;      // the ACCEPTED consent record this capture runs under
+var scRecorder = null;
+var scStream = null;
+var scChunks = [];
+var scAvailable = false;   // set only by a preflight that came back clean
+
+function scEl(id){ return document.getElementById(id); }
+
+function getScribeConsents(){
+  try {
+    var stored = localStorage.getItem('sv_scribe_consent');
+    if(stored) return JSON.parse(stored);
+  } catch(e){}
+  return [];
+}
+// NOT SEEDED. Every other collection in this app has a demo seed; this one
+// must not. A fabricated consent record is a fabricated legal artefact, and
+// an empty list is the honest state of a practice that has not asked anybody.
+function saveScribeConsents(list){ return st('sv_scribe_consent', list); }
+
+// ── PREFLIGHT ─────────────────────────────────────────────────────────────
+// Deliberately carries NO audio and NO consent reference. api/sairnvet-transcribe.js
+// checks the host BEFORE anything else precisely so this question can be asked
+// without sending anything, and its own test locks that ordering in place.
+function scribePreflight(){
+  var statusEl = scEl('sc-status'), btn = scEl('sc-start-btn');
+  if(!statusEl || !btn) return;
+  var lic = (typeof svLoad === 'function') ? svLoad('license','') : '';
+  var headers = { 'Content-Type':'application/json' };
+  if(lic) headers['Authorization'] = 'Bearer ' + lic;
+  fetch(SC_ENDPOINT, { method:'POST', headers:headers, body: JSON.stringify({ app_id:'sairnvet' }) })
+    .then(function(r){ return r.json().then(function(d){ return { status:r.status, body:d }; }); })
+    .then(function(res){
+      var code = (res.body && res.body.error && res.body.error.code) || '';
+      if(code === 'TRANSCRIBE_HOST_NOT_CONFIGURED'){
+        scAvailable = false;
+        statusEl.innerHTML = '<strong>Not available on this practice yet.</strong> ' +
+          escHtml(res.body.error.message);
+        return;
+      }
+      // Anything that is NOT the host refusal means a host IS configured and
+      // the request failed for some other reason (licence, consent reference,
+      // no audio -- all expected for a preflight that carries none of them).
+      scAvailable = true;
+      statusEl.textContent = 'Available. The client is asked at the start of each visit.';
+      btn.disabled = false;
+    })
+    .catch(function(){
+      // COULD NOT TELL IS NOT AVAILABLE. A network failure here leaves the
+      // button disabled rather than optimistically enabled -- the third state
+      // CLAUDE.md names, never folded into a pass.
+      scAvailable = false;
+      statusEl.textContent = 'Could not reach the server to check whether the scribe is available, so it stays off. Dictation is unaffected.';
+    });
+}
+
+// ── THE ASK (4.1) ─────────────────────────────────────────────────────────
+window.scribeAsk = function(){
+  if(!scAvailable){ showToast('The scribe is not available on this practice.','error',6000); return; }
+  if(scState !== 'idle'){ return; }
+  var patient = (scEl('soap-patient') ? scEl('soap-patient').value.trim() : '');
+  var pEl = scEl('sc-consent-patient');
+  if(pEl){
+    pEl.textContent = patient ? ('This visit: ' + patient) :
+      'No patient name has been entered on the SOAP form yet — the consent record will not name one.';
+  }
+  if(scEl('sc-vet-enable')) scEl('sc-vet-enable').checked = false;
+  if(scEl('sc-consent-blocked')) scEl('sc-consent-blocked').style.display = 'none';
+  scState = 'asking';
+  scEl('sc-consent-modal').classList.add('on');
+};
+
+window.scribeCloseConsent = function(){
+  scEl('sc-consent-modal').classList.remove('on');
+  if(scState === 'asking') scState = 'idle';
+};
+
+// TWO DISTINCT AFFIRMATIONS (4.1). The vet's checkbox is checked here rather
+// than merely displayed: without it, this single button IS a member of staff
+// consenting on the client's behalf, which the scoping document says must not
+// be built.
+window.scribeClientAnswer = function(answer){
+  if(scState !== 'asking') return;
+  var blocked = scEl('sc-consent-blocked');
+  if(!scEl('sc-vet-enable').checked){
+    if(blocked){
+      blocked.textContent = 'Step 1 is not complete: the veterinarian has not enabled the scribe for this visit. ' +
+        'This screen cannot record an answer without it — one button pressed by staff is not consent.';
+      blocked.style.display = 'block';
+    }
+    return;
+  }
+
+  var patient = (scEl('soap-patient') ? scEl('soap-patient').value.trim() : '');
+  var rec = {
+    id: 'svc' + Date.now(),
+    asked_at: new Date().toISOString(),
+    date: localToday(),
+    patient: patient || '',
+    answer: answer,                       // 'agreed' or 'declined' -- BOTH recorded
+    statement_version: SC_STATEMENT_VERSION,
+    asked_by_role: (scEl('userRole') ? scEl('userRole').textContent : '').trim() || 'unspecified',
+    asked_by_employee_id: (function(){ try{ return sessionStorage.getItem(SV_EMPLOYEE_KEY) || ''; }catch(e){ return ''; } })()
+  };
+  // NO AUDIO OF THE CONSENT (5). A stored FACT of consent is defensible; a
+  // stored RECORDING of it re-creates the problem it documents.
+
+  var list = getScribeConsents();
+  list.push(rec);
+  var saved = saveScribeConsents(list);
+
+  scEl('sc-consent-modal').classList.remove('on');
+
+  // A CONSENT THAT DID NOT SAVE DOES NOT START A RECORDING. The practice's
+  // whole defence is being able to show consent was obtained; capturing
+  // against a record that failed to write gives them the audio and none of the
+  // evidence. st() has already latched the failure, so this is the one place
+  // that has to act on it.
+  if(!saved){
+    scState = 'idle';
+    showToast('The consent record did NOT save, so nothing was recorded. Storage may be full or unavailable. Use dictation, or try again.','error',9000);
+    return;
+  }
+
+  if(answer !== 'agreed'){
+    scState = 'idle';
+    showToast('Recorded: the client declined. Nothing was captured. Dictation is available as usual.','info',6000);
+    return;
+  }
+  scConsent = rec;
+  scribeStart();
+};
+
+// ── CAPTURE (4.2) ─────────────────────────────────────────────────────────
+//
+// UNREACHABLE WHILE NO HOST IS CONFIGURED, and that is by construction rather
+// than by accident: scribeAsk() refuses unless the preflight cleared, so this
+// runs only on a platform where transcription actually works. Written now so
+// the contract the endpoint documents has a real caller, and named here so a
+// dormant-code check reads a decision instead of an absence.
+function scribeStart(){
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === 'undefined'){
+    scState = 'idle';
+    showToast('This browser cannot record audio, so the scribe cannot run here. Dictation is unaffected.','error',7000);
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(function(stream){
+    scStream = stream;
+    scChunks = [];
+    scRecorder = new MediaRecorder(stream);
+    scRecorder.ondataavailable = function(e){ if(e.data && e.data.size) scChunks.push(e.data); };
+    scRecorder.onstop = scribeOnStopped;
+    scRecorder.start();
+    scState = 'capturing';
+    scEl('sc-banner').classList.add('on');
+    scInstallInterruptGuards();
+  }).catch(function(){
+    scState = 'idle';
+    showToast('Microphone access was refused, so nothing was recorded.','error',6000);
+  });
+}
+
+// NO BACKGROUND CAPTURE, EVER (4.2). If the tab is hidden or loses focus,
+// capture STOPS and the vet is told. Resuming requires asking the client
+// again -- scState returns to idle and the only way back into capture is
+// through scribeAsk(). "A recorder that quietly restarts is the failure mode
+// this whole document exists to prevent."
+function scInstallInterruptGuards(){
+  document.addEventListener('visibilitychange', scOnInterrupt);
+  window.addEventListener('blur', scOnInterrupt);
+  window.addEventListener('pagehide', scOnInterrupt);
+}
+function scRemoveInterruptGuards(){
+  document.removeEventListener('visibilitychange', scOnInterrupt);
+  window.removeEventListener('blur', scOnInterrupt);
+  window.removeEventListener('pagehide', scOnInterrupt);
+}
+function scOnInterrupt(){
+  if(scState !== 'capturing') return;
+  if(document.visibilityState === 'visible' && document.hasFocus()) return;
+  window.scribeStop('interrupted');
+}
+
+window.scribeStop = function(reason){
+  if(scState !== 'capturing') return;
+  scState = 'drafting';
+  scRemoveInterruptGuards();
+  scEl('sc-banner').classList.remove('on');
+  try { if(scRecorder && scRecorder.state !== 'inactive') scRecorder.stop(); } catch(e){}
+  try { if(scStream) scStream.getTracks().forEach(function(t){ t.stop(); }); } catch(e){}
+  scStream = null;
+  if(reason === 'interrupted'){
+    showToast('Recording STOPPED — the app lost focus. Nothing was captured in the background. ' +
+      'To carry on you must ask the client again.','error',9000);
+  }
+};
+
+function scribeOnStopped(){
+  var blob = scChunks.length ? new Blob(scChunks, { type: (scRecorder && scRecorder.mimeType) || 'audio/webm' }) : null;
+  scChunks = [];
+  scRecorder = null;
+  if(!blob || !blob.size){ scribeReset(); return; }
+  scribeTranscribe(blob);
+}
+
+// ── TRANSCRIPTION ─────────────────────────────────────────────────────────
+// One destination, first-party, and nothing here decides what to do if it is
+// unavailable except say so. THE AUDIO IS RELEASED ON EVERY PATH -- success,
+// refusal and network failure alike (5: "never persisted ... discarded as
+// soon as a transcript returns"). There is no retry queue, because a retry
+// queue is a place audio lives.
+function scribeTranscribe(blob){
+  showToast('Transcribing…','info');
+  var reader = new FileReader();
+  reader.onerror = function(){ scribeReset(); showToast('Could not read the recording. Nothing was kept.','error',6000); };
+  reader.onload = function(){
+    var b64 = String(reader.result || '').split(',')[1] || '';
+    var lic = (typeof svLoad === 'function') ? svLoad('license','') : '';
+    var headers = { 'Content-Type':'application/json' };
+    if(lic) headers['Authorization'] = 'Bearer ' + lic;
+    fetch(SC_ENDPOINT, {
+      method:'POST', headers:headers,
+      body: JSON.stringify({
+        app_id:'sairnvet',
+        consent_ref: scConsent ? scConsent.id : '',
+        audio: b64,
+        mime: blob.type || 'audio/webm'
+      })
+    }).then(function(r){ return r.json().then(function(d){ return { status:r.status, body:d }; }); })
+      .then(function(res){
+        if(!res.body || !res.body.ok){
+          var msg = (res.body && res.body.error && res.body.error.message) ||
+            'The transcription service refused the request.';
+          showToast(msg + ' The recording has been discarded.','error',10000);
+          scribeReset();
+          return;
+        }
+        scribeShowDraft(res.body.transcript || '', res.body.model || '');
+      })
+      .catch(function(){
+        showToast('The transcription service could not be reached. The recording has been discarded — it is not queued and not stored.','error',9000);
+        scribeReset();
+      });
+  };
+  reader.readAsDataURL(blob);
+}
+
+// ── THE DRAFT IS A DRAFT (4.3) ────────────────────────────────────────────
+var scPendingModel = '';
+function scribeShowDraft(text, model){
+  scPendingModel = model || '';
+  scEl('sc-draft').value = text;
+  scEl('sc-draft-wrap').style.display = 'block';
+  showToast('Draft ready — read and correct it before accepting.','success',6000);
+}
+
+window.scribeDiscardDraft = function(){
+  scEl('sc-draft').value = '';
+  scEl('sc-draft-wrap').style.display = 'none';
+  scribeReset();
+  showToast('Draft discarded. Nothing was saved and the transcript is gone.','info',5000);
+};
+
+// NOTHING REACHES sv_soapnotes WITHOUT THE VET ACCEPTING IT (4.3), and the
+// stored note RECORDS HOW IT WAS DRAFTED. A clinical record that hides its own
+// provenance is worse than one that admits it -- a later reader must be able
+// to tell a transcribed note from a typed one.
+window.scribeAcceptDraft = function(){
+  var text = scEl('sc-draft').value.trim();
+  if(!text){ showToast('There is nothing in the draft to accept.','error'); return; }
+  var patient = (scEl('soap-patient') ? scEl('soap-patient').value.trim() : '') ||
+                (scConsent && scConsent.patient) || '';
+  if(!patient){ showToast('Enter the patient on the SOAP form before accepting — a note with no patient cannot be filed.','error',7000); return; }
+  var list = getSoapNotes();
+  list.push({
+    id: 'sn' + Date.now(),
+    date: localToday(),
+    patient: patient,
+    complaint: text.slice(0,60),
+    recorded_by_role: (scEl('userRole') ? scEl('userRole').textContent : '').trim() || 'unspecified',
+    status: 'Reviewed',
+    reviewed_at: new Date().toISOString(),
+    drafted_by: 'ambient_scribe',
+    scribe_model: scPendingModel || 'unrecorded',
+    scribe_consent_id: scConsent ? scConsent.id : ''
+  });
+  var saved = saveSoapNotes(list);
+  if(!saved){
+    showToast('NOT saved — storage may be full or unavailable. The draft is still on screen; do not close it.','error',9000);
+    return;
+  }
+  if(typeof renderSoap === 'function') renderSoap();
+  scEl('sc-draft').value = '';
+  scEl('sc-draft-wrap').style.display = 'none';
+  scribeReset();
+  showToast('Note accepted and filed as scribe-assisted.','success',5000);
+};
+
+// Consent does not carry over. The next capture asks again (4.1: per-visit).
+function scribeReset(){
+  scState = 'idle';
+  scConsent = null;
+  scPendingModel = '';
+}
+
+if(document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', scribePreflight);
+} else {
+  scribePreflight();
+}
+})();
+// ================================================================
+// END AMBIENT SCRIBE
+// ================================================================
 
 // ================================================================
 // PREDICTIVE INSIGHTS (2026-08-05) -- real signals computed live from

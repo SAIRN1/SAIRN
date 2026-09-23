@@ -1,10 +1,11 @@
 # SAIRNvet ambient scribe — consent and UI scoping
 
-**2026-09-23 (Fourth).** **§6.1 and §6.2 are now DECIDED (Michael, 2026-09-23). §6.3 and §6.4
-remain open and do not block the build. NOTHING IS BUILT YET — §8 stands exactly as written.**
-The build was claimed (`fourth`, `sairnvet-scribe-build`, 2026-09-23T09:40:21Z) and blocked six
-minutes later by `cody`'s `audit-wave3` claim on the same app. It is waiting on a decision about
-who runs it, not on any remaining scoping question. The instruction was explicit: an ambient scribe
+**2026-09-23 (Fourth).** **§6.1 and §6.2 are DECIDED (Michael). §6.3 and §6.4 remain open and did
+not block the build. THE BUILD IS DONE AND IS UNREACHABLE ON PURPOSE — §10 is what was written,
+§9 is what is still missing, and §8 is the section that used to say nothing existed.** There is no
+transcription host, so the feature refuses end to end: the endpoint answers `503` and the client
+disables its own button before any client is ever asked. That is §6.2's named failure mode being
+honoured, not a defect. The instruction was explicit: an ambient scribe
 auto-transcribing a live vet–client conversation has real consent implications,
 so the consent and UI flow is scoped *before* the transcription logic, and the
 capture is not built silently.
@@ -261,13 +262,175 @@ professional can be asked a narrow question instead of an open one.
 
 ---
 
-## 8. What was deliberately NOT built
+## 8. What was deliberately NOT built — SUPERSEDED, see §10
 
-No audio capture, no `getUserMedia({audio:true})`, no transcription call, no
-consent UI, no resource. **The instruction was to scope the consent and UI flow
-before writing the transcription logic, and the reason that ordering matters is
-that capture code is easy to add and impossible to un-ship.** §6's first two
-questions — the two that change the architecture — are now answered (§6.1, §6.2).
-**This section is still accurate as of 2026-09-23: none of it has been written.**
-When it is, this section must be rewritten to say what WAS built, not left
-standing as a stale claim that nothing exists.
+**This section said "no audio capture, no `getUserMedia({audio:true})`, no
+transcription call, no consent UI, no resource" and it stopped being true later
+on 2026-09-23.** It is rewritten rather than deleted, because the reason it
+existed is the part worth keeping: *the instruction was to scope the consent
+and UI flow before writing the transcription logic, and that ordering matters
+because capture code is easy to add and impossible to un-ship.* The ordering
+held — §6.1 and §6.2 were decided first, and §10 was written against them.
+
+Its last line asked the next session to rewrite it rather than leave it
+standing as a stale claim that nothing exists. **That is what this is.** The
+register of stale-document incidents in `CLAUDE.md` is long enough that a
+section which was accurate when written and false eight hours later is worth
+one paragraph marking the transition.
+
+---
+
+## 9. What is STILL not built, as of 2026-09-23
+
+Kept separate from §10 on purpose, because "built" and "working" are different
+claims and the gap between them is where this document would otherwise start
+lying.
+
+1. **The transcription host does not exist.** No model is running anywhere.
+   `SAIRNVET_TRANSCRIBE_URL` is unset in every environment, so
+   `api/sairnvet-transcribe.js` refuses every request and the client disables
+   its own button on preflight. **The feature is therefore UNREACHABLE end to
+   end today, by construction**, and that is §6.2's stated failure mode being
+   honoured rather than a defect.
+2. **Server-side verification of the consent reference is not written.** The
+   endpoint requires `consent_ref` to be present and refuses without it, but a
+   present string is a claim the *caller* makes.
+   `api/_lib/biometric-consent.js` already states this platform's rule — a
+   module that lets a caller assert consent as a flag is a module that would
+   manufacture consent the first time somebody hit a deadline. **Verifying the
+   ref against the stored `sv_scribe_consent` row is REQUIRED BEFORE THE HOST
+   IS EVER ENABLED.** It is not written today because with no host it could
+   never execute, and dormant code that has never run is not a control.
+3. **§6.3 and §6.4 remain open** — retention, and a per-practice kill switch.
+   Neither blocked the build. The kill switch in particular is cheap to add and
+   is the sort of thing a practice owner asks for on day one.
+4. **The SOUP register has no entry**, and should not until a model is chosen.
+   An entry for software nothing runs is the "claim nothing backs" error
+   `api/_resources/sairnvet.js` was written about. **The trigger is naming the
+   model**, not shipping this code.
+5. **Nothing here has been exercised against a real browser.** The capture path
+   is unreachable, so `getUserMedia`, `MediaRecorder`, the interrupt guards and
+   the banner have been syntax-checked and reasoned about, **not run**.
+6. **The `sv_scribe_consent_no_audio` CHECK constraint has never executed**, and
+   Guardian check 29 is explicit that this is the gap that matters: a schema
+   constraint is only proven by a real write against the real endpoint, because
+   a unit test calling the business function never reaches the database. The
+   table does not exist on the live database — `sql/sairnvet_data_schema.sql` is
+   a migration nobody has run. **Both arms must be run before the constraint is
+   trusted:** a row containing `"audio":` must be refused, and an ordinary
+   consent row must be accepted. A constraint that refuses everything looks
+   identical to one that works until the first real consent is recorded.
+7. **The whole table is unprovisioned**, so today a consent record saves locally
+   and its server backup answers `NOT_PROVISIONED`. The app already degrades
+   honestly there — but a practice relying on this as evidence has one copy, in
+   one browser, which is the failure `sql/sairnvet_data_schema.sql` was written
+   about in the first place.
+
+---
+
+## 10. What WAS built, 2026-09-23
+
+Five files. Each rule below cites the section it implements, so a reader checks
+the code against this document rather than against a memory of it.
+
+| File | What it is |
+|---|---|
+| `api/sairnvet-transcribe.js` | The transcription contract. Refuses every request until a self-hosted model host is configured. |
+| `api/sairnvet-transcribe.test.js` | Ten tests, and the ones that matter prove the *refusal*, not the feature. |
+| `sairnvet.html` | The consent flow, the capture UI, the recording indicator, and the draft-review step. |
+| `api/_resources/sairnvet.js`, `api/sd-data.js`, `sql/sairnvet_data_schema.sql` | `sv_scribe_consent` — the 42nd resource. |
+| `docs/CRITICALITY-TIERS.md` | `sv_scribe_consent` tiered **A / A** on the day it landed, not defaulted and revisited. |
+
+### 10.1 It fails closed, and the check runs before the client is asked
+
+`api/sairnvet-transcribe.js` reads `SAIRNVET_TRANSCRIBE_URL` in **exactly one
+place** (a test asserts the count is one, because a second read is a second
+place the gate can be bypassed) and answers `503
+TRANSCRIBE_HOST_NOT_CONFIGURED` when it is unset or blank.
+
+**The host check runs FIRST — before the licence, before the body is touched.**
+That ordering is a privacy property, not tidiness: with no host there is no
+lawful destination for exam-room audio, so the process must never hold any.
+Checking the licence first would mean parsing a request body full of a client's
+voice in order to reject it. A test asserts the ordering by sending a request
+with *no* `Authorization` header at all and requiring `503`, not `401`.
+
+**The client preflights that refusal on load** and disables its own Start
+button, so with no host **no microphone is opened and no client is ever asked**.
+Asking somebody to agree to a recording that cannot be transcribed is consent
+theatre. A preflight that cannot reach the server leaves the button **disabled**
+— could-not-tell is not available.
+
+**There is no fallback branch, and a test enforces it at the source level**,
+reading `sairnvet.html` between the scribe module's banners and failing if
+`SpeechRecognition` appears in its *code*. Comments are stripped first: the
+module's header names the rejected API in order to reject it, and a check that
+failed on the explanation would push the next author to delete the reasoning
+rather than keep the rule. **That test failed on its first run against its own
+module header, which is the check working.**
+
+### 10.2 The consent flow (§4.1)
+
+- **Two distinct affirmations.** The vet ticks an enable box; the **client**
+  answers. The answer buttons refuse to record anything while that box is
+  unticked and say why: *one button pressed by staff is not consent.*
+- **Agree and Decline are the same size.** That is a consent property rather
+  than a style choice — a large primary "Agree" beside a small grey "No" is a
+  nudge.
+- **Both answers are stored.** A register holding only agreements cannot show
+  the ask was ever real.
+- **The stored record names the wording** (`statement_version`). A consent is
+  to a specific statement; "they consented" is evidence of nothing if nobody
+  can say what they were told.
+- **A consent that did not save does not start a recording.** `st()` returns
+  false on a failed write and this is the one place in the app that acts on it
+  — capturing against a record that failed to write hands the practice the
+  audio and none of the evidence.
+- **The statement names WHERE the audio goes**, per §6.2 item 1 — SAIRN's own
+  service, *not* Google, Amazon or any other speech company. The self-hosted
+  decision is only worth its cost if the notice can say that sentence.
+
+### 10.3 While capturing (§4.2)
+
+- **The indicator is fixed to the top of the viewport, full width, 18px, with
+  no dismiss control**, and it is outside every panel so it survives
+  navigation. §4.2 asks for something "readable from the client's side of the
+  table — not a small dot in a corner of the vet's screen."
+- **STOP is inside the banner** and is the largest control on screen.
+- **No background capture.** `visibilitychange`, `blur` and `pagehide` all stop
+  the recorder, and the vet is told it stopped. **Resuming requires asking the
+  client again** — the state returns to idle and the only way back in is
+  through the ask. A recorder that quietly restarts is the failure mode this
+  document exists to prevent.
+
+### 10.4 What is kept and what is thrown away (§5)
+
+**The audio is released on every path — success, refusal and network failure
+alike — and there is no retry queue, because a retry queue is a place audio
+lives.** The transcript is never written to any resource. Only a note the vet
+accepts reaches `sv_soapnotes`, and it carries `drafted_by: 'ambient_scribe'`,
+the model, and the consent id, so a later reader can tell a transcribed note
+from a typed one (§4.3 item 9).
+
+`sv_scribe_consent` carries **no audio, and the database enforces that** rather
+than trusting the client: a `sv_scribe_consent_no_audio` CHECK constraint
+refuses a row containing a `data:audio/` URI or an `"audio"` key. Same
+belt-and-braces shape `sql/biometric_consent_schema.sql` uses for its
+three-year ceiling — application code is where a rule is applied, the schema is
+where it cannot be skipped. There is **no delete grant**, which is uniform
+across this schema but load-bearing here: a practice that can delete this row
+can delete the proof its recording was lawful.
+
+### 10.5 One thing this build did NOT do, and it is a finding
+
+**§7 asks whether a client's voice is biometric data, and names Illinois BIPA.
+`api/_lib/biometric-consent.js` already exists and implements that statute's
+three-part sequence — and this feature deliberately does not use it.** The
+reasoning: BIPA is about a biometric *identifier*, a template used to identify
+a person. This feature never builds one; it transcribes words and discards the
+audio. A voiceprint used for identification would be squarely in that module's
+scope, and a transcript is not.
+
+**That is a judgement, not a settled answer, and §7 keeps it open.** It is
+recorded here because the next person to read §7 will find that module and
+reasonably wonder why it was not wired in.
