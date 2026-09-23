@@ -2215,5 +2215,22 @@
         "docs/CRITICALITY-TIERS.md"
       ]
     }
+  ],
+  "refusals": [
+    {
+      "refused_at": "2026-09-23T12:59:24Z",
+      "my_subject": "tiers-grd",
+      "my_task": "full individually-read re-audit of all 30 sairngrounds resources FILES: docs/CRITICALITY-TIERS.md",
+      "other_session": "cc",
+      "other_subject": "sairncode",
+      "other_task": "sc_telehealth B to A on the money limb plus the two water_features rows individually read at unchanged B FILES: docs/CRITICALITY-TIERS.md",
+      "other_claimed_at": "2026-09-23T12:56:02Z",
+      "shared_files": [
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    }
   ]
 }
