@@ -2387,8 +2387,8 @@
       "task": "cody routed follow-ups on the tier probe arm 6 regex hazard and anchor staleness FILES: tests/run_criticality_tier_probe.py",
       "claimed_at": "2026-09-23T11:58:21Z",
       "claimed_at_epoch": 1790164701.7982104,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T12:11:05Z",
       "files": [
         "tests/run_criticality_tier_probe.py"
       ]
