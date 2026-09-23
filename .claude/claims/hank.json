@@ -2859,8 +2859,8 @@
       "task": "close the isolation NONE bucket for today's 12 new Tier A rows -- sc_drg sc_eligibility sf_service_appointments (generic), rf_bonding rf_job_hazard_assessments rf_locations rf_roof_sections rf_settings rf_warranty_tiers subcontractors sub_assignments (bespoke), then sharpen rf_jobs from WEAK FILES: api/sd-data-cross-tenant-dispatchers.test.js",
       "claimed_at": "2026-09-23T12:31:49Z",
       "claimed_at_epoch": 1790166709.8346634,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T12:59:48Z",
       "files": [
         "api/sd-data-cross-tenant-dispatchers.test.js"
       ]
