@@ -2345,8 +2345,8 @@
       "task": "close the check-to-claim git visibility window by publishing declared file sets into the local status registry FILES: tools/sairn_claim.py tools/sairn_status.py",
       "claimed_at": "2026-09-22T22:53:32Z",
       "claimed_at_epoch": 1790117612.4723983,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T08:51:58Z",
       "files": [
         "tools/sairn_claim.py",
         "tools/sairn_status.py"
