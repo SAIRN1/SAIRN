@@ -12429,7 +12429,7 @@
       "recurrence_open": "Only the six SAIRNcare trails were examined. Every other read on this platform that carries an order= clause is unchecked against the same question -- does the caller receive the column it is ordered by -- and the answer is invisible from the source, so a grep cannot settle it. No sweep was run."
     },
     {
-      "commit": "7022a7ca9c72",
+      "commit": "80a091c03317",
       "date": "2026-09-23",
       "subject": "fix(sairnvet): the no-fallback check's comment stripper is a scanner, not a regex -- a `//` inside a string took the rest of the line",
       "files": [
