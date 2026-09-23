@@ -2201,6 +2201,19 @@
         "docs/CRITICALITY-TIERS.md",
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "fourth-1790166616",
+      "session": "fourth",
+      "subject": "tiers-rollup",
+      "task": "cross-app rollup count+list re-derivation sweep, then the full sairnfreedom individually-read re-audit FILES: docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-23T12:30:16Z",
+      "claimed_at_epoch": 1790166616.0372531,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ]
 }
