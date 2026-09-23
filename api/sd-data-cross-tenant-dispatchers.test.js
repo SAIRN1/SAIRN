@@ -36,7 +36,8 @@
 //   grd_boq_rates, grd_cart_orders, grd_invasive_sightings, grd_rounds,
 //   grd_training_courses, grd_training_completions, rf_entities,
 //   sc_anesthesia, sen_referrals, sen_applicants, sen_referral_sources,
-//   sen_training_rules, sen_training_records
+//   sen_training_rules, sen_training_records,
+//   bld_inspections, bld_toolbox_talks, bld_warranty
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -303,7 +304,22 @@ const UNITS = [
     ['bld_pos', 'po_id'], ['bld_change_orders', 'change_order_id'],
     ['bld_lien_waivers', 'lien_waiver_id'], ['bld_subs', 'sub_id'],
     ['bld_timesheet', 'timesheet_id'],
-    ['bld_photo_analyses', 'photo_analysis_id']] },
+    ['bld_photo_analyses', 'photo_analysis_id'],
+    // ── THREE MORE, 2026-09-23, AND THE TIER MOVED FIRST ──────────────────
+    // These were Tier B this morning and had no arm here because this suite
+    // covers Tier A. The full SAIRNbuild tier re-audit promoted all three the
+    // same day -- bld_inspections (municipal code determinations),
+    // bld_toolbox_talks (OSHA instruction evidence), bld_warranty (a hand-
+    // entered `cost` summed into a Total Cost KPI).
+    //
+    // ADDED IN THE SAME BODY OF WORK AS THE PROMOTION, DELIBERATELY. A tier
+    // change is not a neutral edit to a document: the moment those rows read
+    // A, cross_tenant_isolation_scope's NONE bucket grew by three, and the
+    // session that grew it is the one holding the context to close it. Leaving
+    // them would have been a session creating a gap and reporting a finding.
+    ['bld_inspections', 'inspection_id'],
+    ['bld_toolbox_talks', 'toolbox_talk_id'],
+    ['bld_warranty', 'warranty_id']] },
   { map: 'SDN_RESOURCES', app: 'sairndesign', role: 'owner', members: [
     ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
     ['sdn_contracts', 'contract_id']] },
