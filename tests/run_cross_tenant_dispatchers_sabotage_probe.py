@@ -77,48 +77,114 @@ SERVING = os.path.join(ROOT, 'api', 'sd-data.js')
 SUITE = 'sd-data-cross-tenant-dispatchers.test.js'
 
 # ── THE MUTATION TABLE ─────────────────────────────────────────────────────
-# open_line  : the 1-indexed line the branch OPENS on, and `open_anchor` must
-#              be on it. This is what pins a mutation to one dispatcher when
-#              nine of them carry byte-identical query text.
-# read_line  : the 1-indexed line carrying the tenant filter to remove.
-# arms       : substrings of the arm names that MUST turn red. Every other arm
-#              in the suite must stay green.
+# opener : a string that appears EXACTLY ONCE in api/sd-data.js and identifies
+#          this branch. Uniqueness is asserted, not assumed -- it is what pins
+#          a mutation to one dispatcher when nine of them carry byte-identical
+#          query text.
+# arms   : substrings of the arm names that MUST turn red. Every other arm in
+#          the suite must stay green.
+#
+# ── LINE NUMBERS WERE THE FIRST SPELLING AND THEY LASTED ABOUT AN HOUR ──────
+# The table carried `open_line` and `read_line` as 1-indexed literals. Three
+# other sessions were editing api/sd-data.js the same afternoon, and after one
+# rebase EIGHT of the thirteen reported ANCHOR MOVED. The guard behaved
+# correctly -- it refused rather than mutating whatever now sits on line 11036
+# -- but a control that goes red on a green tree every time somebody else
+# commits is a control people learn to ignore, which is the slower version of
+# the failure this file exists to prevent.
+#
+# SO THE BRANCH IS LOCATED BY SEARCH AND THE READ LINE IS DERIVED FROM IT: the
+# first tenant filter at or below the opener, within a bounded window. That
+# keeps the property line-targeting was FOR -- one named branch, never the
+# byte-identical copy 900 lines away -- and drops the part that rots. The
+# located line number is printed on every run so it stays checkable.
 MUTATIONS = [
-    ('LEG_RESOURCES', 11036, "LEG_RESOURCES[resource] && action === 'read'", 11037,
+    ('LEG_RESOURCES', "if (LEG_RESOURCES[resource] && action === 'read') {",
      ['leg_', 'LEG_RESOURCES [L-rev]']),
-    ('SV_RESOURCES', 10355, "SV_RESOURCES[resource] && action === 'read'", 10356,
+    ('SV_RESOURCES', "if (SV_RESOURCES[resource] && action === 'read') {",
      ['sv_', 'SV_RESOURCES [L-rev]']),
-    ('SB_RESOURCES', 10732, 'SB_RESOURCES[resource]', 10739,
+    # The read branch's opener is the WHOLE condition: `SB_RESOURCES[resource]`
+    # alone also matches `const idCol = SB_RESOURCES[resource];` in the write
+    # branch, and the uniqueness check refused it rather than guessing.
+    ('SB_RESOURCES', 'if (SB_RESOURCES[resource]) {',
      ['sb_', 'SB_RESOURCES [L-rev]']),
-    ('SDN_RESOURCES', 10019, "SDN_RESOURCES[resource] && action === 'read'", 10021,
+    ('SDN_RESOURCES', "if (SDN_RESOURCES[resource] && action === 'read') {",
      ['sdn_', 'SDN_RESOURCES [L-rev]']),
-    ('LAW_RESOURCES', 10911, "LAW_RESOURCES[resource] && action === 'read'", 10912,
+    ('LAW_RESOURCES', "if (LAW_RESOURCES[resource] && action === 'read') {",
      ['law_portalesign', 'law_portalmessages', 'law_timeentries', 'law_clecredits',
       'law_optx', 'law_pimedical', 'law_mattertasks', 'law_matterdocs',
       'law_mattermilestones', 'law_bankstatements', 'LAW_RESOURCES [L-rev]']),
-    ('SF_RESOURCES', 10511, "SF_RESOURCES[resource] && action === 'read'", 10512,
+    ('SF_RESOURCES', "if (SF_RESOURCES[resource] && action === 'read') {",
      ['sf_', 'SF_RESOURCES [L-rev]']),
-    ('SC_RESOURCES', 13052, 'if (isScResource) {', 13120,
+    ('SC_RESOURCES', 'if (isScResource) {',
      ['sc_', 'SC_RESOURCES [L-rev]']),
-    ('BLD_RESOURCES', 10106, "BLD_RESOURCES[resource] && action === 'read'", 10107,
+    ('BLD_RESOURCES', "if (BLD_RESOURCES[resource] && action === 'read') {",
      ['bld_', 'BLD_RESOURCES [L-rev]']),
-    ('rf_company_programs', 7955, "resource === 'rf_company_programs'", 7962,
+    # Each rf_ branch below names its ACTION as well as its resource: the bare
+    # `resource === 'x'` form matches the read, the write and (for three of
+    # them) a third verb, so it cannot say which branch a mutation would hit.
+    ('rf_company_programs',
+     "if (resource === 'rf_company_programs' && action === 'read') {",
      ['rf_company_programs']),
-    ('rf_job_warranties', 7361, "resource === 'rf_job_warranties'", 7362,
+    ('rf_job_warranties',
+     "if (resource === 'rf_job_warranties' && action === 'read') {",
      ['rf_job_warranties']),
-    ('rf_prequal_documents', 6594, "resource === 'rf_prequal_documents'", 6595,
+    ('rf_prequal_documents',
+     "if (resource === 'rf_prequal_documents' && (action === 'read' || action === 'readiness')) {",
      ['rf_prequal_documents']),
-    ('rf_safety_equipment', 6781, "resource === 'rf_safety_equipment'", 6782,
+    ('rf_safety_equipment',
+     "if (resource === 'rf_safety_equipment' && (action === 'read' || action === 'board')) {",
      ['rf_safety_equipment']),
-    ('sen_visits', 4845, "resource === 'sen_visits' && action === 'read'", 4848,
+    ('sen_visits', "if (resource === 'sen_visits' && action === 'read') {",
      ['sen_visits']),
+    # TWO MORE, 2026-09-23, added with the units they cover rather than after:
+    # sd_sms_log and sd_email_threats joined SD_LOCAL_RESOURCES and sd_crm got
+    # its own bespoke unit, all three on the same day their register rows read
+    # A. A unit added without a mutation is a unit nobody has tried to break.
+    ('SD_LOCAL_RESOURCES', "if (SD_LOCAL_RESOURCES[resource] && action === 'read') {",
+     ['sd_aiquotes', 'sd_fin_jobs', 'sd_invoices', 'sd_negotiated_prices',
+      'sd_order_history', 'sd_pricing_rules', 'sd_exec_msgs', 'sd_sms_log',
+      'sd_email_threats', 'SD_LOCAL_RESOURCES [L-rev]']),
+    ('sd_crm', "if (resource === 'sd_crm' && action === 'read') {",
+     ['sd_crm']),
 ]
+
+# ── WHAT IS NOT MUTATED, SAID HERE RATHER THAN LEFT TO LOOK COVERED ─────────
+# Fifteen branches are driven above. The suite's other units are NOT: DNT, SD_HR,
+# GRD, rf_entities, the six RF bespoke branches, the four SEN units and
+# law_clients. Each of those still has [L]/[W] arms in the suite -- they are
+# tested -- but nothing here proves those arms would go red if their tenant
+# filter were removed. That is the same "sampled, not exhaustive" disclosure
+# hank made for SF, applied to this file's own coverage, and it is the honest
+# reading of the RESULT line at the bottom.
+
 
 # Two shapes, because the filter is written two ways in this file. Form A is the
 # single-line `...+ '&select=...'`; form B covers a continuation line and the SC
 # branch's `+ scSoftFilter +`. Both erase the tenant clause and nothing else.
 FORM_A = "?license_hash=eq.' + enc(licHash) + '&"
 FORM_B = "?license_hash=eq.' + enc(licHash) +"
+
+
+# How far below a branch's opener its tenant filter may sit. SC_RESOURCES is
+# the widest real gap -- `if (isScResource) {` and its read are 68 lines apart,
+# with the KX accumulator between them -- so 90 covers every current branch
+# with room, and is still far too narrow to reach the NEXT dispatcher.
+READ_WINDOW = 90
+
+
+def locate_opener(lines, anchor):
+    """The 1-indexed line carrying `anchor`, or None unless it matches once."""
+    hits = [i + 1 for i, l in enumerate(lines) if anchor in l]
+    return hits[0] if len(hits) == 1 else None
+
+
+def locate_read(lines, open_line):
+    """The first tenant filter at or below the opener, within READ_WINDOW."""
+    for i in range(open_line - 1, min(open_line - 1 + READ_WINDOW, len(lines))):
+        if FORM_A in lines[i] or FORM_B in lines[i]:
+            return i + 1
+    return None
 
 
 def die(msg):
@@ -190,16 +256,29 @@ try:
 
     failures = []
     print('\n=== %d LINE-TARGETED MUTATIONS ===' % len(MUTATIONS))
-    for label, open_line, open_anchor, read_line, arms in MUTATIONS:
-        # 1. the branch really opens where the table says
-        if open_line - 1 >= len(src_lines) or open_anchor not in src_lines[open_line - 1]:
-            failures.append('%s: ANCHOR MOVED -- line %d does not carry %r. The '
-                            'mutation was NOT applied; this is a stale table, '
-                            'not a caught sabotage.'
-                            % (label, open_line, open_anchor))
-            print('  MISS  %-22s anchor not on line %d' % (label, open_line))
+    for label, open_anchor, arms in MUTATIONS:
+        # 1. the opener must identify EXACTLY ONE place in the file
+        open_line = locate_opener(src_lines, open_anchor)
+        if open_line is None:
+            hits = sum(1 for l in src_lines if open_anchor in l)
+            failures.append('%s: the opener %r matches %d lines in api/sd-data.js, '
+                            'not 1. Zero means it was reworded; more than one '
+                            'means this mutation cannot say WHICH branch it '
+                            'would hit. Either way nothing was mutated -- a '
+                            'stale table, not a caught sabotage.'
+                            % (label, open_anchor, hits))
+            print('  MISS  %-22s opener matches %d lines, not 1' % (label, hits))
             continue
-        # 2. the read line really carries a tenant filter
+        # 2. the read line is DERIVED from the opener, not typed
+        read_line = locate_read(src_lines, open_line)
+        if read_line is None:
+            failures.append('%s: no tenant filter within %d lines below the '
+                            'opener at %d. The branch was restructured, or its '
+                            'filter is written in a third shape this probe does '
+                            'not know. Nothing was mutated.'
+                            % (label, READ_WINDOW, open_line))
+            print('  MISS  %-22s no filter under opener at %d' % (label, open_line))
+            continue
         target = src_lines[read_line - 1]
         if FORM_A in target:
             mutated_line = target.replace(FORM_A, '?', 1)
@@ -288,17 +367,20 @@ try:
         # [L] arm reported a correct result as a MISLANDING on the first run --
         # the two-sided assertion catching the expectation table rather than
         # the code, which is the direction it is supposed to fail in.
-        ('grd_boq_rates', 3432, "resource === 'grd_boq_rates' && action === 'read'",
+        ('grd_boq_rates',
+         "if (resource === 'grd_boq_rates' && action === 'read') {",
          ['grd_boq_rates [L]', 'NO session gate) [L-rev]']),
-        ('grd_rounds', 3243, "resource === 'grd_rounds' && action === 'read'",
+        ('grd_rounds', "if (resource === 'grd_rounds' && action === 'read') {",
          ['grd_rounds [L]']),
     ]
-    for label, open_line, open_anchor, arms in TRIPWIRES:
-        if open_line - 1 >= len(src_lines) or open_anchor not in src_lines[open_line - 1]:
-            failures.append('%s tripwire: ANCHOR MOVED -- line %d does not carry '
-                            '%r, so no gate was inserted and nothing was proven.'
-                            % (label, open_line, open_anchor))
-            print('  MISS  %-22s anchor not on line %d' % (label, open_line))
+    for label, open_anchor, arms in TRIPWIRES:
+        open_line = locate_opener(src_lines, open_anchor)
+        if open_line is None:
+            hits = sum(1 for l in src_lines if open_anchor in l)
+            failures.append('%s tripwire: the opener %r matches %d lines, not 1, '
+                            'so no gate was inserted and nothing was proven.'
+                            % (label, open_anchor, hits))
+            print('  MISS  %-22s opener matches %d lines, not 1' % (label, hits))
             continue
         new = src_lines[:open_line] + [GATE] + src_lines[open_line:]
         io.open(SAND_SERVING, 'w', encoding='utf-8', newline='').write('\n'.join(new))

@@ -48,6 +48,7 @@
 //   leg_merch_catalog, sc_fraud, sc_prebill, sc_providers, sc_query, sc_rac,
 //   sc_telehealth, sv_referrals, sv_reminders, sv_scribe_consent, sb_train,
 //   sdn_referrals, law_bankstatements, sc_anesthesia_base_units, sc_auth,
+//   sd_sms_log, sd_email_threats, sd_crm,
 //   rf_company_programs,
 //   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits,
 //   sc_dme, sf_members, sb_ap, leg_custodylog, leg_deathrecords, bld_draws,
@@ -531,6 +532,25 @@ const UNITS = [
   // LESS than the code does is still a comment nobody can trust.
   { map: 'law_clients (bespoke, session-gated)', app: 'sairnlaw', role: 'owner',
     members: [['law_clients', 'client_id']] },
+  // ── sd_crm (bespoke, assignee-narrowed), added 2026-09-23 ──────────────
+  // Promoted B -> A on BOTH axes in the same body of work. It graded WEAK
+  // rather than NONE -- named by files that do not drive the tenant filter --
+  // so the gap it grew is the WEAK bucket, and the rule is the same: the
+  // session that grew it closes it.
+  //
+  // `owner` FOR THE SAME REASON AS sen_clients AND sen_visits. The READ
+  // narrows to assigned leads for anybody outside CRM_MANAGEMENT_ROLES
+  // (api/sd-data.js:2882), and an UNASSIGNED lead is management-only, so a
+  // sales role would make the [L] arm pass because of the ASSIGNMENT filter
+  // rather than the tenant filter. owner is management, so license_hash is the
+  // only thing left that can narrow the result.
+  //
+  // WHAT THIS DOES NOT ASSERT, stated rather than left to look covered: the
+  // per-employee narrowing itself, which is a second question on the same
+  // query and needs two tenants sharing an employee id -- the collision shape
+  // sen_visits already records as OWED.
+  { map: 'sd_crm (bespoke, assignee-narrowed)', app: 'stonedesk', role: 'owner',
+    members: [['sd_crm', 'lead_id']] },
   // ── SAIRNgrounds HAD NO UNIT HERE EITHER (added 2026-09-23) ────────────
   // The same absent-dispatcher shape LAW_RESOURCES had: six Tier A resources
   // in the NONE bucket together because nothing drove the app at all. Each of
@@ -654,7 +674,13 @@ const UNITS = [
     // which the unit's `owner` role satisfies. It is the row the register
     // names as what the B tier's weak point looks like when it fires -- it
     // sat at B for eleven days on "an internal message lost".
-    ['sd_exec_msgs', 'exec_msg_id']] },
+    ['sd_exec_msgs', 'exec_msg_id'],
+    // TWO MORE, 2026-09-23, promoted B -> A on CONFIDENTIALITY in the same
+    // body of work that adds these arms. sd_sms_log carries a named customer,
+    // their mobile and the verbatim text sent to them; sd_email_threats
+    // carries a 120-character verbatim slice of somebody else's suspicious
+    // email. Both landed in the NONE bucket the moment those rows read A.
+    ['sd_sms_log', 'sms_id'], ['sd_email_threats', 'threat_id']] },
   // ── THIS BRANCH HAD NO SESSION GATE, AND NOW IT DOES (2026-09-21) ───────
   // The first version of this entry read `app: null, role: null` and recorded
   // why: SF_RESOURCES went straight from the map test to the query,
