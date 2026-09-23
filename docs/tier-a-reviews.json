@@ -2660,6 +2660,7 @@
       "verdict": null
     },
     {
+<<<<<<< HEAD
       "author_session": "cc",
       "opened_at": "2026-09-23T20:55:16Z",
       "resources": [
@@ -2700,6 +2701,29 @@
       "status": "open",
       "reviewer_owner": "fourth",
       "owner_assigned_at": "2026-09-23T20:55:16Z",
+=======
+      "author_session": "hank",
+      "opened_at": "2026-09-23T23:16:12Z",
+      "resources": [
+        "law_deadlines",
+        "law_trusttx",
+        "sdn_contracts",
+        "sdn_discounts",
+        "sdn_invoices",
+        "sdn_pos",
+        "sdn_referrals"
+      ],
+      "files": [
+        "api/sd-data-bespoke-branch-isolation.test.js",
+        "api/sd-data-sdn-session-gate.test.js",
+        "api/sd-data.js",
+        "sairndesign.html"
+      ],
+      "what": "SAIRNdesign session gate armed on the five Tier A resources, 2026-09-23 (9db14368). sairndesign.html, api/sd-data.js, api/sd-data-sdn-session-gate.test.js, api/sd-data-bespoke-branch-isolation.test.js. THIS ONE CHANGES SHIPPED AUTH BEHAVIOUR ON A LIVE APP, which is a different risk class from the test-only work I have been filing all day -- review it as such.\n\nREVIEW THESE SIX THINGS:\n\n(1) THE LOCKOUT RISK IS THE WHOLE RISK AND IT IS NOT FULLY CLOSED BY ANYTHING I CAN TEST. I made sdnData's X-SD-Auth header unconditional and then gated five resources in the same commit, on the measurement that 29 of 30 call sites did not pass `withSession`. If ANY path in sairndesign.html reaches sdnData for one of those five before sdnSession is set -- a restore path, a trial path, a deep link, a retry queue, a service worker -- that call now gets 403 and the studio loses data access. I assert sdnEnterApp sets the session before sdnHydrateAll and sdnRestoreSession does the same, and an arm checks that ORDERING in the source. THAT IS A STATIC CHECK OF TWO FUNCTIONS, NOT A PROOF ABOUT THE WHOLE PAGE. Grep every sdnData call site and every caller of them for a path that can run pre-session. This is the thing most likely to be wrong and the most expensive if it is.\n\n(2) AND IT HAS NEVER RUN IN A BROWSER. No live verification was done -- I cannot sign into a real SAIRNdesign practice from here. Every arm drives api/sd-data.js directly with a synthesised token. The claim \"a correctly signed-in designer still gets through\" is asserted against the HANDLER, not against the app. Live click-through on the deployed page is the missing half and I am naming it rather than letting the green suite imply it.\n\n(3) THE MEASUREMENT THAT JUSTIFIED THE ORDER -- 30 call sites, 19 resources, one passing withSession -- came from a regex over sairndesign.html counting comma-separated arguments. A call spanning multiple lines, or one passing the flag through a variable, would be miscounted. If the real number of session-passing call sites is higher, my argument for changing the header is weaker (though the change is still safe); if it is lower in a way I missed, nothing changes. Re-derive it.\n\n(4) I GATED FIVE AND LEFT THIRTEEN. Check that stopping at Tier A is right for THIS app specifically rather than by analogy to SAIRNfreedom. sdn_projects carries a client budget, sdn_specitems is the pricing catalogue both sdn_pos and sdn_proposals derive totals from, and sdn_timeentries carries a billable rate per employee-hour -- all three are queued for tier reads and may well be A tomorrow, at which point they need gating too. Argue whether they should have been gated now on the strength of the pending reads.\n\n(5) `withSession` IS NOW AN INERT PARAMETER on 30 call sites and one live user (sdnAuth, a different endpoint). I kept it deliberately -- a 30-site cosmetic diff in the same commit as a security change is unreviewable -- but an inert parameter that still LOOKS meaningful is its own hazard: the next author may add a call site and reason about whether to pass it. Decide whether the follow-up cleanup is worth its own commit or whether a comment is enough.\n\n(6) THE SABOTAGE CONTROL IS THREE MUTATIONS AND ALL THREE ARE ON MY OWN SUITE. Re-run them, and check the paired positive really is load-bearing: arm `read WITH a valid designer session is allowed` is the only thing standing between this change and a gate that refuses everybody, so confirm it fails when the gate is made unconditional-deny.\n\nDISCLOSED: the other thirteen SDN resources remain licence-key-only and an arm asserts sdn_moodboards is still ungated so a scope change is visible. Nothing about the TENANT boundary changed -- that was never the defect and is covered elsewhere.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-23T23:16:12Z",
+>>>>>>> efe1b3b6 (chore(docs): regenerate for the SAIRNdesign session gate)
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
