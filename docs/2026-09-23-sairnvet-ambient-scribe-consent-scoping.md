@@ -1,7 +1,10 @@
 # SAIRNvet ambient scribe — consent and UI scoping
 
-**2026-09-23 (Fourth).** **SCOPING ONLY. No capture code was written and none
-should be until §6 is decided.** The instruction was explicit: an ambient scribe
+**2026-09-23 (Fourth).** **§6.1 and §6.2 are now DECIDED (Michael, 2026-09-23). §6.3 and §6.4
+remain open and do not block the build. NOTHING IS BUILT YET — §8 stands exactly as written.**
+The build was claimed (`fourth`, `sairnvet-scribe-build`, 2026-09-23T09:40:21Z) and blocked six
+minutes later by `cody`'s `audit-wave3` claim on the same app. It is waiting on a decision about
+who runs it, not on any remaining scoping question. The instruction was explicit: an ambient scribe
 auto-transcribing a live vet–client conversation has real consent implications,
 so the consent and UI flow is scoped *before* the transcription logic, and the
 capture is not built silently.
@@ -170,21 +173,69 @@ scope here.**
 
 ---
 
-## 6. WHAT MUST BE DECIDED BEFORE ANY CAPTURE CODE IS WRITTEN
+## 6. DECISIONS
 
-1. **Is all-party-everywhere (§3) accepted?** If a per-state branch is wanted
-   instead, that is a different and much larger build, and it needs an owner for
-   keeping fifty jurisdictions current.
-2. **Where does transcription run?** Browser-native `SpeechRecognition` is what
-   the app already uses and costs nothing — **but on Chrome it sends audio to a
-   Google service**, which is a third-party disclosure that must appear in the
-   §4.1 wording and in the SOUP register. A local or first-party model avoids
-   that and costs real money. **This is the decision with the largest
-   consequence and it is not mine to make.**
-3. **Is the discard-by-default retention in §5 accepted**, or does a practice
-   need a retention option?
-4. **Does this need a per-practice kill switch** a practice owner can set, so
-   individual vets cannot enable it unilaterally?
+### 6.1 All-party-everywhere — **ACCEPTED** (Michael, 2026-09-23)
+
+§3 stands as written. No per-state branch.
+
+### 6.2 Where transcription runs — **DECIDED: SELF-HOSTED, e.g. Whisper** (Michael, 2026-09-23)
+
+**Not Google's browser-native `SpeechRecognition`, and not a paid third-party
+ASR service either.** A self-hosted model: real compute cost to host, no
+per-call fee, and **no third-party data flow for exam-room audio**.
+
+**The reasoning, recorded because it is the reasoning and not the conclusion
+that has to survive:**
+
+- **Trust and minimal-necessary.** This platform's whole posture is
+  redaction-first and minimum-necessary. Routing a client's voice through a
+  consumer speech API to save money would contradict the position every other
+  feature is built on, and a consent notice that has to say *"and Google hears
+  this"* is a notice practices will decline.
+- **`SpeechRecognition` is a CONSUMER-FACING BROWSER API, not a production
+  dependency.** It is unversioned, vendor-controlled, silently changeable and
+  absent entirely in some browsers. The app already treats it that way — the
+  existing dictation shows no button at all when it is missing
+  (`sairnvet.html:21570`-style graceful fallback), which is fine for a
+  convenience and not fine for the path a clinical record is drafted from.
+- **Cost shape.** Per-call pricing scales with every consultation; a hosted
+  model is a fixed cost that does not grow with use.
+
+**WHAT THIS DECISION CHANGES IN THIS DOCUMENT, said explicitly rather than left
+for a reader to infer:**
+
+1. **§5's "never leaves the device" needs its qualifier read carefully.** Audio
+   now DOES leave the device — to a **first-party** endpoint. The rule is
+   unchanged in substance (no third party) and the wording in §4.1 must say
+   *where* it goes rather than implying it goes nowhere.
+2. **The server must discard too.** Discard-by-default is now a property of two
+   places, not one. A transcription endpoint that writes audio to disk, a log or
+   a temp file that outlives the request re-creates exactly the liability §5
+   removes on the client.
+3. **The host does not exist yet, and that is a real blocker for the MODEL half
+   only.** Vercel's serverless runtime has an execution-time limit and no GPU,
+   so `api/` is the wrong place for Whisper itself. The endpoint **contract**
+   can be built and gated now; the model host is its own infrastructure
+   decision.
+4. **It becomes a SOUP entry.** A self-hosted model is third-party software the
+   platform runs, which is exactly what the SOUP register is for — the vendor,
+   the version, and the stated reason it is trusted.
+
+**AND THE FAILURE MODE IS NAMED NOW RATHER THAN DISCOVERED: with no host, the
+feature must FAIL CLOSED.** It must refuse to capture and say why. It must not
+fall back to `SpeechRecognition` "just for now", because a temporary fallback to
+the exact vendor this decision rejects is how the decision gets reversed without
+anybody deciding it.
+
+### 6.3 Discard-by-default retention — **still open**
+
+§5 as proposed, or does a practice need a retention option?
+
+### 6.4 Per-practice kill switch — **still open**
+
+Should a practice owner be able to disable the feature so individual vets
+cannot enable it unilaterally?
 
 ---
 
@@ -215,5 +266,8 @@ professional can be asked a narrow question instead of an open one.
 No audio capture, no `getUserMedia({audio:true})`, no transcription call, no
 consent UI, no resource. **The instruction was to scope the consent and UI flow
 before writing the transcription logic, and the reason that ordering matters is
-that capture code is easy to add and impossible to un-ship.** §6 has four
-questions; the first two change the architecture.
+that capture code is easy to add and impossible to un-ship.** §6's first two
+questions — the two that change the architecture — are now answered (§6.1, §6.2).
+**This section is still accurate as of 2026-09-23: none of it has been written.**
+When it is, this section must be rewritten to say what WAS built, not left
+standing as a stale claim that nothing exists.
