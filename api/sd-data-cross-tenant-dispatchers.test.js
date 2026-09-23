@@ -37,7 +37,18 @@
 //   grd_training_courses, grd_training_completions, rf_entities,
 //   sc_anesthesia, sen_referrals, sen_applicants, sen_referral_sources,
 //   sen_training_rules, sen_training_records,
-//   bld_inspections, bld_toolbox_talks, bld_warranty
+//   bld_inspections, bld_toolbox_talks, bld_warranty,
+//   sc_drg, sc_eligibility, sf_service_appointments,
+//   rf_bonding, rf_job_hazard_assessments, rf_locations, rf_roof_sections,
+//   rf_warranty_tiers, subcontractors
+//
+// rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
+// list and are covered in api/sd-data-roofing-projected-isolation.test.js.
+// All three re-project their rows into a FIXED shape before responding, so
+// the `owner` probe the [L] arm above reads back does not survive the
+// response and no fixture here can make it. Same reason bld_tna and
+// exec_context have their own files. Declaring them here would have been a
+// claim this file's own table cannot back -- which the tool checks.
 //
 // THE LAST TWENTY-TWO WERE ADDED 2026-09-23. Every one was Tier A and sat
 // in cross_tenant_isolation_scope's NONE bucket -- no cross-tenant arm at
@@ -226,9 +237,26 @@ function mockReq(body, licHash, app, role) {
 //        app would pass, which is Guardian Check 28's collision).
 //        `null` means the branch has NO session gate -- see SF_RESOURCES.
 // role : the role its role-gate demands, where it has one.
-// members: [resource, idCol, payloadExtras?] . idCol comes from the map in
-//        sd-data.js and is what the upsert's on_conflict key must carry
-//        alongside license_hash.
+// members: [resource, idCol, payloadExtras?, rowExtras?] . idCol comes from
+//        the map in sd-data.js and is what the upsert's on_conflict key must
+//        carry alongside license_hash.
+//
+// ── WHY SOME MEMBERS CARRY rowExtras, AND WHY IT CANNOT FAKE A PASS ───────
+// Added 2026-09-23 for the bespoke SAIRNroofing branches. A few branches ask
+// for MORE than license_hash before a row is visible at all: `subcontractors`
+// ANDs `app_id=eq.sairnroofing` into the query, and `rf_roof_sections` filters
+// the fetched rows to `status === 'active'` in memory. A seeded row without
+// those columns matches nothing, the handler answers `{data: []}`, and the arm
+// fails saying tenant A saw nothing -- which is true and is about the fixture,
+// not about tenancy.
+//
+// THIS IS THE READ-SIDE TWIN OF payloadExtras BELOW, and it is safe for a
+// reason worth stating rather than assuming: the extras are applied to BOTH
+// tenants' rows by the SAME line of code, so they cannot make B's row
+// disappear while leaving A's. The only failure they can cause is an EMPTY
+// result, and the [L] arm asserts A's row is PRESENT -- so a wrong rowExtras
+// fails LOUDLY and can never manufacture a pass. A member whose extras are
+// missing is reported, not silently skipped.
 //
 // ── WHY SOME MEMBERS CARRY payloadExtras, AND WHY THAT IS NOT CHEATING ────
 // Several resources validate their payload BEFORE the upsert -- a coverage
@@ -241,6 +269,27 @@ function mockReq(body, licHash, app, role) {
 // is reported UNREACHED rather than passed, which is the whole point of that
 // list: a write arm that silently never ran is indistinguishable from one
 // that ran and found nothing.
+// ── A ROW THE WRITE PATH MUST FIND BEFORE IT REACHES THE UPSERT ──────────
+// Same idea as payloadExtras, one layer further out: a few branches check a
+// FOREIGN ROW before writing. `rf_roof_sections` refuses a section whose
+// building does not exist ("a section pointing at nothing is a silent
+// orphan"), so with an empty store the arm answered 404 NO_BUILDING and went
+// UNREACHED -- correctly, and proving nothing about tenancy.
+//
+// SEEDED UNDER TENANT A, WHICH IS WHAT KEEPS IT HONEST. The prerequisite
+// lookup is itself license_hash-filtered, so a row seeded under B would leave
+// the arm UNREACHED rather than passing. As with rowExtras, the only failure
+// this can cause is a loud one. It cannot reach the [W] assertions at all --
+// those are about the conflict key and the license_hash the HANDLER put in
+// the body, neither of which a prerequisite read can influence.
+//
+// AND IT DOES NOT ASSERT THE INTERESTING VERSION OF THAT CHECK, which is
+// stated rather than left to look covered: whether tenant A can attach a
+// section to tenant B's BUILDING is a second isolation question, on a second
+// query, and nothing here drives it.
+const WRITE_PREREQ = {
+  rf_roof_sections: [{ license_hash: HASH_A, building_id: 'BL-1' }]
+};
 const WRITE_BLOCKED = {
   // Needs a co-signature from api/sv-witness.js -- a second employee
   // confirming a controlled-substance entry. Forging one in a test would be
@@ -335,7 +384,11 @@ const UNITS = [
     ['sc_denial', 'entry_id'], ['sc_denial_events', 'entry_id'],
     ['sc_revenue', 'entry_id'],
     ['sc_auth_requests', 'entry_id'], ['sc_coded_items', 'entry_id'],
-    ['sc_hcc', 'entry_id'], ['sc_anesthesia', 'entry_id']] },
+    ['sc_hcc', 'entry_id'], ['sc_anesthesia', 'entry_id'],
+    // Promoted B -> A on 2026-09-23 by another session's tier pass. Added the
+    // same day rather than left in the NONE bucket -- see the BLD note below
+    // for why a promotion and its arm belong together.
+    ['sc_drg', 'entry_id'], ['sc_eligibility', 'entry_id']] },
   // ── LAW_RESOURCES HAD NO UNIT HERE AT ALL (added 2026-09-23) ───────────
   // Seven Tier A SAIRNlaw resources sat in the NONE bucket together, which is
   // what an absent UNIT looks like from the coverage side: not one resource
@@ -395,6 +448,38 @@ const UNITS = [
   { map: 'rf_entities (bespoke)', app: 'sairnroofing', role: 'owner', members: [
     ['rf_entities', 'entity_id',
       { entity_id: 'X-1', legal_name: 'A Entity', entity_type: 'llc' }]] },
+  // ── SIX MORE SAIRNROOFING BESPOKE BRANCHES, 2026-09-23 ──────────────────
+  // Every one was promoted B -> A earlier the same day by another session's
+  // tier pass, and every one landed straight in cross_tenant_isolation_scope's
+  // NONE bucket. They are SEPARATE `if (resource === ...)` branches, not a map
+  // -- so unlike a dispatcher member, each one is its own place the tenant
+  // filter had to be written correctly, and driving one says nothing about the
+  // next. `owner` is used throughout: rf-auth's MANAGEMENT_ROLES is
+  // {owner, admin} and its BROAD_READ_ROLES is {owner, admin, estimator}, so
+  // owner is the one role that cannot make a read arm pass for a narrowing
+  // reason other than license_hash.
+  //
+  // THE TWO WITH rowExtras ARE THE REASON rowExtras EXISTS. `subcontractors`
+  // ANDs `app_id=eq.sairnroofing` into its query; `rf_roof_sections` filters
+  // the fetched rows to `status === 'active'` in memory. Without those columns
+  // a seeded row is invisible to the branch and the arm fails about the
+  // fixture rather than about tenancy.
+  { map: 'RF (bespoke branches)', app: 'sairnroofing', role: 'owner', members: [
+    ['rf_bonding', 'bonding_id',
+      { bonding_id: 'B-1', surety: 'A Surety', effective_on: '2026-01-01' }],
+    ['rf_job_hazard_assessments', 'jha_id',
+      { jha_id: 'B-1', job_id: 'J-1', assessed_on: '2026-09-01',
+        competent_person: 'A Person' }],
+    ['rf_locations', 'location_id',
+      { location_id: 'B-1', name: 'A Location' }],
+    ['rf_roof_sections', 'section_id',
+      { section_id: 'B-1', building_id: 'BL-1', name: 'A Section' },
+      { status: 'active' }],
+    ['rf_warranty_tiers', 'tier_id',
+      { tier_id: 'B-1', manufacturer: 'A Maker', tier_name: 'Gold' }],
+    ['subcontractors', 'sub_id',
+      { sub_id: 'B-1', name: 'A Sub' },
+      { app_id: 'sairnroofing' }]] },
   // SEN_REFERRAL_RESOURCES is its own small map with its own gate -- the
   // file's words: "a caregiver is out, the coordinator who screens the call is
   // in". `owner` is used for the same reason as the sen_clients unit: so the
@@ -430,7 +515,11 @@ const UNITS = [
     ['sf_signatures', 'signature_id'], ['sf_donor_awards', 'donor_award_id'],
     ['sf_donor_tiers', 'donor_tier_id'],
     ['sf_accounts', 'account_id'], ['sf_ledger', 'ledger_id'],
-    ['sf_vendor_prices', 'vendor_price_id']] },
+    ['sf_vendor_prices', 'vendor_price_id'],
+    // Promoted B -> A on 2026-09-23 by another session's tier pass -- the row
+    // ties a member to a VA-adjacent referral outcome, which is the reason
+    // SD_SESSION_GATED already carries it at :879.
+    ['sf_service_appointments', 'service_appointment_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [
     ['sb_bud', 'bud_id'], ['sb_exps', 'exp_id'], ['sb_invs', 'inv_id'],
     ['sb_incidents', 'incident_id'], ['sb_payruns', 'payrun_id'],
@@ -448,13 +537,21 @@ const UNITS = [
 // reports UNREACHED, never pass and never fail-as-isolation.
 const UNREACHED = [];
 
-async function listRead(unit, resource, idCol) {
-  const rows = [
-    { license_hash: HASH_A, [idCol]: 'A-1', owner: 'A',
-      data: { id: 'A-1', owner: 'A' } },
-    { license_hash: HASH_B, [idCol]: 'B-1', owner: 'B',
-      data: { id: 'B-1', owner: 'B' } }
+// ONE function builds BOTH tenants' fixture rows, and rowExtras is applied by
+// the same line to both. That is what makes rowExtras unable to fake a pass:
+// there is no code path that can give tenant A a visible row and tenant B an
+// invisible one.
+function seedPair(idCol, rowExtras) {
+  return [
+    Object.assign({ license_hash: HASH_A, [idCol]: 'A-1', owner: 'A',
+                    data: { id: 'A-1', owner: 'A' } }, rowExtras || {}),
+    Object.assign({ license_hash: HASH_B, [idCol]: 'B-1', owner: 'B',
+                    data: { id: 'B-1', owner: 'B' } }, rowExtras || {})
   ];
+}
+
+async function listRead(unit, resource, idCol, rowExtras) {
+  const rows = seedPair(idCol, rowExtras);
   const calls = [];
   const h = loadHandler(HASH_A, unit.app, postgrestMock(rows, calls));
   const res = mockRes();
@@ -469,10 +566,10 @@ async function listRead(unit, resource, idCol) {
     section(unit.map + '  (' + unit.app + ', role ' + unit.role + ') -- '
       + unit.members.length + ' Tier A member(s)');
 
-    for (const [resource, idCol, extras] of unit.members) {
+    for (const [resource, idCol, extras, rowExtras] of unit.members) {
       // ── SHAPE L ──────────────────────────────────────────────────────────
       await test(resource + ' [L] tenant A sees ONLY tenant A rows', async () => {
-        const { res, calls } = await listRead(unit, resource, idCol);
+        const { res, calls } = await listRead(unit, resource, idCol, rowExtras);
         if (res.statusCode !== 200) {
           UNREACHED.push([resource, 'read', res.statusCode,
                           (res.body && res.body.error && res.body.error.code) || '']);
@@ -500,7 +597,8 @@ async function listRead(unit, resource, idCol) {
       }
       await test(resource + ' [W] A writing B\'s id lands under A, not B', async () => {
         const calls = [];
-        const h = loadHandler(HASH_A, unit.app, postgrestMock([], calls));
+        const h = loadHandler(HASH_A, unit.app,
+          postgrestMock(WRITE_PREREQ[resource] || [], calls));
         const res = mockRes();
         const payload = Object.assign(
           { id: 'B-1', amount: 1, name: 'x', entry_id: 'B-1',
@@ -528,14 +626,9 @@ async function listRead(unit, resource, idCol) {
 
     // ── SHAPE L, THE OTHER DIRECTION, once per unit ───────────────────────
     // A handler hardcoded to one tenant passes every A-only arm above.
-    const [firstRes, firstId, firstExtras] = unit.members[0];
+    const [firstRes, firstId, firstExtras, firstRowExtras] = unit.members[0];
     await test(unit.map + ' [L-rev] tenant B sees ONLY tenant B rows', async () => {
-      const rows = [
-        { license_hash: HASH_A, [firstId]: 'A-1', owner: 'A',
-          data: { id: 'A-1', owner: 'A' } },
-        { license_hash: HASH_B, [firstId]: 'B-1', owner: 'B',
-          data: { id: 'B-1', owner: 'B' } }
-      ];
+      const rows = seedPair(firstId, firstRowExtras);
       const h = loadHandler(HASH_B, unit.app, postgrestMock(rows, []));
       const res = mockRes();
       await h(mockReq({ action: 'read', resource: firstRes }, HASH_B, unit.app, unit.role), res);
