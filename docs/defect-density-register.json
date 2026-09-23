@@ -12424,61 +12424,62 @@
       "recurrence_open": "The checker still cannot see a fold with NO fallback at all. Its pattern is the truthy-guard shape, plus (x || 0); taxRender's invTotal was the bare shape, s + i.amount, and was invisible to it by construction rather than by configuration. Widening truthy_sum_check.py to that shape is a separate change and was NOT made here, so the gap is named rather than assumed covered. AND 46 GRANDFATHERED ENTRIES REMAIN: each is a hazard nobody has assessed, and this defect is the first demonstration that the list hides real ones rather than only theoretical ones -- two of its entries were a live money bug on a tax report."
     },
     {
-      "commit": "fc2ee8f136b3",
+      "commit": "75656e2c68df",
       "date": "2026-09-23",
-      "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
+      "subject": "fix(nhi): the register runs again -- and the refusal that blocked it had surfaced a procedure that was wrong for six days",
       "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "sairnvet.html",
-        "tests/sv_boarding_revenue_coercion.js",
-        "tools/truthy_sum_baseline.json"
+        "docs/NHI-REGISTER.md",
+        "tools/nhi_register.py"
       ],
-      "lines_added": 177,
-      "lines_removed": 3,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "code-review",
-      "summary": "SAIRNvet's Revenue MTD KPI folded `s + (b.rate || 0) * days` across every booking in the month. Dispatched as the same uncoerced-fold defect fixed in stonedesk.html the same day, and it is NOT that class: `*` has no string overload, so the multiplication coerces before the addition sees the value. Driven, rates of \"500\" and \"250\" over 3 days give 2250, where the bare fold gives the string \"0500250\". WHAT WAS REAL IS SMALLER: the multiplication rescues a numeric STRING and not a junk value. \"abc\" * 3 is NaN, one NaN poisons the whole reduce, and the KPI rendered \"$NaN\" -- every other booking's revenue vanishing with it, which is a worse outcome than a single wrong row. Wrapped in Number(x) || 0 so one bad row costs that row. sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map carrying the recorded reason \"NOT ASSESSED -- whether it is a defect depends on whether anything can put a STRING in this field\", a deferral that was honest and was never resolved; it has now been assessed (a string CAN arrive, sv_boarding is server-synced) and the entry is removed. The criticality-tier row written the same morning cited the uncoerced fold as evidence of concatenation risk and was corrected in the same commit.",
+      "lines_added": 88,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "tools/nhi_register.py REFUSED TO RUN over two unattributed credentials, so item 61's non-human-identity figures could not be re-derived at all -- a could-not-run, not a pass. Neither attribution was bookkeeping. SD_AUTH_SECRET_PREVIOUS belongs to the session-signing identity, and it FALSIFIES THAT ENTRY'S OWN PROCEDURE: the compromise text ended 'AN OVERLAP WINDOW -- accept two secrets during a changeover -- would remove that dilemma and IS A BUILD, NOT A PROCEDURE. DRAFTED 2026-09-15.' That build landed 2026-09-17 at api/_lib/auth.js:365, which accepts SD_AUTH_SECRET_PREVIOUS on verify and never signs with it -- so a rotation had not logged everyone out for six days, and the dilemma the entry posed to a human handling an incident (a certain universal logout against an uncertain compromise) was already gone. The stale claim was repeated in THREE fields of the same entry: scope, rotation and compromise. SD_ENCRYPTION_KEY is a separate identity that nothing had registered: it was split out of SD_AUTH_SECRET on 2026-09-17 precisely so a signing-key leak would stop also decrypting secrets at rest, and it is the AES-256-GCM key for attorney MFA/TOTP secrets and a stored Stedi API key. It had no owner, no rotation entry and no compromise procedure. Both were surfaced by the refusal rather than by anybody reading the register.",
       "rules": [
-        "1.1"
+        "2.3"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
+      "injection_phase": "config",
+      "phase_confidence": "stated",
+      "found_by_tool": "tools/nhi_register.py",
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The fold predates the baseline file, which was generated 2026-09-11 and already contained this entry. Nothing dates the line itself, and picking the commit that introduced renderBoarding would name the feature rather than the defect -- the NaN behaviour was present from the first version and was never a regression."
+        "commit": "7ed87d0f6ca9",
+        "date": "2026-09-23",
+        "subject": "docs(sairnfreedom): the last two tips register items -- one answered, one researched into a different shape, and the register was carrying TWO tests under one word",
+        "lag_days": 0
       },
-      "citation_note": "1.1 is about a check that cannot fail. The grandfathered entry made this one unable to fail for twelve days, which is that shape via configuration rather than via a broken predicate. Cited as arguable.",
+      "citation_note": "2.3 is 'a fact with a tense needs a read, and a number needs a single source'. This is the first half exactly: DRAFTED 2026-09-15 was true when written and false two days later, and nothing re-read it. Clean citation.",
       "contributing_factors": [
         {
-          "factor": "The Revenue MTD fold read `s + (b.rate || 0) * days`. The `|| 0` guard does not coerce, but the MULTIPLICATION does -- so the string case this shape is usually reported for was never live here. What the multiplication does not rescue is a non-numeric value: \"abc\" * 3 is NaN, and one NaN poisons the entire reduce.",
+          "factor": "The session-signing entry's compromise procedure ended 'AN OVERLAP WINDOW ... would remove that dilemma and IS A BUILD, NOT A PROCEDURE. DRAFTED 2026-09-15.' That build landed 2026-09-17 in api/_lib/auth.js:365, and the entry still described the pre-build world for six days. The same stale claim was repeated in THREE fields of the same entry -- scope, rotation and compromise.",
           "kind": "technical",
           "action_status": "done",
-          "action": "wrapped in Number(x) || 0 so one bad row costs that row rather than the whole KPI"
+          "action": "all three fields corrected, each stating what it previously said rather than quietly replacing it"
         },
         {
-          "factor": "sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map with the recorded reason NOT ASSESSED -- explicitly deferring the question of whether a string could reach the field. The deferral was honest and it was never resolved, so the checker reported CLEAN over it for twelve days.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "assessed and removed by name, 46 to 45; a string CAN reach it because sv_boarding is server-synced, and it is harmless here for a reason now written down"
-        },
-        {
-          "factor": "IT WAS DISPATCHED AS THE WRONG DEFECT CLASS, and accepting that framing would have produced a fix with a false rationale attached. The dispatch called it the same class as the StoneDesk tax folds; driving it showed 2250 where the concatenation class gives \"0500250\".",
+          "factor": "SD_ENCRYPTION_KEY was split out of SD_AUTH_SECRET on 2026-09-17 so a session-signing leak would stop also decrypting secrets at rest. The split happened in code and nothing added the new identity to the register, so a credential protecting attorney MFA secrets and a Stedi API key had no owner, no rotation entry and no compromise procedure.",
           "kind": "process",
           "action_status": "done",
-          "action": "measured before changing anything, and the tier row that carried the wrong rationale was corrected in the same commit rather than left standing"
+          "action": "added as its own identity with scope, rotation history and a compromise entry that states there is no revoke"
         },
         {
-          "factor": "truthy_sum_check.py reports `+ (x || 0) * y` even though its own docstring states multiplication is safe. That is deliberate -- it is a HAZARD reporter, not a defect detector -- but it means a report from it cannot be read as a defect without driving the expression.",
+          "factor": "BOTH were found by the register REFUSING TO RUN rather than by anybody reading it. The refusal on a blank owner is what made an unattributed credential impossible to ignore -- and it also blocked item 61's figures entirely, so the same guard that surfaced the problem also stopped the inventory being re-derived.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the refusal is unchanged and is the reason this was found; recorded so it is not later softened into a warning"
+        },
+        {
+          "factor": "Nothing connects a code change that adds or splits a credential to the identity register. api/_lib/auth.js grew SD_AUTH_SECRET_PREVIOUS and SD_ENCRYPTION_KEY with no step that asks whether an identity entry is owed, so the register only learns about them when secrets_inventory next classifies them and the refusal fires.",
           "kind": "latent-condition",
-          "action_status": "not-actionable",
-          "note": "narrowing it to exclude a following `*` would hide the case where somebody later removes the multiplication; the over-report is the safe direction and the tool already says so"
+          "action_status": "planned",
+          "action": "no gate ties a new process.env credential read to an identity entry; the refusal catches it eventually but only on the next run, and it is named here rather than assumed covered"
         }
       ],
-      "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
+      "recurrence_open": "NOTHING TIES A CODE CHANGE THAT ADDS OR SPLITS A CREDENTIAL TO THE IDENTITY REGISTER. api/_lib/auth.js grew both of these with no step asking whether an entry was owed; the register only learns when secrets_inventory next classifies them and the refusal fires, which is eventual rather than immediate. AND THE SAME CLASS IS PROBABLY LIVE ELSEWHERE: this entry carried the same stale sentence in three of its own fields, and nothing checks an identity's fields against each other or against the code they describe. 17 of 23 identities still carry no compromise trigger and 23 of 23 no attested rotation date, so most entries have less text to go stale -- that is not reassurance, it is the same gap earlier."
     },
     {
       "commit": "70192c7f64c7",
@@ -12611,6 +12612,63 @@
         }
       ],
       "recurrence_open": "The tripwire covers api/*-auth.js by FILENAME. An auth surface that does not match that glob -- a new endpoint named differently, or a licence check added inside a data handler -- is not covered. And no test presents a foreign licence to the twelve NON-auth endpoints that call validateLicenseKey; the data-layer boundary is believed to cover them and that belief is not re-measured here."
+    },
+    {
+      "commit": "fc2ee8f136b3",
+      "date": "2026-09-23",
+      "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "sairnvet.html",
+        "tests/sv_boarding_revenue_coercion.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 177,
+      "lines_removed": 3,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "SAIRNvet's Revenue MTD KPI folded `s + (b.rate || 0) * days` across every booking in the month. Dispatched as the same uncoerced-fold defect fixed in stonedesk.html the same day, and it is NOT that class: `*` has no string overload, so the multiplication coerces before the addition sees the value. Driven, rates of \"500\" and \"250\" over 3 days give 2250, where the bare fold gives the string \"0500250\". WHAT WAS REAL IS SMALLER: the multiplication rescues a numeric STRING and not a junk value. \"abc\" * 3 is NaN, one NaN poisons the whole reduce, and the KPI rendered \"$NaN\" -- every other booking's revenue vanishing with it, which is a worse outcome than a single wrong row. Wrapped in Number(x) || 0 so one bad row costs that row. sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map carrying the recorded reason \"NOT ASSESSED -- whether it is a defect depends on whether anything can put a STRING in this field\", a deferral that was honest and was never resolved; it has now been assessed (a string CAN arrive, sv_boarding is server-synced) and the entry is removed. The criticality-tier row written the same morning cited the uncoerced fold as evidence of concatenation risk and was corrected in the same commit.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The fold predates the baseline file, which was generated 2026-09-11 and already contained this entry. Nothing dates the line itself, and picking the commit that introduced renderBoarding would name the feature rather than the defect -- the NaN behaviour was present from the first version and was never a regression."
+      },
+      "citation_note": "1.1 is about a check that cannot fail. The grandfathered entry made this one unable to fail for twelve days, which is that shape via configuration rather than via a broken predicate. Cited as arguable.",
+      "contributing_factors": [
+        {
+          "factor": "The Revenue MTD fold read `s + (b.rate || 0) * days`. The `|| 0` guard does not coerce, but the MULTIPLICATION does -- so the string case this shape is usually reported for was never live here. What the multiplication does not rescue is a non-numeric value: \"abc\" * 3 is NaN, and one NaN poisons the entire reduce.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "wrapped in Number(x) || 0 so one bad row costs that row rather than the whole KPI"
+        },
+        {
+          "factor": "sairnvet.html::b.rate was in truthy_sum_baseline.json's grandfathered map with the recorded reason NOT ASSESSED -- explicitly deferring the question of whether a string could reach the field. The deferral was honest and it was never resolved, so the checker reported CLEAN over it for twelve days.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "assessed and removed by name, 46 to 45; a string CAN reach it because sv_boarding is server-synced, and it is harmless here for a reason now written down"
+        },
+        {
+          "factor": "IT WAS DISPATCHED AS THE WRONG DEFECT CLASS, and accepting that framing would have produced a fix with a false rationale attached. The dispatch called it the same class as the StoneDesk tax folds; driving it showed 2250 where the concatenation class gives \"0500250\".",
+          "kind": "process",
+          "action_status": "done",
+          "action": "measured before changing anything, and the tier row that carried the wrong rationale was corrected in the same commit rather than left standing"
+        },
+        {
+          "factor": "truthy_sum_check.py reports `+ (x || 0) * y` even though its own docstring states multiplication is safe. That is deliberate -- it is a HAZARD reporter, not a defect detector -- but it means a report from it cannot be read as a defect without driving the expression.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "narrowing it to exclude a following `*` would hide the case where somebody later removes the multiplication; the over-report is the safe direction and the tool already says so"
+        }
+      ],
+      "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
     }
   ],
   "started": "2026-09-09",
