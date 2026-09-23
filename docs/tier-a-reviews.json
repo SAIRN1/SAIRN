@@ -2158,6 +2158,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-23T10:57:01Z",
+      "resources": [
+        "sv_scribe_consent",
+        "sv_soapnotes",
+        "sv_surgery"
+      ],
+      "files": [
+        "api/_resources/sairnvet.js",
+        "api/sairnvet-transcribe.js",
+        "api/sd-data.js",
+        "sairnvet.html"
+      ],
+      "what": "SAIRNvet ambient scribe: new Tier A resource sv_scribe_consent (consent evidence for recording an exam room), plus the capture/consent UI in sairnvet.html and api/sairnvet-transcribe.js which refuses every request until a self-hosted transcription host exists. REVIEW THE REFUSAL, NOT THE FEATURE -- the property that matters is that no microphone opens and no client is asked while SAIRNVET_TRANSCRIBE_URL is unset, and that no SpeechRecognition fallback exists anywhere in the scribe module. WHAT TO ATTACK: (1) the preflight decides availability from an error CODE on a POST that carries no audio and no consent ref -- confirm a host that is configured but broken cannot read as available. (2) the source-level no-fallback test strips comments before asserting; confirm the stripper cannot hide real code (a fixture is included, attack it). (3) a consent that fails to save must not start a recording -- confirm st()'s false is actually reached there. (4) UNVERIFIED AND DISCLOSED in section 9 of the scoping doc: the sv_scribe_consent_no_audio CHECK constraint has NEVER EXECUTED because the migration has not been run, and the capture path has never run in a real browser.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-23T10:57:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
