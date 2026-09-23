@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**213 files in `tools/`.** By what actually invokes them:
+**214 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 25 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 40 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 148 |
+| CHECKER | 149 |
 | GENERATOR | 18 |
 | LIBRARY | 23 |
 | LIVE | 20 |
@@ -46,13 +46,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 16 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 8
+**The number to act on: 17 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 9
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 16, by name, so this is actionable rather than a statistic:
+The 17, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -61,6 +61,7 @@ The 16, by name, so this is actionable rather than a statistic:
 | `cross_tenant_isolation_scope.py` | SUITE-ONLY | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling |
 | `csv_formula_injection_check.py` | UNWIRED | a CSV cell built by string concatenation that carries NO guard against a leading =/+/-/@/TAB/CR -- the characters Excel, LibreOffice and Sheets execute as a FORMULA on open, which the surrounding quotes do not prevent because the importer strips them before evaluating. Reports two different failures: a RAW construction outside any helper (an unguarded export path) and a guard HELPER whose body no longer guards (worse -- every call site still reads as covered). Accepts THREE guard shapes, including a stricter split form and one factored into a named constant, because the first version reported the module every app copied as the only unguarded helper on the platform -- the sabotage_control_check inversion, reproduced. Reports a THIRD state since 2026-09-18: a CALL TO A HELPER THAT IS NOT DEFINED, which is worse than either -- the export does not lose its guard, it THROWS. The sweep this file verifies shipped two of them, where replacing the quoted expression after a spaceless `return` glued the keyword to the new call; node --check passed, the raw count correctly went to zero, and this file reported the app GUARDED. A ZERO IS NOT COVERAGE: an export written with a library, a template, or no quoting at all has no .replace to match and is invisible to it |
 | `defect_budget_gate.py` | UNWIRED | new-vertical work proceeding while the defect budget says it should not -- the half of item 20 that nothing had: defect_budget_policy.py MEASURES and states a band, its own header says it cannot stop anybody doing anything, and until now NO CODE ANYWHERE READ IT. Reads the policy module rather than re-deriving the arithmetic, and takes the band vocabulary from that module too -- a first draft hardcoded four band names and three of the four were invented, which would have answered COULD NOT TELL for ever. DOES NOT BIND YET, ON PURPOSE AND LOUDLY: the WINDOW is decided but BUDGET_PER_WINDOW is not, and at 60 against an observed rate several times that, every band reads ALL HANDS -- enforcing on it would halt every push on a number its own author calls uncalibrated. Binds the moment a budget is recorded. Refuses only new-vertical work; refusing reliability work when the budget is exhausted would forbid the one kind that refills it |
+| `hover_eqa_escalation.py` | SUITE-ONLY | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
@@ -301,7 +302,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (25)
+## SUITE-ONLY (26)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -314,6 +315,7 @@ fixtures. Nothing points them at the real codebase.
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `confidentiality_candidate_flagger.py` | ADVISORY | the B/C rows of docs/CRITICALITY-TIERS.md that a person must read before the two-axis migration scores them for confidentiality -- 288 rows narrowed to a list short enough to read by hand. IT FLAGS AND DOES NOT SCORE, which is not a limitation to be closed later: the register's own header says a tier asserted with no evidence is a label, so a script cannot assign one. It does not edit the register, writes no tier anywhere, and exits 0 at any count. THE THING IT ACTUALLY CATCHES IS A SIGNAL THAT MEASURED PROXIMITY INSTEAD OF OWNERSHIP, because both of its own signals did. Asking only "is there a server-side check" flagged 173 of 288 rows, since whole apps have no session gate by a RECORDED decision (SD_LOCAL_RESOURCES says so in its own header) -- the signal is the DISAGREEMENT between client and server, not the absence. And the payload signal scanned 400 characters after the resource name for a PII/PHI word, which in a single-file app runs straight into the declaration next door: all 17 rows it flagged were wrong, ten sen_* rows for `pay_rate` off a cache array containing the DIFFERENT resource 'sen_pay_rates', four leg_* rows for `decedent` off one shared helper reading a CASE. It now reads the resource's own record literal, balance-parsed and string-blanked. WHERE THE APP HANDS IT NO READABLE LITERAL THE PAYLOAD SIGNAL CANNOT BE ASKED AT ALL, returned as a separate boolean rather than an empty field list so a could-not-tell is never read as a clean payload, and printed on its own lines in the report. --self-test carries six locked fixtures in BOTH directions, because a count that fell is indistinguishable from a signal that stopped working. | `confidentiality_flagger_asymmetry_review_probe.py` |
 | `cross_tenant_isolation_scope.py` | CHECKER | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling | `cross_tenant_dispatchers_review_probe.py`, `cross_tenant_grader_declaration_review_probe.py`, `cross_tenant_scope_grader_review_probe.py`, `grader_declaration_reconstruction_review_probe.py`, `grader_exclusion_parser_review_probe.py`, `run_cross_tenant_scope_probe.py`, `run_cross_tenant_untabled_declaration_probe.py`, `run_self_exclusion_guard_sabotage_probe.py` |
+| `hover_eqa_escalation.py` | CHECKER | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing | `run_hover_eqa_escalation_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py`, `run_jscomments_probe.py`, `run_retry_policy_probe.py`, `run_temporary_state_probe.py` |
@@ -413,11 +415,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      213   git ls-files tools/
+  tools on disk                      214   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            153   tests/**/*.py, *.js
+  tools invoked by tests/            154   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
