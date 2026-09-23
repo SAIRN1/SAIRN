@@ -2837,6 +2837,20 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "hank-1790164752",
+      "session": "hank",
+      "subject": "sairnbuild",
+      "task": "full bld_ criticality tier re-audit -- all 32 rows read individually out of sairnbuild.html, both axes FILES: docs/CRITICALITY-TIERS.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T11:59:12Z",
+      "claimed_at_epoch": 1790164752.4713182,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ]
     }
   ]
 }
