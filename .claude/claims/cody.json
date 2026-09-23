@@ -2003,8 +2003,8 @@
       "task": "close the routed sc_ row and raise the payee-vs-operator cross-check gap FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-23T13:11:08Z",
       "claimed_at_epoch": 1790169068.551481,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T13:14:18Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
