@@ -2140,8 +2140,8 @@
       "task": "read out of the app the four B-rule-classified rows -- leg_merch_catalog sc_rac leg_floristorders leg_maintenance FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-23T09:50:29Z",
       "claimed_at_epoch": 1790157029.3579023,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T10:03:56Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
