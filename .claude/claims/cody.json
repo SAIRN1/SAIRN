@@ -2162,8 +2162,8 @@
       "task": "correct the stale node-version and actions sentence in the upgrade audit row FILES: docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-23T20:28:59Z",
       "claimed_at_epoch": 1790195339.1613646,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-23T20:31:06Z",
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
