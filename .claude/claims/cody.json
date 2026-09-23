@@ -2208,6 +2208,19 @@
       "files": [
         "tools/nhi_register.py"
       ]
+    },
+    {
+      "id": "cody-1790205046",
+      "session": "cody",
+      "subject": "spof-register",
+      "task": "capture the 21 unregistered components and resume the retirement discipline FILES: docs/SPOF-REGISTER.md",
+      "claimed_at": "2026-09-23T23:10:46Z",
+      "claimed_at_epoch": 1790205046.0196047,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SPOF-REGISTER.md"
+      ]
     }
   ],
   "refusals": [
