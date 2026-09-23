@@ -12200,6 +12200,81 @@
         }
       ],
       "recurrence_open": "This fixes the ONE reader. Nothing enforces that a future panel reading sdSlabs refreshes first, and nothing measures how often a rep actually hits a stale row -- so the frequency this was worth fixing at is still unmeasured."
+    },
+    {
+      "commit": "f27a9cd5ed4c",
+      "date": "2026-09-23",
+      "subject": "fix(auth): all seventeen auth endpoints took a licence for ANY app -- a StoneDesk key got 200 from SAIRNvet, and check_license is the gate that exists to stop exactly that",
+      "files": [
+        "api/_lib/license.js",
+        "api/_resources/index.js",
+        "api/alf-auth.js",
+        "api/auth-license-app-scope.test.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/grd-auth.js",
+        "api/law-auth.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sb-auth.js",
+        "api/sc-auth.js",
+        "api/scp-auth.js",
+        "api/sd-auth.js",
+        "api/sd-sub-auth.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md"
+      ],
+      "lines_added": 602,
+      "lines_removed": 27,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "All seventeen api/*-auth.js endpoints accepted a licence key issued for a DIFFERENT app. Measured live: POST /api/sv-auth {action:check_license} with Bearer SD-AUDIT-2026 (a StoneDesk licence) returned 200 {ok:true,active:true,app_id:'stonedesk'} -- SAIRNvet's own endpoint admitting a StoneDesk key and echoing the foreign app back. Each file checked lic.valid and lic.active; none compared lic.app_id to its own APP. NOT A DATA BREACH, and saying so is part of the record: api/sd-data.js:661 gates on the verified lic.app_id, so a foreign licence reaches no rows. What it does not gate is a credential row being written into another app's *_employee_auth under a foreign licence's hash, because that write never goes through sd-data.js. The reason this is a defect rather than a tidy-up is the call site's own comment: sairnvet.html:2967 says check_license runs BEFORE the key is stored precisely so 'a bad licence key gets misattributed later' cannot happen, and calls that misattribution 'the reason check_license exists at all'. It answered the exact question it was built to answer, wrongly. Fixed centrally: validateLicenseKey takes an optional expectedApp and returns a three-state app_scope, and only an explicit 'mismatch' refuses -- an unattributable licence is admitted deliberately, matching the 'cannot attribute -> cannot judge' posture api/_resources/index.js already wrote down, because refusing one would lock out real customers nobody can enumerate.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "There is no single injecting commit. The shape was present in the FIRST auth endpoint and copied verbatim into sixteen more over several months; naming any one of them would be picking a scapegoat out of a series. What is datable is when it became reachable-and-wrong rather than merely unasked: 2026-09-05, when the data-layer boundary landed and lic.app_id started meaning something."
+      },
+      "citation_note": "1.1 is about a check that cannot fail. This one could fail, on valid and on active -- it simply never asked the question its own call site says it exists to ask, so it passed a wrong-app key with full marks. Adjacent rather than exact; cited as arguable rather than clean.",
+      "contributing_factors": [
+        {
+          "factor": "Every api/*-auth.js validated lic.valid and lic.active and none compared the licence's own app_id to the app it was talking to. The licence layer answered 'is this a real, live key' and was read as though it had answered 'is this key for me'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "validateLicenseKey takes an optional expectedApp and returns app_scope; every endpoint refuses an explicit mismatch with 403 LICENSE_WRONG_APP"
+        },
+        {
+          "factor": "The app boundary WAS built, correctly, at the data layer (sd-data.js:661, on the verified lic.app_id) eighteen days earlier. Having one correct gate one layer down is what made the missing one read as covered -- the question 'can a foreign licence reach data' was asked and answered, and 'can a foreign licence be admitted at all' was not.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "no check can catch a correct guard placed one layer later than the thing it was assumed to cover; the suite's source tripwire now covers the specific case, not the general one"
+        },
+        {
+          "factor": "The defect is identical in seventeen files because the licence preamble was copied verbatim into each new auth endpoint. Nothing compared a new endpoint's preamble against the others, so one omission became seventeen at zero additional cost to anyone.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "api/auth-license-app-scope.test.js asserts EVERY api/*-auth.js passes a second argument AND that the app it names is one the registry knows -- a new endpoint cannot skip it silently"
+        },
+        {
+          "factor": "Nothing detected it for eighteen days because there was no test that presented one app's licence to another app's auth endpoint. It was found by probing whether SD-AUDIT-2026 covered all three Wave 3 apps -- a credentials question, not a security one.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five real handlers are now driven with a foreign licence, with a control that each still admits its own and an arm that an unattributable one is still admitted"
+        }
+      ],
+      "recurrence_open": "The tripwire covers api/*-auth.js by FILENAME. An auth surface that does not match that glob -- a new endpoint named differently, or a licence check added inside a data handler -- is not covered. And no test presents a foreign licence to the twelve NON-auth endpoints that call validateLicenseKey; the data-layer boundary is believed to cover them and that belief is not re-measured here."
     }
   ],
   "started": "2026-09-09",
