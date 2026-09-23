@@ -1967,6 +1967,21 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "cody-1790167590",
+      "session": "cody",
+      "subject": "wave3-close",
+      "task": "close the wave 3 click-through -- driver settle pass and the findings record FILES: tools/sairn_clickthrough_driver.js docs/2026-09-23-wave3-click-through-reverification.md docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-23T12:46:30Z",
+      "claimed_at_epoch": 1790167590.3142936,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-23-wave3-click-through-reverification.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tools/sairn_clickthrough_driver.js"
+      ]
     }
   ],
   "refusals": [
