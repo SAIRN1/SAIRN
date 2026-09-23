@@ -3442,6 +3442,74 @@ such carve-out and was told so explicitly -- the boundary was narrower
 than the precedent it was built from, on purpose, checked before any code
 was written rather than discovered afterward.
 
+### Spec 3 -- a genuinely different model checks a CRITICAL finding
+
+Built 2026-09-23 on Michael's direct instruction, verified end-to-end
+against the real Anthropic API before being trusted. Closes a real
+asymmetry: independent re-verification inside this session (hover1 vs
+hover2) is two instances of the same model family, which does not fully
+cover this role's own training-derived blind spots. This adds a
+genuinely different model as a second reader -- not another same-family
+instance, not a live re-derivation -- reserved for the entries where being
+wrong matters most.
+
+**Scope, deliberately narrow: `severity == 'critical'` only, refused
+before anything else runs for any other severity.** A real API call has
+real cost and a real rate limit; every other severity already gets other
+independent scrutiny (a duplicate check, a coverage-ledger poll, eventual
+EQA). Not a general second-reviewer pipeline -- a targeted one.
+
+**What it hands the second model, and what it deliberately does not.** The
+finding's own WRITTEN evidence -- its summary text and its citations --
+never live tool access, never a fresh read of source. The second model
+judges whether the finding's OWN reasoning holds up to an independent
+read of what was written, the same way a second human reviewer reads a
+report rather than re-investigating from scratch. This is cheaper and
+narrower than a full independent re-derivation (Tier 0/Tier 1 live
+execution, an EQA checkpoint) -- it catches a finding whose own argument
+does not hold together, not one whose underlying evidence was
+individually wrong in a way only re-reading the source would catch. Named
+as a real limit, not implied to be more.
+
+**Structured output, not free-text parsing.** The second model's verdict
+is elicited as a forced single-tool call with a strict schema (agrees:
+boolean, confidence: low/medium/high, reasoning: string) -- the interface
+guarantees a clean, unambiguous answer to program against, rather than
+regexing a paragraph for "yes" or "no."
+
+**Every run logs an outcome, agreement or disagreement, never silently
+dropped either direction -- the identical standard already held for a
+hover1/hover2 disagreement.** Agreement logs as a plain check. Disagreement
+logs as its OWN entry, type finding, severity escalated -- because a
+different model reading the same written evidence and reaching a
+different conclusion is itself a real, standalone signal on a CRITICAL
+finding, worth a human's attention regardless of which side turns out to
+be right.
+
+**Every real failure mode -- an API error, a rate limit, a missing forced
+tool call, a network failure -- is COULD-NOT-TELL, never silently folded
+into agreement.** One broad catch covers this on purpose: to this specific
+tool, every failure mode means the identical thing (no second opinion was
+obtained this run), and treating any of them as a de facto "agrees" would
+be worse than refusing to log anything at all.
+
+**A real incident, disclosed rather than smoothed over, because the lesson
+is the transferable part.** The first live test of this tool's own
+logging path accidentally wrote a synthetic test artifact into the real,
+hash-chained production log -- a SEPARATE process invoked to do the actual
+logging does not inherit an in-process test's isolation, the same shape
+as any subprocess-boundary mistake. Left in place once it happened
+(append-only, hash-chained, corrected in a following entry rather than
+edited away), and closed for good with an opt-in, empty-by-default
+override on the logging path itself plus a standing safety-net assertion
+that the real log's line count is unchanged before and after any test run
+-- not trusted on the fix alone a second time.
+
+**Credential handling, stated for whoever builds the equivalent:** a real
+API key is never written to a file, never logged, never appears in any
+committed content -- supplied once, used for a single real call, and
+confirmed absent from the environment immediately afterward.
+
 ## Three threats to watch in myself
 
 From the same safety-culture lineage as SUBSAFE: Ignorance, Arrogance, and
