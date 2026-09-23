@@ -97,15 +97,41 @@ test('an unprovisioned table answers provisioned:false, never a bare empty list'
   }
 });
 
-test('a hard-deleting SAIRNcode resource is REFUSED, not answered with an empty list', () => {
-  const i = SRC.indexOf("if (action === 'tombstones') {", SRC.indexOf('if (isScResource)'));
-  assert.ok(i > -1, 'no tombstones handler inside the SAIRNcode branch');
-  const b = SRC.slice(i, i + 1400);
-  assert.ok(/scIsSoftDeleteOnly\(resource\)/.test(b),
-    'the SAIRNcode handler must ask whether this resource keeps tombstones at all');
-  assert.ok(/NO_TOMBSTONES/.test(b),
-    'a resource that hard-deletes must REFUSE. An empty list from a resource '
-    + 'that cannot answer is indistinguishable from one that answered "none".');
+test('a hard-deleting SAIRNcode resource cannot even REACH the handler', () => {
+  // The first version of this arm asserted a NO_TOMBSTONES refusal INSIDE the
+  // branch. That refusal is gone, and its removal is the finding: the
+  // dispatcher checks an action allowlist BEFORE any resource branch, so
+  // declaring `tombstones` only where a tombstone can exist makes the refusal
+  // unreachable -- and unreachable code that reads like a control is Guardian
+  // check 0d's subject.
+  //
+  // The allowlist's own message is also the better one: it names the verbs the
+  // resource DOES have.
+  const extra = require('./_resources/sairncode').extraActions;
+  const soft = require('./_resources/sairncode').tierASoftDeleteOnly;
+  const all = require('./_resources/sairncode').resources;
+  for (const r of all) {
+    const declared = (extra[r] || []).indexOf('tombstones') !== -1;
+    assert.strictEqual(declared, soft.indexOf(r) !== -1,
+      r + ': tombstones must be declared for exactly the soft-delete resources. '
+      + 'Declared for a hard-deleting one, the handler answers a query that can '
+      + 'only ever return nothing; missing from a soft-delete one, the handler '
+      + 'is unreachable behind BAD_ACTION.');
+  }
+});
+
+test('THE LIVE-PROBE LESSON: every tombstones handler has a matching extraActions entry', () => {
+  // This arm exists because the first version SHIPPED UNREACHABLE. Every
+  // source-level assertion in this file passed while the deployed endpoint
+  // answered "action must be 'read' or 'write' or 'soft_delete'" -- the
+  // allowlist runs before the branch, and nothing here was looking at it.
+  const sd = require('./_resources/stonedesk').extraActions;
+  for (const r of ['sd_customers', 'sd_quote_requests']) {
+    assert.ok((sd[r] || []).indexOf('tombstones') !== -1,
+      r + ' implements tombstones and does not declare it, so the dispatcher '
+      + 'refuses the call before the branch is reached. A handler nothing can '
+      + 'call is not a feature.');
+  }
 });
 
 test('the seven that DO keep tombstones are read from the registry, not typed here', () => {

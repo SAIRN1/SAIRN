@@ -268,9 +268,18 @@ module.exports = {
   // day one is corrected -- the drift this file's own comment above describes
   // for lists, applied to money.
   extraActions: RESOURCES.reduce(function (map, name) {
+    // 'tombstones' ONLY where a tombstone can exist. The 21 hard-delete
+    // resources keep no marker, so declaring it for them would admit a call
+    // this branch can only refuse -- and the allowlist's own refusal is the
+    // better one, because it names the verbs the resource actually has.
+    // DECLARED HERE RATHER THAN ONLY IMPLEMENTED: the allowlist runs BEFORE
+    // any resource branch, so an undeclared handler is unreachable. That is
+    // how the first version shipped, and a LIVE PROBE is what caught it --
+    // every source-level arm passed while the deployed endpoint answered
+    // "action must be 'read' or 'write' or 'delete'".
     map[name] = SC_TIER_A_SOFT_DELETE_ONLY.indexOf(name) === -1
       ? ['delete']
-      : ['soft_delete'];
+      : ['soft_delete', 'tombstones'];
     if (name === 'sc_claims') map[name] = map[name].concat(['therapy_accumulator']);
     return map;
   }, {}),

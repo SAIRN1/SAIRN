@@ -13272,19 +13272,18 @@ module.exports = async (req, res) => {
       // goes through the same gate in the same commit -- a tombstone list that
       // outlives its resource's gate is the door this platform keeps finding.
       //
-      // REFUSED FOR THE OTHER 21 rather than
-      // answering an empty list: they hard-delete, so they carry no marker, and
-      // an empty answer would read as "nothing has been deleted" when the real
-      // answer is "this resource cannot tell you". Same third-state rule the
-      // soft filter one line down states for its own predicate.
+      // THE OTHER 21 NEVER REACH HERE, and that is better than a refusal in
+      // this file. They hard-delete, so `tombstones` is not in their
+      // extraActions, and the dispatcher's allowlist answers first with a
+      // message naming the verbs they DO have -- "'read' or 'write' or
+      // 'delete'" -- which is more useful than "this resource keeps no
+      // tombstone" and needs no code here to say it.
+      //
+      // The first version DID carry a NO_TOMBSTONES refusal in this branch.
+      // Removed rather than kept: once the action is declared only where a
+      // tombstone can exist, that branch is unreachable, and unreachable code
+      // that reads like a control is the shape Guardian check 0d is about.
       if (action === 'tombstones') {
-        if (!scIsSoftDeleteOnly(resource)) {
-          res.status(400).json({ error: { code: 'NO_TOMBSTONES',
-            message: resource + ' hard-deletes, so it keeps no tombstone. An empty list '
-              + 'would read as "nothing was deleted" when the truth is that this resource '
-              + 'cannot answer the question.' } });
-          return;
-        }
         const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
           '&data->>_deleted_at=not.is.null&select=entry_id,data'), { headers });
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }

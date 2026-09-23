@@ -237,6 +237,13 @@ module.exports = {
   // may delete is not the same question as who may write. Widening is one
   // decision per family, not a sweep.
   extraActions: {
+    // 'tombstones' rides beside 'soft_delete' on exactly the resources whose
+    // branch implements it. DECLARED HERE RATHER THAN ONLY IMPLEMENTED,
+    // because the dispatcher's action allowlist is checked BEFORE any resource
+    // branch -- a handler with no declaration answers 400 BAD_ACTION and is
+    // unreachable. That is how this shipped and how a LIVE PROBE caught it: the
+    // source-level arms all passed while the deployed endpoint answered
+    // "action must be 'read' or 'write' or 'soft_delete'".
     'sd_invoices': ['soft_delete'],
     'sd_drawings': ['soft_delete'],
     'sd_remakes': ['soft_delete'],
@@ -282,7 +289,7 @@ module.exports = {
   // that stays true. THE SUBMITTED TEXT IS STILL NOT EDITABLE: soft delete
   // adds `_deleted_at` and changes nothing else, so what the customer wrote
   // survives a deletion exactly as written.
-    'sd_quote_requests': ['soft_delete'],
+    'sd_quote_requests': ['soft_delete', 'tombstones'],
   // SOFT DELETE ON sd_customers (2026-09-12), and unlike the twenty-two above
   // this one closes a defect that was VISIBLE TO THE USER AND UNDID ITSELF.
   //
@@ -299,7 +306,7 @@ module.exports = {
   // resolves a live ORDER TRACKING LINK against this table by customer_id, so
   // in the window between the local delete and the resurrection a customer
   // could still read their job status from a record the shop believed gone.
-    'sd_customers': ['soft_delete'],
+    'sd_customers': ['soft_delete', 'tombstones'],
   },
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker
