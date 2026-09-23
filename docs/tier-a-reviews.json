@@ -2135,6 +2135,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-23T10:45:04Z",
+      "resources": [
+        "grd_training_completions",
+        "grd_training_courses",
+        "rf_entities",
+        "sc_anesthesia",
+        "sc_hcc",
+        "sen_clients",
+        "sen_referrals"
+      ],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "isolation coverage fourth batch: the SEN_REFERRAL_RESOURCES map (5 members, no unit existed) plus sc_anesthesia. GENUINE 148 to 150, suite 268/0. TEST ONLY, no defect found. WHAT TO ATTACK: (1) I USED role owner FOR THE SEN REFERRAL UNIT and that map has a real gate -- the file says a caregiver is out and the screening coordinator is in. owner makes license_hash the only thing that can narrow the result, which is what these arms are for, but it means the unit never exercises the caregiver exclusion that is the reason the gate exists. Same tradeoff I disclosed on sen_clients and the same answer; confirm it is still the right one when the gate is a ROLE gate rather than an assignment filter. (2) sc_anesthesia was added on the assumption it rides the generic SC list because SC_RESOURCES is the registry array -- the arms pass, but confirm it really reaches the generic branch rather than something permissive. (3) THE COUNT DID NOT MOVE and the commit says why: two left the bucket while two arrived from another session's re-tiering. Check that framing is honest rather than convenient. FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-23T10:45:04Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
