@@ -2811,6 +2811,19 @@
       "files": [
         "docs/SAIRN-OPEN-WORK-INDEX.md"
       ]
+    },
+    {
+      "id": "hank-1790162486",
+      "session": "hank",
+      "subject": "isolation-arms2",
+      "task": "dedicated isolation arms for bld_tna and exec_context -- the two whose projected shape the shared [L] arm cannot see into FILES: api/sd-data-cross-tenant-dispatchers.test.js",
+      "claimed_at": "2026-09-23T11:21:26Z",
+      "claimed_at_epoch": 1790162486.2794683,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ]
     }
   ]
 }
