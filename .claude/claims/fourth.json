@@ -2293,6 +2293,20 @@
         "tests/run_sync_write_result_probe.py",
         "tools/sync_write_result_check.py"
       ]
+    },
+    {
+      "id": "fourth-1790195442",
+      "session": "fourth",
+      "subject": "tombstones",
+      "task": "tombstone propagation -- a soft-deleted record is filtered out server-side and never reaches a device that already holds it FILES: api/sd-data.js api/sd-data-tombstone-propagation.test.js",
+      "claimed_at": "2026-09-23T20:30:42Z",
+      "claimed_at_epoch": 1790195442.0691488,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-tombstone-propagation.test.js",
+        "api/sd-data.js"
+      ]
     }
   ],
   "refusals": [
