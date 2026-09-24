@@ -9011,9 +9011,35 @@ function svRenderDoseAudit(){
     }
     var rows = Array.isArray(env.data) ? env.data : [];
     var only = svAuditLocalOnly(local, rows);
+    // ── "NOT CAPPED" WAS A CLAIM WITH NOTHING BEHIND IT (fixed 2026-09-24) ──
+    // This banner said "The server copy is not capped" on every successful
+    // read, with zero verification that the rows received were all the rows
+    // the table holds. PostgREST truncates silently when max-rows is set, and
+    // a truncated response looks exactly like a complete one -- on the DEA
+    // dosing register, where "complete" is the one property an inspector is
+    // reading this banner for. The server read now carries its own
+    // Content-Range total (api/sd-data.js, same pattern as
+    // api/audit-checkpoint.js:137), and the claim is made ONLY when the rows
+    // received match it. Three states, none folded into another:
+    //   total matches   -> completeness VERIFIED, and the count is shown
+    //   total differs   -> TRUNCATED, said in bold with both numbers
+    //   total unknown   -> UNVERIFIED, said plainly -- not assumed complete
+    var completeness;
+    if (typeof env.total === 'number' && env.total === rows.length) {
+      completeness = ' Complete: the server states it holds ' + env.total
+        + ' entr' + (env.total === 1 ? 'y' : 'ies') + ' and all of them were received.';
+    } else if (typeof env.total === 'number') {
+      completeness = ' <strong>INCOMPLETE: the server states it holds ' + env.total
+        + ' entries and only ' + rows.length + ' were received.</strong> The table below is '
+        + 'missing ' + (env.total - rows.length) + ' entr' + ((env.total - rows.length) === 1 ? 'y' : 'ies')
+        + ' — do not treat it as the full register.';
+    } else {
+      completeness = ' The server did not state its total, so whether this is the complete '
+        + 'record is <strong>unverified</strong> — it is shown as received, not as complete.';
+    }
     done(rows, 'server',
       '<strong>Showing the server record</strong> — ' + rows.length + ' entr' + (rows.length === 1 ? 'y' : 'ies')
-      + '. The server copy is not capped; this device holds ' + local.length + '.'
+      + '.' + completeness + ' This device holds ' + local.length + '.'
       + (only ? ' <strong>' + only + ' entr' + (only === 1 ? 'y is' : 'ies are') + ' on this device and NOT on the server</strong>'
               + ' — written while a backup was refused or timed out. They are not in the table below.' : ''));
   });
@@ -10387,7 +10413,11 @@ function svData(action, resource, payload, wantEnvelope) {
       // `provisioned` is only FALSE when the server said so. An absent flag is
       // UNKNOWN, not false -- several branches in api/sd-data.js do not set it,
       // and reading silence as "not provisioned" would invent a refusal.
-      return wantEnvelope ? { data: d.data, provisioned: d.provisioned } : d.data;
+      // `total` (2026-09-24): the server's own Content-Range count, or null
+      // when it could not be read. Same rule as provisioned: absence is
+      // UNKNOWN, and the dose-audit banner treats unknown as unverified.
+      return wantEnvelope ? { data: d.data, provisioned: d.provisioned,
+                              total: (typeof d.total === 'number' ? d.total : null) } : d.data;
     });
   }).catch(function(e) { console.warn('svData network error:', e.message); return null; });
 }

@@ -10804,14 +10804,39 @@ module.exports = async (req, res) => {
       }
     }
     if (SV_RESOURCES[resource] && action === 'read') {
-      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // ── THE RESPONSE NOW CARRIES THE SERVER'S OWN COUNT (2026-09-24) ─────
+      // sairnvet.html's dosing-trail banner told a DEA-relevant lie: "The
+      // server copy is not capped", with nothing anywhere verifying that the
+      // rows returned were all the rows the table holds. PostgREST truncates
+      // silently when max-rows is configured, and a truncated response is
+      // byte-for-byte indistinguishable from a complete one -- the same shape
+      // api/audit-checkpoint.js:137 already fixed for checkpoints, applied
+      // here to the read path that feeds the register's display.
+      //
+      // `Prefer: count=exact` makes PostgREST put the true total after the
+      // slash in Content-Range ("0-41/1207"). `total` is returned beside the
+      // rows so the CLIENT can compare; an unreadable or absent count returns
+      // total:null, which the client must treat as could-not-tell -- a third
+      // state, never folded into "complete" (PR 1.11).
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), {
+        headers: Object.assign({}, headers, { 'Range-Unit': 'items', Prefer: 'count=exact' })
+      });
       // 404/400 means the table does not exist yet. An honest empty WITH
       // provisioned:false, so the client can tell "nothing saved yet" from
       // "this was never migrated" and leaves local data alone for the second.
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      let total = null;
+      const cr = (r.headers && typeof r.headers.get === 'function' && r.headers.get('content-range')) || '';
+      const slash = cr.indexOf('/');
+      if (slash !== -1) {
+        const t = cr.slice(slash + 1);
+        // '*' is PostgREST for "I did not count". That is null, not zero --
+        // reading it as a number would claim an empty table over a full one.
+        if (t !== '*' && t !== '' && !isNaN(Number(t))) total = Number(t);
+      }
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true, total: total });
       return;
     }
     if (SV_RESOURCES[resource] && action === 'write') {
