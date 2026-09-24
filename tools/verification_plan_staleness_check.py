@@ -62,6 +62,22 @@ whole point: an unverifiable item is exactly where drift hides.
 ── AND IT FAILS CLOSED WHEN THE PLAN IS ABSENT ─────────────────────────────
 Exit 2, naming the path it looked for. A staleness checker that reports a
 clean plan it never opened is the defect it exists to prevent, one level up.
+
+── ALSO EXIT 2 WHEN ITEMS EXIST AND NONE IS CHECKABLE (2026-09-24) ─────────
+FOUND BY RUNNING IT ON THE REAL PLAN THE DAY THAT PLAN WAS FIRST COMMITTED.
+The plan describes its state entirely in prose, so it has 10 item lines and
+ZERO verify markers: nothing was checked, `drift found 0`, and this returned
+EXIT 0. A caller reading the exit code alone -- a push gate, a cron, another
+tool -- could not distinguish "checked ten and they all agree" from "could
+check none of them". That is the exact defect this file's own header refuses
+one paragraph up, and the probe had an arm for the neighbouring case (a plan
+with zero item LINES is exit 2) which did not reach this one.
+
+So: zero checkable items out of a non-zero number of items is COULD NOT
+TELL, not clean. A PARTIAL measurement stays exit 0 when no drift is found
+among the items that were checkable -- that really is a finding about those
+items -- and the unverifiable count is printed beside it every time so the
+denominator is never implied.
 """
 import io
 import json
@@ -284,6 +300,23 @@ def build(path):
             'commits': len(hist), 'claims': len(live)}
 
 
+def nothing_checkable(res):
+    """Items exist and not one of them carries a verify marker.
+
+    Kept as its own function rather than inlined at the two exit points,
+    because the --json path and the human path diverging on what counts as
+    COULD NOT TELL is precisely how a third state gets folded back into a
+    pass by one caller and not the other.
+    """
+    return bool(res['items']) and len(res['unverifiable']) == len(res['items'])
+
+
+def verdict(res):
+    if nothing_checkable(res):
+        return 2
+    return 1 if res['findings'] else 0
+
+
 def main(argv):
     explicit = None
     if '--plan' in argv:
@@ -302,8 +335,10 @@ def main(argv):
             'findings': [{'kind': k, 'line': it['line'], 'tier': it['tier'],
                           'why': why} for k, it, why in res['findings']],
             'unverifiable': [it['line'] for it in res['unverifiable']],
+            'checkable': len(res['items']) - len(res['unverifiable']),
+            'could_not_tell': nothing_checkable(res),
         }, indent=2))
-        return 1 if res['findings'] else 0
+        return verdict(res)
 
     print('VERIFICATION-PLAN STALENESS -- %s' % os.path.relpath(path, REPO))
     print('  measured against %d commit(s) and %d claim record(s)%s'
@@ -339,10 +374,22 @@ def main(argv):
             print('    %s:%-5d  claimed by %s' % (os.path.basename(path),
                                                   it['line'], ', '.join(who)))
     print('')
+    if nothing_checkable(res):
+        print('COULD NOT TELL (exit 2). %d item line(s) and NOT ONE verify'
+              % len(res['items']))
+        print('marker, so nothing above was measured and `drift found 0` is')
+        print('the absence of a measurement, not the absence of drift. This')
+        print('is NOT a pass. Mark an item to make it checkable.')
+        return 2
     print('NOTE: this says the plan DISAGREES with the repo, never that an item')
     print('is genuinely finished. Whether the scope is met is a judgement, and')
     print('nothing here edits the plan.')
-    return 1 if res['findings'] else 0
+    if res['unverifiable']:
+        print('And %d of %d item(s) were NOT measured at all -- the number above'
+              % (len(res['unverifiable']), len(res['items'])))
+        print('is out of %d, never out of %d.'
+              % (len(res['items']) - len(res['unverifiable']), len(res['items'])))
+    return verdict(res)
 
 
 if __name__ == '__main__':
