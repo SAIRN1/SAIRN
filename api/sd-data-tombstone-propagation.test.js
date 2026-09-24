@@ -153,3 +153,59 @@ test('THE PAIRED NEGATIVE: the read filter is still is.null, so tombstones did n
     'the live-row filter has gone missing from at least one read branch. '
     + 'Found ' + reads.length + ' occurrences of the is.null predicate.');
 });
+
+// ── SERVER-WINS: A WRITE CANNOT RESURRECT A DELETED RECORD (2026-09-24) ────
+// The audit that asked whether this design carried a quiet last-write-wins
+// dependency found one, and it lived in the WRITE branches, not here: both
+// sd_customers' write and the SAIRNcode generic write are merge-duplicates
+// upserts that replace the stored jsonb WHOLESALE, so a stale device's
+// ordinary save cleared `_deleted_at` and un-deleted the record -- on
+// sd_customers, whose deleted rows a live tracking link resolves against,
+// and on the seven soft-delete-only Tier A billing resources. Michael's
+// decision is SERVER-WINS. sd_quote_requests had the guard from day one
+// ("the API is the boundary, not the panel"); these arms hold the other two
+// to the same rule.
+
+test('the sd_customers WRITE refuses a soft-deleted row with 409 DELETED', () => {
+  const i = SRC.indexOf("const custData = Object.assign({}, payload);");
+  assert.ok(i > 0, 'the sd_customers write body moved -- re-anchor this arm');
+  const before = SRC.slice(Math.max(0, i - 2600), i);
+  assert.ok(/_deleted_at/.test(before) && /'DELETED'/.test(before)
+    && /409/.test(before),
+    'the sd_customers write no longer checks the STORED row for _deleted_at '
+    + 'before upserting -- a stale device\'s save resurrects a deleted '
+    + 'customer, and the deletion quietly loses to the last writer');
+});
+
+test('the SAIRNcode generic WRITE refuses a soft-deleted row on the seven, and ONLY the seven', () => {
+  const i = SRC.indexOf("rest(resource + '?on_conflict=license_hash,entry_id')");
+  assert.ok(i > 0, 'the SAIRNcode generic upsert moved -- re-anchor this arm');
+  const before = SRC.slice(Math.max(0, i - 1800), i);
+  assert.ok(/scIsSoftDeleteOnly\(resource\)/.test(before)
+    && /_deleted_at/.test(before) && /'DELETED'/.test(before),
+    'the SAIRNcode generic write no longer guards the soft-delete-only '
+    + 'resources against resurrection-by-upsert');
+  // ONLY the seven: the guard must be inside the scIsSoftDeleteOnly branch,
+  // because the other 21 resources have no marker and a pre-read there would
+  // be a round trip buying nothing.
+  // indexOf on the CODE spelling, not the first mention -- the guard's own
+  // comment says _deleted_at before the branch does, and matching the comment
+  // failed this arm on code that was correct (the comment-counted-as-code
+  // shape, in miniature, inside the arm hunting a related defect).
+  const guardIdx = before.indexOf("if (scIsSoftDeleteOnly(resource)) {");
+  const delIdx = before.indexOf('sstored._deleted_at');
+  assert.ok(guardIdx !== -1 && delIdx > guardIdx,
+    'the resurrection check is not scoped to the soft-delete-only resources');
+});
+
+test('the deleted_at rationale no longer invites client-side last-write-wins', () => {
+  // The tombstone comment originally said deleted_at rides along so a client
+  // can "decide whether its own local edit is newer" -- which is an
+  // instruction to implement the LWW Michael decided against, waiting for
+  // whoever writes the client half. The comment now states SERVER-WINS.
+  assert.ok(!/decide whether its own local edit is newer/.test(SRC),
+    'the LWW-inviting sentence is back in a tombstone comment -- the client '
+    + 'half will be written to it');
+  assert.ok(/SERVER-WINS/.test(SRC),
+    'the server-wins decision is no longer stated at the tombstone branch');
+});

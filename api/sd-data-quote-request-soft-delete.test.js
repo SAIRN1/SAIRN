@@ -288,7 +288,11 @@ async function main() {
     delete require.cache[require.resolve('./_resources/index.js')];
     const reg = require('./_resources/index.js');
     assert.ok(reg.RESOURCE_NAMES.includes('sd_quote_requests'));
-    assert.deepStrictEqual(reg.EXTRA_ACTIONS['sd_quote_requests'], ['soft_delete']);
+    // 'tombstones' joined 2026-09-23 with the propagation feature; this arm
+    // stayed pinned to the pre-tombstone list and was red on origin for a
+    // day. The assertion is the FULL list on purpose -- a verb appearing
+    // here must be a decision, not a drift -- so it grows when the verbs do.
+    assert.deepStrictEqual(reg.EXTRA_ACTIONS['sd_quote_requests'], ['soft_delete', 'tombstones']);
   });
 
   console.log(passed + ' passed');

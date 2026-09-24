@@ -2863,11 +2863,15 @@ module.exports = async (req, res) => {
     //
     // IT RETURNS IDS AND NOTHING ELSE. The deleted ROW still holds whatever
     // it held -- a name, an address, a price -- and a caller asking "what was
-    // removed" has no business receiving that. `_deleted_at` rides along
-    // because a client that has been offline needs to know WHEN in order to
-    // decide whether its own local edit is newer; `_deleted_by` does not,
-    // because knowing who deleted a record is a different question with a
-    // different audience.
+    // removed" has no business receiving that. `_deleted_at` rides along so a
+    // client can SAY when the deletion happened ("removed 2026-09-23") --
+    // NOT so it can compare against a local edit's timestamp and keep the
+    // newer one. That reading was this comment's original wording, and it is
+    // exactly the quiet last-write-wins Michael decided against: SERVER-WINS
+    // means a tombstoned id is removed locally, full stop, and the write
+    // branches below now refuse to resurrect one. `_deleted_by` does not
+    // ride along, because knowing who deleted a record is a different
+    // question with a different audience.
       if (action === 'tombstones') {
         const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
           '&data->>_deleted_at=not.is.null&select=customer_id,data'), { headers });
@@ -2966,6 +2970,38 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, cmarked) });
         return;
       }
+      // ── A WRITE CANNOT RESURRECT A DELETED CUSTOMER (2026-09-24) ────────
+      // Found by the audit that asked whether the tombstone design carried a
+      // quiet last-write-wins dependency. It did, and it lived HERE, not in
+      // the tombstone branch: this write is a merge-duplicates upsert that
+      // replaces the stored jsonb WHOLESALE, so a device still holding a
+      // soft-deleted customer (which is EVERY other device -- nothing calls
+      // `tombstones` yet) that saved any ordinary edit would overwrite
+      // `_deleted_at` and un-delete the record. Michael's decision is
+      // SERVER-WINS: a deletion the server has accepted is not something a
+      // stale client's save may quietly reverse. Same guard, same words, as
+      // the sd_quote_requests branch below, which had it from day one --
+      // "the API is the boundary, not the panel". Restoring a deleted
+      // customer is deliberate future work with its own verb, not a side
+      // effect of writing to it.
+      const rcur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
+        '&customer_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+      if (rcur.ok) {
+        const rrows = await rcur.json().catch(function () { return null; });
+        const rstored = (Array.isArray(rrows) && rrows[0] && rrows[0].data) || null;
+        if (rstored && rstored._deleted_at) {
+          res.status(409).json({ error: { code: 'DELETED',
+            message: 'That customer record was deleted, so it cannot be edited. '
+              + 'The deletion happened on another device or session; refresh to remove it here.' } });
+          return;
+        }
+      }
+      // A failed pre-read falls through to the write rather than refusing:
+      // the guard exists to stop a RESURRECTION, and refusing every write
+      // whenever the read blinks would turn a liveness hiccup into a data
+      // outage. The window this leaves (delete and write racing) is the same
+      // one the upsert always had, and closing it needs a database-side
+      // predicate, not a second read.
       const custData = Object.assign({}, payload);
       delete custData.id;
       const w = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {
@@ -13800,6 +13836,29 @@ module.exports = async (req, res) => {
             // never end up in the sign-off record.
             payload.signedOffBy = arCaller.employee_id;
             payload.signedOffAt = nowISO();
+          }
+        }
+        // ── A WRITE CANNOT RESURRECT A SOFT-DELETED ROW (2026-09-24) ───────
+        // Same audit finding, same fix, as sd_customers: this upsert replaces
+        // the stored jsonb wholesale, so on the seven soft-delete-only Tier A
+        // resources a stale device's ordinary save would clear `_deleted_at`
+        // and un-delete a claims record. SERVER-WINS by Michael's decision.
+        // Guarded only where soft delete exists -- the other 21 resources
+        // hard-delete and have no marker to erase -- and a failed pre-read
+        // falls through rather than refusing, for the reason written at the
+        // sd_customers guard.
+        if (scIsSoftDeleteOnly(resource)) {
+          const scur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+            '&entry_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+          if (scur.ok) {
+            const srows = await scur.json().catch(function () { return null; });
+            const sstored = (Array.isArray(srows) && srows[0] && srows[0].data) || null;
+            if (sstored && sstored._deleted_at) {
+              res.status(409).json({ error: { code: 'DELETED',
+                message: 'That ' + resource + ' record was deleted, so it cannot be edited. '
+                  + 'The deletion happened on another device or session; refresh to remove it here.' } });
+              return;
+            }
           }
         }
         const r = await fetch(rest(resource + '?on_conflict=license_hash,entry_id'), {
