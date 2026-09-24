@@ -13183,7 +13183,7 @@
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
     },
     {
-      "commit": "0706e28da8c3",
+      "commit": "b0b9445f0194",
       "date": "2026-09-24",
       "subject": "fix(write-audit): the fifth false-positive class -- a call inside a comment is not a call",
       "files": [
@@ -13211,7 +13211,7 @@
       "factors_unknown_reason": "Not yet worked through independently. The commit names the shape: a documented lesson living in one tool's header, never generalised, not reaching a sibling tool with the same problem."
     },
     {
-      "commit": "6a710a6a5fe8",
+      "commit": "f9b7522c5948",
       "date": "2026-09-24",
       "subject": "fix(controls): the rebase control was guarded all along, and a register count was counting itself",
       "files": [
@@ -13241,7 +13241,7 @@
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
     },
     {
-      "commit": "acd31230d7b9",
+      "commit": "130b5a86124d",
       "date": "2026-09-24",
       "subject": "fix(service-role-gate): the report truncated 226 resources to 3 in silence, and two claims about it were stale",
       "files": [
