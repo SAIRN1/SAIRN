@@ -2329,8 +2329,8 @@
       "task": "post-rewrite hook auto-reseats the defect register after a rebase, plus a pre-commit conflict-marker refusal FILES: .githooks/post-rewrite .githooks/pre-commit tools/install_git_hooks.py tools/defect_register.py",
       "claimed_at": "2026-09-24T12:18:08Z",
       "claimed_at_epoch": 1790252288.2761128,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T13:11:26Z",
       "files": [
         "tools/defect_register.py",
         "tools/install_git_hooks.py"
