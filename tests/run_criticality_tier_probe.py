@@ -310,6 +310,128 @@ try:
            'a rollup list naming a row that is NOT Tier A is refused (planted `%s`)' % _plant,
            'LIST STALE')
 
+    # ── ARMS 11-14: THE FIXER, DRIVEN (2026-09-24) ────────────────────────
+    # `--fix-rollup-list` exists because arm 9's finding kept being TRUE. The
+    # LIST MISSING arm landed 2026-09-23 and caught the same omission five
+    # times in the following day: every catch real, every fix correct, and
+    # nothing about the fifth different from the first, because promoting a
+    # row leaves a derived sentence somewhere else for a human to retype.
+    #
+    # A FIXER IS A WRITER AND GETS THE HARDER CONTROLS, not the same ones. It
+    # is not enough that the check passes afterwards -- a fixer that rewrote
+    # the whole cell, or the whole file, would also make the check pass. So
+    # these arms assert what it did NOT touch as hard as what it did.
+    def run_fix(wt_):
+        r = subprocess.run([sys.executable, os.path.join(wt_, REL_TOOL),
+                            '--fix-rollup-list'],
+                           cwd=wt_, capture_output=True, text=True,
+                           encoding='utf-8', errors='replace')
+        return r.returncode, (r.stdout or '') + (r.stderr or '')
+
+    # ARM 11 -- on a register with nothing missing it writes NOTHING. A fixer
+    # that reformats a correct file on every run makes every unrelated diff
+    # unreadable, which is how a tool stops being run.
+    rc11, out11 = run_fix(wt)
+    check('the fixer is a NO-OP on a register that is already right',
+          rc11 == 0 and io.open(DOC, encoding='utf-8', newline='').read() == ORIGINAL,
+          'exit=%s bytes_changed=%s' % (rc11, io.open(DOC, encoding='utf-8', newline='').read() != ORIGINAL))
+    check('...and it says so rather than printing nothing',
+          'Nothing to insert' in out11, out11[-200:])
+
+    # ARM 12 -- the real one: drop a name, run the fixer, and the document must
+    # come back BYTE-IDENTICAL. Not "the check passes" -- that is the weaker
+    # claim, and every one of this repo's regenerate-the-file incidents would
+    # have satisfied it.
+    #
+    # THE NAME IS CHOSEN SEPARATELY FROM ARM 9's AND THE REASON IS A REAL
+    # FAILURE. Arm 9 takes the first exactly-once name and falls back to
+    # dropping the bare `name` when neither `name`, nor , `name` matches. On
+    # this register that picked `sd_crm`, which is inside a bold annotation --
+    # so the drop removed the NAME and left the annotation, and no correct
+    # fixer could round-trip that: it re-inserts alphabetically and the bytes
+    # differ. The arm was red about the fixer and the fault was the fixture.
+    # A byte-identical claim is only meaningful over a PLAIN list member, so
+    # this picks one and fails loudly about its anchor if the register has
+    # none left.
+    #
+    # AND IT MUST BE A REAL TIER A ROW, not merely a backticked token. `_listed`
+    # is a raw backtick scrape of the cell, so it also contains prose tokens --
+    # the first run of this arm picked `val` out of an annotation, dropped it,
+    # and the register still PASSED, because the checker only judges names that
+    # are registered resources of the app. The arm then failed about the fixer
+    # for doing nothing to a document that had nothing wrong with it. Same
+    # family as arm 9's own `exec_context` near-miss: a mutation that is not a
+    # mutation of the SUBJECT.
+    _a_rows = set(re.findall(r'^\| `([a-z_0-9]+)` \| \*\*A\*\* \|',
+                             ORIGINAL, re.M))
+    _plain = [n for n in _once
+              if n in _a_rows
+              and (('`%s`, ' % n) in roll or (', `%s`' % n) in roll)]
+    assert _plain, (
+        'fixture invalid: the stonedesk rollup has no plain list member -- every '
+        'exactly-once name carries an annotation, so a dropped name cannot be '
+        'restored byte-identically by ANY fixer and this arm would be asserting '
+        'something false about a correct tool')
+    _fixdrop = _plain[0]
+    _rolled12 = roll
+    for _pat in ('`%s`, ' % _fixdrop, ', `%s`' % _fixdrop):
+        if _pat in _rolled12:
+            _rolled12 = _rolled12.replace(_pat, '', 1)
+            break
+    assert '`%s`' % _fixdrop not in _rolled12, (
+        '`%s` survived the drop, so arm 12 is not testing a missing name' % _fixdrop)
+    _fix_doc = ORIGINAL.replace(roll, _rolled12, 1)
+    assert _fix_doc != ORIGINAL, 'ANCHOR STALE: arm 12 planted nothing'
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(_fix_doc)
+    rc12a, _ = run(wt)
+    check('arm 12 precondition: the mutated register is REFUSED before the fix',
+          rc12a == 1, 'exit=%s -- if this passes, the fix below proves nothing' % rc12a)
+    rc12, out12 = run_fix(wt)
+    _after = io.open(DOC, encoding='utf-8', newline='').read()
+    check('the fixer restores a dropped Tier A name BYTE FOR BYTE (`%s`)' % _fixdrop,
+          rc12 == 0 and _after == ORIGINAL,
+          'exit=%s identical=%s :: %s' % (rc12, _after == ORIGINAL, out12[-300:]))
+    check('...and it names what it inserted rather than working silently',
+          'INSERTED' in out12 and _fixdrop in out12, out12[-200:])
+    rc12b, _ = run(wt)
+    check('...and the checker itself now passes the fixed register', rc12b == 0)
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(ORIGINAL)
+
+    # ARM 13 -- THE FIXER MUST NOT DELETE. LIST STALE is the other half of the
+    # same arm and it is NOT derivable: a name listed whose row says B may
+    # mean the row is wrong, not the list. Arm 10's mutation, run through the
+    # fixer, must come out still planted and still refused.
+    _stale_doc = ORIGINAL.replace(roll, roll.replace(
+        '**RE-TIERED**', '**RE-TIERED** `%s`,' % _plant, 1), 1)
+    assert _stale_doc != ORIGINAL, 'ANCHOR STALE: arm 13 planted nothing'
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(_stale_doc)
+    run_fix(wt)
+    _after13 = io.open(DOC, encoding='utf-8', newline='').read()
+    rc13, out13 = run(wt)
+    check('the fixer does NOT delete a LIST STALE name -- that one is a '
+          'judgement and stays refused (`%s`)' % _plant,
+          '`%s`' % _plant in _after13 and rc13 == 1 and 'LIST STALE' in out13,
+          'still_present=%s exit=%s' % ('`%s`' % _plant in _after13, rc13))
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(ORIGINAL)
+
+    # ARM 14 -- THE MUTATION CONTROL ON THE FIXER'S OWN GUARD. Drop a name AND
+    # strip every backticked resource out of that cell, so there is no list to
+    # insert into. The fixer must REFUSE and name the app; inserting into a
+    # cell that describes its resources in prose would be inventing a list.
+    _prose = roll
+    for _n in sorted(_listed):
+        _prose = _prose.replace('`%s`, ' % _n, '').replace(', `%s`' % _n, '').replace('`%s`' % _n, '')
+    assert _prose != roll, 'ANCHOR STALE: arm 14 stripped nothing'
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(ORIGINAL.replace(roll, _prose, 1))
+    _before14 = io.open(DOC, encoding='utf-8', newline='').read()
+    rc14, out14 = run_fix(wt)
+    check('the fixer REFUSES a rollup cell with no list in it, and says which app',
+          rc14 == 1 and 'REFUSED' in out14 and 'stonedesk' in out14,
+          'exit=%s :: %s' % (rc14, out14[-300:]))
+    check('...and it wrote nothing at all while refusing',
+          io.open(DOC, encoding='utf-8', newline='').read() == _before14)
+    io.open(DOC, 'w', encoding='utf-8', newline='').write(ORIGINAL)
+
     check('the register was restored byte for byte after every arm',
           io.open(DOC, encoding='utf-8', newline='').read() == ORIGINAL)
 finally:

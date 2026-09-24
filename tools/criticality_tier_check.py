@@ -2,6 +2,10 @@
 
     python tools/criticality_tier_check.py            # report, exit 1 on drift
     python tools/criticality_tier_check.py --quiet    # exit code only
+    python tools/criticality_tier_check.py --fix-rollup-list
+                                       # INSERT the derived half of a rollup
+                                       # line -- the Tier A NAME LIST -- and
+                                       # nothing else. See fix_rollup_lists().
 
 WHY THIS EXISTS. `docs/CRITICALITY-TIERS.md` states, for each RESOURCE, the worst
 consequence of it being wrong, and cites something already recorded in this repo
@@ -19,9 +23,30 @@ same consequence, and one label per app forces them into one answer.
 The unit is now `api/_resources/<app>.js`, the same unit the SOUP register and
 the traceability matrix already use.
 
-IT REPORTS AND NEVER REWRITES, deliberately. The tier and its sentence are a
-JUDGEMENT; a tool that regenerated this file would delete exactly the part that
-matters and leave a table that looks authoritative because a machine made it.
+IT REPORTS AND NEVER REWRITES ANY JUDGEMENT, deliberately. The tier and its
+sentence are a JUDGEMENT; a tool that regenerated this file would delete exactly
+the part that matters and leave a table that looks authoritative because a
+machine made it.
+
+── THE ONE EXCEPTION, AND WHY IT IS NOT ONE (2026-09-24) ───────────────────
+`--fix-rollup-list` writes. It inserts, into a rollup line's name list, Tier A
+names that are already stated by the rows underneath it -- and it inserts
+NOTHING ELSE, deletes nothing, and never touches a tier, a sentence or a count.
+That list is not judgement; it is a restatement of rows this tool already
+parses, which is exactly why it rotted while the COUNT -- the other derived
+thing on that line -- never did. The count was guarded from day one AND is
+re-derived on every run, so it stayed right with nobody thinking about it.
+
+THE RECURRENCE IS THE ARGUMENT. The LIST MISSING arm landed 2026-09-23 and
+caught the same class of omission FIVE times in the following day. Every catch
+was real and every fix was correct; none of them changed the fact that
+promoting a row leaves a derived sentence elsewhere for a human to retype. A
+check firing five times in a day is not a check working harder, it is a check
+reporting that the step in front of it is hand-done.
+
+LIST STALE -- a name listed whose row says B -- is NOT fixed, and the asymmetry
+is deliberate: that one may mean the ROW is wrong rather than the list, and
+there is no derivation that can tell which.
 
 WHAT IT CAN AND CANNOT SEE, said plainly because a checker that overstates its
 reach is worse than none:
@@ -386,9 +411,225 @@ def parse():
     return rollup, rows
 
 
+BACKTICKED = re.compile(r'`([\w.-]+)`')
+
+
+def listed_names(status, names):
+    """The registered resources of this app that its rollup cell NAMES.
+
+    Only backticked tokens that are registered resources of THIS app count. A
+    rollup cell may legitimately name a file, another app's resource, or
+    describe its resources in plain words, and none of those is a claim this
+    can judge.
+    """
+    return {n for n in BACKTICKED.findall(status) if n in names}
+
+
+def rollup_list_gap(status, names, present, by_name):
+    """Tier A rows this rollup cell does not name, sorted.
+
+    ── ONE DERIVATION, TWO CALLERS (2026-09-24) ──────────────────────────
+    Extracted so `--fix-rollup-list` inserts EXACTLY the names the LIST
+    MISSING arm reports and cannot answer a different question from the
+    check it exists to satisfy. A fixer with its own copy of the rule is a
+    second rule, and the two drift in the direction where the fixer writes
+    something the checker then refuses -- or worse, stops refusing.
+    """
+    return sorted({n for n in present if by_name[n][1] == 'A'}
+                  - listed_names(status, names))
+
+
+def _rollup_line_indices(lines):
+    """{app: line index} for the rollup rows, identified the way parse() does.
+
+    Cells are read to IDENTIFY a line and never to rebuild one: every edit
+    below is a character insert into the original string. PR 2.1 -- an index
+    row that is split on `|` and re-joined loses whatever the split did not
+    model, and this file's rows carry escaped pipes, bold runs and em dashes.
+    """
+    out = {}
+    for i, line in enumerate(lines):
+        if not line.startswith('|'):
+            continue
+        c = cells(line)
+        m = re.match(r'^`([\w.-]+)`$', c[0]) if c else None
+        if not m or len(c) != 6:
+            continue
+        if RESOURCE_CELL1.match(c[1].strip()):
+            continue
+        out[m.group(1)] = i
+    return out
+
+
+# The character that may follow the LAST name in a list for an append to be
+# safe. Anything else -- ` (`, a word, an opening bracket -- means the name is
+# carrying a decoration the insert would land inside, and the fixer refuses
+# rather than guessing where the decoration ends.
+_TAIL_OK = re.compile(r'^\s*(,|\||&mdash;|—|$)')
+
+
+def _insert_one(line, name, names):
+    """Insert one backticked name into a rollup line, or say why not.
+
+    Returns (new_line, None) or (None, reason).
+
+    ── IT PLACES AMONG THE PLAIN NAMES ONLY, AND THAT IS THE WHOLE DESIGN ──
+    These cells are NOT one alphabetical list. They are an annotated run --
+    `**`sd_crm` (2026-09-23, B->A on BOTH axes ...)**` -- followed by a plain
+    alphabetical run of bare names. The first version of this sorted against
+    every backticked name in the cell, which put a new `sd_a*` ahead of an
+    annotated `sd_crm` at the very front of the sentence: not wrong as a fact,
+    but it moved the name out of the list a reader scans and into the middle
+    of somebody's prose. Found by arm 12 refusing to round-trip.
+
+    So: alphabetical WITHIN the plain run, and a cell with no plain run is
+    REFUSED rather than given one. Inserting into an annotated name's bold
+    span would silently widen an annotation to cover a resource it was never
+    written about, which is a worse defect than the missing name.
+    """
+    toks = []
+    for m in BACKTICKED.finditer(line):
+        if m.group(1) not in names:
+            continue
+        # Inside a bold run iff an odd number of `**` markers precede it.
+        bold = line.count('**', 0, m.start()) % 2 == 1
+        toks.append((m.start(), m.end(), m.group(1), bold))
+    if not toks:
+        return None, ('its rollup cell names no registered resource of this '
+                      'app, so there is no list to insert into. A cell that '
+                      'DESCRIBES its resources is not a list and this refuses '
+                      'to turn one into the other')
+    plain = [t for t in toks if not t[3]]
+    if not plain:
+        return None, ('every name in its rollup list carries a bold annotation '
+                      'and there is no plain run to insert into. Placing a bare '
+                      'name inside one of those spans would widen somebody\'s '
+                      'annotation to cover a resource it was not written about. '
+                      'Place it by hand')
+    after = [t for t in plain if t[2] > name]
+    if after:
+        return line[:after[0][0]] + '`%s`, ' % name + line[after[0][0]:], None
+    end, prev = plain[-1][1], plain[-1][2]
+    if not _TAIL_OK.match(line[end:]):
+        return None, ('it sorts after every plain name in the list and the last '
+                      'one (`%s`) is followed by %r rather than a separator -- '
+                      'so an append would land inside that annotation. Place it '
+                      'by hand' % (prev, line[end:end + 12]))
+    return line[:end] + ', `%s`' % name + line[end:], None
+
+
+def fix_rollup_lists(rollup, rows, reg):
+    """Insert the Tier A names each rollup list is missing. Nothing else.
+
+    ── WHY THIS DOES NOT CONTRADICT "IT REPORTS AND NEVER REWRITES" ──────
+    That rule is at the top of this file and it is right: the TIER and the
+    EVIDENCE SENTENCE are judgement, and a tool that regenerated them would
+    delete the only part that matters. THE NAME LIST IS NOT JUDGEMENT. It is
+    a restatement of which rows say A, derived entirely from rows this same
+    tool already reads -- which is exactly why it rotted while the COUNT, the
+    other derived thing on that line, never did. Guarding the count made it
+    correct; deriving it is what kept it correct with nobody thinking about
+    it.
+
+    THE RECURRENCE IS THE POINT. The LIST MISSING arm landed 2026-09-23 and
+    caught the same omission FIVE times in the following day -- 2a7e72f3's
+    sweep, then again on each retier commit that promoted a row. Every catch
+    was real and every fix was correct; what none of them changed is that
+    promoting a row leaves a sentence somewhere else that a human has to
+    remember to retype. A checker that fires five times in a day is not
+    failing, it is reporting that the work upstream of it is hand-done.
+
+    IT ONLY EVER INSERTS. A name listed whose row is Tier B is LIST STALE,
+    and that is a genuine question -- the row may be wrong rather than the
+    list -- so it is reported and never silently deleted. The two halves of
+    the same arm get different treatment on purpose: one has a derivable
+    answer and one does not.
+
+    Returns (applied, refusals) where applied is [(app, name)].
+    """
+    src = io.open(REGISTER, encoding='utf-8', newline='').read()
+    lines = src.split('\n')
+    idx = _rollup_line_indices(lines)
+    by_name = {r[0]: r for r in rows}
+    applied, refusals = [], []
+    for app in sorted(set(rollup) & set(reg)):
+        if 'NOT YET RE-TIERED' in rollup[app]['status']:
+            continue
+        names = reg[app]
+        if isinstance(names, SHAPE_ERROR):
+            continue
+        present = {n for n in names if n in by_name}
+        gap = rollup_list_gap(rollup[app]['status'], names, present, by_name)
+        if not gap:
+            continue
+        if app not in idx:
+            refusals.append((app, None, 'its rollup row could not be located in '
+                                        'the file by the same reader that parsed it'))
+            continue
+        i = idx[app]
+        for name in gap:
+            new, why = _insert_one(lines[i], name, names)
+            if why:
+                refusals.append((app, name, why))
+                continue
+            lines[i] = new
+            applied.append((app, name))
+    if applied:
+        io.open(REGISTER, 'w', encoding='utf-8', newline='').write('\n'.join(lines))
+    return applied, refusals
+
+
+def cmd_fix_rollup_lists():
+    rollup, rows = parse()
+    reg = apps_with_registries()
+    applied, refusals = fix_rollup_lists(rollup, rows, reg)
+    for app, name in applied:
+        print('INSERTED  %s/%s into the rollup list' % (app, name))
+    for app, name, why in refusals:
+        print('REFUSED   %s%s -- %s'
+              % (app, ('/' + name) if name else '', why))
+    if not applied and not refusals:
+        print('Nothing to insert: every rollup list already names every Tier A '
+              'row under it.')
+        return 0
+    # ── THE FIXER CHECKS ITS OWN WORK, against the arm and not against
+    #    itself. Re-parsing from disk is the point: an in-memory "I inserted
+    #    N names" is the fixer agreeing with the fixer.
+    rollup, rows = parse()
+    reg = apps_with_registries()
+    by_name = {r[0]: r for r in rows}
+    left = []
+    for app in sorted(set(rollup) & set(reg)):
+        if 'NOT YET RE-TIERED' in rollup[app]['status']:
+            continue
+        names = reg[app]
+        if isinstance(names, SHAPE_ERROR):
+            continue
+        present = {n for n in names if n in by_name}
+        for n in rollup_list_gap(rollup[app]['status'], names, present, by_name):
+            left.append('%s/%s' % (app, n))
+    if left:
+        print('\n%d LIST MISSING problem(s) REMAIN after the fix -- %s'
+              % (len(left), ', '.join(left)))
+        print('Every one of them is a refusal above, or this fixer wrote '
+              'something the check does not accept. Either way nothing here '
+              'is done.')
+        return 1
+    print('\nEvery rollup list now names every Tier A row under it. Re-run the '
+          'check itself before committing -- this verified ONE arm.')
+    return 0
+
+
 def main(argv):
     quiet = '--quiet' in argv
     problems = []
+
+    if '--fix-rollup-list' in argv:
+        if not os.path.isfile(REGISTER):
+            print('docs/CRITICALITY-TIERS.md is missing -- that is the finding, '
+                  'not a reason to pass.')
+            return 1
+        return cmd_fix_rollup_lists()
 
     if not os.path.isfile(REGISTER):
         print('docs/CRITICALITY-TIERS.md is missing -- that is the finding, not a '
@@ -447,14 +688,16 @@ def main(argv):
             # rollup that DESCRIBES its resources instead of naming them is not
             # flagged -- it is simply unverifiable, which is its own problem and
             # not one a set comparison can state.
-            listed = {n for n in re.findall(r'`([\w.-]+)`', rollup[app]['status'])
-                      if n in names}
+            listed = listed_names(rollup[app]['status'], names)
             a_rows = {n for n in present if by_name[n][1] == 'A'}
-            for n in sorted(a_rows - listed):
+            for n in rollup_list_gap(rollup[app]['status'], names, present, by_name):
                 problems.append('LIST MISSING %s/%s is Tier A and is not named in the '
                                 'rollup list. Whatever promoted it updated the COUNT and '
                                 'not the sentence -- which is how a summary stops being '
-                                'readable while still adding up.' % (app, n))
+                                'readable while still adding up. Do not retype the '
+                                'sentence: `python tools/criticality_tier_check.py '
+                                '--fix-rollup-list` inserts exactly the names this arm '
+                                'is naming and touches nothing else.' % (app, n))
             # ── ONLY NAMES THAT HAVE A ROW, and the reason is a real crash ──
             # The first version of this iterated `listed - a_rows` and read
             # `by_name[n]`. Delete a resource row and that name is still in the
