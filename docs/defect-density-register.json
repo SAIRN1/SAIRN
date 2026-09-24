@@ -12829,6 +12829,56 @@
       "recurrence_open": "The actions close this app's role maps and this app's claim write. They do NOT close the nine other api/*.js files carrying the identical plain-literal shape -- each is inert or not for its own reasons and none has been checked. They also do not close the delete-list shape generally: every resource whose stored blob is built from the caller's payload minus an explicit list has the same \"a new field is stored unless somebody remembers\" property, and no check counts those. Nothing on this platform currently detects either shape; both were found by reading, and a second reader is not a control."
     },
     {
+      "commit": "0c7672e17d11",
+      "date": "2026-09-24",
+      "subject": "fix(dnt-rollup): money summed as IEEE754 doubles -- integer cents now, at the cell AND the totals line",
+      "files": [
+        "api/_lib/dnt-rollup.js",
+        "api/_lib/dnt-rollup.test.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "api/_lib/dnt-rollup.js summed money amounts as IEEE754 doubles: `cell.value += n` at the sum branch, and `v += cell.value` again at the totals line. 0.1 + 0.2 reported 0.30000000000000004; one hundred $10.01 charges totalled 1000.9999999999998 -- in a roll-up whose own header promises the totals line agrees with the buckets by construction, serving the SAIRNdental per-location production/collections figures. No crash, no warning; the number was simply not the number the ledger says. Fixed by accumulating integer cents in pass 1 and recovering each bucket's integer losslessly at the totals line, with three regression arms each verified to FAIL on the old code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "af5aeddfb782",
+        "date": "2026-09-15",
+        "subject": "feat(sairndental): B2 cross-location roll-up -- and it returns null rather than a number it could not measure",
+        "lag_days": 9
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md names float accumulation of money; the closest standing statement is the cross-domain disciplines' fabricated-number class, which this is not -- the number was computed, just in the wrong arithmetic. Queue item 10 exists to make this a named, checkable shape.",
+      "contributing_factors": [
+        {
+          "factor": "Float accumulation is the language default and nothing on the platform refuses it: += on amounts reads as obviously correct and reviews passed it repeatedly",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Fixed here with integer cents; queue item 10 builds a Guardian-style check for this named shape (truthy-coercion/float-money) so the next instance is caught mechanically rather than by reading."
+        },
+        {
+          "factor": "The suite asserted sums only on values that happen to be exact in binary (100, 1200), so the drift class was structurally invisible to every existing arm",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Three arms added using 0.1/0.2/10.01 with strictEqual on the exact decimal -- an epsilon comparison would pass the defect the arm exists to refuse. Each verified red on the old code."
+        },
+        {
+          "factor": "The totals line re-summed bucket dollars, so a fix at the cell alone would have LOOKED complete while reintroducing the same drift one screen down",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both passes fixed together and a dedicated arm drives the totals line with buckets whose exact values misadd as doubles."
+        }
+      ],
+      "recurrence_open": "grep -c '+= ' over api/ finds hundreds of accumulations and nothing distinguishes a money one from a counter. Until item 10's primitive-obsession check lands, every other float-money sum on the platform -- and the platform has at least the sairncode accumulator and the biz rollups in the same shape -- is found only by reading."
+    },
+    {
       "commit": "130b5a86124d",
       "date": "2026-09-24",
       "subject": "fix(service-role-gate): the report truncated 226 resources to 3 in silence, and two claims about it were stale",
@@ -12893,6 +12943,68 @@
       "citation_note": "PR 1.5 is the verify-before-you-report rule: a status claim is a claim, not a fact, until checked against real current state. That is exactly what failed -- the claim was checked against the file's HEADER rather than against the handler, and a header is a document about the code, not the code.",
       "phase_note": "Injected while fixing a different and real staleness in the same comment block, in the same commit as three correct fixes. The lag from injection to detection was under an hour.",
       "factors_unknown_reason": "Not yet worked through independently. The shape is named in the commit: correcting a stale header BY reading the header, when the fact lives in the handler sixty lines below."
+    },
+    {
+      "commit": "1fc1b5a88d78",
+      "date": "2026-09-24",
+      "subject": "fix(fai): the four findings from cc's obligation review, closed structurally rather than by more punctuation",
+      "files": [
+        "tools/first_article_inspection.py"
+      ],
+      "lines_added": 264,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/first_article_inspection.py counted four spellings of a declared exclusion as test coverage (set, list, tuple, dict VALUE -- the colon rule matched only a dict KEY), counted a bare comment mention ('widget.py' inside a # comment) as a suite, anchored its self-test body extraction on the literal 'def _selftest' while 2 of the 7 real self-tests spell theirs without the underscore (their arm counts were right only because nothing outside the self-test looked like an arm), and detected self-tests in Python only, so a JS tool with a working process.argv self-test would be reported UNVERIFIED rather than UNWIRED -- the exact conflation the UNWIRED state was created to end. All four were disclosed in cody's review of cc's change (obligation 69755622) and had no dedicated open-work row, so nothing owned them until this queue item.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e419586b69f5",
+        "date": "2026-09-15",
+        "subject": "feat(process): five follow-ups -- and the sharpest finding is that my own tool was wrong about five of its seven",
+        "lag_days": 9
+      },
+      "citation_note": "The nearest rules are the disciplines' anchor-staleness and blind-lock requirements, and neither names the actual shape: a matcher stated at the punctuation level when the property is structural. Third not-citable today whose family is 'the rule was narrower than the principle its own comment stated'; the three together are the case for writing one.",
+      "phase_note": "Injected in cc's exclusion-rule change: the principle (named is not tested) was stated in the comment and the code implemented one punctuation mark of it. The JS and underscore gaps predate that commit but were surfaced by the same review.",
+      "contributing_factors": [
+        {
+          "factor": "The exclusion rule keyed on PUNCTUATION (a colon after the name) when the property is POSITION (a catalogue entry vs a driven argument). Any rule stated at the punctuation level invites the next spelling of the same semantics.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "named_only_mention() decides it structurally with ast: a string occurring only inside ASSIGNED collection literals is catalogued; an argument list is driving. An unparseable file keeps the suite -- losing a real suite is the expensive direction."
+        },
+        {
+          "factor": "Comments counted as coverage because the bare-name rule was a regex over raw text. The same class as the exclusion defect: the matcher answered 'is the string present' when the question is 'does any use reach the tool'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Closed by construction for Python (ast does not see comments) and by the CANONICAL stripper for JS -- explicitly not a third local reimplementation, since comment_quote_check has been wrong about this twice."
+        },
+        {
+          "factor": "The self-test body anchor was a single literal spelling, and the whole-file fallback made a wrong anchor produce a silently coincident number instead of an error. Right-by-luck is indistinguishable from right in the output.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The anchor accepts def/function/const spellings with or without the underscore, and when no named function is found the whole-file basis is SAID in the result ('whole_file_count') and printed, rather than coinciding."
+        },
+        {
+          "factor": "All four defects were fully described in a review verdict and then owned by nobody: the review discharged its obligation, the findings were 'disclosed', and no open-work row carried them. Disclosure without a row is where findings go to expire.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Fixed under an explicit queue item from Michael. The recurrence-open names the general gap: nothing mechanically turns a review verdict's numbered findings into tracked work."
+        },
+        {
+          "factor": "The first draft of the structural fix subjected IMPORT hits to the named-only test and silently cost 19 artefacts their suites (api/_lib/auth.js lost 51) because require() names a module without its extension -- caught only because the delta was measured against the shipped version over the full repo before committing.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Hit classes separated (an import is a dependency, never a mention) with a fixture arm pinning it, and the final delta re-measured: one loss, judged a true positive and disclosed in the commit."
+        }
+      ],
+      "recurrence_open": "The actions close these four instances and pin them with 34 fixture arms. They do NOT close: the general gap that a review verdict's numbered findings become nobody's work unless a human copies them into a row (these sat disclosed for six days); the tuple-in-call ambiguity (a name in a tuple passed as an argument is treated as driven, which is the chosen direction, not a proven one); and the JS half of named_only_mention still has no AST -- a name inside a JS array literal is only as invisible as the stripper makes it."
     },
     {
       "commit": "295de7744eba",
@@ -12989,6 +13101,57 @@
         }
       ],
       "recurrence_open": "THE MARKER IS ON ONE ROW. Fourteen other branches still locate their read by proximity alone, and any one of them acquires this defect the moment a second filtered query is added above its read -- which is exactly what happened here, from an unrelated feature commit. Nothing measures how close any of them is to its window, and the count of branches with more than one license_hash-filtered query is UNMEASURED rather than one. Also open: READ_WINDOW is now 160 because 103 was measured today, and nothing re-measures it -- the previous number was 90 with '68 lines' written beside it and that sentence was true when written. And the probe is run by hand; nothing schedules it, so the gap between a control going blind and anybody noticing is however long it takes for somebody to be told to run it."
+    },
+    {
+      "commit": "41f7ffc7a3b9",
+      "date": "2026-09-24",
+      "subject": "fix(comment-stripper): a quote inside a REGEX literal handed real comments to every caller as code",
+      "files": [
+        "tests/run_comment_quote_probe.py",
+        "tools/comment_quote_check.py"
+      ],
+      "lines_added": 115,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/comment_quote_check.py's strip_comments() did not parse JS regex literals, and its own disclosure was BACKWARDS about which way that failed. It said the gap \"biases toward reporting MORE code as comment, which for a report-only checker is the safe direction\". Measured over 753 tracked js/html files: 2,178 characters over-stripped in 54 files (the disclosed direction) and 328,210 characters UNDER-stripped in 27 files (the denied one). A quote character inside a regex literal opened a bogus string span, so the scanner hunted a closing quote and walked past real // comments -- and a BACKTICK is not newline-bounded, so api/_lib/style-profile.js:71's markdown-detection regex caused every comment below it in that file to reach ~30 downstream checkers as CODE. The over-strip half is the replace(/\\//g,...) shape: two adjacent slashes inside a literal read as a comment opener, blanking the rest of the line, present in api/_lib/auth.js's base64url encoder and 53 other files.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ba70ec125a97",
+        "date": "2026-09-11",
+        "subject": "feat(tools): a probe that greps for what the fix's own comment quotes -- made mechanical",
+        "lag_days": 13
+      },
+      "citation_note": "No standing rule covers a lexer-class gap ('a scanner that does not model a token class misreads its content as another class'). The nearest is the disciplines' anchor-staleness rule, which is about time, not vocabulary. Second not-citable of this shape today; candidate for a rule.",
+      "phase_note": "Injected when strip_comments was made string-aware: strings and comments were modelled, regex literals were named in a disclosure and deliberately not modelled, with the cost asserted in the wrong direction rather than measured.",
+      "contributing_factors": [
+        {
+          "factor": "The scanner modelled strings and line/block comments but not regex literals, a third token class that can contain both quote characters and slash pairs. Any character-class member it does not model is interpreted AS one of the classes it does.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Regex literals are parsed and skipped whole, like strings. A slash opens one only where an expression may legally begin (conservative preceder list plus keywords), the literal must close on the same line, and anything ambiguous advances one character -- each bound chosen so a mis-detection cannot recreate the skip-to-next-slash under-strip."
+        },
+        {
+          "factor": "The disclosure above the gap asserted its direction without measuring it, and asserted the SAFE direction. A wrong disclosure is worse than none: it tells every reader the check they were about to do is unnecessary.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The direction was measured before fixing (753 files, both deltas counted separately, old vs new implementation compared byte-for-byte) and the corrected disclosure quotes the measurement instead of a belief."
+        },
+        {
+          "factor": "~30 tools consume strip_comments and none of their probes drove a regex-literal case, so the shape had no detector anywhere on the platform.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Nine arms added to tests/run_comment_quote_probe.py, paired in both directions: the three quote-in-regex shapes and the backtick runaway (under-strip), the escaped-slash shape (over-strip), and four controls that fail if the fix over-reaches (division, division after a paren, // inside a regex surviving, an unterminated slash not read as a literal)."
+        }
+      ],
+      "recurrence_open": "The actions close the JS regex-literal class in the one canonical stripper. They do NOT close: template-literal interpolation (a comment-opener inside `${...}` is still unmodelled); the two consumers' verdicts were compared by EXIT CODE only, not by every internal count, so a count that moved inside a still-nonzero exit would not have been seen; and the general class -- a scanner that models N-1 of N token classes misreads the Nth as one of the N-1 -- has no detector, this instance was found from a queue item, not by a tool."
     },
     {
       "commit": "426b29a2a25a",
@@ -13105,6 +13268,58 @@
         }
       ],
       "recurrence_open": "THE PATTERN IS NOT SWEPT. This is the fourth instance of the same anchor shape on this one register and the second in two days; nothing has grepped tests/ for the `name`, spelling, and the count of remaining instances is UNMEASURED rather than zero. Also open, and larger: a report-only probe that CRASHES still exits 0 here, so the arms after the crash silently do not run and nothing distinguishes that from a clean report -- the could-not-tell-folded-into-a-pass shape, in a file whose job is to catch it in others. Neither is closed by this fix."
+    },
+    {
+      "commit": "58303cc59aaa",
+      "date": "2026-09-24",
+      "subject": "fix(sairndesign): the four resources promoted to Tier A after the gate was armed join the gate",
+      "files": [
+        "api/sd-data-sdn-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 53,
+      "lines_removed": 6,
+      "app": "sairndesign",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Four SAIRNdesign resources sat at Tier A on a licence key alone for a day: sdn_projects, sdn_proposals, sdn_specitems and sdn_timeentries were individually read and promoted B->A on 2026-09-23, hours AFTER the SAIRNdesign session gate was armed for \"the five at Tier A\" -- and nothing connected a tier promotion to the gate whose scope was defined BY tier. The gate's comment said \"only the five at Tier A\" and named five names; the tier table moved; the comment and the gate stayed. A studio's client budgets (steering the AI adviser), priced accept/decline proposals (whose Approved path reserves one-of-a-kind inventory), the cost/retail catalogue both totals derive from, and billable hours were all writable and readable by anyone holding the browser-shipped licence key, which is the exact finding that armed the first five.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9db143687be7",
+        "date": "2026-09-23",
+        "subject": "feat(sairndesign): arm the session gate on the five Tier A resources -- and the precondition was the whole job, not the four things the row assumed",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names 'a gate scoped by a property but implemented as the list of things that had the property on arming day'. Fourth not-citable of the week whose family is scope-follows-a-moving-referent; the register's own recurrence fields now carry the case for a rule.",
+      "phase_note": "Injected when the first five were gated: the stopping rule was stated as Tier A and implemented as five names. Correct on arming day by construction, wrong on the first promotion by construction.",
+      "contributing_factors": [
+        {
+          "factor": "The gate's scope was defined by a PROPERTY (Tier A) but implemented as a LIST of the five names that had the property on arming day. A promotion changes the property without touching the list, and nothing diffs the two.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The four join SD_SESSION_GATED and SD_GATE_APP in one edit, with the boundary's comment restated as following the tier rather than the names."
+        },
+        {
+          "factor": "No mechanism connects a CRITICALITY-TIERS.md promotion to the gates whose scope is stated in tier terms. The promotion and the gate live in different files, edited by different sessions for different reasons, and the day gap here was ONE day only because the same queue item covered both.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Not built in this change and said so: a checker that cross-references tier-A rows against SD_SESSION_GATED membership per app is a real tool with its own criteria questions (which apps' gates are tier-scoped vs product-scoped), and folding it into this fix would be scope growth. The recurrence-open names it as the standing gap."
+        },
+        {
+          "factor": "The sdn gate suite's GATED table and the platform gate table's pair count both tripped on the growth, which is the detection working -- but only AFTER the edit was made. Neither could have flagged the promoted-but-ungated day, because both assert agreement with the gate, not with the tier table.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both tables updated with the why-gated paragraphs their tripwires demand; the suite grew to 40 arms over nine resources."
+        }
+      ],
+      "recurrence_open": "The actions close these four resources. They close NOTHING about the class: any app whose session gate is scoped \"the Tier A resources\" drifts the same way on the next promotion, and no tool cross-references CRITICALITY-TIERS.md tier-A rows against SD_SESSION_GATED membership. SAIRNdesign itself still has nine ungated resources that are Tier B today and one promotion away from being this defect again. The detection that exists (both gate-table tripwires) fires on gate EDITS, not on tier promotions, so the exposure window between promotion and gating is invisible to everything but a queue item."
     },
     {
       "commit": "5e7f9ebd6cb7",
@@ -13601,169 +13816,6 @@
       "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
       "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
-    },
-    {
-      "commit": "41f7ffc7a3b9",
-      "date": "2026-09-24",
-      "subject": "fix(comment-stripper): a quote inside a REGEX literal handed real comments to every caller as code",
-      "files": [
-        "tests/run_comment_quote_probe.py",
-        "tools/comment_quote_check.py"
-      ],
-      "lines_added": 115,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "tools/comment_quote_check.py's strip_comments() did not parse JS regex literals, and its own disclosure was BACKWARDS about which way that failed. It said the gap \"biases toward reporting MORE code as comment, which for a report-only checker is the safe direction\". Measured over 753 tracked js/html files: 2,178 characters over-stripped in 54 files (the disclosed direction) and 328,210 characters UNDER-stripped in 27 files (the denied one). A quote character inside a regex literal opened a bogus string span, so the scanner hunted a closing quote and walked past real // comments -- and a BACKTICK is not newline-bounded, so api/_lib/style-profile.js:71's markdown-detection regex caused every comment below it in that file to reach ~30 downstream checkers as CODE. The over-strip half is the replace(/\\//g,...) shape: two adjacent slashes inside a literal read as a comment opener, blanking the rest of the line, present in api/_lib/auth.js's base64url encoder and 53 other files.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "ba70ec125a97",
-        "date": "2026-09-11",
-        "subject": "feat(tools): a probe that greps for what the fix's own comment quotes -- made mechanical",
-        "lag_days": 13
-      },
-      "citation_note": "No standing rule covers a lexer-class gap ('a scanner that does not model a token class misreads its content as another class'). The nearest is the disciplines' anchor-staleness rule, which is about time, not vocabulary. Second not-citable of this shape today; candidate for a rule.",
-      "phase_note": "Injected when strip_comments was made string-aware: strings and comments were modelled, regex literals were named in a disclosure and deliberately not modelled, with the cost asserted in the wrong direction rather than measured.",
-      "contributing_factors": [
-        {
-          "factor": "The scanner modelled strings and line/block comments but not regex literals, a third token class that can contain both quote characters and slash pairs. Any character-class member it does not model is interpreted AS one of the classes it does.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Regex literals are parsed and skipped whole, like strings. A slash opens one only where an expression may legally begin (conservative preceder list plus keywords), the literal must close on the same line, and anything ambiguous advances one character -- each bound chosen so a mis-detection cannot recreate the skip-to-next-slash under-strip."
-        },
-        {
-          "factor": "The disclosure above the gap asserted its direction without measuring it, and asserted the SAFE direction. A wrong disclosure is worse than none: it tells every reader the check they were about to do is unnecessary.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The direction was measured before fixing (753 files, both deltas counted separately, old vs new implementation compared byte-for-byte) and the corrected disclosure quotes the measurement instead of a belief."
-        },
-        {
-          "factor": "~30 tools consume strip_comments and none of their probes drove a regex-literal case, so the shape had no detector anywhere on the platform.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Nine arms added to tests/run_comment_quote_probe.py, paired in both directions: the three quote-in-regex shapes and the backtick runaway (under-strip), the escaped-slash shape (over-strip), and four controls that fail if the fix over-reaches (division, division after a paren, // inside a regex surviving, an unterminated slash not read as a literal)."
-        }
-      ],
-      "recurrence_open": "The actions close the JS regex-literal class in the one canonical stripper. They do NOT close: template-literal interpolation (a comment-opener inside `${...}` is still unmodelled); the two consumers' verdicts were compared by EXIT CODE only, not by every internal count, so a count that moved inside a still-nonzero exit would not have been seen; and the general class -- a scanner that models N-1 of N token classes misreads the Nth as one of the N-1 -- has no detector, this instance was found from a queue item, not by a tool."
-    },
-    {
-      "commit": "1fc1b5a88d78",
-      "date": "2026-09-24",
-      "subject": "fix(fai): the four findings from cc's obligation review, closed structurally rather than by more punctuation",
-      "files": [
-        "tools/first_article_inspection.py"
-      ],
-      "lines_added": 264,
-      "lines_removed": 12,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "tools/first_article_inspection.py counted four spellings of a declared exclusion as test coverage (set, list, tuple, dict VALUE -- the colon rule matched only a dict KEY), counted a bare comment mention ('widget.py' inside a # comment) as a suite, anchored its self-test body extraction on the literal 'def _selftest' while 2 of the 7 real self-tests spell theirs without the underscore (their arm counts were right only because nothing outside the self-test looked like an arm), and detected self-tests in Python only, so a JS tool with a working process.argv self-test would be reported UNVERIFIED rather than UNWIRED -- the exact conflation the UNWIRED state was created to end. All four were disclosed in cody's review of cc's change (obligation 69755622) and had no dedicated open-work row, so nothing owned them until this queue item.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "e419586b69f5",
-        "date": "2026-09-15",
-        "subject": "feat(process): five follow-ups -- and the sharpest finding is that my own tool was wrong about five of its seven",
-        "lag_days": 9
-      },
-      "citation_note": "The nearest rules are the disciplines' anchor-staleness and blind-lock requirements, and neither names the actual shape: a matcher stated at the punctuation level when the property is structural. Third not-citable today whose family is 'the rule was narrower than the principle its own comment stated'; the three together are the case for writing one.",
-      "phase_note": "Injected in cc's exclusion-rule change: the principle (named is not tested) was stated in the comment and the code implemented one punctuation mark of it. The JS and underscore gaps predate that commit but were surfaced by the same review.",
-      "contributing_factors": [
-        {
-          "factor": "The exclusion rule keyed on PUNCTUATION (a colon after the name) when the property is POSITION (a catalogue entry vs a driven argument). Any rule stated at the punctuation level invites the next spelling of the same semantics.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "named_only_mention() decides it structurally with ast: a string occurring only inside ASSIGNED collection literals is catalogued; an argument list is driving. An unparseable file keeps the suite -- losing a real suite is the expensive direction."
-        },
-        {
-          "factor": "Comments counted as coverage because the bare-name rule was a regex over raw text. The same class as the exclusion defect: the matcher answered 'is the string present' when the question is 'does any use reach the tool'.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Closed by construction for Python (ast does not see comments) and by the CANONICAL stripper for JS -- explicitly not a third local reimplementation, since comment_quote_check has been wrong about this twice."
-        },
-        {
-          "factor": "The self-test body anchor was a single literal spelling, and the whole-file fallback made a wrong anchor produce a silently coincident number instead of an error. Right-by-luck is indistinguishable from right in the output.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The anchor accepts def/function/const spellings with or without the underscore, and when no named function is found the whole-file basis is SAID in the result ('whole_file_count') and printed, rather than coinciding."
-        },
-        {
-          "factor": "All four defects were fully described in a review verdict and then owned by nobody: the review discharged its obligation, the findings were 'disclosed', and no open-work row carried them. Disclosure without a row is where findings go to expire.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "Fixed under an explicit queue item from Michael. The recurrence-open names the general gap: nothing mechanically turns a review verdict's numbered findings into tracked work."
-        },
-        {
-          "factor": "The first draft of the structural fix subjected IMPORT hits to the named-only test and silently cost 19 artefacts their suites (api/_lib/auth.js lost 51) because require() names a module without its extension -- caught only because the delta was measured against the shipped version over the full repo before committing.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Hit classes separated (an import is a dependency, never a mention) with a fixture arm pinning it, and the final delta re-measured: one loss, judged a true positive and disclosed in the commit."
-        }
-      ],
-      "recurrence_open": "The actions close these four instances and pin them with 34 fixture arms. They do NOT close: the general gap that a review verdict's numbered findings become nobody's work unless a human copies them into a row (these sat disclosed for six days); the tuple-in-call ambiguity (a name in a tuple passed as an argument is treated as driven, which is the chosen direction, not a proven one); and the JS half of named_only_mention still has no AST -- a name inside a JS array literal is only as invisible as the stripper makes it."
-    },
-    {
-      "commit": "0c7672e17d11",
-      "date": "2026-09-24",
-      "subject": "fix(dnt-rollup): money summed as IEEE754 doubles -- integer cents now, at the cell AND the totals line",
-      "files": [
-        "api/_lib/dnt-rollup.js",
-        "api/_lib/dnt-rollup.test.js"
-      ],
-      "lines_added": 73,
-      "lines_removed": 5,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "user-report",
-      "summary": "api/_lib/dnt-rollup.js summed money amounts as IEEE754 doubles: `cell.value += n` at the sum branch, and `v += cell.value` again at the totals line. 0.1 + 0.2 reported 0.30000000000000004; one hundred $10.01 charges totalled 1000.9999999999998 -- in a roll-up whose own header promises the totals line agrees with the buckets by construction, serving the SAIRNdental per-location production/collections figures. No crash, no warning; the number was simply not the number the ledger says. Fixed by accumulating integer cents in pass 1 and recovering each bucket's integer losslessly at the totals line, with three regression arms each verified to FAIL on the old code.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "af5aeddfb782",
-        "date": "2026-09-15",
-        "subject": "feat(sairndental): B2 cross-location roll-up -- and it returns null rather than a number it could not measure",
-        "lag_days": 9
-      },
-      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md names float accumulation of money; the closest standing statement is the cross-domain disciplines' fabricated-number class, which this is not -- the number was computed, just in the wrong arithmetic. Queue item 10 exists to make this a named, checkable shape.",
-      "contributing_factors": [
-        {
-          "factor": "Float accumulation is the language default and nothing on the platform refuses it: += on amounts reads as obviously correct and reviews passed it repeatedly",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Fixed here with integer cents; queue item 10 builds a Guardian-style check for this named shape (truthy-coercion/float-money) so the next instance is caught mechanically rather than by reading."
-        },
-        {
-          "factor": "The suite asserted sums only on values that happen to be exact in binary (100, 1200), so the drift class was structurally invisible to every existing arm",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Three arms added using 0.1/0.2/10.01 with strictEqual on the exact decimal -- an epsilon comparison would pass the defect the arm exists to refuse. Each verified red on the old code."
-        },
-        {
-          "factor": "The totals line re-summed bucket dollars, so a fix at the cell alone would have LOOKED complete while reintroducing the same drift one screen down",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both passes fixed together and a dedicated arm drives the totals line with buckets whose exact values misadd as doubles."
-        }
-      ],
-      "recurrence_open": "grep -c '+= ' over api/ finds hundreds of accumulations and nothing distinguishes a money one from a counter. Until item 10's primitive-obsession check lands, every other float-money sum on the platform -- and the platform has at least the sairncode accumulator and the biz rollups in the same shape -- is found only by reading."
     }
   ],
   "started": "2026-09-09",
