@@ -2908,6 +2908,17 @@
         "api/sd-data.js",
         "sairndesign.html"
       ]
+    },
+    {
+      "id": "hank-1790254663",
+      "session": "hank",
+      "subject": "platform",
+      "task": "verification methodology plan and the nine-file role-map prototype sweep",
+      "claimed_at": "2026-09-24T12:57:43Z",
+      "claimed_at_epoch": 1790254663.6976464,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
