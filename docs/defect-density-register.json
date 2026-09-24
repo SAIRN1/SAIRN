@@ -12851,7 +12851,7 @@
       "recurrence_open": "Every other merge_policy validator on this platform is unchecked against the same question. docs/defect-density-register.json names defect_register.py --check, which happens to be a validity check, but nothing enforces that a declared validator answers soundness rather than content. A second ledger adopting a --list-shaped validator would reproduce this exactly."
     },
     {
-      "commit": "ebc79708c5f5",
+      "commit": "dc8a8509682f",
       "date": "2026-09-24",
       "subject": "fix(security): the undecryptable-ciphertext logs named the wrong secret, and now name exactly one",
       "files": [
