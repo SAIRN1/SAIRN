@@ -74,8 +74,12 @@ test('the quote is NOT saved when the reservation is refused', () => {
   assert.match(after, /if \(!qbRes\.ok\) \{/);
   assert.match(after, /return;/);
   // The save itself must come after the guard, not before it.
-  const save = html.indexOf('quoteHistory.unshift(q);');
-  assert.ok(save > i, 'the quote is stored before the reservation is decided');
+  // ANCHOR UPDATED 2026-09-24: `quoteHistory.unshift(q)` became the item-92
+  // compute-commit-mutate block (the mutate-and-roll-back pair was the
+  // resurrection bug's family), so the save is now the pure next-state build.
+  const save = html.indexOf('var nextHistory = [q].concat(quoteHistory);');
+  assert.ok(save > i, 'the quote is stored before the reservation is decided '
+    + '-- or the next-state build was renamed and this anchor is stale');
 });
 
 test('THE MONEY ONE: the POS reserves BEFORE the invoice is written', () => {

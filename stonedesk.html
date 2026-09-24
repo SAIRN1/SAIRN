@@ -6092,7 +6092,7 @@ function sdCsvCell(v){var s=v==null?'':String(v);if(/^[=+\-@\t\r]/.test(s)&&!(s!
     }
     // THE MODULE-LEVEL ARRAY HAS TO COME WITH IT, AND UNTIL 2026-09-14 IT DID
     // NOT. `quoteHistory` is read from localStorage ONCE, at parse time, and
-    // saveQuote() does `quoteHistory.unshift(q)` then writes the WHOLE array
+    // saveQuote() builds the next array and writes the WHOLE thing
     // back. So a delete here removed the row from storage, sdQBRender() re-read
     // storage and showed it gone -- and the next saved quote wrote the stale
     // array straight back over it, deleted row and all, and on to the server
@@ -13837,12 +13837,23 @@ async function saveQuote() {
     var chip = document.getElementById('qb-slab-chip');
     if (chip) chip.innerHTML = '';
   }
-  quoteHistory.unshift(q);
-  if(!st('stonedesk_quote_history', quoteHistory)){
-    quoteHistory.shift();
+  // ── COMPUTE, COMMIT, THEN MUTATE -- never mutate-and-roll-back (item 92) ─
+  // This was `quoteHistory.unshift(q)` then, on a failed write,
+  // `quoteHistory.shift()` -- a mutation with a hand-written undo, which is
+  // the exact shape behind the Quote Builder resurrection bug: an in-memory
+  // array mutated ahead of its store, left disagreeing with it on any path
+  // the undo missed. The next state is BUILT first, pure; the store commits
+  // it; only a committed write touches the live array. There is no rollback
+  // because there is nothing to roll back -- a refused write leaves
+  // quoteHistory untouched by construction, on every path including a throw
+  // inside st().
+  var nextHistory = [q].concat(quoteHistory);
+  if(!st('stonedesk_quote_history', nextHistory)){
     if (typeof showToast === 'function') showToast('Could not save quote -- storage may be full or unavailable, try again');
     return;
   }
+  quoteHistory.length = 0;
+  Array.prototype.push.apply(quoteHistory, nextHistory);
   renderHistory();
   dbSaveQuoteHistory();
   currentQuoteNum = 'Q-' + (quoteCounter++);
@@ -13865,7 +13876,7 @@ function renderHistory() {
   // slab-reservation crash documented in the comment just above this
   // function: it aborted the rest of saveQuote() (quote counter increment,
   // #quote-num reset, "Saved!" flash) before those ever ran. The quote
-  // itself (quoteHistory.unshift/localStorage/dbSaveQuoteHistory above)
+  // itself (the compute-commit-mutate block/localStorage/dbSaveQuoteHistory above)
   // already happened by the time this runs, so it was unaffected -- only
   // the crashing re-render (a redundant duplicate of the real, working
   // History panel's own sdHistoryRender()) is neutralized here.
@@ -14096,10 +14107,23 @@ function sdAgentCommissionRates(){
 // silent 0: a rate that cannot be resolved falls back to the tier's, and an
 // unknown TIER is reported rather than defaulted, because defaulting there
 // would pay retail commission on a distributor deal.
-function sdCommissionFor(tierKey, agentId){
-  var t=TIERS[tierKey];
+//
+// ── FUNCTIONAL CORE, IMPERATIVE SHELL (item 92, 2026-09-24) ──────────────
+// The CORE takes every fact it uses as an argument -- the tier table, the
+// override map -- and touches nothing outside itself: no localStorage, no
+// DOM, no clock. Same inputs, same answer, every time. The shell one
+// function down is the ONLY place the storage read happens.
+//
+// This is the same split that made the money bugs of the last two days
+// findable: dnt-rollup's engine is pure and its float-sum defect fell to a
+// three-line test the moment one existed; the first sdCommissionFor buried
+// the localStorage read INSIDE the decision, so testing the decision meant
+// faking a browser. A rule about money that cannot be driven with two plain
+// arguments is a rule nobody drives.
+function sdCommissionForPure(tiers, rates, tierKey, agentId){
+  var t=tiers[tierKey];
   if(!t) return { rate:null, source:'unknown tier "'+String(tierKey)+'"', ok:false };
-  var over=sdAgentCommissionRates()[String(agentId||'')];
+  var over=(rates||{})[String(agentId||'')];
   if(agentId && over!==undefined && over!==null){
     // Validated, not coerced. Number('') is 0, and a 0% commission that came
     // from an empty settings field looks exactly like a deliberate one.
@@ -14110,6 +14134,11 @@ function sdCommissionFor(tierKey, agentId){
     return { rate:t.commission, source:'agent override was unusable ('+JSON.stringify(over)+') — tier rate used', ok:true, warn:true };
   }
   return { rate:t.commission, source:t.label+' tier rate', ok:true };
+}
+// The SHELL: reads the world, hands it to the core, changes nothing. Every
+// existing caller keeps this signature.
+function sdCommissionFor(tierKey, agentId){
+  return sdCommissionForPure(TIERS, sdAgentCommissionRates(), tierKey, agentId);
 }
 // ── COMMISSION IS CARRIED IN INTEGER CENTS, NOT DOLLARS ──────────────────
 // Returns a whole number of CENTS, or null when the rate could not be

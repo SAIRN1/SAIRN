@@ -267,6 +267,70 @@ test('the history row reads the SNAPSHOT and never recomputes', () => {
     'the history row RECOMPUTES the rate, so editing TIERS rewrites history');
 });
 
+section('functional core, imperative shell (item 92)');
+
+test('THE CORE IS PURE: sdCommissionForPure takes the world as arguments and '
+   + 'reads nothing outside itself', () => {
+  // The property, asserted on SOURCE because purity is about what the code
+  // CANNOT do: no localStorage, no document, no Date, no call back into the
+  // shell. A core that sneaks one read keeps every bug the split exists to
+  // end -- the first sdCommissionFor buried the storage read inside the
+  // decision, and testing the decision meant faking a browser.
+  const i = html.indexOf('function sdCommissionForPure(tiers, rates, tierKey, agentId){');
+  assert.ok(i > 0, 'the pure core is gone or its signature changed');
+  const body = html.slice(i, html.indexOf('\n}', i));
+  ['localStorage', 'document.', 'Date.now', 'new Date', 'sdAgentCommissionRates', 'TIERS']
+    .forEach(w => assert.ok(body.indexOf(w) === -1,
+      'the core reaches outside itself: ' + w));
+});
+
+test('...and the SHELL is one line of plumbing, so there is nothing in it to test', () => {
+  const i = html.indexOf('function sdCommissionFor(tierKey, agentId){');
+  assert.ok(i > 0, 'the shell is gone');
+  const body = html.slice(i, html.indexOf('\n}', i));
+  assert.match(body, /sdCommissionForPure\(TIERS, sdAgentCommissionRates\(\), tierKey, agentId\)/,
+    'the shell no longer routes through the pure core');
+});
+
+test('the core is driven DIRECTLY with plain arguments -- no browser fake', () => {
+  // What the split buys: this arm needs no localStorage stub at all.
+  const pure = ctx.sdCommissionForPure;
+  assert.ok(typeof pure === 'function', 'sdCommissionForPure not extracted into ctx');
+  const tiers = { retail: { label: 'Retail', commission: 0.05 } };
+  assert.strictEqual(pure(tiers, {}, 'retail', '').rate, 0.05);
+  assert.strictEqual(pure(tiers, { 'E-1': 0.07 }, 'retail', 'E-1').rate, 0.07);
+  assert.strictEqual(pure(tiers, { 'E-1': '' }, 'retail', 'E-1').rate, 0.05,
+    'Number("") slipped through the pure core');
+  assert.strictEqual(pure(tiers, {}, 'nope', 'E-1').ok, false);
+  // Same inputs, same answer -- called twice to make the claim mean something.
+  const a = pure(tiers, { 'E-1': 0.07 }, 'retail', 'E-1');
+  const b = pure(tiers, { 'E-1': 0.07 }, 'retail', 'E-1');
+  assert.deepStrictEqual(a, b);
+});
+
+test('saveQuote COMPUTES-COMMITS-MUTATES -- the unshift/shift rollback pair is gone', () => {
+  // The mutate-then-undo shape is the Quote Builder resurrection bug's
+  // family: an in-memory array changed ahead of its store, disagreeing with
+  // it on any path the undo misses (including a throw inside st()). The next
+  // state is built pure, committed, and only then swapped in -- so a refused
+  // write leaves quoteHistory untouched by construction.
+  const i = html.indexOf('var nextHistory = [q].concat(quoteHistory);');
+  assert.ok(i > 0, 'the pure next-state build is gone from saveQuote');
+  // Comment lines stripped before matching: the block's own comment QUOTES
+  // the removed `quoteHistory.unshift(q)` to explain it, and a checker whose
+  // subject is code must not match the fix's own prose (the house rule).
+  const region = html.slice(i - 1600, i + 800).split('\n')
+    .filter(l => !/^\s*(\/\/|\*)/.test(l)).join('\n');
+  assert.ok(!/quoteHistory\.unshift\(q\)/.test(region),
+    'the mutation happens before the store commits again');
+  assert.ok(!/quoteHistory\.shift\(\)/.test(region),
+    'the hand-written rollback is back -- and rollbacks miss paths');
+  const commit = region.indexOf("st('stonedesk_quote_history', nextHistory)");
+  const mutate = region.indexOf('quoteHistory.length = 0;');
+  assert.ok(commit > 0 && mutate > commit,
+    'the live array is mutated before (or without) the store committing');
+});
+
 Promise.resolve().then(() => {
   console.log('\n' + (fail === 0
     ? 'ALL ' + pass + ' TIERED-PRICING ASSERTIONS PASS'
