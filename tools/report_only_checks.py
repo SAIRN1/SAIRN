@@ -1725,10 +1725,24 @@ REGISTRY = [
         'tool': 'service_role_tier_a_gate_check.py',
         'mode': 'once',
         'verdict': by_exit,
-        'promoted': '2026-09-15, report-only. It reports CLEAN today, which is '
-                    'exactly when a checker is worth the least -- so it is '
-                    'registered to be READ rather than to gate, and its own '
-                    'population figures are printed above every verdict',
+        'promoted': '2026-09-15, report-only. IT NO LONGER REPORTS CLEAN AND '
+                    'THIS SENTENCE SAID IT DID UNTIL 2026-09-24 -- it now '
+                    'names 3 UNGATED findings and 1 COULD NOT RUN, and exits '
+                    '2 permanently because api/legal-deadlines.js calls '
+                    'rest(<variable>) and cannot be resolved from source. The '
+                    'claim was true when written and the tool\'s own later '
+                    'honesty made it false, which is the stale-caveat shape '
+                    'pointed the other way: a description that drifted while '
+                    'the thing it describes got BETTER. Flagged in a review '
+                    'verdict and confirmed still false a day later, which is '
+                    'the argument for correcting it here rather than in the '
+                    'generated document. It stays registered to be READ '
+                    'rather than to gate, and its own population figures are '
+                    'printed above every verdict. PROMOTING IT WOULD NEED '
+                    'by_exit TAUGHT THE THIRD STATE FIRST: it maps any '
+                    'non-zero to a finding, so COULD_NOT_RUN is currently '
+                    'indistinguishable from a real UNGATED one, and a '
+                    'blocking gate built on that could never go green',
         'catches': 'a module holding SUPABASE_SERVICE_ROLE_KEY -- the key that '
                    'BYPASSES RLS -- that writes a Tier A resource with no '
                    'identity check before the write. Separates GATED, '

@@ -63,6 +63,29 @@
 //   this does not require a license key -- adding that requirement would
 //   just trade a 404 for a 401, not fix anything live.
 //
+//   ── THAT LAST SENTENCE IS STALE AND IS CORRECTED HERE RATHER THAN
+//   ── DELETED (2026-09-24) ─────────────────────────────────────────────
+//   It was written while `pull` still existed, and the argument was about
+//   the pair: no caller authenticates, so requiring auth changes nothing.
+//   `pull` was then REMOVED on 2026-09-17 for a reason recorded twelve lines
+//   below -- `bridge_data.shop_id` is the customer's RAW LICENCE KEY, not a
+//   hash, and an unauthenticated reader holding one could read that shop's
+//   jobs, invoices and employees.
+//
+//   THE SAME FACT APPLIES TO THIS WRITE AND THE SENTENCE ABOVE STILL SAYS IT
+//   DOES NOT. Anyone holding a shop's licence key -- a string customers do
+//   not treat as a password -- can still OVERWRITE that shop's whole
+//   {jobs, invoices, employees} blob here, because the upsert key IS that
+//   string and nothing authenticates the caller. Whether that matters turns
+//   on what the blob is used for, which is the same question the `pull`
+//   removal answered in the read direction and nobody has asked in the write
+//   direction.
+//
+//   NOT CHANGED HERE. Adding auth to a live endpoint with two live callers
+//   is a product decision with a real breakage cost, and this is a comment
+//   fix. What is fixed is that the file no longer argues, in its own voice,
+//   that the question was already settled.
+//
 //   UPSERTS one row into the pre-existing `bridge_data` table
 //   (shop_id text primary key, data jsonb, updated_at timestamptz -- already
 //   provisioned in Supabase, confirmed empty/unused by any code before this

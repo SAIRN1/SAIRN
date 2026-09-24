@@ -73,6 +73,22 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'coding_rule_discovery.py': ('CHECKER',
+        'a coding or billing RULE that nobody has registered for independent '
+        'review. docs/coding-rule-registry.json is hand-written -- no property '
+        'of a function tells you it encodes a federal billing rule -- and that '
+        'is true of the JUDGEMENT but was never true of the CANDIDATE SET. '
+        'This derives candidates from the codebase\'s OWN conventions: a '
+        'function that calls a `*Finding(sev, rule, detail, sourceKey)` '
+        'builder, or a PURE function called from a markup-wired handler that '
+        'cites a `*_SOURCES` map. On the day it was written: 41 candidates in '
+        'sairncode.html against 8 registered. It registers nothing -- what a '
+        'rule DECIDES, what the HARM is and which source says so is the '
+        'judgement the registry holds, and a tool that auto-registered would '
+        'fill it with guesses. Third instance of the split sairn_app_map_check '
+        'and this file already make: judgement human, enumeration derived. '
+        'WHAT IT CANNOT SEE, printed on every run: a rule written in NEITHER '
+        'convention'),
     'sync_write_result_check.py': ('CHECKER',
         'a SERVER WRITE whose result nobody reads. Every app transport returns '
         'something falsy when the push did not land, so the failure is already '

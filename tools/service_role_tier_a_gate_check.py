@@ -460,8 +460,29 @@ def main(argv=None):
     print('')
     for r in sorted(rows, key=lambda x: (x['verdict'] != 'UNGATED', x['file'])):
         mark = '  ! ' if r['verdict'] == 'UNGATED' else '    '
-        print('%s%-17s %-42s %s' % (mark, r['verdict'], r['file'],
-                                    ', '.join(r['resources'][:3])))
+        # ── THE TRUNCATION USED TO BE SILENT, AND IT WAS A CLAIM (2026-09-24)
+        # This printed `r['resources'][:3]` with nothing to say there were
+        # more. On api/sd-data.js that is 3 of 237, so the line read
+        # "alf_billing, alf_claim_routes, alf_clients" and a reader would take
+        # the file for one that barely touches Tier A data -- when it is the
+        # single largest Tier A surface on the platform.
+        #
+        # THE CLASSIFICATION WAS NEVER WRONG. Only the report was, which is the
+        # more dangerous half: a wrong verdict gets argued with, and a truthful
+        # verdict under a misleading summary gets believed. Same shape as the
+        # fabrication rule this platform already holds -- blanking a KPI while
+        # leaving "4 in progress" beside it is worse than not blanking it.
+        #
+        # THE CAP STAYS, because 237 names on one line is not a report either.
+        # What changes is that the cap now DISCLOSES itself, which is the only
+        # version of a cap this codebase accepts: "no silent caps -- if a
+        # report bounds coverage, log what was dropped".
+        shown = r['resources'][:3]
+        more = len(r['resources']) - len(shown)
+        print('%s%-17s %-42s %s%s'
+              % (mark, r['verdict'], r['file'], ', '.join(shown),
+                 (' ... and %d more (%d total)' % (more, len(r['resources'])))
+                 if more else ''))
         if r['verdict'] != 'GATED':
             print('                      %s' % r['why'])
     print('')

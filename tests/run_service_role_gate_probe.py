@@ -3,10 +3,21 @@ CONTROLS_FOR = ['tools/service_role_tier_a_gate_check.py']
 """tests/run_service_role_gate_probe.py -- controls for
 tools/service_role_tier_a_gate_check.py.
 
-THE SUBJECT REPORTS CLEAN TODAY, WHICH IS EXACTLY WHEN A CHECKER IS WORTH THE
-LEAST. Three of its eight fixtures exist because the classifier was wrong on a
-REAL file and the wrongness was only caught by asking why a module had appeared
--- or vanished -- between two runs:
+THE SUBJECT NO LONGER REPORTS CLEAN, AND THIS PARAGRAPH SAID IT DID UNTIL
+2026-09-24. It now names three UNGATED findings and one COULD NOT RUN. The old
+sentence -- "reports clean today, which is exactly when a checker is worth the
+least" -- was true when written, and the tool's own later honesty made it false:
+a description that drifted while the thing it describes got BETTER, which is the
+stale-caveat shape pointed the other way and is easy to miss because nothing
+about it looks like a regression.
+
+THE FIXTURES BELOW WERE RE-CHECKED AGAINST THE LIVE FILES ON 2026-09-24 rather
+than assumed: `api/bridge.js:372` still carries `invoices: body.invoices`, and
+`invoices` is still Tier A, so the first fixture replays a shape that STILL
+EXISTS and the tool still correctly declines to report it. Three of its eight
+fixtures exist because the classifier was wrong on a REAL file and the wrongness
+was only caught by asking why a module had appeared -- or vanished -- between
+two runs:
 
   bridge.js      `invoices` in header prose and in `body.invoices`, reported as
                  an ungated Tier A write. It writes to `bridge_data`.

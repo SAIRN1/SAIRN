@@ -628,11 +628,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 90 test files are traced to no stated requirement
+### 92 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 630 of 720 traced, 87.5%.
+For context and not as the headline: 630 of 722 traced, 87.3%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -653,10 +653,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | kind | count | what it means | the fix |
 |---|---|---|---|
-| **bound to a subject, tied to no requirement** | 15 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 75 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **bound to a subject, tied to no requirement** | 16 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
+| **no subject binding either** | 76 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
-**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 15 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
+**These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 16 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
 - `api/_lib/csv-cell.test.js`
 - `api/_lib/roofing-gl-export.test.js`
@@ -710,6 +710,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_ai_action_approval_control.py`
 - `tests/run_allan_deviation_probe.py`
 - `tests/run_claim_search_probe.py`
+- `tests/run_coding_rule_discovery_probe.py`
 - `tests/run_cross_tenant_dispatchers_sabotage_probe.py`
 - `tests/run_defect_register_vocab_probe.py`
 - `tests/run_exec_msgs_gate_sabotage_probe.py`
@@ -730,6 +731,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnbuild_server_wins.js`
 - `tests/sairncare_payer_routing_integration.js`
 - `tests/sairncash_entitlement_gate_probe.py`
+- `tests/sairncode_eligibility_coding_edge.js`
 - `tests/sairncode_kx_accumulator_wiring_probe.py`
 - `tests/sairnfreedom_server_backup_probe.py`
 - `tests/sairnlaw_citation_rule_probe.py`
@@ -767,7 +769,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 720   tests/**, api/** (both walked)
+  test files on disk                 722   tests/**, api/** (both walked)
   open-work rows citing a test       349   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  9   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
