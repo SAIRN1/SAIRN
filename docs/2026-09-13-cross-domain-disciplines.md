@@ -1,6 +1,6 @@
-# Cross-domain disciplines — nine standing conventions for any checker built here
+# Cross-domain disciplines — ten standing conventions for any checker built here
 
-**Read this before building any checker, probe, gate or tool.** These are not
+**Read this before building any checker, probe, gate or tool.**  These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
 paid for — either by a defect on this platform or by a defect a tool committed
 while being written to prevent that same defect.
@@ -387,6 +387,66 @@ every incident in this file's registers points).
 ---
 
 ## The failure mode seven of the NINE share
+
+## 10. Segmented verification — no long run whose first check is at the end
+
+**The convention: break one long unverifiable run into short segments, each
+independently checkable at its boundary, instead of betting everything on one
+continuous leap of faith checked only at the finish.** (Methodology item 95,
+adopted 2026-09-24 -- NUMBERED TENTH after landing: another session adopted
+a different ninth the same day, and this document's own closing note records
+what a numbering collision costs, so the later-to-land renumbers.)
+
+Borrowed from survey engineering's hardest recent case: the Gotthard Base
+Tunnel did not bore 57 km from each portal and hope to meet — intermediate
+access shafts (Sedrun, Faido, Amsteg) let several machines drill SHORTER,
+independently-surveyable segments, so an alignment error was caught at the
+next boundary instead of compounding for a decade. The tubes met within
+centimetres because nothing was allowed to run unverified for long enough to
+drift by metres.
+
+**Why it is a convention and not advice — it was paid for HERE, twice, and the
+second time was the day it was adopted:**
+
+- **The stale-plan dispatch (2026-09-24).** A queue item said methodology
+  item 34 had "no owner." It had been BUILT ten days earlier and extended by
+  another session that very morning. The dispatch trusted one long
+  unverified read — a plan snapshot, never re-checked against the repo
+  between its writing and its execution — and the truth surfaced only
+  because the rebuild accidentally collided with the original at the
+  inventory gate. Segments existed (the claim record, `git log`, the
+  inventory) and the run consulted none of them until the end.
+- **The headline sentence of `docs/CRITICALITY-TIERS.md` drifted five
+  recorded times**, twice while two sessions re-derived it concurrently from
+  different trees. The fix that held was not care — it was a SHAFT:
+  `criticality_tier_check.py` re-derives the count on every run, so a drift
+  is caught at the next boundary instead of at the next audit weeks later.
+
+**What already implements it, named so the pattern is copied rather than
+reinvented:** item 35's checkpoint endpoint plus item 54's heartbeat (a long
+agent run becomes independently-checkable segments); every sabotage probe's
+per-arm verdicts with byte-verified restore between arms (a probe is never
+one long mutation whose first check is at the end); the push loop's
+per-attempt rebase-verify-push cycle; and the tier checker's per-run
+re-derivation above.
+
+**The test to apply when building or reviewing anything long-running:** find
+the longest interval in which the work could be silently wrong. If the answer
+is "from start to finish," the run needs a shaft — a boundary at which the
+work so far is checked against an independent source — and the shaft must be
+CHEAPER than the segment it protects, or nobody will sink it. A checkpoint
+that merely records progress is not a shaft; a shaft VERIFIES, against
+something the run did not itself produce (item 5's isolation rule, applied to
+time).
+
+**Where it does not transfer, said plainly:** an operation that is atomic by
+design (one upsert, one signed commit) has no interior to segment, and
+slicing it would add failure modes, not remove them. The convention is about
+runs whose LENGTH is the risk, not about making everything incremental.
+
+---
+
+## The failure mode seven of the first eight share
 
 Seven of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Items 7 and 9 are the exceptions and are worth

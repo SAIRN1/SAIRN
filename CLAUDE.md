@@ -197,7 +197,7 @@ looks.
 ## Skills — read them, don't rely on trigger-word matching
 
 **BEFORE BUILDING ANY CHECKER, PROBE, GATE OR TOOL, read
-`docs/2026-09-13-cross-domain-disciplines.md`.** Nine standing conventions (the ninth, 2026-09-25: verification rigor follows what the artifact IS -- the real costly thing earns exhaustive verification, a cheap stand-in earns iteration), each
+`docs/2026-09-13-cross-domain-disciplines.md`.** Ten standing conventions (the ninth, 2026-09-25: verification rigor follows what the artifact IS -- the real costly thing earns exhaustive verification, a cheap stand-in earns iteration; the tenth, 2026-09-24: segmented verification -- no long run whose first check is at the end), each
 paid for by a real defect: lock a check's criteria against synthetic fixtures
 before running it on real data; report accuracy and stability as two numbers,
 never one; publish a named uncertainty table rather than a combined figure; set
@@ -221,7 +221,14 @@ which is *stronger* than the `anchor in src` shape it did accept, so five
 well-written controls were being reported as unguarded and the signal was
 inverted — a probe that did the harder thing scored worse. Criteria are now
 stamped `CRITERIA_VERSION` and the blind lock carries fixtures for that shape in
-both directions.
+both directions. **And a tenth (2026-09-24), which is about LENGTH: no long run
+whose first check is at the end** -- break it into segments, each verified at
+its boundary against something the run did not itself produce, the way the
+Gotthard Base Tunnel's intermediate shafts let short surveyable drives replace
+one 57km leap of faith. Paid for the day it was adopted: a stale plan snapshot
+dispatched a rebuild of a tool that had existed for ten days, because nothing
+between the snapshot's writing and its execution re-checked it against the
+repo.
 
 The other six exist because **the tools written to enforce them kept committing
 the defects they were built to catch** — a risk scorer that
