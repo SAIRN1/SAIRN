@@ -66,8 +66,11 @@ MUTATIONS = [
      "reads as a change with nothing on file and sends the session to "
      "re-record obligations it already holds",
      GATE,
-     "    partial = sorted(set(hits) & covered)\n    if partial:",
-     "    partial = sorted(set(hits) & covered)\n    if False:"),
+     # ANCHOR UPDATED 2026-09-24: 5e8cf3fb widened the partial set to the rule
+     # channel, and this arm sat on the OLD spelling reporting ANCHOR-0 -- a
+     # probe arm testing nothing while looking armed.
+     "    partial = sorted((set(hits) & covered) | (set(rule_hits) & covered_rules))\n    if partial:",
+     "    partial = sorted((set(hits) & covered) | (set(rule_hits) & covered_rules))\n    if False:"),
 
     ("4. THE ONE THAT READS AS CORRECT: the blocking list names every resource "
      "the change touched rather than the uncovered ones, so the heading and "
@@ -105,7 +108,10 @@ MUTATIONS = [
 
     ("9. THE HOVER AUDITOR BECOMES ELIGIBLE -- one filter removed, and the audit role starts receiving the build agents' review queue",
      GATE,
-     '    names = [n for n in names if n != HOVER_SESSION]',
+     # ANCHOR MOVED 2026-09-24: the literal `n != HOVER_SESSION` compare was
+     # itself the defect (H2 seq #205 -- hover2 was one claim file away from
+     # the reviewer pool) and is a role predicate now.
+     '    names = [n for n in names if not is_hover_session(n)]',
      '    names = list(names)'),
 
     ('10. TAKEOVER LOSES ITS TIME GATE -- anybody may take any owned obligation immediately, which is the original race with a flag on it, and it still RECORDS a handover so the record looks MORE honest than it is',
