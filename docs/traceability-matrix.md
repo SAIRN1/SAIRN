@@ -191,6 +191,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; The coding-rule review channel is built and CANNOT HOLD AN OBLIGATION FOR ITSELF** | **BUILT 2026-09-24 (CC) in `c478772e`. INDEPENDENT REVIEW OWED, AND THE GATE STILL CANNOT EXPRESS IT.** The new half keys on `docs/coding-rule-registry.json`; the build touched `tools/tier_a_review_ga | `tests/run_coding_rule_channel_probe.py` |
 | **&#128993; `tools/cross_tenant_isolation_scope.py` reports `NONE` for a tenant boundary it has no vocabulary for &mdash; `exec_context` now has TEN arms and a passing sabotage control, and the headline coverage table reads it as untested** | **FOUND 2026-09-23 (Hank) while landing `9ae85897`, NOT FIXED.** The tool is a MEASURER: changing its criteria changes every verdict it has ever issued, so it needs its own commit, its own fixtures an | `api/sd-data-exec-context-isolation.test.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#9989; The hover self-health SessionStart hook was registered by ABSOLUTE PATH into ONE clone, so the SECOND auditor self-checked the FIRST one&rsquo;s log on every firing and its own was never checked at all** | **FIXED 2026-09-22 (Hank)** &mdash; `tools/hover_self_health_shim.py` (NEW) + `tests/run_hover_self_health_shim_probe.py` (NEW, 8 arms). **One residual is hover2&rsquo;s to close, named below** | `tests/run_hover_self_health_shim_probe.py` |
 | **&#128308; `rf_claim_agreements` is the SAIRNcare `alf_claim_routes` defect again, both halves &mdash; an append-only chain of executed/rescinded contingency-agreement events, no server `order=`, no client sort, and `created_at` rendered DATE-ONLY** | **FOUND 2026-09-22 (Hank)** by the cross-app scan the SAIRNcare fix left as an open item. **NOT FIXED** &mdash; `api/sd-data.js` is held by cody (sairnsenior EVV) and the display half alone leaves the | `tests/run_append_only_read_order_probe.py` |
@@ -630,15 +631,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 629 of 719 traced, 87.5%.
+For context and not as the headline: 630 of 720 traced, 87.5%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 629 citations come from
+### Where the 630 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 308 |
+| `index` | 309 |
 | `declared` | 267 |
 | `declared+index` | 45 |
 | `GUARD_TESTS+index` | 6 |
@@ -765,8 +766,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 719   tests/**, api/** (both walked)
-  open-work rows citing a test       347   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 720   tests/**, api/** (both walked)
+  open-work rows citing a test       348   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  9   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
