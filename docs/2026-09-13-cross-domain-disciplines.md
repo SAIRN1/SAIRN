@@ -1,4 +1,4 @@
-# Cross-domain disciplines — eight standing conventions for any checker built here
+# Cross-domain disciplines — nine standing conventions for any checker built here
 
 **Read this before building any checker, probe, gate or tool.** These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
@@ -341,12 +341,60 @@ and a cron that cannot perform the capture will report drift it cannot fix.
 
 ---
 
-## The failure mode seven of the eight share
+## 9. Verification rigor follows what the artifact IS, not what the team is like
+
+**The convention: before deciding how much verification an item deserves, ask
+whether the thing under test IS the expensive, irreplaceable artifact, or a
+cheap stand-in for it. The real, costly thing earns exhaustive verification;
+the genuinely cheap-to-rebuild thing legitimately earns faster, iterative
+treatment — and the decision is recorded as a fact about the ARTIFACT, never
+as a preference about process.** (Methodology item 97, added 2026-09-25.)
+
+From the SpaceX-versus-NASA comparison, read past its usual telling. The two
+organizations' testing philosophies are routinely explained as culture — move
+fast versus measure twice — and that explanation predicts nothing. What
+predicts everything is what was on the stand: a Starship prototype is cheap
+relative to the program and REPLACEABLE, so letting it fail is a measurement
+strategy; a crewed capsule or a one-shot space telescope IS the artifact, so
+exhaustive ground verification is the only rational posture. Same physics,
+same era, opposite rigor — because the COST OF THE TESTED THING differs, not
+the engineering taste. NASA itself iterates fast on cheap simulators and
+mockups; SpaceX tests crew-rated hardware exhaustively. Each organization
+holds both postures at once, keyed to the artifact.
+
+**Applied here, this is what the criticality tiers have been reaching for
+without the basis stated.** Tier A deserves exhaustive verification — driven
+suites, mutation controls, independent review, live checks — because a Tier A
+resource IS the real, irreplaceable thing: a customer's money record, a
+controlled-substance log, an executed signature. Losing or corrupting one is
+not a rebuild, it is a loss event. A report-only checker that gates nothing,
+an internal dev script, a probe fixture — these are cheap stand-ins:
+rebuilding one costs an afternoon and corrupting one costs a wrong report
+somebody re-runs. Iterating fast on those is not lowered standards, it is the
+same standard correctly priced.
+
+**The question to ask, verbatim, before assigning rigor to any future item:**
+*is this the real costly thing, or a cheap stand-in for it?* Two honest
+corollaries. First, the answer can CHANGE — a report-only checker that gets
+promoted into a push gate stops being a cheap stand-in the day it can block a
+release, and its verification debt comes due then, not never (this platform's
+own promotion-is-earned convention already encodes half of this). Second, the
+trap runs both ways: exhaustive verification of a cheap stand-in wastes the
+attention Tier A needed (rigor theater), and iterative treatment of the real
+artifact books the rebuild cost as if it were an afternoon (the direction
+every incident in this file's registers points).
+
+---
+
+## The failure mode seven of the NINE share
 
 Seven of these conventions defend against the same thing: **a check that reads as
-coverage and structurally cannot fire.** (Item 7 is the exception and is worth
-holding separately — it defends against a correct thing moved into a context
-where its assumptions no longer hold, which none of the others would catch.) A criterion tuned to the data.
+coverage and structurally cannot fire.** (Items 7 and 9 are the exceptions and are worth
+holding separately. Item 7 defends against a correct thing moved into a context
+where its assumptions no longer hold, which none of the others would catch;
+item 9 is upstream of every check — it prices how much rigor an item deserves
+before any check exists, so it cannot share a failure mode with the checks it
+sizes.) A criterion tuned to the data.
 A score that averages away the half that broke. A rate over a denominator
 nobody stated. An alarm set at the cliff edge. A validation fed by its own
 subject. A replication that shares a blind spot. An anchor that quietly stopped

@@ -197,7 +197,7 @@ looks.
 ## Skills — read them, don't rely on trigger-word matching
 
 **BEFORE BUILDING ANY CHECKER, PROBE, GATE OR TOOL, read
-`docs/2026-09-13-cross-domain-disciplines.md`.** Eight standing conventions, each
+`docs/2026-09-13-cross-domain-disciplines.md`.** Nine standing conventions (the ninth, 2026-09-25: verification rigor follows what the artifact IS -- the real costly thing earns exhaustive verification, a cheap stand-in earns iteration), each
 paid for by a real defect: lock a check's criteria against synthetic fixtures
 before running it on real data; report accuracy and stability as two numbers,
 never one; publish a named uncertainty table rather than a combined figure; set
