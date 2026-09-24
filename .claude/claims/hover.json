@@ -18,8 +18,8 @@
       "task": "editor-review pass -- a report self-check tool in the hover skill scope, fixture-locked, validating a report's own citations line numbers and ref hashes against current source FILES: .claude/skills/sairn-hover-auditor/",
       "claimed_at": "2026-09-24T14:49:17Z",
       "claimed_at_epoch": 1790261357.707963,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T15:10:57Z",
       "files": null
     }
   ]
