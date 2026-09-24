@@ -51,7 +51,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairndesign';
@@ -72,7 +73,7 @@ const PROVISIONING_LABEL = 'an Owner';
 // 'admin'/'manager' role exists here) -- needs the same broad client
 // visibility 'owner' has for scheduling/invoicing, same reasoning as
 // StoneDesk's EMPLOYEES_READ_DENIED_ROLES / CRM_MANAGEMENT_ROLES split.
-const MANAGEMENT_ROLES = { owner: true, office: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, office: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

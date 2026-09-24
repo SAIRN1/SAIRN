@@ -168,4 +168,11 @@ if __name__ == '__main__':
         # register is staged for the same reason -- the re-tier and the arm
         # asserting it land together, so at HEAD the row still reads B and the
         # baseline would go red against a document nobody had changed yet.
-        stage=(API, TIERS)))
+        # api/_lib/auth.js joined 2026-09-24: api/sd-data.js now calls
+        # roleSet() from it (the platform-wide null-prototype role-map
+        # sweep), so a staged sd-data.js run against a HEAD copy of auth.js
+        # that does not export it dies at require() and the baseline goes red
+        # for a reason that has nothing to do with the exec channel. An
+        # unstaged DEPENDENCY of a staged file is the same gap as an unstaged
+        # file.
+        stage=(API, TIERS, os.path.join('api', '_lib', 'auth.js'))))

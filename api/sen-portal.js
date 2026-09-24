@@ -52,11 +52,11 @@
 
 const crypto = require('crypto');
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 
 const ACTIONS = ['create', 'revoke', 'list', 'view'];
-const MANAGEMENT_ROLES = { owner: true, billing: true };
-const BROAD_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+const BROAD_ROLES = roleSet({ owner: true, billing: true, coordinator: true, scheduler: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

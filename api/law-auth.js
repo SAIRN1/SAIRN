@@ -108,7 +108,8 @@ const {
   encryptSecret, decryptSecret,
   oidcConfigured, generatePkcePair, oidcDiscoverEndpoints, oidcAuthorizationUrl,
   oidcExchangeCode, oidcVerifyIdToken, signSsoState, verifySsoState,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 // AI Chain of Custody server-side capture (2026-08-13): callAnthropic() and
 // the demo-limit helpers are imported directly from api/claude.js (an
@@ -143,7 +144,7 @@ const ACTIONS = [
 // authenticated role may trigger an AI interaction (ai_generate) -- everyone's
 // usage gets logged the same way, only the review/attestation actions are
 // role-gated.
-const AI_COC_REVIEW_ROLES = { owner: true, attorney: true };
+const AI_COC_REVIEW_ROLES = roleSet({ owner: true, attorney: true });
 const AI_PROMPT_RESPONSE_CAP = 20000;
 // Separate, smaller cap for LIST-time preview length. AI_PROMPT_RESPONSE_CAP
 // above governs what's stored at INSERT time (ai_generate); this one governs what

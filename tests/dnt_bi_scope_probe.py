@@ -79,6 +79,11 @@ MUTATIONS = [
 ]
 
 if __name__ == '__main__':
-    sys.exit(run_probe(SUITE, MUTATIONS, stage=(SRC,),
+    # api/_lib/auth.js is staged 2026-09-24 because the file(s) above now
+    # call roleSet() from it -- the platform-wide null-prototype role-map
+    # sweep. The worktree is at HEAD, so an UNSTAGED DEPENDENCY of a staged
+    # file dies at require() and the BASELINE goes red before any mutation
+    # is planted. Same gap as an unstaged file. Full account: api/_lib/auth.js.
+    sys.exit(run_probe(SUITE, MUTATIONS, stage=(SRC, os.path.join('api', '_lib', 'auth.js')),
                        title='negative control -- api/dnt-bi.test.js must refuse each way '
                              'the BI feed PHI scope can be undone'))

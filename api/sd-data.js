@@ -28,7 +28,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive, roleSet } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
@@ -262,7 +262,7 @@ function scTierAWriteRoles(resource) {
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
 // from the caller's own verified token) is allowed for every role and does
 // not consult this list -- see the employee_profile branch below.
-const EMPLOYEE_PROFILE_MANAGE_ROLES = { owner: true, admin: true };
+const EMPLOYEE_PROFILE_MANAGE_ROLES = roleSet({ owner: true, admin: true });
 // Word-frequency cap for the shared_knowledge topics map (2026-08-05) -- pruned to the top N by
 // count on every write so a shop's row can't grow unbounded over the account's lifetime. See
 // sql/sd_shared_knowledge_schema.sql for the full design/scope note.
@@ -281,7 +281,7 @@ const SHARED_KNOWLEDGE_STOPWORDS = {
 // design in sql/sd_employee_auth_schema.sql. Manager additionally gets
 // hourly_rate stripped from the response (see EMPLOYEES read branch below)
 // — only Owner sees pay.
-const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
+const EMPLOYEES_READ_DENIED_ROLES = roleSet({ sales: true, install: true });
 // Roles allowed to WRITE the employees resource (added 2026-08-03, closing
 // the security-auditor finding that this branch used to trust an unverified
 // body.app_id==='sairnbiz' string with no role check at all). Write access
@@ -293,13 +293,13 @@ const EMPLOYEES_READ_DENIED_ROLES = { sales: true, install: true };
 // employee records in SAIRNbiz's own role model; accounting/manager/staff
 // do not get write access here (a default call, flagged as adjustable
 // rather than blocking on it).
-const EMPLOYEES_WRITE_ALLOWED_ROLES = { owner: true, hr: true };
+const EMPLOYEES_WRITE_ALLOWED_ROLES = roleSet({ owner: true, hr: true });
 // CRM/Lead Pipeline privacy (2026-08-19, confirmed with Michael): a lead is
 // visible only to management or the salesperson it's assigned to, platform
 // rule not a StoneDesk-specific one-off -- see sql/sd_crm_schema.sql's own
 // header. 'admin' is StoneDesk's Manager role (matches EMPLOYEES_* above
 // and api/sd-auth.js's own "Only Owner or Manager" setup-action gate).
-const CRM_MANAGEMENT_ROLES = { owner: true, admin: true };
+const CRM_MANAGEMENT_ROLES = roleSet({ owner: true, admin: true });
 // Void/override/QC-decision hard-gate role lists (2026-08-07) -- server-side
 // mirror of each client's own authority-check role arrays (sairngrounds.html's
 // GRD_QC_AUTHORITY_ROLES/MSB_VOID_AUTHORITY_ROLES, sairnscape.html's
@@ -4465,7 +4465,7 @@ module.exports = async (req, res) => {
     // StoneDesk's sd_crm and shared_knowledge's sairnlegacy carve-out were done. Every other
     // sdn_ resource (projects, spec items, moodboards, etc.) is unaffected, still fully
     // generic/ungated -- this rule is specifically about client/lead data, not the whole app.
-    const SDN_CLIENT_MANAGEMENT_ROLES = { owner: true, office: true };
+    const SDN_CLIENT_MANAGEMENT_ROLES = roleSet({ owner: true, office: true });
     if (resource === 'sdn_clients' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairndesign');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -4539,7 +4539,7 @@ module.exports = async (req, res) => {
     // (which was retrofitted onto an existing generic resource), bld_bids never had ANY server
     // sync before this, so there is no generic-loop fallback registered for it anywhere else in
     // this file -- this branch is the only code path that ever handles this resource.
-    const BLD_BID_MANAGEMENT_ROLES = { owner: true, office: true };
+    const BLD_BID_MANAGEMENT_ROLES = roleSet({ owner: true, office: true });
 
     // ── SAIRNBUILD: RETAINAGE CAN NOW COME BACK OUT (2026-09-14) ─────────────
     // Competitive-gap audit B2, and the audit's own sentence is the whole
@@ -4891,7 +4891,7 @@ module.exports = async (req, res) => {
     // only ever writable by the subject themselves, including for a management-role caller
     // assessing THEIR OWN self-perspective -- self-report integrity, nobody fills it out on
     // someone else's behalf, matching the instrument's own single-rater design for that half.
-    const BLD_TNA_MANAGEMENT_ROLES = { owner: true, office: true };
+    const BLD_TNA_MANAGEMENT_ROLES = roleSet({ owner: true, office: true });
     if (resource === 'bld_tna' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -4978,8 +4978,8 @@ module.exports = async (req, res) => {
     // this app, so "broad caseload visibility" is implemented as full agency-wide READ (their
     // effective caseload is the whole roster, absent any per-team structure) -- but NOT
     // reassignment rights, which stay exactly where they were confirmed: management-only.
-    const SEN_CLIENT_MANAGEMENT_ROLES = { owner: true, billing: true };
-    const SEN_CLIENT_BROAD_READ_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+    const SEN_CLIENT_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+    const SEN_CLIENT_BROAD_READ_ROLES = roleSet({ owner: true, billing: true, coordinator: true, scheduler: true });
     if (resource === 'sen_clients' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -5195,7 +5195,7 @@ module.exports = async (req, res) => {
     // client (re)assignment which stays management-only. EVV fields (clock in/out, GPS, service
     // notes) are writable ONLY by the assigned caregiver, and only on a visit that already
     // exists -- nobody schedules a visit by clocking into it.
-    const SEN_VISIT_SCHEDULER_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+    const SEN_VISIT_SCHEDULER_ROLES = roleSet({ owner: true, billing: true, coordinator: true, scheduler: true });
     // `service_type` IS A SCHEDULING FIELD, NOT AN EVV ONE, and the split is
     // the decision rather than the list. Federal EVV element 1 (42 U.S.C.
     // §1396b(l)(5)(A)(i)) is WHAT SERVICE the visit is for -- that is decided
@@ -5341,7 +5341,7 @@ module.exports = async (req, res) => {
     if (resource === 'sen_visits' && action === 'readiness') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const SEN_READINESS_ROLES = { owner: true, billing: true, coordinator: true, scheduler: true };
+      const SEN_READINESS_ROLES = roleSet({ owner: true, billing: true, coordinator: true, scheduler: true });
       if (!SEN_READINESS_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'EVV readiness is available to management, coordinators and schedulers' } }); return; }
 
       const vr = await fetch(rest('sen_visits?license_hash=eq.' + enc(licHash) + '&select=visit_id,assigned_employee_id,data'), { headers });
@@ -5887,10 +5887,10 @@ module.exports = async (req, res) => {
     //     identical shape to sen_clients' caregiver tier and bld_bids' original fix.
     // NULL assigned_employee_id = unassigned, management-only-visible, same default as every
     // prior app's assignment gate.
-    const ALF_MANAGEMENT_ROLES = { owner: true, billing: true };
-    const ALF_EDIT_ROLES = { owner: true, billing: true, nursing: true };
-    const ALF_READ_ONLY_BROAD_ROLES = { activities: true };
-    const ALF_BROAD_READ_ROLES = { owner: true, billing: true, nursing: true, activities: true };
+    const ALF_MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
+    const ALF_EDIT_ROLES = roleSet({ owner: true, billing: true, nursing: true });
+    const ALF_READ_ONLY_BROAD_ROLES = roleSet({ activities: true });
+    const ALF_BROAD_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true, activities: true });
     // Level-of-care history (2026-08-21, Phase 0 item 1) -- management-only write given the
     // direct billing consequence (generateInvoice() prorates a resident's monthly care charge
     // off this exact history), enforced below even for nursing, which can otherwise edit every
@@ -9101,12 +9101,12 @@ module.exports = async (req, res) => {
     // general alf_clients write path. Real research pass (not assumed) run
     // before building this -- no single uniform ALF standard exists for
     // any of these; see SAIRN-ACTIVE-WORK.md for full sourcing.
-    const ALF_MAR_ROLES = { owner: true, nursing: true, med_aide: true };
-    const ALF_MAR_BROAD_ROLES = { owner: true, nursing: true };
+    const ALF_MAR_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });
+    const ALF_MAR_BROAD_ROLES = roleSet({ owner: true, nursing: true });
     // medication_order/reconciliation/assessment_refusal are clinical-
     // decision entry types -- owner/nursing only, even though med_aide can
     // read them and can write the other two (routine execution) types.
-    const ALF_MAR_ORDER_ROLES = { owner: true, nursing: true };
+    const ALF_MAR_ORDER_ROLES = roleSet({ owner: true, nursing: true });
     const ALF_MAR_ENTRY_TYPES = ['medication_order', 'administration', 'count', 'reconciliation', 'assessment_refusal'];
     // ── AN APPEND-ONLY TRAIL READ WITHOUT order= IS NOT "INSERTION ORDER" ──────
     // Postgres makes no ordering promise on a SELECT that does not ask for one,
@@ -9524,7 +9524,7 @@ module.exports = async (req, res) => {
     // whoever-witnessed-it, gating this would discourage reporting) but only management/
     // nursing/billing may READ the log or UPDATE an existing report afterward -- the original
     // filer cannot go back and alter their own submission once it exists.
-    const ALF_INCIDENT_READ_ROLES = { owner: true, nursing: true, billing: true };
+    const ALF_INCIDENT_READ_ROLES = roleSet({ owner: true, nursing: true, billing: true });
     if (resource === 'alf_incidents' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -9607,7 +9607,7 @@ module.exports = async (req, res) => {
     // panel treating operational data as non-PHI), narrow-write (owner + activities only --
     // planning/running activities is the Activities Coordinator's own real job, the same
     // scope-of-practice reasoning that shaped alf_mar in the other direction).
-    const ALF_ACTIVITIES_WRITE_ROLES = { owner: true, activities: true };
+    const ALF_ACTIVITIES_WRITE_ROLES = roleSet({ owner: true, activities: true });
     if (resource === 'alf_activities' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
@@ -10062,7 +10062,7 @@ module.exports = async (req, res) => {
     // clinical oversight and is who actually chases an expiring certification), and a staff
     // member may always read their OWN records. Writes are management-only: a training record
     // is an assertion about someone's qualifications, and self-certification would defeat it.
-    const ALF_CRED_READ_ROLES = { owner: true, billing: true, nursing: true };
+    const ALF_CRED_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
     const ALF_COMPLIANCE_TYPES = { staffing: true, training: true, licensure: true };
     const ALF_CRED_RECORD_TYPES = { training_hours: true, credential: true };
     if (resource === 'alf_compliance_rules' && action === 'read') {
@@ -11614,8 +11614,8 @@ module.exports = async (req, res) => {
     // imported because sd-data.js does not require dnt-auth.js (that file is a
     // request handler, not a lib) -- if the two ever diverge, dnt-auth.js is the
     // source of truth and this is the copy to correct.
-    const DNT_MANAGEMENT_ROLES = { owner: true };
-    const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true };
+    const DNT_MANAGEMENT_ROLES = roleSet({ owner: true });
+    const DNT_FINANCIAL_ROLES = roleSet({ owner: true, frontdesk: true });
     const DNT_FINANCIAL_RESOURCES = {
       dnt_charges: true, dnt_payments: true, dnt_denial: true,
       dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true,
@@ -11655,7 +11655,7 @@ module.exports = async (req, res) => {
     // financial tier above. "No patients" and "you are not linked yet" are
     // completely different facts, and only one of them is worth showing a
     // clinician. A distinct code lets the client say which, and point at the fix.
-    const DNT_PATIENT_BROAD_READ_ROLES = { owner: true, frontdesk: true };
+    const DNT_PATIENT_BROAD_READ_ROLES = roleSet({ owner: true, frontdesk: true });
 
     // Resolves the caller to their dnt_providers row. Returns:
     //   { provisioned:false }              -> registry table not set up yet
@@ -13236,7 +13236,7 @@ module.exports = async (req, res) => {
       // never be reached by a request, and a branch that cannot fire is a
       // branch nobody maintains. The defect is in the CONFIGURATION, and a
       // configuration defect is visible without a request.
-      const LAW_RECONCILE_ROLES = { owner: true };
+      const LAW_RECONCILE_ROLES = roleSet({ owner: true });
       if (!LAW_RECONCILE_ROLES[recSess.role]) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Trust reconciliation is available to the firm owner' } });
         return;

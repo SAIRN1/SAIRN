@@ -34,7 +34,7 @@
 'use strict';
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 const medSchedule = require('./_lib/med-schedule');
 
 function supabaseHeaders() {
@@ -51,7 +51,7 @@ function bad(res, status, code, message) { res.status(status).json({ error: { co
 // Roles allowed to see who is late on medications. Same scope-of-practice
 // boundary alf_mar itself uses -- billing/activities/caregiver have no business
 // in a medication-administration exception report.
-const ALERT_ROLES = { owner: true, nursing: true, med_aide: true };
+const ALERT_ROLES = roleSet({ owner: true, nursing: true, med_aide: true });
 
 // `null` from here reaches a NO_WINDOW_POLICY refusal telling the facility to
 // "Set one in Settings" -- which, on a failed read, is an instruction to

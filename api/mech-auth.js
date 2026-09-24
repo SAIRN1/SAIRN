@@ -62,7 +62,8 @@
 const { validateLicenseKey } = require('./_lib/license');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairnmechanical';
@@ -75,8 +76,8 @@ const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'rost
 
 // See the tier note in the header. Exported shape kept deliberately simple so a
 // later split of 'estimator' is a one-line change here, not a gate rewrite.
-const MANAGEMENT_ROLES = { owner: true, admin: true };
-const AUTHENTICATED_ROLES = { owner: true, admin: true, sales: true, tech: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, admin: true });
+const AUTHENTICATED_ROLES = roleSet({ owner: true, admin: true, sales: true, tech: true });
 // Only 'owner' provisions or changes credentials. 'admin' runs the office but
 // does not mint identities -- deliberately narrower than StoneDesk, where both
 // owner and admin can, because a 20-100 person shop has one principal and the

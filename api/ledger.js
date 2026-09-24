@@ -34,7 +34,7 @@
 'use strict';
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 const ledger = require('./_lib/ledger');
 
 const IDENT_RE = /^[A-Za-z0-9_.:-]+$/;
@@ -43,7 +43,7 @@ const MAX_LINES = 200;
 
 // Posting to the general ledger is an accounting action, not an operational
 // one. Same tier as bonding limits and programme standing.
-const MANAGEMENT_ROLES = { owner: true, admin: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, admin: true });
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

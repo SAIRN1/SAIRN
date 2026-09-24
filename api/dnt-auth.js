@@ -128,7 +128,8 @@
 const { validateLicenseKey } = require('./_lib/license');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairndental';
@@ -141,8 +142,8 @@ const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'rost
 
 // See the tier note in the header. Exported shape kept deliberately simple so a
 // later split of 'estimator' is a one-line change here, not a gate rewrite.
-const MANAGEMENT_ROLES = { owner: true };
-const AUTHENTICATED_ROLES = { owner: true, frontdesk: true, provider: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true });
+const AUTHENTICATED_ROLES = roleSet({ owner: true, frontdesk: true, provider: true });
 // Only 'owner' provisions or changes credentials.
 //
 // CORRECTED 2026-08-29. This comment used to read "'admin' runs the office but

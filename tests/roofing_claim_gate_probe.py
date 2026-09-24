@@ -108,12 +108,17 @@ MUTATIONS = [
     # would have shown up in any behavioural arm above. They are planted here
     # because a fix whose control has never refused anything is indistinguish-
     # able from a fix that does nothing.
-    ("8. the role maps go back to a NORMAL prototype -- seesAllRows still "
-     "refuses an inherited name via hasOwnProperty, but the ~40 sites in "
-     "api/sd-data.js that index MANAGEMENT_ROLES/BROAD_READ_ROLES DIRECTLY all "
-     "start reading 'constructor' as a role again, and nothing at those sites "
-     "changed",
-     AUTH,
+    # ARM 8 MOVED FILE 2026-09-24, from api/rf-auth.js to api/_lib/auth.js.
+    # roleSet() lived in rf-auth.js for about an hour before the sweep found
+    # the same literal shape at 48 sites across 19 files and moved it to the
+    # shared module. The mutation is unchanged; only its address is. Left
+    # pointing at rf-auth.js it would have stopped matching, and a mutation
+    # whose anchor no longer matches is a control that silently stops testing.
+    ("8. the role maps go back to a NORMAL prototype -- one line in the SHARED "
+     "helper, and every one of the 48 role maps on the platform starts reading "
+     "'constructor' as a role again, including the ~40 sites in api/sd-data.js "
+     "that index them DIRECTLY. Nothing at any of those sites changed",
+     os.path.join('api', '_lib', 'auth.js'),
      "  const m = Object.create(null);",
      "  const m = {};"),
 
@@ -133,6 +138,13 @@ if __name__ == '__main__':
         # match them landed in the same change as the fix. The worktree is at
         # HEAD, so without this the baseline measures the OLD source against a
         # suite that expects the new one and goes red for the wrong reason.
-        stage=(AUTH, os.path.join('api', 'sd-data.js')),
+        # api/_lib/auth.js joined this list 2026-09-24: roleSet()/hasRole()
+        # moved there in the platform-wide sweep, so a staged rf-auth.js run
+        # against a HEAD copy of auth.js that does not export them dies at
+        # require() and the BASELINE goes red before any mutation is planted.
+        # An unstaged DEPENDENCY of a staged file is the same gap as an
+        # unstaged file, and the harness said so by name.
+        stage=(AUTH, os.path.join('api', 'sd-data.js'),
+               os.path.join('api', '_lib', 'auth.js')),
         title='SAIRNroofing claim gate -- the suite must refuse a predicate '
               'that has stopped being the same answer'))

@@ -54,11 +54,11 @@
 
 const bi = require('./_lib/dental-bi');
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 
 const TOKEN_TABLE = 'sairndental_bi_tokens';
 const AUTH_TABLE = 'sairndental_employee_auth';
-const MANAGEMENT_ROLES = { owner: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true });
 const MAX_TOKENS_PER_LICENSE = 25;
 
 function env() {

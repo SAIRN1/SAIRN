@@ -70,7 +70,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairnfreedom';
@@ -90,7 +91,7 @@ const PROVISIONING_ROLES = ['post.govern', 'post.govern.deputy'];
 // data, it is the access-control surface itself, and the finance officer
 // having the ledger does not make the roster theirs. Same reasoning
 // api/sc-auth.js records for excluding its `auditor` role.
-const MANAGEMENT_ROLES = { 'post.govern': true, 'post.govern.deputy': true };
+const MANAGEMENT_ROLES = roleSet({ 'post.govern': true, 'post.govern.deputy': true });
 // The SOLE capability -- one per post, from CAPABILITIES' `sole:true`. This is
 // what the last-governor guard counts, NOT the provisioning list, because a
 // deputy is not a substitute for the governor in the bootstrap-trapdoor sense.

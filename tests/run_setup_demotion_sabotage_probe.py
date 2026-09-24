@@ -126,5 +126,10 @@ sys.exit(run_probe(
     title='SAIRN: demoting the last holder of a sole role must be refused on '
           'the SETUP route too -- on all four apps, before the write, and '
           'without refusing a promotion or a PIN reset',
-    stage=tuple([LIB] + APPS),
+    # api/_lib/auth.js is staged 2026-09-24 because the file(s) above now
+    # call roleSet() from it -- the platform-wide null-prototype role-map
+    # sweep. The worktree is at HEAD, so an UNSTAGED DEPENDENCY of a staged
+    # file dies at require() and the BASELINE goes red before any mutation
+    # is planted. Same gap as an unstaged file. Full account: api/_lib/auth.js.
+    stage=tuple([LIB] + APPS + [os.path.join('api', '_lib', 'auth.js')]),
 ))

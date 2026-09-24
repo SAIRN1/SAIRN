@@ -52,7 +52,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairnbuild';
@@ -73,7 +74,7 @@ const PROVISIONING_LABEL = 'an Owner';
 // 'admin'/'manager' role exists here) -- needs the same broad bid
 // visibility 'owner' has, same reasoning as SAIRNdesign's
 // MANAGEMENT_ROLES split.
-const MANAGEMENT_ROLES = { owner: true, office: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, office: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

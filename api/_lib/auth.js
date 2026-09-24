@@ -40,8 +40,60 @@
 
 const crypto = require('crypto');
 
+// ── ROLE MEMBERSHIP SETS HAVE NO PROTOTYPE (2026-09-24) ────────────────────
+// Every app on this platform expresses "which roles may do X" as an object
+// literal indexed by the session's role: `MANAGEMENT_ROLES[session.role]`.
+// A plain object literal inherits every key on Object.prototype, so
+// `MANAGEMENT_ROLES['constructor']` is TRUTHY. Found in api/rf-auth.js and
+// reproduced live 2026-09-24; the same shape was then counted at 48 literals
+// across 19 files, which is the whole platform, not one app.
+//
+// WHAT IS ACTUALLY HOLDING ALL 48 INERT IS ONE CHECK, AND THAT IS THE POINT.
+// It is not the per-app provisioning allowlist (that only guards the setup
+// branch). It is verifySessionToken() below, which re-validates
+// `payload.role` against ROLES_BY_APP on EVERY verification -- so no session
+// object carrying an inherited name can reach any of the 48 maps. Measured,
+// not assumed: no session-shaped object anywhere in api/ is built from
+// request data; every one comes through that function.
+//
+// So this is a single point that 48 authorisation gates silently depend on.
+// Nothing at any of the 48 says so, and nothing at verifySessionToken says
+// it is load-bearing for them. Narrowing the vocabulary there, or adding one
+// caller that builds a session another way, opens all of them at once. Each
+// gate now refuses an inherited name on its own, so the central check is
+// defence in depth rather than the only defence.
+//
+// roleSet() TAKES THE LITERAL AND RETURNS A NULL-PROTOTYPE COPY, deliberately
+// rather than taking a list of names. Wrapping `roleSet({ owner: true })`
+// leaves the key set verbatim in the diff, so a 48-site sweep cannot silently
+// add or drop a role by transcription -- the failure mode a mechanical sweep
+// actually has. Every existing `MAP[role]` call site is fixed without being
+// edited, which is why this is a wrapper and not a rewrite.
+function roleSet(literal) {
+  const m = Object.create(null);
+  const src = literal || {};
+  for (const k of Object.keys(src)) m[k] = src[k];
+  return m;
+}
+
+// The explicit form, for a gate that wants to state the check rather than
+// rely on the map's prototype. Holds even if a map is ever rebuilt as a
+// plain literal, and refuses a non-string role instead of coercing it.
+function hasRole(set, role) {
+  return typeof role === 'string'
+    && Object.prototype.hasOwnProperty.call(set || {}, role)
+    && (set || {})[role] === true;
+}
+
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
-const ROLES_BY_APP = {
+// NULL-PROTOTYPE FOR THE SAME REASON, and this one is not theoretical: it is
+// indexed by `payload.app` at verifySessionToken. As a plain literal,
+// ROLES_BY_APP['constructor'] is a FUNCTION -- truthy, so it passes the
+// `!ROLES_BY_APP[payload.app]` guard, and then `.indexOf` on a function
+// throws. Not an authorisation bypass (the app name is signed into the
+// token), but a 500 where a null session was intended, from the one function
+// every gate on the platform depends on.
+const ROLES_BY_APP = roleSet({
   stonedesk: ['owner', 'admin', 'sales', 'install'],
   sairnbiz: ['owner', 'hr', 'accounting', 'manager', 'staff'],
   // Subcontractor Portal (2026-08-04): a DELIBERATELY separate app namespace,
@@ -261,7 +313,7 @@ const ROLES_BY_APP = {
     'member.admit', 'services.refer', 'legal.review', 'history.write',
     'ceremonial.manage', 'chaplain.pastoral'
   ]
-};
+});
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.
 const ROLES = ROLES_BY_APP.stonedesk;
@@ -903,7 +955,7 @@ function verifySsoState(token, expectedApp) {
 // is not `alf_*` though its endpoint is. A derivation would be wrong for at
 // least five of them and wrong SILENTLY -- a missing table reads as "no active
 // row", which would refuse every caller in that app.
-const AUTH_TABLE_BY_APP = {
+const AUTH_TABLE_BY_APP = roleSet({
   stonedesk: 'sd_employee_auth',
   sairnbiz: 'sb_employee_auth',
   sairngrounds: 'grd_employee_auth',
@@ -931,7 +983,7 @@ const AUTH_TABLE_BY_APP = {
   // a different one. Listing it here with the wrong key would refuse every
   // subcontractor; omitting it makes credentialStillActive() answer
   // NO_ACTIVE_CHECK, which the caller must handle rather than read as a pass.
-};
+});
 
 /**
  * Is the credential behind this session STILL active?
@@ -980,6 +1032,8 @@ async function credentialStillActive(session, licHash, rest, headers) {
 module.exports = {
   ROLES,
   ROLES_BY_APP,
+  roleSet,
+  hasRole,
   AUTH_TABLE_BY_APP,
   credentialStillActive,
   hashPin,

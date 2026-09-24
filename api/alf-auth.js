@@ -32,7 +32,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairncare';
@@ -52,7 +53,7 @@ const PROVISIONING_LABEL = 'an Owner';
 // 'billing' (Business Office) needs the same broad resident visibility
 // 'owner' has for private-pay/HCBS billing across the whole roster --
 // same reasoning as every other app's MANAGEMENT_ROLES split this session.
-const MANAGEMENT_ROLES = { owner: true, billing: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, billing: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

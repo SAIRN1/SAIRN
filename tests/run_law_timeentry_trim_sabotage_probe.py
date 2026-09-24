@@ -122,5 +122,10 @@ sys.exit(run_probe(
     title='SAIRNlaw: the billing code a time entry is JUDGED on must be the '
           'billing code it is STORED with -- including at the length bound, '
           'where the two differ in whether they pass',
-    stage=(LIB, SD),
+    # api/_lib/auth.js is staged 2026-09-24 because the file(s) above now
+    # call roleSet() from it -- the platform-wide null-prototype role-map
+    # sweep. The worktree is at HEAD, so an UNSTAGED DEPENDENCY of a staged
+    # file dies at require() and the BASELINE goes red before any mutation
+    # is planted. Same gap as an unstaged file. Full account: api/_lib/auth.js.
+    stage=(LIB, SD, os.path.join('api', '_lib', 'auth.js')),
 ))

@@ -33,10 +33,10 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 
 const RESOURCES = { roster: true, jobs: true, progress_photos: true };
-const WRITE_ALLOWED_ROLES = { owner: true, admin: true };
+const WRITE_ALLOWED_ROLES = roleSet({ owner: true, admin: true });
 
 // ── SUBCONTRACTOR COMPLIANCE (2026-09-01) ───────────────────────────────────
 // Closes the one StoneDesk row in the 2026-08-27 worldwide competitive pass

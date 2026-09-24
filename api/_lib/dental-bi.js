@@ -68,10 +68,14 @@
 // ---------------------------------------------------------------------------
 
 const crypto = require('crypto');
+// roleSet only -- this module deliberately does NOT depend on the session
+// layer, and importing one helper does not change that. See ./auth.js for why
+// a role membership set must not be a plain object literal.
+const { roleSet } = require('./auth');
 
 // -- ROLE GATES: mirrors of api/sd-data.js. Change both or neither. ---------
-const FINANCIAL_ROLES = { owner: true, frontdesk: true };
-const PATIENT_BROAD_READ_ROLES = { owner: true, frontdesk: true };
+const FINANCIAL_ROLES = roleSet({ owner: true, frontdesk: true });
+const PATIENT_BROAD_READ_ROLES = roleSet({ owner: true, frontdesk: true });
 
 // -- TYPE COERCION ----------------------------------------------------------
 // A CSV hands a BI tool text and lets it guess; guessing is how a practice ends

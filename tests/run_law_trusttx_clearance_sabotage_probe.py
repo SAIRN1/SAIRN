@@ -81,4 +81,9 @@ if __name__ == '__main__':
               'confirms a clearance the disbursement path never stored',
         # The suite is new and api/sd-data.js's guard is not committed when
         # this first runs, so both are staged; the worktree is at HEAD.
-        stage=(SUITE, SRC)))
+    # api/_lib/auth.js is staged 2026-09-24 because the file(s) above now
+    # call roleSet() from it -- the platform-wide null-prototype role-map
+    # sweep. The worktree is at HEAD, so an UNSTAGED DEPENDENCY of a staged
+    # file dies at require() and the BASELINE goes red before any mutation
+    # is planted. Same gap as an unstaged file. Full account: api/_lib/auth.js.
+        stage=(SUITE, SRC, os.path.join('api', '_lib', 'auth.js'))))

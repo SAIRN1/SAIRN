@@ -36,7 +36,7 @@
 'use strict';
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
 const connector = require('./_lib/accounting-connector');
 const vault = require('./_lib/token-vault');
 
@@ -47,7 +47,7 @@ const MAX_ID_LEN = 64;
 // commercial and contractual information about the business itself, not
 // operational data, so it sits at the same tier as programme standing and
 // bonding limits rather than being visible to a crew member.
-const MANAGEMENT_ROLES = { owner: true, admin: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, admin: true });
 
 function setCors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

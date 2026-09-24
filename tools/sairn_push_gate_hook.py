@@ -340,6 +340,31 @@ GUARD_TESTS = [
      'their gaps were row-level and an audit measured that claim false -- 2 of '
      'Utah\'s 9 rows and 2 of Nevada\'s 10 carried any omission note -- so a '
      'caller was told through neither channel.'),
+    ('tests/role_maps_have_no_prototype.js',
+     'not one of the role membership sets in api/ is a plain object literal, '
+     'so an inherited Object.prototype name can never index truthy as a role',
+     'FOUND IN api/rf-auth.js AND REPRODUCED LIVE 2026-09-24: '
+     'MANAGEMENT_ROLES was `{ owner: true, admin: true }`, so '
+     'MANAGEMENT_ROLES[\'constructor\'] was TRUTHY and a session carrying that '
+     'role passed seesAllRows() and every direct-index gate -- cross-assignee '
+     'read and write on rf_claims and rf_claim_photos, both Tier A. The shape '
+     'was then COUNTED at 48 literals across 19 files, which is the platform '
+     'rather than one app. ALL 48 WERE INERT FOR THE SAME DISTANT REASON: '
+     'api/_lib/auth.js\'s verifySessionToken() re-validates payload.role '
+     'against ROLES_BY_APP on every verification, so no session with an '
+     'inherited name reached any of them. That is ONE function 48 '
+     'authorisation gates silently depended on, with nothing at either end '
+     'saying so -- narrowing that vocabulary, or adding one caller that builds '
+     'a session another way, opens all 48 at once. THIS ENTRY IS HERE RATHER '
+     'THAN LEFT REPORT-ONLY because the defect is invisible by construction: '
+     'a new plain literal looks exactly like the 48 that were already there, '
+     'reads correctly, and fails only on names nobody writes. The suite uses '
+     'two structurally different methods -- a SOURCE scan (the only way to see '
+     'the 25 maps declared inside functions in api/sd-data.js, which are never '
+     'exported) and a RUNTIME check on the exported maps (the only way to '
+     'catch one built correctly and mutated after) -- and each carries a '
+     'negative control, because a regex that stopped matching produces exactly '
+     'the same clean output as a clean repo.'),
 ]
 
 

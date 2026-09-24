@@ -66,7 +66,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairnlegacy';
@@ -81,7 +82,7 @@ const LEG_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
 const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'grant_shared_knowledge_access', 'roster', 'set_active'];
-const MANAGEMENT_ROLES = { owner: true, director: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, director: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

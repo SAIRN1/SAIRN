@@ -87,7 +87,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
-  ROLES_BY_APP
+  ROLES_BY_APP,
+  roleSet
 } = require('./_lib/auth');
 
 const APP = 'sairnvet';
@@ -111,9 +112,9 @@ const PROVISIONING_LABEL = 'an Owner';
 // The credential roster is the access-control surface, not app data -- the same
 // reason api/sc-auth.js denies its read-only 'auditor' role. A Practice Manager
 // runs the office and legitimately needs it; a DVM does not.
-const MANAGEMENT_ROLES = { owner: true, manager: true };
+const MANAGEMENT_ROLES = roleSet({ owner: true, manager: true });
 // See the header. The witnessing lock on sv_controlled imports THIS.
-const PRESCRIBER_ROLES = { owner: true, dvm: true };
+const PRESCRIBER_ROLES = roleSet({ owner: true, dvm: true });
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

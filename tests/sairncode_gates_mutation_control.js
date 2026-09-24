@@ -95,8 +95,16 @@ const ROOT = path.join(__dirname, '..');
 // decides which resources may be destroyed lives in api/_resources/sairncode.js,
 // not in the handler, so a control that could only sabotage the handler could
 // not reach the one edit that reopens the whole finding -- emptying the list.
-const UNDER_TEST = ['api/sd-data.js', 'sairncode.html', 'api/_resources/sairncode.js',
-                    'tests/sairncode_gates.js'];
+// api/_lib/auth.js JOINED THIS LIST 2026-09-24 AND THE REASON IS THE LIST'S
+// OWN PURPOSE. The worktree is at HEAD; only the paths named here are copied
+// in from the working tree. api/sd-data.js started calling roleSet() from
+// api/_lib/auth.js in the platform-wide null-prototype role-map sweep, so the
+// staged sd-data.js was being run against a HEAD copy of auth.js that did not
+// export it -- "roleSet is not a function", and the baseline arm went red
+// before a single mutation was planted. That is the control working: an
+// unstaged DEPENDENCY of a staged file is the same gap as an unstaged file.
+const UNDER_TEST = ['api/sd-data.js', 'api/_lib/auth.js', 'sairncode.html',
+                    'api/_resources/sairncode.js', 'tests/sairncode_gates.js'];
 
 // ── THE CLONE'S OWN BYTES, RECORDED BEFORE ANYTHING HAPPENS ─────────────────
 // Hashed rather than kept in memory as text: the closing control's job is to
