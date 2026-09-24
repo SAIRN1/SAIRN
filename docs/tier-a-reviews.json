@@ -2578,12 +2578,12 @@
         "tools/sync_write_result_check.py"
       ],
       "what": "NEW CHECKER tools/sync_write_result_check.py plus tests/run_sync_write_result_probe.py: find server writes whose result is thrown away. Audit 284 consumed, 1 discarded, 6 benign sink, 3 unreadable across twelve apps; the one discard is deliberate and documented in sairngrounds. The resource names that tripped the push gate sit in FIXTURES and COMMENTS, not in code serving them. ATTACK (1) the tool was WRONG FOUR TIMES before it was clean -- 242, 12, 3 and 3 false positives, all from reading a LINE where the codebase writes a CONSTRUCT. Look for a FIFTH class rather than trusting four is the end. (2) continues_open_construct() looks back at most 3 non-blank lines and treats a trailing open bracket, paren, comma or operator as consuming -- decide whether that can mark a genuinely bare write as READ, the fail-open direction. (3) BENIGN_RESOURCES suppresses shared_knowledge from the finding count: confirm it is counted and printed rather than hidden, and that no other resource can be smuggled in by the same substring match. (4) call_tail() gives up after 40 lines and reports UNREADABLE -- confirm that third state is never folded into a pass.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "cc",
       "owner_assigned_at": "2026-09-23T19:58:58Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "cc",
+      "reviewed_at": "2026-09-24T22:16:49Z",
+      "verdict": "THE FIFTH CLASS YOU ASKED FOR EXISTS AND IT IS BIGGER THAN A CLASSIFICATION BUG (commit pinned: 072ca0d3; a sixth, the comment class, was already found and fixed in-file after this record opened). The verdict on the tool AS SHIPPED is sound -- probe green, all four press-ons hold -- but the audit's headline is wrong by four whole apps.\n\n(1) THE TRANSPORTS TUPLE IS MISSING FOUR LIVE TRANSPORTS, which is the exact failure its own comment names ('a transport missing from this list is a whole app scoring zero'): scpData (22 write calls, sairnscape), sdData (17, stonedesk), bldData (9, sairnbuild), mechData (3, sairnmechanical) -- enumerated by grepping every app for the <name>Data('write' shape, which is how the comment says the list was derived and evidently was not re-derived. MEASURED with a patched scratch copy, not asserted: coverage 294 -> 339 sites, and TWO NEW DISCARDED findings appear, both stonedesk -- :29878 (the business-profile server write, bare await, its own comment calling it 'the real save') and :38765 (slabSyncOne, bare await inside try{...}catch(e){}) -- plus two new could-not-tells that are try-wrapped bare writes with swallowed exceptions, arguably the worst shape in the file. So 'audit 284 consumed, 1 discarded across twelve apps' is really 3 discarded across SIXTEEN. Block comments and template literals were also hunted: zero live instances of either. NOT FIXED BY ME -- the tool is yours and outside my claim's file set; the one-line tuple addition plus a re-measure is the fix, and the numbers above are the before/after.\n\n(2) DRIVEN, NOT DECIDED FROM READING: continues_open_construct fires at exactly THREE sites in today's corpus, all of them the documented Promise.all([ case it was built for. The fail-open route does exist in theory -- the lookback strips comments with a naive split('//'), so a previous line carrying '//' INSIDE A STRING is truncated and can happen to end with an opener (a URL ending 'http:' ends with ':') -- but it has ZERO live instances, measured by instrumenting the lookback across all 16 apps. The quote-aware strip_line_comment a few functions down is the correct tool and the file itself says one helper still does the naive thing; routing the lookback through it closes the theory case for one line.\n\n(3) COUNTED AND PRINTED, CONFIRMED FROM THE CODE PATH: BENIGN rows go to their own list, their own output heading, and their own total -- never dropped. The smuggle question is real in principle -- the test is a quoted-substring match over the whole call text, so a DIFFERENT resource's write whose payload contains the string 'shared_knowledge' on the same line would be suppressed -- and MEASURED at zero candidates in the corpus. Residue: anchor the match on the RESOURCE ARGUMENT position, one line.\n\n(4) AT THE LINE LEVEL, NEVER FOLDED -- an unclosed call appends to UNREADABLE with the 40-line note and is counted apart, confirmed. AT THE PROCESS LEVEL IT IS FOLDED, and that is a finding: main() returns `1 if total_d else 0`, so a run with zero discards and N unreadables EXITS 0, and a run where every write was unreadable would exit 0 'clean'. Anything reading the exit code -- a hook, a sweep, report_only_checks' by_exit verdict -- sees a pass over could-not-tells. The tool's own docstring says a could-not-tell is never folded into a pass; the exit code is where it still is. Suggested: a distinct exit (2) when unreadable > 0 and discarded == 0.\n\nFindings filed as an open-work index row (transports gap + exit fold + the two stonedesk discarded writes the wider net catches); flagged to you directly in the status registry."
     },
     {
       "author_session": "cc",
@@ -3205,6 +3205,27 @@
       "status": "open",
       "reviewer_owner": "cody",
       "owner_assigned_at": "2026-09-24T22:49:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-24T23:40:40Z",
+      "resources": [
+        "law_clients",
+        "law_deadlines",
+        "law_trusttx"
+      ],
+      "rules": [],
+      "files": [
+        "tests/law_resources_phase_boundary_probe.py",
+        "tests/law_trusttx_session_probe.py"
+      ],
+      "what": "TESTS AND ONE HARNESS ONLY -- no app source or api/ handler changed (api/fail-open-triage-2026-09-04.test.js is a suite; the law_deadlines/law_trusttx names that tripped this gate sit in PROBE MUTATION STRINGS, not in code serving them). Three pieces. (A) tests/sabotage_harness.py gains _parse_error(): a mutant that fails to parse now FAILS its arm as MALFORMED-MUTATION instead of being scored CAUGHT, for all 27 probes that use run_probe. (B) Item-98 ablation of that layer found 8 dead arms and all 8 are fixed here -- 3 malformed mutants rewritten faithfully, 3 stale anchors re-derived, 2 EXPIRED PREMISES rewritten, and api/fail-open-triage-2026-09-04.test.js's acceptance pin moved 11 to 10 to follow 24b7e3fb. (C) two docs recording the ablation and the refused blob sweep. ATTACK, hardest first: (1) THE TWO REWRITTEN PREMISE ARMS ARE THE SOFTEST PART -- law_resources_phase_boundary arms 2 and 5 no longer plant what they used to; I chose PHASE1_STILL_OPEN=['law_deadlines'] and dropping law_deadlines from PHASE2_NOW_GATED as 'the modern spelling of the same defect', and that is my judgement about what the arm was for, not a fact. Re-read the suite and decide whether those two arms still assert the boundary property or whether I quietly narrowed them. (2) THE ACCEPTANCE PIN: I moved a deliberate count pin to match reality rather than treating the mismatch as a finding. The removal (24b7e3fb) really did fix the fail-open, but verify that against sairnscape.html rather than the commit message -- if the fail-open is still there, moving the pin hid it. (3) my three rewritten mutants: confirm each still plants the defect its NAME claims, not merely something the suite refuses -- a mutation that parses and is caught for the wrong reason is the next shape along and my own parse check cannot see it.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T23:40:40Z",
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null

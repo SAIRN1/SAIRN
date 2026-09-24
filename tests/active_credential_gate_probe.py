@@ -102,11 +102,21 @@ MUTATIONS = [
      "          console.warn('sd-data: active-credential re-check DID NOT RUN for app \"'",
      "          void ('sd-data: active-credential re-check DID NOT RUN for app \"'"),
 
+    # ── REWRITTEN 2026-09-25: THE ORIGINAL MUTANT DID NOT PARSE ────────────
+    # It replaced `try {` with `if (true) {` and left the `} catch` behind --
+    # an orphaned catch is a SyntaxError, so the suite was red about syntax,
+    # not about the un-guarded logging throw this arm claims to prove. The
+    # harness scored any red as CAUGHT until its 2026-09-25 parse check, whose
+    # first full run across the dependent probes exposed exactly this arm.
+    # Now a PAIR edit removes the try AND its catch together, which is the
+    # defect as a person would actually write it.
     ("6. the log loses its try/catch, so a logging failure throws out of the "
      "gate and refuses a caller for a reason that has nothing to do with them",
      API,
-     "        try {\n          console.warn('sd-data: active-credential re-check DID NOT RUN",
-     "        if (true) {\n          console.warn('sd-data: active-credential re-check DID NOT RUN"),
+     ["        try {\n          console.warn('sd-data: active-credential re-check DID NOT RUN",
+      "        } catch (e) { /* logging must never refuse a request */ }"],
+     ["          console.warn('sd-data: active-credential re-check DID NOT RUN",
+      ""]),
 
     ("7. a SECOND copy of the app-to-table map appears in sd-data.js. The map "
      "has no derivable rule -- four apps use a prefix, the rest the full name, "

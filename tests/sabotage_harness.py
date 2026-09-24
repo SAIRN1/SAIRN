@@ -128,6 +128,94 @@ def _carry_identity(wt):
     return name
 
 
+def _parse_error(wt, rel):
+    """Does the (mutated) file still PARSE? None when it does, or when this
+    cannot tell; a short reason string when it provably does not.
+
+    ── WHY (2026-09-25, methodology queue item after the 18:54:03Z review) ──
+    The per-mutation verdict below used to be `rc != 0`, full stop -- so a
+    mutant with a SYNTAX ERROR turned the suite red for a reason that is not
+    the rule, and the probe printed the same CAUGHT as a genuine refusal.
+    Eleven probes run through this function; none of them could tell the two
+    apart. api/sairndental/complaint-respond.test.js already states the
+    distinction inline ("the mutated validator still PARSES, so a caught arm
+    is the rule failing and not a syntax error") -- this puts it where every
+    probe inherits it.
+
+    A file this cannot parse-check (an extension with no checker here) answers
+    None WITH a printed note at the call site, never a silent pass -- the
+    could-not-tell is said aloud, it just is not an arm failure.
+    """
+    path = os.path.join(wt, rel)
+    if rel.endswith('.js'):
+        r = subprocess.run(['node', '--check', path], capture_output=True,
+                           text=True, encoding='utf-8', errors='replace')
+        if r.returncode != 0:
+            # The USEFUL line, not the last one -- node ends its stderr with a
+            # bare version footer, and the first run of this check quoted
+            # 'Node.js v24.16.0' as the whole reason.
+            errlines = (r.stderr or '').strip().split('\n')
+            named = [l for l in errlines if 'Error' in l]
+            return (named[0] if named else (errlines[0] if errlines else
+                                            'node --check failed'))[:160]
+        return None
+    if rel.endswith('.py'):
+        import ast
+        try:
+            ast.parse(io.open(path, encoding='utf-8', errors='replace').read())
+        except SyntaxError as e:
+            return 'SyntaxError: %s (line %s)' % (e.msg, e.lineno)
+        return None
+    if rel.endswith('.html'):
+        # The platform's own Check 0a rule: extract INLINE script blocks with a
+        # real HTML parser, node --check each. A mutation that breaks a script
+        # block is exactly the malformed-mutant this exists to name.
+        from html.parser import HTMLParser
+
+        class _P(HTMLParser):
+            def __init__(self):
+                HTMLParser.__init__(self, convert_charrefs=False)
+                self.blocks, self._in, self._buf = [], False, []
+
+            def handle_starttag(self, tag, attrs):
+                if tag == 'script' and not any(k == 'src' for k, _v in attrs):
+                    self._in, self._buf = True, []
+
+            def handle_endtag(self, tag):
+                if tag == 'script' and self._in:
+                    self.blocks.append(''.join(self._buf))
+                    self._in = False
+
+            def handle_data(self, d):
+                if self._in:
+                    self._buf.append(d)
+
+            def handle_entityref(self, n):
+                if self._in:
+                    self._buf.append('&' + n + ';')
+
+            def handle_charref(self, n):
+                if self._in:
+                    self._buf.append('&#' + n + ';')
+
+        p = _P()
+        p.feed(io.open(path, encoding='utf-8', errors='replace').read())
+        for bi, block in enumerate(p.blocks):
+            tmp = os.path.join(wt, '_parse_check_block.js')
+            io.open(tmp, 'w', encoding='utf-8', newline='').write(block)
+            r = subprocess.run(['node', '--check', tmp], capture_output=True,
+                               text=True, encoding='utf-8', errors='replace')
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            if r.returncode != 0:
+                return ('script block %d: ' % bi
+                        + (r.stderr or '').strip().split('\n')[-1][:140])
+        return None
+    return None                    # unknown extension -- caller prints the note
+
+
 def _unstaged_suspects(suite, stage):
     """Files this clone has modified, named by the suite, and NOT staged.
 
@@ -301,6 +389,25 @@ def run_probe(suite, mutations, title='', stage=(), carry_identity=False):
                 check(name, False, bad)
                 continue
             _write(wt, rel, cur)
+            # ── A MUTANT THAT DOES NOT PARSE PROVES NOTHING (2026-09-25) ────
+            # `rc != 0` below used to be the whole verdict, so a syntax error
+            # in the mutant printed the same CAUGHT as a genuine refusal --
+            # the suite was red about the PROBE'S typo, not about the rule.
+            # Distinguished now, and a malformed mutant FAILS the arm: a
+            # control that plants gibberish has not shown the suite refuses
+            # the defect it names.
+            if rel.endswith(('.js', '.py', '.html')):
+                perr = _parse_error(wt, rel)
+                if perr:
+                    check(name, False,
+                          'MALFORMED-MUTATION -- the mutant does not parse (%s). '
+                          'A red suite here would be about syntax, not the rule; '
+                          'rewrite the mutation so it parses.' % perr)
+                    _write(wt, rel, src)
+                    continue
+            else:
+                print('       (no parse check for %s -- unknown extension; a '
+                      'non-parsing mutant here would still read as CAUGHT)' % rel)
             rc, out = _run_suite(wt, suite)
             check(name, rc != 0,
                   'SILENT -- the suite passed with this defect planted')

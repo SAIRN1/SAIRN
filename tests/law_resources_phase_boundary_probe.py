@@ -41,16 +41,24 @@ MUTATIONS = [
      "an attorney trust ledger reachable on the licence key alone, and the "
      "suite's PHASE 2 arm is the only thing here that would notice",
      API,
-     "      'law_trusttx': ['read', 'write']\n    };",
-     "    };"),
+     # ANCHOR RE-DERIVED 2026-09-25: the entry stopped being the registry's
+     # last row when phase 2 added four more gates, so the trailing-brace
+     # anchor matched nothing and this arm sat ANCHOR-0 red on main.
+     "      'law_trusttx': ['read', 'write'],",
+     "      /* 'law_trusttx' entry removed -- licence-key-only again */"),
 
-    ("2. a still-open resource is gated EARLY -- law_deadlines joins the "
-     "registry before its phase-2 day, which fails a staff member with the app "
-     "already open. The boundary has to bite in the OTHER direction too, or it "
-     "only ever ratchets one way",
-     API,
-     "      'law_trusttx': ['read', 'write']",
-     "      'law_deadlines': ['read', 'write'],\n      'law_trusttx': ['read', 'write']"),
+    # PREMISE RE-DERIVED 2026-09-25: the phased rollout COMPLETED --
+    # law_deadlines is legitimately gated now (sd-data.js SD_SESSION_GATED),
+    # so planting it "early" planted current reality and the arm reported
+    # SILENT forever. The other-direction property survives in the suite as
+    # `PHASE1_STILL_OPEN = []` asserted empty, so the mutation now reopens a
+    # resource in that list -- the modern spelling of the same defect.
+    ("2. the boundary stops biting in the OTHER direction -- a resource is "
+     "declared still-open after the rollout completed, and the suite must "
+     "refuse the claim rather than absorb it",
+     SUITE,
+     "  const PHASE1_STILL_OPEN = [];",
+     "  const PHASE1_STILL_OPEN = ['law_deadlines'];"),
 
     # ── THE DERIVED LIST, WHICH IS THE PART THAT COULD GO VACUOUS ───────────
     ("3. the law_trust_reconcile branch is renamed away. BESPOKE is DERIVED "
@@ -70,19 +78,30 @@ MUTATIONS = [
      "    if (resource === 'law_clients' && action === 'read') {"),
 
     # ── AND THE ARM THAT KEEPS THE TWO PHASE LISTS HONEST ──────────────────
-    ("5. law_deadlines is dropped from the open list without being added to the "
-     "gated one. It falls out of the boundary entirely and the suite goes GREEN "
-     "having stopped asking about it -- the quiet failure the partition arm "
-     "exists for",
+    # PREMISE RE-DERIVED 2026-09-25: the pre-completion open list this arm
+    # quoted is gone (ANCHOR-0 on main). Same quiet failure, current shape:
+    # a resource falls out of the GATED list without landing anywhere, and
+    # the suite must notice it left the boundary rather than going green
+    # having stopped asking about it.
+    ("5. law_deadlines is dropped from the gated list without landing "
+     "anywhere. It falls out of the boundary entirely and the suite must not "
+     "go GREEN having stopped asking about it",
      SUITE,
-     "  const PHASE1_STILL_OPEN = ['law_clients', 'law_matters', 'law_deadlines'];",
-     "  const PHASE1_STILL_OPEN = ['law_clients', 'law_matters'];"),
+     "  const PHASE2_NOW_GATED = ['law_trusttx', 'law_clients', 'law_matters', 'law_deadlines'];",
+     "  const PHASE2_NOW_GATED = ['law_trusttx', 'law_clients', 'law_matters'];"),
 
+    # ── REWRITTEN 2026-09-25: THE ORIGINAL MUTANT DID NOT PARSE ────────────
+    # `[].concat([...new Set(` opened a paren nothing closed, so the suite
+    # died on Unexpected end of input -- red about syntax, not about the
+    # folded resource. Scored CAUGHT until the harness's parse check. The
+    # rewrite makes the derived BESPOKE list silently LOSE law_trusttx --
+    # what folding it into the generic map would actually look like from the
+    # suite's own computation -- and parses.
     ("6. a bespoke resource is folded into the generic map, dropping its "
      "promoted columns and, for law_trusttx, its balance guard",
      SUITE,
-     "const BESPOKE = [...new Set(",
-     "const BESPOKE = [].concat([...new Set("),
+     ")].filter((r) => !HANDLED[r]).sort();",
+     ")].filter((r) => !HANDLED[r] && r !== 'law_trusttx').sort();"),
 ]
 
 if __name__ == '__main__':

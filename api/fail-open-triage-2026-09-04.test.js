@@ -185,8 +185,14 @@ function main() {
     // near. Pinned exactly, and it fails upward too: a NEW acceptance is a new
     // fail-open somebody decided to keep, which is precisely the event this
     // file exists to put in front of a person.
-    assert.strictEqual(real.length, 11,
-      'the acceptance count moved: expected 11, found ' + real.length +
+    // 11 -> 10 on 2026-09-25, following 24b7e3fb (2026-09-18): the stale
+    // sairnscape acceptance was REMOVED because its fail-open was FIXED --
+    // exactly the decision this pin exists to put in front of a person, and
+    // the pin then sat unmoved for six days, holding this suite (and the
+    // sabotage probe frozen behind its red baseline) out of service. The
+    // decision is the commit; the pin follows it.
+    assert.strictEqual(real.length, 10,
+      'the acceptance count moved: expected 10, found ' + real.length +
       '. An acceptance added or removed is a decision, not a detail.');
     real.forEach((e) => {
       assert.ok(e.reason && e.reason.length > 40,

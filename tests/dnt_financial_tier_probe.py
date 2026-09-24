@@ -60,6 +60,10 @@ MUTATIONS = [
      "        res.status(200).json({ ok: true, data: [] });\n"
      "        return;\n      }\n      // Provider-scoped patient read.",),
 
+    # ANCHOR RE-DERIVED 2026-09-25: dadfedf4's platform-wide sweep wrapped
+    # all 48 role sets in roleSet({...}) for the null prototype, and this
+    # arm's bare-literal anchor went ANCHOR-0 red the same day. Same defect,
+    # current spelling.
     ("3. the role set widens to every dental role, so the tier exists and "
      "gates nobody",
      API,

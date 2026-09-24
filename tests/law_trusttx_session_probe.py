@@ -33,11 +33,15 @@ SUITE = os.path.join('api', 'sd-data-law-trusttx-session.test.js')
 API = os.path.join('api', 'sd-data.js')
 
 MUTATIONS = [
+    # ── ANCHOR RE-DERIVED 2026-09-25, same staleness as arm 4 below: the
+    # entry stopped being the map's LAST row when later gates were added, so
+    # the `...]\n    };` anchor matched nothing and this arm was ANCHOR-0 red
+    # on main. The mutation now removes the entry alone, wherever it sits.
     ("1. law_trusttx leaves the session registry entirely -- the pre-fix state, "
      "restored in one line",
      API,
-     "      'law_trusttx': ['read', 'write']\n    };",
-     "    };"),
+     "      'law_trusttx': ['read', 'write'],",
+     "      /* 'law_trusttx' entry removed -- ungated again */"),
 
     ("2. only the WRITE is gated -- the quiet half, because a readable trust "
      "ledger errors nowhere and looks like a working app",
@@ -51,12 +55,19 @@ MUTATIONS = [
      "      'law_trusttx': ['read', 'write']",
      "      'law_trusttx': ['read']"),
 
+    # ── ANCHOR RE-DERIVED 2026-09-25: SD_GATE_APP grew into a MULTI-LINE map
+    # (law_clients/matters/deadlines, then the sdn five) and the single-line
+    # literal this arm quoted matched NOTHING -- the arm was failing ANCHOR-0
+    # on main, the stale-anchor class the harness exists to refuse. The
+    # mutation now removes only the law_trusttx ENTRY, which is the same
+    # defect (this resource's expected app falls back to 'stonedesk') without
+    # asserting anything about the map's other rows.
     ("4. the expected app reverts to the hardcoded 'stonedesk' -- every "
      "correctly signed-in attorney is refused, and the obvious fix for THAT is "
      "to remove the gate",
      API,
-     "    const SD_GATE_APP = { 'law_trusttx': 'sairnlaw' };",
-     "    const SD_GATE_APP = {};"),
+     "      'law_trusttx': 'sairnlaw',",
+     "      /* 'law_trusttx' entry removed -- falls back to 'stonedesk' */"),
 
     ("5. the session is verified and its answer DISCARDED -- the call is right "
      "there, so review reads it as present",

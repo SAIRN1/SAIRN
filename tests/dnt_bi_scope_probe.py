@@ -36,12 +36,19 @@ MUTATIONS = [
      "again -- the refusal fires with the PHI already fetched",
      SRC, "  let patientIds = null;\n  if (scope.kind === 'patient_ids') {",
      "  let patientIds = null;\n  if (false && scope.kind === 'patient_ids') {"),
+    # ── REWRITTEN 2026-09-25: THE ORIGINAL MUTANT DID NOT PARSE ────────────
+    # Its replacement ended with a dangling `if (false) {` that nothing
+    # closed, so the suite went red on `Unexpected end of input` -- syntax,
+    # not the fall-through this arm claims to prove. Scored CAUGHT anyway
+    # until the harness's 2026-09-25 parse check exposed it. The rewrite is
+    # the defect as written by a person: the refusal is replaced by silently
+    # treating the failed lookup as an empty patient list.
     ("2. a FAILED scope lookup falls through instead of refusing, so an "
      "unknown patient list is treated as an empty one",
      SRC,
      "      res.status(502).json({ error: { code: 'SCOPE_LOOKUP_FAILED', message: 'Could not determine your patient list. Try again.' } });\n"
      "      return;\n    }\n    patientIds = {};",
-     "      patientIds = {};\n    }\n    patientIds = patientIds || {};\n    if (false) {"),
+     "      patientIds = {};\n    }\n    patientIds = patientIds || {};"),
     ("3. the provider_column scope stops filtering in the DATABASE, so an "
      "appointment blob for every provider is read to discard most of it",
      SRC,
