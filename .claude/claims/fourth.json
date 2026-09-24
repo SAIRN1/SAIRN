@@ -2335,6 +2335,24 @@
         "tools/defect_register.py",
         "tools/install_git_hooks.py"
       ]
+    },
+    {
+      "id": "fourth-1790255491",
+      "session": "fourth",
+      "subject": "sairnfreedom",
+      "task": "gate sf_signatures -- the last of the pair the 2026-09-22 finding named; plus three stale arms found by running them FILES: api/sd-data.js api/sd-data-sf-session-gate.test.js api/sf-session-gate.test.js tests/run_sf_session_gate_sabotage_probe.py docs/SAIRN-OPEN-WORK-INDEX.md docs/CRITICALITY-TIERS.md",
+      "claimed_at": "2026-09-24T13:11:31Z",
+      "claimed_at_epoch": 1790255491.986057,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "api/sf-session-gate.test.js",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_sf_session_gate_sabotage_probe.py"
+      ]
     }
   ],
   "refusals": [
