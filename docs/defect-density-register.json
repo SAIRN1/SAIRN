@@ -13718,6 +13718,104 @@
       "factors_unknown_reason": "Named in the obligation opened against this commit and not yet worked through by an independent session: the 'PT' name collision with the preventive modifier, and the fact that a panel listing what it checks gives no signal about what it does not."
     },
     {
+      "commit": "a23c6344c1b7",
+      "date": "2026-09-24",
+      "subject": "retier(h1-batch): seven rows read individually -- five promoted, one confirmed against a premise that died the day before, one register self-disagreement closed -- plus the two app defects the reads carried",
+      "files": [
+        "api/sd-data.js",
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "lines_added": 76,
+      "lines_removed": 26,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "hover-audit",
+      "summary": "api/sd-data.js's rf_buildings write handler upserted EVERY optional column on EVERY write, deriving each from a payload field the caller may not have sent: location_id as trim-or-null, `active` as `payload.active !== false` (absent resolves TRUE), notes and data likewise. The one live caller -- saveBuilding() in sairnroofing.html:4650 -- sends only {building_id, name, customer, address}, so RENAMING A BUILDING from the app silently overwrote its server-side location_id with null, detaching it from the location -> entity chain the capital forecast attributes roof sections through -- and the same rename silently REACTIVATED a deactivated building. Found by H1 (log #536) while reading the register row, whose evidence cell asserted the opposite (\"the app cannot set it wrong\" -- true only of the UI form) and cited api/sd-data.js:7164, a line number that had drifted 216 lines to the rf_bonding write. Fixed by omitting absent payload keys from the upsert body -- PostgREST merge-duplicates only updates the columns present in the posted row, so absent means leave-alone while a present value, including an explicit empty string, still writes. Driven three ways: the shipped rename payload posts a body carrying neither location_id nor active nor notes; an explicit assignment writes LOC-9/false; an explicit empty writes null. The register cell is corrected in the same commit, citation re-anchored to the construct rather than a line number.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "The unconditional full-row upsert shipped with the rf_buildings write handler; which commit introduced it needs the branch's history walked and was not established -- a guessed sha is a lag with a hash on it."
+      },
+      "citation_note": "2.3's family fits the register half exactly -- the evidence cell's safety claim and its line-number citation were both facts with a tense that nobody re-read. The handler half (absent-as-value) has no standing rule; cited arguable for the composite, with the handler half carried in the factors.",
+      "contributing_factors": [
+        {
+          "factor": "THE UPSERT TREATED ABSENT AS A VALUE. Every optional column was unconditionally derived from the payload, so the wire format had no way to say leave-this-alone -- absent, empty and null all collapsed to overwrite.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Absent keys are omitted from the posted row; merge-duplicates leaves omitted columns untouched. Present keys, including explicit empties, still write."
+        },
+        {
+          "factor": "TWO WRITERS WITH DIFFERENT FIELD SETS SHARED ONE FULL-ROW UPSERT. The building form writes four fields; the entity-assignment path writes location_id; the handler assumed every caller sends everything, which was true only when there was one caller.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The general sweep -- every merge-duplicates upsert in api/sd-data.js that derives optional columns unconditionally from payload -- is grep-able and unswept; it belongs to its own claim because each site needs its callers enumerated the way this one was."
+        },
+        {
+          "factor": "THE REGISTER ASSERTED THE SAFETY THE DEFECT LIVED BEHIND. The rf_buildings evidence cell said the app cannot set location_id wrong, a sentence true of the UI form and false of the handler that serves it -- so the row that existed to prompt scrutiny instead argued against it, and its supporting citation had drifted 216 lines.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The cell is rewritten with the lesson attached and the citation re-anchored to the construct (the rf_buildings select feeding bldLoc) rather than a bare line number."
+        }
+      ],
+      "recurrence_open": "The class is open platform-wide: every merge-duplicates upsert that unconditionally derives optional columns from payload is a rename-nulls-a-column site waiting for a second caller with a narrower field set, and nothing has swept api/sd-data.js for the shape -- this fix is one handler. The register's citation-drift half also recurs by construction (a bare line number into a 13k-line file five sessions edit), and citing the construct is convention, not enforcement."
+    },
+    {
+      "commit": "a23c6344c1b7",
+      "date": "2026-09-24",
+      "subject": "retier(h1-batch): seven rows read individually -- five promoted, one confirmed against a premise that died the day before, one register self-disagreement closed -- plus the two app defects the reads carried",
+      "files": [
+        "api/sd-data.js",
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "lines_added": 76,
+      "lines_removed": 26,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sb_perf -- a NAMED EMPLOYEE's performance review row: score, raise flag, PIP flag -- rode SAIRNbiz's generic dispatch, which requires a session and NO role, so any signed-in employee of any role (including `staff`) could read every coworker's review score and PIP status, and write one. Found by H1 (log #533) and corroborated independently by H2 (seq #217); the register had already recorded the sensitivity ON THE ADJACENT ROW -- sb_train's evidence cell cites sb_perf's data class -- while sb_perf's own cell still said \"no PII ... never individually read\", the register disagreeing with itself one row apart. Fixed with a bespoke role gate ahead of the generic dispatch: read AND write refused outside {owner, hr, manager} with 403 FORBIDDEN (the SAIRNsenior minimum-necessary pattern; accounting deliberately excluded -- its business is sb_ap, not personnel files), built on roleSet/hasRole like every role map since the constructor-role finding. Driven seven ways: owner/hr/manager 200, staff/accounting 403, no-session 401, and a control proving sb_incidents still answers 200 for staff. Verified non-breaking before gating: sbData() returns null on any non-ok and the panel falls back to local data. Tier updated B->A on confidentiality in the same commit.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "unknown_reason": "sb_perf joined SB_RESOURCES when the SAIRNbiz forms were built (10db5d3c area); the session-only generic gate predates the resource, so no single commit injected the mismatch -- it arose from the composition."
+      },
+      "citation_note": "No standing rule names role-vs-data-class mismatch; the nearest family is 2.3 for the register's self-disagreement (a recorded fact sitting on the wrong row). Cited arguable on that half.",
+      "contributing_factors": [
+        {
+          "factor": "THE GENERIC DISPATCH HAS ONE AUTH SHAPE FOR TWENTY RESOURCES. SB_RESOURCES gates on session only; a resource whose data class needs a ROLE answer had no way to say so short of a bespoke branch, and nothing prompts the question when a resource joins the map.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "sb_perf gets the bespoke branch. The general question -- which other generic-dispatch members hold data a coworker should not read -- is the confidentiality axis's job, and the register now answers it row by row."
+        },
+        {
+          "factor": "THE REGISTER KNEW ON THE WRONG ROW. sb_train's cell cited sb_perf's sensitivity as evidence while sb_perf's own cell carried the never-read boilerplate -- knowledge recorded where a reader of the subject row cannot see it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "sb_perf's cell now carries the read, the tier, and the gate; the self-disagreement is named in it."
+        },
+        {
+          "factor": "NO ROLE-VS-DATA-CLASS SWEEP EXISTS. SAIRNsenior role-gates the same class and nothing compares one app's answer to another's -- each app's gate exists because somebody read that app.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "A cross-app comparison (resources whose confidentiality is A and whose dispatch has no role narrowing) is derivable from the register plus the dispatch tables and is worth its own claim."
+        }
+      ],
+      "recurrence_open": "The gate covers sb_perf only; whether other SB_RESOURCES members (sb_hire's candidate records, sb_emps' HR data if present) need the same narrowing is per-row work the confidentiality axis will reach. Client-side, the Performance panel is not role-hidden -- a staff user still sees the panel and its local-only data; server refusal is the boundary, and whether the UI should also hide it is a product call nobody has made."
+    },
+    {
       "commit": "b0b9445f0194",
       "date": "2026-09-24",
       "subject": "fix(write-audit): the fifth false-positive class -- a call inside a comment is not a call",
