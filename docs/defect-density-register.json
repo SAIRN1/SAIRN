@@ -12849,6 +12849,59 @@
         }
       ],
       "recurrence_open": "Every other merge_policy validator on this platform is unchecked against the same question. docs/defect-density-register.json names defect_register.py --check, which happens to be a validity check, but nothing enforces that a declared validator answers soundness rather than content. A second ledger adopting a --list-shaped validator would reproduce this exactly."
+    },
+    {
+      "commit": "ebc79708c5f5",
+      "date": "2026-09-24",
+      "subject": "fix(security): the undecryptable-ciphertext logs named the wrong secret, and now name exactly one",
+      "files": [
+        "api/law-auth.js",
+        "api/sc-eligibility.js",
+        "docs/2026-09-24-sd-encryption-key-revoke.md"
+      ],
+      "lines_added": 35,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "Both undecryptable-ciphertext diagnostics named the wrong secret. api/law-auth.js (attorney MFA/TOTP secret) said \"tampered, or SD_AUTH_SECRET was rotated\" and api/sc-eligibility.js (stored Stedi API key) said \"SD_AUTH_SECRET rotated?\". True when written; false since 509a04f6 split the encryption duty out on 2026-09-17, after which a `v2.` ciphertext is AES-keyed on sha256(SD_ENCRYPTION_KEY) and fails for a reason SD_AUTH_SECRET has nothing to do with. These are the first lines an incident responder reads -- docs/2026-09-24-sd-encryption-key-revoke.md routes them straight here -- so the cost lands entirely during an incident, on somebody already under time pressure, pointing at a variable whose rotation would not have caused what they are looking at. Fixed by deriving rather than by naming both candidates: each site reads the `v2.` prefix off the stored value, the same discriminator decryptSecret() branches on, and names the one key that wrote that ciphertext. No behaviour change -- same 500 MFA_UNAVAILABLE and 503 CREDENTIAL_UNREADABLE, same client payloads; only the server log differs.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "509a04f653f7",
+        "date": "2026-09-17",
+        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
+        "lag_days": 7
+      },
+      "citation_note": "2.3 is cited with a stretch, and the stretch is the reason for this note. Its shape fits exactly -- a stated fact carries a tense, and goes stale when the world it describes changes rather than when anybody edits it -- but 2.3 is written about STANDING DOCUMENTS, and these two facts live in a comment and a console.error inside shipped source. Nothing in Part 1 or Part 2 covers a fact asserted in code that is read only by a human, and only during an incident. Cited as arguable rather than recorded not-citable, because the family is right and only the scope is being widened: a source comment that states which env var is at fault is a standing document with a smaller audience and no review cadence at all.",
+      "contributing_factors": [
+        {
+          "factor": "THE KEY NAME WAS A LITERAL IN THE MESSAGE, not derived from anything. Both sites hardcoded 'SD_AUTH_SECRET' in a comment and a console.error at a point where the code already had the stored ciphertext in hand -- the one value that actually answers which key wrote it. A message stating a fact it does not read cannot stay true across a change to that fact.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each site now reads the `v2.` prefix off the stored value -- the same discriminator decryptSecret() itself branches on -- and names the single key that wrote that ciphertext. The message is now derived from the same source as the behaviour, so the two cannot disagree again."
+        },
+        {
+          "factor": "THE 2026-09-17 SPLIT SWEPT BEHAVIOUR AND NOT PROSE. 509a04f6 changed which key decrypts and added the branch that decides, but the sweep stopped at code that ACTS on the key; the two call sites whose operator-facing text NAMED the key were left, and both still read as correct English about a system that had changed underneath them.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "No sweep tool was added here. The general form -- 'a message names an env var that a later change re-assigned' -- needs to know which key a code path actually uses, which is the hard half. The narrow form (an env-var literal inside a string or comment within a few lines of a decryptSecret() call) is cheap and buildable, and is recorded as a candidate rather than half-built inside a fix commit that declared two source files."
+        },
+        {
+          "factor": "NOTHING ASSERTS ON OPERATOR-FACING LOG TEXT. api/_lib/auth.test.js covers the format choice and key selection thoroughly -- v2 vs legacy, rotation, unset key -- so the split was well tested in exactly the dimension that went stale, and every one of those tests stayed green while both diagnostics pointed at the wrong variable. Log strings are read only by a human during an incident, which is the worst moment to discover they are wrong.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Pinning these two strings in a test would freeze the wording, not the truth of it: a test asserting the message says SD_AUTH_SECRET is exactly what the old text would have passed. What would actually bite is asserting the NAMED KEY MATCHES THE STORED FORMAT, which is the derivation this fix introduced -- so the fix removes the class rather than the test covering it."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
     }
   ],
   "started": "2026-09-09",
