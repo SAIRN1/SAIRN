@@ -63,28 +63,29 @@
 //   this does not require a license key -- adding that requirement would
 //   just trade a 404 for a 401, not fix anything live.
 //
-//   ── THAT LAST SENTENCE IS STALE AND IS CORRECTED HERE RATHER THAN
-//   ── DELETED (2026-09-24) ─────────────────────────────────────────────
-//   It was written while `pull` still existed, and the argument was about
-//   the pair: no caller authenticates, so requiring auth changes nothing.
-//   `pull` was then REMOVED on 2026-09-17 for a reason recorded twelve lines
-//   below -- `bridge_data.shop_id` is the customer's RAW LICENCE KEY, not a
-//   hash, and an unauthenticated reader holding one could read that shop's
-//   jobs, invoices and employees.
+//   ── THAT PARAGRAPH IS STALE AND MY FIRST CORRECTION OF IT WAS WRONG
+//   ── (2026-09-24, corrected the same day) ─────────────────────────────
+//   The paragraph above describes the pre-2026-09-17 posture and is no
+//   longer true of this handler. `handlePush` REQUIRES a licence: it answers
+//   401 NO_LICENCE with no Authorization header, validates the key, FAILS
+//   CLOSED with 503 if the licence store cannot answer, and refuses an
+//   invalid licence with 403. The upsert key is `license_hash`, renamed and
+//   rehashed in place by sql/bridge_data_rekey_2026-09-18.sql -- the raw
+//   licence key is no longer stored.
 //
-//   THE SAME FACT APPLIES TO THIS WRITE AND THE SENTENCE ABOVE STILL SAYS IT
-//   DOES NOT. Anyone holding a shop's licence key -- a string customers do
-//   not treat as a password -- can still OVERWRITE that shop's whole
-//   {jobs, invoices, employees} blob here, because the upsert key IS that
-//   string and nothing authenticates the caller. Whether that matters turns
-//   on what the blob is used for, which is the same question the `pull`
-//   removal answered in the read direction and nobody has asked in the write
-//   direction.
+//   AND THE CORRECTION THIS COMMENT FIRST CARRIED SAID THE OPPOSITE. It
+//   claimed anyone holding a licence key could still overwrite a shop's whole
+//   blob because nothing authenticated the caller. That was wrong on both
+//   counts, and it was written from the HEADER rather than from the handler
+//   sixty lines down -- which is the same mistake the header itself makes,
+//   committed by somebody correcting it. Caught within the hour by the push
+//   gate printing this file's own 401 NO_LICENCE oracle back at me.
 //
-//   NOT CHANGED HERE. Adding auth to a live endpoint with two live callers
-//   is a product decision with a real breakage cost, and this is a comment
-//   fix. What is fixed is that the file no longer argues, in its own voice,
-//   that the question was already settled.
+//   IT IS WRITTEN DOWN RATHER THAN QUIETLY REPLACED because a wrong security
+//   claim in a comment is worse than the stale one it replaced: the stale
+//   version understated the protection and would have prompted somebody to
+//   go and look, and mine overstated the exposure and would have sent them
+//   to fix something already fixed.
 //
 //   UPSERTS one row into the pre-existing `bridge_data` table
 //   (shop_id text primary key, data jsonb, updated_at timestamptz -- already
