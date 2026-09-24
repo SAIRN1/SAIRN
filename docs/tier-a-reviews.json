@@ -3033,6 +3033,37 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-24T19:45:38Z",
+      "resources": [
+        "sd_exec_msgs",
+        "sdn_contracts",
+        "sdn_projects",
+        "sdn_proposals",
+        "sdn_referrals",
+        "sdn_specitems",
+        "sdn_timeentries",
+        "sv_boarding",
+        "sv_clients",
+        "sv_farmcalls",
+        "sv_invoicing",
+        "sv_multisite",
+        "sv_petinsurance",
+        "sv_scribe_consent"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-cross-tenant-dispatchers.test.js"
+      ],
+      "what": "SAIRNvet + SAIRNdesign isolation arms (82159f54, 26186b12): six sv_ Tier A rows (sv_boarding, sv_clients, sv_farmcalls, sv_invoicing, sv_multisite, sv_petinsurance) and the four sdn promotions join the dispatchers suite's tables, closing their NONE buckets; dispatchers 397->417 arms. Also the scope probe's declaration arm stopped counting a comment as a driven resource. WHAT A REVIEWER SHOULD ATTACK: (1) every new row is table-driven through the same generic loop, so what each independently establishes is MEMBERSHIP -- confirm none of the ten has a bespoke read site outside the generic loop that these arms cannot see (the rf_locations lesson: six filtered reads, one driven); (2) the probe fix strips '//' lines before the member regex -- check a block comment (/* */) inside UNITS would still fool it, and whether that shape can occur in that table; (3) the NONE bucket still holds eight rows (grd_/msb_/sen_caregivers/sf_vehicle_service) with bespoke branches -- deliberately not claimed here, confirm that division is recorded and not silently dropped.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-24T19:45:38Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
