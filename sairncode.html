@@ -8345,6 +8345,7 @@ How to answer:
             kx:         'CMS Transmittal R13437CP, 2026 Annual Update of Per-Beneficiary Threshold Amounts — CY2026 KX threshold is $2,480 for PT and SLP COMBINED, and a separate $2,480 for OT; targeted medical review threshold is $3,000',
             cq:         'CMS MM12397 / CY2020 PFS final rule — the CQ modifier is required when a PTA furnishes more than 10% of a service; those services are paid at 85% of the otherwise applicable fee schedule amount (a 15% reduction of the FULL payment, not of the practice-expense component), effective 1 Jan 2022',
             gp:         'CMS Medicare Claims Processing Manual Ch. 5 (Part B Outpatient Rehabilitation and CORF/OPT Services), HCPCS coding requirement — every ALWAYS-THERAPY service carries the modifier for the plan of care it was furnished under: GP physical therapy, GO occupational therapy, GN speech-language pathology. A therapy line submitted without one is returned as unprocessable, so this is the modifier that stops a claim being adjudicated at all rather than one that changes what it pays. THE CHAPTER IS CITED, NOT A SUBSECTION: the rule is long-standing and unambiguous, the exact section numbering was NOT re-verified against CMS in this session, and a precise-looking citation nobody checked is worse than an honest one.',
+            gp_rtm:     'CY2022 Medicare Physician Fee Schedule final rule (86 FR 64996) — CMS designated the RTM code family SOMETIMES THERAPY: when an RTM service is furnished under a therapy plan of care it must carry the corresponding discipline modifier (GP physical therapy, GO occupational, GN speech-language), the same requirement always-therapy services carry flatly. STATED AT THE CONFIDENCE IT WAS VERIFIED AT: this rule is cited from reviewer knowledge of the CY2022 final rule and was NOT re-verified against a primary source in the session that added it — which is why the finding below is a WARN and not a block. Pin the Federal Register cite before ever escalating it.',
             mppr:       'APTA "Multiple Procedure Payment Reduction and the Physician Fee Schedule" — MPPR applies to the PRACTICE EXPENSE component of always-therapy services; the service with the highest PE RVU is paid at 100% and each remaining service at 50%, since 1 Apr 2013',
             rtm_2026:   'ASHA "CPT and HCPCS Code Changes for 2026" — the RTM set was expanded with 98979 (treatment management, first 10 minutes, at least one real-time interactive communication), 98984 (respiratory device supply 2-15 days), 98985 (musculoskeletal 2-15 days) and 98986 (cognitive behavioral therapy 2-15 days); the pre-existing device-supply codes now specify 16-30 days'
         };
@@ -8497,6 +8498,47 @@ How to answer:
                     }
                 });
             }
+
+            // --- RTM discipline modifier: a WARN, deliberately not a block ---
+            // ADDED 2026-09-24 from the independent review of the GP rule. The
+            // GP block above deliberately excludes RTM codes -- "whether a
+            // therapist-furnished RTM service takes a discipline modifier was
+            // not verified" -- and the review answered the question in the
+            // direction the silence did not cover: CMS designated the RTM
+            // family SOMETIMES THERAPY in the CY2022 PFS final rule, and a
+            // sometimes-therapy service furnished under a therapy plan of
+            // care carries the discipline modifier like any always-therapy
+            // service. Everything in THIS panel is a PT plan-of-care context
+            // by construction -- the same argument the GP rule itself makes
+            // for scoping to timed_minutes_by_code.
+            //
+            // A WARN AND NOT A BLOCK, at the confidence the finding was made
+            // at: the CY2022 rule is cited from reviewer knowledge, not from
+            // a primary source reached in-session, and blocking on an
+            // unverified rule refuses compliant claims -- the DMEPOS
+            // direction this app records getting wrong. Silence was the right
+            // call the day the GP rule shipped; it is not the right resting
+            // state now the question has a sourced answer. Escalating to a
+            // block requires pinning the Federal Register cite first.
+            //
+            // gp_applied_codes IS CONSULTED, so a coder who recorded GP on the
+            // RTM code is not warned about the thing they already did.
+            // Derived here rather than reusing the window section's `rtm`,
+            // which is declared BELOW this point -- var hoisting would make it
+            // undefined here and this block would throw on the first session
+            // that carried an RTM code.
+            var rtmForGp = (input.rtm_codes || []).map(function(c){ return String(c).trim().toUpperCase(); });
+            rtmForGp.forEach(function(c){
+                if (!SC_RTM_SHORT_WINDOW[c] && !SC_RTM_LONG_WINDOW[c]) return;
+                if (gpApplied.indexOf(c) !== -1) return;
+                findings.push(scPtFinding('warn', 'RTM code ' + c + ' has no GP recorded',
+                    'CMS designated the RTM family SOMETIMES THERAPY (CY2022 PFS final rule): '
+                    + 'furnished under a physical-therapy plan of care -- which is the whole '
+                    + 'context of this panel -- an RTM line carries GP like any always-therapy service. '
+                    + 'Verify against the current rule before submitting without it; this is a '
+                    + 'warning rather than a block because the rule was cited from review '
+                    + 'knowledge, not re-verified against a primary source.', 'gp_rtm'));
+            });
 
             // --- MPPR ranking, on the PE component ---
             var sameDay = input.same_day_codes || [];

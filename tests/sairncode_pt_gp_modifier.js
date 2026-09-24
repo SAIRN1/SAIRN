@@ -213,6 +213,81 @@ section('6. RTM codes are NOT swept into the rule -- the disclosed scope, driven
      + 'measuring scope and not a dead RTM check');
 }
 
+// ── 6b. THE RTM SILENCE BECAME A WARN, 2026-09-24 ────────────────────────
+// Section 6 above asserted the SILENCE, on the ground the question was
+// unverified. The independent review answered it: CMS designated the RTM
+// family SOMETIMES THERAPY (CY2022 PFS final rule), and everything in this
+// panel is a PT plan-of-care context by construction -- so an RTM line here
+// takes GP on CMS's own framing. Added as a WARN and not a block, at exactly
+// the confidence the review stated: the rule is cited from review knowledge,
+// not from a primary source reached in-session, and blocking on an unverified
+// rule refuses compliant claims. Section 6's arms still hold -- no BLOCK is
+// ever produced for an RTM line -- which is asserted here too, so an
+// escalation to block cannot land without a deliberate edit to both.
+section('6b. an RTM line with no GP now WARNS -- and never blocks');
+{
+  const r = run({ timed_minutes_by_code: {}, gp_applied_codes: [],
+                  rtm_codes: ['98985'], rtm_monitoring_days: 10 });
+  const w = r.findings.filter((f) => /RTM code 98985 has no GP/.test(f.rule));
+  ok(w.length === 1 && w[0].severity === 'warn',
+     'an RTM code with no GP produces exactly one WARN: '
+     + JSON.stringify(r.findings.map((f) => f.severity + ':' + f.rule)));
+  ok(r.blocking === 0,
+     'and it is NOT a block -- blocking on a rule cited from review knowledge '
+     + 'refuses compliant claims, the DMEPOS direction');
+  ok(/CY2022/.test(w[0].source || ''),
+     'the finding carries its CY2022 PFS source, so the confidence level '
+     + 'travels with the warning');
+  ok(/not re-verified|NOT re-verified|review knowledge/i.test(w[0].source || ''),
+     'and the source SAYS the cite is unpinned -- a precise-looking citation '
+     + 'nobody checked is worse than an honest one');
+
+  // GP recorded on the RTM code itself silences the warn.
+  const r2 = run({ timed_minutes_by_code: {}, gp_applied_codes: ['98985'],
+                   rtm_codes: ['98985'], rtm_monitoring_days: 10 });
+  ok(r2.findings.filter((f) => /RTM code .* has no GP/.test(f.rule)).length === 0,
+     'GP recorded on the RTM code silences the warn -- the coder who already '
+     + 'did the thing is not nagged about it');
+
+  // Only the KNOWN RTM family warns: an arbitrary code in the RTM field is
+  // not this rule's business.
+  const r3 = run({ timed_minutes_by_code: {}, gp_applied_codes: [],
+                   rtm_codes: ['12345'], rtm_monitoring_days: 10 });
+  ok(r3.findings.filter((f) => /RTM code .* has no GP/.test(f.rule)).length === 0,
+     'a code outside SC_RTM_SHORT/LONG_WINDOW gets no RTM-GP warn');
+
+  // NEGATIVE CONTROL: the warn is capable of being broken. Escalate it to a
+  // block in a mutated copy and the never-blocks arm above must be the one
+  // that would catch it -- proven by driving the mutant, not asserted.
+  // SRC and freshRun are section 8's locals, re-derived here the same way --
+  // grab() is top-level and cheap, and borrowing across block scopes is how
+  // an arm quietly starts depending on section ordering.
+  const SRC = grab('function scValidatePtSession(input){');
+  const freshRun = (mutatedSrc) => {
+    const c2 = {};
+    vm.createContext(c2);
+    for (const v of ['KX_THRESHOLD_2026', 'KX_MR_THRESHOLD_2026',
+                     'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW']) {
+      vm.runInContext(grabVar(v), c2);
+    }
+    vm.runInContext(grab('var SC_PT_SOURCES = '), c2);
+    vm.runInContext(grab('function scPtUnitsFromMinutes(totalMinutes){'), c2);
+    vm.runInContext(grab('function scPtFinding(sev, rule, detail, srcKey){'), c2);
+    vm.runInContext(mutatedSrc, c2);
+    return c2.scValidatePtSession;
+  };
+  const mutated = SRC.replace(
+    "findings.push(scPtFinding('warn', 'RTM code ' + c + ' has no GP recorded'",
+    "findings.push(scPtFinding('block', 'RTM code ' + c + ' has no GP recorded'");
+  ok(mutated !== SRC, 'ANCHOR: the escalation mutation planted nothing');
+  const fnMut = freshRun(mutated);
+  const rm = fnMut({ timed_minutes_by_code: {}, gp_applied_codes: [],
+                     rtm_codes: ['98985'], rtm_monitoring_days: 10 });
+  ok(rm.blocking > 0,
+     'CONTROL: the escalated mutant DOES block, so the never-blocks arm is '
+     + 'testing a live property rather than one nothing could change');
+}
+
 // ── 7. THE PANEL IS WIRED TO IT ───────────────────────────────────────────
 // A rule the form cannot reach is worse than no rule: it reads as covered.
 section('7. the panel field exists and reaches the validator');
