@@ -3169,6 +3169,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T22:35:41Z",
+      "resources": [
+        "stonedesk_quote_history",
+        "sv_scribe_consent"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-sv-session-gate.test.js",
+        "stonedesk.html",
+        "tests/tiered_pricing_commission.js"
+      ],
+      "what": "stonedesk.html, three commits: (1) item 92 refactor -- sdCommissionFor split into a pure core (sdCommissionForPure, takes TIERS and the override map as arguments) plus a one-line shell, and saveQuote's unshift/shift mutate-and-roll-back replaced with compute-commit-mutate; (2) .btn/.bo/.bp/.bsm CSS defined for 23 page-module buttons that had no rules; (3) test-fixture repointes. WHAT A REVIEWER SHOULD ATTACK: whether sdCommissionForPure behaves byte-identically to the old inlined version for every input class (especially null vs undefined override and the 0.5 upper bound); whether the in-place array swap (length=0 + push.apply) preserves every closure that holds quoteHistory by identity -- the storage-listener at :6079 is the pattern source; and whether any of the 23 buttons' new styling collides with a selector I did not audit (the collision audit covered class lists containing bare 'btn' only).",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T22:35:41Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
