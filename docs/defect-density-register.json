@@ -12829,6 +12829,53 @@
       "recurrence_open": "The actions close this app's role maps and this app's claim write. They do NOT close the nine other api/*.js files carrying the identical plain-literal shape -- each is inert or not for its own reasons and none has been checked. They also do not close the delete-list shape generally: every resource whose stored blob is built from the caller's payload minus an explicit list has the same \"a new field is stored unless somebody remembers\" property, and no check counts those. Nothing on this platform currently detects either shape; both were found by reading, and a second reader is not a control."
     },
     {
+      "commit": "3182e1feebe3",
+      "date": "2026-09-24",
+      "subject": "fix(probe): the sabotage control has been mutating the WRONG SC query, and reporting it as 24 broken arms",
+      "files": [
+        "tests/run_cross_tenant_dispatchers_sabotage_probe.py"
+      ],
+      "lines_added": 56,
+      "lines_removed": 14,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tests/run_cross_tenant_dispatchers_sabotage_probe.py locates each branch by its opener and DERIVES the read line as \"the first tenant filter at or below it, within 90 lines\" -- deliberately, so a typed line number cannot rot. On 2026-09-23 a `tombstones` action with its own license_hash-filtered query was added to the SAIRNcode branch and landed BETWEEN `if (isScResource) {` (line 13341) and the generic list read (13444). The first filter below the opener became the tombstones query at +81, which no isolation arm drives, while the read the control exists for sits at +103 -- past the tombstones line AND past the 90-line window. So the SC_RESOURCES mutation removed a tenant filter nothing tested and the control reported `24 arm(s) the mutation should have turned red stayed green`, which reads as twenty-four broken cross-tenant arms on SAIRNcode's Tier A billing resources. The arms are correct -- removing license_hash from 13444 by hand turns exactly those 24 red. The control did not fail silently; it failed LOUDLY ABOUT THE WRONG THING, which this file's own header names as the worse outcome, and for a day the only sabotage control over 23 Tier A sc_ resources was verifying nothing.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tombstones action that landed between the opener and the read is on 2026-09-23 and is identifiable, but the defect is in the PROBE's derivation rule, which was correct when written -- so naming the feature commit as the injection would credit the wrong change. The rule's own commit is the honest candidate and I did not establish which it is."
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE DERIVATION RULE ASSUMED ONE FILTERED QUERY PER BRANCH. `first tenant filter below the opener` is correct exactly while a branch has one such query. Nothing enforced that assumption and nothing stated it: the rule was chosen to avoid a typed line number rotting, and it replaced one kind of rot with a quieter one -- an anchor that still matches, on the wrong line.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A branch row may now carry a read MARKER -- a substring the read line must also contain -- so a branch with several filtered queries says which one is its read. SC's is `scSoftFilter`. A marker that matches nothing is a MISS and never falls back to proximity."
+        },
+        {
+          "factor": "A FEATURE LANDED INSIDE A BRANCH A CONTROL WAS ANCHORED ON, and there is no reason the author would have known. The tombstones commit added an action to api/sd-data.js; the control lives in tests/ and names no line numbers, so nothing connected the two. The window was documented as 90 with the reason 'SC is the widest real gap at 68 lines' -- a measured number that quietly became 103.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "The window is now 160 with the measurement and the date beside it, so the next reader can see when it was last checked rather than inferring it still holds. What is NOT built is anything that re-measures it; that is named in the recurrence note rather than claimed."
+        },
+        {
+          "factor": "IT WAS ONLY FOUND BECAUSE A REVIEW OBLIGATION ASKED FOR IT BY NAME. hank's own point (5) said to re-run the control rather than trust its summary, having been bitten once already by an anchor hitting a byte-identical branch. Nothing runs this probe automatically, so without that sentence the MISS would have sat until somebody happened to run it.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Promoting a ~10-minute sabotage probe into the push gate is a real cost decision for its owner, not a change to make inside a review discharge. Recorded so the choice is visible."
+        }
+      ],
+      "recurrence_open": "THE MARKER IS ON ONE ROW. Fourteen other branches still locate their read by proximity alone, and any one of them acquires this defect the moment a second filtered query is added above its read -- which is exactly what happened here, from an unrelated feature commit. Nothing measures how close any of them is to its window, and the count of branches with more than one license_hash-filtered query is UNMEASURED rather than one. Also open: READ_WINDOW is now 160 because 103 was measured today, and nothing re-measures it -- the previous number was 90 with '68 lines' written beside it and that sentence was true when written. And the probe is run by hand; nothing schedules it, so the gap between a control going blind and anybody noticing is however long it takes for somebody to be told to run it."
+    },
+    {
       "commit": "426b29a2a25a",
       "date": "2026-09-24",
       "subject": "fix(sairnfreedom): an executed signature was reachable on the licence key alone -- the second half of a pair closed by halves",
