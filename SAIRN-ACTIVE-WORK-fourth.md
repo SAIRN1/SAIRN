@@ -526,3 +526,41 @@ correction — stays in `SAIRN-ACTIVE-WORK.md`.
 - THE LIVE READ-BACK THAT hank's 2026-09-22T12:02:38Z OBLIGATION LEFT UNSETTLED, NOW SETTLED (Fourth, 2026-09-23). My discharge of that obligation said plainly that I had only schema-file evidence for `created_at` existing on `alf_mar` and `alf_incidents`, and that the obligation was right to call the live read-back the thing that would decide it. **DONE NOW, and it confirms the change.** Signed in live against `sairn.vercel.app/api/alf-auth` with the SAIRNcare demo owner (`ALF-TEST-2026` / `sairn-demo-owner`) and read all three through the deployed `api/sd-data`: **`alf_mar` 200 ok:true provisioned:true (2 rows), `alf_incidents` 200 provisioned:true (0 rows), `alf_claim_routes` 200 provisioned:true (0 rows)**. **THAT IS THE PROOF, and the deduction is worth stating rather than just the result:** if PostgREST had rejected `created_at` as an unknown order column it would answer 400, and the branch maps 400 to `{ok:true,data:[],provisioned:false}` -- so `provisioned:true` cannot be reached with an unresolvable order column. The column resolves server-side on both tables.
   **TWO PRECISIONS, because the result is not uniform across the two.** (a) `alf_incidents` returned ZERO ROWS, so the column RESOLVES but the ordering was never exercised on data -- that is a weaker confirmation than `alf_mar`'s and is not the same claim. (b) `alf_mar`'s two rows came back `ADM-V1` (administration) before `MED-V1` (medication_order), which is consistent with newest-first since an order precedes its administration -- corroborating, not proof, because the ids are not timestamps.
   **AND ONE THING THE LIVE READ FOUND THAT THE CODE READ DID NOT: the returned rows carry no `created_at` at all.** The select lists for `alf_mar` and `alf_incidents` omit it while the order clause depends on it, so **the client is ordered by a column it never receives and cannot verify the order it was handed.** That is the same asymmetry I flagged in the review as a widened surface, now confirmed from the other side: the caller has no way to check the ordering it is relying on.
+
+## 2026-09-24 — the ten-item queue, run end to end (Ted)
+
+All ten items closed on origin/main in one session; three turned out to be
+already done and were VERIFIED rather than rebuilt, which is recorded because
+"done" and "verified done" are different facts.
+
+1. **sf_signatures gated** (`3e22be44` line) — the second half of the
+   2026-09-22 pair. Three guard suites found RED on origin/main since
+   2026-09-22 by RUNNING them, repaired in the same commit.
+2. **Slab holds expire** — server-clock `reservedUntil`, lazy expiry, a
+   `release` verb that is not a way to take a slab, 8-mutation probe. An
+   absent deadline never reads as expired: the deploy-day mutation.
+3. **B2B tiers + per-agent commission** — Trade/Distributor added, keys never
+   renamed (saved quotes carry them), commission in integer CENTS after this
+   change's own test arm caught the dollars version drifting.
+4. **Measured AI-quote speed + waste calculator** — the "3-minute" claim is a
+   median the app measures of itself, refusing to state one under 5 samples;
+   the waste calculator shares calc()'s own factor, compared by a test arm.
+5. **SAIRNdental CDT versioning** — ALREADY DONE (landed via a8fe1485 et al);
+   handoff's "orphaned tbody" no longer reproduces: parser 0 problems, 28/28.
+6. **Wave 3 click-through** — ALREADY CLOSED by Cody 2026-09-23, 149/149.
+7. **dnt-rollup float money** — integer cents at the cell AND the totals line;
+   three arms each verified red on the old code.
+8. **sairnvet "not capped" banner** — completeness verified against
+   Content-Range now; three states, none folded (PR 1.11). H1 seq #512.
+9. **FAI four findings** — ALREADY CLOSED by cc (1fc1b5a8) mid-session.
+10. **primitive_obsession_check.py** — item 90 as three named shapes with a
+    fixture lock AND a shape-vanish backstop the probe forced into existence.
+
+STANDING NOTES FOR WHOEVER IS NEXT: `dnt_financial_tier_probe.py` arm 3,
+`api/sd-data-sv-session-gate.test.js` and `tests/sairnvet_server_backup.js`
+are red at origin/main baseline — pre-existing, not this session's, verified
+by stashing. Twelve StoneDesk buttons wear `class="btn bo bsm"` and none of
+those classes has a CSS rule. The seam check reports 18 standing
+could-not-tells around roleSet(). Review obligations opened: cody
+(sf-signatures batch, sairnvet completeness), hank (slab holds), cc
+(dnt-rollup cents).
