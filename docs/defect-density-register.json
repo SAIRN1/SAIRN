@@ -13951,6 +13951,58 @@
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
     },
     {
+      "commit": "f4945dd9e872",
+      "date": "2026-09-24",
+      "subject": "fix(sairncode): the RTM silence becomes a WARN -- CMS made the RTM family sometimes-therapy, and this panel is a PT plan of care by construction",
+      "files": [
+        "sairncode.html",
+        "tests/sairncode_pt_gp_modifier.js"
+      ],
+      "lines_added": 117,
+      "lines_removed": 0,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairncode.html's PT validator was SILENT on an RTM line with no discipline modifier. The silence was deliberate and disclosed -- the GP rule's author wrote 'whether a therapist-furnished RTM service takes a discipline modifier was not verified' and asserted the silence in an arm -- but the question has an answer in the direction the silence did not cover: CMS designated the RTM code family SOMETIMES THERAPY in the CY2022 PFS final rule, and a sometimes-therapy service furnished under a therapy plan of care carries the discipline modifier (GP/GO/GN) like any always-therapy service. Everything in this panel is a PT plan-of-care context by construction -- the same scoping argument the GP rule itself makes for timed_minutes_by_code -- so an RTM line entered here takes GP on CMS's own framing, and the panel said nothing. Found by the independent review of cc's GP obligation and fixed as a WARN, not a block, at exactly the confidence the finding was stated at: the CY2022 rule is cited from review knowledge, NOT re-verified against a primary source in-session, and the gp_rtm source entry says so in its own text so the confidence travels with every rendered finding. The vm drive also caught a scope hazard before it shipped: the first draft reused the window section's `rtm` variable, declared BELOW the insertion point -- var hoisting would have thrown on the first RTM-carrying session.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "982b093cfa13",
+        "date": "2026-09-24",
+        "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
+        "lag_days": 0
+      },
+      "citation_note": "2.3's family (a stated fact with a tense, never re-read) fits the disclosed-unknown half: 'not verified' was true the day it was written and stood while the verification became available. Cited arguable -- the instance is a judgement staying open rather than a fact going stale, which no rule names exactly.",
+      "contributing_factors": [
+        {
+          "factor": "A DISCLOSED UNKNOWN HAS NO ROUTE TO BECOMING A KNOWN. The original author verified what they could, declared the RTM question open in a comment and an arm, and nothing after that ever re-asked it -- an asserted silence reads as a settled decision, and it took a review obligation explicitly instructing 'check it' to reopen the question.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The review channel worked as designed here; the warn now carries the open half (pin the cite) inside its own source text where every future reader sees it."
+        },
+        {
+          "factor": "THE PANEL'S CONTEXT MAKES A GENERAL RULE SPECIFIC and nothing recorded that inference. Sometimes-therapy means 'depends on the plan of care' in general; in a PT panel the plan of care is fixed by construction, so the conditional collapses -- but that collapse lives in reasoning, not in any table the app holds.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The collapse is now written into both the warn's source entry and the rule comment, tied to the same argument the GP scope already makes."
+        },
+        {
+          "factor": "NO PRIMARY-SOURCE CHANNEL EXISTS IN-SESSION. Both the GP citation and this one are chapter-or-rule-level from knowledge because no session here reaches CMS or the Federal Register; every regulatory claim ships at reduced confidence and says so.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "A verified-citation workflow (fetch, pin, quote) is real work with its own risks (a precise-looking citation nobody checked); the platform's current convention -- cite at stated confidence, refuse to escalate until pinned -- is the honest interim and is applied here."
+        }
+      ],
+      "recurrence_open": "The cite is UNPINNED and the warn must not become a block until somebody reaches the CY2022 PFS final rule and pins it -- that instruction is in the source entry, the rule comment, and the review obligation opened over this change. The family boundary is inherited from SC_RTM_SHORT/LONG_WINDOW, maps built for the window rule; RTM setup and treatment-management codes get no warn and whether they should is undecided. And the general shape -- a disclosed unknown with no route back to being re-asked -- has no mechanism; this one was reopened only because a review obligation said to attack it by name."
+    },
+    {
       "commit": "f9b7522c5948",
       "date": "2026-09-24",
       "subject": "fix(controls): the rebase control was guarded all along, and a register count was counting itself",
