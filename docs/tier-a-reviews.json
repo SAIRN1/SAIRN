@@ -3229,6 +3229,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-24T22:26:05Z",
+      "resources": [
+        "sb_ap",
+        "sb_invs",
+        "sb_perf",
+        "sen_clients"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data.js"
+      ],
+      "what": "THE H1/H2 RETIER BATCH (a23c6344): seven register rows read individually -- sd_approvals A/A, law_picases A/A, law_clerequirements A/B, sc_pctc A/B, sb_perf A-conf, alf_signals A-conf, alf_activities A-conf, sb_vends confirmed B/B against a premise the previous day's fix had killed -- plus TWO app changes in api/sd-data.js: the rf_buildings absent-as-null upsert fix and the sb_perf role gate.\r\n\r\nATTACK THESE FIVE, hardest first:\r\n\r\n(1) THE rf_buildings FIX CHANGES UPSERT SEMANTICS FOR EVERY CALLER, not just the rename form. Absent keys are now omitted, so any caller that RELIED on absent-means-clear (sending a partial payload expecting other columns to reset) silently stops clearing. I enumerated callers by grep -- saveBuilding() and the entity-assignment path -- and drove three payload shapes; verify no third caller exists in sairnroofing.html or another suite's fixtures that depended on the old overwrite.\r\n\r\n(2) THE sb_perf GATE'S ROLE SET IS A JUDGEMENT: {owner, hr, manager}, accounting excluded. If accounting legitimately runs comp reviews in a real shop, the exclusion over-refuses. The SAIRNsenior precedent gates client PHI, not personnel records; decide whether the analogy carries or whether this needed a product decision recorded elsewhere first.\r\n\r\n(3) THE alf_activities CALL IS THE SOFTEST TIER JUDGEMENT IN THE BATCH -- attendance is the gentlest resident-linked fact, and I promoted on sibling precedent plus a no-mildness-carve-out argument. If you think a carve-out is defensible, that row is where to argue it.\r\n\r\n(4) sb_perf FALLS THROUGH to the generic dispatch after the role check, so the session is verified twice; confirm the fall-through cannot be reached with a different resource name (the branch tests resource === 'sb_perf' before SB_RESOURCES) and that nothing between the two checks mutates the request.\r\n\r\n(5) THE TIER MATH: headline 248/140 -> 255/133, six rollup pairs re-derived, seven names inserted by --fix-rollup-list. Re-derive rather than trust -- the fifth headline drift was mine to find and the sixth could be mine to cause.\r\n\r\nFILES: docs/CRITICALITY-TIERS.md api/sd-data.js",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T22:26:05Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
