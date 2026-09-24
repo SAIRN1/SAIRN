@@ -13270,6 +13270,58 @@
       "recurrence_open": "THE PATTERN IS NOT SWEPT. This is the fourth instance of the same anchor shape on this one register and the second in two days; nothing has grepped tests/ for the `name`, spelling, and the count of remaining instances is UNMEASURED rather than zero. Also open, and larger: a report-only probe that CRASHES still exits 0 here, so the arms after the crash silently do not run and nothing distinguishes that from a clean report -- the could-not-tell-folded-into-a-pass shape, in a file whose job is to catch it in others. Neither is closed by this fix."
     },
     {
+      "commit": "44dc28cea046",
+      "date": "2026-09-24",
+      "subject": "fix(sabotage-check): re.I defeated the sixth spelling's ALL-CAPS narrowing -- found discharging cc's seven-item obligation",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 28,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/sabotage_control_check.py's sixth guard spelling -- the ALL-CAPS state-label tuple, added 2026-09-24 in criteria .1 -- compiled with re.I, and IGNORECASE silently defeated the narrowing the pattern's own comment describes: under the flag, [A-Z][A-Z -]{3,} matches 'did ' as happily as 'ANCHOR', so `append(('did not find it', name))` -- ordinary prose in an accumulator -- counted as a machine-readable verdict. The comment claimed \"THE MATCH IS STRUCTURAL, NOT A PHRASE LIST\" and one flag made it a match-anything list. The blind lock passed 30/30 because it held a POSITIVE fixture for the new spelling and no NEGATIVE: a comparison that cannot fire in one direction reports whatever that direction claims, which is the exact one-direction blindness the same file's uniqueness-shape note records for an earlier criterion. MEASURED BEFORE FIXING: zero real files diverge between the case-sensitive and case-insensitive spellings today -- the intended beneficiary's labels are genuine ALL-CAPS -- so no published UNGUARDED figure was wrong; this is the latent form. Fixed with (?-i:) on the label class alone, criteria bumped to 2026-09-24.2, and the lock gains the fixture pair in both directions, 32/32. Found by cc's own attack instruction on the obligation (\"check the negative fixture actually holds\"), which is the review channel doing precisely its job.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "130b5a86124d",
+        "date": "2026-09-24",
+        "subject": "fix(service-role-gate): the report truncated 226 resources to 3 in silence, and two claims about it were stale",
+        "lag_days": 0
+      },
+      "citation_note": "1.1's family -- a check that cannot fire in a direction reads identically to one that passed -- fits the lock half exactly; the regex half (a flag defeating a narrowing) has no rule of its own. Cited arguable for the composite.",
+      "contributing_factors": [
+        {
+          "factor": "A FLAG APPLIED TO THE WHOLE PATTERN CHANGED THE MEANING OF ONE ALTERNATION. re.I was correct for the code tokens in the other alternatives and silently rewrote the character-class semantics of the label branch; nothing in the pattern's structure marks which branches the flag was FOR.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "(?-i:) scoped to the label class, so the flag and the narrowing can no longer disagree."
+        },
+        {
+          "factor": "THE BLIND LOCK GREW A POSITIVE FIXTURE WITHOUT ITS NEGATIVE. The .1 criteria change added the ALL-CAPS tuple fixture and nothing that must NOT match, so the lock could only confirm the widening fired, never that it fired narrowly -- and 30/30 read as validation of a claim no fixture tested.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The prose-tuple negative is in the lock; both directions now break if either regression returns."
+        },
+        {
+          "factor": "NOTHING EXERCISES A REGEX CRITERION AGAINST CASE VARIANTS OF ITS OWN FIXTURES. The rewording family built this week does exactly this for prose graders (its case relation); regex-based checkers have no equivalent, and this is the second flag-semantics defect class on record after the bare-/config/-matching-CONFIG one this same file documents.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "A case-variant metamorphic pass over checker fixtures is buildable on the existing frame and worth its own claim; not built inside a review discharge."
+        }
+      ],
+      "recurrence_open": "Only this one alternation is scoped; every other re.I pattern in GUARDS still applies the flag pattern-wide, and whether any of their character classes silently widened the same way is UNMEASURED -- the sweep is one read of six regexes and has not been done. And the one-direction-fixture shape has now recurred inside the same tool's own history twice; nothing refuses a criteria bump that adds a positive fixture without a paired negative."
+    },
+    {
       "commit": "58303cc59aaa",
       "date": "2026-09-24",
       "subject": "fix(sairndesign): the four resources promoted to Tier A after the gate was armed join the gate",
@@ -13373,58 +13425,6 @@
       "recurrence_open": "ONLY THIS ONE BLOCK IS FIXED. Nothing has swept the rest of api/sd-data.js for branch comments that describe a guard which has since moved to SD_SESSION_GATED, and the file has 22 resources in that table -- the same staleness is possible at every one of them and has been measured at none. Also open: no check exists that would fail when a resource is added to SD_SESSION_GATED while its branch comment still says it is ungated, which is the mechanical form of this defect and the only thing that would catch the next one. And the direction of the error matters and is not tracked anywhere -- a comment that understates a guard produces wasted review and false gap reports, while one that overstates a guard would produce the opposite and worse, and nothing here distinguishes them."
     },
     {
-      "commit": "874ac5ab4313",
-      "date": "2026-09-24",
-      "subject": "fix(truthy-sum): the checker was RED at HEAD on the arms that prove its own fix, and the test pinned a count nobody could hold",
-      "files": [
-        "tests/sv_boarding_revenue_coercion.js",
-        "tools/truthy_sum_baseline.json"
-      ],
-      "lines_added": 49,
-      "lines_removed": 4,
-      "app": "tooling",
-      "layer": "test",
-      "severity": "low",
-      "detection_method": "static-checker",
-      "summary": "tools/truthy_sum_check.py exited 1 at HEAD on tests/sv_boarding_revenue_coercion.js lines 117 and 144, and the cause is structural rather than a stray fold: both lines are deliberate NEGATIVE CONTROLS holding the sv_boarding pre-fix expression on purpose -- one proves a bare fold concatenates (\"50\"+\"20\" -> \"05020\"), the other proves the pre-fix expression produced NaN. The checker was red on exactly the arms that make its own subject falsifiable, and every future coercion fix that ships a proper control trips it the same way -- a checker penalising the thing it should reward. Compounding it, the same test asserted the SIZE OF THE WHOLE BASELINE (assert.strictEqual(n, 45, 'expected 45 (46 - 1)')) -- a fact about somebody else's file typed beside it, claiming nobody would ever baseline anything again -- and it went red the same day, on the entry that exempted this file's own controls. Fixed by baselining the controls WITH the reason on the record, and rewriting the count arm to assert what it actually meant: this key gone, the baseline still populated above a stated floor, and no entry reasonless. Three mutations verified the new arms bite.",
-      "rules": [
-        "1.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": "truthy_sum_check.py",
-      "found_by_session": null,
-      "injection": {
-        "commit": "fc2ee8f136b3",
-        "date": "2026-09-23",
-        "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
-        "lag_days": 1
-      },
-      "citation_note": "1.3's shape -- an anchor that still matches is not an anchor that still points at the right thing -- fits the count half exactly: `45` matched the file the day it was written and pointed at nothing the day the baseline legitimately grew. The checker-flags-its-own-control half has no rule of its own; cited arguable rather than not-citable because the count is the half that shipped red.",
-      "contributing_factors": [
-        {
-          "factor": "THE CHECKER CANNOT TELL A CONTROL FROM A DEFECT, and nothing declares which is which. A negative control containing the hunted shape is indistinguishable from the shape itself; the only channel for the distinction is the baseline, and nothing wrote the entry when the controls landed.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The two controls are baselined with a reason that names them as controls, and the test now asserts the entry exists WITH that reason -- so deleting the exemption breaks the suite, not just the checker."
-        },
-        {
-          "factor": "THE FIX AND ITS EXEMPTION SHIPPED IN DIFFERENT CHANGES. The sv_boarding fix removed sairnvet.html::b.rate from the baseline and added the control-bearing test in one commit, but nobody ran truthy_sum_check before pushing -- it is report-only and in the sweep, so the red arrived silently after landing.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "The checker is deliberately report-only; promoting it to a gate is its owner's cost decision and the register already tracks that class of question. The recurrence note names the general shape instead."
-        },
-        {
-          "factor": "A GLOBAL COUNT WAS USED AS A PROXY FOR A LOCAL CLAIM. 'Exactly one entry was removed' was checked by pinning the whole dictionary's size, which is right only until anyone else touches the file -- the same class as the tier probe's hardcoded | **10** | and the fifth instance recorded here.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Rewritten as the three local claims the arm actually meant: the sairnvet key absent, a deliberate floor on the population, and no reasonless entries."
-        }
-      ],
-      "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
-    },
-    {
       "commit": "7cc29f6e4c5a",
       "date": "2026-09-24",
       "subject": "fix(sairnvet): the dosing-register banner claimed \"not capped\" with nothing behind it -- completeness is verified against the server's own count now",
@@ -13475,6 +13475,58 @@
         }
       ],
       "recurrence_open": "Every OTHER app's read branch in api/sd-data.js still returns rows with no total -- the sv_ branch is fixed, and any client of the sf_/law_/sdn_/leg_ branches that renders a completeness or count claim renders it unverified. Nothing scans for display text that asserts completeness over a count-less read; that shape is found only by reading."
+    },
+    {
+      "commit": "874ac5ab4313",
+      "date": "2026-09-24",
+      "subject": "fix(truthy-sum): the checker was RED at HEAD on the arms that prove its own fix, and the test pinned a count nobody could hold",
+      "files": [
+        "tests/sv_boarding_revenue_coercion.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 49,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "tools/truthy_sum_check.py exited 1 at HEAD on tests/sv_boarding_revenue_coercion.js lines 117 and 144, and the cause is structural rather than a stray fold: both lines are deliberate NEGATIVE CONTROLS holding the sv_boarding pre-fix expression on purpose -- one proves a bare fold concatenates (\"50\"+\"20\" -> \"05020\"), the other proves the pre-fix expression produced NaN. The checker was red on exactly the arms that make its own subject falsifiable, and every future coercion fix that ships a proper control trips it the same way -- a checker penalising the thing it should reward. Compounding it, the same test asserted the SIZE OF THE WHOLE BASELINE (assert.strictEqual(n, 45, 'expected 45 (46 - 1)')) -- a fact about somebody else's file typed beside it, claiming nobody would ever baseline anything again -- and it went red the same day, on the entry that exempted this file's own controls. Fixed by baselining the controls WITH the reason on the record, and rewriting the count arm to assert what it actually meant: this key gone, the baseline still populated above a stated floor, and no entry reasonless. Three mutations verified the new arms bite.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "truthy_sum_check.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "fc2ee8f136b3",
+        "date": "2026-09-23",
+        "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
+        "lag_days": 1
+      },
+      "citation_note": "1.3's shape -- an anchor that still matches is not an anchor that still points at the right thing -- fits the count half exactly: `45` matched the file the day it was written and pointed at nothing the day the baseline legitimately grew. The checker-flags-its-own-control half has no rule of its own; cited arguable rather than not-citable because the count is the half that shipped red.",
+      "contributing_factors": [
+        {
+          "factor": "THE CHECKER CANNOT TELL A CONTROL FROM A DEFECT, and nothing declares which is which. A negative control containing the hunted shape is indistinguishable from the shape itself; the only channel for the distinction is the baseline, and nothing wrote the entry when the controls landed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The two controls are baselined with a reason that names them as controls, and the test now asserts the entry exists WITH that reason -- so deleting the exemption breaks the suite, not just the checker."
+        },
+        {
+          "factor": "THE FIX AND ITS EXEMPTION SHIPPED IN DIFFERENT CHANGES. The sv_boarding fix removed sairnvet.html::b.rate from the baseline and added the control-bearing test in one commit, but nobody ran truthy_sum_check before pushing -- it is report-only and in the sweep, so the red arrived silently after landing.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "The checker is deliberately report-only; promoting it to a gate is its owner's cost decision and the register already tracks that class of question. The recurrence note names the general shape instead."
+        },
+        {
+          "factor": "A GLOBAL COUNT WAS USED AS A PROXY FOR A LOCAL CLAIM. 'Exactly one entry was removed' was checked by pinning the whole dictionary's size, which is right only until anyone else touches the file -- the same class as the tier probe's hardcoded | **10** | and the fifth instance recorded here.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Rewritten as the three local claims the arm actually meant: the sairnvet key absent, a deliberate floor on the population, and no reasonless entries."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
       "commit": "982b093cfa13",
