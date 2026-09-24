@@ -13109,7 +13109,7 @@
       "recurrence_open": "ONLY THIS ONE BLOCK IS FIXED. Nothing has swept the rest of api/sd-data.js for branch comments that describe a guard which has since moved to SD_SESSION_GATED, and the file has 22 resources in that table -- the same staleness is possible at every one of them and has been measured at none. Also open: no check exists that would fail when a resource is added to SD_SESSION_GATED while its branch comment still says it is ungated, which is the mechanical form of this defect and the only thing that would catch the next one. And the direction of the error matters and is not tracked anywhere -- a comment that understates a guard produces wasted review and false gap reports, while one that overstates a guard would produce the opposite and worse, and nothing here distinguishes them."
     },
     {
-      "commit": "7ccccd1ed3d0",
+      "commit": "874ac5ab4313",
       "date": "2026-09-24",
       "subject": "fix(truthy-sum): the checker was RED at HEAD on the arms that prove its own fix, and the test pinned a count nobody could hold",
       "files": [
@@ -13161,7 +13161,7 @@
       "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
-      "commit": "93f18467b17a",
+      "commit": "d3d3625afa68",
       "date": "2026-09-24",
       "subject": "fix(spof): the retirement disclosure went SILENT exactly when the list was growing -- and its own control arm has been red",
       "files": [
