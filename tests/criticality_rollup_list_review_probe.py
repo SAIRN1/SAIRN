@@ -376,7 +376,23 @@ try:
     print('\nA8  the paired directions, re-driven independently of arms 9 and 10')
     once = [n for n in sd_listed if SD.count('`%s`' % n) == 1]
     assert once, 'fixture invalid: every listed name appears more than once'
-    dropped = SD.replace('`%s`, ' % once[0], '', 1)
+    # ── THE SAME ANCHOR REPAIR arm 9 ALREADY CARRIES (applied here 2026-09-24)
+    # This was `SD.replace('`name`, ', ...)` -- name, comma, space -- which is
+    # how every name is written EXCEPT THE LAST. `sd_crm` is the first
+    # exactly-once name today and it is the last element, so the replace
+    # planted nothing and drive()'s bytes-changed guard fired: this whole arm
+    # has been CRASHING at origin/main, not passing. Exactly the defect this
+    # file exists to find in somebody else's arms, in its own. Three spellings
+    # tried in order: mid-list, last-in-list, and alone.
+    dropped = SD
+    for _pat in ('`%s`, ' % once[0], ', `%s`' % once[0], '`%s`' % once[0]):
+        if _pat in dropped:
+            dropped = dropped.replace(_pat, '', 1)
+            break
+    assert dropped != SD, 'the list mutation did not land for `%s`' % once[0]
+    assert '`%s`' % once[0] not in dropped, (
+        '`%s` survived the drop, so this arm is not testing a missing name'
+        % once[0])
     rc, out = drive('name dropped from the list', ORIGINAL.replace(SD, dropped, 1))
     if rc == 1 and 'LIST MISSING' in out and once[0] in out:
         ok('MISSING direction bites', 'dropped `%s`' % once[0])
