@@ -167,6 +167,55 @@ def accepts_real_statuses():
 
 accepts_real_statuses()
 
+# ── ARM 5b: THE VOCABULARY IS RE-DERIVED FROM THE WRITERS, MECHANICALLY ─────
+# Added 2026-09-24 by the reviewer (hank), because arm 5's fixture HARDCODES
+# the three statuses -- the very literal-instead-of-read-from-the-writer shape
+# the author's own point (3) asked a reviewer to hunt. STATUSES in the tool is
+# also a hand-maintained tuple with a comment naming its writers. A FOURTH
+# writer added later would drift past both, and --validate would refuse a real
+# ledger DURING A REBASE, which is precisely the failure this change fixed.
+# So the writer set is read out of the tool's source here: every literal
+# passed to _discharge() plus the 'status': 'open' the --open path writes.
+def statuses_rederived_from_writers():
+    src = io.open(os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
+                  encoding='utf-8', errors='replace').read()
+    import re as _re
+    # A _discharge() call can span lines and hold nested parens (the
+    # reviewed-by-record one does both), so the span is walked with a paren
+    # balance rather than matched with a bracket-free regex -- the first
+    # version of this arm used one and re-derived only the single-line call,
+    # which would have "confirmed" a two-status vocabulary.
+    written = set()
+    for m in _re.finditer(r'\b_discharge\(', src):
+        i, depth = m.end(), 1
+        while i < len(src) and depth:
+            if src[i] == '(':
+                depth += 1
+            elif src[i] == ')':
+                depth -= 1
+            i += 1
+        span = src[m.end():i - 1]
+        lits = _re.findall(r"['\"]([a-z][a-z-]*)['\"]", span)
+        if lits:
+            written.add(lits[-1])   # the status is _discharge's LAST argument
+    written.discard('rec')
+    if _re.search(r"['\"]status['\"]\s*:\s*['\"]open['\"]", src):
+        written.add('open')
+    declared = set(_re.findall(r"['\"]([a-z-]+)['\"]",
+                               _re.search(r'^STATUSES\s*=\s*\(([^)]*)\)', src,
+                                          _re.M).group(1)))
+    check('the writer statuses re-derived from source are non-empty and '
+          'include a discharge form -- else this arm is matching nothing',
+          len(written) >= 2 and any(s.startswith('reviewed') for s in written),
+          sorted(written))
+    check('STATUSES equals the statuses the writers actually assign -- a '
+          'fourth writer or a dropped one fails HERE, not mid-rebase',
+          written == declared,
+          'written=%s declared=%s' % (sorted(written), sorted(declared)))
+
+
+statuses_rederived_from_writers()
+
 # ── ARM 6: AN UNREADABLE LEDGER IS COULD-NOT-RUN, NOT SOUND. ──────────────
 def broken_json():
     original = io.open(LEDGER, encoding='utf-8', newline='').read()
