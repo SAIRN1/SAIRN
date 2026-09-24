@@ -713,6 +713,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_accepted_risk_expiry_control.py`
 - `tests/run_ai_action_approval_control.py`
 - `tests/run_allan_deviation_probe.py`
+- `tests/run_claim_doc_freshness_probe.py`
 - `tests/run_claim_search_probe.py`
 - `tests/run_coding_rule_discovery_probe.py`
 - `tests/run_cross_tenant_dispatchers_sabotage_probe.py`
