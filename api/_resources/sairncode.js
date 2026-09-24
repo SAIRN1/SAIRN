@@ -235,7 +235,7 @@ const SC_TIER_A_SOFT_DELETE_ONLY = [
   'sc_anesthesia', 'sc_anesthesia_base_units', 'sc_ar', 'sc_auth',
   'sc_auth_requests', 'sc_claims', 'sc_coded_items', 'sc_compliance',
   'sc_credential_scope', 'sc_denial', 'sc_denial_events', 'sc_dme',
-  'sc_drg', 'sc_eligibility', 'sc_fraud', 'sc_hcc', 'sc_prebill',
+  'sc_drg', 'sc_eligibility', 'sc_fraud', 'sc_hcc', 'sc_pctc', 'sc_prebill',
   'sc_providers', 'sc_query', 'sc_rac', 'sc_revenue', 'sc_settings',
   'sc_telehealth'
 ];

@@ -12112,8 +12112,15 @@ How to answer:
         }
         async function removePcTcEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_pctc', { id: id });
+            // soft_delete since 2026-09-25: sc_pctc was promoted Tier A on
+            // integrity (a wrong indicator is a wrong billing instruction on
+            // every future check), and the seam test that holds
+            // SC_TIER_A_SOFT_DELETE_ONLY equal to the register's Tier A rows
+            // is what demanded this line move with the tier -- the same
+            // fifteen-call conversion the other Tier A resources went through.
+            var result = await scData('soft_delete', 'sc_pctc', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('PC/TC reference entry');
             savePcTcEntries(getPcTcEntries().filter(function(e){return e.id!==id;}));
             renderPcTc();
         }
@@ -12136,7 +12143,7 @@ How to answer:
             document.getElementById('pt-add-indicator').value = '';
             document.getElementById('pt-add-desc').value = '';
             document.getElementById('pt-add-source').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'PC/TC entry added' : 'PC/TC entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'PC/TC entry added' : scWriteRefusalText('PC/TC entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
         function runPcTcPathCheck(){
             var out = document.getElementById('pt-check-result');

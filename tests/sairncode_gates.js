@@ -214,6 +214,11 @@ const WRITE_GATED = {
   sc_eligibility: 'admin|biller',
   sc_fraud: 'admin|biller',
   sc_hcc: 'admin|biller',
+  // sc_pctc joined 2026-09-25 with its Tier A promotion (integrity: a wrong
+  // PC/TC indicator is a wrong billing instruction on every future check of
+  // that code). The seam test below is what demanded this row move with the
+  // register -- the same route the sixteen of 2026-09-23 took.
+  sc_pctc: 'admin|biller',
   sc_prebill: 'admin|biller',
   sc_providers: 'admin|biller',
   sc_query: 'admin|biller',
@@ -841,14 +846,18 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // joined to payer and plan (sc_eligibility), and the QP status that picks
     // between two CMS conversion factors (sc_providers).
     //
-    // THE FIVE THAT REMAIN ARE THE FIVE THAT ARE NOT TIER A, and they are the
-    // same five that still hard-delete: sc_scrubrules, sc_encoder,
-    // sc_specialty_checks, sc_specialty_checklists, sc_pctc. So this number and
-    // the partition in arm 1 now have to agree, which is a second way to notice
-    // a drift in either.
-    ok(writeOpen.length === 5,
-       '5 resources still accept an ordinary write with the licence key alone -- '
-       + 'the 28 minus the 23 Tier A ones. They are the same five that still '
+    // THE FOUR THAT REMAIN ARE THE FOUR THAT ARE NOT TIER A, and they are the
+    // same four that still hard-delete: sc_scrubrules, sc_encoder,
+    // sc_specialty_checks, sc_specialty_checklists. FIVE became FOUR on
+    // 2026-09-25 when sc_pctc was promoted Tier A on integrity (a wrong PC/TC
+    // indicator is a wrong billing instruction on every future check) and its
+    // gate, soft-delete conversion and client call site all moved together --
+    // the seam test above is what refused the register moving alone. So this
+    // number and the partition in arm 1 have to agree, which is a second way
+    // to notice a drift in either.
+    ok(writeOpen.length === 4,
+       '4 resources still accept an ordinary write with the licence key alone -- '
+       + 'the 28 minus the 24 Tier A ones. They are the same four that still '
        + 'hard-delete, so this figure and the partition in arm 1 must agree '
        + '(got ' + writeOpen.length + ': ' + writeOpen.join(', ') + ')');
     // THE ARM THAT WAS INVERTED BY THE DECISION, and it is left visibly
