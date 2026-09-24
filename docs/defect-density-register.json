@@ -12790,6 +12790,65 @@
       "citation_note": "No standing rule names this shape. The nearest is the coverage-disclosure discipline -- a panel that lists what it checks must not read as checking a category it does not -- but the tooltip here was ACCURATE about everything it named (\"8-minute rule, KX threshold, CQ modifier, MPPR, 2026 RTM codes\"), so nothing in the app was false. The gap was an absent rule, not a wrong claim, and the specific reason it stayed absent is a name collision this platform has no rule about: \"PT\" already means the preventive-to-diagnostic modifier in the Modifier Routing panel, so a reader searching for therapy modifiers finds \"PT\" throughout the file and reads the area as covered.",
       "phase_note": "Not introduced in a phase -- the rule was never written. The panel's own originating brief listed the modifiers it covers and GP was not among them.",
       "factors_unknown_reason": "Named in the obligation opened against this commit and not yet worked through by an independent session: the 'PT' name collision with the preventive modifier, and the fact that a panel listing what it checks gives no signal about what it does not."
+    },
+    {
+      "commit": "f36a7b5b1f24",
+      "date": "2026-09-24",
+      "subject": "fix(tier-a-gate): --list's exit 1 meant 'the queue has overdue work' and was being read as 'this file is invalid'",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "tests/run_review_gate_validate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 283,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "docs/tier-a-reviews.json named tier_a_review_gate.py --list as its merge validator, and --list exits 1 whenever ANY obligation is past its 24h deadline. tools/sairn_rebase_resolve.py refuses any merge whose validator exits non-zero, so a correct union-by-identity merge of the review ledger was refused whenever the queue happened to hold overdue work -- which is most of the time, and is not a fact about the file being merged. Two unrelated questions shared one exit code: is this file sound, and does the queue hold overdue work.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c6d07088ee85",
+        "date": "2026-09-16",
+        "subject": "fix(rebase): the two JSON registers get a real 3-way merge, not a side taken",
+        "lag_days": 8
+      },
+      "citation_note": "No standing rule covers 'a tool's exit code means one thing to a human and another to a machine that reuses it'. The nearest family is the could-not-tell-folded-into-a-pass rule, but this is its mirror image: a clean state folded into a failure. Recorded as not-citable with the shape named rather than stretched onto a rule it does not fit.",
+      "phase_note": "The merge policy was written naming the only mode that existed. The defect is in choosing a validator whose exit semantics were never for that purpose, not in the implementation of either tool.",
+      "contributing_factors": [
+        {
+          "factor": "ONE EXIT CODE CARRIED TWO QUESTIONS. --list returns 1 when any obligation is past its 24h deadline, which is correct for a person reading the queue. The merge policy pointed at it, and sairn_rebase_resolve.py treats any non-zero validator exit as 'this merge produced a file its own gate rejects'. Soundness and queue state are unrelated facts and nothing separated them.",
+          "kind": "technical",
+          "action": "A second mode, --validate, answers soundness only and exits 0 or 2 -- never 1 -- so the two cannot share a code again. The merge policy names it, with the reason recorded in the policy note.",
+          "action_status": "done"
+        },
+        {
+          "factor": "THE FIX THAT WOULD HAVE BEEN WRONG WAS THE OBVIOUS ONE. Changing --list to exit 0 would have unblocked every rebase and removed the only mechanical signal that an obligation is being ignored -- trading a real alarm for a convenience, on the register built specifically because a queue nobody closes is a queue people stop reading.",
+          "kind": "process",
+          "action": "--list is untouched. The new mode was added beside it and the divergence is asserted by a probe arm rather than left as a comment.",
+          "action_status": "done"
+        },
+        {
+          "factor": "IT WAS INVISIBLE FROM EITHER FILE. tier_a_review_gate.py does not know it is a merge validator; sairn_rebase_resolve.py does not know what exit 1 means to the tool it runs. The coupling lives in a JSON field in a third file, and neither side reads the other.",
+          "kind": "technical",
+          "action": "Recorded rather than fixed: a validator contract stated in a data file and enforced nowhere is the general shape, and the only defence added here is that --validate's exit codes are documented at its definition. No mechanism checks that a declared validator has the right exit semantics.",
+          "action_status": "not-actionable",
+          "note": "Not actionable as a check, and that is a decision rather than a deferral. Nothing can mechanically test what a third-party tool's exit 1 is SUPPOSED to mean -- the semantics live in prose. What could be built is a rule that a merge validator must never exit 1, but that would be a convention imposed on tools this repo does not own. Recorded as the shape to look for when a merge_policy names a new validator."
+        },
+        {
+          "factor": "MY OWN FIRST VERSION OF THE NEW VALIDATOR WAS WRONG IN THE SAME FAMILY: it typed the status vocabulary as ('open','discharged') instead of reading it out of the writers, and refused 109 of 127 real records on its first run against the live ledger. A validator that refuses the file it certifies is worse than none.",
+          "kind": "process",
+          "action": "STATUSES is derived by reading the three sites that assign a status -- _discharge()'s two callers plus --open -- and a probe arm asserts all three are accepted. Caught by driving it against the real ledger rather than a fixture.",
+          "action_status": "done"
+        }
+      ],
+      "recurrence_open": "Every other merge_policy validator on this platform is unchecked against the same question. docs/defect-density-register.json names defect_register.py --check, which happens to be a validity check, but nothing enforces that a declared validator answers soundness rather than content. A second ledger adopting a --list-shaped validator would reproduce this exactly."
     }
   ],
   "started": "2026-09-09",
