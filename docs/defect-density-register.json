@@ -13307,7 +13307,7 @@
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
     },
     {
-      "commit": "6becc77fccaa",
+      "commit": "dadfedf48ac9",
       "date": "2026-09-24",
       "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
       "files": [
@@ -13394,6 +13394,62 @@
         }
       ],
       "recurrence_open": "The actions close every role membership set currently in api/ and add a blocking guard against a new one. They do NOT close: (1) role maps expressed some other way -- an array read with .indexOf is safe and was counted and skipped, but a Set, a Map, or a switch would be outside both methods; (2) the same prototype-inheritance shape anywhere outside a role gate -- any object literal used as a lookup table keyed by caller-influenced data has it, and nothing counts those; (3) the client-side halves in the *.html files, which were not scanned at all; (4) the general question of what else, besides these role gates, silently depends on verifySessionToken's vocabulary check -- that dependency was discovered by reading, and nothing enumerates it."
+    },
+    {
+      "commit": "c0263b7c221a",
+      "date": "2026-09-24",
+      "subject": "fix(verification-plan): zero checkable items out of ten was returning EXIT 0",
+      "files": [
+        "tests/run_verification_plan_staleness_probe.py",
+        "tools/verification_plan_staleness_check.py"
+      ],
+      "lines_added": 141,
+      "lines_removed": 19,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/verification_plan_staleness_check.py returned EXIT 0 when the plan it read had item lines and NOT ONE verify marker: nothing was measured, it printed \"drift found 0\", and main() returned 0. A caller reading the exit code -- a push gate, a cron, another tool -- could not distinguish \"checked ten items and they all agree\" from \"could check none of them\". The file's own header refuses exactly that shape one paragraph above the bug (\"a staleness checker that reports a clean plan it never opened is the defect it exists to prevent\"), and the probe already had an arm for the neighbouring case (a plan with zero item LINES is exit 2) which never reached this one. Found by running the tool against its real subject the day that subject was first committed; before that the tool had only ever been run against synthetic fixtures that all carried markers.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
+      },
+      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
+      "contributing_factors": [
+        {
+          "factor": "The could-not-tell third state was implemented for one shape (no plan file, or a plan with zero item lines) and not for the neighbouring one (items present, none carrying a verify marker). The printed output named UNVERIFIABLE as 'a THIRD state, not clean' while the exit code folded it into clean.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Zero checkable items out of a non-zero number of items is now exit 2 with the reason printed. The verdict is computed in one function used by both the human and the --json path, so the two cannot diverge on what counts as could-not-tell."
+        },
+        {
+          "factor": "A PARTIAL measurement had no stated meaning either. Making the tool strict enough to catch the bug would have made every real plan permanently could-not-tell, which is the opposite failure and just as useless.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Partial stays exit 0 when the checkable items agree, and now always prints how many were NOT measured so the zero cannot be read against the wrong denominator. Arm 7b is the paired control that refuses the over-strict implementation."
+        },
+        {
+          "factor": "The tool had never been run against its real subject, because the subject was chat's own planning document and was not repo-tracked. Every probe arm drove a synthetic plan, and every synthetic plan happened to carry verify markers -- so the branch where none does was never executed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The plan is now committed and arm 1b reads it. The probe's closing note states plainly which branch the real plan exercises and that the rest are fixtures, so the limit is declared rather than discovered."
+        },
+        {
+          "factor": "The probe's arm 1 drove the absent-plan case by running the tool bare. That stopped being the absent case the moment the plan was committed, and TWO of its three assertions kept passing while testing something else -- exit 2 for an unrelated reason, and the path named because it was the path it OPENED rather than the path it looked for.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Absence is now driven against a copy of the tool in a throwaway tree with no plan in it, which reaches the real search-miss branch. The tool resolves its repo root from its own __file__, so this is the only way to reach that branch while the plan exists, and the arm says so."
+        }
+      ],
+      "recurrence_open": "The actions close the exit-code semantics of this one tool. They do NOT close the class: no check on this platform asks whether a tool's exit 0 means \"measured and clean\" or \"measured nothing\". The register itself, the tier-A gate and the generators each answer this differently and correctly, but by hand, and nothing enumerates the tools that do not. They also do not close the plan's own unverifiability -- the committed plan carries zero verify markers, so the tool will answer exit 2 COULD NOT TELL until somebody marks items in it, and nothing schedules that."
     }
   ],
   "started": "2026-09-09",
