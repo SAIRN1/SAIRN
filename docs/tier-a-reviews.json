@@ -3102,6 +3102,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T20:02:13Z",
+      "resources": [
+        "sv_audit_log",
+        "sv_controlled"
+      ],
+      "rules": [],
+      "files": [
+        "sairnvet.html"
+      ],
+      "what": "sairnvet.html in-app notice + five comment corrections: the SOAP authorship card claimed per-employee sign-in does not exist -- false since 2026-09-13. Card rewritten to the narrower true claim (role-not-person, attestation-not-signature); five stale comments marked superseded in place. WHAT A REVIEWER SHOULD ATTACK: whether the new card text overstates the OTHER way (it now says the role is server-verified -- confirm whoami really feeds the badge on every path including session restore), and whether any of the five comment corrections changed code behaviour by accident (they must be comment-only).",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T20:02:13Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
