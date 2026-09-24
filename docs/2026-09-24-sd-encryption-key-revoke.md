@@ -102,15 +102,20 @@ it is why step 1 comes first: the credential that an attacker can use
 
 ---
 
-## 4. Two stale error messages, found on the way and not fixed here
+## 4. Two stale error messages, found on the way — FIXED 2026-09-24
 
-Both undecryptable-ciphertext paths still blame the wrong secret:
+Both undecryptable-ciphertext paths used to blame the wrong secret:
 
-- `api/law-auth.js:387` — *"tampered, or SD_AUTH_SECRET was rotated"*
-- `api/sc-eligibility.js:195` — *"SD_AUTH_SECRET rotated?"*
+- `api/law-auth.js` — *"tampered, or SD_AUTH_SECRET was rotated"*
+- `api/sc-eligibility.js` — *"SD_AUTH_SECRET rotated?"*
 
 Since 2026-09-17 a v2 ciphertext fails because **`SD_ENCRYPTION_KEY`** changed,
-not `SD_AUTH_SECRET`. During an incident these two lines point the responder at
-the wrong variable. **Not fixed here** — this claim declares a doc and a SQL
-file, and app source belongs to its own change — but it is the first thing
-anybody following this procedure will read in the logs.
+not `SD_AUTH_SECRET`. During an incident those two lines pointed the responder
+at the wrong variable.
+
+**Fixed in a separate change on 2026-09-24**, and not by naming both keys —
+naming two candidates is only half an improvement when the log could name one.
+Each site now reads the stored format (`v2.` prefix or not), the same
+discriminator `decryptSecret()` itself uses, and prints the single variable
+that actually wrote that ciphertext. Line numbers are deliberately dropped
+here: an anchor to a line is the thing that goes stale next.

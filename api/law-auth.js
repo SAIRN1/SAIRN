@@ -384,9 +384,17 @@ module.exports = async (req, res) => {
       const secret = decryptSecret(row.mfa_secret_encrypted);
       if (!secret) {
         // Decrypt failure means the stored ciphertext can't be read with the
-        // current key (tampered, or SD_AUTH_SECRET was rotated). Fail closed
-        // and say so in the log — never fall back to skipping MFA.
-        console.error('law-auth: mfa secret decrypt failed for', row.employee_id);
+        // current key (tampered, or the key that wrote it was rotated). WHICH
+        // KEY IS DECIDED BY THE STORED FORMAT, and naming the wrong one costs
+        // a responder the first minutes of an incident: since the 2026-09-17
+        // split a `v2.` value was written with SD_ENCRYPTION_KEY and a legacy
+        // one with SD_AUTH_SECRET. Print the format so the log names a single
+        // variable instead of two candidates. Fail closed either way — never
+        // fall back to skipping MFA.
+        const encFormat = String(row.mfa_secret_encrypted || '').startsWith('v2.') ? 'v2' : 'legacy';
+        console.error('law-auth: mfa secret decrypt failed for', row.employee_id,
+          '— stored format ' + encFormat + ', so the key at fault is '
+          + (encFormat === 'v2' ? 'SD_ENCRYPTION_KEY' : 'SD_AUTH_SECRET'));
         await audit('mfa_failed', { employee_id: row.employee_id, role: row.role, detail: { reason: 'secret_undecryptable' } });
         res.status(500).json({ error: { code: 'MFA_UNAVAILABLE', message: 'Two-factor verification is unavailable — contact your firm administrator' } });
         return;

@@ -189,10 +189,17 @@ module.exports = async (req, res) => {
     }
     stediKey = decryptSecret(rec.enc);
     if (!stediKey) {
-      // Ciphertext present but undecryptable -- almost always SD_AUTH_SECRET
-      // having changed since the credential was stored. Say that plainly
-      // rather than reporting it as a Stedi or payer failure.
-      console.error('sc-eligibility: stored Stedi credential failed to decrypt (SD_AUTH_SECRET rotated?)');
+      // Ciphertext present but undecryptable -- almost always the encryption
+      // key having changed since the credential was stored. WHICH KEY IS
+      // DECIDED BY THE STORED FORMAT: since the 2026-09-17 split a `v2.` value
+      // was written with SD_ENCRYPTION_KEY and a legacy one with
+      // SD_AUTH_SECRET. Print the format so the log names one variable rather
+      // than sending a responder to the wrong one, and say it plainly rather
+      // than reporting it as a Stedi or payer failure.
+      const encFormat = String(rec.enc || '').startsWith('v2.') ? 'v2' : 'legacy';
+      console.error('sc-eligibility: stored Stedi credential failed to decrypt'
+        + ' -- stored format ' + encFormat + ', so the key at fault is '
+        + (encFormat === 'v2' ? 'SD_ENCRYPTION_KEY' : 'SD_AUTH_SECRET'));
       res.status(503).json({ error: { code: 'CREDENTIAL_UNREADABLE', message: 'The stored Stedi API key could not be decrypted. It most likely needs to be re-entered by a Compliance Admin in Settings.' } });
       return;
     }
