@@ -13718,7 +13718,7 @@
       "factors_unknown_reason": "Named in the obligation opened against this commit and not yet worked through by an independent session: the 'PT' name collision with the preventive modifier, and the fact that a panel listing what it checks gives no signal about what it does not."
     },
     {
-      "commit": "d72f7d522795",
+      "commit": "3037f9649045",
       "date": "2026-09-24",
       "subject": "retier(h1-batch): seven rows read individually -- five promoted, one confirmed against a premise that died the day before, one register self-disagreement closed -- plus the two app defects the reads carried",
       "files": [
@@ -13767,7 +13767,7 @@
       "recurrence_open": "The class is open platform-wide: every merge-duplicates upsert that unconditionally derives optional columns from payload is a rename-nulls-a-column site waiting for a second caller with a narrower field set, and nothing has swept api/sd-data.js for the shape -- this fix is one handler. The register's citation-drift half also recurs by construction (a bare line number into a 13k-line file five sessions edit), and citing the construct is convention, not enforcement."
     },
     {
-      "commit": "d72f7d522795",
+      "commit": "3037f9649045",
       "date": "2026-09-24",
       "subject": "retier(h1-batch): seven rows read individually -- five promoted, one confirmed against a premise that died the day before, one register self-disagreement closed -- plus the two app defects the reads carried",
       "files": [
