@@ -2310,8 +2310,8 @@
       "task": "RTM discipline-modifier WARN in scValidatePtSession -- CY2022 PFS sometimes-therapy, from my own GP review finding FILES: sairncode.html tests/sairncode_pt_gp_modifier.js",
       "claimed_at": "2026-09-24T20:01:37Z",
       "claimed_at_epoch": 1790280097.2751768,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T21:08:59Z",
       "files": [
         "sairncode.html",
         "tests/sairncode_pt_gp_modifier.js"
