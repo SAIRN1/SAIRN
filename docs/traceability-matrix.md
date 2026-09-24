@@ -719,6 +719,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_python_escape_hygiene_probe.py`
 - `tests/run_reclassification_sweep_probe.py`
 - `tests/run_response_shape_probe.py`
+- `tests/run_review_gate_validate_probe.py`
 - `tests/run_shape_search_probe.py`
 - `tests/run_sync_write_result_probe.py`
 - `tests/run_two_axis_tier_parser_probe.py`
