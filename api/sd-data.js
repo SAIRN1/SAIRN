@@ -12817,17 +12817,33 @@ module.exports = async (req, res) => {
     // ── SAIRNlaw trust disbursement server-sync, step 1 (2026-08-16) ──────
     // See sql/sairnlaw_data_schema.sql and
     // docs/superpowers/specs/2026-08-14-sairnlaw-trust-data-schema-design.md.
-    // No verifySessionToken/role check on any of these three resources --
-    // see that spec's "Correction (2026-08-16)" section for why (sdnData()
-    // never sends a session token to this endpoint; auth is the Bearer
-    // license key alone, same as grd_jobs).
-    // NOTE (2026-08-16, final review finding): these three read routes are
-    // live but currently unreachable from the client -- sairnlaw.html has
-    // zero sdnData('read',...) calls anywhere (grep-confirmed). Writes are
-    // genuinely durable server-side; reads are still localStorage-only, so
-    // this is write-through, not full cross-device sync yet. Wiring real
-    // client-side reads (with local/server merge semantics) is deferred to
-    // a separate future spec, not part of this pass.
+    //
+    // ── CORRECTED 2026-09-24. THIS BLOCK MADE THREE CLAIMS AND ALL THREE
+    //    HAD GONE FALSE, two of them about authentication. Every one was
+    //    true when written; none was re-read when the thing it described
+    //    changed, and it sits directly above the branch, which is where a
+    //    reader looks first. What it used to say, against what is true now:
+    //
+    //    (1) "No verifySessionToken/role check on any of these three
+    //        resources." FALSE since 2026-09-22. law_clients, law_matters
+    //        and law_deadlines are all in SD_SESSION_GATED for read AND
+    //        write, with SD_GATE_APP pinning each to 'sairnlaw'. The check
+    //        is not in this branch because it runs CENTRALLY, above -- which
+    //        is exactly why a local comment saying "no check" is worse than
+    //        no comment: the branch really does look unguarded from here.
+    //    (2) "sdnData() never sends a session token to this endpoint."
+    //        FALSE. sairnlaw.html's sdnData() sets X-SD-Auth on EVERY data
+    //        call whenever a token exists -- not per-resource, not behind a
+    //        withSession flag. That fact is what made (1) safe to change.
+    //    (3) "these three read routes are live but currently unreachable
+    //        from the client -- zero sdnData('read',...) calls anywhere."
+    //        FALSE. law_clients is a member of LAW_SYNC_RESOURCES and
+    //        lawHydrateAll() reads every member. This is full sync now, not
+    //        write-through.
+    //
+    //    Found while discharging the cross-tenant review obligation opened
+    //    2026-09-23T09:54Z, whose own point (3) was written on claim (1)
+    //    and was stale for the same reason.
     if (resource === 'law_clients' && action === 'read') {
       const r = await fetch(rest('law_clients?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
