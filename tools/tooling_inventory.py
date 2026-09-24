@@ -73,6 +73,23 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'purpose_expired_measure.py': ('GENERATOR',
+        'nothing. It is a recorded REFUSAL with a reproducible measurement '
+        'behind it. Three "purpose expired" detectors were designed as the '
+        'Ariane 5 sharpening of the reachability checker -- the question '
+        'frequency can never answer, since Flight 501 ran correct software '
+        'whose PRECONDITION had expired -- and all three were measured before '
+        'anything was built and all three refused: a never-true guard (0 '
+        'instances, an empty population cannot be validated), a role '
+        'comparison outside the app vocabulary (14 hits, 14 false positives, '
+        'every one a chat-message role or an employee job title), and a '
+        'handler branch on an ungranted action (70 of 100, premise wrong -- '
+        'the registry governs one dispatcher, not every handler). It exists '
+        'so the next session does not spend the same afternoon reaching the '
+        'same three refusals. What discriminates rare-but-legitimate from '
+        'purposeless today is activity_cadence.json, a human declaration, and '
+        'R4\'s coverage gate is why it cannot discriminate yet -- a DATA '
+        'problem, not a design one'),
     'coding_rule_discovery.py': ('CHECKER',
         'a coding or billing RULE that nobody has registered for independent '
         'review. docs/coding-rule-registry.json is hand-written -- no property '
