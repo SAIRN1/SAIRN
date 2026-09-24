@@ -71,7 +71,7 @@ function makeCtx(store, fields) {
     sbLocalToday: () => '2026-09-14',
     ld: (k, d) => { try { const v = JSON.parse(store[k]); return v === null ? d : v; } catch (e) { return d; } },
     st: function (k, v) { if (ctx.stFails) return false; store[k] = JSON.stringify(v); return true; },
-    rAP: () => {}, rDash: () => {}, closeBillModal: () => {},
+    rAP: () => {}, rDash: () => {}, rVends: () => {}, closeBillModal: () => {},
     sbNormalizeBills: d => (Array.isArray(d) ? d : []),
     sbGlPost: () => {},
     els: els

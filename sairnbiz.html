@@ -3701,7 +3701,7 @@ function sbPayBill(id){
   b.bal=0;
   b.paidDate=sbLocalToday();
   st('sb_ap',bills);
-  rAP();rDash();
+  rAP();rDash();rVends();
   // Names the real vendor and the real amount, so the confirmation is checkable
   // against the row rather than being a generic reassurance.
   toast('Marked paid: '+b.vendor+' '+fmt(b.amt)+' - recorded in this app only, no payment was sent',5000);
@@ -3732,12 +3732,60 @@ function rAR(){
   $('artbody').innerHTML=open.map(function(i){var b=i.amt-(i.paid||0);var dl=daysLate(i);var age=dl>0?dl+' days late':Math.abs(dl)+' days left';var sc=dl>0?'br':'bb';return'<tr><td>'+H(i.cust)+'</td><td>'+H(i.id)+'</td><td>'+fdate(i.date)+'</td><td>'+fdate(i.due)+'</td><td>'+fmt(i.amt)+'</td><td><strong>'+fmt(b)+'</strong></td><td>'+age+'</td><td><span class="badge '+sc+'">'+H(i.status)+'</span></td></tr>';}).join('');
 }
 
+// ── VENDOR YTD IS DERIVED FROM PAID BILLS, NOT READ FROM A STORED FIELD ──
+// (2026-09-24, H2 seq #211.) The stored `ytd` was written by exactly two
+// things: the demo seed (invented figures) and saveVendor (always 0) --
+// nothing updated it when a bill was actually paid, so a real licence read
+// $0 forever and the "1099 Required" tile silently filed none, while a
+// seed-carrying licence presented ~$112k of invented spend as live. That is
+// the fabricated-KPI class.
+//
+// DERIVED rather than accumulated-at-pay-time, deliberately: an accumulator
+// cannot backfill bills already marked paid, double-counts on any replay,
+// and is a second copy of a fact sb_ap already holds -- the drift the budget
+// panel's baseline comment below warns about. Here the stored figure is 0 on
+// every real licence and invented on the seed, so unlike sb_bud there is no
+// real opening balance to preserve and nothing is lost by ignoring it. The
+// stored `ytd` field is left in place untouched (SB_SYNCED syncs the row
+// shape) but nothing displays it any more.
+//
+// YTD means THIS CALENDAR YEAR: a bill counts under paidDate's year, falling
+// back to the bill date for rows marked Paid at creation (which get no
+// paidDate). Vendors are matched by trimmed, case-folded name -- the same
+// name-string join sbThreeWayMatch already uses between these two stores.
+function sbVendorPaidYTD(){
+  var year=String(new Date().getFullYear());
+  var by={};
+  sbNormalizeBills(ld('sb_ap',[])).forEach(function(b){
+    if(!b||b.status!=='Paid')return;
+    var when=String(b.paidDate||b.date||'');
+    if(when.slice(0,4)!==year)return;
+    var k=String(b.vendor||'').trim().toLowerCase();
+    if(!k)return;
+    by[k]=(by[k]||0)+(Number(b.amt)||0);
+  });
+  return by;
+}
 function rVends(){
-  var v=ld('sb_vends',[]);var sp=v.reduce(function(s,x){return s+x.ytd;},0);
-  var w9=v.filter(function(x){return x.w9==='Yes';}).length;var req=v.filter(function(x){return x.ytd>=600;}).length;
-  var top=v.slice().sort(function(a,b){return b.ytd-a.ytd;})[0];
-  $('vn-total').textContent=v.length;$('vn-spend').textContent=fmt(sp);$('vn-top').textContent=top?top.name:'--';$('vn-w9').textContent=w9;$('vn-1099').textContent=req;
-  $('vntbody').innerHTML=v.map(function(x){return'<tr><td><strong>'+H(x.name)+'</strong></td><td>'+H(x.cat)+'</td><td>'+H(x.contact)+'</td><td>'+H(x.phone)+'</td><td>'+fmt(x.ytd)+'</td><td>'+H(x.terms)+'</td><td><span class="badge '+(x.w9==='Yes'?'bg':'br')+'">'+H(x.w9)+'</span></td><td><span class="badge bg">Active</span></td></tr>';}).join('');
+  var v=ld('sb_vends',[]);
+  var paid=sbVendorPaidYTD();
+  var spendOf=function(x){return paid[String(x.name||'').trim().toLowerCase()]||0;};
+  var sp=v.reduce(function(s,x){return s+spendOf(x);},0);
+  var w9=v.filter(function(x){return x.w9==='Yes';}).length;var req=v.filter(function(x){return spendOf(x)>=600;}).length;
+  var top=v.slice().sort(function(a,b){return spendOf(b)-spendOf(a);})[0];
+  $('vn-total').textContent=v.length;$('vn-spend').textContent=fmt(sp);$('vn-top').textContent=(top&&spendOf(top)>0)?top.name:'--';$('vn-w9').textContent=w9;$('vn-1099').textContent=req;
+  var html=v.map(function(x){return'<tr><td><strong>'+H(x.name)+'</strong></td><td>'+H(x.cat)+'</td><td>'+H(x.contact)+'</td><td>'+H(x.phone)+'</td><td>'+fmt(spendOf(x))+'</td><td>'+H(x.terms)+'</td><td><span class="badge '+(x.w9==='Yes'?'bg':'br')+'">'+H(x.w9)+'</span></td><td><span class="badge bg">Active</span></td></tr>';}).join('');
+  // A bill paid this year to a vendor with NO row on this list is invisible
+  // to every figure above, including the 1099 count -- which is exactly the
+  // silent-underfiling failure the derivation fixes one level down. Said in
+  // the table rather than swallowed.
+  var listed={};v.forEach(function(x){listed[String(x.name||'').trim().toLowerCase()]=true;});
+  var unName=[],unSum=0;
+  Object.keys(paid).forEach(function(k){if(!listed[k]){unName.push(k);unSum+=paid[k];}});
+  if(unName.length){
+    html+='<tr><td colspan="8" style="color:var(--muted);font-size:12px;">'+fmt(unSum)+' paid this year to '+unName.length+' payee(s) with no vendor row (not counted above, including in the 1099 count): '+H(unName.join(', '))+'</td></tr>';
+  }
+  $('vntbody').innerHTML=html;
 }
 
 // Budget actuals, wired to recorded expenses -- 2026-09-01.
@@ -4599,7 +4647,7 @@ function csv(type){
   var rows=[],fn='sairnbiz-'+type+'.csv';
   if(type==='employees'){rows=[['ID','First','Last','Role','Dept','Type','Rate','Start','Status']];ld('sb_emps',[]).forEach(function(e){rows.push([e.id,e.fn,e.ln,e.role,e.dept,e.type,e.rate,e.start,e.status]);});}
   else if(type==='invoices'){rows=[['Invoice','Customer','Date','Due','Amount','Paid','Balance','Status']];ld('sb_invs',[]).forEach(function(i){rows.push([i.id,i.cust,i.date,i.due,i.amt,i.paid||0,i.amt-(i.paid||0),i.status]);});}
-  else if(type==='vendors'){rows=[['ID','Name','Cat','Contact','Phone','YTD','Terms','W-9']];ld('sb_vends',[]).forEach(function(v){rows.push([v.id,v.name,v.cat,v.contact,v.phone,v.ytd,v.terms,v.w9]);});}
+  else if(type==='vendors'){var vnPaid=sbVendorPaidYTD();rows=[['ID','Name','Cat','Contact','Phone','YTD','Terms','W-9']];ld('sb_vends',[]).forEach(function(v){rows.push([v.id,v.name,v.cat,v.contact,v.phone,vnPaid[String(v.name||'').trim().toLowerCase()]||0,v.terms,v.w9]);});}
   // Same repoint as checkAttentionItems: sb_bud no longer stores `actual`, and
   // an export of blank actuals is worse than no export. Baseline and recorded
   // are separate columns so the exported figure can be reconciled rather than
