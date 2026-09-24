@@ -12764,6 +12764,57 @@
       "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
     },
     {
+      "commit": "5e7f9ebd6cb7",
+      "date": "2026-09-24",
+      "subject": "fix(sairnlaw): the comment above law_clients made three claims and all three had gone false",
+      "files": [
+        "api/sd-data.js"
+      ],
+      "lines_added": 27,
+      "lines_removed": 11,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "The comment block immediately above the law_clients branch in api/sd-data.js asserted three facts and all three had gone false, two of them about authentication: \"No verifySessionToken/role check on any of these three resources\" (law_clients, law_matters and law_deadlines entered SD_SESSION_GATED for read and write on 2026-09-22, with SD_GATE_APP pinning each to 'sairnlaw'), \"sdnData() never sends a session token to this endpoint\" (sairnlaw.html sets X-SD-Auth on every data call whenever a token exists), and \"these three read routes are live but currently unreachable from the client -- zero sdnData('read',...) calls anywhere\" (law_clients is a member of LAW_SYNC_RESOURCES and lawHydrateAll reads every member). The two security claims are stale in the direction that reads as an OPEN HOLE: the session check is absent from this branch because it runs centrally, so the branch genuinely looks ungated from here and the comment confirms the wrong reading rather than correcting it. It cost real work -- the cross-tenant review obligation opened 2026-09-23T09:54Z built its point (3) on claim (1) and asked a reviewer to confirm a phase-2 gap that had been closed two days earlier.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ce835a7e57b3",
+        "date": "2026-09-22",
+        "subject": "fix(sairnlaw): phase 2 completed -- the last three resources authorised by a key shipped to the browser now need a session",
+        "lag_days": 2
+      },
+      "citation_note": "Same citation and same stretch as the record for dc8a8509 earlier today, and deliberately the same so the two read as one class rather than two incidents. 2.3's shape is exact -- a fact with a tense goes stale when the world changes, not when anybody edits it -- but 2.3 is written about standing documents and this fact lived in a source comment. Cited arguable rather than not-citable: the family is right, only the audience is smaller and the review cadence is zero.",
+      "contributing_factors": [
+        {
+          "factor": "THE GUARD MOVED AND THE COMMENT DID NOT. The session check for these three resources is not in this branch at all -- it is in SD_SESSION_GATED, a central table roughly 11,800 lines away. Nothing connects the two, so a change at the gate has no mechanical reason to touch the prose at the branch, and the prose is what a reader standing at the branch sees.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "The real fix is the one the gate's own comments already gesture at -- a branch whose guard lives elsewhere should say WHERE, not whether. Rewriting every centrally-gated branch's comment to point at SD_SESSION_GATED is a sweep across the whole file and belongs to its own claim, not to a review discharge."
+        },
+        {
+          "factor": "THE 2026-09-22 PHASE-2 CHANGE DOCUMENTED ITSELF THOROUGHLY AT THE GATE AND NOWHERE ELSE. SD_SESSION_GATED carries a long, careful entry explaining the canary, the six measured pairs and the client-half confirmation -- so the author plainly did re-derive the facts. The sweep just stopped at the table being edited.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Corrected here, with what the comment used to say kept beside what is true, because the wrong version is what older obligations quote."
+        },
+        {
+          "factor": "A REVIEWER READ IT AND PASSED IT ON RATHER THAN CHECKING IT. The 2026-09-23T09:54Z obligation's point (3) restates claim (1) as established fact and asks the next reviewer to confirm the SCOPING of an arm around it. A false premise travelled one hop into a standing record and would have travelled further -- the arm's own label in the test file was corrected on 2026-09-23, so the test file and api/sd-data.js have disagreed about this for a day with nothing noticing.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "The verdict for that obligation names the disagreement explicitly so the next reader of either file finds the other. A mechanical check -- a resource in SD_SESSION_GATED whose branch comment says it is ungated -- is narrow enough to be worth building and is recorded as a candidate, not built here."
+        }
+      ],
+      "recurrence_open": "ONLY THIS ONE BLOCK IS FIXED. Nothing has swept the rest of api/sd-data.js for branch comments that describe a guard which has since moved to SD_SESSION_GATED, and the file has 22 resources in that table -- the same staleness is possible at every one of them and has been measured at none. Also open: no check exists that would fail when a resource is added to SD_SESSION_GATED while its branch comment still says it is ungated, which is the mechanical form of this defect and the only thing that would catch the next one. And the direction of the error matters and is not tracked anywhere -- a comment that understates a guard produces wasted review and false gap reports, while one that overstates a guard would produce the opposite and worse, and nothing here distinguishes them."
+    },
+    {
       "commit": "982b093cfa13",
       "date": "2026-09-24",
       "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
