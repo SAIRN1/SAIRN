@@ -2353,6 +2353,21 @@
         "docs/SAIRN-OPEN-WORK-INDEX.md",
         "tests/run_sf_session_gate_sabotage_probe.py"
       ]
+    },
+    {
+      "id": "fourth-1790277378",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "item 90 primitive-obsession check -- one tool, three named shapes: a measured value defended into a default (Number(x)||0), a config read where Number('') is 0, and a locale date string compared as if sortable FILES: tools/primitive_obsession_check.py tools/tooling_inventory.py tests/run_primitive_obsession_probe.py",
+      "claimed_at": "2026-09-24T19:16:18Z",
+      "claimed_at_epoch": 1790277378.1329432,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_primitive_obsession_probe.py",
+        "tools/primitive_obsession_check.py",
+        "tools/tooling_inventory.py"
+      ]
     }
   ],
   "refusals": [
