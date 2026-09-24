@@ -3064,6 +3064,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-24T21:12:02Z",
+      "resources": [
+        "sd_quote_requests"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-quote-request-soft-delete.test.js",
+        "api/sd-data-tombstone-propagation.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "Tombstone resurrection guards (3c4c79e3): sd_customers' write and the SAIRNcode generic write now read the stored row and refuse 409 DELETED on a tombstoned record -- the quiet LWW found by auditing fourth's Task #19 against Michael's server-wins decision. WHAT A REVIEWER SHOULD ATTACK: (1) the FAIL-THROUGH: a failed pre-read falls through to the upsert rather than refusing, on the argument that a liveness hiccup must not become a data outage -- if you think a resurrection during a read outage is worse than blocked writes during one, that is a real disagreement and this is the moment; (2) the pre-read adds a round trip to every sd_customers write and every write on the seven SC soft-delete resources -- confirm no caller loops writes in a way that doubles a bulk sync's requests; (3) the residual race (delete and write interleaving between pre-read and upsert) is disclosed as the window the upsert always had -- check whether a DB-side predicate (e.g. a partial unique index or a WHERE on the upsert) could close it cheaply, which I did not attempt; (4) the two soft-delete suites' registry arms were updated to ['soft_delete','tombstones'] -- confirm that expectation change is honest (the registry really did grow on 2026-09-23) and not an arm weakened to green.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T21:12:02Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
