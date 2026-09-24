@@ -546,14 +546,22 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="soap-kpis"></div>
-<!-- Added 2026-09-04 with the authorship correction. A reader of this table
-     cannot otherwise tell that "Recorded by" is a self-selected label. -->
+<!-- Added 2026-09-04 with the authorship correction; REWRITTEN 2026-09-24.
+     The old text said "SAIRNvet has no per-employee sign-in ... chosen from a
+     dropdown and is never verified" -- true when written, FALSE since
+     2026-09-13, when per-employee auth landed (employee ID + PIN, a signed
+     session, and a role served by whoami from the server row -- the dropdown
+     is gone). An in-app notice that understates the app's own controls is the
+     same defect as one that overstates them: a reader acting on it acts
+     wrongly. What is STILL true is narrower and is what the card now says:
+     these rows store the ROLE, not the signed-in person's identity, and a
+     ticked box is not an electronic signature. -->
 <div class="card" style="padding:12px 16px;font-size:12px;color:var(--text-muted,#666);line-height:1.6">
-  <strong>These entries identify a role, not a person, and none of them is an electronic signature.</strong>
-  SAIRNvet has no per-employee sign-in &mdash; the role beside your name is chosen from a dropdown and is never
-  verified, so &ldquo;Recorded by&rdquo; says which role was selected at the time and nothing about who was at the
-  keyboard. &ldquo;Reviewed&rdquo; records that the confirmation box was ticked; it is an attestation, not a signature,
-  and it will not satisfy any requirement that a named licensed individual sign a record.
+  <strong>These entries identify a role, not a named person, and none of them is an electronic signature.</strong>
+  Sign-in is per-employee and the role shown beside your name is verified by the server &mdash; but this table
+  stores only that role, so &ldquo;Recorded by&rdquo; says which verified role recorded the note, not which named
+  individual. &ldquo;Reviewed&rdquo; records that the confirmation box was ticked; it is an attestation, not a
+  signature, and it will not satisfy any requirement that a named licensed individual sign a record.
 </div>
 <div class="card"><div class="sv-tw"><table id="panel-soap-table">
 <thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Recorded by (role)</th><th>Status</th></tr></thead>
@@ -2215,12 +2223,13 @@ function svIsQuotaError(e){
 // it does not have.
 //
 // WHAT THIS DOES NOT DO, said plainly because of what is in these tables: it
-// does not make SAIRNvet compliant. The gate is the LICENCE KEY only, because
-// that is the whole authentication this app has -- `role` is a self-selected
-// dropdown, never server-verified. sv_controlled is a DEA-relevant register
-// and sv_audit_log is its dosing trail; both are in scope of the open-work row
-// for SAIRNvet's missing auth subsystem. Not backing them up guaranteed they
-// were lost with the browser profile; backing them up does not close that row.
+// does not make SAIRNvet compliant. WHEN WRITTEN the gate was the licence key
+// only and `role` was a self-selected dropdown -- TRUE THEN, SUPERSEDED
+// 2026-09-13: per-employee auth landed (employee ID + PIN, signed session,
+// server-supplied role) and the server session gate followed on 2026-09-21.
+// The original sentence is kept above as the record of why this backup landed
+// in the shape it did; do not read it as current. sv_controlled remains a
+// DEA-relevant register and sv_audit_log its dosing trail.
 var SV_SYNCED=[
   'sv_audit_log','sv_billing','sv_boarding','sv_clients','sv_coggins',
   'sv_comms','sv_compliance','sv_conservation','sv_controlled','sv_dental',
@@ -5140,11 +5149,12 @@ function savePatients(list){
 }
 
 // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
-// live in SAIRNbiz and SAIRNlaw, minus the sensitivity/role-gate concept:
-// SAIRNvet's `role` is a self-selected dropdown at login
-// (sairnvet.html:1981), never server-verified, so a "sensitive" flag
-// here would restrict nothing a user couldn't bypass by picking a
-// different option. See
+// live in SAIRNbiz and SAIRNlaw, minus the sensitivity/role-gate concept.
+// THE STATED PREMISE EXPIRED 2026-09-13: when written, `role` was a
+// self-selected dropdown, so a "sensitive" flag would have restricted
+// nothing. The role is server-verified now (whoami, per-employee sign-in),
+// so a role gate here WOULD hold -- adding one is an open product decision,
+// not a technical impossibility any more. See
 // docs/superpowers/specs/2026-08-10-sairnvet-ai-tool-calling-design.md
 var SV_TOOLS = {};
 
@@ -8578,9 +8588,11 @@ function onSoapSignoff(){
         //
         // The checkbox beside it already says the honest thing -- "I have
         // reviewed and edited this note and confirm it as accurate" -- so the
-        // stored status now matches the attestation actually given. Renaming it
-        // is the fix; producing a real signature needs per-employee auth this
-        // app does not have.
+        // stored status now matches the attestation actually given. The old
+        // closing line said a real signature "needs per-employee auth this
+        // app does not have" -- auth EXISTS since 2026-09-13; what is still
+        // missing is only the wiring that would stamp the signed-in
+        // employee's identity here instead of the role label.
         n.status = 'Reviewed';
         n.reviewed_by_role = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'').trim()||'unspecified';
         n.reviewed_at = new Date().toISOString();
@@ -8630,14 +8642,14 @@ function generateSOAP(){
     document.getElementById('soap-signoff').style.display='block';
     var list = getSoapNotes();
     var id = 'sn'+Date.now();
-    // WHAT THIS FIELD ACTUALLY IS, corrected 2026-09-04. It was called `author`
-    // and shown in a column headed "Author", which a reader takes to mean WHO
-    // WROTE THIS. It is not a person: it is the self-selected ROLE label from
-    // the sidebar (`#userRole`), read out of the DOM. SAIRNvet has no
-    // per-employee authentication -- the role is a dropdown at login, never
-    // server-verified, which the AI dispatcher's own header already says is
-    // why it carries no role gate. So every note is "authored" by "Doctor" or
-    // "Technician", identifying nobody.
+    // WHAT THIS FIELD ACTUALLY IS, corrected 2026-09-04, re-corrected
+    // 2026-09-24. It was called `author` and shown as "Author", which a reader
+    // takes to mean WHO WROTE THIS. It is the ROLE label from the sidebar
+    // (`#userRole`) -- since 2026-09-13 that badge is SERVER-VERIFIED
+    // (whoami), so the role is real; but it is still a role, and every note is
+    // "authored" by "Doctor" or "Technician", identifying no named person.
+    // Stamping the signed-in employee instead is possible now and remains an
+    // open product decision.
     //
     // Not fixed by inventing an identity the app does not have. The value is
     // stored under a name that says what it is, and the column is relabelled.
@@ -9398,11 +9410,12 @@ function exportTableCSV(tableId,filename){
 // AI suggestion, and staff peer-consult routing (panel-photoconsult).
 // Phase 1 / internal-staff scope only -- see the HTML comment above the
 // panel markup for the full scope note. Data: sv_peerconsults (localStorage,
-// same convention as every other sv_ store in this app). No per-user auth
-// exists beyond the shared clinic login, so "who am I" is a simple
-// self-selected staff picker (svStore'd as pc_identity), not a real
-// account system -- this is a deliberately honest, minimal stand-in
-// rather than a fabricated multi-user auth layer.
+// same convention as every other sv_ store in this app). WHEN WRITTEN no
+// per-user auth existed, so "who am I" was a self-selected staff picker
+// (svStore'd as pc_identity). Per-employee sign-in EXISTS since 2026-09-13;
+// the picker survives because the roster here is the STAFF list (names),
+// not the credential list, and rewiring it to the signed-in identity is an
+// open product decision -- but the old justification is history, not fact.
 // ================================================================
 var pcStream = null;
 var pcCapturedB64 = null;
