@@ -13181,6 +13181,98 @@
         }
       ],
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
+    },
+    {
+      "commit": "0706e28da8c3",
+      "date": "2026-09-24",
+      "subject": "fix(write-audit): the fifth false-positive class -- a call inside a comment is not a call",
+      "files": [
+        "tests/run_sync_write_result_probe.py",
+        "tools/sync_write_result_check.py"
+      ],
+      "lines_added": 99,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/sync_write_result_check.py scanned transport calls written inside `//` comments as if they were real call sites. Three on the live codebase -- sairndental.html:5264, sairndesign.html:2394, sairngrounds.html:1683 -- and every one is a comment EXPLAINING a write, two of them explaining a write that had been deliberately REMOVED. They were reported as COULD NOT TELL, which is the right answer to the wrong question: there is nothing to tell because there is no call. IT COST IN THREE DIRECTIONS AND THE THIRD IS THE WORST. The write COUNT is the denominator of every figure the tool prints, and it was over by three. Three could-not-tells sat permanently unresolvable, and a third-state column that can never reach zero is one people stop reading. And a comment quoting a call it removed would be reported forever, so the honest act of writing down what you took out made the tool noisier -- a checker that penalises good documentation is one people route around. THIS IS THE FIFTH FALSE-POSITIVE CLASS found in this checker; four were already fixed (await read as a consumer, a delayed multi-line .then(), an array element inside Promise.all, and a bracket opened on an earlier line). AND THIS CODEBASE HAD ALREADY PAID FOR THIS EXACT CLASS: tools/sairn_dead_button_audit.py records 58 phantom findings on StoneDesk from scanning comments, and its fix was a real state machine rather than a regex. The lesson was written down and had not reached here.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Present from the tool's first version. No commit introduced it; the three comments it trips on were written independently, two of them AFTER the tool, by sessions documenting a write they had removed."
+      },
+      "citation_note": "The applicable rule is a repo CONVENTION rather than a numbered process rule: tools/sairn_dead_button_audit.py's header records that scanning comments cost 58 phantom findings on StoneDesk and that the fix is a real state machine, not a regex. It is not a section in SAIRN-PROCESS-RULES.md, so not-citable is the honest field value -- and the fact that a lesson this expensive lives only in one tool's header is part of why it did not reach a sibling tool solving the same problem.",
+      "phase_note": "Not introduced in a phase. The scanner never stripped comments, and the population it trips on grows every time somebody documents a removal honestly.",
+      "factors_unknown_reason": "Not yet worked through independently. The commit names the shape: a documented lesson living in one tool's header, never generalised, not reaching a sibling tool with the same problem."
+    },
+    {
+      "commit": "6a710a6a5fe8",
+      "date": "2026-09-24",
+      "subject": "fix(controls): the rebase control was guarded all along, and a register count was counting itself",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 52,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "Two measurement defects, each of which made a checker report the wrong thing about itself. (1) tools/sabotage_control_check.py reported tests/rebase_resolve_merge_control.py as UNGUARDED while that control carried a guard STRONGER than any spelling the detector knew: it tells a STALE ANCHOR apart from a NO-OP MUTATION, reports both, and exits 1 on either. The control guards tools/sairn_rebase_resolve.py, which every clone on this machine uses to merge docs/tier-a-reviews.json. This is the SIXTH time this detector has under-credited a well-written control, which inverts the signal it exists to give -- a probe that did the harder thing scoring worse than one that did the easy thing. The fix is the detector, not the probe: adding a decorative assert to satisfy a regex would be the inversion itself. (2) docs/CRITICALITY-TIERS.md said \"N rows are marked CONFIDENTIALITY NOT YET INDIVIDUALLY READ\" and instructed the reader to re-derive the figure with an unanchored `grep -c`, so the prose that REPORTS the count matched too and the prescribed re-derivation returned one too many EVERY TIME ANYBODY RAN IT. A SELF-COUNTING NUMBER IS WORSE THAN A STALE ONE: a stale number is wrong until somebody checks, and this one was wrong including when they did, because the instruction to check was what reproduced the error. It had also drifted on the other axis -- it read nine against an actual seven -- so correcting only the command would have left a wrong figure behind a right method.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Neither has an injection commit. The detector's vocabulary never covered the state-label spelling, and the grep command has counted its own sentence since the sentence was written."
+      },
+      "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
+      "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
+      "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
+    },
+    {
+      "commit": "acd31230d7b9",
+      "date": "2026-09-24",
+      "subject": "fix(service-role-gate): the report truncated 226 resources to 3 in silence, and two claims about it were stale",
+      "files": [
+        "api/bridge.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_service_role_gate_probe.py",
+        "tools/report_only_checks.py",
+        "tools/service_role_tier_a_gate_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 122,
+      "lines_removed": 33,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/service_role_tier_a_gate_check.py printed each file's Tier A resource list truncated to three names with nothing to say it had truncated. On api/sd-data.js that is 3 of 226, so the report line read \"alf_billing, alf_claim_routes, alf_clients\" and a reader would take the single largest Tier A surface on the platform for a file that barely touches Tier A data. THE CLASSIFICATION WAS NEVER WRONG -- only the reporting layer was, which is the more dangerous half: a wrong verdict gets argued with, a truthful verdict under a misleading summary gets believed. Same shape as the fabrication rule this platform already holds, where blanking a KPI value while leaving \"4 in progress\" beside it is worse than not blanking it at all. TWO STALE CLAIMS ABOUT THE SAME TOOL WERE FIXED WITH IT: the registry entry and the generated TOOLING-INVENTORY row both said \"It reports CLEAN today\" when it names three UNGATED findings and one COULD NOT RUN and exits 2 permanently; and api/bridge.js's push comment still argued that requiring a licence key \"would just trade a 404 for a 401, not fix anything live\", an argument written while `pull` existed and invalidated when `pull` was removed on 2026-09-17 for a raw-licence-key exposure that applies equally to the write side.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The truncation was present from the tool's first version on 2026-09-15 and no commit introduced it. The two stale claims each became false when something ELSE changed -- the tool got more honest, and pull was removed from bridge.js -- so neither has an injection point either."
+      },
+      "citation_note": "No standing rule names a REPORT that truncates silently while its classification stays correct. The nearest are the fabrication discipline (a blanked KPI with a surviving sub-label) and Guardian's no-silent-caps line in the coverage-disclosure section; neither is written as a rule about a checker's own output. Closest match recorded rather than forced.",
+      "phase_note": "Not introduced in a phase. A cap that was reasonable when the largest file held a handful of Tier A resources became misleading as api/sd-data.js grew to 226.",
+      "factors_unknown_reason": "Not yet worked through by an independent session. Named in the commit: a cap with no disclosure, a caveat that went stale because its subject improved, and an argument whose premise was removed a week later."
     }
   ],
   "started": "2026-09-09",
