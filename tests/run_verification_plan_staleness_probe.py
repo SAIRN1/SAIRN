@@ -72,6 +72,15 @@ _r = subprocess.run([sys.executable, _abs_tool], cwd=_abs_root,
                     capture_output=True, text=True, encoding='utf-8',
                     errors='replace')
 rc, out = _r.returncode, (_r.stdout or '') + (_r.stderr or '')
+# REMOVED, NOT LEFT FOR THE OS (2026-09-24). The first version of this arm
+# created the throwaway tree and never deleted it, and the temporary-state
+# checker built LATER THE SAME DAY found two of them sitting in the temp
+# directory on its FIRST RUN -- the tool's own author leaking the exact class
+# the tool detects, hours before writing it. The claim registry's
+# sabotage-worktrees ttl now covers this prefix, and this rmtree is the
+# restore half the claim demands.
+import shutil as _sh
+_sh.rmtree(_abs_root, ignore_errors=True)
 check('with NO plan on disk it exits 2 COULD NOT TELL, not 0',
       rc == 2 and 'COULD NOT TELL' in out, 'rc=%s' % rc)
 check('...and it NAMES every path it looked for',
