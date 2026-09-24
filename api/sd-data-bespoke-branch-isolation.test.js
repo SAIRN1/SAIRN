@@ -317,6 +317,10 @@ const WRITE = {
 // Which of the two write shapes each resource has. Stated per resource rather
 // than sniffed from the response, so a branch that CHANGES shape breaks this
 // table loudly instead of silently taking the other assertion.
+// Branches converted to api/_lib/blob.js's storedBlob(), whose stored data
+// must carry no scope key. Grows as conversions land; absent means only that
+// the branch still hand-rolls its delete list.
+const BLOB_CLEAN = { law_matters: true, rf_proposals: true };
 const CONFLICT_KEY = {
   dnt_appointments: 'on_conflict=license_hash,appointment_id',
   law_matters: 'on_conflict=license_hash,matter_id',
@@ -384,6 +388,18 @@ const CONFLICT_KEY = {
           resource + ' grew a conflict key (' + post.url + ') and this arm still '
           + 'only checks the body. Re-read the branch: an upsert keyed without '
           + 'license_hash is a cross-tenant overwrite this assertion cannot see.');
+        // AND THE HEADER, NOT JUST THE URL (2026-09-24, from this file's own
+        // Tier A review): PostgREST upserts on the table's PRIMARY KEY when
+        // `Prefer: resolution=merge-duplicates` is sent with NO on_conflict=
+        // in the URL -- so the assertion above alone stays green for an
+        // upsert it exists to refuse. Both branches send return=representation
+        // only today; this pins that.
+        const prefer = String((post.opts.headers
+          && (post.opts.headers.Prefer || post.opts.headers.prefer)) || '');
+        assert.ok(prefer.indexOf('merge-duplicates') === -1,
+          resource + ' sends Prefer: ' + prefer + ' -- merge-duplicates with no '
+          + 'on_conflict= upserts on the primary key, which is the overwrite '
+          + 'the URL check above cannot see.');
       }
       const sent = JSON.parse(post.opts.body);
       assert.strictEqual(sent.license_hash, HASH_A,
@@ -403,8 +419,19 @@ const CONFLICT_KEY = {
           assert.fail('UNREACHED: nothing was written; handler answered '
             + res.statusCode + ' ' + JSON.stringify(res.body));
         }
-        assert.strictEqual(JSON.parse(post.opts.body).license_hash, HASH_A,
+        const sentInj = JSON.parse(post.opts.body);
+        assert.strictEqual(sentInj.license_hash, HASH_A,
           'a license_hash INSIDE the payload reached the stored row');
+        // THE BLOB HALF (2026-09-24): scope keys are stripped from the stored
+        // data on the branches converted to api/_lib/blob.js's storedBlob().
+        // Asserted only where the conversion has landed -- an assertion over
+        // unconverted branches would be red about work nobody has done yet,
+        // and the remaining branches are an open-work row, not a surprise.
+        if (BLOB_CLEAN[resource] && sentInj.data) {
+          assert.ok(!('license_hash' in sentInj.data) && !('app_id' in sentInj.data),
+            resource + ' stored a scope key inside its data blob: '
+            + JSON.stringify(Object.keys(sentInj.data)));
+        }
       });
 
     if (unit[5] === false) {

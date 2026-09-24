@@ -3121,6 +3121,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-24T21:21:44Z",
+      "resources": [
+        "alf_mar",
+        "law_matters",
+        "rf_proposals",
+        "rf_supplier_documents",
+        "sb_ap",
+        "sb_bud"
+      ],
+      "rules": [],
+      "files": [
+        "api/_lib/blob.js",
+        "api/sd-data-bespoke-branch-isolation.test.js",
+        "api/sd-data.js",
+        "sairnbiz.html",
+        "tests/sairnbiz_vendor_ytd_derivation.js"
+      ],
+      "what": "Two commits in this push. (A) sairnbiz vendor YTD (H2 seq #211): derived from paid sb_ap bills in rVends via new sbVendorPaidYTD() -- current calendar year on paidDate falling back to bill date, vendors joined on trimmed case-folded name, unlisted-payee disclosure row, CSV exports the derived figure, sbPayBill refreshes the panel; the stored ytd field (seed-invented or saveVendor's constant 0) is read by nothing. ATTACK: the name join -- a renamed vendor orphans their history silently; the year boundary on bills paid near midnight (paidDate is sbLocalToday, bill date could be prior year); and whether the disclosure row can be spoofed by a crafted vendor name (it goes through H()). 7-arm suite with an in-memory mutation control. (B) api/_lib/blob.js storedBlob adopted on six branches (alf_mar +created_at shadow close, alf_incidents, alf_clients, alf_facility, law_matters, rf_proposals) with Winj blob assertions (module sabotage 5/5 red) and the append-only arms now refuse Prefer merge-duplicates (driven red). ATTACK: whether any client legitimately stored license_hash/app_id inside these six resources' blobs before today -- the strip is silent for them; and law_matters keeps its client-side id INSIDE data on purpose (the read returns x.data), so verify the empty columnKeys call did not strip anything the reader needs.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T21:21:44Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

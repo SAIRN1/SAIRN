@@ -29,6 +29,12 @@
 
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive, roleSet } = require('./_lib/auth');
+// storedBlob: the ONE place that knows scope keys (license_hash, app_id,
+// p_license_hash) are never stored inside a data blob -- api/_lib/blob.js's
+// header carries the whole argument. Adopted 2026-09-24 on the six branches
+// two Tier A reviews named; the remaining hand-rolled delete lists are an
+// open-work row, not a silent difference.
+const { storedBlob } = require('./_lib/blob');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
@@ -6082,9 +6088,7 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const clientData = Object.assign({}, payload);
-      delete clientData.id;
-      delete clientData.assigned_employee_id;
+      const clientData = storedBlob(payload, ['id', 'assigned_employee_id']);
       clientData.care_level_history = careLevelHistory;
       clientData.ccrc_contract_type = ccrcContractType;
       // care_level stays a derived flat field for backward-compatible display (badges, careRateFor
@@ -8074,8 +8078,7 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const blob = Object.assign({}, payload);
-      ['id', 'job_id', 'event_type', 'supersedes'].forEach((k) => { delete blob[k]; });
+      const blob = storedBlob(payload, ['id', 'job_id', 'event_type', 'supersedes']);
       // The price is SNAPSHOT and recomputed server-side, never trusted from
       // the client and never a pointer at the live estimate.
       if (payload.event_type === 'issued') {
@@ -9287,8 +9290,10 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'This resident is not assigned to you' } });
         return;
       }
-      const marData = Object.assign({}, payload);
-      delete marData.id; delete marData.resident_id; delete marData.entry_type; delete marData.assigned_employee_id;
+      // created_at is in the strip list because the read maps the COLUMN and
+      // spreads this blob after it -- a payload created_at would shadow the
+      // real one (the 2026-09-23T18:54:03Z review's point 1, now closed).
+      const marData = storedBlob(payload, ['id', 'resident_id', 'entry_type', 'assigned_employee_id', 'created_at']);
       // ── PHARMACY-ORDER REVIEW GATE (2026-08-22, Phase 3 item 1) ────────────────────────
       // A pharmacy-sourced order arrives via api/alf-pharmacy.js as pending_review and is
       // NOT active on the MAR until a clinician accepts it. Removing manual transcription
@@ -9642,8 +9647,8 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management, nursing, or billing can update an incident report after it is filed' } });
         return;
       }
-      const incidentData = Object.assign({}, payload);
-      delete incidentData.id; delete incidentData.resident_id;
+      // created_at stripped for the same shadow reason as alf_mar above.
+      const incidentData = storedBlob(payload, ['id', 'resident_id', 'created_at']);
       const r = await fetch(rest('alf_incidents?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -9761,8 +9766,7 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_facility payload.id is required' } }); return; }
-      const facilityData = Object.assign({}, payload);
-      delete facilityData.id;
+      const facilityData = storedBlob(payload, ['id']);
       // An EMPTY licensing_state is allowed on purpose -- a facility that has not filled it in
       // yet is a real state of the world, and refusing the whole save would block unrelated
       // profile edits. A NON-EMPTY one that is not a real USPS code is refused outright rather
@@ -13210,7 +13214,7 @@ module.exports = async (req, res) => {
       const r = await fetch(rest('law_matters?on_conflict=license_hash,matter_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', matter_id: String(payload.id), client_id: String(payload.client_id), data: payload, updated_at: nowISO() })
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', matter_id: String(payload.id), client_id: String(payload.client_id), data: storedBlob(payload, []), updated_at: nowISO() })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw data tables are not set up yet — run sql/sairnlaw_data_schema.sql in Supabase first.' } }); return; }
       const rows = await r.json();

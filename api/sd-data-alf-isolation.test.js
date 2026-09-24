@@ -292,8 +292,13 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
         assert.fail('UNREACHED: no upsert; handler answered ' + res.statusCode
           + ' ' + JSON.stringify(res.body));
       }
-      assert.strictEqual(JSON.parse(post.opts.body).license_hash, HASH_A,
+      const sentCli = JSON.parse(post.opts.body);
+      assert.strictEqual(sentCli.license_hash, HASH_A,
         'a license_hash inside the payload reached the stored row');
+      // storedBlob() (api/_lib/blob.js, 2026-09-24): scope keys never reach
+      // the stored data either.
+      assert.ok(!('license_hash' in (sentCli.data || {})),
+        'the payload license_hash was stored INSIDE the data blob');
     });
 
   // ══ alf_facility ════════════════════════════════════════════════════════
@@ -347,7 +352,10 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
         assert.fail('UNREACHED: no upsert; handler answered ' + res.statusCode
           + ' ' + JSON.stringify(res.body));
       }
-      assert.strictEqual(JSON.parse(post.opts.body).license_hash, HASH_A);
+      const sentFac = JSON.parse(post.opts.body);
+      assert.strictEqual(sentFac.license_hash, HASH_A);
+      assert.ok(!('license_hash' in (sentFac.data || {})),
+        'the payload license_hash was stored INSIDE the data blob');
     });
 
   // ══ alf_mar ═════════════════════════════════════════════════════════════
@@ -438,8 +446,18 @@ function marEntry(licHash, entryId, residentId, assignee, tenant) {
         assert.fail('UNREACHED: no RPC call; handler answered ' + res.statusCode
           + ' ' + JSON.stringify(res.body));
       }
-      assert.strictEqual(JSON.parse(post.opts.body).p_license_hash, HASH_A,
+      const sentMar = JSON.parse(post.opts.body);
+      assert.strictEqual(sentMar.p_license_hash, HASH_A,
         'a license_hash inside the payload reached the stored procedure');
+      // storedBlob() strips the scope keys AND created_at from p_data --
+      // created_at because the read maps the COLUMN and spreads the blob
+      // after it, so a blob copy would shadow the real one (the
+      // 2026-09-23T18:54:03Z review point 1, closed by this).
+      const pd = sentMar.p_data || {};
+      assert.ok(!('license_hash' in pd) && !('p_license_hash' in pd)
+        && !('created_at' in pd),
+        'a scope key or created_at was stored inside p_data: '
+        + JSON.stringify(Object.keys(pd)));
     });
 
   // ══ THE SESSION HALF ════════════════════════════════════════════════════
