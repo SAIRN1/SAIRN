@@ -2274,6 +2274,20 @@
         "docs/2026-09-24-sd-encryption-key-revoke.md",
         "tools/nhi_register.py"
       ]
+    },
+    {
+      "id": "cody-1790250640",
+      "session": "cody",
+      "subject": "rollup-guard",
+      "task": "structural guard so the rollup name list cannot drift from the rows FILES: tools/criticality_tier_check.py tests/run_two_axis_tier_parser_probe.py",
+      "claimed_at": "2026-09-24T11:50:40Z",
+      "claimed_at_epoch": 1790250640.721159,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_two_axis_tier_parser_probe.py",
+        "tools/criticality_tier_check.py"
+      ]
     }
   ],
   "refusals": [
