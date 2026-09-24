@@ -7146,6 +7146,22 @@ How to answer:
                     var cred = scValidateCredentialForCode(item.provider_id, item.code);
                     if (cred.state !== 'covered') basis.push(cred.detail);
                 }
+
+                // (d) THE EDGE BACK FROM ELIGIBILITY, A2's MISSING HALF
+                //     (2026-09-24). `panel-eligibility` and `sc_eligibility`
+                //     have existed for some time; nothing read a payer's answer
+                //     back into the coding queue, so a coder could clear an
+                //     encounter the payer had already said was not covered.
+                //
+                // IT OBEYS THE SAME RULE AS (a), (b) AND (c): it reads only
+                // what this practice's own data holds, and it never asserts a
+                // coverage fact this app invented. Everything it escalates on
+                // is either the PAYER'S OWN WORDS, quoted, or a disagreement
+                // between two of the practice's own recorded checks.
+                var eligBasis = (typeof scEligibilityConcerns === 'function')
+                    ? scEligibilityConcerns(item)
+                    : [];
+                for (var e = 0; e < eligBasis.length; e++) basis.push(eligBasis[e]);
             }
 
             return {
@@ -7156,6 +7172,87 @@ How to answer:
                     ? 'Held for a human coder because: ' + basis.join(' ')
                     : ''
             };
+        }
+
+        // ── A2's MISSING EDGE: AN ELIGIBILITY ANSWER REACHES THE CODING
+        // ── QUEUE (2026-09-24) ──────────────────────────────────────────────
+        // The eligibility panel and `sc_eligibility` shipped without this. A
+        // payer could answer "inactive" on Monday and a coder could clear the
+        // same encounter on Tuesday with nothing connecting the two, because
+        // the only thing joining them -- `encounter_ref` -- was never read
+        // across.
+        //
+        // TWO SIGNALS, AND NEITHER INVENTS A COVERAGE VERDICT. That is the
+        // line this whole module holds: scDeriveCodedReview's own comment says
+        // its signals are safe to ship precisely because none of them asserts
+        // a coding fact this app made up, "and a hardcoded NCCI table would
+        // not be". A CPT-to-service-type-code mapping would be exactly that
+        // hardcoded table, so there is none here.
+        //
+        //   D1  THE PAYER SAID SOMETHING UNAMBIGUOUSLY NEGATIVE, and the
+        //       escalation QUOTES IT rather than summarising it. The terms
+        //       below are the X12 271 EB01 benefit-status descriptions for the
+        //       non-active states -- Inactive, Non-Covered, and the two
+        //       "cannot answer" states -- not a vocabulary invented here.
+        //       Anything else, including a status this app does not recognise,
+        //       is SILENT.
+        //
+        //   D2  TWO CHECKS ON ONE ENCOUNTER DISAGREE. This needs no vocabulary
+        //       at all: it is a fact about the practice's own recorded data,
+        //       the same shape as signal (b) counting prior rejections. Two
+        //       payer answers for one encounter that do not match is something
+        //       a human should see whichever of them is right.
+        //
+        // NO ELIGIBILITY RECORD IS SILENT, AND THAT IS A DELIBERATE DEPARTURE
+        // from signal (c). The credential gate escalates on `no_data` because
+        // a practice must know whether its own providers are credentialed.
+        // Eligibility is optional per encounter and most encounters legitimately
+        // have no check, so escalating every unchecked one would hold the whole
+        // queue -- which is the fail-closed-in-the-wrong-direction mistake this
+        // app already records for the DMEPOS seven-element gate. An absent
+        // check is an absence of evidence and is reported as nothing.
+        var SC_ELIG_NEGATIVE_TERMS = [
+            'inactive', 'non-covered', 'noncovered', 'not covered',
+            'terminated', 'ineligible', 'cannot process'
+        ];
+        function scEligibilityChecksFor(encounterRef) {
+            var ref = String(encounterRef || '').trim();
+            if (!ref) return [];
+            var all = [];
+            try { all = getEligibilityEntries() || []; } catch (e) { all = []; }
+            return all.filter(function (r) {
+                return r && String(r.encounter_ref || '').trim() === ref;
+            });
+        }
+        function scEligibilityConcerns(item) {
+            var out = [];
+            var checks = scEligibilityChecksFor(item && item.encounter_ref);
+            if (!checks.length) return out;
+            // D1 -- quoted, never paraphrased.
+            for (var i = 0; i < checks.length; i++) {
+                var status = String(checks[i].status || '');
+                var low = status.toLowerCase();
+                for (var t = 0; t < SC_ELIG_NEGATIVE_TERMS.length; t++) {
+                    if (low.indexOf(SC_ELIG_NEGATIVE_TERMS[t]) !== -1) {
+                        out.push('The payer answered "' + status + '" for this '
+                            + 'encounter on ' + (checks[i].date || 'an unrecorded date')
+                            + '. That is the payer\'s own wording, not this app\'s reading of it.');
+                        break;
+                    }
+                }
+            }
+            // D2 -- disagreement between the practice's own recorded checks.
+            var distinct = [];
+            checks.forEach(function (c) {
+                var st = String(c.status || '').trim();
+                if (st && distinct.indexOf(st) === -1) distinct.push(st);
+            });
+            if (distinct.length > 1) {
+                out.push('This encounter has ' + checks.length + ' eligibility checks '
+                    + 'on record and they do not agree: ' + distinct.join(' / ')
+                    + '. One of them is out of date and nothing here can say which.');
+            }
+            return out;
         }
 
         // Capture a coded item WITH its citation. Called from the suggestion
