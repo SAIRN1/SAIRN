@@ -2972,6 +2972,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T18:46:55Z",
+      "resources": [
+        "dnt_charges",
+        "dnt_patients"
+      ],
+      "rules": [],
+      "files": [
+        "api/_lib/dnt-rollup.test.js"
+      ],
+      "what": "api/_lib/dnt-rollup.js: money amounts were summed as IEEE754 doubles at the cell accumulation AND re-summed as float dollars at the totals line -- 0.1+0.2 = 0.30000000000000004, 100 x $10.01 = 1000.9999999999998, in a roll-up whose header promises the totals agree with the buckets by construction. Fixed with integer cents: rounded once at measurement, added as integers, dollars materialised at exactly two points. WHAT A REVIEWER SHOULD ATTACK: (1) whether Math.round(cell.value*100) at the totals line is genuinely lossless for every value a bucket can hold (it is c/100 for integer c -- check the magnitude bound); (2) whether rounding to whole cents at ingestion can mask a sub-cent upstream defect that used to be visible in the drift; (3) whether the count-metric path through the same expressions is really unchanged. Three regression arms each verified RED on the old code; strictEqual on exact decimals, no epsilon.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-24T18:46:55Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

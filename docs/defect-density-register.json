@@ -13716,7 +13716,7 @@
       "recurrence_open": "The actions close these four instances and pin them with 34 fixture arms. They do NOT close: the general gap that a review verdict's numbered findings become nobody's work unless a human copies them into a row (these sat disclosed for six days); the tuple-in-call ambiguity (a name in a tuple passed as an argument is treated as driven, which is the chosen direction, not a proven one); and the JS half of named_only_mention still has no AST -- a name inside a JS array literal is only as invisible as the stripper makes it."
     },
     {
-      "commit": "df32b641d534",
+      "commit": "0c7672e17d11",
       "date": "2026-09-24",
       "subject": "fix(dnt-rollup): money summed as IEEE754 doubles -- integer cents now, at the cell AND the totals line",
       "files": [
