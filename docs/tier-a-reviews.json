@@ -3084,6 +3084,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-24T21:20:22Z",
+      "resources": [],
+      "rules": [
+        "sc_pt_session_rules"
+      ],
+      "files": [
+        "sairncode.html"
+      ],
+      "what": "THE RTM SILENCE IN scValidatePtSession BECOMES A WARN (see the fix commit \"the RTM silence becomes a WARN\"), closing the finding from my own review of cc's GP obligation. CMS designated the RTM code family SOMETIMES THERAPY in the CY2022 PFS final rule; a sometimes-therapy service furnished under a therapy plan of care carries the discipline modifier, and everything in this panel is a PT plan-of-care context by construction -- the same scoping argument the GP block itself makes. WARN, not block, at exactly the confidence the finding was stated at: the CY2022 rule is cited from review knowledge, NOT re-verified against a primary source, and the gp_rtm source entry SAYS SO in its own text so the confidence travels with every rendered finding.\r\n\r\nATTACK THESE FIVE:\r\n\r\n(1) THE CY2022 CLAIM ITSELF IS THE LOAD-BEARING PART AND IT IS UNPINNED. I cite the CY2022 PFS final rule from model knowledge. If you can reach a primary source: confirm the sometimes-therapy designation for the RTM family AND the discipline-modifier requirement under a therapy plan of care; pin the Federal Register cite in gp_rtm; only then is escalation to a block even arguable. If the claim is wrong, the warn comes out entirely -- it has no other leg.\r\n\r\n(2) THE SCOPE IS THE KNOWN FAMILY ONLY: codes in SC_RTM_SHORT/LONG_WINDOW. The setup and treatment-management RTM codes are NOT in those maps and get no warn. Decide whether the family boundary should be the window maps -- built for a different rule -- or its own list.\r\n\r\n(3) A REVIEWER-FOUND FINDING IMPLEMENTED BY THE SAME REVIEWER is the softest spot procedurally: I found it, argued it, and shipped it. The counter-review this record exists for should re-litigate the JUDGEMENT, not just the code -- is a warn on an unpinned rule better than the silence the original author chose deliberately?\r\n\r\n(4) THE SCOPE BUG THE VM DRIVE CAUGHT: the rule derives its own rtmForGp because the window section's rtm variable is declared BELOW it -- var hoisting would have thrown on the first RTM-carrying session. Confirm no OTHER cross-section variable in that function body has the same hazard; I checked only mine.\r\n\r\n(5) SECTION 6b's NEGATIVE CONTROL escalates the warn to a block in a mutated copy and asserts the mutant blocks. Check the mutation anchor still matches exactly once and that the never-blocks arm plus section 6's original silence arms together really do pin both severity and scope.\r\n\r\nFILES: sairncode.html tests/sairncode_pt_gp_modifier.js",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T21:20:22Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
