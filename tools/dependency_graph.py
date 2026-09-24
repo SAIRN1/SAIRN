@@ -63,6 +63,7 @@ a tidy-up: removing an isolated node lowers the component count, so the
 "disconnects something" test cannot distinguish it. A module nothing requires
 and which requires nothing has no pair to be half of anyway.
 """
+import datetime
 import io
 import json
 import os
@@ -514,9 +515,23 @@ BASELINE_RE = re.compile(
     r'BASELINE\s*[:\-]?\s*(\d+)\s+components?\s+at\s+or\s+above', re.I)
 
 
+# THE DATE, because a frozen denominator without one cannot express a TREND.
+# "0 RETIRED" is a number; "0 RETIRED in 10 days" is what this register was
+# actually asked for -- a LIVE, SHRINKING list. Read out of the SAME sentence
+# as the count so the two cannot drift apart.
+BASELINE_DATE_RE = re.compile(
+    r'BASELINE\s*[:\-]?\s*\d+\s+components?\s+at\s+or\s+above'
+    r'[^\r\n]*?on\s+(\d{4}-\d{2}-\d{2})', re.I)
+
+
 def read_baseline(text):
     m = BASELINE_RE.search(text)
     return int(m.group(1)) if m else None
+
+
+def read_baseline_date(text):
+    m = BASELINE_DATE_RE.search(text)
+    return m.group(1) if m else None
 
 
 def check_register():
@@ -583,9 +598,43 @@ def check_register():
                  else ('%d fewer' % net if net > 0 else '%d MORE' % -net))
         print('  BASELINE %d on the day this register opened -> %d today (%s).'
               % (base, len(live), moved))
-        if net == 0 and not retired:
-            print('  NOTHING HAS BEEN RETIRED YET. Said plainly: the mechanism')
-            print('  works and the list has not moved.')
+        # ── THE RETIREMENT STALL, REPORTED UNCONDITIONALLY (2026-09-24) ────
+        # This disclosure used to be gated on `net == 0` -- the list being
+        # exactly its opening size -- so it went SILENT in every case except
+        # the one where nothing at all had happened. On 2026-09-23 the list
+        # stood at 32 against a baseline of 11 with ZERO retirements and the
+        # tool printed nothing about retirement at all: the GROWTH suppressed
+        # the one sentence a reader needed. A disclosure that disappears when
+        # the situation worsens is not a disclosure.
+        #
+        # AND IT CARRIES ELAPSED TIME NOW, which is what makes it a trend
+        # rather than a number. This register's stated purpose is a LIVE,
+        # SHRINKING list; "0 RETIRED" cannot be told from "nobody has run
+        # this" without knowing how long it has been true.
+        bdate = read_baseline_date(
+            io.open(REGISTER, encoding='utf-8', errors='replace').read())
+        if bdate is None:
+            problems.append('NO BASELINE DATE  the BASELINE sentence gives a '
+                            'count and no date, so "%d RETIRED" cannot be read '
+                            'as a trend -- a list nobody has fixed and a list '
+                            'nobody has measured print the same line.'
+                            % len(retired))
+        else:
+            try:
+                days = (datetime.date.today() - datetime.date(
+                    *(int(x) for x in bdate.split('-')))).days
+            except ValueError:
+                days = None
+            span = ('%d day(s)' % days) if days is not None else 'an unreadable span'
+            if not retired:
+                print('  NOTHING HAS BEEN RETIRED IN %s, since %s.' % (span, bdate))
+                print('  THAT IS A FACT ABOUT THE PLATFORM, NOT ABOUT THIS REGISTER:')
+                print('  retirement is a MEASUREMENT and no component has dropped')
+                print('  below the threshold. Nothing here is broken -- but a list')
+                print('  whose whole purpose is to SHRINK has not, and the elapsed')
+                print('  time is printed so that cannot be read as a clean run.')
+            else:
+                print('  %d RETIRED in %s, since %s.' % (len(retired), span, bdate))
     print('  A register that only grows is a graveyard; one that shrinks without '
           'a measurement')
     print('  behind it is worse, so RETIRED is refused while the component is '

@@ -21,6 +21,7 @@ actually differ, which is the only way to know the exclusion is doing anything.
 """
 import io
 import os
+import re
 import subprocess
 import sys
 
@@ -187,8 +188,18 @@ check('7d  a register with NO rows is REFUSED -- every live chokepoint is '
       'reported unregistered, rather than an empty table reading as clean',
       rc == 1 and 'UNREGISTERED' in out, rc)
 
+# ── 7e HAS BEEN RED AT HEAD, and it is the CONTROL (repaired 2026-09-24) ──
+# Its fixture carried no BASELINE sentence, so check_register correctly raised
+# NO BASELINE and the arm -- the only one in this section asserting rc == 0 --
+# failed. So 7d's refusal has been UNVERIFIED: nothing proved this checker
+# refuses an empty register for the reason 7d names rather than refusing
+# everything put in front of it. The other rc == 1 arms each assert their own
+# marker as well, so they were not passing on the missing baseline; this one
+# had no marker to assert and nothing else to be right about.
+BASE_LINE = ('**BASELINE: 3 components at or above the threshold on 2026-09-14, '
+             'the day this register opened.**\n\n')
 full = HEAD + ''.join('| `%s` | CC | OPEN | x |\n' % r['component'] for r in rows)
-rc, out = with_register(full)
+rc, out = with_register(BASE_LINE + full)
 check('7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that '
       'refuses everything', rc == 0, out[-200:])
 
@@ -221,6 +232,45 @@ finally:
     G.REGISTER = real_reg
 check('7i  a MISSING register is COULD-NOT-RUN (exit 2), never a clean pass -- '
       'could-not-tell is a third state', rc == 2 and 'COULD NOT RUN' in buf.getvalue(), rc)
+
+# ── 7j-7m: THE RETIREMENT STALL (2026-09-24) ────────────────────────────────
+# The disclosure used to be gated on `net == 0` -- the list being exactly its
+# opening size -- so it went silent in every case except the one where nothing
+# had happened at all. On 2026-09-23 the register stood at 32 against a
+# baseline of 11 with ZERO retirements and the tool said nothing about
+# retirement: the GROWTH suppressed the sentence. These arms pin the repair in
+# the state that used to be silent.
+BASE_OK = BASE_LINE
+_full_rows = ''.join('| `%s` | CC | OPEN | x |\n' % r['component'] for r in rows)
+
+rc, out = with_register(BASE_OK + HEAD + _full_rows)
+check('7j  the retirement stall is reported WHEN THE LIST HAS GROWN -- the '
+      'case the old `net == 0` gate made silent',
+      'NOTHING HAS BEEN RETIRED IN' in out and 'day(s), since 2026-09-14' in out,
+      out[-300:])
+check('7k  ...and it names the elapsed time, so "0 RETIRED" reads as a trend '
+      'rather than a number',
+      bool(re.search(r'RETIRED IN \d+ day\(s\)', out)), out[-200:])
+
+# THE PAIRED POSITIVE. Without it 7j is satisfied by a tool that prints the
+# stall line unconditionally, including when something HAS been retired.
+# A retired row must name a component that is no longer a chokepoint, so an
+# invented name is used -- a real one would trip the NOT RETIRED arm instead.
+retired_ok = (BASE_OK + HEAD + _full_rows
+              + '| `docs/never-a-node-retired.md` | CC | RETIRED | x |\n')
+rc, out = with_register(retired_ok)
+check('7l  CONTROL: with a RETIRED row the line changes to "N RETIRED in ..." '
+      'rather than the stall text',
+      'NOTHING HAS BEEN RETIRED' not in out and '1 RETIRED in' in out,
+      out[-300:])
+
+# A BASELINE WITH NO DATE CANNOT EXPRESS A TREND, and that is a problem line
+# rather than a silent fall back to "no elapsed time".
+rc, out = with_register('**BASELINE: 3 components at or above the threshold.**\n\n'
+                        + HEAD + _full_rows)
+check('7m  a BASELINE sentence with a count and NO DATE is REFUSED -- a list '
+      'nobody fixed and a list nobody measured print the same line',
+      rc == 1 and 'NO BASELINE DATE' in out, (rc, out[-200:]))
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
