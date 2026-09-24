@@ -13425,6 +13425,58 @@
       "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
+      "commit": "908e55c2deda",
+      "date": "2026-09-24",
+      "subject": "fix(sairnvet): the dosing-register banner claimed \"not capped\" with nothing behind it -- completeness is verified against the server's own count now",
+      "files": [
+        "api/sd-data.js",
+        "sairnvet.html",
+        "tests/sv_audit_completeness.js"
+      ],
+      "lines_added": 221,
+      "lines_removed": 4,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "hover-audit",
+      "summary": "sairnvet.html's dose-audit banner asserted \"The server copy is not capped\" on every successful read of the DEA dosing register, with no Content-Range verification anywhere in the read path -- the sv_ read branch in api/sd-data.js never asked PostgREST for a count, so a max-rows truncation would return a partial register byte-identical to a complete one, under a banner claiming completeness. The claim was manufactured at display time from a 200 status alone. Fixed with the pattern api/audit-checkpoint.js:137 already carries: Prefer count=exact, the after-the-slash total returned beside the rows, and the client claiming completeness only when received rows match it, with truncation said in bold and an unknown total said as unverified rather than assumed complete.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover",
+      "injection": {
+        "commit": "fbae89ebbb59",
+        "date": "2026-09-16",
+        "subject": "feat(sairnvet): the controlled-substance dosing trail finally has a reader",
+        "lag_days": 8
+      },
+      "contributing_factors": [
+        {
+          "factor": "The banner text was written as reassurance about a design property (the server table has no cap in OUR schema) and read as a runtime claim (this response is complete) -- the same words, two different statements, and only one was ever checked",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The claim is computed from the server's own count now, and the three states are separate strings so the reassuring one cannot render unchecked."
+        },
+        {
+          "factor": "The fix pattern existed in-repo at api/audit-checkpoint.js:137 since 2026-09-14 and nothing propagates a proven pattern to sibling read paths -- each surface gets it only when somebody reads that surface",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "A platform-wide sweep of every read path that displays a completeness or count claim is real work nobody has scoped; CLAUDE.md's own byte-identical-is-not-safe-in-context rule says the propagation needs per-surface re-qualification, not a blind copy. Named in recurrence_open."
+        },
+        {
+          "factor": "No test anywhere drove the read path with a truncated response, because the stub returned rows with no headers at all -- the truncation state was unrepresentable in the test fixtures, so no arm could have gone red",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sv_audit_completeness.js drives the real handler with three Content-Range shapes including '*' and absent, and asserts the request asks for the count at all."
+        }
+      ],
+      "recurrence_open": "Every OTHER app's read branch in api/sd-data.js still returns rows with no total -- the sv_ branch is fixed, and any client of the sf_/law_/sdn_/leg_ branches that renders a completeness or count claim renders it unverified. Nothing scans for display text that asserts completeness over a count-less read; that shape is found only by reading."
+    },
+    {
       "commit": "982b093cfa13",
       "date": "2026-09-24",
       "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
