@@ -156,11 +156,55 @@ t('sairnvet.html::b.rate is no longer grandfathered', () => {
     'still grandfathered, so the checker still cannot fail on it');
 });
 
-t('...and exactly one entry was removed, not a swathe', () => {
+// ── THIS ARM ASSERTED A GLOBAL COUNT AND THAT WAS THE DEFECT (fixed
+//    2026-09-24) ────────────────────────────────────────────────────────
+// It read `assert.strictEqual(n, 45, 'expected 45 (46 - 1)')` -- the size of
+// the WHOLE baseline, typed beside it. It went red the moment an unrelated
+// key was added, which happened the same day: this file's own two negative
+// controls carry the pre-fix expression on purpose, `truthy_sum_check.py`
+// correctly reported them, and baselining them with a reason broke an arm
+// that has nothing to do with them.
+//
+// A COUNT IS A FACT ABOUT SOMEBODY ELSE'S FILE. Typing it here asserts that
+// nobody will ever baseline anything again -- the same shape as the tier
+// probe's hardcoded `| **10** |`, which went red the day a register count
+// moved, and the same one this repo has now recorded five times.
+//
+// WHAT THE ARM WAS FOR is still checked, and more precisely: the claim was
+// "exactly one entry was removed, not a swathe". That is a claim about THIS
+// KEY and about the file still being a populated baseline, so it is written
+// that way -- the sairnvet key is gone, the remaining set is still large,
+// and every entry still carries a reason. A baseline emptied in a careless
+// rebase fails all three.
+t('...one entry was removed, not a swathe -- and no entry lost its reason', () => {
   const base = JSON.parse(fs.readFileSync(
     path.join(__dirname, '..', 'tools', 'truthy_sum_baseline.json'), 'utf8'));
-  const n = Object.keys(base.grandfathered || {}).length;
-  assert.strictEqual(n, 45, 'grandfathered is ' + n + ', expected 45 (46 - 1)');
+  const g = base.grandfathered || {};
+  const n = Object.keys(g).length;
+  assert.ok(n >= 40,
+    'grandfathered is down to ' + n + ' -- one key was meant to leave, not a '
+    + 'swathe. If a real burn-down took it below this, move the floor '
+    + 'DELIBERATELY rather than letting a count nobody set drift.');
+  const blank = Object.keys(g).filter((k) => !String(g[k] || '').trim());
+  assert.deepStrictEqual(blank, [],
+    'baseline entries with no reason: ' + blank.join(', ')
+    + ' -- an exemption without a reason is a silence wearing an exemption.');
+});
+
+t('this file\'s own negative controls are baselined WITH their reason, not '
+  + 'silently tolerated', () => {
+  // The paired positive for the arm above, and the thing that keeps the two
+  // controls in this file honest: they contain the exact shape the checker
+  // hunts, so they must be exempt ON THE RECORD or the checker sits at exit 1
+  // for ever and gets switched off.
+  const base = JSON.parse(fs.readFileSync(
+    path.join(__dirname, '..', 'tools', 'truthy_sum_baseline.json'), 'utf8'));
+  const key = 'tests/sv_boarding_revenue_coercion.js::b.rate';
+  const why = (base.grandfathered || {})[key];
+  assert.ok(why, 'this file\'s controls are not baselined, so truthy_sum_check '
+    + 'is red at HEAD on the arms that prove the fix');
+  assert.ok(/NEGATIVE CONTROL/.test(why),
+    'the baseline entry does not say WHY it is exempt: ' + String(why).slice(0, 80));
 });
 
 // ---------------------------------------------------------------------------
