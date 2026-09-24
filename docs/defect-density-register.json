@@ -13809,6 +13809,56 @@
       "recurrence_open": "The disclosure now says how long nothing has retired; nothing yet says what SHOULD have. A retirement-schedule discipline -- per-OPEN-row target dates, or a cadence after which a stall escalates from prose to a problem line -- does not exist and is the register owner's decision; the elapsed-time line is the measurement that decision needs, not the decision. Also open: the `net == 0` shape (a disclosure keyed to one scenario instead of the property) has no detector and this is its first recorded instance."
     },
     {
+      "commit": "9710c884acc9",
+      "date": "2026-09-24",
+      "subject": "fix(push-gate): a docs-only push no longer runs check 9 -- the Windows-only liveness probe was stranding every cloud push",
+      "files": [
+        "tests/push_gate/check9_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 91,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "Push-gate check 9 ran its full guard-test registry on every push regardless of what the push contained, and tests/session_lock_liveness_probe.py -- Windows-only by its own admission, its arm (c2) manufactures pid-recycling state a Linux container cannot -- exits 2 COULD NOT SET UP on the Linux cloud runner. The check-9 loop read every nonzero exit as a FAILING seam and denied, so every cloud-session push, including docs-only pushes that cannot move any code seam, required an override the auto-mode classifier correctly refuses. Three commits were stranded local-only on claude/jolly-gauss-uropwz, including both competitive-gap audit documents. Fixed by skipping check 9 when the entire outgoing range is docs-only: a named predicate (docs_only_outgoing) with an empty range refusing to count as docs-only (could-not-tell must not read as safe-to-skip) and docs/tier-a-reviews.json disqualifying despite living in docs/.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9f7d61cfae44",
+        "date": "2026-09-10",
+        "subject": "feat(push-gate): check 9 -- the named guard and seam tests can now stop a push",
+        "lag_days": 14
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 (could-not-run is a third state), but check 9's defect is the INVERSE direction: it folded could-not-run into FAILED rather than into passed, over-blocking instead of over-passing. No section names the over-blocking direction; recording not-citable rather than stretching 1.11 to a shape it does not state.",
+      "contributing_factors": [
+        {
+          "factor": "The guard-test runner treats every nonzero exit as a failing seam -- the family convention that exit 2 means COULD NOT RUN and exit 3 means SKIPPED exists in the probes but check 9 never learned it",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "Teaching check 9 the 2/3 convention would change what a blocking gate allows for CODE pushes and is a deliberate decision, named in the commit rather than folded into a docs-only fix."
+        },
+        {
+          "factor": "The liveness probe declares itself Windows-only in prose but not in code -- it attempts setup on any platform and reports the failure as inability rather than inapplicability",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Teach the probe to exit 3 SKIPPED on non-Windows platforms, the convention its siblings use; left as follow-up because it changes a guard test's contract with the gate."
+        },
+        {
+          "factor": "The gate had no concept of what a push CONTAINS when deciding which whole-tree checks apply -- check 9's whole-tree scope was argued from the rebase case and never bounded by what the check protects",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The docs-only predicate bounds it by what check 9 protects (code seams), with both honesty exclusions driven by check9_probe arm 7."
+        }
+      ],
+      "recurrence_open": "Cloud pushes that touch CODE still hit the same wall: the liveness probe still exits 2 on Linux and check 9 still reads that as a failing seam. The docs-only skip unstrands documentation work only. The real closure is the probe exiting 3 SKIPPED off-Windows or check 9 learning the 2/3 convention -- both named as decisions, neither made here."
+    },
+    {
       "commit": "dadfedf48ac9",
       "date": "2026-09-24",
       "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
