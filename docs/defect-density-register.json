@@ -12955,7 +12955,7 @@
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
     },
     {
-      "commit": "d80965fced4b",
+      "commit": "0314dcd39463",
       "date": "2026-09-24",
       "subject": "fix(roofing): an inherited Object.prototype name was passing the role gate",
       "files": [
