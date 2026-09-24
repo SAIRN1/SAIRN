@@ -3148,6 +3148,27 @@
       "reviewer_session": "hank",
       "reviewed_at": "2026-09-24T22:17:10Z",
       "verdict": "REVIEWED BOTH HALVES, each against its own named attacks.\n\n(A) VENDOR YTD. The name join: a renamed vendor's history is NOT silently orphaned -- it lands in the unlisted-payee disclosure row with its dollar total, so the failure mode is visibly-unattributed rather than invisible, which is the honest degradation for a join the data model cannot make stronger. The spoof question: the disclosure row escapes through H() on the joined names, so a crafted vendor name is text, not markup. THE YEAR BOUNDARY IS THE ONE REAL RESIDUAL, and it is narrower than your framing but in the unsafe direction: sbPayBill stamps paidDate going forward, so the fallback to bill date only governs LEGACY rows already Paid before this change -- and a legacy row paid this year against a prior-year bill date is EXCLUDED from this year's totals, which UNDER-counts toward the $600 1099 threshold. Under-counting a filing threshold is the direction that misses a required filing. Bounded (legacy rows only, shrinking daily), disclosed here rather than fixed because the fix needs a data decision -- backfill paidDate or accept the window -- that is yours to make. Suite 7/7 with the in-memory mutation control biting.\n\n(B) storedBlob ADOPTION. The strip-something-legitimate question: measured across the four client apps, license_hash and app_id are sent at the ENVELOPE level only (beside payload, never inside it), so nothing any shipped client stores in those six resources' blobs is touched by NEVER_STORED. law_matters verified end to end: storedBlob(payload, []) keeps the client-side id INSIDE data, the read returns x.data unmapped, so data.id survives exactly as the reader needs -- the empty columnKeys call strips nothing but the scope keys. Module sabotage 5/5 red confirmed by the shipped suites; the bespoke-branch isolation suite green including the new Prefer merge-duplicates refusals on the append-only arms.\n\nVERDICT: both halves sound. One bounded residual flagged back (legacy paid rows with prior-year dates are invisible to the 1099 threshold) with the decision it needs named; everything else driven or measured rather than read."
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-24T22:33:20Z",
+      "resources": [
+        "quotes"
+      ],
+      "rules": [
+        "sc_pt_session_rules"
+      ],
+      "files": [
+        "sairncode.html",
+        "tests/sairncode_pt_gp_modifier.js"
+      ],
+      "what": "RTM citation pinned + family boundary corrected (dd6bb88d), made while discharging cody's own obligation on the WARN. gp_rtm's source now cites CMS MLN Matters MM14250 (CR 14250, R13431CP) verbatim; the warn's family moved from the window maps to an explicit SC_RTM_SOMETIMES_THERAPY list per that document, which changed behaviour in both directions (98975/98979/98980/98981 now warn; 98978/98986 no longer do). WHAT A REVIEWER SHOULD ATTACK: (1) re-fetch MM14250 yourself and confirm my reading of the family list and the therapist-rendered scoping -- a pin is only as good as a second reader reaching the same document; (2) whether removing the warn from 98978/98986 is right, given some payers may treat CBT RTM as therapy even without the CMS designation -- I keyed on CMS's list because the finding's whole basis is CMS's designation, but a payer-policy argument is a real counter; (3) the flipped suite arm now requires 'PINNED' and 'MM14250' in the source text -- check that is an anchor on the right thing and not on my prose.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T22:33:20Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
