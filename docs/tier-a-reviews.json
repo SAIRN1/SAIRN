@@ -2951,6 +2951,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-24T15:29:49Z",
+      "resources": [
+        "invoices",
+        "quotes"
+      ],
+      "rules": [],
+      "files": [
+        "api/bridge-push-auth.test.js",
+        "api/bridge.js",
+        "stonedesk.html"
+      ],
+      "what": "api/bridge.js push now requires an X-SD-Auth session (verifySessionToken app stonedesk, identity not rank) plus the credentialStillActive three-state re-check, after the existing licence validation. Client: stonedesk.html crSendToBridge attaches X-SD-Auth from sd_session_token and renders error.message. The gate matcher flags resource 'quotes' for the stonedesk.html edit; the edit is confined to crSendToBridge (check register) and touches no quote code path -- verify that claim rather than trusting it. REVIEW: (1) the sabotage run -- bypassing the gate turned 5 arms red -- was done by mutating the file and restoring via git checkout, which also reverted the fix itself mid-session; the re-applied version is what shipped, so diff the shipped handler against the test's expectations rather than my summary. (2) NO_ACTIVE_CHECK is allowed-and-logged, same trade as sd-data's gate -- attack whether that is right for a write path when sd-data made the same call for reads AND writes. (3) the one live caller: confirm crSendToBridge still works signed in, and that the 403 path renders a real message, not [object Object]. NOTE ON THIS RECORD: the --open text was first mangled by shell backtick substitution (the word quotes vanished and with it the resource list); repaired by direct edit in the same session, said here so the diff is not read as tampering.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T15:29:49Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

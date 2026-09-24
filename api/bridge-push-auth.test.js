@@ -45,13 +45,28 @@ require.cache[LICENCE] = {
 
 process.env.SUPABASE_URL = 'https://example.invalid';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'service-role-for-the-test';
+// REAL tokens, REAL verification -- the auth module is NOT stubbed, so these
+// arms exercise verifySessionToken's actual signature/app/licence checks
+// rather than a stand-in that agrees with the handler by construction.
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET
+  || 'bridge-push-auth-test-secret';
+const { signSessionToken } = require('./_lib/auth');
 
 const handler = require('./bridge.js');
 
-// The upsert the handler makes, captured rather than sent.
+// The upsert the handler makes, captured rather than sent. The SAME mock
+// answers the active-credential re-check read (sd_employee_auth) so the
+// deactivation arms can flip `activeAnswer` -- and those reads are NOT
+// counted as upserts, or every refusal arm's "nothing was written" would
+// pass or fail on the wrong traffic.
 let upserts = [];
+let activeAnswer = [{ active: true }];
 const realFetch = global.fetch;
 global.fetch = async (url, opts) => {
+  if (String(url).includes('sd_employee_auth')) {
+    return { ok: true, status: 200, json: async () => activeAnswer,
+             text: async () => JSON.stringify(activeAnswer) };
+  }
   upserts.push({ url: String(url), body: opts && opts.body });
   return { ok: true, status: 200, json: async () => ([{ shop_id: 'x' }]),
            text: async () => '[]' };
@@ -64,10 +79,20 @@ function mockRes() {
   return r;
 }
 
-async function push(body, authHeader) {
+// `session` -- undefined: attach a REAL StoneDesk token signed against the
+// licence stub's hash (the happy path). null: send NO X-SD-Auth at all.
+// A string: send exactly that (the forged/wrong-app arms build their own).
+async function push(body, authHeader, session) {
   upserts = [];
   licenceSeen = [];
   const headers = authHeader ? { authorization: authHeader } : {};
+  if (session === undefined) {
+    headers['x-sd-auth'] = signSessionToken({ app: 'stonedesk',
+      employee_id: 'emp-1', role: 'owner',
+      license_hash: licenceAnswer.license_hash });
+  } else if (session !== null) {
+    headers['x-sd-auth'] = session;
+  }
   const res = mockRes();
   await handler({ method: 'POST', url: '/api/bridge?action=push', headers, body }, res);
   return { status: res._s, body: res._j, upserts: upserts.slice(),
@@ -155,6 +180,70 @@ const PAYLOAD = { shopId: 'SD-SOMEBODY-ELSES-LICENCE', invoices: [{ id: 'i1', am
         assert.strictEqual(r.body.error.code, 'LICENCE_UNCHECKED');
         assert.strictEqual(r.upserts.length, 0, 'it wrote anyway');
       } finally { licenceThrows = false; }
+    });
+
+  // == THE SESSION GATE (2026-09-24): a licence alone no longer writes ======
+  // The licence proves the SHOP; these arms prove the endpoint now also asks
+  // WHO. Every refusal asserts upserts.length === 0 -- a gate that answers
+  // 403 after writing is worse than no gate.
+
+  await t('SESSION GATE -- a valid licence with NO session token is refused, '
+    + 'and nothing is written', async () => {
+      const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE', null);
+      assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+      assert.strictEqual(r.body.error.code, 'FORBIDDEN');
+      assert.strictEqual(r.upserts.length, 0, 'a licence-only push still wrote');
+    });
+
+  await t('SESSION GATE -- a GARBAGE token is refused', async () => {
+      const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE', 'not-a-token');
+      assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 0);
+    });
+
+  await t('SESSION GATE -- a genuine token for ANOTHER APP (sairnbiz) under '
+    + 'the same secret is refused: expectedApp is checked', async () => {
+      const tok = signSessionToken({ app: 'sairnbiz', employee_id: 'emp-1',
+        role: 'owner', license_hash: 'hash-of-shop-a' });
+      const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE', tok);
+      assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 0);
+    });
+
+  await t('SESSION GATE -- a genuine StoneDesk token signed for a DIFFERENT '
+    + 'licence hash is refused: the token is bound to the shop', async () => {
+      const tok = signSessionToken({ app: 'stonedesk', employee_id: 'emp-1',
+        role: 'owner', license_hash: 'hash-of-somebody-else' });
+      const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE', tok);
+      assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 0);
+    });
+
+  await t('SESSION GATE -- a DEACTIVATED credential is refused even with a '
+    + 'valid, unexpired token', async () => {
+      activeAnswer = [{ active: false }];
+      try {
+        const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE');
+        assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'CREDENTIAL_INACTIVE');
+        assert.strictEqual(r.upserts.length, 0);
+      } finally { activeAnswer = [{ active: true }]; }
+    });
+
+  await t('SESSION GATE -- when the active-check CANNOT RUN the push is '
+    + 'allowed on the token alone: a transport failure is not a deactivation',
+    async () => {
+      // The re-check read throws; the third state must not refuse.
+      const saved = global.fetch;
+      global.fetch = async (url, opts) => {
+        if (String(url).includes('sd_employee_auth')) { throw new Error('db blinked'); }
+        return saved(url, opts);
+      };
+      try {
+        const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE');
+        assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+        assert.strictEqual(r.upserts.length, 1, 'the third state refused the write');
+      } finally { global.fetch = saved; }
     });
 
   await t('TEETH -- a VALID licence with a working store does write, so the '

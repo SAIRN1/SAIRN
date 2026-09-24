@@ -20174,9 +20174,16 @@ function crSendToBridge() {
   // The endpoint now derives the row key from the validated licence and
   // ignores `shopId`; it is still sent so an older deployment keeps working
   // during the minutes between this file and api/bridge.js going live.
+  //
+  // AND THE SESSION GOES IN X-SD-Auth, 2026-09-24, same header every other
+  // gated StoneDesk data call already sends -- the endpoint now refuses a
+  // licence-only push (403 FORBIDDEN), because the licence proves the shop
+  // and this payload is financial data that needs a signed-in employee.
+  var crHdrs = {'Content-Type':'application/json',
+    'Authorization': 'Bearer ' + (typeof sdLicenseKey==='function' ? (sdLicenseKey()||'') : '')};
+  try{var crTok=sessionStorage.getItem('sd_session_token');if(crTok)crHdrs['X-SD-Auth']=crTok;}catch(e){}
   fetch(bridgeUrl + '?action=push', {
-    method: 'POST', headers: {'Content-Type':'application/json',
-      'Authorization': 'Bearer ' + (typeof sdLicenseKey==='function' ? (sdLicenseKey()||'') : '')},
+    method: 'POST', headers: crHdrs,
     body: JSON.stringify({ shopId: shopId, invoices: [{ id: entry.id, type: 'expense',
       date: entry.date, payee: entry.payee, amount: entry.amount, memo: entry.memo,
       category: entry.category, app_id: 'stonedesk', gl_account: 'Accounts Payable' }] })
@@ -20197,7 +20204,7 @@ function crSendToBridge() {
     // scoped design rather than a quick read.
     if(statusEl) statusEl.innerHTML = d.ok
       ? '<span style="color:#166534">Saved locally and queued on the Bridge. No app reads this yet — use CSV Export to get it into SAIRNbiz.</span>'
-      : '<span style="color:#dc2626">Bridge error: '+(d.error||'unknown')+'</span>';
+      : '<span style="color:#dc2626">Bridge error: '+((d.error&&d.error.message)||d.error||'unknown')+'</span>';
   })
   .catch(function(){
     if(statusEl) statusEl.innerHTML = '<span style="color:#6B7280">Saved locally — will sync to SAIRNbiz when online.</span>';

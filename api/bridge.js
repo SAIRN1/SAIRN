@@ -32,6 +32,10 @@
 //
 // It now takes Authorization: Bearer <licence key>, validates it, and keys the
 // row on the resulting license_hash. The body's shopId is accepted and IGNORED.
+//
+// AND SINCE 2026-09-24 push ALSO REQUIRES A SESSION (X-SD-Auth, app
+// 'stonedesk', active credential re-checked) -- the licence proves the shop,
+// not the person, and this write is financial data. See handlePush.
 // ---------------------------------------------------------------------------
 // SAIRN Bridge -- action-routed cross-app relay. Built 2026-07-31 to replace
 // a URL every caller already assumed existed but never did (confirmed live
@@ -115,6 +119,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const { verifySessionToken, tokenFromRequest, credentialStillActive } = require('./_lib/auth');
 const RESIL = require('./_lib/resilience.js');
 
 // LOOSE ON PURPOSE. Nothing has been measured about these upstreams' real
@@ -380,6 +385,24 @@ async function handlePush(body, res, req) {
     res.status(403).json({ error: { code: 'BAD_LICENCE', message: 'That licence is not valid' } });
     return;
   }
+  // ── AND A SESSION, NOT JUST A LICENCE (2026-09-24) ───────────────────
+  // The licence proves the SHOP; it proves nothing about WHO at the shop is
+  // writing. This push carries expense invoices -- payee, amount, memo, a GL
+  // account -- and every other financial write on this platform goes through
+  // verifySessionToken (api/sd-data.js's SD_SESSION_GATED). The one live
+  // caller, stonedesk.html's crSendToBridge, runs inside an app that already
+  // signs its employees in and already attaches X-SD-Auth on its other data
+  // calls, so this closes the gap rather than inventing a new credential.
+  // Identity, not rank: any active StoneDesk employee session passes -- the
+  // check register is office-staff work, not an owner/admin channel.
+  // expectedApp 'stonedesk' so a genuine session minted for another SAIRN
+  // app under the same platform secret cannot be replayed here.
+  const session = verifySessionToken(tokenFromRequest(req), lic.license_hash, 'stonedesk');
+  if (!session) {
+    res.status(403).json({ error: { code: 'FORBIDDEN', message:
+      'A valid employee session is required — sign in first' } });
+    return;
+  }
   // ── THE COLUMN IS `license_hash` SINCE 2026-09-18 ────────────────────
   // sql/bridge_data_rekey_2026-09-18.sql renamed it and rehashed the legacy
   // rows in place. The name mattered: after the auth fix this column held a
@@ -408,6 +431,25 @@ async function handlePush(body, res, req) {
     console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
     res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
     return;
+  }
+
+  // ── THE CREDENTIAL BEHIND THE TOKEN MUST STILL BE ACTIVE ─────────────
+  // Same three-state discipline as api/sd-data.js's gate: a deactivated
+  // employee is refused, a lookup that could not run is LOGGED and allowed on
+  // the token alone -- a transport failure is not a deactivation, and
+  // refusing every push whenever the database blinks is the worse failure.
+  const stillActive = await credentialStillActive(session, licenseHash,
+    function (path) { return SUPABASE_URL + '/rest/v1/' + path; },
+    { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY });
+  if (!stillActive.ok && stillActive.code === 'CREDENTIAL_INACTIVE') {
+    res.status(403).json({ error: { code: stillActive.code, message: stillActive.message } });
+    return;
+  }
+  if (!stillActive.ok) {
+    try {
+      console.warn('bridge push: active-credential re-check DID NOT RUN ('
+        + stillActive.code + '). The push was allowed on the token alone.');
+    } catch (e) { /* logging must never refuse a request */ }
   }
 
   try {
