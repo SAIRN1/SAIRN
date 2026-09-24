@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**222 files in `tools/`.** By what actually invokes them:
+**223 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 13 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 155 |
+| CHECKER | 156 |
 | GENERATOR | 19 |
 | LIBRARY | 24 |
 | LIVE | 20 |
@@ -134,7 +134,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (63)
+## REPORT-ONLY (64)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -430,11 +430,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      222   git ls-files tools/
+  tools on disk                      223   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            159   tests/**/*.py, *.js
+  tools invoked by tests/            160   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

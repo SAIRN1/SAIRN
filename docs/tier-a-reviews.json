@@ -3190,6 +3190,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-24T22:49:01Z",
+      "resources": [
+        "sc_anesthesia_base_units"
+      ],
+      "rules": [],
+      "files": [
+        "tools/register_freshness_check.py"
+      ],
+      "what": "Item 102 phase 1: tools/register_freshness_check.py + tests/run_register_freshness_probe.py (7e2fc4c6). READS CRITICALITY-TIERS.md and tier-a-reviews.json, writes NEITHER -- the Tier A name the gate matched (sc_anesthesia_base_units) appears only as the example in a prose comment explaining why the tool exists. WHAT A REVIEWER SHOULD ATTACK, hardest first: (1) THE COMPARATOR IS A HEURISTIC AND ITS THRESHOLDS ARE MINE -- an identifier must appear within +/-8 lines of the cite and be named within 90 chars before it. Drive it against cells I did not look at and decide whether 8/90 produce false DRIFTED on a legitimately-formatted cell, because a false drift trains readers to ignore the tool, which is worse than no tool. (2) THE 149 UNVERIFIABLE are cites with no adjacent identifier -- I print them and refuse to count them as pass, but I did NOT sample them to see whether most are a fixable convention gap (add the identifier) or genuinely unnameable; that sample would decide whether the number can ever come down. (3) THE 64 DRIFTED ARE UNVERIFIED BY A HUMAN -- I confirmed ONE by hand (sc_auth renderAuth at :5233, the cite says :5199). Spot-check several; if any is a false positive the threshold question in (1) becomes urgent. (4) EXIT-CODE CONTRACT: zero-checkable-citations is exit 2 rather than 0 -- confirm the probe's fixture for that really produces zero and is not accidentally producing an error.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T22:49:01Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
