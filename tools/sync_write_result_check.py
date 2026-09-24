@@ -169,11 +169,68 @@ def call_tail(lines, i, start_col):
     return None, None            # never closed inside the window
 
 
+# ── A CALL INSIDE A COMMENT IS NOT A CALL. FIFTH FALSE-POSITIVE CLASS,
+# ── FOUND 2026-09-24 ────────────────────────────────────────────────────────
+# Four were already found and fixed: `await` read as a consumer, a `.then()`
+# arriving several lines below, an array element inside `Promise.all([`, and a
+# bracket opened on an earlier line. This is the fifth, and unlike the others it
+# leaves a PERMANENT mark rather than one wrong verdict.
+#
+# THREE LINES, ALL PROSE, ALL COUNTED AS WRITES:
+#   sairndental.html:5264   // sdnData('write','dnt_complaints',...). All real
+#   sairndesign.html:2394   // Was sdnData('write','specitems_bulk',{...}) -- a
+#   sairngrounds.html:1683  // grdData('write', ...)` followed by a toast
+#
+# Every one is a comment EXPLAINING a write, and two explain a write that was
+# deliberately REMOVED. They were reported as COULD NOT TELL, which is the right
+# answer to the wrong question: there is nothing to tell, because there is no
+# call.
+#
+# IT COSTS IN THREE DIRECTIONS AND THE THIRD IS THE WORST:
+#   * the write COUNT is the denominator of every figure this tool prints, and
+#     it was over by three;
+#   * three could-not-tells sat permanently unresolvable, and a third-state
+#     column that can never reach zero is one people stop reading -- the same
+#     "a disclosure that is always on stops being read" failure this codebase
+#     already names elsewhere;
+#   * a comment quoting a call it REMOVED would be reported forever, so the
+#     honest act of writing down what you took out makes this tool noisier. A
+#     checker that penalises good documentation is one people route around.
+#
+# AND THIS CODEBASE HAS PAID FOR THIS EXACT CLASS BEFORE.
+# tools/sairn_dead_button_audit.py records 58 phantom findings on StoneDesk from
+# scanning comments, and its fix was to strip them with a real state machine
+# rather than a regex. That lesson was written down and had not reached here.
+#
+# QUOTE-AWARE, NOT `split('//')[0]`. A naive split truncates
+# `scData('write','x',{url:'http://a'})` at the URL and LOSES a real call --
+# trading three false positives for a false negative, which is the worse trade.
+# One helper further up this file still does the naive thing on a narrower
+# input; this is the correct version and both behaviours are pinned by fixtures.
+def strip_line_comment(line):
+    """`line` with any `//` comment removed, ignoring `//` inside strings."""
+    q = None
+    i = 0
+    while i < len(line):
+        c = line[i]
+        p = line[i - 1] if i else ''
+        if q:
+            if c == q and p != chr(92):
+                q = None
+        elif c in ('"', "'", '`'):
+            q = c
+        elif c == '/' and line[i + 1:i + 2] == '/':
+            return line[:i]
+        i += 1
+    return line
+
+
 def scan(path):
     src = io.open(path, encoding='utf-8', errors='replace').read()
     lines = src.split('\n')
     out = {'READ': 0, 'RETURNED': 0, 'DISCARDED': [], 'UNREADABLE': [], 'BENIGN': []}
-    for i, ln in enumerate(lines):
+    for i, raw in enumerate(lines):
+        ln = strip_line_comment(raw)
         if "'write'" not in ln:
             continue
         m = CALL.search(ln)

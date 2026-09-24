@@ -133,6 +133,47 @@ rc, out = run_on("function f(){\n"
 check('an unclassifiable line is reported as UNREADABLE rather than silently passed',
       count(out, 'WRITES_UNREADABLE') + count(out, 'WRITES_CONSUMED') >= 1, out[-300:])
 
+# ── THE FIFTH FALSE-POSITIVE CLASS: A CALL INSIDE A COMMENT (2026-09-24) ───
+# Four were already found and fixed -- `await` read as a consumer, a delayed
+# multi-line `.then()`, an array element inside `Promise.all([`, and a bracket
+# opened on an earlier line. This is the fifth, and it left three PERMANENT
+# could-not-tells on the live codebase: comments explaining a write, two of
+# them explaining a write that had been REMOVED.
+rc, out = run_on("function f(){\n"
+                 "  // sdnData('write','dnt_complaints',{id:1});\n"
+                 "}")
+check('a transport call inside a // comment is not counted as a write at all',
+      count(out, 'WRITES_CONSUMED') + count(out, 'WRITES_DISCARDED')
+      + count(out, 'WRITES_UNREADABLE') == 0, out[-300:])
+
+rc, out = run_on("function f(){\n"
+                 "  // Was sdnData('write','specitems_bulk',{p:1}) -- removed\n"
+                 "  var ok = await sdnData('write','x',r);\n"
+                 "  if (!ok) toast('no');\n"
+                 "}")
+check('...and the REAL write on the next line is still found',
+      count(out, 'WRITES_CONSUMED') == 1, out[-300:])
+
+# THE FALSE NEGATIVE THIS FIX COULD HAVE INTRODUCED, and the reason the
+# stripper is quote-aware instead of `split('//')[0]`: a `//` inside a STRING
+# is not a comment, and truncating there would LOSE a real call -- trading
+# three false positives for a false negative, which is the worse trade.
+rc, out = run_on("function f(){\n"
+                 "  sdnData('write','x',{url:'http://a/b'});\n"
+                 "}")
+check('a // inside a string literal does NOT truncate the line -- the write is '
+      'still seen',
+      count(out, 'WRITES_DISCARDED') + count(out, 'WRITES_CONSUMED')
+      + count(out, 'WRITES_UNREADABLE') == 1, out[-300:])
+
+rc, out = run_on("function f(){\n"
+                 "  var ok = await sdnData('write','x',{url:'https://a'}); // fire\n"
+                 "  if (!ok) toast('no');\n"
+                 "}")
+check('...and a real trailing comment after a string-bearing call is still '
+      'stripped without losing the call',
+      count(out, 'WRITES_CONSUMED') == 1, out[-300:])
+
 # ── A FILE IT CANNOT READ IS NOT A CLEAN FILE ──────────────────────────────
 r = subprocess.run([sys.executable, TOOL, 'no-such-file-anywhere.html'],
                    capture_output=True, text=True, encoding='utf-8', errors='replace')
