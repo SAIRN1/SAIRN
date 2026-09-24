@@ -817,6 +817,62 @@ def main(argv):
                             'consequence for being read by the wrong person. An empty '
                             'cell is an unanswered axis, not a low one.' % name)
 
+    # ── THE DOCUMENT'S OWN HEADLINE TOTAL (2026-09-24) ──────────────────────
+    # The per-app rollup COUNT has been guarded since this file was written and
+    # the rollup LIST since 2026-09-23. The sentence at the top of the file --
+    # "All 17 apps are re-tiered: N resources, A A, B B, C C" -- is the same
+    # kind of claim one level up and was guarded by NOTHING, which is exactly
+    # why it is the figure that keeps rotting. The register's own prose records
+    # FOUR separate incidents of it: 229/159 against an actual 231/157,
+    # 195/189 against 198/186, two sessions re-deriving it concurrently and
+    # disagreeing with each other AND with the merged tree, and 244/144 written
+    # against an actual 247/141 on 2026-09-23. Found the fifth on 2026-09-24
+    # while re-deriving it for a review: 247/141 stated, 248/140 actual.
+    #
+    # NOT A `--fix`. The rollup LIST is a restatement of rows and is safe to
+    # write; this sentence is a restatement WRAPPED IN AN ARGUMENT -- "that is
+    # 63% Tier A, and the distribution is the point" -- and a tool editing
+    # numbers inside somebody's prose would be the regenerate-the-judgement
+    # failure the header refuses. It is a PROBLEM line: it says what the
+    # numbers are, and a person changes the sentence.
+    #
+    # ABSENT IS NOT CLEAN. A headline that has been deleted or reworded past
+    # recognition is a COULD-NOT-TELL, and it says so rather than passing.
+    # Read again rather than threaded through parse(): this is a check on the
+    # DOCUMENT's prose, not on the table parse() builds, and a reader should
+    # not have to know the two come from one string.
+    SRC = io.open(REGISTER, encoding='utf-8').read()
+    head = re.search(r'(\d+) resources, (\d+) A, (\d+) B, (\d+) C', SRC)
+    n_a = sum(1 for r in rows if r[1] == 'A')
+    n_b = sum(1 for r in rows if r[1] == 'B')
+    n_c = sum(1 for r in rows if r[1] == 'C')
+    if not head:
+        problems.append('HEADLINE     the "N resources, A A, B B, C C" sentence is '
+                        'NOT PRESENT in this file, so the summary a reader meets '
+                        'first could not be checked. That is a could-not-tell, not '
+                        'a pass -- the rows say %d/%d/%d/%d.'
+                        % (len(rows), n_a, n_b, n_c))
+    else:
+        got = tuple(int(x) for x in head.groups())
+        want = (len(rows), n_a, n_b, n_c)
+        if got != want:
+            problems.append('HEADLINE     the file opens by saying %d resources, '
+                            '%d A, %d B, %d C. The rows say %d/%d/%d/%d. A summary '
+                            'that disagrees with its own detail is worse than no '
+                            'summary, and this is the fifth time this sentence has '
+                            'drifted -- re-derive it, never adjust it by the size '
+                            'of the edit.' % (got + want))
+    # The B-tier bullet restates one of the same four numbers in its own words,
+    # so it drifts on its own schedule. Checked separately rather than assumed
+    # to move with the headline: they have disagreed with each other before,
+    # inside one pair of brackets.
+    btier = re.search(r'The B tier is (\d+) rows', SRC)
+    if btier and int(btier.group(1)) != n_b:
+        problems.append('HEADLINE     "The B tier is %s rows" -- the rows say %d. '
+                        'This sentence and the headline above it are two '
+                        'restatements of one count and have disagreed with each '
+                        'other before.' % (btier.group(1), n_b))
+
     if not quiet:
         for p in problems:
             print(p)

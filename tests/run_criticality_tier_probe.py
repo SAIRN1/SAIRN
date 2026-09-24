@@ -310,6 +310,52 @@ try:
            'a rollup list naming a row that is NOT Tier A is refused (planted `%s`)' % _plant,
            'LIST STALE')
 
+    # ── ARMS 11a-11d: THE DOCUMENT'S OWN HEADLINE (2026-09-24) ────────────
+    # The per-app rollup count has been guarded since this file was written
+    # and the rollup LIST since 2026-09-23. The sentence a reader meets FIRST
+    # -- "All 17 apps are re-tiered: N resources, A A, B B, C C" -- was
+    # guarded by nothing, which is why the register's own prose records four
+    # separate drifts of it, and a fifth was found by hand on 2026-09-24.
+    #
+    # ANCHORS DERIVED, not typed: the numbers come out of the fixture.
+    _head = re.search(r'(\d+) resources, (\d+) A, (\d+) B, (\d+) C', ORIGINAL)
+    assert _head, ('fixture invalid: the headline sentence is not in the register, '
+                   'so these arms would be asserting against nothing')
+    _a = int(_head.group(2))
+    mutate(ORIGINAL.replace(_head.group(0),
+                            _head.group(0).replace('%d A' % _a, '%d A' % (_a + 7), 1), 1),
+           'a headline TOTAL that disagrees with the rows is refused (A %d -> %d)'
+           % (_a, _a + 7), 'HEADLINE')
+
+    # THE B-TIER BULLET DRIFTS ON ITS OWN SCHEDULE and is checked separately,
+    # because these two restatements of one count have disagreed with EACH
+    # OTHER before -- inside one pair of brackets, three different figures in
+    # one sentence, per the register's own note.
+    _bt = re.search(r'The B tier is (\d+) rows', ORIGINAL)
+    assert _bt, 'fixture invalid: the B-tier bullet is not in the register'
+    mutate(ORIGINAL.replace(_bt.group(0),
+                            'The B tier is %d rows' % (int(_bt.group(1)) + 5), 1),
+           'the B-tier bullet drifting on its own is refused separately',
+           'HEADLINE')
+
+    # ── ABSENT IS NOT CLEAN, which is the arm that matters most here. A
+    #    headline deleted or reworded past recognition must be a
+    #    COULD-NOT-TELL, never a silent pass -- PR 1.11 applied to a document
+    #    rather than to a tool.
+    mutate(ORIGINAL.replace(_head.group(0), 'a great many resources', 1),
+           'a headline that was REWORDED AWAY is could-not-tell, not clean',
+           'HEADLINE')
+
+    # THE PAIRED POSITIVE. Without it the three arms above are satisfied by a
+    # check that raises HEADLINE on every register, including a correct one --
+    # and arm 1 already proves the shipped file passes, so this states the
+    # narrower thing: the headline arm specifically is silent when the numbers
+    # agree. Re-stating the CORRECT numbers must change nothing.
+    _restated = ORIGINAL.replace(_head.group(0), _head.group(0), 1)
+    check('the headline arm is SILENT when the sentence agrees with the rows',
+          _restated == ORIGINAL and run(wt)[0] == 0,
+          'the shipped register must still pass with the headline arm armed')
+
     # ── ARMS 11-14: THE FIXER, DRIVEN (2026-09-24) ────────────────────────
     # `--fix-rollup-list` exists because arm 9's finding kept being TRUE. The
     # LIST MISSING arm landed 2026-09-23 and caught the same omission five
