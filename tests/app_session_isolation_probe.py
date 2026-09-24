@@ -113,12 +113,25 @@ MUTATIONS = [
      "      'law_trusttx': ['read', 'write']",
      "      'law_trusttx': ['write']"),
 
-    ("3. a still-open resource is gated EARLY -- law_deadlines joins the "
-     "registry before its phase-2 day, which fails a staff member with the app "
-     "already open on a cached page that sends no token",
-     API,
-     "      'law_trusttx': ['read', 'write']",
-     "      'law_deadlines': ['read', 'write'],\n      'law_trusttx': ['read', 'write']"),
+    # ── MUTATION 3 WITHDRAWN 2026-09-24, the SECOND casualty of ce835a7e ──
+    # It planted `'law_deadlines': ['read','write']` into SD_SESSION_GATED to
+    # express "a still-open resource is gated EARLY, before its phase-2 day".
+    # ce835a7e completed phase 2: law_deadlines is now in that map LEGITIMATELY
+    # (api/sd-data.js:995), so the mutation inserted a DUPLICATE key with the
+    # identical value -- in a JS object literal the last key wins, the planted
+    # line changed nothing, and the suite was RIGHT to stay green. An
+    # equivalent mutant, but unlike the withdrawn `!== 401` it did not start
+    # as one: TIME made it equivalent, which is the eighth discipline's shape
+    # (nothing announces the day a check stops testing anything) landing on a
+    # probe's own arm. It surfaced as a SILENT verdict the first day the
+    # suite's baseline went green -- the arm had been unreachable behind a red
+    # baseline since before its subject expired.
+    #
+    # NOT REPOINTED, and the reason is a fact about the boundary rather than a
+    # judgement: STILL_UNGATED is now EMPTY -- every phase-1 resource is gated
+    # -- so "gated early" has no remaining subject in this suite's scope. The
+    # class returns the day a new app's resources enter a phased rollout, and
+    # belongs to that suite when it does.
 
     ("4. law_trusttx is dropped from BOTH phase lists -- it leaves the boundary "
      "entirely and the suite goes green having stopped asking about it. Only the "
