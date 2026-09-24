@@ -13103,6 +13103,65 @@
       "recurrence_open": "THE MARKER IS ON ONE ROW. Fourteen other branches still locate their read by proximity alone, and any one of them acquires this defect the moment a second filtered query is added above its read -- which is exactly what happened here, from an unrelated feature commit. Nothing measures how close any of them is to its window, and the count of branches with more than one license_hash-filtered query is UNMEASURED rather than one. Also open: READ_WINDOW is now 160 because 103 was measured today, and nothing re-measures it -- the previous number was 90 with '68 lines' written beside it and that sentence was true when written. And the probe is run by hand; nothing schedules it, so the gap between a control going blind and anybody noticing is however long it takes for somebody to be told to run it."
     },
     {
+      "commit": "3c4c79e365c4",
+      "date": "2026-09-24",
+      "subject": "fix(sd-data): a stale device's ordinary write could RESURRECT a soft-deleted record -- the quiet LWW the tombstone audit was sent to find",
+      "files": [
+        "api/sd-data-customer-soft-delete.test.js",
+        "api/sd-data-quote-request-soft-delete.test.js",
+        "api/sd-data-tombstone-propagation.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 130,
+      "lines_removed": 7,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "The tombstone feature's write branches carried a quiet last-write-wins that reversed deletions: sd_customers' write and the SAIRNcode generic write are merge-duplicates upserts replacing the stored jsonb wholesale with the caller's payload, so a device still holding a soft-deleted record that saved any ordinary edit cleared _deleted_at and un-deleted it -- on the customer table a live public tracking link resolves against, and on the seven soft-delete-only Tier A medical-billing resources. Every other device holds deleted records indefinitely because no client calls the tombstones action yet, which made the resurrection likely rather than theoretical. Michael's recorded decision was server-wins; the third branch of the same feature (sd_quote_requests) had the guard from day one, so the design intended it and two of three implementations lacked it. The tombstone branch's own comment additionally instructed the future client half to compare deleted_at against a local edit's timestamp and keep the newer -- LWW stated in prose, waiting to be implemented.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b8bacc95944d",
+        "date": "2026-09-23",
+        "subject": "feat(sd-data): tombstones -- a deletion on one device reached no other one",
+        "lag_days": 1
+      },
+      "citation_note": "No standing rule names 'a server-stamped marker inside a client-writable blob loses to a wholesale write'. Fifth uncited instance of the family this week (rf_claims assignee, slab audit fields, and now three tombstone branches); the recurrence-open fields across these records are the accumulated case for writing the rule.",
+      "phase_note": "Injected with the tombstone feature: the guard was designed (sd_quote_requests has it) and applied to one of three branches. The write-path interaction was in the model for the branch where the original resurrection bug was found, and not re-checked on the siblings.",
+      "contributing_factors": [
+        {
+          "factor": "A merge-duplicates upsert that replaces the stored jsonb wholesale makes every field the caller sends authoritative, including the server's own bookkeeping markers. Any server-stamped field inside the same blob a client writes back whole is one stale save from being erased.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both branches read the stored row first and refuse 409 DELETED on a tombstoned record. The pre-read failing falls through rather than refusing, so a liveness hiccup cannot become a data outage; the residual race is the window the upsert always had and is disclosed to the review obligation."
+        },
+        {
+          "factor": "Three branches of one feature, two implementations: sd_quote_requests got the deleted-write guard, sd_customers and the SC generic loop did not, and nothing compared the siblings. A protection added to the branch where the defect was FOUND does not propagate to the branches with the same shape.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The guard is now in all three, and a test arm anchors each -- including an ONLY-the-seven scoping assertion so the guard cannot silently widen to resources with no marker."
+        },
+        {
+          "factor": "The tombstone comment's rationale for returning deleted_at explicitly invited client-side last-write-wins ('decide whether its own local edit is newer') -- a decided-against design stated as guidance in the one place the future client author will read.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Reworded to state server-wins, and a test arm pins the LWW sentence's ABSENCE so it cannot return with the client half."
+        },
+        {
+          "factor": "The feature shipped server-complete and client-absent: zero calls to the tombstones action exist in any app, so deletions still do not propagate and stale holders accumulate. Nothing tracked the client half as remaining work.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Disclosed by name to the open review obligation on fourth's feature (cc holds it) rather than folded into this fix -- the client half is fourth's scope and folding it in would be the orthogonal-change shape."
+        }
+      ],
+      "recurrence_open": "The actions close the resurrection path on the three branches that have soft delete today. They do NOT close the class: any server-stamped marker living inside a jsonb blob that clients write back whole has the same one-stale-save-from-erased property (the slab-hold audit fields found this same day are the fourth instance), and nothing enumerates blob-resident server markers against wholesale-write branches. They also do not deliver tombstone propagation itself -- no client calls the action, so deletions still reach no other device; that is fourth's client half. And the pre-read race window stands, closeable only DB-side."
+    },
+    {
       "commit": "41f7ffc7a3b9",
       "date": "2026-09-24",
       "subject": "fix(comment-stripper): a quote inside a REGEX literal handed real comments to every caller as code",
