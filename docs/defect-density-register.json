@@ -12792,7 +12792,7 @@
       "factors_unknown_reason": "Named in the obligation opened against this commit and not yet worked through by an independent session: the 'PT' name collision with the preventive modifier, and the fact that a panel listing what it checks gives no signal about what it does not."
     },
     {
-      "commit": "f36a7b5b1f24",
+      "commit": "7ab1e436058a",
       "date": "2026-09-24",
       "subject": "fix(tier-a-gate): --list's exit 1 meant 'the queue has overdue work' and was being read as 'this file is invalid'",
       "files": [
