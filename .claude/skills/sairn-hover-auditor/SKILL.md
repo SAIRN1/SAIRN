@@ -1748,8 +1748,26 @@ caught before being reverted. Consult it before a rotation pick as a real,
 additional input alongside Tier and freshness -- it does not replace either,
 and with this little history it should not yet dominate either.
 
-Four further anti-predictability rules, against the rotation itself becoming
-a pattern a build agent could learn and route around:
+**A fifth rotation rule, a COORDINATOR-DIRECTED policy change, 2026-09-25:
+within a session, the draw pool prefers never-individually-read rows first,
+and falls back to already-read rows only when the unread set for that weight
+class is exhausted.** Recorded by a build agent (Cody) on Michael's explicit
+instruction, said out loud because the boundary matters: a build agent must
+not tune the auditor's selection policy on its own judgment, and this entry
+exists only as the transcription of the coordinator's decision. THE
+MEASUREMENT BEHIND IT, from the 2026-09-24/25 session: draws were landing
+session-repeats roughly half the time because the weighted pool has no memory
+of what the session already re-read -- and every real finding of that session
+(sd_approvals, law_picases, law_clerequirements, sc_pctc, sb_perf, sb_vends,
+alf_signals, rf_buildings' null-overwrite) came from a FIRST-TIME individual
+read, while repeat draws landed zero. That is the same asymmetry the
+register's own history shows one level up: rows carrying "never individually
+read" are where wrong tiers hide, and a re-read of an already-read row mostly
+re-confirms. THE EXISTING RULES ARE NOT REPEALED: the occasional
+re-check-something-that-passed rule below still applies ACROSS sessions
+(a clean verdict is not permanent), and the unweighted-random slice keeps its
+false-negative-rate job. What changes is only the within-session ordering:
+unread first, within the same weight class, until that class is dry.
 
 - **Vary what triggers attention**, not only freshest-commit / highest-stakes.
   A rotation that always picks the same signal is still a predictable pattern
