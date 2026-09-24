@@ -2296,8 +2296,8 @@
       "task": "item 18 rewording relations -- semantic-preserving rewording against judgement-call verdicts, extending tools/metamorphic_check.py FILES: tools/metamorphic_check.py tests/run_metamorphic_probe.py",
       "claimed_at": "2026-09-24T13:13:02Z",
       "claimed_at_epoch": 1790255582.610833,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T13:35:11Z",
       "files": [
         "tests/run_metamorphic_probe.py",
         "tools/metamorphic_check.py"
