@@ -160,6 +160,55 @@ s2, rows2, _ = shapes('fx/probe.py', GIT_LEAK_PY)
 ok('a persistent git config write is reported',
    any(r['shape'] == 'git-config-write' for r in rows2), rows2)
 
+print('\nA2. the THIRD shape (2026-09-24): a mutation harness with no finally')
+# The class's third real instance, after the git identity and the suppression
+# flag: a harness that writes a mutation into a live file, runs something, and
+# writes the original back -- with nothing guaranteeing the second write runs.
+# The fixture is the reduced form of every ad-hoc mutation script this repo's
+# sabotage work produces.
+MUTANT_PY = """base = open('api/target.js').read()
+open('api/target.js', 'w').write(base.replace('a', 'b'))
+run_suite()
+# restore the original
+open('api/target.js', 'w').write(base)
+"""
+s3, rows3, _ = shapes('tests/fx_mutant.py', MUTANT_PY)
+ok('a two-write restore harness with NO finally is reported',
+   any(r['shape'] == 'tracked-write-no-finally' for r in rows3), rows3)
+ok('...once per FILE, not once per write -- the unit is the missing finally',
+   len([r for r in rows3 if r['shape'] == 'tracked-write-no-finally']) == 1, rows3)
+
+# THE PAIRED NEGATIVES, one per narrowing, because each narrowing is a claim:
+ok('the same harness WITH a finally is silent',
+   not any(r['shape'] == 'tracked-write-no-finally' for r in
+           shapes('tests/fx_mutant2.py',
+                  MUTANT_PY.replace('run_suite()',
+                                    'try:\n    run_suite()\nfinally:\n    pass'))[1]),
+   'a finally anywhere in the file must silence this shape')
+ok('a harness restoring into a TEMPDIR is silent',
+   not any(r['shape'] == 'tracked-write-no-finally' for r in
+           shapes('tests/fx_mutant3.py',
+                  'import tempfile\n' + MUTANT_PY)[1]),
+   'a tempdir file-level mark must silence this shape')
+ok('a GENERATOR -- one write, no restore vocabulary -- is silent, so the '
+   'shape does not flood on files whose single permanent write is their job',
+   not any(r['shape'] == 'tracked-write-no-finally' for r in
+           shapes('tools/fx_gen.py',
+                  "out = build_report()\nopen('docs/OUT.md', 'w').write(out)\n")[1]),
+   'generators were 37 of the 38 findings the v2 proxy produced')
+ok('an APP file writing twice is silent -- the shape binds to tests/ and tools/',
+   not any(r['shape'] == 'tracked-write-no-finally' for r in
+           shapes('api/fx_app.py', MUTANT_PY)[1]),
+   'an endpoint writing files is its job, not temporary state')
+ok('a declaration covers this shape like the other two',
+   not any(r['shape'] == 'tracked-write-no-finally' for r in
+           shapes('tests/fx_mutant4.py',
+                  MUTANT_PY.replace(
+                      "open('api/target.js', 'w').write(base.replace('a', 'b'))",
+                      '# ' + TOKEN + ' scope=command released-by=the restore below\n'
+                      "open('api/target.js', 'w').write(base.replace('a', 'b'))"))[1]),
+   'the declaration mechanism must cover shape 3 or the vocabulary forked')
+
 print('\nB. a declaration on the line above silences it -- that is the point')
 s, rows, bad = shapes('fx/declared.js', DECLARED_JS)
 ok('scope=call on the preceding line covers the assignment',

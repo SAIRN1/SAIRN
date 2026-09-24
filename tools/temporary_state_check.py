@@ -5,7 +5,7 @@
     python tools/temporary_state_check.py --check
 
 ── ITEM 34, AND WHY THE DECLARATION COMES FIRST ──────────────────────────
-Two real leaks, two different substrates, one shape:
+Three real instances now, three different substrates, one shape:
 
   * a probe wrote `user.name = probe@local` into a clone's PERSISTENT git
     config instead of passing `-c` per command. 131 real commits on origin/main
@@ -15,9 +15,16 @@ Two real leaks, two different substrates, one shape:
     SESSION, and the surrounding `.catch` swallowed the throw. This one is NOT
     historical: the shape is live in `stonedesk.html` at 2286/2299 and 6350 as
     of 2026-09-14 -- set true, call `st(...)`, set false, no `finally`.
+  * (2026-09-24, the third, and the reason shape 3 below exists) a MUTATION
+    HARNESS writes a change into a live tracked file, runs a suite, and writes
+    the original back -- with nothing guaranteeing the second write runs. The
+    sabotage-control work produces one of these ad hoc almost daily, each
+    carrying the same three lines of discipline by hand (dirty-check,
+    finally-restore, git-diff verify), and nothing noticed when one did not.
+    The residue is a REAL EDIT to a REAL file, indistinguishable from work.
 
-Both are: **something set on the way in, meant to come off on the way out, and
-nothing that guarantees it does.**
+All three are: **something set on the way in, meant to come off on the way
+out, and nothing that guarantees it does.**
 
 **A CHECKER CANNOT TELL A LEAKED FLAG FROM A DELIBERATELY LONG-LIVED ONE.** A
 session token with a long expiry, an hours-long cache, a feature switch read at
@@ -108,6 +115,35 @@ FLAG_ON = re.compile(r'^[ \t]*([A-Za-z_$][\w$.]*)\s*=\s*true\s*;', re.M)
 GIT_CONFIG = re.compile(r"""['"]config['"]\s*,|\bgit\s+config\s+(?!--get)""")
 GIT_NEAR = 100
 
+# Shape 3: a probe that MUTATES A TRACKED FILE with no `finally` anywhere in
+# it -- the third real instance of this class (2026-09-24), after the git
+# identity and the suppression flag. A mutation harness writes a change into a
+# live source file, runs a suite, and writes the original back; the restore is
+# the released-by, and when it is not in a `finally` the mutation persists the
+# moment anything between the two writes raises. This repo's own words:
+# "a probe which edits tracked files is indistinguishable from residue when it
+# dies" -- and the residue is a REAL EDIT to a REAL file, the worst possible
+# thing to leak. Found generalising the sabotage-control work of 2026-09-24,
+# where every ad-hoc mutation script had to carry the same three lines of
+# discipline by hand (dirty-check, finally-restore, git-diff verify) and
+# nothing noticed when one did not.
+#
+# THE PROXY IS DELIBERATELY PER-FILE AND DELIBERATELY WEAK, in the same way
+# and for the same reason as the flag proxy above: whether a given write is
+# the mutation or the restore, and whether the control flow between them can
+# raise, is not derivable by regex. What IS derivable: this file (a) writes in
+# 'w' mode to a path it did not just create under tempfile, and (b) contains
+# no `finally` at all. A file with even one `finally` is assumed to have
+# thought about it -- over- and under-reporting both possible, both accepted,
+# because the declaration is still the requirement and this is the read-list.
+PY_WRITE = re.compile(r"""\bio\.open\([^)\n]*,\s*['"]w b?['"]""".replace('w b', 'wb?'))
+PY_WRITE = re.compile(r"""\b(?:io\.)?open\(\s*[^)\n]*,\s*['"]wb?['"]""")
+JS_WRITE = re.compile(r"""\bfs\.writeFileSync\(""")
+TEMP_MARKS = ('tempfile', 'mkdtemp', 'TemporaryDirectory', 'tmpdir', 'os.tmpdir',
+              'scratch')
+MUTATE_INTENT = re.compile(r'restor|mutat|sabotag|revert|put back|byte-identical',
+                           re.I)
+
 SKIP_DIRS = ('node_modules', '.git', 'archive', 'dist', 'docs')
 
 
@@ -164,6 +200,69 @@ def findings_for(rel, raw):
                 continue
             out.append({'file': rel, 'line': line, 'shape': 'git-config-write',
                         'what': 'persistent git config'})
+    # Shape 3 binds to PROBES AND TOOLS only. An app or an endpoint writing a
+    # file is its job; a test writing one is a mutation that had better come
+    # back. One finding per file -- the first uncovered write -- because the
+    # unit of the defect is "this harness has no finally", not each write.
+    if rel.startswith(('tests/', 'tools/')) and (rel.endswith('.py') or rel.endswith('.js')):
+        # THE PROXY WAS NARROWED TWICE ON MEASUREMENT, and both cuts are
+        # recorded because each one is a stated blind spot:
+        #   v1: any 'w'-mode write with no tempfile within 200 chars -- 74
+        #       files, because a harness makes its tempdir at the top and
+        #       writes to it hundreds of lines later. Noise.
+        #   v2: tempdir detected at FILE level -- 38 files, still mostly
+        #       generators and registers, whose single permanent write is
+        #       their JOB and not temporary state at all.
+        #   v3 (shipped): the signal for MEANT-to-be-temporary is the file's
+        #       own vocabulary. A mutation harness writes at least TWICE
+        #       (mutate, restore) and says so -- restore/mutate/sabotage/
+        #       revert. A file that writes twice, says restore, and has no
+        #       `finally` is precisely the harness whose mutation persists
+        #       the moment anything between the two writes raises.
+        # WHAT v3 CANNOT SEE, stated: a harness that never uses the
+        # vocabulary, and one that spreads mutate/restore across two files.
+        # Measured against this repo the day it shipped: ONE finding
+        # (tools/sabotage_control_check.py, 18 writes, no finally), which is
+        # a real instance and not a tuned-to-zero result.
+        # A QUOTED WRITE IS NOT A WRITE, and this was not caution -- it was
+        # the first thing the shape got wrong. Run raw, its single repo
+        # finding was tools/sabotage_control_check.py "18 writes, no finally":
+        # every one of the eighteen was a write pattern QUOTED in that tool's
+        # docstrings and probe fixtures, because analysing write patterns is
+        # that tool's SUBJECT. PR 1.2 -- text that describes code is not code
+        # -- committed by the detector whose sibling shapes each carry their
+        # own version of the same scar.
+        #
+        # The regex cannot simply run on a string-blanked copy, because the
+        # thing it matches CONTAINS a string (the 'w' mode) that blanking
+        # erases. So it matches on the RAW text and each match is kept only if
+        # its `open`/`fs` token SURVIVES string-blanking at the same offset --
+        # a token inside a docstring or fixture string is blanked there, a
+        # real call is not. Offsets line up because strip_comments preserves
+        # them by contract.
+        try:
+            import checker_kit
+            code3 = checker_kit.strip_comments(raw, strings=True)
+        except Exception:                            # noqa: BLE001
+            code3 = None
+        has_finally = re.search(r'\bfinally\b', code) is not None
+        uses_temp = any(t in code for t in TEMP_MARKS)
+        if code3 is not None and not has_finally and not uses_temp:
+            wr = PY_WRITE if rel.endswith('.py') else JS_WRITE
+            writes = [m for m in wr.finditer(code)
+                      if code3[m.start():m.start() + 4] == code[m.start():m.start() + 4]]
+            if len(writes) >= 2 and MUTATE_INTENT.search(code):
+                lines = [code[:m.start()].count('\n') + 1 for m in writes]
+                # ONE declaration anywhere on the harness's writes covers the
+                # FILE, because the finding is per-file: the declaration says
+                # "this mutation is deliberate and here is how it comes back",
+                # and demanding it on every write of one harness would be
+                # punctuation, not information.
+                if not any(l in covered for l in lines):
+                    out.append({'file': rel, 'line': lines[0],
+                                'shape': 'tracked-write-no-finally',
+                                'what': '%d writes, restore vocabulary, no finally'
+                                        % len(writes)})
     return out, bad_scope
 
 
