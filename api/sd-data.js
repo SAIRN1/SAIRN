@@ -28,7 +28,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive, roleSet } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, ROLES_BY_APP, credentialStillActive, roleSet, hasRole } = require('./_lib/auth');
 // storedBlob: the ONE place that knows scope keys (license_hash, app_id,
 // p_license_hash) are never stored inside a data blob -- api/_lib/blob.js's
 // header carries the whole argument. Adopted 2026-09-24 on the six branches
@@ -7561,18 +7561,35 @@ module.exports = async (req, res) => {
         const bid = payload && typeof payload.building_id === 'string' ? payload.building_id.trim() : '';
         const bname = payload && typeof payload.name === 'string' ? payload.name.trim() : '';
         if (!bid || !bname) { res.status(400).json({ error: { message: 'rf_buildings: building_id and name are required' } }); return; }
+        // ── ABSENT IS NOT NULL (2026-09-25, H1 log #536) ────────────────
+        // This upsert wrote EVERY optional column on EVERY write, deriving
+        // each from a payload field the caller may not have sent. The one
+        // live caller -- saveBuilding() in sairnroofing.html -- sends only
+        // {building_id, name, customer, address}, so RENAMING A BUILDING
+        // from the app silently overwrote its server-side location_id with
+        // null, detaching it from the location -> entity chain the capital
+        // forecast attributes through. `active` had the same shape worse:
+        // `payload.active !== false` resolves an absent field to TRUE, so
+        // the same rename silently REACTIVATED a deactivated building.
+        //
+        // merge-duplicates only updates the columns present in the posted
+        // row, so the fix is to OMIT what the caller did not send -- an
+        // absent field means "leave it alone", a present one (including an
+        // explicit null) means "set it". The required pair and the audit
+        // stamps are always written; everything else is conditional on the
+        // key existing in the payload.
+        const bRow = { license_hash: licHash, building_id: bid, name: bname,
+                       updated_by: session.employee_id, updated_at: nowISO() };
+        if ('customer' in payload) bRow.customer = (payload.customer || '').trim() || null;
+        if ('address' in payload) bRow.address = (payload.address || '').trim() || null;
+        if ('location_id' in payload) bRow.location_id = (payload.location_id || '').trim() || null;
+        if ('active' in payload) bRow.active = payload.active !== false;
+        if ('notes' in payload) bRow.notes = (payload.notes || '').trim() || null;
+        if ('data' in payload) bRow.data = payload.data || {};
         const w = await fetch(rest('rf_buildings?on_conflict=license_hash,building_id'), {
           method: 'POST',
           headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-          body: JSON.stringify({
-            license_hash: licHash, building_id: bid, name: bname,
-            customer: (payload.customer || '').trim() || null,
-            address: (payload.address || '').trim() || null,
-            location_id: (payload.location_id || '').trim() || null,
-            active: payload.active !== false,
-            notes: (payload.notes || '').trim() || null,
-            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
-          })
+          body: JSON.stringify(bRow)
         });
         const saved = await w.json();
         if (!w.ok) return upstream(res, saved);
@@ -11261,6 +11278,39 @@ module.exports = async (req, res) => {
       // choose it could write two rows for one employee-week, which is the one
       // thing the deterministic id exists to make impossible.
       p.id = p.emp + '|' + p.week;
+    }
+    // ── SAIRNBIZ: sb_perf IS ROLE-GATED, NOT JUST SESSION-GATED (2026-09-25,
+    //    H1 log #533, corroborated H2 seq #217) ───────────────────────────
+    // A performance-review row is a NAMED EMPLOYEE joined to a review score
+    // and raise/PIP flags -- the data class SAIRNsenior already role-gates
+    // (sen_clients' minimum-necessary pattern), and the one row in this app a
+    // coworker has no business reading. The generic SB dispatch below asks
+    // only for a session, so before this gate any signed-in `staff` employee
+    // could read every colleague's score and PIP flag.
+    //
+    // {owner, hr, manager}: the roles that conduct or own reviews.
+    // `accounting` and `staff` are deliberately out -- accounting's job here
+    // is sb_ap/sb_invs, not personnel files. Built with roleSet()/hasRole()
+    // like every role map since the constructor-role finding, and the refusal
+    // is 403 with a named code so the client's console names the reason
+    // rather than degrading to a generic failure (sbData() returns null on
+    // any non-ok, so a staff session's panel falls back to local data and
+    // nothing crashes -- verified before gating, the SAIRNfreedom lesson).
+    const SB_PERF_ROLES = roleSet({ owner: true, hr: true, manager: true });
+    if (resource === 'sb_perf') {
+      const sbPerfSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');
+      if (!sbPerfSession) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'SAIRNbiz business records require a signed-in employee session' } });
+        return;
+      }
+      if (!hasRole(SB_PERF_ROLES, sbPerfSession.role)) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Performance reviews are limited to owners, HR and managers' } });
+        return;
+      }
+      // Falls through to the generic dispatch below, which re-verifies the
+      // session (cheap, and keeping one dispatch path is worth the second
+      // check) and serves the read/write exactly as before for the roles
+      // that pass.
     }
     if (SB_RESOURCES[resource]) {
       const sbBizSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');
