@@ -116,8 +116,25 @@ MUTATIONS = [
       'law_mattermilestones', 'law_bankstatements', 'LAW_RESOURCES [L-rev]']),
     ('SF_RESOURCES', "if (SF_RESOURCES[resource] && action === 'read') {",
      ['sf_', 'SF_RESOURCES [L-rev]']),
+    # ── THE FOURTH ELEMENT IS A READ MARKER, AND SC IS WHY IT EXISTS ──────
+    # "the first tenant filter below the opener" was right when written and
+    # stopped being right silently. A `tombstones` action was added to this
+    # branch on 2026-09-23 with its own license_hash-filtered query, so the
+    # FIRST filter below `if (isScResource) {` is now tombstones' at +81 and
+    # the generic list read is at +103 -- past READ_WINDOW as well as past the
+    # tombstones line. The control mutated a query no isolation arm drives,
+    # reported 24 expected-red arms stayed green, and READ AS IF THE ARMS WERE
+    # BROKEN. They are not: mutating the real read at +103 by hand turns
+    # exactly those 24 red. A control that is looking at the wrong line does
+    # not fail quietly here -- it fails LOUDLY about the wrong thing, which is
+    # the failure mode this file's own header warns about.
+    #
+    # The marker is `scSoftFilter`, which appears on the generic read and on
+    # no other query in the branch. A marker that matches nothing is a
+    # COULD-NOT-RUN, never a fall back to proximity: falling back is how this
+    # got here.
     ('SC_RESOURCES', 'if (isScResource) {',
-     ['sc_', 'SC_RESOURCES [L-rev]']),
+     ['sc_', 'SC_RESOURCES [L-rev]'], 'scSoftFilter'),
     ('BLD_RESOURCES', "if (BLD_RESOURCES[resource] && action === 'read') {",
      ['bld_', 'BLD_RESOURCES [L-rev]']),
     # Each rf_ branch below names its ACTION as well as its resource: the bare
@@ -167,10 +184,17 @@ FORM_B = "?license_hash=eq.' + enc(licHash) +"
 
 
 # How far below a branch's opener its tenant filter may sit. SC_RESOURCES is
-# the widest real gap -- `if (isScResource) {` and its read are 68 lines apart,
-# with the KX accumulator between them -- so 90 covers every current branch
-# with room, and is still far too narrow to reach the NEXT dispatcher.
-READ_WINDOW = 90
+# the widest real gap and IT HAS MOVED: the comment here said 68 lines, which
+# was true when it was written. Measured 2026-09-24 it is 103 -- the KX
+# accumulator AND a `tombstones` action now sit between the opener and the
+# generic list read -- so 90 could no longer reach it at all. 160 covers the
+# current worst case with room and is still far short of the next dispatcher.
+#
+# THE NUMBER IS MEASURED AND PRINTED, not asserted: a window is a guess about
+# somebody else's file and the only honest version of it says when it was last
+# checked against that file. Raising it is not the real fix either -- see the
+# read marker on SC_RESOURCES for that.
+READ_WINDOW = 160
 
 
 def locate_opener(lines, anchor):
@@ -179,10 +203,23 @@ def locate_opener(lines, anchor):
     return hits[0] if len(hits) == 1 else None
 
 
-def locate_read(lines, open_line):
-    """The first tenant filter at or below the opener, within READ_WINDOW."""
+def locate_read(lines, open_line, marker=None):
+    """The tenant filter this branch's READ uses, within READ_WINDOW.
+
+    WITH A MARKER the line must carry it as well as a filter form, so a branch
+    with several license_hash-filtered queries says WHICH one is the read
+    rather than taking whichever comes first. Without one the behaviour is
+    unchanged: the first filter below the opener.
+
+    A MARKER THAT MATCHES NOTHING RETURNS None and the caller reports a MISS.
+    It does NOT fall back to proximity -- falling back is exactly how the SC
+    row came to be mutating a `tombstones` query for a day without anybody
+    being able to tell from the output.
+    """
     for i in range(open_line - 1, min(open_line - 1 + READ_WINDOW, len(lines))):
         if FORM_A in lines[i] or FORM_B in lines[i]:
+            if marker and marker not in lines[i]:
+                continue
             return i + 1
     return None
 
@@ -256,7 +293,9 @@ try:
 
     failures = []
     print('\n=== %d LINE-TARGETED MUTATIONS ===' % len(MUTATIONS))
-    for label, open_anchor, arms in MUTATIONS:
+    for row in MUTATIONS:
+        label, open_anchor, arms = row[0], row[1], row[2]
+        read_marker = row[3] if len(row) > 3 else None
         # 1. the opener must identify EXACTLY ONE place in the file
         open_line = locate_opener(src_lines, open_anchor)
         if open_line is None:
@@ -270,14 +309,17 @@ try:
             print('  MISS  %-22s opener matches %d lines, not 1' % (label, hits))
             continue
         # 2. the read line is DERIVED from the opener, not typed
-        read_line = locate_read(src_lines, open_line)
+        read_line = locate_read(src_lines, open_line, read_marker)
         if read_line is None:
-            failures.append('%s: no tenant filter within %d lines below the '
-                            'opener at %d. The branch was restructured, or its '
+            failures.append('%s: no tenant filter%s within %d lines below the '
+                            'opener at %d. The branch was restructured, its '
                             'filter is written in a third shape this probe does '
-                            'not know. Nothing was mutated.'
-                            % (label, READ_WINDOW, open_line))
-            print('  MISS  %-22s no filter under opener at %d' % (label, open_line))
+                            'not know, or the read marker no longer appears on '
+                            'the read. Nothing was mutated.'
+                            % (label, (' carrying %r' % read_marker) if read_marker else '',
+                               READ_WINDOW, open_line))
+            print('  MISS  %-22s no%s filter under opener at %d'
+                  % (label, (' %r' % read_marker) if read_marker else '', open_line))
             continue
         target = src_lines[read_line - 1]
         if FORM_A in target:
