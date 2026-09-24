@@ -88,6 +88,7 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_session_identity as _identity            # noqa: E402
 REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
 REVIEWS = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
+RULE_REGISTRY = os.path.join(REPO, 'docs', 'coding-rule-registry.json')
 # Module-level rather than inlined in _register_records(), for the same reason
 # REVIEWS is: a path buried in a function body cannot be pointed at a fixture,
 # so the auto-discharge path could only ever be exercised against the live
@@ -211,6 +212,187 @@ def tier_a_resources():
             'this gate cannot answer, and an empty set would silently pass '
             'every push.')
     return names
+
+
+# ── THE SECOND SUBJECT KIND: A RULE, NOT A ROW (2026-09-24) ─────────────────
+# Everything above this point answers "which stored Tier A resources does this
+# change serve". That is the right question for a handler and the WRONG question
+# for a validator, and the gate said so itself on 2026-09-24 when it refused to
+# record an obligation for the GP therapy-discipline modifier: "Nothing in this
+# change names a Tier A resource, so there is no obligation to record."
+#
+# IT WAS CORRECT. scValidatePtSession() persists nothing. But a missing GP makes
+# a therapy claim UNPROCESSABLE -- never adjudicated at all -- so the change with
+# no reviewable subject was the one that decides whether the practice gets paid,
+# while a one-line edit to a handler that stores a row owes a full review. Six
+# shipped rules were in the same position: the 8-minute aggregation, the KX
+# threshold, CQ, MPPR, the RTM windows and DMEPOS.
+#
+# A RULE DECIDES WHETHER A CLAIM IS ADJUDICATED. A ROW DECIDES WHAT IS
+# REMEMBERED. The obligation ledger, the author-cannot-self-sign refusal, the
+# ownership assignment, the overdue clock and the merge policy are all correct
+# for both and are REUSED RATHER THAN COPIED -- a record simply carries `rules`
+# as well as `resources`, and a record may have either or both. A second ledger
+# with a second discharge path would be a second place for the self-signing
+# refusal to be got wrong.
+#
+# ATTRIBUTION IS BY LINE RANGE, NOT BY NAME, and that is the one place this half
+# is stronger than the resource half. A resource is found by its name appearing
+# on a changed line, which misses a change that does not mention it. A rule's
+# range is BRACE-MATCHED out of the file as it now stands, so any changed line
+# inside the body counts -- including one that names nothing.
+def _anchor_range(text, anchor):
+    """(first_line, last_line) 1-indexed for `anchor`'s block, or raise.
+
+    FAILS CLOSED ON BOTH SIDES OF UNIQUENESS. Zero matches means the anchor was
+    reworded and this rule is no longer locatable -- reporting it as untouched
+    would be the silent half of a stale anchor, which is the failure this
+    platform has recorded five times. More than one match means the gate cannot
+    say WHICH site a change hit, which is the same answer wearing a different
+    hat.
+
+    An anchor with no `{` or `[` after it covers its own line. That is how a
+    bare constant is expressed -- `var KX_MR_THRESHOLD_2026 = 3000;` has no
+    block -- rather than inventing a second kind of entry for it.
+    """
+    n = text.count(anchor)
+    if n != 1:
+        raise CouldNotTell(
+            'the anchor %r matches %d lines, not 1. Zero means it was reworded; '
+            'more than one means this rule cannot say which site a change hit. '
+            'Either way the gate cannot answer, and answering "untouched" would '
+            'be the quiet half of a stale anchor.' % (anchor, n))
+    start = text.index(anchor)
+    first_line = text.count('\n', 0, start) + 1
+    # The opening bracket must be on the anchor's own line, not the next one.
+    # `var X = {` and `function f(a) {` both qualify; a bare `var X = 3;` does
+    # not, and its range is that one line.
+    eol = text.find('\n', start)
+    if eol < 0:
+        eol = len(text)
+    head = text[start:eol]
+    opener = None
+    for ch in ('{', '['):
+        i = head.find(ch)
+        if i >= 0 and (opener is None or i < opener[0]):
+            opener = (i, ch)
+    if opener is None:
+        return first_line, first_line
+    close = {'{': '}', '[': ']'}[opener[1]]
+    i, depth, q = start + opener[0], 0, None
+    while i < len(text):
+        c, p = text[i], text[i - 1] if i else ''
+        if q:
+            if c == q and p != '\\':
+                q = None
+        elif c in ('"', "'", '`'):
+            q = c
+        elif text.startswith('//', i):
+            j = text.find('\n', i)
+            i = len(text) if j < 0 else j
+        elif text.startswith('/*', i):
+            j = text.find('*/', i)
+            i = len(text) if j < 0 else j + 1
+        elif c == opener[1]:
+            depth += 1
+        elif c == close:
+            depth -= 1
+            if depth == 0:
+                return first_line, text.count('\n', 0, i) + 1
+        i += 1
+    raise CouldNotTell('the block opened by %r is never closed' % anchor)
+
+
+def coding_rules():
+    """[{rule, app, file, anchor, ...}]. FAILS CLOSED exactly like
+    tier_a_resources(): an unreadable or empty registry is COULD NOT TELL, never
+    a clean answer, because an empty list would make every rule change invisible
+    and that is the quietest way for this half to stop working."""
+    try:
+        data = json.load(io.open(RULE_REGISTRY, encoding='utf-8'))
+    except OSError as e:
+        raise CouldNotTell('docs/coding-rule-registry.json could not be read: %s' % e)
+    except ValueError as e:
+        raise CouldNotTell('docs/coding-rule-registry.json is not valid JSON: %s' % e)
+    rules = data.get('rules') if isinstance(data, dict) else None
+    if not isinstance(rules, list) or not rules:
+        raise CouldNotTell(
+            'docs/coding-rule-registry.json yielded ZERO rules. That is a parse '
+            'failure or a registry that has lost its list; both mean this gate '
+            'cannot answer about rule changes, and an empty set would pass every '
+            'push silently.')
+    for r in rules:
+        for field in ('rule', 'app', 'file', 'anchor'):
+            if not str(r.get(field) or '').strip():
+                raise CouldNotTell(
+                    'a rule entry is missing %r: %s. A rule the gate cannot '
+                    'locate is one it would report as untouched forever.'
+                    % (field, json.dumps(r)[:120]))
+    return rules
+
+
+def changed_lines_by_file(diff_text):
+    """{path: set(new-file line numbers this diff CHANGED)}.
+
+    An added line is at its own new-file position. A DELETED line is recorded at
+    the position it was removed FROM -- the new-file line the deletion sits
+    between -- because a rule gutted by a pure deletion is a rule change, and
+    attributing nothing to it would make "delete the body" the one edit this
+    gate cannot see. That is the shape the whole registry exists to refuse.
+
+    CONTEXT LINES ARE NOT CHANGES and are deliberately not recorded. Counting
+    them would attribute every rule within three lines of any edit anywhere in
+    the file, which is how a range check quietly becomes a file check.
+    """
+    out, cur, new_ln = {}, None, None
+    for line in diff_text.split('\n'):
+        if line.startswith('+++ '):
+            path = line[4:].strip()
+            if path == '/dev/null':
+                cur = None
+                continue
+            cur = (path[2:] if path[:2] in ('a/', 'b/') else path).replace('\\', '/')
+            out.setdefault(cur, set())
+            continue
+        if cur is None:
+            continue
+        m = re.match(r'^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@', line)
+        if m:
+            new_ln = int(m.group(1))
+            continue
+        if new_ln is None:
+            continue
+        if line.startswith('+'):
+            out[cur].add(new_ln)
+            new_ln += 1
+        elif line.startswith('-'):
+            # The deletion happened HERE in the new file. No increment: the
+            # removed line occupies no new-file position of its own.
+            out[cur].add(new_ln)
+        elif line.startswith(' '):
+            new_ln += 1
+    return out
+
+
+def touched_rules(diff_text, rules):
+    """rule name -> [files]. Raises CouldNotTell if an anchor cannot be located
+    in a file this change actually touches."""
+    changed = changed_lines_by_file(diff_text)
+    hits = {}
+    for r in rules:
+        path = r['file'].replace('\\', '/')
+        lines = changed.get(path)
+        if not lines:
+            continue
+        try:
+            text = io.open(os.path.join(REPO, path), encoding='utf-8').read()
+        except OSError as e:
+            raise CouldNotTell('%s is registered for rule %r and could not be '
+                               'read: %s' % (path, r['rule'], e))
+        lo, hi = _anchor_range(text, r['anchor'])
+        if any(lo <= n <= hi for n in lines):
+            hits.setdefault(r['rule'], []).append(path)
+    return hits
 
 
 def load_reviews():
@@ -871,6 +1053,7 @@ def check(diff_text, verbose=True):
     try:
         resources = tier_a_resources()
         data = load_reviews()
+        rules = coding_rules()
     except CouldNotTell as e:
         return 2, ['COULD NOT TELL -- this is NOT a pass:', '  ' + str(e)]
 
@@ -888,15 +1071,28 @@ def check(diff_text, verbose=True):
         return 1, lines
 
     hits = touched_tier_a(diff_text, resources)
+    # RAISED, NOT SWALLOWED: a rule whose anchor no longer matches is a
+    # COULD NOT TELL for the whole run. Reporting it as "untouched" would let
+    # the registry decay into silence one rule at a time, which is exactly the
+    # stale-anchor failure this platform has now recorded six times.
+    try:
+        rule_hits = touched_rules(diff_text, rules)
+    except CouldNotTell as e:
+        return 2, ['COULD NOT TELL -- this is NOT a pass:',
+                   '  a registered coding rule could not be located: ' + str(e),
+                   '  Fix the anchor in docs/coding-rule-registry.json, or remove',
+                   '  the rule deliberately. A rule the gate cannot find is a rule',
+                   '  it would report as untouched forever.']
     # DEMOTED, NOT DELETED. A name that appears only in hunk CONTEXT used to
     # block; four-for-four it was a false positive and it added nothing to
     # either true one. It is still worth a human seeing, so it is said out loud
     # and never gates.
     ctx_only = context_only_tier_a(diff_text, resources)
-    if not hits:
+    if not hits and not rule_hits:
         if verbose:
             lines.append('No file in this change names a Tier A resource on a '
-                         'changed line. Nothing to record.')
+                         'changed line, and no changed line falls inside a '
+                         'registered coding rule. Nothing to record.')
             if ctx_only:
                 lines.append('FYI, not blocking: %s appear(s) in hunk CONTEXT '
                              'only. If the change really is about one of them, '
@@ -934,39 +1130,64 @@ def check(diff_text, verbose=True):
     # blocking gate, and folding it in would make one change do two things.
     mine = open_records(data, session)
     covered = set()
+    covered_rules = set()
     for r in mine:
         covered |= set(r.get('resources') or [])
+        covered_rules |= set(r.get('rules') or [])
     uncovered = sorted(set(hits) - covered)
-    if not uncovered:
+    # PER RULE, FOR THE SAME REASON COVERAGE IS PER RESOURCE. An obligation
+    # naming the KX threshold does not cover a change to the SWO element list
+    # that happened to ride along in the same push.
+    uncovered_rules = sorted(set(rule_hits) - covered_rules)
+    if not uncovered and not uncovered_rules:
         if verbose:
-            lines.append('Tier A code changed: %s' % ', '.join(sorted(hits)))
-            lines.append('EVERY resource it touches has an OPEN review obligation '
+            if hits:
+                lines.append('Tier A code changed: %s' % ', '.join(sorted(hits)))
+            if rule_hits:
+                lines.append('Coding rules changed: %s' % ', '.join(sorted(rule_hits)))
+            lines.append('EVERY resource and rule it touches has an OPEN obligation '
                          '(%s). Recording it is this session\'s job; discharging '
                          'it is somebody else\'s.' % session)
             for r in mine:
-                shared = sorted(set(hits) & set(r.get('resources') or []))
+                shared = sorted((set(hits) & set(r.get('resources') or []))
+                                | (set(rule_hits) & set(r.get('rules') or [])))
                 if shared:
                     lines.append('  opened %s covers %s'
                                  % (r.get('opened_at', '?'), ', '.join(shared)))
         return 0, lines
 
-    partial = sorted(set(hits) & covered)
+    partial = sorted((set(hits) & covered) | (set(rule_hits) & covered_rules))
     if partial:
         lines.append('TIER A CODE CHANGED AND ONLY PART OF IT IS RECORDED.')
         lines.append('')
         lines.append('  already covered by an open obligation:  %s'
                      % ', '.join(partial))
         lines.append('  NOT covered, and this is what blocks:    %s'
-                     % ', '.join(uncovered))
+                     % ', '.join(uncovered + uncovered_rules))
         lines.append('')
         lines.append('An obligation covers the RESOURCES IT NAMES, not every resource')
         lines.append('a later change happens to touch alongside them.')
         lines.append('')
-    else:
+    elif uncovered:
         lines.append('TIER A CODE CHANGED WITH NO RECORDED REVIEW OBLIGATION.')
+        lines.append('')
+    else:
+        lines.append('A CODING RULE CHANGED WITH NO RECORDED REVIEW OBLIGATION.')
+        lines.append('')
+        lines.append('This half of the gate exists because the other half refused a')
+        lines.append('real obligation on 2026-09-24 and was RIGHT to: a validator')
+        lines.append('stores nothing, so changing one names no Tier A resource. A')
+        lines.append('rule decides whether a claim is ADJUDICATED; a row decides what')
+        lines.append('is REMEMBERED. docs/coding-rule-registry.json names the rules,')
+        lines.append('and they are found by LINE RANGE rather than by name -- so a')
+        lines.append('changed line inside the body counts even when it mentions')
+        lines.append('nothing the gate could have grepped for.')
         lines.append('')
     for name in uncovered:
         lines.append('  %-22s %s' % (name, ', '.join(sorted(set(hits[name])))[:110]))
+    for name in uncovered_rules:
+        lines.append('  %-22s %s  [coding rule]'
+                     % (name, ', '.join(sorted(set(rule_hits[name])))[:96]))
     lines.append('')
     lines.append('The standing rule is that a Tier A change is reviewed by a session')
     lines.append('OTHER than the one that wrote it -- the author shares the blind spot')
@@ -1047,6 +1268,7 @@ def body_from_file_or(argv, fallback):
 
 def cmd_open(why, rng=None):
     resources = tier_a_resources()
+    rules = coding_rules()
     if rng:
         # ── RECORDING AN OBLIGATION FOR WORK ALREADY PUSHED (2026-09-16) ────
         # Without this there is no way to open an accurate record after the
@@ -1080,11 +1302,18 @@ def cmd_open(why, rng=None):
             # --open runs.
             text += '\n' + range_diff(base, 'HEAD')
     hits = touched_tier_a(text, resources)
-    if not hits:
-        sys.stderr.write('Nothing in this change names a Tier A resource, so there '
-                         'is no obligation to record. If you believe there is, say '
-                         'which resource and why -- an entry naming no resource '
-                         'cannot be discharged by anybody.\n')
+    rule_hits = touched_rules(text, rules)
+    if not hits and not rule_hits:
+        sys.stderr.write('Nothing in this change names a Tier A resource, and no '
+                         'changed line falls inside a registered coding rule, so '
+                         'there is no obligation to record. If you believe there '
+                         'is, say which resource or rule and why -- an entry '
+                         'naming neither cannot be discharged by anybody.\n'
+                         '\nIf it IS a coding or billing rule and the registry '
+                         'does not know about it yet, that is the gap rather than '
+                         'the answer: add it to docs/coding-rule-registry.json. '
+                         'Seven shipped rules sat in exactly that position until '
+                         '2026-09-24.\n')
         return 1
     data = load_reviews()
     author = session_name()
@@ -1093,7 +1322,14 @@ def cmd_open(why, rng=None):
         'author_session': author,
         'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
         'resources': sorted(hits),
-        'files': sorted(set(f for fs in hits.values() for f in fs)),
+        # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
+        # A field that appears only when non-empty is a field every reader has
+        # to remember might be absent, and `set(r.get('rules') or [])` in three
+        # places is one missing `or []` away from a silent miss. Written on
+        # every record so the shape is one shape.
+        'rules': sorted(rule_hits),
+        'files': sorted(set(list(f for fs in hits.values() for f in fs)
+                            + list(f for fs in rule_hits.values() for f in fs))),
         'what': why,
         'status': 'open',
         # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────
@@ -1110,8 +1346,9 @@ def cmd_open(why, rng=None):
         rec['owner_note'] = owner_note
     data['records'].append(rec)
     save_reviews(data)
+    subjects = rec['resources'] + ['%s [rule]' % r for r in rec['rules']]
     print('RECORDED -- %s owes an independent review on: %s'
-          % (rec['author_session'], ', '.join(rec['resources'])))
+          % (rec['author_session'], ', '.join(subjects)))
     if owner:
         print('ASSIGNED TO %s, now, rather than left first-come. Only %s can '
               'discharge it (or anybody after %dh, with --takeover).'
@@ -1141,7 +1378,10 @@ def cmd_list():
             mark = ('   ** OVERDUE, age UNREADABLE **' if age is None
                     else '   ** OVERDUE %.0fh **' % age)
         print('  %-8s %s  %s%s' % (r.get('author_session'), r.get('opened_at'),
-                                   ', '.join(r.get('resources') or []), mark))
+                                   ', '.join((r.get('resources') or [])
+                                             + ['%s [rule]' % x
+                                                for x in (r.get('rules') or [])]),
+                                   mark))
         # ── WHOSE IT IS, ON THE LINE PEOPLE ACTUALLY READ ──────────────────
         # --list is where a session decides what to pick up. Printing the owner
         # anywhere else would leave that decision on first-come, which is the
@@ -1204,6 +1444,94 @@ def cmd_list():
 # written at --open. Derived by reading those three sites rather than by
 # sampling the ledger, so a status nothing writes cannot creep in here.
 STATUSES = ('open', 'reviewed', 'reviewed-by-record')
+
+
+# ── --rules: IS EVERY REGISTERED RULE STILL FINDABLE? ──────────────────────
+# The registry's own validator, and the answer this half depends on. Every
+# other question here -- did this change touch a rule, is it covered -- assumes
+# each anchor resolves to exactly one range. When one stops resolving, the gate
+# already refuses with COULD NOT TELL on any push touching that FILE; this is
+# how somebody asks the question without needing a push to ask it with.
+#
+# EXIT 2 AND NOT 1 WHEN AN ANCHOR IS GONE. A rule that cannot be located is a
+# could-not-tell about that rule, not a finding about the code -- the same
+# three-state discipline the rest of this file holds.
+def cmd_rules():
+    try:
+        rules = coding_rules()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL: %s\n' % e)
+        return 2
+    print('%d registered coding rule(s) in docs/coding-rule-registry.json\n'
+          % len(rules))
+    # ── THE REVIEW BACKLOG, WHICH IS THE POINT OF REGISTERING THEM ─────────
+    # Reading the ledger for which rules have ever been the subject of an
+    # obligation, and whether it was discharged. A registry that only answers
+    # "can I find this rule" would be a lookup table; what somebody actually
+    # needs to know is which shipped rules nobody outside their author has ever
+    # read. On the day this was built that was ALL of them.
+    #
+    # NEVER-RECORDED IS NOT A FINDING AND IS NOT PRINTED AS ONE. The gate opens
+    # obligations for CHANGES, so a rule that has not been touched since the
+    # registry existed has no obligation and should not have one invented. It
+    # is a coverage figure, and it is reported as a figure.
+    try:
+        data = load_reviews()
+        records = data.get('records') or []
+    except CouldNotTell:
+        records = None
+    seen, reviewed = {}, {}
+    if records is not None:
+        for rec in records:
+            for name in (rec.get('rules') or []):
+                seen[name] = seen.get(name, 0) + 1
+                if rec.get('status') in ('reviewed', 'reviewed-by-record'):
+                    reviewed[name] = reviewed.get(name, 0) + 1
+    bad = 0
+    for r in sorted(rules, key=lambda x: (x['app'], x['rule'])):
+        try:
+            text = io.open(os.path.join(REPO, r['file']), encoding='utf-8').read()
+            lo, hi = _anchor_range(text, r['anchor'])
+            where = '%s:%d-%d  (%d lines)' % (r['file'], lo, hi, hi - lo + 1)
+        except (OSError, CouldNotTell) as e:
+            where = 'UNLOCATABLE -- %s' % e
+            bad += 1
+        if records is None:
+            mark = '[ledger unreadable]'
+        elif reviewed.get(r['rule']):
+            mark = '[reviewed %d]' % reviewed[r['rule']]
+        elif seen.get(r['rule']):
+            mark = '[obligation OPEN]'
+        else:
+            mark = '[never recorded]'
+        print('  %-34s %-18s %s' % (r['rule'], mark, where))
+        print('      %s' % (r.get('decides') or '(no `decides` recorded)'))
+    if bad:
+        print('\n%d rule(s) COULD NOT BE LOCATED. Every push touching their file '
+              'will refuse with COULD NOT TELL until the anchor is repaired or '
+              'the rule is removed deliberately. An unlocatable rule reads as '
+              'untouched forever, which is the failure this registry exists to '
+              'prevent.' % bad)
+        return 2
+    never = [r['rule'] for r in rules if not seen.get(r['rule'])]
+    print('\nEvery anchor resolves to exactly one range. That is the property '
+          'the\nwhole rule half depends on -- it says nothing about whether any '
+          'rule is\nCORRECT, which is what the review obligation is for.')
+    if records is None:
+        print('\nTHE LEDGER COULD NOT BE READ, so the review column above says '
+              'nothing.\nThat is a could-not-tell about coverage, not a clean '
+              'backlog.')
+    elif never:
+        print('\n%d of %d registered rule(s) have NEVER been the subject of a '
+              'review\nobligation: %s.\n'
+              'That is a coverage figure and not a finding -- this gate opens '
+              'an\nobligation for a CHANGE, so a rule nobody has touched since '
+              'the registry\nexisted correctly has none. It is printed because '
+              'the reason the registry\nwas built is that these rules had no '
+              'channel at all, and "no channel" and\n"reviewed" look identical '
+              'from the outside.'
+              % (len(never), len(rules), ', '.join(sorted(never))))
+    return 0
 
 
 def cmd_validate():
@@ -1673,6 +2001,8 @@ def main(argv):
         sys.stderr.write('--discharge <author-session> [opened_at] <verdict '
                          'sentence>   [--takeover]\n')
         return 1
+    if '--rules' in argv:
+        return cmd_rules()
     if '--validate' in argv:
         return cmd_validate()
     if '--list' in argv:

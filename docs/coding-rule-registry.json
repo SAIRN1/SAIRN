@@ -1,0 +1,95 @@
+{
+  "_what_this_is": "The named coding and billing RULES on this platform, and where each one lives. It exists because tools/tier_a_review_gate.py keys the independent-review obligation on Tier A RESOURCES -- stored rows -- and a coding rule stores nothing. On 2026-09-24 that gate refused an obligation for the GP therapy-discipline modifier in as many words: 'Nothing in this change names a Tier A resource, so there is no obligation to record.' It was right. A rule decides whether a claim is ADJUDICATED; a row decides what is REMEMBERED, and the obligation could only express the second.",
+
+  "_why_it_is_not_derived": "Every other registry on this platform is derived from something, and this one cannot be. There is no property of a function that says 'this encodes a federal billing rule' -- scValidatePtSession and scRenderRuleFindings are both functions in the same file, and only one of them decides whether a claim is payable. Naming them is a judgement, so the file is hand-written and the gate FAILS CLOSED when it cannot parse it. What IS derived is the LINE RANGE of each rule: the anchor is brace-matched against the real file at check time, so a rule that moves is still found and a rule whose anchor is gone is a refusal rather than a silent miss.",
+
+  "_how_attribution_works": "A changed line is attributed to a rule when it falls inside that rule's anchor range in the file as it now stands. The anchor must match EXACTLY ONCE -- zero means it was reworded and the gate says COULD NOT TELL; more than one means the gate cannot say which site a change hit, which is the same answer. An anchor with no brace or bracket after it covers its single line, which is how a bare constant is expressed.",
+
+  "_several_rules_may_share_one_anchor_and_that_is_deliberate": "scValidatePtSession implements six rules in one function: the 8-minute aggregation, the KX threshold, CQ, MPPR, the RTM windows and GP. A change anywhere inside it owes a review naming all six. That is OVER-coverage and it is the honest direction: those six are interleaved in one body, they share `findings`, and a reviewer told 'something in the PT validator changed' is better served by the list of everything it could have affected than by a guess at which section the diff meant. The alternative -- anchoring each rule on its section comment -- makes the range depend on a comment nobody is required to keep, which is the drift this whole file is a response to.",
+
+  "_what_it_does_NOT_claim": "That the rules are correct, that the list is complete, or that a review happened. It is a list of the places where a change is a CODING decision rather than a code change, so an obligation can be recorded against something other than a stored row. Completeness is the weak point and it is stated rather than implied: seven rules are registered and SAIRNcode alone holds more than twenty scValidate* functions. Adding one is a judgement call and the gate cannot prompt for it.",
+
+  "merge_policy": {
+    "strategy": "union-by-identity",
+    "records_key": "rules",
+    "identity": ["rule"],
+    "validator": ["tools/tier_a_review_gate.py", "--rules"],
+    "note": "Same shape as docs/tier-a-reviews.json so tools/sairn_rebase_resolve.py can treat it the same way. Two sessions registering different rules is an append on both sides and has a correct answer; two sessions editing the SAME rule's anchor differently does not, and is refused."
+  },
+
+  "rules": [
+    {
+      "rule": "sc_pt_eight_minute_units",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "function scPtUnitsFromMinutes(totalMinutes){",
+      "decides": "how many billable units a total of timed therapy minutes supports",
+      "harm": "the classic over-bill: counting units per code and summing them, instead of aggregating the session first. Every therapy claim from the practice is wrong in the same direction at once.",
+      "source": "CMS Medicare Claims Processing Manual Ch. 5; APTA 'Coding for Timed Codes'"
+    },
+    {
+      "rule": "sc_pt_session_rules",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "function scValidatePtSession(input){",
+      "covers": ["8-minute aggregation", "KX threshold attestation", "CQ de minimis", "MPPR ranking", "RTM monitoring windows", "GP discipline modifier"],
+      "decides": "every blocking and warning finding the Physical Therapy panel produces",
+      "harm": "six federal billing rules are interleaved in this one function body. A wrong unit count over-bills; a missing KX loses the claim above the threshold; a wrong CQ costs or wastes 15%; a missing GP makes the claim UNPROCESSABLE and it is never adjudicated at all.",
+      "source": "per-rule, in SC_PT_SOURCES in the same file"
+    },
+    {
+      "rule": "sc_pt_kx_thresholds",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "var KX_THRESHOLD_2026",
+      "decides": "the per-beneficiary dollar threshold above which KX is required",
+      "harm": "updated annually by the MEI. A stale figure attaches KX below the threshold or omits it above, and neither is visible on screen.",
+      "source": "CMS Transmittal R13437CP, 2026 Annual Update of Per-Beneficiary Threshold Amounts"
+    },
+    {
+      "rule": "sc_pt_kx_medical_review_threshold",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "var KX_MR_THRESHOLD_2026",
+      "decides": "the targeted medical review threshold",
+      "harm": "same annual-update shape as the KX threshold, one line further on. Registered separately because it is a DIFFERENT figure that moves on a different schedule, and a single entry covering both would read as reviewed when only one had been.",
+      "source": "CMS Transmittal R13437CP"
+    },
+    {
+      "rule": "sc_pt_rtm_windows",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "var SC_RTM_SHORT_WINDOW",
+      "decides": "which RTM codes take a 2-15 day monitoring window",
+      "harm": "the 2026 code set moved. A code in the wrong window blocks a compliant claim or passes a non-compliant one, and the panel states the window as fact.",
+      "source": "ASHA 'CPT and HCPCS Code Changes for 2026'"
+    },
+    {
+      "rule": "sc_pt_rtm_long_windows",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "var SC_RTM_LONG_WINDOW",
+      "decides": "which RTM codes take a 16-30 day monitoring window",
+      "harm": "as above. Separate from its sibling for the same reason the two KX figures are separate: they are two lists and either can move alone.",
+      "source": "ASHA 'CPT and HCPCS Code Changes for 2026'"
+    },
+    {
+      "rule": "sc_dmepos_swo_elements",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "var DME_SWO_ELEMENTS = [",
+      "decides": "which elements a Standard Written Order must carry before a DMEPOS claim may be billed",
+      "harm": "THE DIRECTION OF THE ERROR IS THE POINT AND THIS APP HAS ALREADY BEEN WRONG ABOUT IT ONCE. The gate was briefed as requiring seven elements; CMS article A55426 lists SIX, and the commonly repeated seventh -- a start date -- is not required. A seven-element gate BLOCKS COMPLIANT ORDERS. Strictness is not automatically safety, which is why this list needs a reviewer and not a careful author.",
+      "source": "CMS Medicare Coverage Database article A55426"
+    },
+    {
+      "rule": "sc_dmepos_swo_validation",
+      "app": "sairncode",
+      "file": "sairncode.html",
+      "anchor": "function dmeValidateSwo(elements, onRequiredList, f2fWithinSixMonths, signatureIsStamp) {",
+      "decides": "whether a Standard Written Order is complete, timely, and signed in a way CMS accepts",
+      "harm": "a stamped signature and a face-to-face encounter outside the six-month window are both hard refusals under the Program Integrity Manual, and both look like paperwork details on screen.",
+      "source": "CMS article A55426; Medicare Program Integrity Manual Ch. 3 3.3.2.4"
+    }
+  ]
+}

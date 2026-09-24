@@ -2782,6 +2782,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-24T12:29:25Z",
+      "resources": [],
+      "rules": [
+        "sc_pt_session_rules"
+      ],
+      "files": [
+        "sairncode.html"
+      ],
+      "what": "THE GP CHANGE, RECORDED RETROSPECTIVELY THE DAY THE CHANNEL TO RECORD IT EXISTED. 982b093c added the GP therapy-discipline modifier rule to sairncode.html's Physical Therapy validator. tools/tier_a_review_gate.py refused an obligation for it at the time, correctly -- \"Nothing in this change names a Tier A resource\" -- because a validator stores nothing. This is that obligation, opened over the same commit range now that the gate can express it, and it names ONE registry entry -- sc_pt_session_rules -- whose anchor is the whole scValidatePtSession body and which COVERS six interleaved rules: the 8-minute aggregation, the KX threshold, CQ, MPPR, the RTM windows and GP. Reviewing it means reviewing the body, not the GP section alone. CORRECTED IN PLACE: this sentence first said the record names six rules. It names one entry covering six, which is a different claim and the reader would have gone looking for five records that do not exist.\n\nATTACK THESE SIX:\n\n(1) THE CITATION IS THE WEAKEST PART AND THE SOURCE STRING SAYS SO ITSELF. I cite CMS Medicare Claims Processing Manual Ch. 5 by CHAPTER and deliberately not by subsection, because the numbering was NOT re-verified against CMS in that session. The load-bearing claim is the RULE -- GN/GO/GP identify the plan of care, and an always-therapy line without one is returned unprocessable. If you can reach a primary source, pin the subsection or correct me.\n\n(2) THE SCOPE CAN OVER-BLOCK AND THAT IS THE DIRECTION THIS APP HAS ALREADY BEEN WRONG IN. The rule fires on every code in timed_minutes_by_code, on the ground that the 8-minute rule has already treated those as timed therapy services. This app holds no copy of the CMS always-therapy list, on purpose. A SOMETIMES-therapy code entered with timed minutes now gets a block CMS would not require -- refusing a compliant claim, which is exactly what the seven-element DMEPOS gate would have done. Decide whether the scope is right or whether it should be a warn.\n\n(3) RTM CODES ARE EXCLUDED ON AN UNVERIFIED QUESTION. Whether a therapist-furnished RTM service takes a discipline modifier was not verified, so the rule is silent there and an arm asserts the silence. Silence may be the wrong answer -- check it.\n\n(4) THE FIVE RULES THAT DID NOT CHANGE ARE IN THIS RECORD ANYWAY, and you should decide whether that is coverage or noise. The 8-minute aggregation, KX, CQ, MPPR and the RTM windows share one function body with GP. The registry's own note calls this over-coverage and defends it: those six are interleaved, they share `findings`, and a reviewer told \"something in the PT validator changed\" is better served by the full list than by a guess at which section the diff meant. If you disagree, the alternative is anchoring each rule on its section comment, which makes the range depend on a comment nobody is required to keep.\n\n(5) THE WARN ARM IS NEW BEHAVIOUR NOBODY ASKED FOR. GP recorded on a code with no timed minutes produces a warning. It mirrors the CQ rule's second arm, but it is an addition rather than a fix and it will fire on a coder who enters modifiers before minutes.\n\n(6) THE NEGATIVE CONTROL MUTATES A STRING, NOT A FILE. tests/sairncode_pt_gp_modifier.js extracts the validator as text and re-runs three mutations in a fresh vm context, so nothing is ever opened for writing. That is safer than a worktree and it also proves something slightly narrower -- a property of the EXTRACTED text rather than of the file as a browser loads it. Judge whether that gap matters.\n\nFILES: sairncode.html tests/sairncode_pt_gp_modifier.js",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T12:29:25Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
