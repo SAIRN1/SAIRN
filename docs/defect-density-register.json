@@ -12895,6 +12895,55 @@
       "factors_unknown_reason": "Not yet worked through independently. The shape is named in the commit: correcting a stale header BY reading the header, when the fact lives in the handler sixty lines below."
     },
     {
+      "commit": "295de7744eba",
+      "date": "2026-09-24",
+      "subject": "fix(sairnfreedom): the (D)(1) name match misses a doubled space -- and its own test fixture was collapsing the whitespace for it",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sf_operator_payee_match.js"
+      ],
+      "lines_added": 45,
+      "lines_removed": 9,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "SAIRNfreedom's ORC 2915.09(D)(1) enforcement -- no compensation to a bingo game operator -- matched names with bare trim().toLowerCase() on both routes (the canteen-roster match and the gaming-account payee match), so \"Pat  Doe\" with a doubled internal space did not equal \"Pat Doe\". The evasion was bidirectional: a payee written with a doubled space missed the operator roster, and an operator ENROLLED with a doubled space was exempted from every payee comparison at once. The test arm named \"the match is case- and whitespace-insensitive\" was green the whole time because its fixture read 'Pat  Doe'.replace(/\\s+/g, ' ') -- the FIXTURE collapsed the whitespace before handing the string to the matcher, so the arm tested 'Pat Doe' twice and covered nothing. Found by H1 (seq #526), verified live. Fixed with one shared normaliser (sfD1Name: trim, collapse internal whitespace, lowercase) used by both routes; the test now extracts that normaliser from the app rather than re-implementing it, feeds raw fixture strings including a tab, and drives the operator-enrolment direction the old fixture never touched. Mutation-verified: trim-only turns exactly the two whitespace arms red.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The trim-only normalisation dates to whenever each route was written (the canteen match predates the 2026-09-23 direct route); two injection commits for one defect class, and picking either would misstate the lag for the other."
+      },
+      "citation_note": "1.2's letter is grep-vs-text; its principle -- a check reading a surrogate of the thing instead of the thing -- is the fit: the arm read a fixture-preprocessed surrogate of user input and called it user input. Cited arguable because the rule's text is narrower than this instance.",
+      "contributing_factors": [
+        {
+          "factor": "THE FIXTURE APPLIED THE TRANSFORM THE CODE UNDER TEST WAS SUPPOSED TO APPLY. 'Pat  Doe'.replace(/\\s+/g,' ') hands the matcher an already-collapsed string, so the arm asserts the matcher handles input the fixture has already handled. Green over a matcher that only trims.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Raw strings in the fixture, a tab added, an operator-side arm added, and the normaliser extracted from the app so a test-side stub cannot recreate the same defect."
+        },
+        {
+          "factor": "TWO ROUTES NORMALISED INDEPENDENTLY with copies of the same expression, so there was no single place where 'what counts as the same name' was decided -- and the comment on the second route claimed it used the same normalisation as the first, which was true only because both were equally incomplete.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "One sfD1Name() used by both routes; the comment now says the sharing is the point."
+        },
+        {
+          "factor": "NOTHING EXERCISES A CHECKER'S CLAIMED INVARIANCES AGAINST RAW INPUT. The arm's NAME promised whitespace-insensitivity and nothing verified the promise against strings the fixture had not preprocessed -- the same class the metamorphic rewording family now covers for prose graders, appearing in a hand-written unit test.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "A general sweep for self-normalising fixtures (fixtures calling replace/trim/toLowerCase on the value they pass to the subject) is grep-able and worth its own claim; not built inside this fix."
+        }
+      ],
+      "recurrence_open": "Whitespace is closed; other same-name spellings are not -- \"Pat Doe Jr\", \"P. Doe\", unicode confusables and NBSP all still evade, and for a compliance prompt that is arguably correct (a prompt that fires on weak matches teaches the panel to be ignored) but nobody has decided that on the record. The self-normalising-fixture class has no detector: fixtures that trim/collapse/lowercase the value they hand to the subject are grep-able across tests/ and unswept. And the both-empty guard added to the canteen match is new behaviour verified only by reading -- no arm drives a nameless paid-staff row against a nameless operator."
+    },
+    {
       "commit": "3182e1feebe3",
       "date": "2026-09-24",
       "subject": "fix(probe): the sabotage control has been mutating the WRONG SC query, and reporting it as 24 broken arms",
@@ -13161,56 +13210,6 @@
       "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
-      "commit": "d3d3625afa68",
-      "date": "2026-09-24",
-      "subject": "fix(spof): the retirement disclosure went SILENT exactly when the list was growing -- and its own control arm has been red",
-      "files": [
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "tests/run_dependency_graph_probe.py",
-        "tools/dependency_graph.py"
-      ],
-      "lines_added": 105,
-      "lines_removed": 6,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "tools/dependency_graph.py's SPOF-register check printed its retirement disclosure (\"NOTHING HAS BEEN RETIRED YET\") only when net == 0 -- the live count exactly equalling the frozen baseline -- so the sentence went SILENT in every state except the one where nothing at all had happened. On 2026-09-23 the register stood at 32 components against a baseline of 11 with zero retirements in nine days, and the tool said nothing about retirement: the GROWTH suppressed the disclosure. A disclosure that disappears when the situation worsens is not a disclosure. And its control probe's arm 7e -- the ONE arm in the register section asserting rc == 0 -- has been red at HEAD, because its fixture carried no BASELINE sentence; so 7d's refusal was unverified and nothing proved the checker refuses an empty register for the stated reason rather than refusing everything. Fixed: the stall prints unconditionally with ELAPSED TIME read from the same frozen sentence as the count (an undated baseline is refused as its own problem line), and four probe arms pin the growth case, the elapsed-time text, the paired positive (a RETIRED row changes the line), and the undated refusal.",
-      "rules": [
-        "1.1"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "The net==0 gate shipped with the register check itself; identifying that commit needs the file's history walked for check_register's introduction and I did not establish it -- a guessed sha would be a lag with a hash on it."
-      },
-      "citation_note": "1.1's shape -- a check that stopped checking -- is the closest fit and is a stretch in one respect: the disclosure never checked the growth case, so it is a check that NEVER STARTED for that state rather than one that stopped. The family (a green-looking output concealing an unexercised path) is the same; cited arguable for that scope difference.",
-      "contributing_factors": [
-        {
-          "factor": "THE CONDITION ENCODED ONE SCENARIO, NOT THE PROPERTY. `net == 0 and not retired` was written when the register had just opened and the only imaginable quiet state was 'nothing moved yet'. The property -- zero retirements should always be said out loud with how long it has been true -- was never stated, so the first state outside the author's imagination (growth) fell outside the condition.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The disclosure is unconditional on `not retired`, carries elapsed days from the baseline date, and the paired-positive arm proves it is not printed when a retirement exists."
-        },
-        {
-          "factor": "THE CONTROL THAT WOULD HAVE FORCED THE QUESTION WAS ITSELF BROKEN. Arm 7e was the section's only rc == 0 assertion and was red at HEAD on a fixture defect (no BASELINE sentence), so the whole register section of the probe had no working positive control -- and a probe whose control is red teaches its reader to stop reading exactly the section that needed reading.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "7e's fixture carries the BASELINE sentence; confirmed red at HEAD in a detached worktree before repair so the fix is credited against a real failure."
-        },
-        {
-          "factor": "REPORT-ONLY OUTPUT HAS NO READER OF RECORD. The stall sentence is advisory prose in a --register run; nobody's workflow breaks when it goes missing, so its absence for nine days was noticed only when a queue item said to look.",
-          "kind": "latent-condition",
-          "action_status": "declined",
-          "note": "Making the stall a problem line (exit 1) would gate every push on a fact about the platform's pace of fixing chokepoints, which is a policy decision for the register's owner, not a repair."
-        }
-      ],
-      "recurrence_open": "The disclosure now says how long nothing has retired; nothing yet says what SHOULD have. A retirement-schedule discipline -- per-OPEN-row target dates, or a cadence after which a stall escalates from prose to a problem line -- does not exist and is the register owner's decision; the elapsed-time line is the measurement that decision needs, not the decision. Also open: the `net == 0` shape (a disclosure keyed to one scenario instead of the property) has no detector and this is its first recorded instance."
-    },
-    {
       "commit": "982b093cfa13",
       "date": "2026-09-24",
       "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
@@ -13380,6 +13379,56 @@
         }
       ],
       "recurrence_open": "The actions close the exit-code semantics of this one tool. They do NOT close the class: no check on this platform asks whether a tool's exit 0 means \"measured and clean\" or \"measured nothing\". The register itself, the tier-A gate and the generators each answer this differently and correctly, but by hand, and nothing enumerates the tools that do not. They also do not close the plan's own unverifiability -- the committed plan carries zero verify markers, so the tool will answer exit 2 COULD NOT TELL until somebody marks items in it, and nothing schedules that."
+    },
+    {
+      "commit": "d3d3625afa68",
+      "date": "2026-09-24",
+      "subject": "fix(spof): the retirement disclosure went SILENT exactly when the list was growing -- and its own control arm has been red",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_dependency_graph_probe.py",
+        "tools/dependency_graph.py"
+      ],
+      "lines_added": 105,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/dependency_graph.py's SPOF-register check printed its retirement disclosure (\"NOTHING HAS BEEN RETIRED YET\") only when net == 0 -- the live count exactly equalling the frozen baseline -- so the sentence went SILENT in every state except the one where nothing at all had happened. On 2026-09-23 the register stood at 32 components against a baseline of 11 with zero retirements in nine days, and the tool said nothing about retirement: the GROWTH suppressed the disclosure. A disclosure that disappears when the situation worsens is not a disclosure. And its control probe's arm 7e -- the ONE arm in the register section asserting rc == 0 -- has been red at HEAD, because its fixture carried no BASELINE sentence; so 7d's refusal was unverified and nothing proved the checker refuses an empty register for the stated reason rather than refusing everything. Fixed: the stall prints unconditionally with ELAPSED TIME read from the same frozen sentence as the count (an undated baseline is refused as its own problem line), and four probe arms pin the growth case, the elapsed-time text, the paired positive (a RETIRED row changes the line), and the undated refusal.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The net==0 gate shipped with the register check itself; identifying that commit needs the file's history walked for check_register's introduction and I did not establish it -- a guessed sha would be a lag with a hash on it."
+      },
+      "citation_note": "1.1's shape -- a check that stopped checking -- is the closest fit and is a stretch in one respect: the disclosure never checked the growth case, so it is a check that NEVER STARTED for that state rather than one that stopped. The family (a green-looking output concealing an unexercised path) is the same; cited arguable for that scope difference.",
+      "contributing_factors": [
+        {
+          "factor": "THE CONDITION ENCODED ONE SCENARIO, NOT THE PROPERTY. `net == 0 and not retired` was written when the register had just opened and the only imaginable quiet state was 'nothing moved yet'. The property -- zero retirements should always be said out loud with how long it has been true -- was never stated, so the first state outside the author's imagination (growth) fell outside the condition.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The disclosure is unconditional on `not retired`, carries elapsed days from the baseline date, and the paired-positive arm proves it is not printed when a retirement exists."
+        },
+        {
+          "factor": "THE CONTROL THAT WOULD HAVE FORCED THE QUESTION WAS ITSELF BROKEN. Arm 7e was the section's only rc == 0 assertion and was red at HEAD on a fixture defect (no BASELINE sentence), so the whole register section of the probe had no working positive control -- and a probe whose control is red teaches its reader to stop reading exactly the section that needed reading.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "7e's fixture carries the BASELINE sentence; confirmed red at HEAD in a detached worktree before repair so the fix is credited against a real failure."
+        },
+        {
+          "factor": "REPORT-ONLY OUTPUT HAS NO READER OF RECORD. The stall sentence is advisory prose in a --register run; nobody's workflow breaks when it goes missing, so its absence for nine days was noticed only when a queue item said to look.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Making the stall a problem line (exit 1) would gate every push on a fact about the platform's pace of fixing chokepoints, which is a policy decision for the register's owner, not a repair."
+        }
+      ],
+      "recurrence_open": "The disclosure now says how long nothing has retired; nothing yet says what SHOULD have. A retirement-schedule discipline -- per-OPEN-row target dates, or a cadence after which a stall escalates from prose to a problem line -- does not exist and is the register owner's decision; the elapsed-time line is the measurement that decision needs, not the decision. Also open: the `net == 0` shape (a disclosure keyed to one scenario instead of the property) has no detector and this is its first recorded instance."
     },
     {
       "commit": "dadfedf48ac9",
