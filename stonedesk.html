@@ -993,6 +993,29 @@ textarea#userInput::placeholder{color:var(--muted)}
   font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;
   cursor:pointer;color:var(--muted);transition:all .15s;letter-spacing:.3px;
 }
+/* ── .btn / .bo / .bp / .bsm HAD NO RULES AT ALL (defined 2026-09-24) ──────
+   Twenty-one buttons across the three .page modules (Field Quote, Doc
+   Scanner, Check Register) wore `class="btn bo bsm"` / `class="btn bp"` --
+   a vocabulary copied from another app's stylesheet that never existed in
+   this file, so every one rendered as bare browser default inside otherwise
+   styled pages. Found while adding the quote-hold Release button, which
+   checked before copying the class and found nothing to copy.
+   Defined to match the app's own .q-btn idiom rather than invent a second
+   look: btn = the .q-btn base, bp (primary) = .q-btn.primary, bo (outline)
+   = the base's outline emphasis, bsm = the compact size. */
+.btn{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:9px 18px;border-radius:8px;
+  border:1px solid var(--border);background:rgba(255,255,255,0.04);
+  font-family:'Outfit',sans-serif;font-size:12px;font-weight:600;
+  cursor:pointer;color:var(--muted);transition:all .15s;letter-spacing:.3px;
+  text-decoration:none;
+}
+.btn:hover{background:rgba(255,255,255,0.07);color:var(--text);border-color:rgba(255,255,255,0.15)}
+.btn.bp{background:var(--ar);border-color:var(--ab);color:var(--a)}
+.btn.bp:hover{background:rgba(232,133,10,0.2)}
+.btn.bo{background:transparent}
+.btn.bsm{padding:5px 12px;font-size:11px}
 .q-btn:hover{background:rgba(255,255,255,0.07);color:var(--text);border-color:rgba(255,255,255,0.15)}
 .q-btn.primary{background:var(--ar);border-color:var(--ab);color:var(--a)}
 .q-btn.primary:hover{background:rgba(232,133,10,0.2)}
@@ -13874,17 +13897,17 @@ function renderHistory() {
       // Only offer a release for a slab THIS quote still holds. Offering it for
       // one already taken over or consumed would be a button that answers 409.
       if (hs && hs.status === 'reserved' && hs.reservedFor === q.client) {
-        // Styled inline rather than with `class="btn bo bsm"`, which twelve
-        // other buttons in this file use: NONE of those three classes has a
-        // CSS rule anywhere in the document, so copying them would ship a
-        // control that renders as bare browser default. Checked rather than
-        // assumed. Those twelve are a separate finding, not fixed here.
+        // `class="btn bo bsm"` -- the classes EXIST now (2026-09-24). When
+        // this button was first added they had no CSS rules anywhere in the
+        // document (checked, not assumed) and it shipped inline-styled; the
+        // rules are defined beside .q-btn now and all twenty-three page-module
+        // buttons render styled, so this one uses the shared vocabulary.
         var lab = (typeof sdHoldLabel === 'function') ? sdHoldLabel(hs) : '';
         var mins = (typeof sdHoldMinutesLeft === 'function') ? sdHoldMinutesLeft(hs) : null;
         var lapsed = (mins !== null && mins <= 0);
         hold = '<span style="font-size:11px;' + (lapsed ? 'color:#ef4444' : 'color:var(--muted)') + '">🪨 '
           + escHtml(hs.colorName || hs.id) + (lab ? ' &middot; ' + escHtml(lab) : '')
-          + '</span> <button type="button" style="margin-left:6px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:11px;cursor:pointer" onclick="qbReleaseQuoteHold(' + JSON.stringify(q.num).replace(/"/g, '&quot;') + ')">Release</button>';
+          + '</span> <button type="button" class="btn bo bsm" style="margin-left:6px" onclick="qbReleaseQuoteHold(' + JSON.stringify(q.num).replace(/"/g, '&quot;') + ')">Release</button>';
       }
     }
     return '<div class="hist-row">' +
