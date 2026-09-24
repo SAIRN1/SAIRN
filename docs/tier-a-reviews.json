@@ -2991,6 +2991,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-24T19:04:59Z",
+      "resources": [
+        "sdn_projects",
+        "sdn_proposals",
+        "sdn_referrals",
+        "sdn_specitems",
+        "sdn_timeentries"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-sdn-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "SAIRNdesign: the four resources promoted B->A on 2026-09-23 (sdn_projects, sdn_proposals, sdn_specitems, sdn_timeentries) join SD_SESSION_GATED and SD_GATE_APP (58303cc5). Server-side only -- the client's X-SD-Auth was already unconditional. WHAT A REVIEWER SHOULD ATTACK: (1) whether any sairndesign.html call site for these four resources runs BEFORE a session exists (a boot-time hydrate would now 403 for a signed-out user where it previously rendered -- I did not sweep the 30 call sites for ordering, only relied on the five already-gated resources having proven the pattern); (2) the sdn gate suite's arms are table-driven from GATED, so what each new entry independently establishes is membership, the same shared-path caveat cc recorded for the sc isolation arms; (3) whether the pair-count paragraph in sd-data-session-gate.test.js accurately states the why for all four, since that tripwire's whole purpose is the reason being written down.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T19:04:59Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
