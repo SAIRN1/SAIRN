@@ -67,7 +67,22 @@ except g.CouldNotTell as e:
 check('the real register yields Tier A rows (%d)' % len(real), len(real) > 50, len(real))
 check('...including the SAIRNcode billing records', {'sc_claims', 'sc_ar'} <= real,
       sorted(real)[:8])
-check('...and NOT a Tier B name', 'sc_dme' not in real, 'sc_dme is in the Tier A set')
+# ── THE NEGATIVE CONTROL WENT STALE AND SAT RED (fixed 2026-09-24) ─────────
+# This arm asserted `sc_dme` is NOT in the Tier A set. sc_dme was re-tiered
+# B->A (docs/CRITICALITY-TIERS.md:201 -- a DME record wrong on its HCPCS code
+# bills a Medicare claim) and the arm went red and STAYED red at origin/main,
+# read as noise. A negative control pinned to a name somebody may legitimately
+# promote is a fixture that expires without announcement -- the same shape as
+# the sf_ absence arm replaced earlier this week. The control now uses a row
+# whose B is structural rather than provisional: sc_settings is configuration,
+# and a register that promotes CONFIGURATION to Tier A has changed its own
+# definition, which is exactly what this arm should catch.
+check('...and NOT a Tier B name', 'sc_encoder' not in real,
+      'sc_encoder is in the Tier A set -- either the register redefined Tier A '
+      'or the parser is over-collecting. (First replacement pick was '
+      'sc_settings, which turned out to be A/B on the retention-period limb -- '
+      'checked before use this time, which is the step the sc_dme version of '
+      'this arm never got.)')
 
 print('\n2. attribution is by HUNK, not by file')
 hit = g.touched_tier_a(diff_for('api/x.js', "const a = 'sc_claims';"), RES)
@@ -1069,6 +1084,27 @@ check('the real roster on disk is derived rather than hardcoded, and holds the '
       'build sessions',
       set(g.eligible_reviewers() or []) >= {'cc', 'cody', 'fourth', 'hank'},
       g.eligible_reviewers())
+# ── EVERY INSTANCE OF THE AUDITOR ROLE, NOT ONE LITERAL NAME (H2 seq #205) ──
+# The exclusion was `n != 'hover'` while the auditor already ran as hover AND
+# hover2 in the shared status registry -- the day hover2 wrote its own claim
+# file it would have silently entered the reviewer pool and started being
+# ASSIGNED build-agent obligations. The roster's own header names why literal
+# lists fail here; the fix is a role predicate, and BOTH directions are pinned
+# because over-exclusion starves the pool the same way over-inclusion poisons
+# it.
+for _n in ('hover', 'hover2', 'hover-3', 'hover_x'):
+    check('auditor instance %r is excluded from the reviewer pool' % _n,
+          g.is_hover_session(_n) is True, _n)
+for _n in ('hoverboard', 'fourth', 'cc', ''):
+    check('%r is NOT swept out by the prefix -- over-exclusion starves the pool' % _n,
+          g.is_hover_session(_n) is False, _n)
+import io as _io
+_gate_src = _io.open(os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
+                     encoding='utf-8').read()
+check('eligible_reviewers() consults is_hover_session rather than != HOVER_SESSION',
+      'if not is_hover_session(n)' in _gate_src
+      and "if n != HOVER_SESSION" not in _gate_src,
+      'the literal compare is back')
 
 # ── 8. TAKEOVER: the failure the stamp CREATES, answered in the same change ──
 # An obligation assigned to a session that never runs again would block for

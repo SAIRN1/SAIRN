@@ -934,12 +934,35 @@ DENY_ON_OWN_OVERDUE = False      # flip with Michael, once the seven are cleared
 # opened then is left UNOWNED with the reason in it rather than assigned to a
 # guess.
 #
-# THE HOVER AUDITOR IS EXCLUDED BY NAME AND THAT IS STRUCTURAL, not tidying.
-# `hover` does not build; it adversarially checks what the four build agents
-# built, on its own rotation, and docs/2026-09-15-hover-auditor-separation-
-# enforcement.md plus two gates exist to keep that boundary. Handing it a build
-# agent's review queue would erase the separation from the other side.
+# THE HOVER AUDITOR IS EXCLUDED BY ROLE AND THAT IS STRUCTURAL, not tidying.
+# The auditor does not build; it adversarially checks what the four build
+# agents built, on its own rotation, and docs/2026-09-15-hover-auditor-
+# separation-enforcement.md plus two gates exist to keep that boundary.
+# Handing it a build agent's review queue would erase the separation from the
+# other side.
+#
+# A PREFIX, NOT A NAME (fixed 2026-09-24, H2 seq #205). This was the literal
+# 'hover', and the auditor already runs as more than one instance -- the
+# shared status registry lists `hover` AND `hover2` today. The day hover2
+# created `.claude/claims/hover2.json` it would have silently entered the
+# reviewer pool and started being ASSIGNED build-agent review obligations,
+# with nothing anywhere saying the boundary had been crossed. The roster's
+# own header says why hardcoded lists fail here ("named four clones for weeks
+# after a fifth existed"); excluding one auditor by literal name was the same
+# mistake one shelf over. Any session whose name is `hover` or starts with
+# `hover` followed by a digit or separator is the auditor role.
 HOVER_SESSION = 'hover'
+
+
+def is_hover_session(name):
+    """True for every instance of the auditor role: hover, hover2, hover-3...
+
+    Deliberately NOT a bare startswith('hover'): a build agent legitimately
+    named `hoverboard` (unlikely, but rosters grow) must not be silently
+    excluded from review duty -- over-exclusion here starves the pool the
+    same way over-inclusion poisons it.
+    """
+    return bool(re.match(r'^hover(\d|[-_]|$)', str(name or '')))
 CLAIMS_DIR = os.path.join(REPO, '.claude', 'claims')
 # How long an owner may sit on an obligation before anybody else may TAKE IT
 # OVER. Deliberately longer than OVERDUE_HOURS: overdue means "somebody should
@@ -964,7 +987,7 @@ def eligible_reviewers():
             if f.endswith('.json') and re.match(r'^[a-z][a-z0-9_-]{1,31}\.json$', f))
     except OSError:
         return None
-    names = [n for n in names if n != HOVER_SESSION]
+    names = [n for n in names if not is_hover_session(n)]
     # One name cannot review anything: the only candidate would be the author.
     return names if len(names) >= 2 else None
 
