@@ -2541,8 +2541,8 @@
       "task": "seven-item queue: coding-rule discovery, SAIRNcode A2 eligibility->coding edge, guard rebase_resolve_merge_control, the confidentiality off-by-one, a fifth FP class in fourth's write-audit checker, service_role_tier_a_gate_check reporting, and item 32 sharper reachability FILES: tools/ tests/ docs/ sairncode.html",
       "claimed_at": "2026-09-24T12:44:40Z",
       "claimed_at_epoch": 1790253880.8099465,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T14:22:37Z",
       "files": [
         "sairncode.html"
       ]
