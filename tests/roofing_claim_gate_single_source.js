@@ -133,10 +133,21 @@ test('seesAllRows keeps BOTH terms, which no behavioural test can check today', 
   const i = authSrc.indexOf('function seesAllRows(session)');
   assert.ok(i > 0, 'seesAllRows not found');
   const body = authSrc.slice(i, authSrc.indexOf('\n}', i)).replace(/\/\/[^\n]*/g, '');
-  assert.match(body, /MANAGEMENT_ROLES\[session\.role\]/,
+  // THE ANCHOR ACCEPTS TWO SPELLINGS, since 2026-09-24. The lookup changed from
+  // `SET[session.role]` to `hasRole(SET, session.role)` when the role maps were
+  // made null-prototype, and this assertion failed -- correctly and loudly,
+  // which is the behaviour a source anchor is supposed to have. The requirement
+  // it guards is about which TERMS are present, not which syntax expresses
+  // them, so it is widened to the two real forms rather than pinned to one.
+  // Deleting either term still fails it.
+  const term = (name) => new RegExp(
+    name + '\\s*\\[\\s*session\\.role\\s*\\]'
+    + '|hasRole\\(\\s*' + name + '\\s*,\\s*session\\.role\\s*\\)');
+  assert.match(body, term('MANAGEMENT_ROLES'),
     'the MANAGEMENT term was dropped from seesAllRows. It is redundant today and '
     + 'will not be the moment a management role is added that is not a broad reader.');
-  assert.match(body, /BROAD_READ_ROLES\[session\.role\]/);
+  assert.match(body, term('BROAD_READ_ROLES'),
+    'the BROAD_READ term was dropped from seesAllRows.');
 });
 
 test('MANAGEMENT_ROLES is currently a SUBSET of BROAD_READ_ROLES', () => {
@@ -202,6 +213,107 @@ test('the fifteen ROLE-ONLY sites are still there and still counted', () => {
   const roleOnly = code.match(/!rfAuth\.MANAGEMENT_ROLES\[session\.role\] && !rfAuth\.BROAD_READ_ROLES\[session\.role\]/g) || [];
   assert.strictEqual(roleOnly.length, 15,
     'the role-only count moved to ' + roleOnly.length + ' -- update the index row, or sweep them');
+});
+
+// ---------------------------------------------------------------------------
+section('an INHERITED name is not a role (H2 seq d3fbda32, fixed 2026-09-24)');
+
+// MANAGEMENT_ROLES and BROAD_READ_ROLES were plain object literals, so every key
+// on Object.prototype indexed truthy: seesAllRows({role:'constructor'}) returned
+// TRUE, reproduced live. That granted cross-assignee read and write on rf_claims
+// and rf_claim_photos, both Tier A.
+//
+// IT WAS INERT FOR A REASON THAT IS NOT THIS GATE. Provisioning refuses an
+// unknown role through a SEPARATE, array-based allowlist -- RF_ROLES.indexOf --
+// so no session with an inherited name could be minted. These arms test the
+// gate on its own, with no session ever being minted, because the defect is
+// that the gate was leaning on distant code.
+
+const INHERITED = ['constructor', 'toString', 'valueOf', 'hasOwnProperty',
+                   'isPrototypeOf', 'propertyIsEnumerable', 'toLocaleString',
+                   '__defineGetter__', '__lookupGetter__'];
+
+test('no inherited Object.prototype name passes seesAllRows', () => {
+  const leaked = INHERITED.filter((r) => rfAuth.seesAllRows({ role: r }));
+  assert.deepStrictEqual(leaked, [],
+    'these inherited names are being read as roles: ' + leaked.join(', '));
+});
+
+test('...nor gets ownsRow past a row assigned to somebody else', () => {
+  const leaked = INHERITED.filter((r) => rfAuth.ownsRow(
+    { role: r, employee_id: 'ME' }, { assigned_employee_id: 'SOMEBODY-ELSE' }));
+  assert.deepStrictEqual(leaked, [],
+    'cross-assignee access via inherited name(s): ' + leaked.join(', '));
+});
+
+test('...and DIRECT indexing of the exported maps is undefined too', () => {
+  // api/sd-data.js indexes these maps directly at ~40 sites and is deliberately
+  // NOT edited: the null prototype fixes every one of them without a sweep.
+  // That is the property being asserted -- if these ever become plain literals
+  // again, the 40 sites silently regress and only this arm would say so.
+  for (const r of INHERITED) {
+    assert.strictEqual(rfAuth.MANAGEMENT_ROLES[r], undefined,
+      'MANAGEMENT_ROLES[' + r + '] is not undefined');
+    assert.strictEqual(rfAuth.BROAD_READ_ROLES[r], undefined,
+      'BROAD_READ_ROLES[' + r + '] is not undefined');
+  }
+});
+
+test('the maps really have a null prototype, not a scrubbed literal', () => {
+  assert.strictEqual(Object.getPrototypeOf(rfAuth.MANAGEMENT_ROLES), null);
+  assert.strictEqual(Object.getPrototypeOf(rfAuth.BROAD_READ_ROLES), null);
+});
+
+test('NEGATIVE CONTROL: a plain literal of the same roles DOES leak', () => {
+  // Without this the four arms above would pass just as happily against a test
+  // that could not distinguish anything. This proves the shape being guarded
+  // against is real and that the arms detect it.
+  const literal = { owner: true, admin: true };
+  assert.ok(literal['constructor'], 'a plain object literal no longer inherits '
+    + 'constructor -- these arms are testing nothing, re-derive them');
+});
+
+test('the real roles still pass, and a real non-management role still does not', () => {
+  assert.ok(rfAuth.seesAllRows({ role: 'owner' }));
+  assert.ok(rfAuth.seesAllRows({ role: 'admin' }));
+  assert.ok(rfAuth.seesAllRows({ role: 'estimator' }));
+  assert.ok(!rfAuth.seesAllRows({ role: 'roofer' }));
+  assert.ok(rfAuth.ownsRow({ role: 'roofer', employee_id: 'ME' },
+                           { assigned_employee_id: 'ME' }));
+});
+
+test('a non-string role is refused rather than coerced', () => {
+  for (const r of [null, undefined, 0, 1, {}, [], true]) {
+    assert.ok(!rfAuth.seesAllRows({ role: r }), 'non-string role passed: ' + String(r));
+  }
+});
+
+// ---------------------------------------------------------------------------
+section('the rf_claims write does not store the caller\'s own assignee');
+
+test('the write branch strips assigned_employee_id from the stored blob', () => {
+  // The blob was `Object.assign({}, payload, norm.money)` with only
+  // money_summary and id removed, so the CALLER's assigned_employee_id was
+  // persisted inside data alongside the authorised column. Inert only because
+  // the read branch's Object.assign happens to overlay the real column last --
+  // an ordering, not a guarantee. Asserted on the WRITE for that reason.
+  const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
+  assert.ok(i > 0, 'could not find the rf_claims write branch');
+  const block = src.slice(i, i + 4200).replace(/\/\/[^\n]*/g, '');
+  assert.match(block, /delete dataBlob\.assigned_employee_id;/,
+    'the rf_claims write is storing the caller\'s assigned_employee_id in the blob again');
+  // and the authorised column is still written from `assignee`, not the payload
+  assert.match(block, /assigned_employee_id: assignee/,
+    'the real column is no longer written from the server-computed assignee');
+});
+
+test('the strip happens BEFORE the row is sent, not after', () => {
+  const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
+  const block = src.slice(i, i + 4200);
+  const del = block.indexOf('delete dataBlob.assigned_employee_id;');
+  const post = block.indexOf("rest('rf_claims?on_conflict=license_hash,claim_id')");
+  assert.ok(del > 0 && post > 0 && del < post,
+    'the delete is not ahead of the POST that stores the blob');
 });
 
 console.log('\n' + (fail === 0

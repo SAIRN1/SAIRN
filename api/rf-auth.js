@@ -90,10 +90,43 @@ const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'rost
 // named in the scope doc are NOT being added here.
 const KNOWN_CERTIFICATION_KEYS = { tesla_certified: true };
 
-// See the tier note in the header. Exported shape kept deliberately simple so a
+// ── THE ROLE MAPS HAVE NO PROTOTYPE, DELIBERATELY (2026-09-24) ─────────────
+// These were plain object literals, and a plain object inherits every key on
+// Object.prototype. `MANAGEMENT_ROLES['constructor']` is therefore TRUTHY --
+// reproduced live 2026-09-24 -- so a session carrying role 'constructor',
+// 'toString', 'valueOf' or 'hasOwnProperty' passed seesAllRows() and every one
+// of the direct-index gates in api/sd-data.js, granting cross-assignee read and
+// write on rf_claims and rf_claim_photos. Those are Tier A.
+//
+// IT WAS INERT, AND NOT BECAUSE THIS CHECK WAS SOUND. The only thing stopping
+// it was a SEPARATE, array-based allowlist one screen down at provisioning --
+// `RF_ROLES.indexOf(role) === -1` in the setup branch -- which no inherited
+// name passes. That is an unstated coupling between two distant pieces of code:
+// this gate was correct only for as long as nothing else ever minted a session.
+// A gate that is safe because of another branch's current behaviour is not a
+// gate, so it is not left that way.
+//
+// roleSet() builds a map with a NULL prototype, so an inherited name is simply
+// absent. That fixes every existing `ROLES[role]` call site -- here and the
+// ones in api/sd-data.js -- without any of them being edited, which is the
+// point: a fix that needed 20-odd distant edits is a fix that goes stale.
+// hasRole() then checks the OWN property rather than indexing, so the gate
+// still holds if one of these maps is ever rebuilt as a plain literal.
+//
+// The tier note in the header still applies: the shape is kept simple so a
 // later split of 'estimator' is a one-line change here, not a gate rewrite.
-const MANAGEMENT_ROLES = { owner: true, admin: true };
-const BROAD_READ_ROLES = { owner: true, admin: true, estimator: true };
+function roleSet(names) {
+  const m = Object.create(null);
+  for (let i = 0; i < names.length; i++) m[names[i]] = true;
+  return m;
+}
+function hasRole(set, role) {
+  return typeof role === 'string'
+    && Object.prototype.hasOwnProperty.call(set, role)
+    && set[role] === true;
+}
+const MANAGEMENT_ROLES = roleSet(['owner', 'admin']);
+const BROAD_READ_ROLES = roleSet(['owner', 'admin', 'estimator']);
 // Only 'owner' provisions or changes credentials. 'admin' runs the office but
 // does not mint identities -- deliberately narrower than StoneDesk, where both
 // owner and admin can, because a 20-100 person shop has one principal and the
@@ -565,7 +598,7 @@ module.exports.BROAD_READ_ROLES = BROAD_READ_ROLES;
 // Can this session see rows it is not personally assigned?
 function seesAllRows(session) {
   if (!session) return false;
-  return !!(MANAGEMENT_ROLES[session.role] || BROAD_READ_ROLES[session.role]);
+  return hasRole(MANAGEMENT_ROLES, session.role) || hasRole(BROAD_READ_ROLES, session.role);
 }
 
 // May this session act on THIS row? True for anyone who sees everything, and

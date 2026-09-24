@@ -6355,6 +6355,20 @@ module.exports = async (req, res) => {
       const dataBlob = Object.assign({}, payload, norm.money);
       delete dataBlob.money_summary;
       delete dataBlob.id;
+      // assigned_employee_id IS A REAL COLUMN AND MUST NOT ALSO LIVE IN THE BLOB
+      // (2026-09-24). `assignee` above is the authorised value -- a narrow role
+      // cannot change it. But the caller's own assigned_employee_id was being
+      // copied into the stored data blob verbatim, so the row carried the
+      // caller's claimed assignee alongside the real one.
+      //
+      // It was inert, and only by accident of ordering: the read branch above
+      // does Object.assign({}, x.data, { ... assigned_employee_id: x.assigned_
+      // employee_id ... }), so the real column happens to be applied LAST and
+      // overwrites the smuggled copy. Any future read that spreads the blob
+      // without that overlay -- an export, a report, a new panel -- would serve
+      // the caller's value as if it were the stored one. Stripped here so the
+      // guarantee belongs to the WRITE, not to the order of keys in one reader.
+      delete dataBlob.assigned_employee_id;
       const r = await fetch(rest('rf_claims?on_conflict=license_hash,claim_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
