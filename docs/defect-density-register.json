@@ -12829,7 +12829,7 @@
       "recurrence_open": "The actions close this app's role maps and this app's claim write. They do NOT close the nine other api/*.js files carrying the identical plain-literal shape -- each is inert or not for its own reasons and none has been checked. They also do not close the delete-list shape generally: every resource whose stored blob is built from the caller's payload minus an explicit list has the same \"a new field is stored unless somebody remembers\" property, and no check counts those. Nothing on this platform currently detects either shape; both were found by reading, and a second reader is not a control."
     },
     {
-      "commit": "06df2a017e5b",
+      "commit": "426b29a2a25a",
       "date": "2026-09-24",
       "subject": "fix(sairnfreedom): an executed signature was reachable on the licence key alone -- the second half of a pair closed by halves",
       "files": [
