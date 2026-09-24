@@ -2546,6 +2546,23 @@
       "files": [
         "sairncode.html"
       ]
+    },
+    {
+      "id": "cc-1790260133",
+      "session": "cc",
+      "subject": "cc-queue",
+      "task": "discharge cc's most overdue Tier A obligation (hank 2026-09-23T17:54:33Z WEAK isolation arms), then GP verify, index node row, settings model-pin commit, bridge push-posture auth, and fold the Ariane reachability work into the existing checker FILES: docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md .claude/settings.json api/bridge.js tools/sairn_reachability_check.py",
+      "claimed_at": "2026-09-24T14:28:53Z",
+      "claimed_at_epoch": 1790260133.6052823,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/settings.json",
+        "api/bridge.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "tools/sairn_reachability_check.py"
+      ]
     }
   ],
   "refusals": [
