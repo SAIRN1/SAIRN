@@ -14001,6 +14001,56 @@
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
     },
     {
+      "commit": "b3ae64ad07eb",
+      "date": "2026-09-24",
+      "subject": "fix(review-gate): the auditor exclusion was one literal name -- hover2 was one claim file away from the build agents' review queue",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 66,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "tier_a_review_gate.py's eligible_reviewers() excluded the hover auditor from the Tier A reviewer pool by the literal name 'hover' -- while the auditor already runs as more than one instance (the shared status registry lists hover AND hover2). The day hover2 created .claude/claims/hover2.json it would have silently entered the reviewer pool and started being ASSIGNED build-agent review obligations, crossing the audit/build separation from the side two gates exist to protect, with nothing anywhere saying so. The roster's own header records exactly why literal lists fail here (\"named four clones for weeks after a fifth existed\"); excluding one auditor by literal name was the same mistake one shelf over. Fixed with a role predicate (is_hover_session: hover, hover2, hover-3, hover_x -- deliberately not a bare startswith, so a build agent named hoverboard is not silently starved out of review duty), pinned in both directions plus a wiring arm that fails if the literal compare returns.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "a51047b398f0",
+        "date": "2026-09-21",
+        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
+        "lag_days": 3
+      },
+      "citation_note": "The hover-separation enforcement doc (2026-09-15) states the boundary but is not a numbered PROCESS-RULES section; the nearest PR sections are about checks failing closed, not about roster membership. Recorded not-citable rather than stretching either.",
+      "contributing_factors": [
+        {
+          "factor": "The auditor role grew a second instance (hover2) after the exclusion was written, and nothing connects the status registry's instance list to the gate's exclusion",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The exclusion is a role predicate now, matching any hover-N instance."
+        },
+        {
+          "factor": "The roster derivation was correctly built to avoid hardcoded lists -- and the exclusion inside it was itself a hardcoded list of one, invisible because it looked like a constant rather than a roster",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Predicate extracted and named; probe arms pin both directions and the wiring."
+        },
+        {
+          "factor": "No probe arm ever drove a hover2-shaped name through eligible_reviewers -- the sabotage arm removed the filter but only for the one literal name it knew",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "run_tier_a_review_gate_probe.py drives hover, hover2, hover-3, hover_x (excluded) and hoverboard/fourth/cc (kept)."
+        }
+      ],
+      "recurrence_open": "Nothing generates the auditor-instance list from one source: the status registry knows hover and hover2, the claim files know whoever has one, and the gate now knows the PREFIX. A third naming convention would defeat the predicate the same way hover2 defeated the literal. The general closure is a single machine-readable roster of roles, which nobody has built."
+    },
+    {
       "commit": "eaefa8396567",
       "date": "2026-09-24",
       "subject": "fix(probe): the staleness probe's absent-plan tree is REMOVED, found by the tool whose queue item turned out to be already built",
