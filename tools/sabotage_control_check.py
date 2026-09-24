@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-24.1'
+CRITERIA_VERSION = '2026-09-24.2'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -241,9 +241,17 @@ GUARDS = (
     # -- because a state label is a machine-readable verdict and ordinary prose
     # is not. A bare `append(` would match every accumulator in the tree, which
     # is why the alternation is not simply widened to it.
+    # (?-i:...) ON THE LABEL CLASS, because this pattern compiles with re.I and
+    # that flag silently defeated the narrowing described above: under
+    # IGNORECASE, [A-Z][A-Z -]{3,} matches 'did ' as happily as 'ANCHOR', so
+    # `append(('did not find it'` -- ordinary prose -- counted as a
+    # machine-readable verdict. Found 2026-09-24 by the review the sixth
+    # spelling was opened for; MEASURED before fixing: zero real files diverge
+    # between the two spellings today, so this is the latent form, closed
+    # before the first prose tuple arrives rather than after.
     re.compile(r"\b[A-Za-z_]\w*\s+not\s+in\s+[A-Za-z_]\w*\s*:\s*\n?"
                r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\(|cannot\("
-               r"|append\(\(\s*['\"][A-Z][A-Z -]{3,})", re.I),
+               r"|append\(\(\s*['\"](?-i:[A-Z][A-Z -]{3,}))", re.I),
 )
 
 
@@ -448,6 +456,20 @@ FIXTURES = [
      "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n", False),
     ('CONTROL: a probe that writes a FRESH fixture is not judged at all',
      "open(p,'w').write('| A | B |\\n')\n", None),
+    # ── ADDED 2026-09-24 WITH THE (?-i:) FIX. The lock had a positive fixture
+    # for the ALL-CAPS tuple and NO negative for the prose tuple, which is the
+    # only reason the IGNORECASE hole could pass 30/30: a comparison that
+    # cannot fire in one direction reports whatever that direction claims.
+    ('the ALL-CAPS state-label tuple is a guard',
+     "src = open(p).read()\nif old not in src:\n"
+     "    out.append(('ANCHOR GONE', name))\n"
+     "open(p,'w').write(src.replace(old,new,1))\n", True),
+    ('NEGATIVE: a PROSE tuple is not a state label and guards nothing -- '
+     'under re.I the label class matched it and the widening would credit '
+     'every accumulator that appends a sentence',
+     "src = open(p).read()\nif old not in src:\n"
+     "    out.append(('did not find it', name))\n"
+     "open(p,'w').write(src.replace(old,new,1))\n", False),
     ('CONTROL: a probe that only reads is not judged',
      "src = open(p).read()\nassert 'x' in src\n", None),
     # ── ADDED 2026-09-13 WITH THE NARROWING. Not one of the seven fixtures
