@@ -1411,6 +1411,37 @@ REGISTRY = [
                     'its own anchor matched first. 0.2s',
     },
     {
+        'tool': 'register_freshness_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-24, report-only and ADVISORY PER ITEM by '
+                    'decision -- a register with one stale cell must not '
+                    'freeze every unrelated push, the same scoping check 12 '
+                    'already established for generated documents. It is '
+                    'registered rather than left unrun because the drift it '
+                    'finds is currently only caught when an auditor happens '
+                    'to individually read that exact row: all NINE line '
+                    'citations on sc_anesthesia_base_units were 30-45 lines '
+                    'stale within a DAY, found only because a review '
+                    'obligation sent a reader there.',
+        'catches': 'a citation in docs/CRITICALITY-TIERS.md or '
+                   'docs/tier-a-reviews.json that no longer points at what it '
+                   'says: a file:line whose named identifier has moved out of '
+                   'the +/-8-line window, a cite past EOF, a path or files[] '
+                   'pointer that is gone, a prose sha that does not resolve. '
+                   'UNVERIFIABLE (a cite with no adjacent identifier) is a '
+                   'third state, counted and printed, never folded into pass',
+        'why_it_matters': 'it COMPARES committed evidence against freshly '
+                          'recomputed truth and has no write path at all -- a '
+                          'freshness gate that repairs its subject is a '
+                          'generator, and a generator judging its own output '
+                          'is the drift shape discipline 8 exists for. It '
+                          'replaces the per-tool reinvention of this one '
+                          'check (app map, tool provenance, claim-doc '
+                          'freshness, the SPOF retirement citation half) for '
+                          'the two registers that had none',
+    },
+    {
         'tool': 'temporary_state_check.py',
         'mode': 'once',
         'verdict': by_exit,

@@ -100,6 +100,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a declared decimal rate constant that some call site in the same app HTML bypasses with the literal value -- so changing the rate moves the declaration and leaves those sites quietly wrong | `bypassed_constant_check.py` | THE CRITERION WAS NARROWED ONCE AND THE MEASUREMENT IS RECORDED IN THE TOOL. "A declared constant whose value appears again as a literal" flagged 60 across the platform and almost all were noise -- TRIAL_DAYS = 30 against 134 unrelated 30s, SD_CTX_MAX_MEMORIES = 10 against 242 unrelated 10s. Narrowed to decimals with three or more significant digits: 2 findings, both real, both the same site. The integer blind spot is therefore DELIBERATE and is printed on every clean run. 20-arm probe whose sharpest arm is that two constants sharing a value do not accuse each other -- employer and employee FICA are different money at the same rate, and the first criterion reported both forever. Sabotage-verified in both directions. It also caught three of its OWN fixtures using a name the tool cannot match, two of which were passing vacuously. 0.4s |
 | the ownership evidence behind an accepted risk drifting away from the population it was evidence about | `ownership_evidence_drift.py` | RED on its first run and correctly so: 251 tables when the evidence was taken, 380 now, 129 unobserved and 51% growth. That is not a claim the ACL has fired -- it almost certainly has not, every migration here goes through the SQL editor as postgres -- it is a statement that nobody has checked, which must not read as a clean result. 18-arm probe whose MAIN arm is that it goes GREEN when the baseline is refreshed, because a checker that can only be red is as useless as one always green; an unreadable snapshot is COULD NOT RUN rather than zero drift, verified by sabotage. 0.1s |
 | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted | `eaten_substitution_check.py` | FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over the last 3,000 commits it flags exactly 2, and both are the instances item 18 already records. RECALL IS NOT MEASURED and is not claimed -- the criterion was read off those same two commits, so finding them is circular. The blind spot is structural and stated on every clean run: a substitution that produced OUTPUT leaves no gap at all, so only the empty-output case is detectable afterwards and `git commit -F` remains the control. 32-arm probe; removing the list-item exclusion takes 7 arms red and silencing the detector takes 9, each sabotage asserting its own anchor matched first. 0.2s |
+| a citation in docs/CRITICALITY-TIERS.md or docs/tier-a-reviews.json that no longer points at what it says: a file:line whose named identifier has moved out of the +/-8-line window, a cite past EOF, a path or files[] pointer that is gone, a prose sha that does not resolve. UNVERIFIABLE (a cite with no adjacent identifier) is a third state, counted and printed, never folded into pass | `register_freshness_check.py` |  |
 | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING | `temporary_state_check.py` | real run 2026-09-14: 723 files, 0 declarations, 175 undeclared candidates, PASS. TWO REAL DEFECTS IN THE SUBJECT were found by building the control first -- a case-insensitive /config/ matched storeError('CONFIG', ...) in api/_lib/sd-store.js, and the Python `= True` blind spot was real and undisclosed. And a LIVE finding, not historical: stonedesk.html 2286/2299/6350 set sdSyncSuppressed=true, call st(), clear it, with no `finally` -- a throw between them silences every later server write for the session. 24-arm probe; neutering FLAG_ON collapses the positive arms, and the sabotage asserts its own anchor is present first. 0.4s |
 | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists | `export_coverage_check.py` | real run 2026-09-14: 11 Class A resources parsed from docs/2026-09-13-irreversible-write-witnessing-scoping.md rather than hardcoded. FIRST run: 3 exportable, 4 gaps in an existing registry, 4 in apps with no export path at all. AFTER the fix: 7 exportable, 0 gaps, the same 4 with no machinery -- and the probe now drives the FAILING direction against a planted registry, so closing the real gaps did not disarm it. The ON-SCREEN half of item 39 is NOT attempted here and the tool says so in its own header: two detectors for it were wrong in opposite directions, one missing alf_staff_credentials entirely and one binding most of SAIRNdental. 21-arm probe; blinding the registry reader collapses the EXPORTABLE answers, and section E pins all eleven verdicts by name so a registry change flips an arm -- which is exactly what happened when the four were fixed, and the table was edited in the same commit as the apps. 26 arms. 0.2s |
 | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify | `hover_separation_audit.py` | 2026-09-15 first run: 5,241 commits, 20 auditor commits, 0 violations; self-log 105 entries, chain INTACT, 33 SHAs claimed, 16 resolve and all 16 in scope. 15 of 15 "Committed a, pushed b" pairs have the local sha absent and the pushed one present, which is what explains 15 of the 17 that do not resolve here rather than a plausible story doing it. EXIT 2 TODAY, not 0, on the remaining 2 |
@@ -633,11 +634,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-### 96 test files are traced to no stated requirement
+### 97 test files are traced to no stated requirement
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 635 of 731 traced, 86.9%.
+For context and not as the headline: 635 of 732 traced, 86.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -660,7 +661,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | kind | count | what it means | the fix |
 |---|---|---|---|
 | **bound to a subject, tied to no requirement** | 16 | the filename names the module it tests and that module exists, so an auditor can see WHAT it covers but not WHY that coverage is required | a row or a `GUARD_TESTS` entry stating the requirement |
-| **no subject binding either** | 80 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
+| **no subject binding either** | 81 | nothing in the repo ties it to a module OR to a requirement | read it, then one of the above |
 
 **These are NOT merged into the traced column, and that is the whole point.** `foo.test.js` beside `foo.js` is the strongest subject binding this repo has, and counting it as traced would move 16 files across overnight with not one more requirement written down anywhere -- which is the same measure-gaming the headline above was rewritten to stop. A SUBJECT is not a REQUIREMENT.
 
@@ -729,6 +730,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_primitive_obsession_probe.py`
 - `tests/run_python_escape_hygiene_probe.py`
 - `tests/run_reclassification_sweep_probe.py`
+- `tests/run_register_freshness_probe.py`
 - `tests/run_response_shape_probe.py`
 - `tests/run_review_gate_validate_probe.py`
 - `tests/run_shape_search_probe.py`
@@ -779,10 +781,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 731   tests/**, api/** (both walked)
+  test files on disk                 732   tests/**, api/** (both walked)
   open-work rows citing a test       353   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                61   report_only_checks.REGISTRY
+  report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```
