@@ -2268,8 +2268,8 @@
       "task": "scope and build a real revoke procedure for SD_ENCRYPTION_KEY FILES: docs/2026-09-24-sd-encryption-key-revoke.md tools/nhi_register.py",
       "claimed_at": "2026-09-24T11:38:15Z",
       "claimed_at_epoch": 1790249895.9094558,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T11:50:13Z",
       "files": [
         "docs/2026-09-24-sd-encryption-key-revoke.md",
         "tools/nhi_register.py"
