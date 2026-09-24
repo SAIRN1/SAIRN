@@ -198,8 +198,26 @@ check('7d  a register with NO rows is REFUSED -- every live chokepoint is '
 # had no marker to assert and nothing else to be right about.
 BASE_LINE = ('**BASELINE: 3 components at or above the threshold on 2026-09-14, '
              'the day this register opened.**\n\n')
+# ── EVERY rc == 0 FIXTURE NEEDS A SCHEDULE SINCE 2026-09-25 ────────────────
+# Item 91: an OPEN row absent from the retirement schedule is refused, so the
+# probe's own positive controls must carry one -- the same ratchet 7e already
+# went through when the BASELINE sentence became mandatory.
+SCHED_HEAD_FIX = ('| OPEN row | What retirement requires | Owner | Next review |\n'
+                  '|---|---|---|---|\n')
+
+
+def sched_line(comps, date):
+    return ('| ' + ', '.join('`%s`' % c for c in comps)
+            + ' | needs a real fix | **CC** | ' + date + ' |\n')
+
+
+def full_schedule(date='2099-01-01'):
+    return SCHED_HEAD_FIX + ''.join(
+        sched_line([r['component']], date) for r in rows) + '\n'
+
+
 full = HEAD + ''.join('| `%s` | CC | OPEN | x |\n' % r['component'] for r in rows)
-rc, out = with_register(BASE_LINE + full)
+rc, out = with_register(BASE_LINE + full + '\n' + full_schedule())
 check('7e  CONTROL: the same rows marked OPEN pass -- 7d is not a checker that '
       'refuses everything', rc == 0, out[-200:])
 
@@ -271,6 +289,53 @@ rc, out = with_register('**BASELINE: 3 components at or above the threshold.**\n
 check('7m  a BASELINE sentence with a count and NO DATE is REFUSED -- a list '
       'nobody fixed and a list nobody measured print the same line',
       rc == 1 and 'NO BASELINE DATE' in out, (rc, out[-200:]))
+
+# ── 7n-7s: THE RETIREMENT SCHEDULE (item 91, 2026-09-25) ────────────────────
+# Every OPEN row must appear in the schedule with a date; a schedule line for
+# a non-OPEN component is refused, so retiring a row forces its schedule line
+# out and the shrink is visible in the DOCUMENT rather than only in a count.
+_reg_rows = ''.join('| `%s` | CC | OPEN | x |\n' % r['component'] for r in rows)
+
+_missing_one = SCHED_HEAD_FIX + ''.join(
+    sched_line([r['component']], '2099-01-01') for r in rows[1:]) + '\n'
+rc, out = with_register(BASE_LINE + HEAD + _reg_rows + '\n' + _missing_one)
+check('7n  an OPEN row ABSENT from the schedule is refused -- a row nobody '
+      'will look at again is the register settling into a number',
+      rc == 1 and 'UNSCHEDULED' in out and rows[0]['component'] in out,
+      (rc, out[-260:]))
+
+_ghost = full_schedule().rstrip() + '\n' + sched_line(
+    ['api/ghost-not-open.js'], '2099-01-01') + '\n'
+rc, out = with_register(BASE_LINE + HEAD + _reg_rows + '\n' + _ghost)
+check('7o  a schedule line for a NON-OPEN component is refused -- retiring a '
+      'row must force its schedule line out, which is the visible shrink',
+      rc == 1 and 'SCHEDULE STALE' in out, (rc, out[-260:]))
+
+_undated = (SCHED_HEAD_FIX
+            + sched_line([rows[0]['component']], 'XXXX').replace('XXXX', 'soon')
+            + ''.join(sched_line([r['component']], '2099-01-01') for r in rows[1:])
+            + '\n')
+rc, out = with_register(BASE_LINE + HEAD + _reg_rows + '\n' + _undated)
+check('7p  a schedule line with NO parseable date is refused -- "soon" is not '
+      'a cadence', rc == 1 and 'SCHEDULE NO DATE' in out, (rc, out[-260:]))
+
+_due = (SCHED_HEAD_FIX
+        + sched_line([rows[0]['component']], '2020-01-01')
+        + ''.join(sched_line([r['component']], '2099-01-01') for r in rows[1:])
+        + '\n')
+rc, out = with_register(BASE_LINE + HEAD + _reg_rows + '\n' + _due)
+check('7q  a PAST-DUE date prints REVIEW DUE and does NOT fail -- failing a '
+      'push because a calendar date passed punishes whoever pushes next, '
+      'which is how a date column gets set to 2099',
+      rc == 0 and 'REVIEW DUE' in out, (rc, out[-260:]))
+
+rc, out = with_register(BASE_LINE + HEAD + _reg_rows)
+check('7r  a register with OPEN rows and NO schedule table at all is refused',
+      rc == 1 and 'NO SCHEDULE' in out, (rc, out[-200:]))
+
+# THE PAIRED POSITIVE for the whole family: 7e above already proves a fully
+# scheduled register passes, so these five are not satisfied by a checker
+# that refuses every schedule shape it meets.
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:

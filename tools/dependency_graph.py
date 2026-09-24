@@ -480,7 +480,21 @@ REGISTER = os.path.join(REPO, 'docs', 'SPOF-REGISTER.md')
 
 
 def register_rows(text):
-    """Rows of the register table: (component, owner, status)."""
+    """Rows of the register table: (component, owner, status).
+
+    THE RETIREMENT-SCHEDULE TABLE IS EXCLUDED FIRST (2026-09-25). Its rows
+    also start with a backticked component, so this parser read them as
+    register rows the day the schedule landed -- and reported the schedule's
+    OWNER cell as a BAD STATUS ('MICHAEL'), a parser reading the wrong table
+    with full confidence. Excised by span rather than by another cell-shape
+    heuristic: the schedule has its own parser and its own header anchor, and
+    two parsers disagreeing about which table a row belongs to is worse than
+    one table being invisible to the wrong parser.
+    """
+    m = SCHED_HEAD_RE.search(text)
+    if m:
+        end = text.find(chr(10) + chr(10), m.end())
+        text = text[:m.start()] + (text[end:] if end != -1 else '')
     rows = []
     for line in text.split(chr(10)):
         if not line.startswith('|'):
@@ -532,6 +546,40 @@ def read_baseline(text):
 def read_baseline_date(text):
     m = BASELINE_DATE_RE.search(text)
     return m.group(1) if m else None
+
+
+# ── THE RETIREMENT SCHEDULE (item 91, 2026-09-25) ──────────────────────────
+# A live, shrinking list needs more than a count that can shrink: it needs
+# every OPEN row to carry WHEN it is next looked at, and it needs retiring a
+# row to visibly remove its schedule line. The schedule is the table whose
+# header row names "Next review"; a schedule line may group several
+# components (the four OIDC variables are one configuration), so components
+# are collected per line rather than one per row.
+SCHED_HEAD_RE = re.compile(
+    r'^\|.*What retirement requires.*Next review.*\|\s*$',
+    re.M)
+SCHED_DATE_RE = re.compile(r'(\d{4}-\d{2}-\d{2})')
+
+
+def schedule_rows(text):
+    """[{components: [..], date: 'YYYY-MM-DD' | None}], or None if no table."""
+    m = SCHED_HEAD_RE.search(text)
+    if not m:
+        return None
+    out = []
+    lines = text[m.end():].split(chr(10))
+    for line in lines[1:]:                       # skip the |---| separator
+        if not line.strip().startswith('|'):
+            break
+        comps = re.findall(r'`([^`]+)`', line.split('|')[1] if line.count('|') > 1 else '')
+        if not comps:
+            continue
+        # the LAST dated cell is the next-review date; the requires prose may
+        # legitimately contain dates of its own, so the final cell is read.
+        cells = [c.strip() for c in line.strip().strip('|').split('|')]
+        dm = SCHED_DATE_RE.search(cells[-1]) if cells else None
+        out.append({'components': comps, 'date': dm.group(1) if dm else None})
+    return out
 
 
 def check_register():
@@ -635,6 +683,52 @@ def check_register():
                 print('  time is printed so that cannot be read as a clean run.')
             else:
                 print('  %d RETIRED in %s, since %s.' % (len(retired), span, bdate))
+        # ── THE SCHEDULE, BOTH DIRECTIONS (item 91, 2026-09-25) ────────────
+        # Every OPEN row appears in the schedule table; a schedule line whose
+        # component is no longer OPEN is refused, so retiring or accepting a
+        # row FORCES its schedule line out and the shrink is visible in the
+        # document rather than only in a count. A PAST-DUE date is printed
+        # loudly and does not fail the check -- failing a push because a
+        # calendar date passed punishes whoever pushes next for a review
+        # someone else owes, which is how a date column gets set to 2099.
+        sched = schedule_rows(io.open(REGISTER, encoding='utf-8',
+                                      errors='replace').read())
+        open_comps = {r['component'] for r in rows if r['status'] == 'OPEN'}
+        if sched is None:
+            problems.append('NO SCHEDULE   the register has no retirement-'
+                            'schedule table (a header row naming "Next '
+                            'review"). %d OPEN row(s) with no stated review '
+                            'cadence is the static-number failure item 91 '
+                            'names.' % len(open_comps))
+        else:
+            sched_comps = set()
+            for srow in sched:
+                sched_comps.update(srow['components'])
+                for c in srow['components']:
+                    if c not in open_comps:
+                        problems.append('SCHEDULE STALE %s is in the retirement '
+                                        'schedule and is not an OPEN row -- '
+                                        'retired, accepted, renamed or below '
+                                        'the threshold. The schedule line goes '
+                                        'when the row does; that is the '
+                                        'visible shrink.' % c)
+                if srow['date'] is None:
+                    problems.append('SCHEDULE NO DATE  the schedule line for '
+                                    '%s carries no YYYY-MM-DD next-review '
+                                    'date.' % ', '.join(srow['components']))
+            for c in sorted(open_comps - sched_comps):
+                problems.append('UNSCHEDULED   %s is OPEN and not in the '
+                                'retirement schedule -- an OPEN row nobody '
+                                'will ever look at again is the register '
+                                'settling into a number.' % c)
+            due = [srow for srow in sched
+                   if srow['date'] and datetime.date(
+                       *(int(x) for x in srow['date'].split('-')))
+                   <= datetime.date.today()]
+            for srow in due:
+                print('  REVIEW DUE: %s was scheduled for %s. Not a failure '
+                      '-- a review owed.'
+                      % (', '.join(srow['components']), srow['date']))
     print('  A register that only grows is a graveyard; one that shrinks without '
           'a measurement')
     print('  behind it is worse, so RETIRED is refused while the component is '

@@ -53,23 +53,36 @@ have traversed `api/_resources/` then, or the register may have been written
 from a partial run. Nothing here determines which, and the distinction matters
 for whether other components are still uncounted today.
 
-### 0 RETIRED in nine days, and what retirement would actually take
+### The retirement schedule — every OPEN row, what retires it, and when it is next looked at
 
 **No row has moved to RETIRED since this register opened.** That is not the
 checker failing — it refuses RETIRED while the component is still above the
-threshold, so a retirement has to be a real fix. The eight OPEN rows and what
-each needs:
+threshold, so a retirement has to be a real fix.
 
-| OPEN row | What retirement requires |
-|---|---|
-| `env:SUPABASE_URL`, `env:SUPABASE_SERVICE_ROLE_KEY` | Splitting the single Supabase project, or per-app credentials against it. **A product and spend decision, not an engineering task**, and it is dispatched as one decision with items 61 and 69 in `docs/SAIRN-OPEN-WORK-INDEX.md`. |
-| `env:SD_AUTH_SECRET` | Per-app signing keys. The overlap window (2026-09-17) removed the rotation COST but not the concentration — one secret still signs every app's sessions. |
-| `env:SD_ENCRYPTION_KEY` | Per-tenant or per-purpose keys, so one leak is not every firm's second factor. |
-| `env:OIDC_CLIENT_ID`, `OIDC_CLIENT_SECRET`, `OIDC_ISSUER_URL`, `OIDC_REDIRECT_URI` | One risk seen four times. Retirement means a second identity provider or a documented fallback, not four separate fixes. |
+**THIS TABLE IS THE SCHEDULE, AND THE CHECKER HOLDS IT IN BOTH DIRECTIONS
+(item 91, 2026-09-25).** Every OPEN row must appear here with an owner and a
+next-review date; a schedule row whose component is no longer OPEN is refused,
+so retiring or accepting a row FORCES its schedule line out — the shrink is
+visible in this table, not only in a count. The dates below are the cadence
+the register runs on until its owner moves them; moving one is a one-cell
+edit and a deliberate act, which is the point — a review that never happens
+and a review nobody scheduled used to print the same nothing.
+
+| OPEN row | What retirement requires | Owner | Next review |
+|---|---|---|---|
+| `env:SUPABASE_URL`, `env:SUPABASE_SERVICE_ROLE_KEY` | Splitting the single Supabase project, or per-app credentials against it. **A product and spend decision, not an engineering task**, and it is dispatched as one decision with items 61 and 69 in `docs/SAIRN-OPEN-WORK-INDEX.md`. | **Michael** | 2026-10-08 |
+| `env:SD_AUTH_SECRET` | Per-app signing keys. The overlap window (2026-09-17) removed the rotation COST but not the concentration — one secret still signs every app's sessions. | **Michael** | 2026-10-08 |
+| `env:SD_ENCRYPTION_KEY` | Per-tenant or per-purpose keys, so one leak is not every firm's second factor. The revoke procedure is drafted (`docs/2026-09-24-sd-encryption-key-revoke.md`) and unrehearsed, which is why this one reviews FIRST. | **Michael** | 2026-10-01 |
+| `env:OIDC_CLIENT_ID`, `env:OIDC_CLIENT_SECRET`, `env:OIDC_ISSUER_URL`, `env:OIDC_REDIRECT_URI` | One risk seen four times. Retirement means a second identity provider or a documented fallback, not four separate fixes. Reviewed last of the eight: three of the four are misconfiguration exposure, not credential exposure. | **Michael** | 2026-10-22 |
 
 **None of these is retirable by editing this file**, and that is the point of
 recording them here: the list shrinks when the platform changes, and until then
-a row saying OPEN is telling the truth.
+a row saying OPEN is telling the truth. **A PAST-DUE DATE IS PRINTED LOUDLY
+AND DOES NOT FAIL THE CHECK**, deliberately: failing a push because a calendar
+date passed punishes whoever pushes next for a review someone else owes, which
+is how a date column gets set to 2099. What DOES fail is structural drift —
+an OPEN row this table forgot, or a schedule line for a row that is no longer
+OPEN.
 
 ## The threshold, and what the number means
 
