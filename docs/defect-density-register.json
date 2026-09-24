@@ -13588,6 +13588,56 @@
       "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
+      "commit": "9710c884acc9",
+      "date": "2026-09-24",
+      "subject": "fix(push-gate): a docs-only push no longer runs check 9 -- the Windows-only liveness probe was stranding every cloud push",
+      "files": [
+        "tests/push_gate/check9_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 91,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "user-report",
+      "summary": "Push-gate check 9 ran its full guard-test registry on every push regardless of what the push contained, and tests/session_lock_liveness_probe.py -- Windows-only by its own admission, its arm (c2) manufactures pid-recycling state a Linux container cannot -- exits 2 COULD NOT SET UP on the Linux cloud runner. The check-9 loop read every nonzero exit as a FAILING seam and denied, so every cloud-session push, including docs-only pushes that cannot move any code seam, required an override the auto-mode classifier correctly refuses. Three commits were stranded local-only on claude/jolly-gauss-uropwz, including both competitive-gap audit documents. Fixed by skipping check 9 when the entire outgoing range is docs-only: a named predicate (docs_only_outgoing) with an empty range refusing to count as docs-only (could-not-tell must not read as safe-to-skip) and docs/tier-a-reviews.json disqualifying despite living in docs/.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "9f7d61cfae44",
+        "date": "2026-09-10",
+        "subject": "feat(push-gate): check 9 -- the named guard and seam tests can now stop a push",
+        "lag_days": 14
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 (could-not-run is a third state), but check 9's defect is the INVERSE direction: it folded could-not-run into FAILED rather than into passed, over-blocking instead of over-passing. No section names the over-blocking direction; recording not-citable rather than stretching 1.11 to a shape it does not state.",
+      "contributing_factors": [
+        {
+          "factor": "The guard-test runner treats every nonzero exit as a failing seam -- the family convention that exit 2 means COULD NOT RUN and exit 3 means SKIPPED exists in the probes but check 9 never learned it",
+          "kind": "technical",
+          "action_status": "declined",
+          "note": "Teaching check 9 the 2/3 convention would change what a blocking gate allows for CODE pushes and is a deliberate decision, named in the commit rather than folded into a docs-only fix."
+        },
+        {
+          "factor": "The liveness probe declares itself Windows-only in prose but not in code -- it attempts setup on any platform and reports the failure as inability rather than inapplicability",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Teach the probe to exit 3 SKIPPED on non-Windows platforms, the convention its siblings use; left as follow-up because it changes a guard test's contract with the gate."
+        },
+        {
+          "factor": "The gate had no concept of what a push CONTAINS when deciding which whole-tree checks apply -- check 9's whole-tree scope was argued from the rebase case and never bounded by what the check protects",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The docs-only predicate bounds it by what check 9 protects (code seams), with both honesty exclusions driven by check9_probe arm 7."
+        }
+      ],
+      "recurrence_open": "Cloud pushes that touch CODE still hit the same wall: the liveness probe still exits 2 on Linux and check 9 still reads that as a failing seam. The docs-only skip unstrands documentation work only. The real closure is the probe exiting 3 SKIPPED off-Windows or check 9 learning the 2/3 convention -- both named as decisions, neither made here."
+    },
+    {
       "commit": "982b093cfa13",
       "date": "2026-09-24",
       "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
@@ -13809,56 +13859,6 @@
       "recurrence_open": "The disclosure now says how long nothing has retired; nothing yet says what SHOULD have. A retirement-schedule discipline -- per-OPEN-row target dates, or a cadence after which a stall escalates from prose to a problem line -- does not exist and is the register owner's decision; the elapsed-time line is the measurement that decision needs, not the decision. Also open: the `net == 0` shape (a disclosure keyed to one scenario instead of the property) has no detector and this is its first recorded instance."
     },
     {
-      "commit": "9710c884acc9",
-      "date": "2026-09-24",
-      "subject": "fix(push-gate): a docs-only push no longer runs check 9 -- the Windows-only liveness probe was stranding every cloud push",
-      "files": [
-        "tests/push_gate/check9_probe.py",
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 91,
-      "lines_removed": 1,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "user-report",
-      "summary": "Push-gate check 9 ran its full guard-test registry on every push regardless of what the push contained, and tests/session_lock_liveness_probe.py -- Windows-only by its own admission, its arm (c2) manufactures pid-recycling state a Linux container cannot -- exits 2 COULD NOT SET UP on the Linux cloud runner. The check-9 loop read every nonzero exit as a FAILING seam and denied, so every cloud-session push, including docs-only pushes that cannot move any code seam, required an override the auto-mode classifier correctly refuses. Three commits were stranded local-only on claude/jolly-gauss-uropwz, including both competitive-gap audit documents. Fixed by skipping check 9 when the entire outgoing range is docs-only: a named predicate (docs_only_outgoing) with an empty range refusing to count as docs-only (could-not-tell must not read as safe-to-skip) and docs/tier-a-reviews.json disqualifying despite living in docs/.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "9f7d61cfae44",
-        "date": "2026-09-10",
-        "subject": "feat(push-gate): check 9 -- the named guard and seam tests can now stop a push",
-        "lag_days": 14
-      },
-      "citation_note": "The nearest standing rule is PR 1.11 (could-not-run is a third state), but check 9's defect is the INVERSE direction: it folded could-not-run into FAILED rather than into passed, over-blocking instead of over-passing. No section names the over-blocking direction; recording not-citable rather than stretching 1.11 to a shape it does not state.",
-      "contributing_factors": [
-        {
-          "factor": "The guard-test runner treats every nonzero exit as a failing seam -- the family convention that exit 2 means COULD NOT RUN and exit 3 means SKIPPED exists in the probes but check 9 never learned it",
-          "kind": "technical",
-          "action_status": "declined",
-          "note": "Teaching check 9 the 2/3 convention would change what a blocking gate allows for CODE pushes and is a deliberate decision, named in the commit rather than folded into a docs-only fix."
-        },
-        {
-          "factor": "The liveness probe declares itself Windows-only in prose but not in code -- it attempts setup on any platform and reports the failure as inability rather than inapplicability",
-          "kind": "technical",
-          "action_status": "planned",
-          "action": "Teach the probe to exit 3 SKIPPED on non-Windows platforms, the convention its siblings use; left as follow-up because it changes a guard test's contract with the gate."
-        },
-        {
-          "factor": "The gate had no concept of what a push CONTAINS when deciding which whole-tree checks apply -- check 9's whole-tree scope was argued from the rebase case and never bounded by what the check protects",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The docs-only predicate bounds it by what check 9 protects (code seams), with both honesty exclusions driven by check9_probe arm 7."
-        }
-      ],
-      "recurrence_open": "Cloud pushes that touch CODE still hit the same wall: the liveness probe still exits 2 on Linux and check 9 still reads that as a failing seam. The docs-only skip unstrands documentation work only. The real closure is the probe exiting 3 SKIPPED off-Windows or check 9 learning the 2/3 convention -- both named as decisions, neither made here."
-    },
-    {
       "commit": "dadfedf48ac9",
       "date": "2026-09-24",
       "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
@@ -13999,6 +13999,47 @@
         }
       ],
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
+    },
+    {
+      "commit": "eaefa8396567",
+      "date": "2026-09-24",
+      "subject": "fix(probe): the staleness probe's absent-plan tree is REMOVED, found by the tool whose queue item turned out to be already built",
+      "files": [
+        "tests/run_verification_plan_staleness_probe.py"
+      ],
+      "lines_added": 9,
+      "lines_removed": 0,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "tests/run_verification_plan_staleness_probe.py's arm-1 rewrite (same day, earlier session hours) created a throwaway directory tree per run with tempfile.mkdtemp and never removed it -- state meant to live for one probe invocation persisting indefinitely, the exact class tools/temporary_state_check.py (item 34) detects. Two leaked trees were found in the temp directory, alongside a 58-hour-old sabotage worktree from an unrelated run. Found while re-building item 34 under a stale queue entry that said it had no owner; the ten-days-built original detected its own would-be duplicate author's leak. The probe now removes its tree in line, and the leaked residue is cleaned.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": "temporary_state_check.py",
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The leak was written this morning in this session's own arm-1 rewrite; the injecting commit has been rebased across at least five sha identities today and naming one would be a guess."
+      },
+      "citation_note": "Item 34's own vocabulary covers this exactly (temporary state with no released-by), but item 34 is a tool, not a standing rule in SAIRN-PROCESS-RULES.md; recorded not-citable so the gap between a tool's criteria and the rules document stays visible.",
+      "phase_note": "The cleanup was omitted at writing time; nothing structural prevented it and nothing detected it until the leak class's own checker ran.",
+      "contributing_factors": [
+        {
+          "factor": "mkdtemp with no paired removal: the probe's arm needed a tree that outlives one subprocess call and the cleanup was simply never written -- set on the way in, nothing on the way out, item 34's exact formula.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "shutil.rmtree added directly after the arm's subprocess run, with the incident written at the line."
+        },
+        {
+          "factor": "The queue entry driving the work said item 34 had no owner, ten days after it was built and hours after another session extended it -- a stale plan snapshot dispatched a rebuild, which briefly overwrote the real tool and its probe before the inventory generator's duplicate-description refusal caught it.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Originals restored byte-identical, duplicate discarded, and the staleness lesson recorded here: the committed verification plan is itself a point-in-time snapshot whose own header now says to re-verify item state before dispatching from it."
+        }
+      ],
+      "recurrence_open": "The rmtree closes this probe. Every other mkdtemp on the platform without a paired removal remains undetected by anything blocking -- temporary_state_check.py reports the class but is deliberately report-only, and its shape-3 coverage is per-file heuristics, not a mkdtemp census."
     },
     {
       "commit": "f4945dd9e872",
