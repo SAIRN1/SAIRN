@@ -2571,8 +2571,8 @@
       "task": "discharge cc's most overdue review obligation (hank 2026-09-23T18:22:01Z last-eight WEAK arms 4d31b011), then sairncode Tier A write-gate list 7-vs-23 verify/fix, fix 42e93469 citation in my own review record, and a freshness check for sairn_claim.py's index-row documentation FILES: api/_resources/sairncode.js docs/tier-a-reviews.json tools/sairn_claim.py docs/SAIRN-OPEN-WORK-INDEX.md",
       "claimed_at": "2026-09-24T19:08:30Z",
       "claimed_at_epoch": 1790276910.0127172,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T19:48:03Z",
       "files": [
         "api/_resources/sairncode.js",
         "docs/SAIRN-OPEN-WORK-INDEX.md",
