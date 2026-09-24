@@ -2884,6 +2884,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-24T14:03:42Z",
+      "resources": [
+        "dnt_complaints",
+        "invoices",
+        "sc_anesthesia_base_units",
+        "sc_eligibility"
+      ],
+      "rules": [],
+      "files": [
+        "api/bridge.js",
+        "sairncode.html",
+        "tests/run_service_role_gate_probe.py",
+        "tests/run_sync_write_result_probe.py",
+        "tests/sairncode_eligibility_coding_edge.js",
+        "tools/purpose_expired_measure.py",
+        "tools/sync_write_result_check.py"
+      ],
+      "what": "SEVEN-ITEM QUEUE, 2026-09-24 (cc). Tier A names appear here only as STRINGS in checker fixtures and one comment -- no handler, no resource dispatch and no app behaviour changed for `dnt_complaints` or `invoices`. `sc_anesthesia_base_units` and `sc_eligibility` are real (the A2 edge reads sc_eligibility), and they are covered by earlier obligations.\n\nWHAT IS IN THIS RANGE:\n  1. tools/coding_rule_discovery.py -- derive the coding-rule CANDIDATE set from the codebase's own conventions. 41 candidates against 8 registered.\n  2. sairncode.html -- A2's missing edge: an eligibility answer now reaches the coding queue (scEligibilityConcerns, consumed by scDeriveCodedItemConfidence).\n  3. tools/sabotage_control_check.py -- a sixth spelling of \"guarded\", so tests/rebase_resolve_merge_control.py stops being reported as unguarded.\n  4. docs/CRITICALITY-TIERS.md -- the confidentiality count that counted its own sentence.\n  5. tools/sync_write_result_check.py -- the fifth false-positive class: a call inside a comment.\n  6. tools/service_role_tier_a_gate_check.py + report_only_checks.py + api/bridge.js comment -- a silent 3-of-226 truncation and two stale claims.\n  7. tools/purpose_expired_measure.py -- the Ariane 5 sharpening, designed, measured three ways, and REFUSED.\n\nATTACK THESE SEVEN:\n\n(1) THE A2 EDGE IS THE ONLY REAL PRODUCT CHANGE AND ITS TERM LIST IS THE SOFT PART. scEligibilityConcerns escalates when a stored payer status contains one of seven lower-cased terms taken from the X12 271 EB01 non-active benefit statuses. If a payer returns a status this app does not recognise, the edge is SILENT by design -- I judged that \"we do not understand this string\" is not evidence of non-coverage, and that escalating anything-not-active would be the app inventing a verdict. Decide whether that silence is right, because it is the difference between a missed non-coverage and a queue full of noise.\n\n(2) NO ELIGIBILITY CHECK AT ALL IS SILENT, and that is a DELIBERATE DEPARTURE from the credential gate immediately above it, which escalates on `no_data`. My reasoning: a practice must know whether its own providers are credentialed, but eligibility is optional per encounter and most legitimately have none, so escalating every unchecked encounter would hold the whole queue. If you disagree, the fix is one line and the consequence is large.\n\n(3) coding_rule_discovery's S2 SIGNAL IS THE ONE THAT WIDENS QUIETLY. It reports a pure function called from a markup-wired handler that cites a `*_SOURCES` map. Without the wired-handler narrowing it reported 70 candidates, most dragged in by ONE generic helper. The narrowing is real but it is a heuristic, and the 41 it now reports include at least three I would not register (duBox, scKxYtd, findPcTcIndicator). Judge the precision, and judge whether the false-positive direction I chose is the right one.\n\n(4) THE SIXTH GUARD SPELLING IS A WIDENING OF A DETECTOR THAT GATES NOTHING, but it changes a published figure: UNGUARDED went 1 -> 0 and the blind lock went 28 -> 30 fixtures. Check the negative fixture actually holds -- a bare `append(` must NOT count, only an ALL-CAPS state label -- because the easy failure here is a widening that credits every accumulator in the tree.\n\n(5) THE CONFIDENTIALITY COUNT FIX CHANGED THE PRESCRIBED COMMAND, which is the thing other sessions will copy. It is now anchored on a row start. Confirm the anchor is right for every row shape in that table, not just the seven that carry the flag today.\n\n(6) THE BRIDGE COMMENT IS CORRECTED AND THE BEHAVIOUR IS NOT. api/bridge.js's push still accepts an unauthenticated write keyed on a raw licence key. I corrected the comment that argued the question was settled and deliberately did NOT change the endpoint -- two live callers, a real breakage cost, and a product decision that is not mine. Somebody should decide it rather than let a corrected comment stand in for a decision.\n\n(7) purpose_expired_measure.py SHIPS NOTHING AND THAT IS THE CLAIM TO ATTACK. Three signals designed, three measured, three refused -- 0 instances, 0-of-14 precision, and a wrong premise. If any of the three is salvageable with a narrowing I did not try, the refusal is wrong and the file is an excuse rather than a result.\n\nFILES: sairncode.html api/bridge.js docs/CRITICALITY-TIERS.md tools/coding_rule_discovery.py tools/sabotage_control_check.py tools/sync_write_result_check.py tools/service_role_tier_a_gate_check.py tools/report_only_checks.py tools/purpose_expired_measure.py tools/tooling_inventory.py tests/run_coding_rule_discovery_probe.py tests/sairncode_eligibility_coding_edge.py tests/run_sync_write_result_probe.py tests/run_service_role_gate_probe.py",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T14:03:42Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
