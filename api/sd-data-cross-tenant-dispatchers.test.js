@@ -390,7 +390,20 @@ const UNITS = [
     // Three more, 2026-09-23. sv_scribe_consent is the consent evidence for
     // recording an exam room and is brand new today.
     ['sv_referrals', 'referral_id'], ['sv_reminders', 'reminder_id'],
-    ['sv_scribe_consent', 'scribe_consent_id']] },
+    ['sv_scribe_consent', 'scribe_consent_id'],
+    // ── SIX MORE, 2026-09-24: the last of SAIRNvet's Tier A rows out of the
+    //    NONE bucket (queue item 14; item 69's tripwire was correctly red --
+    //    the tool measured ALL sv_ members and the recorded coverage said
+    //    NONE for these). Every one is Tier A: sv_clients and sv_invoicing
+    //    are A/A -- a NAMED client joined to what they owe or were billed --
+    //    sv_farmcalls is A/A, and sv_boarding / sv_multisite /
+    //    sv_petinsurance are A on the money limb. They go through the SAME
+    //    generic SV_RESOURCES loop as the 23 above, so what each row buys is
+    //    membership in the driven filter path, the same shared-path caveat
+    //    every table-driven arm in this file carries.
+    ['sv_boarding', 'boarding_id'], ['sv_clients', 'client_id'],
+    ['sv_farmcalls', 'farmcall_id'], ['sv_invoicing', 'invoicing_id'],
+    ['sv_multisite', 'multisite_id'], ['sv_petinsurance', 'petinsurance_id']] },
   { map: 'BLD_RESOURCES', app: 'sairnbuild', role: 'owner', members: [
     ['bld_equipment', 'equipment_id'], ['bld_referrals', 'referral_id'],
     ['bld_costs', 'cost_id'], ['bld_incidents', 'incident_id'],
@@ -428,7 +441,14 @@ const UNITS = [
     ['bld_draws', 'draw_id']] },
   { map: 'SDN_RESOURCES', app: 'sairndesign', role: 'owner', members: [
     ['sdn_discounts', 'discount_id'], ['sdn_invoices', 'invoice_id'],
-    ['sdn_contracts', 'contract_id'], ['sdn_referrals', 'referral_id']] },
+    ['sdn_contracts', 'contract_id'], ['sdn_referrals', 'referral_id'],
+    // ── FOUR MORE, 2026-09-24: promoted B->A on 2026-09-23 and session-gated
+    //    today; their tenant arms land the same day so the promotion does not
+    //    grow the NONE bucket -- a client budget steering the AI adviser, a
+    //    priced accept/decline reserving one-of-a-kind inventory, the
+    //    catalogue both totals derive from, and hours x billable_rate.
+    ['sdn_projects', 'project_id'], ['sdn_proposals', 'proposal_id'],
+    ['sdn_specitems', 'specitem_id'], ['sdn_timeentries', 'timeentry_id']] },
   { map: 'LEG_RESOURCES', app: 'sairnlegacy', role: 'owner', members: [
     ['leg_aftercare', 'aftercare_id'], ['leg_catererorders', 'catererorder_id'],
     ['leg_cases', 'case_id'], ['leg_cremations', 'cremation_id'],
