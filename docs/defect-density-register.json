@@ -12764,6 +12764,53 @@
       "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
     },
     {
+      "commit": "57874de9fbd3",
+      "date": "2026-09-24",
+      "subject": "fix(probe): A8 of the rollup-list review probe has been CRASHING, not passing",
+      "files": [
+        "tests/criticality_rollup_list_review_probe.py"
+      ],
+      "lines_added": 17,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/criticality_rollup_list_review_probe.py arm A8 dropped a name from the StoneDesk rollup cell with SD.replace('`name`, ', '', 1) -- name, comma, space -- which is how every name in that cell is written EXCEPT THE LAST ONE. `sd_crm` is the first exactly-once name today and it is the final element, so the replace planted nothing, drive()'s bytes-changed guard fired, and the probe died with an AssertionError partway through A8. Every arm after it never ran. Confirmed red at origin/main and unrelated to the session that found it. The probe's own subject is finding stale anchors in OTHER probes' arms, and it had the same defect in its own -- the fourth time this exact anchor shape has bitten on this register, after arm 9 of run_criticality_tier_probe.py was repaired for the same reason on the same name on 2026-09-23.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The arm was written with this spelling; which edit to the StoneDesk rollup cell made sd_crm the final element -- and so turned a working anchor into a dead one -- is not established here, and guessing a sha would be a lag with a hash on it."
+      },
+      "contributing_factors": [
+        {
+          "factor": "THE ANCHOR ENCODED A POSITION IT DID NOT CHECK. `name`, with a trailing comma and space is only how a NON-FINAL list element is written. The arm derived WHICH name to drop from the fixture -- correctly, and that is the discipline the file's own header preaches -- but then hardcoded a spelling that assumes where in the list that name sits. Deriving the value and hardcoding the shape around it is half the rule.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three spellings tried in order -- mid-list, last-in-list, alone -- plus an assert that the name is actually absent afterwards. The identical repair hank made to arm 9 on 2026-09-23."
+        },
+        {
+          "factor": "THE SAME REPAIR WAS MADE NEXT DOOR AND NOT PROPAGATED. Arm 9 of run_criticality_tier_probe.py had this exact defect, on this exact name, and was fixed on 2026-09-23. Nothing looked for the pattern anywhere else, and this file -- whose entire purpose is reviewing those arms -- carried a copy.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Recorded here so the pair is findable. A grep for the `name`, spelling across tests/ is cheap and has not been run; it is named rather than claimed."
+        },
+        {
+          "factor": "A REPORT-ONLY PROBE THAT DIES IS INDISTINGUISHABLE FROM ONE WITH NOTHING TO SAY, to anybody not reading its last line. This probe never fails a push by design, so a traceback partway through costs nothing visible: the arms after A8 simply did not run and no gate anywhere noticed.",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "The honest fix is that a report-only probe should still exit non-zero when it CRASHED, as opposed to when it merely found things -- could-not-run is a third state, PR 1.11. That is a change to the probe's exit contract and to whatever reads it, and it belongs to its own claim rather than to a one-line anchor repair."
+        }
+      ],
+      "recurrence_open": "THE PATTERN IS NOT SWEPT. This is the fourth instance of the same anchor shape on this one register and the second in two days; nothing has grepped tests/ for the `name`, spelling, and the count of remaining instances is UNMEASURED rather than zero. Also open, and larger: a report-only probe that CRASHES still exits 0 here, so the arms after the crash silently do not run and nothing distinguishes that from a clean report -- the could-not-tell-folded-into-a-pass shape, in a file whose job is to catch it in others. Neither is closed by this fix."
+    },
+    {
       "commit": "5e7f9ebd6cb7",
       "date": "2026-09-24",
       "subject": "fix(sairnlaw): the comment above law_clients made three claims and all three had gone false",
