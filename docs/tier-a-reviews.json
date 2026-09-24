@@ -2819,6 +2819,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-24T12:58:06Z",
+      "resources": [
+        "exec_context",
+        "sd_crm"
+      ],
+      "files": [
+        "tests/criticality_rollup_list_review_probe.py",
+        "tests/run_criticality_tier_probe.py",
+        "tools/criticality_tier_check.py"
+      ],
+      "what": "`tools/criticality_tier_check.py --fix-rollup-list`: the rollup NAME LIST is derived now instead of retyped, plus four new arms holding it and one dead anchor repaired in the probe that reviews those arms. No app source touched -- the Tier A names above are mentions inside a checker and its controls, not code serving a resource.\n\nWHY IT EXISTS: the LIST MISSING arm landed 2026-09-23 and caught the same class of omission FIVE times in the following day. Every catch real, every fix correct, and nothing about the fifth different from the first -- promoting a row leaves a derived sentence on another line for a human to retype. The proof that it is derivation and not diligence is on the same line: the COUNT is re-derived on every run and has never drifted, while the LIST was prose nobody read and had rotted in six of sixteen apps. Same authors, same edits.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first:\n\n(1) THE HEADER'S STANDING RULE IS NOW AMENDED AND I AM THE ONE WHO AMENDED IT. \"IT REPORTS AND NEVER REWRITES\" has been at the top of this file since it was written, and it is a good rule. My argument is that the NAME LIST is not judgement -- it is a restatement of rows the tool already parses -- and that the COUNT proves the distinction. Attack that argument rather than the code: if the list IS judgement in any case I have not thought of, the whole change is wrong and not just its edges. A cell that names a resource of ANOTHER app is the case I would look at first, since the probe that reviews this area already found (R2) that nothing refuses one.\n\n(2) PLACEMENT AMONG PLAIN NAMES ONLY, which is a rule I inferred from ONE app's cell. These cells are an annotated run -- **`sd_crm` (2026-09-23, B->A ...)** -- followed by a plain alphabetical run, and the fixer sorts within the plain run and REFUSES a cell that has none. I derived that convention from StoneDesk's cell and checked it against the register passing; I did not read all seventeen cells to confirm every one has the same two-part shape. If some app's cell is ordered differently, the fixer will insert somewhere a reader would not expect, and the check will still pass -- the failure is cosmetic and silent, which is the combination worth attacking.\n\n(3) THE FIXER IS EXERCISED ONLY ON STONEDESK. Arms 11-14 all mutate the StoneDesk cell, because that is where the existing arms already had derived anchors. The tail-append path (`_TAIL_OK`), the bold-run refusal and the no-plain-run refusal are each driven exactly once, on one cell shape. A second app's cell would be a structurally different fixture rather than another copy of the same one.\n\n(4) A FIXER IS A WRITER AND I GAVE IT THE CONTROLS I THOUGHT THAT DESERVED -- byte-identical round-trip, no-op on a correct file, refuses without writing, does not delete LIST STALE. Decide whether that set is sufficient or whether something obvious is missing. What I know is missing: nothing asserts the behaviour when TWO names are missing from the same cell, and the insert loop re-derives its tokens per name specifically to make that case work.\n\n(5) THE SEPARATE COMMIT: `criticality_rollup_list_review_probe.py` A8 was CRASHING at origin/main, not passing -- same dead-anchor shape hank repaired in arm 9 on 2026-09-23, same name. Fourth instance of this shape on this register. The pattern is NOT swept: nothing has grepped tests/ for the `name`, spelling and the remaining count is unmeasured.\n\nFILES: tools/criticality_tier_check.py tests/run_criticality_tier_probe.py tests/criticality_rollup_list_review_probe.py",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-24T12:58:06Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
