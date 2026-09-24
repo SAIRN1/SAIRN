@@ -2315,8 +2315,8 @@
       "task": "sairn_rebase_resolve exit-1 conflation and defect_register --reseat needing a manual re-run after every rebase FILES: tools/sairn_rebase_resolve.py tools/defect_register.py",
       "claimed_at": "2026-09-23T23:39:51Z",
       "claimed_at_epoch": 1790206791.4386146,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T11:59:59Z",
       "files": [
         "tools/defect_register.py",
         "tools/sairn_rebase_resolve.py"
