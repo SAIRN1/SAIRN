@@ -361,7 +361,20 @@ async function provision(w, employee_id, role) {
       + 'asserts nothing and reports green.');
   });
 
+  // ── THE LOOP COUNTS WHAT IT DROVE, AND A SHORTFALL IS ITS OWN FAILURE
+  //    (2026-09-25). Found by attacking the shared coverage arm the way its
+  //    own obligation asked: that arm credits EVERY sf_ table entry to this
+  //    loop, and verifies only that this file mentions SD_SESSION_GATED and
+  //    gatedSfResources -- two strings a `.slice(0, 4)` on this line leaves
+  //    intact. Driven before fixing: with that slice planted, eleven gated
+  //    resources lost their only coverage and BOTH suites stayed green. So
+  //    the loop now tallies its own iterations and a final arm compares the
+  //    tally to the parsed count -- narrowing the iterable, skipping inside
+  //    the body, or filtering the list all show up as a number that does not
+  //    match, in THIS file, where the narrowing happened.
+  let sfPairsDriven = 0;
   for (const [resource, action] of gatedSfResources) {
+    sfPairsDriven += 1;
     await test('DRIVEN: ' + resource + '/' + action + ' -> 403 with a licence '
               + 'key and NO session', async () => {
       const w = world();
@@ -377,6 +390,16 @@ async function provision(w, employee_id, role) {
         + w.calls.length + ' database call(s) on the way.');
     });
   }
+
+  await test('every parsed pair was actually iterated -- the loop cannot be '
+            + 'quietly narrowed', () => {
+    assert.strictEqual(sfPairsDriven, gatedSfResources.length,
+      'the DRIVEN loop iterated ' + sfPairsDriven + ' of '
+      + gatedSfResources.length + ' parsed pairs. Something narrowed the '
+      + 'iterable or skipped members; the shared coverage arm credits ALL of '
+      + 'them to this loop, so a shortfall here is uncovered Tier A surface '
+      + 'that still reads as covered over there.');
+  });
 
   await test('the client actually sends the header the gate reads', async () => {
     // The fourth piece, asserted where the other three cannot see it. A gate
