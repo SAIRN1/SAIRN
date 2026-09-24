@@ -443,6 +443,25 @@ def pushed_tip(repo, cmd):
     return local
 
 
+def docs_only_outgoing(changed):
+    """True when the outgoing range can move no code seam: every file is under
+    docs/ and none is the machine-enforced tier-a-reviews ledger.
+
+    A NAMED FUNCTION rather than an inline expression so
+    tests/push_gate/check9_probe.py can drive it in both directions -- the
+    predicate is the whole safety argument for skipping check 9, and a
+    predicate nothing exercises is one refactor away from `True`.
+
+    An EMPTY list is False on purpose: outgoing_files() returns [] both for a
+    genuinely empty push and when no ref resolves, and folding "could not tell
+    what is outgoing" into "docs-only" would be the fail-open direction on a
+    blocking gate.
+    """
+    return bool(changed) and all(
+        f.startswith('docs/') and f != 'docs/tier-a-reviews.json'
+        for f in changed)
+
+
 def outgoing_files(repo, base=None, tip='HEAD'):
     """Files changed by the commits this push would actually send.
 
@@ -1584,9 +1603,44 @@ def main():
     except Exception:
         _suite_busy = False
 
+    # ── A DOCS-ONLY PUSH DOES NOT RUN CHECK 9 AT ALL (2026-09-24) ──────────
+    # The recurring cloud failure this closes: tests/session_lock_liveness_probe.py
+    # is Windows-only by its own admission (it manufactures pid-recycling state
+    # a Linux container cannot), so on the cloud runner it exits 2 COULD NOT
+    # SET UP -- and this loop read every nonzero exit as a FAILING seam and
+    # denied. Every cloud-session push, docs-only or not, then needed an
+    # override the auto-mode classifier correctly refuses, and three commits
+    # sat stranded local-only on claude/jolly-gauss-uropwz.
+    #
+    # THE SKIP IS SCOPED BY WHAT CHECK 9 PROTECTS, not by what is convenient.
+    # Its own header says the registry is the SEAM class: tests that two
+    # independently-maintained sides of CODE still agree. A push whose entire
+    # outgoing range touches only docs/ cannot move either side of any code
+    # seam -- there is nothing for these tests to catch that the push could
+    # have caused, and "it may not be your change" is the one argument the
+    # header gives for running them anyway, which the docs-only case answers:
+    # a broken seam that arrived by rebase is still broken after this push and
+    # still blocks the next code push.
+    #
+    # TWO EXCLUSIONS keep the definition honest rather than convenient:
+    #   - an EMPTY outgoing range is NOT docs-only. outgoing_files() returns []
+    #     both for a genuinely empty push and when no ref resolves; folding
+    #     "could not tell what is outgoing" into "docs-only" would be the
+    #     fail-open direction on a blocking gate.
+    #   - docs/tier-a-reviews.json is a machine-enforced ledger other gates
+    #     read, not prose; a push that touches it takes the full gate.
+    _docs_only = docs_only_outgoing(changed)
+
     _guard_fail = []
     _guard_unrun = []
-    if not _suite_busy:
+    if _docs_only:
+        if MODE == 'prepush':
+            sys.stderr.write(
+                "\nGuard-test gate (check 9) SKIPPED: every outgoing file is under "
+                "docs/ (and none is the tier-a-reviews ledger), so no code seam "
+                "can have moved. The seam tests still run on the next push that "
+                "touches code.\n\n")
+    elif not _suite_busy:
         for _t, _guards, _why in GUARD_TESTS:
             _p = os.path.join(repo, _t)
             if not os.path.isfile(_p):

@@ -270,5 +270,41 @@ check('...and every entry carries what it guards and why it exists',
 for _p in _paths:
     check('registry entry exists on disk: ' + _p, os.path.isfile(os.path.join(REPO, _p)))
 
+# ── ARM 7: THE DOCS-ONLY SKIP, DRIVEN IN BOTH DIRECTIONS (2026-09-24) ───────
+# Added with the skip itself. The recurring failure it closes: the session-lock
+# liveness probe is Windows-only, exits 2 on the Linux cloud runner, and this
+# loop read every nonzero exit as a failing seam -- so every cloud push,
+# docs-only or not, needed an override the auto-mode classifier correctly
+# refuses. Three commits sat stranded on claude/jolly-gauss-uropwz.
+#
+# The predicate is the WHOLE safety argument for the skip, so it is a named
+# function and every boundary is driven here -- including the two exclusions
+# that keep the definition honest rather than convenient.
+_dof = _hook_mod.docs_only_outgoing
+check('docs-only: a pure docs/ range skips',
+      _dof(['docs/a.md', 'docs/sub/deep/b.md']) is True)
+check('docs-only: ONE code file disqualifies the whole range',
+      _dof(['docs/a.md', 'api/sd-data.js']) is False)
+check('docs-only: a claims file disqualifies',
+      _dof(['docs/a.md', '.claude/claims/fourth.json']) is False)
+check('docs-only: the tier-a-reviews LEDGER disqualifies even though it lives '
+      'in docs/ -- it is machine-enforced, not prose',
+      _dof(['docs/tier-a-reviews.json']) is False)
+check('docs-only: an EMPTY range is NOT docs-only -- "could not tell what is '
+      'outgoing" must never read as "safe to skip"',
+      _dof([]) is False)
+check('docs-only: a file whose name merely STARTS with docs is not docs/',
+      _dof(['docs-backup/a.md']) is False)
+# THE WIRING, not only the predicate: check 9's loop must actually consult it.
+# A predicate nothing calls is one refactor from dead, and this arm is what
+# notices the call being dropped.
+_hook_src = io.open(HOOK, encoding='utf-8').read()
+check('check 9 actually consults docs_only_outgoing before running the guards',
+      '_docs_only = docs_only_outgoing(changed)' in _hook_src
+      and 'if _docs_only:' in _hook_src,
+      'the predicate exists but nothing gates the guard loop on it')
+check('...and the skip says so on stderr rather than silently',
+      'check 9) SKIPPED' in _hook_src)
+
 print('\n%s  check9_probe: %d failed' % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)
