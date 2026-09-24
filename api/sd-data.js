@@ -1024,7 +1024,23 @@ module.exports = async (req, res) => {
       'sdn_discounts': ['read', 'write'],
       'sdn_invoices': ['read', 'write'],
       'sdn_pos': ['read', 'write'],
-      'sdn_referrals': ['read', 'write']
+      'sdn_referrals': ['read', 'write'],
+      // ── THE FOUR PROMOTED AFTER THE FIVE, 2026-09-24. "Only the five at
+      //    Tier A" was true on 2026-09-23 and stopped being true the same
+      //    day: sdn_projects, sdn_proposals, sdn_specitems and
+      //    sdn_timeentries were individually read and promoted B->A hours
+      //    after the gate above was armed (a client budget that steers the
+      //    AI adviser; a priced accept/decline that reserves one-of-a-kind
+      //    inventory; the catalogue BOTH proposal and PO totals derive from;
+      //    hours x billable_rate). The stopping rule was "Tier A", not
+      //    "these five names", so the boundary follows the tier -- the same
+      //    day, not whenever somebody re-reads this comment. The client half
+      //    needs no change this time: the X-SD-Auth header was made
+      //    unconditional in sairndesign.html when the first five were armed.
+      'sdn_projects': ['read', 'write'],
+      'sdn_proposals': ['read', 'write'],
+      'sdn_specitems': ['read', 'write'],
+      'sdn_timeentries': ['read', 'write']
     };
     // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
     // The gate below resolved this as "memory follows the caller, everything
@@ -1060,6 +1076,14 @@ module.exports = async (req, res) => {
       'sdn_invoices': 'sairndesign',
       'sdn_pos': 'sairndesign',
       'sdn_referrals': 'sairndesign',
+      // The four promoted 2026-09-24, in the same edit as their
+      // SD_SESSION_GATED entries -- this pair of lists is the closed-and-
+      // confusing failure the comment above records, and it is never grown
+      // one half at a time.
+      'sdn_projects': 'sairndesign',
+      'sdn_proposals': 'sairndesign',
+      'sdn_specitems': 'sairndesign',
+      'sdn_timeentries': 'sairndesign',
       // THE SECOND HALF OF THE SAME CHANGE, and the comment above is the reason
       // this list is not left behind: a resource added to SD_SESSION_GATED and
       // NOT here resolves expectedApp to 'stonedesk' and refuses every correctly

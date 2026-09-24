@@ -58,8 +58,14 @@ const PAGE = fs.readFileSync(path.join(__dirname, '..', 'sairndesign.html'), 'ut
 // The five this commit gates. Written out rather than parsed, because the
 // arms below cross-check the SOURCE against this list in both directions --
 // a list derived from the source could not catch the source being wrong.
+// GREW BY FOUR ON 2026-09-24 and the two-lists arm caught the growth the day
+// it happened -- which is the arm doing its job, not a defect in it.
+// sdn_projects, sdn_proposals, sdn_specitems and sdn_timeentries were
+// individually read and promoted B->A hours AFTER the first five were gated,
+// and the gate's stopping rule was "Tier A", not "these five names".
 const GATED = ['sdn_contracts', 'sdn_discounts', 'sdn_invoices', 'sdn_pos',
-               'sdn_referrals'];
+               'sdn_projects', 'sdn_proposals', 'sdn_referrals',
+               'sdn_specitems', 'sdn_timeentries'];
 
 let pass = 0, fail = 0;
 function test(name, fn) {
@@ -134,7 +140,7 @@ function withToken(app, role) {
       + 'not the second resolves expectedApp to "stonedesk" and refuses every '
       + 'correctly signed-in designer -- it fails CLOSED and confusingly.');
     assert.deepStrictEqual(gatedIn, GATED.slice().sort(),
-      'the gated set is not the five Tier A resources this file is about');
+      'the gated set is not the NINE Tier A resources this file is about');
   });
 
   section('THE CLIENT CAN ACTUALLY SEND A TOKEN -- the precondition, read out '
@@ -207,7 +213,7 @@ function withToken(app, role) {
       });
   }
 
-  section('AND THE THIRTEEN THAT ARE NOT GATED ARE STILL NOT GATED');
+  section('AND THE NINE THAT ARE NOT GATED ARE STILL NOT GATED');
 
   await atest('sdn_moodboards still answers without a session', async function () {
     // NOT AN ENDORSEMENT -- a disclosure. Stopping at Tier A is the scope

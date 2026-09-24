@@ -232,7 +232,16 @@ async function main() {
     // other salesperson's hold, then reserve, and the compare-and-swap never
     // sees a conflict because there is not one left to see. It is the same
     // authority as 'reserve' pointed the other way and it carries the same gate.
-    assert.strictEqual(pairs, 58,
+    // 58 -> 66 on 2026-09-24: the four SAIRNdesign resources promoted B->A on
+    // 2026-09-23 join the gate, eight pairs. WHY THEY ARE GATED, which is what
+    // this tripwire asks for: they were promoted A on the money limb hours
+    // AFTER the first five were gated (a client budget that steers the AI
+    // adviser and decides over/under; a priced client accept/decline whose
+    // Approved path reserves one-of-a-kind inventory; the catalogue BOTH
+    // proposal and PO totals derive from; hours x billable_rate summed into
+    // the month's billable value), and a Tier A resource on a licence key
+    // alone is the exact finding that armed the first five.
+    assert.strictEqual(pairs, 66,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -297,7 +306,15 @@ async function main() {
         sdn_discounts: 'api/sd-data-sdn-session-gate.test.js',
         sdn_invoices: 'api/sd-data-sdn-session-gate.test.js',
         sdn_pos: 'api/sd-data-sdn-session-gate.test.js',
-        sdn_referrals: 'api/sd-data-sdn-session-gate.test.js'
+        sdn_referrals: 'api/sd-data-sdn-session-gate.test.js',
+        // The four promoted B->A on 2026-09-23 and gated 2026-09-24 -- the
+        // gate's stopping rule was "Tier A", not "the five names that were A
+        // on the day it was armed". Driven in the same suite, whose GATED
+        // table grew with them (40 arms).
+        sdn_projects: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_proposals: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_specitems: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_timeentries: 'api/sd-data-sdn-session-gate.test.js'
       };
       // ── AND THE sf_ REMAINDER, COVERED BY A RULE RATHER THAN BY NAME ──────
       // THIS ARM WAS RED ON origin/main FROM 2026-09-22 TO 2026-09-24 and the
