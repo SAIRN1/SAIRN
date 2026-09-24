@@ -13109,6 +13109,108 @@
       "recurrence_open": "ONLY THIS ONE BLOCK IS FIXED. Nothing has swept the rest of api/sd-data.js for branch comments that describe a guard which has since moved to SD_SESSION_GATED, and the file has 22 resources in that table -- the same staleness is possible at every one of them and has been measured at none. Also open: no check exists that would fail when a resource is added to SD_SESSION_GATED while its branch comment still says it is ungated, which is the mechanical form of this defect and the only thing that would catch the next one. And the direction of the error matters and is not tracked anywhere -- a comment that understates a guard produces wasted review and false gap reports, while one that overstates a guard would produce the opposite and worse, and nothing here distinguishes them."
     },
     {
+      "commit": "7ccccd1ed3d0",
+      "date": "2026-09-24",
+      "subject": "fix(truthy-sum): the checker was RED at HEAD on the arms that prove its own fix, and the test pinned a count nobody could hold",
+      "files": [
+        "tests/sv_boarding_revenue_coercion.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 49,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "tools/truthy_sum_check.py exited 1 at HEAD on tests/sv_boarding_revenue_coercion.js lines 117 and 144, and the cause is structural rather than a stray fold: both lines are deliberate NEGATIVE CONTROLS holding the sv_boarding pre-fix expression on purpose -- one proves a bare fold concatenates (\"50\"+\"20\" -> \"05020\"), the other proves the pre-fix expression produced NaN. The checker was red on exactly the arms that make its own subject falsifiable, and every future coercion fix that ships a proper control trips it the same way -- a checker penalising the thing it should reward. Compounding it, the same test asserted the SIZE OF THE WHOLE BASELINE (assert.strictEqual(n, 45, 'expected 45 (46 - 1)')) -- a fact about somebody else's file typed beside it, claiming nobody would ever baseline anything again -- and it went red the same day, on the entry that exempted this file's own controls. Fixed by baselining the controls WITH the reason on the record, and rewriting the count arm to assert what it actually meant: this key gone, the baseline still populated above a stated floor, and no entry reasonless. Three mutations verified the new arms bite.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": "truthy_sum_check.py",
+      "found_by_session": null,
+      "injection": {
+        "commit": "fc2ee8f136b3",
+        "date": "2026-09-23",
+        "subject": "fix(sairnvet): the Revenue MTD fold -- and the defect it was dispatched as is NOT the defect it had",
+        "lag_days": 1
+      },
+      "citation_note": "1.3's shape -- an anchor that still matches is not an anchor that still points at the right thing -- fits the count half exactly: `45` matched the file the day it was written and pointed at nothing the day the baseline legitimately grew. The checker-flags-its-own-control half has no rule of its own; cited arguable rather than not-citable because the count is the half that shipped red.",
+      "contributing_factors": [
+        {
+          "factor": "THE CHECKER CANNOT TELL A CONTROL FROM A DEFECT, and nothing declares which is which. A negative control containing the hunted shape is indistinguishable from the shape itself; the only channel for the distinction is the baseline, and nothing wrote the entry when the controls landed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The two controls are baselined with a reason that names them as controls, and the test now asserts the entry exists WITH that reason -- so deleting the exemption breaks the suite, not just the checker."
+        },
+        {
+          "factor": "THE FIX AND ITS EXEMPTION SHIPPED IN DIFFERENT CHANGES. The sv_boarding fix removed sairnvet.html::b.rate from the baseline and added the control-bearing test in one commit, but nobody ran truthy_sum_check before pushing -- it is report-only and in the sweep, so the red arrived silently after landing.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "The checker is deliberately report-only; promoting it to a gate is its owner's cost decision and the register already tracks that class of question. The recurrence note names the general shape instead."
+        },
+        {
+          "factor": "A GLOBAL COUNT WAS USED AS A PROXY FOR A LOCAL CLAIM. 'Exactly one entry was removed' was checked by pinning the whole dictionary's size, which is right only until anyone else touches the file -- the same class as the tier probe's hardcoded | **10** | and the fifth instance recorded here.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Rewritten as the three local claims the arm actually meant: the sairnvet key absent, a deliberate floor on the population, and no reasonless entries."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
+    },
+    {
+      "commit": "93f18467b17a",
+      "date": "2026-09-24",
+      "subject": "fix(spof): the retirement disclosure went SILENT exactly when the list was growing -- and its own control arm has been red",
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_dependency_graph_probe.py",
+        "tools/dependency_graph.py"
+      ],
+      "lines_added": 105,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/dependency_graph.py's SPOF-register check printed its retirement disclosure (\"NOTHING HAS BEEN RETIRED YET\") only when net == 0 -- the live count exactly equalling the frozen baseline -- so the sentence went SILENT in every state except the one where nothing at all had happened. On 2026-09-23 the register stood at 32 components against a baseline of 11 with zero retirements in nine days, and the tool said nothing about retirement: the GROWTH suppressed the disclosure. A disclosure that disappears when the situation worsens is not a disclosure. And its control probe's arm 7e -- the ONE arm in the register section asserting rc == 0 -- has been red at HEAD, because its fixture carried no BASELINE sentence; so 7d's refusal was unverified and nothing proved the checker refuses an empty register for the stated reason rather than refusing everything. Fixed: the stall prints unconditionally with ELAPSED TIME read from the same frozen sentence as the count (an undated baseline is refused as its own problem line), and four probe arms pin the growth case, the elapsed-time text, the paired positive (a RETIRED row changes the line), and the undated refusal.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The net==0 gate shipped with the register check itself; identifying that commit needs the file's history walked for check_register's introduction and I did not establish it -- a guessed sha would be a lag with a hash on it."
+      },
+      "citation_note": "1.1's shape -- a check that stopped checking -- is the closest fit and is a stretch in one respect: the disclosure never checked the growth case, so it is a check that NEVER STARTED for that state rather than one that stopped. The family (a green-looking output concealing an unexercised path) is the same; cited arguable for that scope difference.",
+      "contributing_factors": [
+        {
+          "factor": "THE CONDITION ENCODED ONE SCENARIO, NOT THE PROPERTY. `net == 0 and not retired` was written when the register had just opened and the only imaginable quiet state was 'nothing moved yet'. The property -- zero retirements should always be said out loud with how long it has been true -- was never stated, so the first state outside the author's imagination (growth) fell outside the condition.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The disclosure is unconditional on `not retired`, carries elapsed days from the baseline date, and the paired-positive arm proves it is not printed when a retirement exists."
+        },
+        {
+          "factor": "THE CONTROL THAT WOULD HAVE FORCED THE QUESTION WAS ITSELF BROKEN. Arm 7e was the section's only rc == 0 assertion and was red at HEAD on a fixture defect (no BASELINE sentence), so the whole register section of the probe had no working positive control -- and a probe whose control is red teaches its reader to stop reading exactly the section that needed reading.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "7e's fixture carries the BASELINE sentence; confirmed red at HEAD in a detached worktree before repair so the fix is credited against a real failure."
+        },
+        {
+          "factor": "REPORT-ONLY OUTPUT HAS NO READER OF RECORD. The stall sentence is advisory prose in a --register run; nobody's workflow breaks when it goes missing, so its absence for nine days was noticed only when a queue item said to look.",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Making the stall a problem line (exit 1) would gate every push on a fact about the platform's pace of fixing chokepoints, which is a policy decision for the register's owner, not a repair."
+        }
+      ],
+      "recurrence_open": "The disclosure now says how long nothing has retired; nothing yet says what SHOULD have. A retirement-schedule discipline -- per-OPEN-row target dates, or a cadence after which a stall escalates from prose to a problem line -- does not exist and is the register owner's decision; the elapsed-time line is the measurement that decision needs, not the decision. Also open: the `net == 0` shape (a disclosure keyed to one scenario instead of the property) has no detector and this is its first recorded instance."
+    },
+    {
       "commit": "982b093cfa13",
       "date": "2026-09-24",
       "subject": "fix(sairncode): the PT panel had no GP rule at all -- the one missing modifier that stops a claim being adjudicated",
@@ -13224,87 +13326,60 @@
       "recurrence_open": "Every other merge_policy validator on this platform is unchecked against the same question. docs/defect-density-register.json names defect_register.py --check, which happens to be a validity check, but nothing enforces that a declared validator answers soundness rather than content. A second ledger adopting a --list-shaped validator would reproduce this exactly."
     },
     {
-      "commit": "dc8a8509682f",
+      "commit": "c0263b7c221a",
       "date": "2026-09-24",
-      "subject": "fix(security): the undecryptable-ciphertext logs named the wrong secret, and now name exactly one",
+      "subject": "fix(verification-plan): zero checkable items out of ten was returning EXIT 0",
       "files": [
-        "api/law-auth.js",
-        "api/sc-eligibility.js",
-        "docs/2026-09-24-sd-encryption-key-revoke.md"
+        "tests/run_verification_plan_staleness_probe.py",
+        "tools/verification_plan_staleness_check.py"
       ],
-      "lines_added": 35,
-      "lines_removed": 15,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "code-review",
-      "summary": "Both undecryptable-ciphertext diagnostics named the wrong secret. api/law-auth.js (attorney MFA/TOTP secret) said \"tampered, or SD_AUTH_SECRET was rotated\" and api/sc-eligibility.js (stored Stedi API key) said \"SD_AUTH_SECRET rotated?\". True when written; false since 509a04f6 split the encryption duty out on 2026-09-17, after which a `v2.` ciphertext is AES-keyed on sha256(SD_ENCRYPTION_KEY) and fails for a reason SD_AUTH_SECRET has nothing to do with. These are the first lines an incident responder reads -- docs/2026-09-24-sd-encryption-key-revoke.md routes them straight here -- so the cost lands entirely during an incident, on somebody already under time pressure, pointing at a variable whose rotation would not have caused what they are looking at. Fixed by deriving rather than by naming both candidates: each site reads the `v2.` prefix off the stored value, the same discriminator decryptSecret() branches on, and names the one key that wrote that ciphertext. No behaviour change -- same 500 MFA_UNAVAILABLE and 503 CREDENTIAL_UNREADABLE, same client payloads; only the server log differs.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "509a04f653f7",
-        "date": "2026-09-17",
-        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
-        "lag_days": 7
-      },
-      "citation_note": "2.3 is cited with a stretch, and the stretch is the reason for this note. Its shape fits exactly -- a stated fact carries a tense, and goes stale when the world it describes changes rather than when anybody edits it -- but 2.3 is written about STANDING DOCUMENTS, and these two facts live in a comment and a console.error inside shipped source. Nothing in Part 1 or Part 2 covers a fact asserted in code that is read only by a human, and only during an incident. Cited as arguable rather than recorded not-citable, because the family is right and only the scope is being widened: a source comment that states which env var is at fault is a standing document with a smaller audience and no review cadence at all.",
-      "contributing_factors": [
-        {
-          "factor": "THE KEY NAME WAS A LITERAL IN THE MESSAGE, not derived from anything. Both sites hardcoded 'SD_AUTH_SECRET' in a comment and a console.error at a point where the code already had the stored ciphertext in hand -- the one value that actually answers which key wrote it. A message stating a fact it does not read cannot stay true across a change to that fact.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Each site now reads the `v2.` prefix off the stored value -- the same discriminator decryptSecret() itself branches on -- and names the single key that wrote that ciphertext. The message is now derived from the same source as the behaviour, so the two cannot disagree again."
-        },
-        {
-          "factor": "THE 2026-09-17 SPLIT SWEPT BEHAVIOUR AND NOT PROSE. 509a04f6 changed which key decrypts and added the branch that decides, but the sweep stopped at code that ACTS on the key; the two call sites whose operator-facing text NAMED the key were left, and both still read as correct English about a system that had changed underneath them.",
-          "kind": "process",
-          "action_status": "declined",
-          "note": "No sweep tool was added here. The general form -- 'a message names an env var that a later change re-assigned' -- needs to know which key a code path actually uses, which is the hard half. The narrow form (an env-var literal inside a string or comment within a few lines of a decryptSecret() call) is cheap and buildable, and is recorded as a candidate rather than half-built inside a fix commit that declared two source files."
-        },
-        {
-          "factor": "NOTHING ASSERTS ON OPERATOR-FACING LOG TEXT. api/_lib/auth.test.js covers the format choice and key selection thoroughly -- v2 vs legacy, rotation, unset key -- so the split was well tested in exactly the dimension that went stale, and every one of those tests stayed green while both diagnostics pointed at the wrong variable. Log strings are read only by a human during an incident, which is the worst moment to discover they are wrong.",
-          "kind": "detection",
-          "action_status": "not-actionable",
-          "note": "Pinning these two strings in a test would freeze the wording, not the truth of it: a test asserting the message says SD_AUTH_SECRET is exactly what the old text would have passed. What would actually bite is asserting the NAMED KEY MATCHES THE STORED FORMAT, which is the derivation this fix introduced -- so the fix removes the class rather than the test covering it."
-        }
-      ],
-      "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
-    },
-    {
-      "commit": "f9b7522c5948",
-      "date": "2026-09-24",
-      "subject": "fix(controls): the rebase control was guarded all along, and a register count was counting itself",
-      "files": [
-        "docs/CRITICALITY-TIERS.md",
-        "tools/sabotage_control_check.py"
-      ],
-      "lines_added": 52,
-      "lines_removed": 3,
-      "app": "PLATFORM",
+      "lines_added": 141,
+      "lines_removed": 19,
+      "app": "tooling",
       "layer": "tooling",
       "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "Two measurement defects, each of which made a checker report the wrong thing about itself. (1) tools/sabotage_control_check.py reported tests/rebase_resolve_merge_control.py as UNGUARDED while that control carried a guard STRONGER than any spelling the detector knew: it tells a STALE ANCHOR apart from a NO-OP MUTATION, reports both, and exits 1 on either. The control guards tools/sairn_rebase_resolve.py, which every clone on this machine uses to merge docs/tier-a-reviews.json. This is the SIXTH time this detector has under-credited a well-written control, which inverts the signal it exists to give -- a probe that did the harder thing scoring worse than one that did the easy thing. The fix is the detector, not the probe: adding a decorative assert to satisfy a regex would be the inversion itself. (2) docs/CRITICALITY-TIERS.md said \"N rows are marked CONFIDENTIALITY NOT YET INDIVIDUALLY READ\" and instructed the reader to re-derive the figure with an unanchored `grep -c`, so the prose that REPORTS the count matched too and the prescribed re-derivation returned one too many EVERY TIME ANYBODY RAN IT. A SELF-COUNTING NUMBER IS WORSE THAN A STALE ONE: a stale number is wrong until somebody checks, and this one was wrong including when they did, because the instruction to check was what reproduced the error. It had also drifted on the other axis -- it read nine against an actual seven -- so correcting only the command would have left a wrong figure behind a right method.",
+      "detection_method": "code-review",
+      "summary": "tools/verification_plan_staleness_check.py returned EXIT 0 when the plan it read had item lines and NOT ONE verify marker: nothing was measured, it printed \"drift found 0\", and main() returned 0. A caller reading the exit code -- a push gate, a cron, another tool -- could not distinguish \"checked ten items and they all agree\" from \"could check none of them\". The file's own header refuses exactly that shape one paragraph above the bug (\"a staleness checker that reports a clean plan it never opened is the defect it exists to prevent\"), and the probe already had an arm for the neighbouring case (a plan with zero item LINES is exit 2) which never reached this one. Found by running the tool against its real subject the day that subject was first committed; before that the tool had only ever been run against synthetic fixtures that all carried markers.",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "unknown",
+      "injection_phase": "coding",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Neither has an injection commit. The detector's vocabulary never covered the state-label spelling, and the grep command has counted its own sentence since the sentence was written."
+        "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
       },
-      "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
-      "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
-      "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
+      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
+      "contributing_factors": [
+        {
+          "factor": "The could-not-tell third state was implemented for one shape (no plan file, or a plan with zero item lines) and not for the neighbouring one (items present, none carrying a verify marker). The printed output named UNVERIFIABLE as 'a THIRD state, not clean' while the exit code folded it into clean.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Zero checkable items out of a non-zero number of items is now exit 2 with the reason printed. The verdict is computed in one function used by both the human and the --json path, so the two cannot diverge on what counts as could-not-tell."
+        },
+        {
+          "factor": "A PARTIAL measurement had no stated meaning either. Making the tool strict enough to catch the bug would have made every real plan permanently could-not-tell, which is the opposite failure and just as useless.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Partial stays exit 0 when the checkable items agree, and now always prints how many were NOT measured so the zero cannot be read against the wrong denominator. Arm 7b is the paired control that refuses the over-strict implementation."
+        },
+        {
+          "factor": "The tool had never been run against its real subject, because the subject was chat's own planning document and was not repo-tracked. Every probe arm drove a synthetic plan, and every synthetic plan happened to carry verify markers -- so the branch where none does was never executed.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The plan is now committed and arm 1b reads it. The probe's closing note states plainly which branch the real plan exercises and that the rest are fixtures, so the limit is declared rather than discovered."
+        },
+        {
+          "factor": "The probe's arm 1 drove the absent-plan case by running the tool bare. That stopped being the absent case the moment the plan was committed, and TWO of its three assertions kept passing while testing something else -- exit 2 for an unrelated reason, and the path named because it was the path it OPENED rather than the path it looked for.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Absence is now driven against a copy of the tool in a throwaway tree with no plan in it, which reaches the real search-miss branch. The tool resolves its repo root from its own __file__, so this is the only way to reach that branch while the plan exists, and the arm says so."
+        }
+      ],
+      "recurrence_open": "The actions close the exit-code semantics of this one tool. They do NOT close the class: no check on this platform asks whether a tool's exit 0 means \"measured and clean\" or \"measured nothing\". The register itself, the tier-A gate and the generators each answer this differently and correctly, but by hand, and nothing enumerates the tools that do not. They also do not close the plan's own unverifiability -- the committed plan carries zero verify markers, so the tool will answer exit 2 COULD NOT TELL until somebody marks items in it, and nothing schedules that."
     },
     {
       "commit": "dadfedf48ac9",
@@ -13396,60 +13471,87 @@
       "recurrence_open": "The actions close every role membership set currently in api/ and add a blocking guard against a new one. They do NOT close: (1) role maps expressed some other way -- an array read with .indexOf is safe and was counted and skipped, but a Set, a Map, or a switch would be outside both methods; (2) the same prototype-inheritance shape anywhere outside a role gate -- any object literal used as a lookup table keyed by caller-influenced data has it, and nothing counts those; (3) the client-side halves in the *.html files, which were not scanned at all; (4) the general question of what else, besides these role gates, silently depends on verifySessionToken's vocabulary check -- that dependency was discovered by reading, and nothing enumerates it."
     },
     {
-      "commit": "c0263b7c221a",
+      "commit": "dc8a8509682f",
       "date": "2026-09-24",
-      "subject": "fix(verification-plan): zero checkable items out of ten was returning EXIT 0",
+      "subject": "fix(security): the undecryptable-ciphertext logs named the wrong secret, and now name exactly one",
       "files": [
-        "tests/run_verification_plan_staleness_probe.py",
-        "tools/verification_plan_staleness_check.py"
+        "api/law-auth.js",
+        "api/sc-eligibility.js",
+        "docs/2026-09-24-sd-encryption-key-revoke.md"
       ],
-      "lines_added": 141,
-      "lines_removed": 19,
-      "app": "tooling",
-      "layer": "tooling",
+      "lines_added": 35,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "tools/verification_plan_staleness_check.py returned EXIT 0 when the plan it read had item lines and NOT ONE verify marker: nothing was measured, it printed \"drift found 0\", and main() returned 0. A caller reading the exit code -- a push gate, a cron, another tool -- could not distinguish \"checked ten items and they all agree\" from \"could check none of them\". The file's own header refuses exactly that shape one paragraph above the bug (\"a staleness checker that reports a clean plan it never opened is the defect it exists to prevent\"), and the probe already had an arm for the neighbouring case (a plan with zero item LINES is exit 2) which never reached this one. Found by running the tool against its real subject the day that subject was first committed; before that the tool had only ever been run against synthetic fixtures that all carried markers.",
+      "summary": "Both undecryptable-ciphertext diagnostics named the wrong secret. api/law-auth.js (attorney MFA/TOTP secret) said \"tampered, or SD_AUTH_SECRET was rotated\" and api/sc-eligibility.js (stored Stedi API key) said \"SD_AUTH_SECRET rotated?\". True when written; false since 509a04f6 split the encryption duty out on 2026-09-17, after which a `v2.` ciphertext is AES-keyed on sha256(SD_ENCRYPTION_KEY) and fails for a reason SD_AUTH_SECRET has nothing to do with. These are the first lines an incident responder reads -- docs/2026-09-24-sd-encryption-key-revoke.md routes them straight here -- so the cost lands entirely during an incident, on somebody already under time pressure, pointing at a variable whose rotation would not have caused what they are looking at. Fixed by deriving rather than by naming both candidates: each site reads the `v2.` prefix off the stored value, the same discriminator decryptSecret() branches on, and names the one key that wrote that ciphertext. No behaviour change -- same 500 MFA_UNAVAILABLE and 503 CREDENTIAL_UNREADABLE, same client payloads; only the server log differs.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "509a04f653f7",
+        "date": "2026-09-17",
+        "subject": "feat(auth): split the encryption duty, add key rotation, and scope signing per app",
+        "lag_days": 7
+      },
+      "citation_note": "2.3 is cited with a stretch, and the stretch is the reason for this note. Its shape fits exactly -- a stated fact carries a tense, and goes stale when the world it describes changes rather than when anybody edits it -- but 2.3 is written about STANDING DOCUMENTS, and these two facts live in a comment and a console.error inside shipped source. Nothing in Part 1 or Part 2 covers a fact asserted in code that is read only by a human, and only during an incident. Cited as arguable rather than recorded not-citable, because the family is right and only the scope is being widened: a source comment that states which env var is at fault is a standing document with a smaller audience and no review cadence at all.",
+      "contributing_factors": [
+        {
+          "factor": "THE KEY NAME WAS A LITERAL IN THE MESSAGE, not derived from anything. Both sites hardcoded 'SD_AUTH_SECRET' in a comment and a console.error at a point where the code already had the stored ciphertext in hand -- the one value that actually answers which key wrote it. A message stating a fact it does not read cannot stay true across a change to that fact.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Each site now reads the `v2.` prefix off the stored value -- the same discriminator decryptSecret() itself branches on -- and names the single key that wrote that ciphertext. The message is now derived from the same source as the behaviour, so the two cannot disagree again."
+        },
+        {
+          "factor": "THE 2026-09-17 SPLIT SWEPT BEHAVIOUR AND NOT PROSE. 509a04f6 changed which key decrypts and added the branch that decides, but the sweep stopped at code that ACTS on the key; the two call sites whose operator-facing text NAMED the key were left, and both still read as correct English about a system that had changed underneath them.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "No sweep tool was added here. The general form -- 'a message names an env var that a later change re-assigned' -- needs to know which key a code path actually uses, which is the hard half. The narrow form (an env-var literal inside a string or comment within a few lines of a decryptSecret() call) is cheap and buildable, and is recorded as a candidate rather than half-built inside a fix commit that declared two source files."
+        },
+        {
+          "factor": "NOTHING ASSERTS ON OPERATOR-FACING LOG TEXT. api/_lib/auth.test.js covers the format choice and key selection thoroughly -- v2 vs legacy, rotation, unset key -- so the split was well tested in exactly the dimension that went stale, and every one of those tests stayed green while both diagnostics pointed at the wrong variable. Log strings are read only by a human during an incident, which is the worst moment to discover they are wrong.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "Pinning these two strings in a test would freeze the wording, not the truth of it: a test asserting the message says SD_AUTH_SECRET is exactly what the old text would have passed. What would actually bite is asserting the NAMED KEY MATCHES THE STORED FORMAT, which is the derivation this fix introduced -- so the fix removes the class rather than the test covering it."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
+    },
+    {
+      "commit": "f9b7522c5948",
+      "date": "2026-09-24",
+      "subject": "fix(controls): the rebase control was guarded all along, and a register count was counting itself",
+      "files": [
+        "docs/CRITICALITY-TIERS.md",
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 52,
+      "lines_removed": 3,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "Two measurement defects, each of which made a checker report the wrong thing about itself. (1) tools/sabotage_control_check.py reported tests/rebase_resolve_merge_control.py as UNGUARDED while that control carried a guard STRONGER than any spelling the detector knew: it tells a STALE ANCHOR apart from a NO-OP MUTATION, reports both, and exits 1 on either. The control guards tools/sairn_rebase_resolve.py, which every clone on this machine uses to merge docs/tier-a-reviews.json. This is the SIXTH time this detector has under-credited a well-written control, which inverts the signal it exists to give -- a probe that did the harder thing scoring worse than one that did the easy thing. The fix is the detector, not the probe: adding a decorative assert to satisfy a regex would be the inversion itself. (2) docs/CRITICALITY-TIERS.md said \"N rows are marked CONFIDENTIALITY NOT YET INDIVIDUALLY READ\" and instructed the reader to re-derive the figure with an unanchored `grep -c`, so the prose that REPORTS the count matched too and the prescribed re-derivation returned one too many EVERY TIME ANYBODY RAN IT. A SELF-COUNTING NUMBER IS WORSE THAN A STALE ONE: a stale number is wrong until somebody checks, and this one was wrong including when they did, because the instruction to check was what reproduced the error. It had also drifted on the other axis -- it read nine against an actual seven -- so correcting only the command would have left a wrong figure behind a right method.",
       "rules": [
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "coding",
+      "injection_phase": "unknown",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
+        "unknown_reason": "Neither has an injection commit. The detector's vocabulary never covered the state-label spelling, and the grep command has counted its own sentence since the sentence was written."
       },
-      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
-      "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
-      "contributing_factors": [
-        {
-          "factor": "The could-not-tell third state was implemented for one shape (no plan file, or a plan with zero item lines) and not for the neighbouring one (items present, none carrying a verify marker). The printed output named UNVERIFIABLE as 'a THIRD state, not clean' while the exit code folded it into clean.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Zero checkable items out of a non-zero number of items is now exit 2 with the reason printed. The verdict is computed in one function used by both the human and the --json path, so the two cannot diverge on what counts as could-not-tell."
-        },
-        {
-          "factor": "A PARTIAL measurement had no stated meaning either. Making the tool strict enough to catch the bug would have made every real plan permanently could-not-tell, which is the opposite failure and just as useless.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Partial stays exit 0 when the checkable items agree, and now always prints how many were NOT measured so the zero cannot be read against the wrong denominator. Arm 7b is the paired control that refuses the over-strict implementation."
-        },
-        {
-          "factor": "The tool had never been run against its real subject, because the subject was chat's own planning document and was not repo-tracked. Every probe arm drove a synthetic plan, and every synthetic plan happened to carry verify markers -- so the branch where none does was never executed.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The plan is now committed and arm 1b reads it. The probe's closing note states plainly which branch the real plan exercises and that the rest are fixtures, so the limit is declared rather than discovered."
-        },
-        {
-          "factor": "The probe's arm 1 drove the absent-plan case by running the tool bare. That stopped being the absent case the moment the plan was committed, and TWO of its three assertions kept passing while testing something else -- exit 2 for an unrelated reason, and the path named because it was the path it OPENED rather than the path it looked for.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Absence is now driven against a copy of the tool in a throwaway tree with no plan in it, which reaches the real search-miss branch. The tool resolves its repo root from its own __file__, so this is the only way to reach that branch while the plan exists, and the arm says so."
-        }
-      ],
-      "recurrence_open": "The actions close the exit-code semantics of this one tool. They do NOT close the class: no check on this platform asks whether a tool's exit 0 means \"measured and clean\" or \"measured nothing\". The register itself, the tier-A gate and the generators each answer this differently and correctly, but by hand, and nothing enumerates the tools that do not. They also do not close the plan's own unverifiability -- the committed plan carries zero verify markers, so the tool will answer exit 2 COULD NOT TELL until somebody marks items in it, and nothing schedules that."
+      "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
+      "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
+      "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
     }
   ],
   "started": "2026-09-09",
