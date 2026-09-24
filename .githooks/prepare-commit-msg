@@ -1,0 +1,48 @@
+#!/bin/sh
+# .githooks/prepare-commit-msg
+#
+# ONE JOB: refuse any commit that stages a conflict marker.
+#
+# ── WHY HERE AND NOT IN pre-commit (measured 2026-09-24) ───────────────────
+# This check was first written into pre-commit, which is the conventional
+# place and is WRONG FOR THE ONE SHAPE IT WAS BUILT FOR. The defect being
+# guarded is `git add -A` while a rebase is mid-conflict, followed by
+# `git rebase --continue`. Tested in a throwaway repo:
+#
+#     git rebase --continue  fires  prepare-commit-msg, post-commit,
+#                                   post-rewrite
+#     git rebase --continue  does NOT fire  pre-commit, commit-msg
+#
+# So a pre-commit copy of this check watches the normal commit path and is
+# silent on the exact path that has put a marker on origin/main four times.
+# It would have reported a clone as protected while the protection could not
+# fire -- the shape PR §1.11 is about.
+#
+# prepare-commit-msg is not a second copy, it is a STRICTLY WIDER one, also
+# verified rather than read off the docs:
+#
+#     normal commit        pre-commit YES   prepare-commit-msg YES
+#     commit --amend       pre-commit YES   prepare-commit-msg YES
+#     commit --no-verify   pre-commit no    prepare-commit-msg YES
+#     cherry-pick --cont.  pre-commit YES   prepare-commit-msg YES
+#     rebase --continue    pre-commit no    prepare-commit-msg YES
+#
+# There is no case where pre-commit fires and this does not, which is why the
+# check lives in one hook rather than two. Two hooks running one tool is not
+# a second opinion -- it is the Ariane 5 redundancy the cross-domain notes
+# already charge for.
+#
+# `--no-verify` not bypassing it is deliberate and worth saying out loud: a
+# conflict marker is never something a person means to commit, so the escape
+# hatch for "skip the slow checks" should not also skip this one. `git commit`
+# aborts when this hook exits non-zero; inside a rebase the step stops with
+# "error: could not commit staged changes", the rebase stays in progress and
+# the resolution stays staged -- which is the cheap state to fix from.
+#
+# INSTALL (per clone, once): python tools/install_git_hooks.py
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+[ -f "$ROOT/tools/staged_conflict_marker_check.py" ] || exit 0
+
+command -v python >/dev/null 2>&1 && PY=python || PY=python3
+exec "$PY" "$ROOT/tools/staged_conflict_marker_check.py"

@@ -236,14 +236,34 @@ def main():
     #
     # Rewriting is safe and invisible to git status: the blob is already LF, so
     # with autocrlf=true a CRLF and an LF working file are both "unmodified".
+    # -- EVERY HOOK IN THE DIRECTORY, NOT ONLY pre-push (2026-09-24) -----
+    # core.hooksPath points git at .githooks/, so git runs EVERY hook it
+    # finds there -- pre-commit and post-rewrite as well. This block
+    # repaired ONE file, so a CRLF pre-commit or post-rewrite would be
+    # skipped silently while the clone still reported itself installed.
+    # That is the identical shape of the 2026-09-01 incident this whole
+    # file exists for, one hook over: reporting protected while the
+    # protection has never run.
+    #
+    # DISCOVERED, NOT LISTED. A hand-kept list of hook names goes stale the
+    # first time somebody adds a fourth -- which is exactly how this one
+    # went stale at three.
     try:
-        raw = open(hookfile, 'rb').read()
-        if b'\r\n' in raw:
-            open(hookfile, 'wb').write(raw.replace(b'\r\n', b'\n'))
-            print('REPAIRED: .githooks/pre-push had CRLF endings -- git was skipping it')
-            print('          silently. Rewritten with LF.')
+        for name in sorted(os.listdir(hookdir)):
+            path = os.path.join(hookdir, name)
+            if not os.path.isfile(path) or name.endswith('.sample'):
+                continue
+            raw = open(path, 'rb').read()
+            if b'\r\n' in raw:
+                open(path, 'wb').write(raw.replace(b'\r\n', b'\n'))
+                print('REPAIRED: .githooks/%s had CRLF endings -- git was '
+                      'skipping it silently. Rewritten with LF.' % name)
+            try:
+                os.chmod(path, os.stat(path).st_mode | 0o111)
+            except Exception:
+                pass
     except Exception as e:
-        print('WARNING: could not check .githooks/pre-push line endings: %s' % e)
+        print('WARNING: could not check .githooks/ line endings: %s' % e)
 
     # On Windows+Git-Bash the executable bit is not what decides whether a hook
     # runs, but set it where the filesystem supports it so the same checkout

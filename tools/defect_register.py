@@ -1577,6 +1577,97 @@ def reachable(sha, base):
     return git('merge-base', '--is-ancestor', sha, base) is not None
 
 
+def cmd_post_rewrite(stream=None):
+    """Re-seat from git's own old->new SHA map, read on stdin.
+
+    ── WHY A HOOK AND NOT A REMINDER (2026-09-24) ────────────────────────────
+    `--reseat` was correct and had to be remembered. Measured across one
+    session: FIVE manual runs, four of them discovered only when the push gate
+    refused -- "A RECORD FOR THIS SUBJECT ALREADY EXISTS, citing X. That sha is
+    not in this history -- a rebase or an --amend moved the commit." The gate
+    diagnosed it perfectly every time and could not fix it, so every contended
+    push became a round trip.
+
+    git already knows the answer. `post-rewrite` runs once after a rebase or an
+    `--amend` completes, and hands over exactly the mapping that was lost:
+
+        <old-sha> <new-sha>\\n
+
+    THAT IS STRICTLY BETTER THAN --reseat's SUBJECT MATCH, which is why this is
+    a separate mode rather than a wrapper. Subject matching refuses when two
+    records share a subject (correctly -- it cannot tell them apart). The
+    rewrite map has no such case: it is git's own record of which commit became
+    which, so a record whose sha appears in it has exactly one right answer.
+    Where the map is silent this writes nothing and leaves --reseat to it.
+
+    ── IT WRITES THE FILE AND DOES NOT STAGE OR COMMIT IT ────────────────────
+    Deliberate. A hook that commits on somebody's behalf is a hook that puts
+    their name on a change they did not read, and this one runs at the end of a
+    rebase when the next thing a person does is look at the tree. It prints one
+    line naming the file so the change is not a surprise.
+
+    ── AND IT NEVER FAILS THE REBASE ─────────────────────────────────────────
+    Returns 0 on every path including its own errors. A post-rewrite hook that
+    exits non-zero does not undo anything -- the rebase has already happened --
+    it just prints a scary failure after a successful operation. What it does
+    instead is SAY what went wrong, so the push gate still catches an unseated
+    record and nothing is hidden.
+    """
+    src = stream if stream is not None else sys.stdin
+    try:
+        raw = src.read()
+    except Exception as e:
+        print('post-rewrite: could not read the rewrite map (%s). Nothing was '
+              'changed; run --reseat by hand if a push is refused.' % e)
+        return 0
+    mapping = {}
+    for line in raw.split('\n'):
+        parts = line.split()
+        if len(parts) >= 2 and len(parts[0]) >= 7 and len(parts[1]) >= 7:
+            mapping[parts[0]] = parts[1]
+    if not mapping:
+        # Not an error. `post-rewrite` also fires for an amend that rewrote
+        # nothing this register knows about.
+        return 0
+    try:
+        reg = load()
+    except Exception as e:
+        print('post-rewrite: the defect register could not be read (%s). '
+              'Nothing was changed.' % e)
+        return 0
+    moved = []
+    for r in reg.get('records') or []:
+        cur = str(r.get('commit') or '')
+        if not cur or is_external(cur):
+            continue
+        for old, new in mapping.items():
+            # Records carry a 12-character sha; the map carries full ones. A
+            # prefix comparison in ONE direction only -- the record's sha must
+            # be a prefix of the old sha, never the other way round -- so a
+            # 12-char record cannot match a 7-char abbreviation of a different
+            # commit.
+            if old.startswith(cur):
+                if not new.startswith(cur):
+                    r['commit'] = new[:12]
+                    moved.append((cur, new[:12], (r.get('subject') or '')[:54]))
+                break
+    if not moved:
+        return 0
+    try:
+        save(reg)
+    except Exception as e:
+        print('post-rewrite: %d record(s) needed re-seating and the register '
+              'could not be written (%s). Run --reseat by hand.' % (len(moved), e))
+        return 0
+    print('defect register: re-seated %d record(s) from git\'s own rewrite map.'
+          % len(moved))
+    for old, new, subj in moved:
+        print('  %s -> %s  %s' % (old, new, subj))
+    print('  docs/defect-density-register.json is MODIFIED AND NOT STAGED -- a '
+          'hook does not commit on your behalf.')
+    return 0
+
+
 def cmd_reseat():
     """Write re-seated SHAs back. A separate command on purpose: `--check` is
     read-only, and a checker that edits the thing it checks is not a checker."""
@@ -1871,6 +1962,8 @@ def main(argv):
         return cmd_confirm(argv)
     if '--check' in argv:
         return cmd_check(argv)
+    if '--post-rewrite' in argv:
+        return cmd_post_rewrite()
     if '--reseat' in argv:
         return cmd_reseat()
     return cmd_report()

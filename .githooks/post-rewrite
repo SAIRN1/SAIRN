@@ -1,0 +1,36 @@
+#!/bin/sh
+# .githooks/post-rewrite
+#
+# ONE JOB: hand git's own old->new SHA map to the defect register, so a rebase
+# stops leaving records pointing at commits that no longer exist.
+#
+# WHY THIS EXISTS, MEASURED RATHER THAN ASSUMED. Across one session on
+# 2026-09-23/24 the push gate refused five separate pushes with the same
+# diagnosis -- "A RECORD FOR THIS SUBJECT ALREADY EXISTS, citing X. That sha is
+# not in this history -- a rebase or an --amend moved the commit." Every one
+# was correct, none could be fixed by the gate, and each cost a round trip to
+# run `defect_register.py --reseat` by hand. Four clones push into one branch;
+# a rebase is the normal case, not the exception.
+#
+# git already knows which commit became which. `post-rewrite` is fired once,
+# after a rebase or an `--amend` has completed, with exactly that mapping on
+# stdin. Using it is strictly better than the subject match `--reseat` falls
+# back to, which has to refuse when two records share a subject.
+#
+# IT NEVER FAILS THE REBASE. The tool returns 0 on every path including its own
+# errors: this hook runs AFTER the operation, so exiting non-zero would undo
+# nothing and only print a failure after a success. If it cannot re-seat, it
+# says so and the push gate still catches the unseated record.
+#
+# IT DOES NOT STAGE OR COMMIT. The register is left modified in the working
+# tree with one line naming it. A hook that commits on somebody's behalf puts
+# their name on a change they have not read.
+#
+# INSTALL (per clone, once): python tools/install_git_hooks.py
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+[ -f "$ROOT/tools/defect_register.py" ] || exit 0
+
+command -v python >/dev/null 2>&1 && PY=python || PY=python3
+"$PY" "$ROOT/tools/defect_register.py" --post-rewrite
+exit 0
