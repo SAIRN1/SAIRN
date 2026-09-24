@@ -218,6 +218,145 @@ def main():
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
+    # ══ THE REWORDING FAMILY (2026-09-24) ══════════════════════════════════
+    # Arms above control the FILE-transform family. These control the second
+    # family: a judgement-call verdict must survive a rewording that cannot
+    # change what the text means. Same both-directions discipline -- a real
+    # grader made fragile must be CAUGHT, and the shipped graders must not be.
+    print('\n--- the rewording family ---')
+
+    locked, lock_rows, lock_problems = M.prose_lock()
+    check('the rewording criteria LOCK on the shipped transforms',
+          (locked, len(lock_rows)), (True, len(M.PROSE_RELATIONS)))
+    if not locked:
+        print('       %s' % '; '.join(lock_problems)[:300])
+
+    # ── P2: THE LOCK MUST REFUSE A TRANSFORM THAT CHANGES MEANING ─────────
+    # This replays the real defect the lock caught on its own first run. An
+    # HTML entity is case-SENSITIVE: `&mdash;` is a character and `&MDASH;`
+    # is six wrong ones, so a naive upper() is not meaning-preserving and
+    # every violation it reported would be true about the transform and false
+    # about the grader. Without this arm the lock is a sentence in a
+    # docstring.
+    _real_case = M.w_case
+    try:
+        M.PROSE_RELATIONS = [(n, (lambda t: t.upper()) if n == 'case' else f, w)
+                             for n, f, w in M.PROSE_RELATIONS]
+        naive_locked, _rows, naive_problems = M.prose_lock()
+        check('a MEANING-CHANGING transform (naive upper() over HTML entities) '
+              'is REFUSED by the lock', naive_locked, False)
+        check('...and the refusal names the normalising fixture, so the reason '
+              'is readable',
+              any('normalising fixture DISAGREED' in p for p in naive_problems),
+              True)
+    finally:
+        M.PROSE_RELATIONS = [(n, _real_case if n == 'case' else f, w)
+                             for n, f, w in M.PROSE_RELATIONS]
+
+    # ── P3: A REAL GRADER MADE FRAGILE MUST BE CAUGHT ────────────────────
+    # The mutation is on `testability_gate.classify` itself, not on a fixture:
+    # its lower-casing is removed, which is exactly the defect the `case`
+    # relation exists to find -- criteria built from lower-case keyword lists
+    # that pass every hand-written fixture and fail the first row somebody
+    # typed in capitals.
+    _real_subjects = M.SUBJECTS
+    import testability_gate as _TG
+    _real_classify = _TG.classify
+
+    def _fragile(text):
+        """classify() with its lower-casing removed. Nothing else changed."""
+        t = _TG._norm(text)
+        low = ' ' + t + ' '                       # <-- the mutation: no .lower()
+        words = re.findall(r"[A-Za-z_][A-Za-z_'-]*", t)
+        import testability_criteria as _C
+        for h in _C.HEDGE:
+            if h in low:
+                return ('UNFALSIFIABLE', '')
+        for v in _C.VAGUE:
+            if re.search(r'(?<![A-Za-z])' + re.escape(v) + r'(?![A-Za-z])', low):
+                return ('VAGUE', '')
+        if len(words) < _C.MIN_WORDS:
+            return ('TOO-SHORT', '')
+        if not any(re.search(r'(?<![A-Za-z])' + re.escape(b) + r'(?![A-Za-z])', low)
+                   for b in _C.BEHAVIOUR):
+            return ('NO-CLAIM', '')
+        return ('PASS', '')
+
+    try:
+        M.SUBJECTS = [('testability_fragile', M._c_testability,
+                       lambda u: _fragile(u)[0], M._r_text, 'the mutant')]
+        rows, cnr, dists = M.measure_prose(per_subject=60)
+        bad = [r for r in rows if r['applicable'] and not r['holds']]
+        check('a REAL grader made case-sensitive is CAUGHT by the case relation',
+              bool([r for r in bad if r['relation'] == 'case']), True)
+        check('...and the mutant is not reported DEGENERATE, so the catch is '
+              'about the relation and not about a constant answer',
+              [d['degenerate'] for d in dists], [False])
+    finally:
+        M.SUBJECTS = _real_subjects
+
+    # ── P4: THE PAIRED POSITIVE ──────────────────────────────────────────
+    # Without this, P3 is satisfied by a family that reports everything as
+    # violated.
+    rows, cnr, dists = M.measure_prose(per_subject=60)
+    bad = [r for r in rows if r['applicable'] and not r['holds']]
+    check('the SHIPPED graders are NOT caught, so the family is not one that '
+          'flags everything', bad, [])
+    check('...and every declared subject actually produced comparisons',
+          sorted(set(r['subject'] for r in rows)),
+          sorted(n for n, _, _, _, _ in M.SUBJECTS))
+
+    # ── P5: A NO-OP TRANSFORM IS NOT A PASS ──────────────────────────────
+    # The failure this arm exists for: most transforms are no-ops on most
+    # units, and comparing a verdict with itself holds forever. Counting that
+    # as held is "a comparison that can never differ reports zero violations"
+    # one level down from the lock.
+    noop = [r for r in rows if not r['applicable']]
+    check('a transform that changed nothing is recorded NOT APPLICABLE rather '
+          'than held', (bool(noop), sorted(set(r['holds'] for r in noop))),
+          (True, [None]))
+
+    # ── P6: A CONSTANT GRADER IS A COULD-NOT-TELL, NOT A CLEAN RESULT ────
+    # The real instance: asserts_access_control() answers False on all 388
+    # evidence cells, and five relations over it held vacuously.
+    try:
+        M.SUBJECTS = [('always_false', M._c_testability, lambda u: False,
+                       M._r_text, 'a constant grader')]
+        rows6, cnr6, dists6 = M.measure_prose(per_subject=40)
+        check('a grader with ONE distinct verdict is reported DEGENERATE',
+              [d['degenerate'] for d in dists6], [True])
+        check('...and it lands in COULD NOT RUN, never in the held count',
+              (rows6, any('DEGENERATE' in c for c in cnr6)), ([], True))
+    finally:
+        M.SUBJECTS = _real_subjects
+
+    # ── P7: THE LABEL-COLLISION REGRESSION ───────────────────────────────
+    # The harness's own fifth confidently-wrong verdict, found today. The
+    # baseline verdicts were keyed by LABEL, and the testability corpus labels
+    # units by their matrix SECTION -- 450 requirements over about ten labels.
+    # Every unit but the last in each section was compared against a DIFFERENT
+    # requirement's verdict and the tool reported 1184 violations that did not
+    # exist. A corpus of two units that SHARE a label and disagree reproduces
+    # it exactly: keyed by label, one of them is compared to the other.
+    _collide = [('same-label', 'the endpoint returns 404 when the roster is empty'),
+                ('same-label', 'thing')]
+
+    def _collide_corpus():
+        return list(_collide)
+
+    try:
+        M.SUBJECTS = [('collision', _collide_corpus,
+                       lambda u: _real_classify(u)[0], M._r_text, 'two units, one label')]
+        rows7, cnr7, dists7 = M.measure_prose()
+        bad7 = [r for r in rows7 if r['applicable'] and not r['holds']]
+        check('two corpus units sharing a LABEL are each compared against '
+              'their OWN baseline', bad7, [])
+        check('...and the fixture really does have two different verdicts, so '
+              'the arm above is not passing on a corpus that cannot collide',
+              len(set(_real_classify(u)[0] for _l, u in _collide)) > 1, True)
+    finally:
+        M.SUBJECTS = _real_subjects
+
     print('')
     if FAILED:
         print('FAILED  metamorphic probe: %d failed' % len(FAILED))

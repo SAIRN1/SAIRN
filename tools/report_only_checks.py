@@ -823,7 +823,12 @@ REGISTRY = [
         'catches': "a checker whose ANSWER changes under a transform that cannot "
                    "legitimately change it -- a byte-identical copy at another "
                    "path, flipped line endings, trailing whitespace, inserted "
-                   "blank lines -- and a finding ERASED by duplicating the file",
+                   "blank lines -- and a finding ERASED by duplicating the file. "
+                   "AND, from 2026-09-24, a JUDGEMENT-CALL verdict that moves "
+                   "under a rewording that cannot change what the text means: "
+                   "markdown emphasis, an HTML entity swapped for the character "
+                   "it names, capitalisation, space runs, a final full stop -- "
+                   "over testability_gate.classify() and fmea_draft's detectors",
         'why_it_matters': 'almost every check here has NO ORACLE, so nobody can '
                           'test it by comparing against the right answer. A '
                           'control pair proves a checker CAN fire; this proves it '
