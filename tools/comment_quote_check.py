@@ -106,6 +106,52 @@ BIND_RE = re.compile(r"(?:const|let|var)\s+(\w+)\s*=\s*fs\.readFileSync\(")
 SEARCH_TMPL = "\\b%s\\.(?:indexOf|includes)\\(\\s*%s(.+?)%s"
 
 
+# A `/` opens a regex literal only where an EXPRESSION may begin. Anywhere else
+# it is division. Getting this wrong in the permissive direction is the
+# expensive one: a division read as a regex skips to the next `/` and swallows
+# whatever is between, which is how the string-span bug behaved. So the list is
+# the conservative one -- punctuation that cannot end an expression, plus the
+# keywords a regex really does follow -- and anything not on it is division.
+_REGEX_PRECEDERS = set('=(,:[!&|?{};+-*~%^<>')
+_REGEX_KEYWORDS = ('return', 'typeof', 'case', 'in', 'of', 'new', 'delete',
+                   'void', 'do', 'else', 'yield', 'await', 'instanceof')
+
+
+def _regex_end(text, i):
+    """Index just past the regex literal starting at `i`, or None if it is not
+    one. None means "treat this `/` as ordinary code and advance one char",
+    which is the answer for division and for anything ambiguous."""
+    j = i - 1
+    while j >= 0 and text[j] in ' \t':
+        j -= 1
+    if j >= 0 and text[j] not in _REGEX_PRECEDERS and text[j] != '\n':
+        k = j
+        while k >= 0 and (text[k].isalnum() or text[k] == '_'):
+            k -= 1
+        if text[k + 1:j + 1] not in _REGEX_KEYWORDS:
+            return None
+    # `//` and `/*` are handled by their own branches before this one is
+    # reached, so an empty regex is not a case that arrives here.
+    n, p, in_class = len(text), i + 1, False
+    while p < n and text[p] != '\n':
+        c = text[p]
+        if c == '\\':
+            p += 2
+            continue
+        if in_class:
+            if c == ']':
+                in_class = False
+        elif c == '[':
+            in_class = True
+        elif c == '/':
+            return p + 1
+        p += 1
+    # UNTERMINATED ON THIS LINE IS NOT A REGEX. A JS regex literal cannot span a
+    # newline, so running past one would be the runaway this function exists to
+    # stop.
+    return None
+
+
 def strip_comments(text, sql=False):
     """Blank out comment spans, preserving offsets so positions stay comparable.
 
@@ -116,10 +162,29 @@ def strip_comments(text, sql=False):
     comment. The count before and after the fix is in the commit message.
 
     It now skips quoted strings (single, double, backtick) before looking for a
-    comment opener, and treats `://` as a URL rather than a comment. It still
-    does not parse regex literals, so a `//` inside one can over-strip --
-    disclosed rather than hidden, and it biases toward reporting MORE code as
-    comment, which for a report-only checker is the safe direction.
+    comment opener, and treats `://` as a URL rather than a comment.
+
+    REGEX LITERALS ARE PARSED AS OF 2026-09-24, and the disclosure above them
+    was BACKWARDS about which direction the gap ran. It said an unparsed regex
+    "can over-strip ... biases toward reporting MORE code as comment, which is
+    the safe direction". Measured, it UNDER-strips, which is the unsafe one:
+
+        const Q = /"/;  // this comment is NOT blanked
+        const RX = /['"]/;  // nor is this one
+
+    A quote character inside a regex literal opened a bogus string span, so the
+    scanner skipped to the end of the line looking for a closing quote and
+    walked straight past a real `//` comment. The comment then reached every
+    caller as CODE. That is a checker reporting documentation as the thing it
+    is checking -- the same class as the `https://` defect one paragraph up,
+    one construct over.
+
+    A `/` is treated as a regex opener only when the previous significant
+    character or keyword is one a regex can legally follow, so ordinary
+    division (`a / b`, `(x)/2`) is left alone; and the literal must close on
+    the SAME LINE, because a JS regex literal cannot span one. Both bounds are
+    deliberate: a mis-detected regex would skip to the next `/` and under-strip
+    again, so the ambiguous cases advance one character instead.
     """
     out = list(text)
 
@@ -164,6 +229,11 @@ def strip_comments(text, sql=False):
             j = n if j < 0 else j
             blank(i, j, keep_newlines=False)
             i = j
+        elif text[i] == '/' and _regex_end(text, i) is not None:
+            # A REGEX LITERAL IS SKIPPED WHOLE, exactly like a string. Nothing
+            # inside it opens a comment, and -- the half that was actually
+            # broken -- nothing inside it opens a STRING either.
+            i = _regex_end(text, i)
         elif sql and text.startswith('--', i) and text[max(0, i - 1):i] in ('', chr(10), ' '):
             # SQL LINE COMMENT, AND ONLY IN A SQL FILE. This branch used to run
             # on every file type and it silently destroyed real markup: this

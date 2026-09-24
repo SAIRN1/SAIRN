@@ -71,6 +71,47 @@ check('1g  a // inside a string literal is not a comment',
 src = '<!-- xx -->code'
 check('1h  offsets are preserved', len(S(src)) == len(src), '%d == %d' % (len(S(src)), len(src)))
 
+# ── 1i-1q  REGEX LITERALS (2026-09-24). The tool was wrong in BOTH directions
+# and its own disclosure said only one of them, in the wrong direction: it
+# claimed an unparsed regex "can over-strip ... biases toward reporting MORE
+# code as comment, which is the safe direction". Measured across 753 tracked
+# js/html files, the real split was 2,178 characters over-stripped in 54 files
+# AND 328,210 characters UNDER-stripped in 27 -- real comments handed to every
+# caller as code, which is the unsafe direction it said it did not have.
+check('1i  a QUOTE inside a regex literal does not swallow the comment after it',
+      'gone' not in S('const Q = /"/;  // gone\n'),
+      'a double quote in a regex opened a bogus string span, and the scanner '
+      'walked past the real comment looking for a closing quote')
+check('1j  ...the single-quote form too',
+      'gone' not in S("const Q = /'/;  // gone\n"), '')
+check('1k  ...and a character class holding both',
+      'gone' not in S('const RX = /[\'"]/;  // gone\n'), '')
+check('1l  a BACKTICK inside a regex does not swallow the REST OF THE FILE. '
+      'api/_lib/style-profile.js:71 is the real instance -- one backtick in a '
+      'markdown-detection regex, and every comment below it reached callers '
+      'as code',
+      'gone' not in S('const RX = /`[^`]+`/m.test(s);\n// gone\nconst k = 1;\n')
+      and 'const k' in S('const RX = /`[^`]+`/m.test(s);\n// gone\nconst k = 1;\n'),
+      '')
+check('1m  an ESCAPED SLASH inside a regex is not read as a comment opener. '
+      '`replace(/\\//g, ...)` puts two slashes side by side and the whole rest '
+      'of the line was being blanked -- this is the over-strip half, and it is '
+      'in api/_lib/auth.js',
+      'kept' in S("s.replace(/\\//g, '_'); var kept = 1;"), '')
+check('1n  CONTROL: a // inside a regex is still not a comment',
+      'kept' in S('const r = /a\\/\\/b/; var kept = 1;'), '')
+check('1o  CONTROL: DIVISION is not mistaken for a regex. Reading `a / b` as a '
+      'literal would skip to the next slash and under-strip again, which is '
+      'the failure being fixed, reintroduced by the fix',
+      'gone' not in S('const a = b / c;  // gone\nconst d = e / f;  // also\n'),
+      '')
+check('1p  CONTROL: nor after a closing paren',
+      'gone' not in S('const a = (x) / 2;  // gone\n'), '')
+check('1q  CONTROL: an UNTERMINATED slash is not a regex -- a JS literal '
+      'cannot span a newline, so running past one would be the runaway this '
+      'guards against',
+      'gone' not in S('const a = 1 / 2\n// gone\n'), '')
+
 
 def run(tmp):
     """Run the tool with REPO pointed at a fixture directory."""
