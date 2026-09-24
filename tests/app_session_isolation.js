@@ -190,7 +190,15 @@ const POSTURE = {
   // and would have gone stale the same way.
   sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on every Tier A resource require admin or biller (SC_TIER_A_WRITE_GATED, derived from the pinned list in api/_resources/sairncode.js and driven by tests/sairncode_gates.js -- the count deliberately lives there and not here). This column measures READS only, which is why it still says NONE' },
   sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
-  sairnscape:      { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/scp-auth.js exists; scp_quotes and invoices are Tier A' },
+  // DOCUMENTED 2026-09-24 (Cody, from H2 seq 206): the licence-key-alone
+  // class rows existed for sdn, sf and sc and this app had none, so a reader
+  // sweeping that class by index rows would conclude SAIRNscape was clean.
+  // The index row records what makes this app DIFFERENT from the sf case:
+  // every precondition for gating the two Tier A rows already exists --
+  // scp-auth, roles, auth table, a real sign-in, and scpData() attaching
+  // X-SD-Auth on every call whenever a token exists (:2107), not behind a
+  // per-call flag.
+  sairnscape:      { gate: 'NONE', auth: true,  why: 'DOCUMENTED in the open-work index 2026-09-24: all 12 resources licence-key-alone, TWO Tier A (scp_quotes, invoices); every gating precondition already met' },
   // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in
   // 760a34a9 and was live-verified in 30a9f179, taking sairnlegacy from measured
   // NONE to measured ALL -- and this suite FAILED until this row was updated,
