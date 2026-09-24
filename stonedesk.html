@@ -4999,12 +4999,21 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
             <label>Customer Type</label>
             <div class="tier-pills" id="tier-pills">
               <div class="tier-pill active" onclick="setTier('retail',this)">Retail</div>
-              <div class="tier-pill" onclick="setTier('contractor',this)">Contractor</div>
-              <div class="tier-pill" onclick="setTier('builder',this)">Builder</div>
               <div class="tier-pill" onclick="setTier('designer',this)">Designer</div>
+              <div class="tier-pill" onclick="setTier('contractor',this)">Contractor</div>
+              <div class="tier-pill" onclick="setTier('trade',this)">Trade</div>
+              <div class="tier-pill" onclick="setTier('builder',this)">Builder</div>
+              <div class="tier-pill" onclick="setTier('distributor',this)">Distributor</div>
             </div>
           </div>
           <div class="note-box" id="tier-note">Walk-in or direct homeowner. Full retail pricing applies.</div>
+          <div class="q-field">
+            <label>Sales Agent <span style="font-weight:400;color:var(--muted)">(for commission)</span></label>
+            <select id="qb-agent" onchange="calc()"><option value="">— none —</option></select>
+          </div>
+          <!-- Shown only once a total exists. A commission line on an empty
+               quote is a number with nothing behind it. -->
+          <div class="note-box" id="qb-commission-note" style="display:none"></div>
         </div>
 
         <!-- Step 2: Material -->
@@ -13352,11 +13361,61 @@ function adj(k, d) {
 
 // == TIER ======================================================
 function setTier(t, el) {
+  // An unknown key would set currentTier to something TIERS cannot resolve,
+  // and every later read of tier.mult would throw or be defended with a
+  // `|| 1.0` that silently reprices a distributor quote at full retail.
+  // Refused here, where it is one line, rather than guarded in six places.
+  if (!TIERS[t]) { console.warn('setTier: unknown tier "' + t + '" ignored'); return; }
   currentTier = t;
   document.querySelectorAll('.tier-pill').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
   document.getElementById('tier-note').textContent = TIERS[t].note;
   calc();
+}
+
+// Fills a <select> with every pricing tier, in the order TIERS declares them.
+// Exists so there is ONE list: the AI-quote panel carried a hardcoded copy of
+// four tiers and would have silently offered no way to price the two added
+// on 2026-09-24.
+function sdFillTierSelect(id, selected){
+  var sel=document.getElementById(id);
+  if(!sel) return;
+  var want=(selected&&TIERS[selected])?selected:(TIERS[sel.value]?sel.value:'retail');
+  sel.innerHTML=Object.keys(TIERS).map(function(k){
+    var t=TIERS[k];
+    var off=Math.round((1-t.mult)*100);
+    return '<option value="'+escHtml(k)+'"'+(k===want?' selected':'')+'>'
+      +escHtml(t.label)+(off>0?(' ('+off+'% off retail)'):' (standard pricing)')+'</option>';
+  }).join('');
+  sel.value=want;
+}
+document.addEventListener('DOMContentLoaded', function(){
+  sdFillTierSelect('aiq-tier','retail');
+  if(typeof sdRefreshAgentPicker==='function') sdRefreshAgentPicker();
+});
+
+// Populates the sales-agent picker from the real employee roster. Sales roles
+// only: a commission line naming an installer is a data-entry mistake the app
+// should not make available.
+//
+// IT DOES NOT INVENT A ROSTER. With no employees recorded the picker stays at
+// "— none —" and the commission line never appears, which is the honest state
+// — a shop that has not entered its people has no agents, not a default one.
+function sdRefreshAgentPicker() {
+  var sel = document.getElementById('qb-agent');
+  if (!sel) return;
+  var keep = sel.value;
+  var rows = [];
+  try { rows = JSON.parse(localStorage.getItem('sd_employees') || '[]') || []; } catch (e) { rows = []; }
+  var agents = rows.filter(function (x) {
+    return x && x.id && /sales|design|account/i.test(String(x.role || ''));
+  });
+  sel.innerHTML = '<option value="">— none —</option>' + agents.map(function (a) {
+    return '<option value="' + escHtml(a.id) + '">' + escHtml(a.name || a.id) + '</option>';
+  }).join('');
+  // A removed employee must not keep a quote's commission pointed at them
+  // invisibly; the picker falls back to none and calc() drops the line.
+  sel.value = agents.some(function (a) { return a.id === keep; }) ? keep : '';
 }
 
 // == DRAW → QUOTE BUILDER IMPORT ==============================
@@ -13591,7 +13650,39 @@ function calc() {
   const impliedSF = totalLF * (proj.depthIn / 12);
   const impliedPPSF = total / impliedSF;
 
-  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, chamferCost, barCost, matFabSubtotal, finishCost, edgeCost, tierAdj };
+  // COMMISSION IS DERIVED, NEVER TYPED IN. It is a function of the tier and
+  // the agent, both of which are already on the quote, so there is nothing for
+  // a rep to enter wrongly and nothing to reconcile later.
+  const agentEl = document.getElementById('qb-agent');
+  const agentId = agentEl ? agentEl.value : '';
+  const comm = sdCommissionFor(currentTier, agentId);
+  const commissionCents = agentId ? sdCommissionCents(total, comm.rate) : null;
+
+  lastCalc = { mat, proj, tier, total, totalLF, impliedSF, impliedPPSF, bsRate, edgeRate, sinkFee, thick, finUpch, removal, delivery, waterfallCost, sinkCost, cookCost, holeCost, outletCost, bsCost, bktCost, dwCost, seamCost, chamferCost, barCost, matFabSubtotal, finishCost, edgeCost, tierAdj,
+               tierKey: currentTier, agentId: agentId || null,
+               commissionRate: agentId ? comm.rate : null,
+               commissionCents: commissionCents,
+               commissionSource: agentId ? comm.source : null };
+
+  // The rate AND where it came from. "3.5%" with no source is a number a rep
+  // cannot check and will not trust; an unusable override is called out rather
+  // than quietly replaced.
+  const commEl = document.getElementById('qb-commission-note');
+  if (commEl) {
+    if (!agentId) {
+      commEl.style.display = 'none';
+      commEl.textContent = '';
+    } else {
+      commEl.style.display = '';
+      const agentName = (agentEl.selectedOptions && agentEl.selectedOptions[0])
+        ? agentEl.selectedOptions[0].textContent : agentId;
+      commEl.innerHTML = (comm.warn ? '&#9888; ' : '')
+        + escHtml(agentName) + ' &mdash; commission '
+        + (commissionCents === null ? '<b>unavailable</b>' : '<b>' + fmt(sdCentsToDollars(commissionCents)) + '</b> ('
+            + (Math.round(comm.rate * 10000) / 100) + '% of ' + fmt(total) + ')')
+        + ' <span style="color:var(--muted)">&middot; ' + escHtml(comm.source) + '</span>';
+    }
+  }
 
   document.getElementById('total-price').textContent = fmt(total);
 
@@ -13650,6 +13741,18 @@ async function saveQuote() {
     material: lastCalc.mat.name,
     total: lastCalc.total,
     date: new Date().toLocaleDateString(),
+    // SNAPSHOTTED, NOT POINTED AT (2026-09-24). The tier key, the rate and the
+    // dollar amount are all written onto the quote rather than recomputed from
+    // TIERS when it is read back. A rate that is looked up later changes every
+    // historical quote the day somebody edits the tier table -- which is how a
+    // commission report stops matching what a rep was actually told, months
+    // after the fact and with nothing to compare against.
+    tierKey: lastCalc.tierKey || currentTier,
+    tierLabel: (TIERS[lastCalc.tierKey || currentTier] || {}).label || null,
+    agentId: lastCalc.agentId || null,
+    commissionRate: (lastCalc.agentId ? lastCalc.commissionRate : null),
+    commissionCents: (lastCalc.agentId ? lastCalc.commissionCents : null),
+    commissionSource: (lastCalc.agentId ? lastCalc.commissionSource : null),
   };
   if (typeof qbReservedSlabId !== 'undefined' && qbReservedSlabId) {
     // RESERVE FIRST, AND STOP IF IT IS REFUSED (2026-09-02).
@@ -13741,8 +13844,18 @@ function renderHistory() {
   // a deal is dead, and until now there was nowhere to act on that: the only
   // way a reservation ended was by lapsing. The release button is here because
   // this is where the decision is actually made.
+  // The roster can change between quotes; the picker is refreshed wherever the
+  // quote panel is already being redrawn rather than on a timer.
+  if (typeof sdRefreshAgentPicker === 'function') { try { sdRefreshAgentPicker(); } catch(e){} }
   el.innerHTML = quoteHistory.map(function(q){
     var hold = '';
+    // Commission is shown from the SNAPSHOT on the quote, never recomputed --
+    // see the comment where it is written. An older quote with no snapshot
+    // shows nothing rather than a number invented from today's rates.
+    var commCell = (q.agentId && typeof q.commissionCents === 'number')
+      ? '<span style="font-size:11px;color:var(--muted)">' + escHtml(q.tierLabel || q.tierKey || '')
+        + ' &middot; comm ' + fmt(sdCentsToDollars(q.commissionCents)) + '</span>'
+      : '';
     if (q.reservedSlabId && typeof sdSlabs !== 'undefined') {
       var hs = sdSlabs.find(function(x){ return x.id === q.reservedSlabId; });
       // Only offer a release for a slab THIS quote still holds. Offering it for
@@ -13767,6 +13880,7 @@ function renderHistory() {
       '<span style="color:var(--muted);font-size:11px">' + q.project + '</span>' +
       '<span style="font-weight:600">' + fmt(q.total) + '</span>' +
       '<span style="font-size:11px;color:var(--muted)">' + q.date + '</span>' +
+      (commCell ? '<span>' + commCell + '</span>' : '') +
       (hold ? '<span>' + hold + '</span>' : '') +
       '</div>';
   }).join('');
@@ -13906,13 +14020,86 @@ var PROJECTS = {
   outdoor:        { name: 'Outdoor countertop',                  depthIn: 25.5, comp: 1.10, min: 1200 },
   custom:         { name: 'Custom / other',                      depthIn: 25.5, comp: 1.10, min: 1000 }
 };
+// ── B2B TIERS AND PER-AGENT COMMISSION (2026-09-24) ──────────────────────
+// `trade` and `distributor` are ADDED; the four that were here are KEPT, and
+// that is not indecision. `currentTier` is stored on every saved quote as a
+// bare string key, and `TIERS[currentTier]` on a key that no longer exists is
+// `undefined` -- which reaches `tier.mult` and throws, or worse, gets defended
+// against with a `|| 1.0` that silently reprices a builder's quote at full
+// retail. Renaming contractor/builder/designer into "trade" would do that to
+// every quote already on disk. They are a trade tier; this adds the LEVELS a
+// distributor relationship needs, above and below them.
+//
+// `commission` IS ON THE TIER, because that is the fact that actually varies:
+// a distributor deal at 8 points of margin cannot carry the same commission as
+// a retail kitchen, and paying one rate across both is how a rep's incentive
+// stops matching the shop's. An agent may override it -- see SD_AGENT_COMM --
+// but the tier is the default and the default is written down.
 var TIERS = {
-  retail:     { label: 'Retail',     mult: 1.00, note: 'Standard retail customer pricing.' },
-  contractor: { label: 'Contractor', mult: 0.90, note: '10% contractor discount applied.' },
-  builder:    { label: 'Builder',    mult: 0.85, note: '15% volume builder discount applied.' },
-  designer:   { label: 'Designer',   mult: 0.92, note: '8% designer trade discount applied.' }
+  retail:      { label: 'Retail',      mult: 1.00, commission: 0.050, note: 'Standard retail customer pricing. 5% commission.' },
+  designer:    { label: 'Designer',    mult: 0.92, commission: 0.040, note: '8% designer trade discount applied. 4% commission.' },
+  contractor:  { label: 'Contractor',  mult: 0.90, commission: 0.035, note: '10% contractor discount applied. 3.5% commission.' },
+  trade:       { label: 'Trade',       mult: 0.88, commission: 0.030, note: 'Trade account — 12% off retail. 3% commission.' },
+  builder:     { label: 'Builder',     mult: 0.85, commission: 0.025, note: '15% volume builder discount applied. 2.5% commission.' },
+  distributor: { label: 'Distributor', mult: 0.78, commission: 0.015, note: 'Distributor / wholesale — 22% off retail, thinnest margin. 1.5% commission.' }
 };
 var currentTier = 'retail';
+
+// ── PER-AGENT COMMISSION OVERRIDES ───────────────────────────────────────
+// { <employeeId>: <rate as a decimal> }. Absent means "use the tier's rate",
+// which is why this is a sparse map rather than a row per employee: a table
+// that must list everybody goes stale the day somebody is hired, and a missing
+// row would then read as 0% rather than as "the normal rate".
+function sdAgentCommissionRates(){
+  try{ var v=JSON.parse(localStorage.getItem('sd_agent_commission')||'{}');
+       return (v && typeof v==='object' && !Array.isArray(v)) ? v : {}; }
+  catch(e){ return {}; }
+}
+// The rate that applies, and WHY -- both returned, because "3.5%" with no
+// source is a number a rep cannot check and will not trust. Never returns a
+// silent 0: a rate that cannot be resolved falls back to the tier's, and an
+// unknown TIER is reported rather than defaulted, because defaulting there
+// would pay retail commission on a distributor deal.
+function sdCommissionFor(tierKey, agentId){
+  var t=TIERS[tierKey];
+  if(!t) return { rate:null, source:'unknown tier "'+String(tierKey)+'"', ok:false };
+  var over=sdAgentCommissionRates()[String(agentId||'')];
+  if(agentId && over!==undefined && over!==null){
+    // Validated, not coerced. Number('') is 0, and a 0% commission that came
+    // from an empty settings field looks exactly like a deliberate one.
+    var n=(typeof over==='number')?over:((typeof over==='string'&&over.trim()!=='')?Number(over):NaN);
+    if(isFinite(n) && n>=0 && n<=0.5){
+      return { rate:n, source:'agent override', ok:true };
+    }
+    return { rate:t.commission, source:'agent override was unusable ('+JSON.stringify(over)+') — tier rate used', ok:true, warn:true };
+  }
+  return { rate:t.commission, source:t.label+' tier rate', ok:true };
+}
+// ── COMMISSION IS CARRIED IN INTEGER CENTS, NOT DOLLARS ──────────────────
+// Returns a whole number of CENTS, or null when the rate could not be
+// resolved. Not dollars, and the difference is the whole point: `12964/100`
+// is 129.63999999999999 in IEEE754, so a "dollars" return value is a float
+// that cannot represent the amount it claims to be. This is money somebody is
+// paid; it stays an integer until the moment it is rendered.
+//
+// Found by this function's own test arm on 2026-09-24, which asserted
+// `Math.round(amt*100) === amt*100` and failed on a perfectly ordinary
+// 3% commission. The first version returned dollars and looked fine.
+//
+// null, never 0: a rate that could not be resolved is "unavailable", and a
+// commission of zero dollars is a different and wrong claim.
+function sdCommissionCents(totalDollars, rate){
+  if(rate===null||rate===undefined||!isFinite(rate)) return null;
+  var cents=Math.round(Number(totalDollars||0)*100);
+  if(!isFinite(cents)) return null;
+  return Math.round(cents*rate);
+}
+// The only place cents become a float, and it is immediately handed to a
+// formatter. Kept as one named function so there is a single spot to look at
+// when somebody asks where the rounding happened.
+function sdCentsToDollars(cents){
+  return (cents===null||cents===undefined) ? null : cents/100;
+}
 var COUNTERS = { wf: 0, sink: 0, cook: 0, hole: 0, outlet: 0, bkt: 0, dw: 0 };
 // Seam polished-edge cost, synced from the Drawing Tool's dcSeams via dcSyncLiveToQuoteEngine()
 // (2026-08-12 fix): calcDrawing() already computed this dollar figure correctly for its own
@@ -32402,12 +32589,12 @@ document.addEventListener('DOMContentLoaded', function() {
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Pricing Tier</label>
-          <select id="aiq-tier" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px">
-            <option value="retail" selected>Retail (standard pricing)</option>
-            <option value="contractor">Contractor (10% discount)</option>
-            <option value="builder">Builder (15% volume discount)</option>
-            <option value="designer">Designer (8% trade discount)</option>
-          </select>
+          <!-- FILLED FROM `TIERS` BY sdFillTierSelect(), not typed out here.
+               This list was a hardcoded copy of four tiers and went stale the
+               moment two more were added: the AI-quote path silently could not
+               price a Trade or Distributor job, and nothing anywhere said so.
+               One list, in the pricing model, where the rates already live. -->
+          <select id="aiq-tier" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px"></select>
         </div>
         <div>
           <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Margin Target</label>
