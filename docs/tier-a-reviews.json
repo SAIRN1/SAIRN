@@ -3115,12 +3115,12 @@
         "sairnvet.html"
       ],
       "what": "sairnvet.html in-app notice + five comment corrections: the SOAP authorship card claimed per-employee sign-in does not exist -- false since 2026-09-13. Card rewritten to the narrower true claim (role-not-person, attestation-not-signature); five stale comments marked superseded in place. WHAT A REVIEWER SHOULD ATTACK: whether the new card text overstates the OTHER way (it now says the role is server-verified -- confirm whoami really feeds the badge on every path including session restore), and whether any of the five comment corrections changed code behaviour by accident (they must be comment-only).",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "hank",
       "owner_assigned_at": "2026-09-24T20:02:13Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "hank",
+      "reviewed_at": "2026-09-24T21:57:16Z",
+      "verdict": "REVIEWED AGAINST BOTH NAMED ATTACKS, mechanically where possible.\n\n(1) COMMENT-ONLY, VERIFIED BY CLASSIFICATION RATHER THAN BY READING: all 81 changed lines in 2e638d60 were machine-classified (JS line comments, HTML comments, and prose inside the notice card); zero non-comment/non-prose candidates survived the filter. The three sv suites that read this file by line range all stay green. No code behaviour changed.\n\n(2) THE OTHER-WAY OVERSTATEMENT, TRACED THROUGH EVERY PATH: the card's \"verified by the server\" claim holds, with one window worth stating precisely. The role key (SV_ROLE_KEY) has exactly TWO writers -- the login result (svStoreSession:2843) and whoami's server row (svWhoamiCheck:2827) -- and no dropdown writer survives anywhere. On SESSION RESTORE, svRestoreSession enters with the STORED role first and fires whoami non-blocking, so for one round-trip the badge shows the LAST server-verified value rather than a freshly verified one; whoami then overwrites the badge and role key from the server row and signs out on 401. That is the deliberate design (the blocking version made a slow network look like a broken app; the missing version is the 2026-08-18 revoked-account lesson, cited at the function), and \"verified by the server\" is accurate about the value's PROVENANCE on every path -- stale-by-one-round-trip in freshness, never self-selected in origin. The card does not need to change.\n\nONE OBSERVATION BELOW THE CARD'S ALTITUDE: the badge's static HTML default is \"Doctor\" (sairnvet.html:271), so any pre-login render of the sidebar would display an unverified role label. Every entry path overwrites it (svEnterApp:3027, whoami:2828) and the app gates entry, so it is not live today -- but it is the one place a role string exists that no server ever produced, and worth a line if that sidebar is ever shown pre-auth.\n\nVERDICT: sound. An in-app notice that understates the app's controls corrected to the narrower true claim, comment-only as promised, and the truth of the new claim confirmed at every badge and role-key writer."
     },
     {
       "author_session": "cc",

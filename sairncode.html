@@ -8345,7 +8345,7 @@ How to answer:
             kx:         'CMS Transmittal R13437CP, 2026 Annual Update of Per-Beneficiary Threshold Amounts — CY2026 KX threshold is $2,480 for PT and SLP COMBINED, and a separate $2,480 for OT; targeted medical review threshold is $3,000',
             cq:         'CMS MM12397 / CY2020 PFS final rule — the CQ modifier is required when a PTA furnishes more than 10% of a service; those services are paid at 85% of the otherwise applicable fee schedule amount (a 15% reduction of the FULL payment, not of the practice-expense component), effective 1 Jan 2022',
             gp:         'CMS Medicare Claims Processing Manual Ch. 5 (Part B Outpatient Rehabilitation and CORF/OPT Services), HCPCS coding requirement — every ALWAYS-THERAPY service carries the modifier for the plan of care it was furnished under: GP physical therapy, GO occupational therapy, GN speech-language pathology. A therapy line submitted without one is returned as unprocessable, so this is the modifier that stops a claim being adjudicated at all rather than one that changes what it pays. THE CHAPTER IS CITED, NOT A SUBSECTION: the rule is long-standing and unambiguous, the exact section numbering was NOT re-verified against CMS in this session, and a precise-looking citation nobody checked is worse than an honest one.',
-            gp_rtm:     'CY2022 Medicare Physician Fee Schedule final rule (86 FR 64996) — CMS designated the RTM code family SOMETIMES THERAPY: when an RTM service is furnished under a therapy plan of care it must carry the corresponding discipline modifier (GP physical therapy, GO occupational, GN speech-language), the same requirement always-therapy services carry flatly. STATED AT THE CONFIDENCE IT WAS VERIFIED AT: this rule is cited from reviewer knowledge of the CY2022 final rule and was NOT re-verified against a primary source in the session that added it — which is why the finding below is a WARN and not a block. Pin the Federal Register cite before ever escalating it.',
+            gp_rtm:     'CY2022 Medicare Physician Fee Schedule final rule (86 FR 64996) — CMS designated five RTM codes (98975, 98976, 98977, 98980, 98981) SOMETIMES THERAPY, and the CY2026 PFS final rule added 98979, 98984, 98985. PINNED 2026-09-24 against a primary CMS source: MLN Matters MM14250 (CR 14250, transmittal R13431CP), which states verbatim that in the CY 2022 PFS final rule CMS designated the five, and that “any of these RTM services rendered by therapists are always provided under a therapy plan of care and require a GP, GO, or GN modifier.” STILL A WARN AND NOT A BLOCK, for a reason that survives the pinning: the modifier requirement attaches to services RENDERED BY THERAPISTS (physicians and NPPs carry a therapy plan of care only for the musculoskeletal device codes), and this panel cannot see who rendered a line — so a missing GP is a question to ask, not a claim to refuse.',
             mppr:       'APTA "Multiple Procedure Payment Reduction and the Physician Fee Schedule" — MPPR applies to the PRACTICE EXPENSE component of always-therapy services; the service with the highest PE RVU is paid at 100% and each remaining service at 50%, since 1 Apr 2013',
             rtm_2026:   'ASHA "CPT and HCPCS Code Changes for 2026" — the RTM set was expanded with 98979 (treatment management, first 10 minutes, at least one real-time interactive communication), 98984 (respiratory device supply 2-15 days), 98985 (musculoskeletal 2-15 days) and 98986 (cognitive behavioral therapy 2-15 days); the pre-existing device-supply codes now specify 16-30 days'
         };
@@ -8361,6 +8361,18 @@ How to answer:
 
         var SC_RTM_SHORT_WINDOW = { '98984': 'respiratory', '98985': 'musculoskeletal', '98986': 'cognitive behavioral therapy' };
         var SC_RTM_LONG_WINDOW  = { '98976': 'respiratory', '98977': 'musculoskeletal', '98978': 'cognitive behavioral therapy' };
+        // THE SOMETIMES-THERAPY FAMILY IS ITS OWN LIST (2026-09-24), per CMS
+        // MLN MM14250: the five CY2022 designations plus the three CY2026
+        // additions. It is DELIBERATELY NOT the window maps above, which were
+        // built for a different rule and disagree with CMS in BOTH
+        // directions: 98978/98986 (the CBT device codes) sit in the window
+        // maps and are NOT on CMS's sometimes-therapy list -- warning on them
+        // would attribute a designation CMS never made -- while 98975 (setup)
+        // and 98979/98980/98981 (treatment management) carry the designation
+        // and have no day window at all. Found by the review that pinned the
+        // citation; the boundary question was the author's own attack point 2.
+        var SC_RTM_SOMETIMES_THERAPY = { '98975': true, '98976': true, '98977': true,
+            '98979': true, '98980': true, '98981': true, '98984': true, '98985': true };
 
         function scPtFinding(sev, rule, detail, srcKey){
             return { severity: sev, rule: rule, detail: detail, source: SC_PT_SOURCES[srcKey] || '' };
@@ -8529,15 +8541,15 @@ How to answer:
             // that carried an RTM code.
             var rtmForGp = (input.rtm_codes || []).map(function(c){ return String(c).trim().toUpperCase(); });
             rtmForGp.forEach(function(c){
-                if (!SC_RTM_SHORT_WINDOW[c] && !SC_RTM_LONG_WINDOW[c]) return;
+                if (!SC_RTM_SOMETIMES_THERAPY[c]) return;
                 if (gpApplied.indexOf(c) !== -1) return;
                 findings.push(scPtFinding('warn', 'RTM code ' + c + ' has no GP recorded',
-                    'CMS designated the RTM family SOMETIMES THERAPY (CY2022 PFS final rule): '
-                    + 'furnished under a physical-therapy plan of care -- which is the whole '
-                    + 'context of this panel -- an RTM line carries GP like any always-therapy service. '
-                    + 'Verify against the current rule before submitting without it; this is a '
-                    + 'warning rather than a block because the rule was cited from review '
-                    + 'knowledge, not re-verified against a primary source.', 'gp_rtm'));
+                    'CMS designated this RTM code SOMETIMES THERAPY (CY2022 PFS final rule; '
+                    + 'pinned against CMS MLN MM14250): rendered by a therapist it is always '
+                    + 'under a therapy plan of care -- the whole context of this panel -- and '
+                    + 'requires the discipline modifier. A warning rather than a block because '
+                    + 'the requirement attaches to therapist-rendered lines and this panel '
+                    + 'cannot see who rendered one.', 'gp_rtm'));
             });
 
             // --- MPPR ranking, on the PE component ---

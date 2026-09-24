@@ -90,7 +90,8 @@ console.log('SAIRNcode PT: the GP discipline modifier\n');
 const ctx = {};
 vm.createContext(ctx);
 for (const v of ['KX_THRESHOLD_2026', 'KX_MR_THRESHOLD_2026',
-                 'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW']) {
+                 'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW',
+                 'SC_RTM_SOMETIMES_THERAPY']) {
   vm.runInContext(grabVar(v), ctx);
 }
 vm.runInContext(grab('var SC_PT_SOURCES = '), ctx);
@@ -238,9 +239,21 @@ section('6b. an RTM line with no GP now WARNS -- and never blocks');
   ok(/CY2022/.test(w[0].source || ''),
      'the finding carries its CY2022 PFS source, so the confidence level '
      + 'travels with the warning');
-  ok(/not re-verified|NOT re-verified|review knowledge/i.test(w[0].source || ''),
-     'and the source SAYS the cite is unpinned -- a precise-looking citation '
-     + 'nobody checked is worse than an honest one');
+  // FLIPPED 2026-09-24, by the review the source text itself asked for. The
+  // arm used to assert the source SAYS the cite is unpinned; the discharge
+  // reached the primary source (CMS MLN Matters MM14250 / CR 14250, which
+  // quotes the CY2022 designation and the GP/GO/GN requirement verbatim) and
+  // pinned it. The confidence still travels with the finding -- it is just a
+  // different confidence now, and the source must say WHICH document pinned
+  // it so the next reader can re-verify rather than take a naked citation.
+  ok(/PINNED/.test(w[0].source || '') && /MM14250/.test(w[0].source || ''),
+     'the source names the primary CMS document that pinned the cite '
+     + '(MM14250) -- a precise-looking citation nobody can re-check is worse '
+     + 'than an honest unpinned one');
+  ok(/WARN AND NOT A BLOCK|warning/i.test(w[0].source || ''),
+     'and it still states why warn survives the pinning: the requirement '
+     + 'attaches to therapist-RENDERED lines, and the panel cannot see who '
+     + 'rendered one');
 
   // GP recorded on the RTM code itself silences the warn.
   const r2 = run({ timed_minutes_by_code: {}, gp_applied_codes: ['98985'],
@@ -254,7 +267,31 @@ section('6b. an RTM line with no GP now WARNS -- and never blocks');
   const r3 = run({ timed_minutes_by_code: {}, gp_applied_codes: [],
                    rtm_codes: ['12345'], rtm_monitoring_days: 10 });
   ok(r3.findings.filter((f) => /RTM code .* has no GP/.test(f.rule)).length === 0,
-     'a code outside SC_RTM_SHORT/LONG_WINDOW gets no RTM-GP warn');
+     'a code outside the sometimes-therapy family gets no RTM-GP warn');
+
+  // ── THE FAMILY BOUNDARY IS CMS'S LIST, NOT THE WINDOW MAPS (2026-09-24) ──
+  // The author's own attack point 2 asked whether the window maps -- built
+  // for the day-window rule -- were the right boundary. Pinning the citation
+  // answered it: they disagree with CMS in BOTH directions. MM14250's family
+  // is 98975/76/77/79/80/81/84/85; the window maps ALSO hold 98978/98986
+  // (the CBT device codes, which CMS has not designated sometimes therapy)
+  // and MISS 98975 and the treatment-management codes (which carry the
+  // designation and have no day window). One arm per direction:
+  const r4 = run({ timed_minutes_by_code: {}, gp_applied_codes: [],
+                   rtm_codes: ['98975'], rtm_monitoring_days: null });
+  ok(r4.findings.filter((f) => /RTM code 98975 has no GP/.test(f.rule)).length === 1,
+     '98975 (setup -- designated CY2022, in NO window map) now warns: the '
+     + 'under-coverage direction');
+  const r5 = run({ timed_minutes_by_code: {}, gp_applied_codes: [],
+                   rtm_codes: ['98986'], rtm_monitoring_days: 10 });
+  ok(r5.findings.filter((f) => /RTM code 98986 has no GP/.test(f.rule)).length === 0,
+     '98986 (CBT -- in a window map, NOT CMS-designated) gets no GP warn: '
+     + 'warning on it would attribute a designation CMS never made');
+  ok(!!ctx.SC_RTM_SOMETIMES_THERAPY && ctx.SC_RTM_SOMETIMES_THERAPY['98980'] === true
+     && ctx.SC_RTM_SOMETIMES_THERAPY['98986'] === undefined,
+     'the family is its own list (SC_RTM_SOMETIMES_THERAPY), not a reuse of '
+     + 'the window maps -- the boundary and the day-window rule can now move '
+     + 'independently, which is how CMS actually moves them');
 
   // NEGATIVE CONTROL: the warn is capable of being broken. Escalate it to a
   // block in a mutated copy and the never-blocks arm above must be the one
@@ -267,7 +304,8 @@ section('6b. an RTM line with no GP now WARNS -- and never blocks');
     const c2 = {};
     vm.createContext(c2);
     for (const v of ['KX_THRESHOLD_2026', 'KX_MR_THRESHOLD_2026',
-                     'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW']) {
+                     'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW',
+                 'SC_RTM_SOMETIMES_THERAPY']) {
       vm.runInContext(grabVar(v), c2);
     }
     vm.runInContext(grab('var SC_PT_SOURCES = '), c2);
@@ -325,7 +363,8 @@ section('8. NEGATIVE CONTROL -- each arm is shown to fail when the rule is broke
     const c2 = {};
     vm.createContext(c2);
     for (const v of ['KX_THRESHOLD_2026', 'KX_MR_THRESHOLD_2026',
-                     'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW']) {
+                     'SC_RTM_SHORT_WINDOW', 'SC_RTM_LONG_WINDOW',
+                 'SC_RTM_SOMETIMES_THERAPY']) {
       vm.runInContext(grabVar(v), c2);
     }
     vm.runInContext(grab('var SC_PT_SOURCES = '), c2);
