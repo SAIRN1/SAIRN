@@ -2599,6 +2599,22 @@
         "sairnbiz.html",
         "tools/dispatch_state.py"
       ]
+    },
+    {
+      "id": "cc-1790287067",
+      "session": "cc",
+      "subject": "cc-queue4",
+      "task": "discharge cc's most overdue review (fourth 2026-09-23T19:58:58Z sync_write_result_check), then sabotage-harness parse-vs-catch fix, blob.js migration sweep MEASURED (read-only on sd-data.js -- cody holds it; conversions deferred if measurement says convert), and item 98 ablation test of one named checker FILES: docs/tier-a-reviews.json tests/sabotage_harness.py api/_lib/blob.js docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-24T21:57:47Z",
+      "claimed_at_epoch": 1790287067.5215206,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/blob.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "tests/sabotage_harness.py"
+      ]
     }
   ],
   "refusals": [
@@ -2612,6 +2628,21 @@
       "other_claimed_at": "2026-09-23T12:30:16Z",
       "shared_files": [
         "docs/CRITICALITY-TIERS.md"
+      ],
+      "source": "status-registry",
+      "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-24T21:57:29Z",
+      "my_subject": "cc-queue4",
+      "my_task": "discharge cc's most overdue review (fourth 2026-09-23T19:58:58Z sync_write_result_check), then sabotage-harness parse-vs-catch fix, blob.js migration sweep measured not blind, and item 98 ablation test of one named checker FILES: docs/tier-a-reviews.json tests/sabotage_harness.py api/sd-data.js api/_lib/blob.js docs/SAIRN-OPEN-WORK-INDEX.md",
+      "other_session": "cody",
+      "other_subject": "tiers-h1-batch",
+      "other_task": "H1 batch retiers: sd_approvals, law_picases, law_clerequirements, sc_pctc, sb_perf, sb_vends, alf_signals, alf_activities read individually plus rf_buildings null-overwrite fix and sb_perf role gate FILES: docs/CRITICALITY-TIERS.md api/sd-data.js",
+      "other_claimed_at": "2026-09-24T21:55:07Z",
+      "shared_files": [
+        "api/sd-data.js"
       ],
       "source": "status-registry",
       "why": "same declared FILES",
