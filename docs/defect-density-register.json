@@ -13484,6 +13484,58 @@
       "recurrence_open": "ONLY THIS ONE BLOCK IS FIXED. Nothing has swept the rest of api/sd-data.js for branch comments that describe a guard which has since moved to SD_SESSION_GATED, and the file has 22 resources in that table -- the same staleness is possible at every one of them and has been measured at none. Also open: no check exists that would fail when a resource is added to SD_SESSION_GATED while its branch comment still says it is ungated, which is the mechanical form of this defect and the only thing that would catch the next one. And the direction of the error matters and is not tracked anywhere -- a comment that understates a guard produces wasted review and false gap reports, while one that overstates a guard would produce the opposite and worse, and nothing here distinguishes them."
     },
     {
+      "commit": "730624bd8ae1",
+      "date": "2026-09-24",
+      "subject": "fix(sairncode): the RTM citation is PINNED against CMS MM14250 -- and the pin corrected the family boundary in both directions",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "sairncode.html",
+        "tests/sairncode_pt_gp_modifier.js"
+      ],
+      "lines_added": 70,
+      "lines_removed": 19,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "scValidatePtSession's RTM GP warn keyed its family on the day-window maps (SC_RTM_SHORT/LONG_WINDOW), which disagree with CMS's sometimes-therapy designation in BOTH directions: 98978 and 98986 (the CBT device codes) sit in the window maps and are NOT CMS-designated -- the shipped warn told a coder CMS designated a code CMS never designated -- while 98975 (setup) and 98979/98980/98981 (treatment management) carry the designation with no day window and produced no warn at all. Found while discharging the review obligation on the warn, whose author's own attack point 2 asked exactly this question; answered by reaching the primary source (CMS MLN Matters MM14250 / CR 14250, which enumerates the family and the GP/GO/GN requirement verbatim) rather than by preference. The unpinned citation the warn shipped with -- disclosed honestly at the time -- is pinned against that document in the same fix.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f4945dd9e872",
+        "date": "2026-09-24",
+        "subject": "fix(sairncode): the RTM silence becomes a WARN -- CMS made the RTM family sometimes-therapy, and this panel is a PT plan of care by construction",
+        "lag_days": 0
+      },
+      "citation_note": "The closest family is discipline 7 (byte-identical is not safe-in-context) applied to a LIST rather than code: a membership list propagated to a second rule needs the second rule's criteria re-qualified. Not cited because discipline 7's text is about code propagation; this is the case for widening it.",
+      "phase_note": "Injected when the warn was added: the family boundary was a design choice to reuse the in-scope window maps, made consciously and flagged by its own author as attack point 2 of the review obligation.",
+      "contributing_factors": [
+        {
+          "factor": "The warn's family boundary reused a list built for a DIFFERENT rule (the 2-15/16-30 day windows) because it was the RTM-shaped list already in scope. A boundary borrowed from an adjacent rule inherits that rule's membership criteria, not the new rule's.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "An explicit SC_RTM_SOMETIMES_THERAPY list per MM14250, with the disagreement documented at the declaration; the family and the day-window rule can now move independently, which is how CMS actually moves them."
+        },
+        {
+          "factor": "The citation was disclosed as unpinned -- stated at the confidence it was verified at, which was the right honesty -- but nothing scheduled the pinning, so it would have stayed unpinned until an incident. The author's obligation text asking the reviewer to pin it is what got it pinned.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Pinned against MM14250 with the document number in the source text so the next reader can re-fetch it; the suite arm that asserted unpinnedness FLIPPED to require the pinning document's name."
+        },
+        {
+          "factor": "The suite's family arm asserted only that a code OUTSIDE the maps got no warn -- it could not see either boundary error, because both errors were INSIDE the borrowed maps' membership.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "One arm per direction (98975 now warns; 98986 does not) plus a structural arm that the family is its own list and not a window-map reuse. 47/47."
+        }
+      ],
+      "recurrence_open": "The explicit list closes this rule's boundary. It does not close the class: any rule whose membership is borrowed from an adjacent rule's list drifts when either rule's true membership moves, and nothing on the platform detects a borrowed-boundary. The payer-policy counter (some payers may treat CBT RTM as therapy without the CMS designation) is real and parked with the review obligation on this fix."
+    },
+    {
       "commit": "7cc29f6e4c5a",
       "date": "2026-09-24",
       "subject": "fix(sairnvet): the dosing-register banner claimed \"not capped\" with nothing behind it -- completeness is verified against the server's own count now",
@@ -13692,6 +13744,56 @@
       "citation_note": "The applicable rule is a repo CONVENTION rather than a numbered process rule: tools/sairn_dead_button_audit.py's header records that scanning comments cost 58 phantom findings on StoneDesk and that the fix is a real state machine, not a regex. It is not a section in SAIRN-PROCESS-RULES.md, so not-citable is the honest field value -- and the fact that a lesson this expensive lives only in one tool's header is part of why it did not reach a sibling tool solving the same problem.",
       "phase_note": "Not introduced in a phase. The scanner never stripped comments, and the population it trips on grows every time somebody documents a removal honestly.",
       "factors_unknown_reason": "Not yet worked through independently. The commit names the shape: a documented lesson living in one tool's header, never generalised, not reaching a sibling tool with the same problem."
+    },
+    {
+      "commit": "b3ae64ad07eb",
+      "date": "2026-09-24",
+      "subject": "fix(review-gate): the auditor exclusion was one literal name -- hover2 was one claim file away from the build agents' review queue",
+      "files": [
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ],
+      "lines_added": 66,
+      "lines_removed": 7,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "hover-audit",
+      "summary": "tier_a_review_gate.py's eligible_reviewers() excluded the hover auditor from the Tier A reviewer pool by the literal name 'hover' -- while the auditor already runs as more than one instance (the shared status registry lists hover AND hover2). The day hover2 created .claude/claims/hover2.json it would have silently entered the reviewer pool and started being ASSIGNED build-agent review obligations, crossing the audit/build separation from the side two gates exist to protect, with nothing anywhere saying so. The roster's own header records exactly why literal lists fail here (\"named four clones for weeks after a fifth existed\"); excluding one auditor by literal name was the same mistake one shelf over. Fixed with a role predicate (is_hover_session: hover, hover2, hover-3, hover_x -- deliberately not a bare startswith, so a build agent named hoverboard is not silently starved out of review duty), pinned in both directions plus a wiring arm that fails if the literal compare returns.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "hover2",
+      "injection": {
+        "commit": "a51047b398f0",
+        "date": "2026-09-21",
+        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
+        "lag_days": 3
+      },
+      "citation_note": "The hover-separation enforcement doc (2026-09-15) states the boundary but is not a numbered PROCESS-RULES section; the nearest PR sections are about checks failing closed, not about roster membership. Recorded not-citable rather than stretching either.",
+      "contributing_factors": [
+        {
+          "factor": "The auditor role grew a second instance (hover2) after the exclusion was written, and nothing connects the status registry's instance list to the gate's exclusion",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The exclusion is a role predicate now, matching any hover-N instance."
+        },
+        {
+          "factor": "The roster derivation was correctly built to avoid hardcoded lists -- and the exclusion inside it was itself a hardcoded list of one, invisible because it looked like a constant rather than a roster",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Predicate extracted and named; probe arms pin both directions and the wiring."
+        },
+        {
+          "factor": "No probe arm ever drove a hover2-shaped name through eligible_reviewers -- the sabotage arm removed the filter but only for the one literal name it knew",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "run_tier_a_review_gate_probe.py drives hover, hover2, hover-3, hover_x (excluded) and hoverboard/fourth/cc (kept)."
+        }
+      ],
+      "recurrence_open": "Nothing generates the auditor-instance list from one source: the status registry knows hover and hover2, the claim files know whoever has one, and the gate now knows the PREFIX. A third naming convention would defeat the predicate the same way hover2 defeated the literal. The general closure is a single machine-readable roster of roles, which nobody has built."
     },
     {
       "commit": "bc22370a9ae5",
@@ -13999,56 +14101,6 @@
         }
       ],
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
-    },
-    {
-      "commit": "b3ae64ad07eb",
-      "date": "2026-09-24",
-      "subject": "fix(review-gate): the auditor exclusion was one literal name -- hover2 was one claim file away from the build agents' review queue",
-      "files": [
-        "tests/run_tier_a_review_gate_probe.py",
-        "tools/tier_a_review_gate.py"
-      ],
-      "lines_added": 66,
-      "lines_removed": 7,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "hover-audit",
-      "summary": "tier_a_review_gate.py's eligible_reviewers() excluded the hover auditor from the Tier A reviewer pool by the literal name 'hover' -- while the auditor already runs as more than one instance (the shared status registry lists hover AND hover2). The day hover2 created .claude/claims/hover2.json it would have silently entered the reviewer pool and started being ASSIGNED build-agent review obligations, crossing the audit/build separation from the side two gates exist to protect, with nothing anywhere saying so. The roster's own header records exactly why literal lists fail here (\"named four clones for weeks after a fifth existed\"); excluding one auditor by literal name was the same mistake one shelf over. Fixed with a role predicate (is_hover_session: hover, hover2, hover-3, hover_x -- deliberately not a bare startswith, so a build agent named hoverboard is not silently starved out of review duty), pinned in both directions plus a wiring arm that fails if the literal compare returns.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": "hover2",
-      "injection": {
-        "commit": "a51047b398f0",
-        "date": "2026-09-21",
-        "subject": "feat(tier-a): an obligation is ASSIGNED when it is opened -- the duplicate-review race removed rather than detected",
-        "lag_days": 3
-      },
-      "citation_note": "The hover-separation enforcement doc (2026-09-15) states the boundary but is not a numbered PROCESS-RULES section; the nearest PR sections are about checks failing closed, not about roster membership. Recorded not-citable rather than stretching either.",
-      "contributing_factors": [
-        {
-          "factor": "The auditor role grew a second instance (hover2) after the exclusion was written, and nothing connects the status registry's instance list to the gate's exclusion",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The exclusion is a role predicate now, matching any hover-N instance."
-        },
-        {
-          "factor": "The roster derivation was correctly built to avoid hardcoded lists -- and the exclusion inside it was itself a hardcoded list of one, invisible because it looked like a constant rather than a roster",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Predicate extracted and named; probe arms pin both directions and the wiring."
-        },
-        {
-          "factor": "No probe arm ever drove a hover2-shaped name through eligible_reviewers -- the sabotage arm removed the filter but only for the one literal name it knew",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "run_tier_a_review_gate_probe.py drives hover, hover2, hover-3, hover_x (excluded) and hoverboard/fourth/cc (kept)."
-        }
-      ],
-      "recurrence_open": "Nothing generates the auditor-instance list from one source: the status registry knows hover and hover2, the claim files know whoever has one, and the gate now knows the PREFIX. A third naming convention would defeat the predicate the same way hover2 defeated the literal. The general closure is a single machine-readable roster of roles, which nobody has built."
     },
     {
       "commit": "eaefa8396567",
