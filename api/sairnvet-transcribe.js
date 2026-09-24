@@ -57,6 +57,11 @@
 // REQUIRED BEFORE THIS ENDPOINT IS EVER ENABLED, and it is deliberately not
 // written today: with no host, that code could never execute, and dormant code
 // that has never run is not a control -- it is Guardian check 0d's subject.
+// SAME DEFERRAL, SECOND SUBJECT (2026-09-24): a LIVENESS probe on the host is
+// approved, scoped, and deliberately not written for the identical reason --
+// docs/2026-09-24-scribe-host-liveness-scoping.md is the design and the
+// enabling-day checklist, and it lands in the same change as the consent-ref
+// verification above or the enabling change is incomplete.
 // `hostConfigured()` is the single place the host is read, so the day somebody
 // sets `SAIRNVET_TRANSCRIBE_URL` they land on this comment.
 // ---------------------------------------------------------------------------
