@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**217 files in `tools/`.** By what actually invokes them:
+**218 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 28 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 41 | nothing runs these at all |
+| **UNWIRED** | 42 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 151 |
+| CHECKER | 152 |
 | GENERATOR | 18 |
 | LIBRARY | 24 |
 | LIVE | 20 |
@@ -46,13 +46,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 19 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 11
+**The number to act on: 20 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 9 wired nowhere at all, and 11
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 19, by name, so this is actionable rather than a statistic:
+The 20, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -72,6 +72,7 @@ The 19, by name, so this is actionable rather than a statistic:
 | `role_gate_mc_config.py` | UNWIRED | a TLA+ model instance that has gone stale against the apps it describes -- `--check` refuses when role sets move and docs/spec/MCRoleGates.* still says otherwise, so the model cannot keep passing about a platform that no longer exists. READS EXPORTS AND INTERNAL CONSTANTS SEPARATELY and says which: an earlier version read only module.exports and concluded 10 of 16 apps had no MANAGEMENT_ROLES, when FOUR declare one internally and never export it. The const anchor sits at LINE START on purpose -- four apps carry the text MANAGEMENT_ROLES inside a comment saying they have no such concept and that inventing one would be a new authorisation tier, so an unanchored scraper invents exactly the tier that comment refuses. EXCLUDES the six apps with no management concept and prints the exclusion every run rather than supplying a set, because Management = Provisioning would make ProvisioningIsManagement true by construction |
 | `run_tlc.py` | UNWIRED | a TLA+ spec in docs/spec that has stopped being consistent with ITSELF -- which is a different question from whether the code matches it, and is the half role_gate_invariants.js structurally cannot ask because it never evaluates the spec. THE FIRST REAL RUN, 2026-09-22, FOUND A BLOCKING DEFECT IN BOTH SPECS: RoleGates.tla had an unbounded CHOOSE that TLC cannot evaluate (0 states generated) and RateLimitConsume.tla defined -1 under EXTENDS Naturals and did not parse at all. Encodes the EXPECTED outcome per run rather than treating green as success -- RacySpec MUST violate the cap, because exhibiting that schedule is what it is for, and a run where it held would mean the spec had stopped modelling the race. NOT a gate and cannot be one: TLC needs a JVM and a 2.3MB jar that is not vendored, so it exits 2 COULD NOT RUN rather than 0 when either is missing |
 | `sairn_self_state.py` | UNWIRED | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name |
+| `staged_conflict_marker_check.py` | UNWIRED | a COMMIT about to make a conflict marker durable -- any of git's three seven-character markers at the start of a line in a STAGED blob, whatever staged it; wired into prepare-commit-msg rather than pre-commit because `git rebase --continue`, which produced all four markers that reached origin/main, never fires pre-commit at all; a lone ======= markdown underline is not a finding |
 | `stale_row_sweep.py` | SUITE-ONLY | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file |
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
@@ -342,7 +343,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (41)
+## UNWIRED (42)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -389,6 +390,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_self_state.py` | CHECKER | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
+| `staged_conflict_marker_check.py` | CHECKER | a COMMIT about to make a conflict marker durable -- any of git's three seven-character markers at the start of a line in a STAGED blob, whatever staged it; wired into prepare-commit-msg rather than pre-commit because `git rebase --continue`, which produced all four markers that reached origin/main, never fires pre-commit at all; a lone ======= markdown underline is not a finding | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
 
@@ -420,7 +422,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      217   git ls-files tools/
+  tools on disk                      218   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
