@@ -2193,12 +2193,12 @@
         "api/sd-data-exec-context-isolation.test.js"
       ],
       "what": "bld_tna and exec_context dedicated cross-tenant isolation arms (9ae85897). Two new test files, no app source touched. REVIEW THESE FOUR THINGS SPECIFICALLY: (1) the bld_tna [L-collide] arm is the one that justifies a separate file -- both tenants carry an emp-1 and the in-memory subject filter can make a dropped license_hash look correct; check the fixtures really distinguish tenants and that the assertion is about WHOSE row came back, not how many. (2) the exec_context arms use the REAL api/_lib/auth deliberately, because api/sd-data-exec-context.test.js stubs verifySessionToken and therefore answers yes to the exact question -- check nothing in the new file re-stubs it. (3) [X-sub] was measured to survive the expected-app sabotage (the role gate catches it) and is labelled defence-in-depth rather than an independent proof; check that label is right and that no OTHER arm has the same undisclosed backstop. (4) exec_context still grades NONE in tools/cross_tenant_isolation_scope.py and the file explains why rather than reshaping itself to satisfy the regex -- check that reasoning, because the alternative (widening the grader) is unfiled open work.",
-      "status": "open",
+      "status": "reviewed",
       "reviewer_owner": "fourth",
       "owner_assigned_at": "2026-09-23T11:50:29Z",
-      "reviewer_session": null,
-      "reviewed_at": null,
-      "verdict": null
+      "reviewer_session": "fourth",
+      "reviewed_at": "2026-09-24T19:47:01Z",
+      "verdict": "REVIEWED BY DRIVING, NOT BY READING. Both suites green (bld_tna, exec-context). Re-planted three of the commit's six sabotage mutations myself rather than trusting its claim: (A) bld_tna read filter's license_hash dropped -> suite RED, and the catch is the WHOSE-row assertion on the tenant marker inside responses, not a count -- verified the marker mechanism at :207/:217; (B) on_conflict loses license_hash -> RED via the [W] arm; (C) exec_context's verifySessionToken loses its expected-app argument -> RED, which the older exec-context suite could never see because it stubs verifySessionToken to answer yes to exactly that question -- these arms sign real tokens with the real api/_lib/auth, confirmed at :84. The claim that teaching the shared dispatcher harness an exception was the wrong trade holds: owner, table name and idCol are all load-bearing for its 150+ other members. No finding against the work. LIMIT: the other three mutations (payload licence trusted, auth licence-hash check removed x2) were not re-planted here; the commit's own control claims them and the three I chose cover the distinct mechanisms."
     },
     {
       "author_session": "hank",
