@@ -27,7 +27,6 @@
       "Bash(npx vercel:*)"
     ]
   },
-  "model": "sonnet",
   "env": {
     "DISABLE_AUTOUPDATER": "1"
   },
