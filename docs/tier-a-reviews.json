@@ -3015,6 +3015,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T19:06:27Z",
+      "resources": [
+        "sv_audit_log"
+      ],
+      "rules": [],
+      "files": [
+        "tests/sv_audit_completeness.js"
+      ],
+      "what": "sairnvet dosing-register completeness: the sv_ read branch in api/sd-data.js now sends Prefer count=exact and returns Content-Range's total beside the rows; sairnvet.html claims completeness only when received rows match it, says INCOMPLETE in bold on a mismatch, and says unverified when the total is unknown. WHAT A REVIEWER SHOULD ATTACK: (1) whether adding Prefer count=exact changes PostgREST behaviour for large tables (exact counts can be slow -- is a timeout now more likely on the biggest registers, and what does the client show then); (2) whether any OTHER sairnvet consumer of the read envelope breaks on the added total field; (3) whether '*' and absent-header genuinely both land as null through the real fetch Headers object, not just the test stub.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T19:06:27Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

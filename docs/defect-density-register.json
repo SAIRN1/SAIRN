@@ -13425,7 +13425,7 @@
       "recurrence_open": "THE CLASS IS OPEN IN BOTH DIRECTIONS. Any future coercion fix that ships a proper negative control will trip truthy_sum_check the same way until its author knows to baseline it -- nothing points them there except the checker's own message, which does now name the baseline route. And the global-count-as-local-claim shape has five recorded instances with no detector; tests that pin a count of somebody else's file are findable by grep (strictEqual\\(.*length, \\d+) and nobody has swept for them."
     },
     {
-      "commit": "908e55c2deda",
+      "commit": "7cc29f6e4c5a",
       "date": "2026-09-24",
       "subject": "fix(sairnvet): the dosing-register banner claimed \"not capped\" with nothing behind it -- completeness is verified against the server's own count now",
       "files": [
