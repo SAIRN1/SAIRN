@@ -2361,8 +2361,8 @@
       "task": "item 90 primitive-obsession check -- one tool, three named shapes: a measured value defended into a default (Number(x)||0), a config read where Number('') is 0, and a locale date string compared as if sortable FILES: tools/primitive_obsession_check.py tools/tooling_inventory.py tests/run_primitive_obsession_probe.py",
       "claimed_at": "2026-09-24T19:16:18Z",
       "claimed_at_epoch": 1790277378.1329432,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T19:35:37Z",
       "files": [
         "tests/run_primitive_obsession_probe.py",
         "tools/primitive_obsession_check.py",
