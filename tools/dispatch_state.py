@@ -265,6 +265,183 @@ def cmd_stale_review(argv=None):
     return 1 if hits else 0
 
 
+# ── AGENT RECONCILIATION: a status report DERIVED, never hand-written ──────
+# (2026-09-24, the weekly full-reconciliation practice from
+# docs/platform-health-check.md area 7 -- confirmed 2026-09-18 and never
+# actually run until this existed.) Every hand-written status summary this
+# platform has reconciled has been wrong somewhere: the clone table said four
+# while five pushed, "no per-employee auth" outlived the auth by nine days,
+# and a registry note aged into a lie the day after it was typed. So each
+# build agent's report is READ OUT OF THE SOURCES, per line, with the source
+# named -- and a source that cannot be read is a COULD-NOT-READ line, never a
+# guessed one.
+#
+# THE SOURCES, and what each is authoritative FOR:
+#   the clone's git      what is actually committed, pushed, and dirty THERE
+#   the status registry  what the agent last SAID, live, no fetch (advisory)
+#   the claim record     what it holds, as of THIS clone's last fetch of
+#                        origin/main -- sairn_claim owns that read
+#   tier-a-reviews.json  what it owes and what of its work awaits review
+#   SAIRN-ACTIVE-WORK-*  its own narrative log, read from ITS clone
+#
+# DISAGREEMENTS ARE THE PRODUCT. A registry row saying idle beside a live
+# claim, a claim beside a dead registry row, dirty files in a clone whose
+# agent says idle -- each is printed as a named disagreement for the reader
+# (and the hover auditor, whose job is the cross-agent reconcile) to settle.
+# This tool never settles one.
+
+CLONES = dict((n, os.path.join(os.path.dirname(REPO), 'SAIRN-' + n))
+              for n in SESSIONS)
+REVIEWS = os.path.join(REPO, 'docs', 'tier-a-reviews.json')
+
+
+def _git(clone, *args):
+    import subprocess
+    r = subprocess.run(['git', '-C', clone] + list(args), capture_output=True,
+                       text=True, encoding='utf-8', errors='replace')
+    return (r.stdout or '').strip() if r.returncode == 0 else None
+
+
+def agent_state(name, claims):
+    """Everything derivable about one build agent, each field traced to its
+    source. Missing sources appear as explicit problems, never as guesses."""
+    out = {'session': name, 'problems': [], 'disagreements': []}
+
+    clone = CLONES.get(name)
+    if clone and os.path.isdir(os.path.join(clone, '.git')):
+        out['clone'] = clone
+        out['branch'] = _git(clone, 'rev-parse', '--abbrev-ref', 'HEAD')
+        out['head'] = _git(clone, 'log', '--format=%h %ad %s',
+                           '--date=format:%m-%d %H:%M', '-1')
+        porc = _git(clone, 'status', '--porcelain')
+        out['dirty'] = (len([l for l in porc.split('\n') if l.strip()])
+                        if porc is not None else None)
+        ab = _git(clone, 'rev-list', '--left-right', '--count',
+                  'origin/main...HEAD')
+        if ab and '\t' in ab:
+            behind, ahead = ab.split('\t')
+            out['behind'], out['ahead'] = int(behind), int(ahead)
+            # As of THAT clone's last fetch -- no fetch is issued here: a
+            # read-only reporter must not touch another session's clone state.
+    else:
+        out['problems'].append('clone not found at %s -- git state UNKNOWN'
+                               % clone)
+
+    try:
+        import sairn_status
+        row_path = os.path.join(sairn_status.STATUS_DIR, name + '.json')
+        with io.open(row_path, encoding='utf-8') as fh:
+            row = json.load(fh)
+        out['registry'] = {'state': row.get('state'),
+                           'updated': row.get('updated'),
+                           'task': (row.get('task') or '')[:120]}
+    except Exception as exc:                                     # noqa: BLE001
+        out['problems'].append('registry row unreadable (%s) -- what the '
+                               'agent last SAID is unknown' % exc)
+
+    out['claims'] = [(t, a) for (n, t, a) in (claims or []) if n == name]
+
+    try:
+        with io.open(REVIEWS, encoding='utf-8') as fh:
+            recs = json.load(fh).get('records', [])
+        out['owes'] = sorted(
+            (r.get('opened_at', ''), r.get('author_session', ''))
+            for r in recs if r.get('status') == 'open'
+            and r.get('reviewer_owner') == name)
+        out['awaiting'] = sorted(
+            (r.get('opened_at', ''), r.get('reviewer_owner', ''))
+            for r in recs if r.get('status') == 'open'
+            and r.get('author_session') == name)
+    except Exception as exc:                                     # noqa: BLE001
+        out['problems'].append('tier-a-reviews.json unreadable (%s) -- '
+                               'obligations unknown' % exc)
+
+    if clone:
+        wl = os.path.join(clone, 'SAIRN-ACTIVE-WORK-%s.md' % name)
+        if not os.path.isfile(wl):
+            out['problems'].append('SAIRN-ACTIVE-WORK-%s.md not found in its '
+                                   'own clone' % name)
+
+    reg = out.get('registry') or {}
+    has_claim = bool(out['claims'])
+    if reg.get('state') == 'idle' and has_claim:
+        out['disagreements'].append(
+            'registry says IDLE while an ACTIVE claim exists -- one of the '
+            'two is stale (sources: status registry vs origin/main claims)')
+    if reg.get('state') == 'working' and not has_claim:
+        out['disagreements'].append(
+            'registry says WORKING with NO active claim on origin/main -- '
+            'either unclaimed work (the 2026-08-30 failure) or a finished '
+            'task whose registry row was not updated')
+    if out.get('dirty'):
+        out['disagreements'].append(
+            '%d uncommitted file(s) in the clone%s (source: git status)' % (
+                out['dirty'],
+                ' while the registry says idle'
+                if reg.get('state') == 'idle' else ''))
+    if out.get('ahead'):
+        out['disagreements'].append(
+            '%d commit(s) in the clone not on its origin/main -- unpushed '
+            'work is invisible to every other clone (source: git rev-list, '
+            'as of that clone%s own last fetch)'
+            % (out['ahead'], "'s"))
+    return out
+
+
+def cmd_reconcile(only=None):
+    claims, cproblem = live_claims()
+    if claims is None:
+        print('COULD NOT RUN the claim half: %s' % cproblem)
+        print('Continuing with the other sources; the claim lines below are '
+              'ABSENT, not empty.')
+    if only and only not in SESSIONS:
+        print('COULD NOT RUN: %r is not a build session (%s). The hover '
+              'auditors keep their own records and are reconciled BY hover, '
+              'not here.' % (only, ', '.join(SESSIONS)))
+        return EXIT_COULD_NOT_RUN
+    names = [only] if only else list(SESSIONS)
+    print('AGENT RECONCILIATION -- derived from sources, never hand-written.')
+    print('Claim lines are as of THIS clone%s last fetch; registry lines are '
+          'live; git' % "'s")
+    print('lines are each clone%s own working tree, read-only, no fetch '
+          'issued.' % "'s")
+    findings = 0
+    for name in names:
+        a = agent_state(name, claims)
+        print('')
+        print('== %s ==' % name)
+        if 'clone' in a:
+            print('  git       branch %s, HEAD %s'
+                  % (a.get('branch'), a.get('head')))
+            print('            dirty %s, ahead %s / behind %s of its '
+                  'origin/main' % (a.get('dirty'), a.get('ahead', '?'),
+                                   a.get('behind', '?')))
+        reg = a.get('registry')
+        if reg:
+            print('  registry  %s -- %s  (updated %s)'
+                  % (reg['state'], reg['task'], reg['updated']))
+        if a['claims']:
+            for t, age in a['claims']:
+                print('  claim     %.1fh  %s' % (age, t[:110]))
+        else:
+            print('  claim     none active on origin/main')
+        if 'owes' in a:
+            print('  reviews   owes %d open (oldest %s), %d of its own '
+                  'awaiting review'
+                  % (len(a['owes']),
+                     a['owes'][0][0] if a['owes'] else '-',
+                     len(a['awaiting'])))
+        for prob in a['problems']:
+            print('  COULD-NOT-READ  %s' % prob)
+        for d in a['disagreements']:
+            print('  DISAGREES  %s' % d)
+            findings += 1
+    print('')
+    print('%d disagreement(s) across %d agent(s). The reader settles them; '
+          'this tool never does.' % (findings, len(names)))
+    return EXIT_FINDING if findings else EXIT_CLEAN
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument('--all', action='store_true')
@@ -272,7 +449,14 @@ def main(argv=None):
     ap.add_argument('--self-check', action='store_true')
     ap.add_argument('--stale-review', action='store_true', dest='stale',
                     help='rows whose leading status phrase disagrees with itself')
+    ap.add_argument('--reconcile', nargs='?', const='ALL', default=None,
+                    metavar='SESSION',
+                    help='derive each build agent status from real sources')
     args = ap.parse_args(argv)
+
+    if args.reconcile:
+        return cmd_reconcile(None if args.reconcile == 'ALL'
+                             else args.reconcile)
 
     if args.stale:
         return cmd_stale_review()

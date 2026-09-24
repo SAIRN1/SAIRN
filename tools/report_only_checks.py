@@ -1829,7 +1829,13 @@ REGISTRY = [
                    'owned by a session holding a live claim -- the collision a '
                    'per-item `sairn_claim.py check` structurally cannot show '
                    'you, because it answers about ONE task string you already '
-                   'thought of and cannot enumerate what else exists',
+                   'thought of and cannot enumerate what else exists. Since '
+                   '2026-09-24, `--reconcile` also derives each build agent '
+                   'status from real sources (that clone git state, the live '
+                   'registry, origin/main claims, tier-a obligations) and '
+                   'prints the DISAGREEMENTS -- a hand-written status summary '
+                   'is the thing the weekly reconciliation practice exists to '
+                   'replace',
         'why_it_matters': 'TWO SOURCES ANSWER "what should I work on" AND '
                           'NEITHER ANSWERS IT ALONE. The registry says what is '
                           'OPEN; the claims say what is BEING WORKED. Reading '
