@@ -2919,6 +2919,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1790283938",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "tombstone resurrection guard sd_customers sc soft-delete write",
+      "claimed_at": "2026-09-24T21:05:38Z",
+      "claimed_at_epoch": 1790283938.8953001,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ]
 }
