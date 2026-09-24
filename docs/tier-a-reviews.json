@@ -2763,6 +2763,25 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-24T12:35:11Z",
+      "resources": [
+        "law_clients",
+        "law_deadlines",
+        "law_matters"
+      ],
+      "files": [
+        "api/sd-data.js"
+      ],
+      "what": "COMMENT-ONLY CHANGE TO api/sd-data.js, and it is recorded rather than waved through because the gate cannot tell a comment from code and SHOULD NOT -- the thing that was wrong here WAS a comment, and it was wrong about authentication.\n\nThe block directly above the law_clients branch asserted three facts and all three had gone false: \"No verifySessionToken/role check on any of these three resources\" (law_clients, law_matters and law_deadlines entered SD_SESSION_GATED on 2026-09-22, ce835a7e, with SD_GATE_APP pinning each to 'sairnlaw'), \"sdnData() never sends a session token to this endpoint\" (sairnlaw.html sets X-SD-Auth on every data call whenever a token exists), and \"zero sdnData('read',...) calls anywhere\" (law_clients is in LAW_SYNC_RESOURCES:5256 and lawHydrateAll:5497 reads every member). Found while discharging hank's 2026-09-23T09:54Z obligation, whose own point (3) was built on the first claim and asked a reviewer to confirm a gap that had been closed two days earlier.\n\nNO EXECUTABLE LINE CHANGED. node --check clean; api/sd-data-law-phase2-session.test.js 25/25, api/sd-data-cross-tenant-dispatchers.test.js 397/0, api/sd-data-sairnlaw-resources.test.js 23/23. Registered as a defect against 5e7f9ebd, cited to PR 2.3 with a note on the scope stretch.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first:\n\n(1) THAT THE GATE REALLY IS LIVE FOR ALL THREE, not just configured. I confirmed law_clients by reading SD_SESSION_GATED and SD_GATE_APP and by running the phase-2 suite, but I did NOT mutate the gate to watch a specific arm go red the way I did for the four bespoke branches in the same session. law_matters and law_deadlines I took from the same table entry rather than driving either. If any of the three is in SD_SESSION_GATED but missing from SD_GATE_APP the failure is CLOSED and confusing, not open -- the table's own comment says so -- but my new comment asserts all three are gated and that assertion is read, not driven.\n\n(2) WHETHER THE CORRECTION IS ITSELF A FACT WITH A TENSE. It names SD_SESSION_GATED and SD_GATE_APP by name and sairnlaw.html's members list by line number. Line numbers are exactly what goes stale next, and I used them anyway because \"somewhere in a 5,000-line file\" is not a pointer. Decide whether that is the right trade or whether the comment should name only the mechanism.\n\n(3) THE ONE I DECLINED. The real fix is not this block -- it is that a branch whose guard lives 11,800 lines away in a central table has no mechanical reason to stay in sync with the prose beside it. 22 resources are in SD_SESSION_GATED and I swept exactly one. A check that fails when a gated resource's branch comment says it is ungated is the mechanical form of this defect; it is recorded as a candidate and NOT built, so nothing prevents the next one.\n\nFILES: api/sd-data.js",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T12:35:11Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
