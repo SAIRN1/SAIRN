@@ -13389,9 +13389,22 @@ function sdFillTierSelect(id, selected){
   }).join('');
   sel.value=want;
 }
+// Fills a <select> with every project type, from PROJECTS. Same reason as
+// sdFillTierSelect: one list, in the model, so a panel cannot offer a
+// different set of project types than the engine prices.
+function sdFillProjectSelect(id){
+  var sel=document.getElementById(id);
+  if(!sel) return;
+  sel.innerHTML=Object.keys(PROJECTS).map(function(k){
+    return '<option value="'+escHtml(k)+'">'+escHtml(PROJECTS[k].name)+'</option>';
+  }).join('');
+}
 document.addEventListener('DOMContentLoaded', function(){
   sdFillTierSelect('aiq-tier','retail');
+  sdFillProjectSelect('pwc-type');
   if(typeof sdRefreshAgentPicker==='function') sdRefreshAgentPicker();
+  if(typeof sdAIQSpeedLine==='function') sdAIQSpeedLine();
+  if(typeof sdWasteCalc==='function') sdWasteCalc();
 });
 
 // Populates the sales-agent picker from the real employee roster. Sales roles
@@ -32552,7 +32565,14 @@ document.addEventListener('DOMContentLoaded', function() {
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
   <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">🤖 AI Quote Generator</h2>
-  <div style="font-size:13px;color:var(--muted);margin-top:2px">Describe any project in plain English — Claude prices it instantly</div></div>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Describe any project in plain English — Claude prices it instantly</div>
+  <!-- THE SPEED CLAIM IS MEASURED HERE, NOT WRITTEN HERE (2026-09-24).
+       "3-minute quote" is exactly the shape sairn-guardian-v2 calls a
+       fabricated KPI: a number in the markup with no function behind it.
+       sdAIQSpeedLine() fills this from THIS SHOP's own recorded quote times,
+       and says "not enough quotes yet" until there are enough to have a
+       median. An empty element here is the honest state, not a broken one. -->
+  <div id="aiq-speed" style="font-size:12px;color:var(--muted);margin-top:4px"></div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn" onclick="sdAIQExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdAIQHistory()">📋 History</button>
@@ -32637,6 +32657,37 @@ document.addEventListener('DOMContentLoaded', function() {
       <div id="aiq-recent"></div>
       <div id="aiq-history" data-auto-container="missing-dom-fix"></div>
     </div>
+
+    <!-- ── PUBLIC WASTE CALCULATOR ──────────────────────────────────────
+         Customer-facing, and the point is the EXPLANATION as much as the
+         number. "Why am I paying for 58 sqft when my kitchen is 45?" is the
+         question that stalls a close, and answering it with a printed page a
+         customer can take away is worth more than answering it again on the
+         phone.
+
+         IT USES THE QUOTE ENGINE'S OWN WASTE FACTOR. Not a second model, not
+         a marketing rule of thumb -- sdWasteFactorFor() reads PROJECTS and
+         applies the same `proj.comp >= 1.20 ? 1.20 : 1.15` the real calc()
+         uses, so what a customer is shown here cannot drift from what they
+         are billed. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-top:14px">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--text);font-size:13px">📐 Material &amp; Waste Calculator</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Share with a customer. Explains why the slab order is bigger than the countertop.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Finished area (sq ft)</label>
+          <input id="pwc-sqft" type="number" step="0.1" placeholder="e.g. 45" oninput="sdWasteCalc()"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px;box-sizing:border-box">
+        </div>
+        <div>
+          <label style="font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase">Project type</label>
+          <select id="pwc-type" onchange="sdWasteCalc()"
+            style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;margin-top:4px;background:var(--bg);color:var(--text);font-size:13px"></select>
+        </div>
+      </div>
+      <div id="pwc-out" style="font-size:13px;line-height:1.7;color:var(--text);margin-top:12px"></div>
+      <button class="q-btn" style="margin-top:10px" onclick="sdWasteCalcPrint()">🖨️ Print for customer</button>
+    </div>
   </div>
 </div>
 </div>
@@ -32692,6 +32743,12 @@ document.addEventListener('DOMContentLoaded', function() {
     var tierSel=document.getElementById("aiq-tier");
     var tierVal=(tierSel&&TIERS[tierSel.value])?tierSel.value:"retail";
     if(!desc){showToast("Describe the project first.");return;}
+    // Wall clock, started at the click and stopped when the answer is on
+    // screen. It deliberately includes BOTH Claude round-trips and the real
+    // calc(), because that whole span is what the customer waited through --
+    // timing only the API call would produce a flattering number that nobody
+    // experiences.
+    var aiqT0=Date.now();
     var out=document.getElementById("aiq-out");
     out.innerHTML="<div style='color:var(--muted);text-align:center;padding:20px'>🤖 Claude is pricing your project...</div>";
     try{
@@ -32754,13 +32811,156 @@ document.addEventListener('DOMContentLoaded', function() {
         out.innerHTML="<strong>Real computed quote (AI narrative unavailable):</strong><br><br>Project: "+escHtml(PROJECTS[extracted.project_type].name)+"<br>Material: "+escHtml(MATERIALS[extracted.material].name)+"<br>Linear feet: "+totalLF.toFixed(1)+"<br>Tier: "+escHtml(TIERS[tierVal].label)+"<br><br><strong>TOTAL: "+fmt(realTotal)+"</strong>";
       }
       document.getElementById("aiq-actions").style.display="flex";
+      // TIMED ONLY ON A REAL ANSWER. The early returns above -- extraction
+      // failed, pricing failed -- do not record a time: counting a refusal as
+      // a fast quote is how a median becomes flattering and false.
+      var aiqMs=Date.now()-aiqT0;
+      aiqRecordTiming(aiqMs);
+      out.innerHTML+='<div style="margin-top:10px;font-size:12px;color:var(--muted)">&#9201; Priced in '
+        +escHtml(aiqFmtDuration(aiqMs))+'.</div>';
+      if(typeof sdAIQSpeedLine==='function') sdAIQSpeedLine();
       var d=load();
-      d.push({id:Date.now(),customer:cust,type:type,tier:tierVal,amount:realTotal,date:sdLocalToday(),accepted:false,desc:desc});
+      d.push({id:Date.now(),customer:cust,type:type,tier:tierVal,amount:realTotal,date:sdLocalToday(),accepted:false,desc:desc,elapsedMs:aiqMs});
       save(d);updateKPIs();
     }catch(e){
       out.innerHTML="<div style='color:#dc2626;padding:12px'>Something went wrong generating this quote. Please try again.</div>";
     }
   };
+  // ── THE SPEED CLAIM IS A MEASUREMENT (2026-09-24) ──────────────────────
+  // The brief asked for "3-minute AI quote" messaging. A 3 written into the
+  // markup is a fabricated KPI -- a number with no function behind it, which
+  // is the exact defect class sairn-guardian-v2 Check 0b exists for, and it
+  // would be a claim made to a paying customer.
+  //
+  // So the app TIMES ITSELF. Every generated quote records how long it took,
+  // wall-clock, from the click to the rendered answer -- which includes both
+  // Claude round-trips and the real calc(), because that is what the customer
+  // waited through. The headline is the MEDIAN of this shop's own recent runs.
+  //
+  // MEDIAN, NOT MEAN: one cold start or one network stall drags a mean far
+  // enough to make the number a lie in the flattering direction.
+  //
+  // AND IT REFUSES TO STATE A TYPICAL TIME UNTIL IT HAS ONE. Under
+  // AIQ_MIN_SAMPLES it says how many quotes it has instead of quoting a
+  // median of two. "Not enough data yet" is a third state and is never folded
+  // into a number.
+  var AIQ_TIMINGS_KEY='sd_aiq_timings';
+  var AIQ_MIN_SAMPLES=5;
+  var AIQ_KEEP=50;
+  function aiqTimings(){
+    try{ var v=JSON.parse(localStorage.getItem(AIQ_TIMINGS_KEY)||'[]');
+         return Array.isArray(v) ? v.filter(function(n){ return typeof n==='number' && isFinite(n) && n>0; }) : []; }
+    catch(e){ return []; }
+  }
+  function aiqRecordTiming(ms){
+    if(!isFinite(ms) || ms<=0) return;
+    var t=aiqTimings(); t.push(Math.round(ms));
+    // Bounded, and the OLDEST are dropped: a median over a shop's whole
+    // history stops reflecting what a customer waits for today.
+    if(t.length>AIQ_KEEP) t=t.slice(t.length-AIQ_KEEP);
+    try{ localStorage.setItem(AIQ_TIMINGS_KEY, JSON.stringify(t)); }catch(e){}
+  }
+  function aiqMedianMs(){
+    var t=aiqTimings().slice().sort(function(a,b){return a-b;});
+    if(t.length<AIQ_MIN_SAMPLES) return null;
+    var m=Math.floor(t.length/2);
+    return t.length%2 ? t[m] : Math.round((t[m-1]+t[m])/2);
+  }
+  function aiqFmtDuration(ms){
+    var s=Math.round(ms/1000);
+    if(s<60) return s+' second'+(s===1?'':'s');
+    var mn=Math.floor(s/60), rs=s%60;
+    return mn+' min'+(rs?' '+rs+' s':'');
+  }
+  window.sdAIQSpeedLine=function(){
+    var el=document.getElementById('aiq-speed');
+    if(!el) return;
+    var n=aiqTimings().length;
+    var med=aiqMedianMs();
+    if(med===null){
+      el.innerHTML=n
+        ? '&#9201; '+n+' quote'+(n===1?'':'s')+' timed so far &mdash; <span style="color:var(--muted)">'
+          +(AIQ_MIN_SAMPLES-n)+' more before a typical time can be stated.</span>'
+        : '&#9201; <span style="color:var(--muted)">Quote times are measured here. No quotes generated yet, so there is no typical time to report.</span>';
+      return;
+    }
+    el.innerHTML='&#9201; <strong>'+aiqFmtDuration(med)+'</strong> &mdash; median of this shop’s last '
+      +n+' AI quotes, measured. <span style="color:var(--muted)">Not a target; what it actually took.</span>';
+  };
+
+  // ── PUBLIC WASTE CALCULATOR ────────────────────────────────────────────
+  // THE FACTOR COMES FROM THE QUOTE ENGINE, NOT FROM A MARKETING NUMBER.
+  // calc() computes `proj.comp >= 1.20 ? 1.20 : 1.15` and multiplies the
+  // material subtotal by it. This reads the same PROJECTS entry and applies
+  // the same expression, so a customer shown "+20% on a waterfall island"
+  // cannot be billed on a different figure. Duplicating the literal 1.20/1.15
+  // here would be a second model that drifts the first time either is tuned;
+  // it is one line and it is the SAME line.
+  //
+  // Returns null for an unknown project type rather than defaulting to 1.15 --
+  // a default there quotes a customer a waste allowance that was never
+  // computed for their job.
+  window.sdWasteFactorFor=function(typeKey){
+    var proj=(typeof PROJECTS!=='undefined') ? PROJECTS[typeKey] : null;
+    if(!proj || typeof proj.comp!=='number') return null;
+    return proj.comp >= 1.20 ? 1.20 : 1.15;
+  };
+  window.sdWasteCalc=function(){
+    var out=document.getElementById('pwc-out'); if(!out) return;
+    var raw=(document.getElementById('pwc-sqft')||{}).value;
+    var typeKey=(document.getElementById('pwc-type')||{}).value;
+    // Validated, not coerced. Number('') is 0, and a printed page telling a
+    // customer their 0 sq ft kitchen needs 0 sq ft of stone is worse than a
+    // blank one.
+    var ok=(typeof raw==='string' && raw.trim()!=='');
+    var sqft=ok?Number(raw):NaN;
+    if(!isFinite(sqft)||sqft<=0){
+      out.innerHTML='<span style="color:var(--muted)">Enter the finished countertop area to see the slab quantity it needs.</span>';
+      return;
+    }
+    var f=sdWasteFactorFor(typeKey);
+    if(f===null){
+      out.innerHTML='<span style="color:#dc2626">No waste allowance is defined for that project type, so this cannot be calculated. Pick another type.</span>';
+      return;
+    }
+    var ordered=Math.round(sqft*f*100)/100;
+    var extra=Math.round((ordered-sqft)*100)/100;
+    var pct=Math.round((f-1)*100);
+    var label=(PROJECTS[typeKey]&&PROJECTS[typeKey].name)||typeKey;
+    out.innerHTML=
+      '<div style="font-size:15px;font-weight:800;color:var(--a)">'+ordered+' sq ft of slab</div>'
+      +'<div style="color:var(--muted);margin-bottom:8px">for '+sqft+' sq ft of finished '+escHtml(label).toLowerCase()+'</div>'
+      +'<div><strong>'+extra+' sq ft ('+pct+'%)</strong> is cutting allowance.</div>'
+      +'<div style="color:var(--muted);font-size:12px;margin-top:6px">'
+      +'Stone is cut from rectangular slabs. Sink and cooktop openings, corner '
+      +'returns, edge build-ups and seam alignment all remove material that '
+      +'cannot be used elsewhere, and on a veined stone the pieces have to be '
+      +'taken from positions that keep the pattern running. The allowance is '
+      +'the difference between the countertop you see and the stone that has '
+      +'to be bought to produce it &mdash; it is not a markup and it is not a fee.'
+      +'</div>'
+      +'<div style="color:var(--muted);font-size:12px;margin-top:6px">'
+      +'This is the same '+pct+'% this shop’s quoting engine applies to a '
+      +escHtml(label).toLowerCase()+'. Final slab count depends on the actual '
+      +'slab sizes available when the job is scheduled.</div>';
+  };
+  window.sdWasteCalcPrint=function(){
+    var out=document.getElementById('pwc-out');
+    if(!out || !out.querySelector('div')){ showToast('Enter an area first.'); return; }
+    var shop=localStorage.getItem('fab_shop_name')||'Your Stone Shop';
+    var w=window.open('','_blank');
+    if(!w){ showToast('Allow pop-ups to print this.'); return; }
+    w.document.write('<html><head><title>Material and Waste &mdash; '+escHtml(shop)+'</title>'
+      +'<style>body{font-family:system-ui,sans-serif;max-width:640px;margin:40px auto;line-height:1.7;color:#111}'
+      +'h1{font-size:18px}div{margin-bottom:6px}</style></head><body>'
+      +'<h1>'+escHtml(shop)+' &mdash; material and cutting allowance</h1>'
+      +out.innerHTML
+      +'<div style="margin-top:24px;color:#666;font-size:12px">Prepared '
+      +escHtml(new Date().toLocaleDateString())+'. An estimate of material quantity, not a quote.</div>'
+      +'</body></html>');
+    w.document.close(); w.print();
+  };
+
   window.sdAIQSendToQuote=function(){showPanel("quote");showToast("Navigate to Quote Builder and build your formal quote.");};
   window.sdAIQExport=function(){
     var d=load();
