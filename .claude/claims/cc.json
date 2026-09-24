@@ -2526,8 +2526,8 @@
       "task": "build a review-obligation channel keyed on named coding/billing RULES rather than stored Tier A resource rows -- the existing gate structurally cannot hold an obligation for a compute-only rule FILES: tools/tier_a_review_gate.py docs/coding-rule-registry.json docs/tier-a-reviews.json",
       "claimed_at": "2026-09-24T12:11:44Z",
       "claimed_at_epoch": 1790251904.929334,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-24T12:40:44Z",
       "files": [
         "docs/coding-rule-registry.json",
         "docs/tier-a-reviews.json",
