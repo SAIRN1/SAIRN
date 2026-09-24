@@ -13601,6 +13601,119 @@
       "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
       "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
+    },
+    {
+      "commit": "41f7ffc7a3b9",
+      "date": "2026-09-24",
+      "subject": "fix(comment-stripper): a quote inside a REGEX literal handed real comments to every caller as code",
+      "files": [
+        "tests/run_comment_quote_probe.py",
+        "tools/comment_quote_check.py"
+      ],
+      "lines_added": 115,
+      "lines_removed": 4,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/comment_quote_check.py's strip_comments() did not parse JS regex literals, and its own disclosure was BACKWARDS about which way that failed. It said the gap \"biases toward reporting MORE code as comment, which for a report-only checker is the safe direction\". Measured over 753 tracked js/html files: 2,178 characters over-stripped in 54 files (the disclosed direction) and 328,210 characters UNDER-stripped in 27 files (the denied one). A quote character inside a regex literal opened a bogus string span, so the scanner hunted a closing quote and walked past real // comments -- and a BACKTICK is not newline-bounded, so api/_lib/style-profile.js:71's markdown-detection regex caused every comment below it in that file to reach ~30 downstream checkers as CODE. The over-strip half is the replace(/\\//g,...) shape: two adjacent slashes inside a literal read as a comment opener, blanking the rest of the line, present in api/_lib/auth.js's base64url encoder and 53 other files.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "ba70ec125a97",
+        "date": "2026-09-11",
+        "subject": "feat(tools): a probe that greps for what the fix's own comment quotes -- made mechanical",
+        "lag_days": 13
+      },
+      "citation_note": "No standing rule covers a lexer-class gap ('a scanner that does not model a token class misreads its content as another class'). The nearest is the disciplines' anchor-staleness rule, which is about time, not vocabulary. Second not-citable of this shape today; candidate for a rule.",
+      "phase_note": "Injected when strip_comments was made string-aware: strings and comments were modelled, regex literals were named in a disclosure and deliberately not modelled, with the cost asserted in the wrong direction rather than measured.",
+      "contributing_factors": [
+        {
+          "factor": "The scanner modelled strings and line/block comments but not regex literals, a third token class that can contain both quote characters and slash pairs. Any character-class member it does not model is interpreted AS one of the classes it does.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Regex literals are parsed and skipped whole, like strings. A slash opens one only where an expression may legally begin (conservative preceder list plus keywords), the literal must close on the same line, and anything ambiguous advances one character -- each bound chosen so a mis-detection cannot recreate the skip-to-next-slash under-strip."
+        },
+        {
+          "factor": "The disclosure above the gap asserted its direction without measuring it, and asserted the SAFE direction. A wrong disclosure is worse than none: it tells every reader the check they were about to do is unnecessary.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The direction was measured before fixing (753 files, both deltas counted separately, old vs new implementation compared byte-for-byte) and the corrected disclosure quotes the measurement instead of a belief."
+        },
+        {
+          "factor": "~30 tools consume strip_comments and none of their probes drove a regex-literal case, so the shape had no detector anywhere on the platform.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Nine arms added to tests/run_comment_quote_probe.py, paired in both directions: the three quote-in-regex shapes and the backtick runaway (under-strip), the escaped-slash shape (over-strip), and four controls that fail if the fix over-reaches (division, division after a paren, // inside a regex surviving, an unterminated slash not read as a literal)."
+        }
+      ],
+      "recurrence_open": "The actions close the JS regex-literal class in the one canonical stripper. They do NOT close: template-literal interpolation (a comment-opener inside `${...}` is still unmodelled); the two consumers' verdicts were compared by EXIT CODE only, not by every internal count, so a count that moved inside a still-nonzero exit would not have been seen; and the general class -- a scanner that models N-1 of N token classes misreads the Nth as one of the N-1 -- has no detector, this instance was found from a queue item, not by a tool."
+    },
+    {
+      "commit": "1fc1b5a88d78",
+      "date": "2026-09-24",
+      "subject": "fix(fai): the four findings from cc's obligation review, closed structurally rather than by more punctuation",
+      "files": [
+        "tools/first_article_inspection.py"
+      ],
+      "lines_added": 264,
+      "lines_removed": 12,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/first_article_inspection.py counted four spellings of a declared exclusion as test coverage (set, list, tuple, dict VALUE -- the colon rule matched only a dict KEY), counted a bare comment mention ('widget.py' inside a # comment) as a suite, anchored its self-test body extraction on the literal 'def _selftest' while 2 of the 7 real self-tests spell theirs without the underscore (their arm counts were right only because nothing outside the self-test looked like an arm), and detected self-tests in Python only, so a JS tool with a working process.argv self-test would be reported UNVERIFIED rather than UNWIRED -- the exact conflation the UNWIRED state was created to end. All four were disclosed in cody's review of cc's change (obligation 69755622) and had no dedicated open-work row, so nothing owned them until this queue item.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "e419586b69f5",
+        "date": "2026-09-15",
+        "subject": "feat(process): five follow-ups -- and the sharpest finding is that my own tool was wrong about five of its seven",
+        "lag_days": 9
+      },
+      "citation_note": "The nearest rules are the disciplines' anchor-staleness and blind-lock requirements, and neither names the actual shape: a matcher stated at the punctuation level when the property is structural. Third not-citable today whose family is 'the rule was narrower than the principle its own comment stated'; the three together are the case for writing one.",
+      "phase_note": "Injected in cc's exclusion-rule change: the principle (named is not tested) was stated in the comment and the code implemented one punctuation mark of it. The JS and underscore gaps predate that commit but were surfaced by the same review.",
+      "contributing_factors": [
+        {
+          "factor": "The exclusion rule keyed on PUNCTUATION (a colon after the name) when the property is POSITION (a catalogue entry vs a driven argument). Any rule stated at the punctuation level invites the next spelling of the same semantics.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "named_only_mention() decides it structurally with ast: a string occurring only inside ASSIGNED collection literals is catalogued; an argument list is driving. An unparseable file keeps the suite -- losing a real suite is the expensive direction."
+        },
+        {
+          "factor": "Comments counted as coverage because the bare-name rule was a regex over raw text. The same class as the exclusion defect: the matcher answered 'is the string present' when the question is 'does any use reach the tool'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Closed by construction for Python (ast does not see comments) and by the CANONICAL stripper for JS -- explicitly not a third local reimplementation, since comment_quote_check has been wrong about this twice."
+        },
+        {
+          "factor": "The self-test body anchor was a single literal spelling, and the whole-file fallback made a wrong anchor produce a silently coincident number instead of an error. Right-by-luck is indistinguishable from right in the output.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The anchor accepts def/function/const spellings with or without the underscore, and when no named function is found the whole-file basis is SAID in the result ('whole_file_count') and printed, rather than coinciding."
+        },
+        {
+          "factor": "All four defects were fully described in a review verdict and then owned by nobody: the review discharged its obligation, the findings were 'disclosed', and no open-work row carried them. Disclosure without a row is where findings go to expire.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Fixed under an explicit queue item from Michael. The recurrence-open names the general gap: nothing mechanically turns a review verdict's numbered findings into tracked work."
+        },
+        {
+          "factor": "The first draft of the structural fix subjected IMPORT hits to the named-only test and silently cost 19 artefacts their suites (api/_lib/auth.js lost 51) because require() names a module without its extension -- caught only because the delta was measured against the shipped version over the full repo before committing.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Hit classes separated (an import is a dependency, never a mention) with a fixture arm pinning it, and the final delta re-measured: one loss, judged a true positive and disclosed in the commit."
+        }
+      ],
+      "recurrence_open": "The actions close these four instances and pin them with 34 fixture arms. They do NOT close: the general gap that a review verdict's numbered findings become nobody's work unless a human copies them into a row (these sat disclosed for six days); the tuple-in-call ambiguity (a name in a tuple passed as an argument is treated as driven, which is the chosen direction, not a proven one); and the JS half of named_only_mention still has no AST -- a name inside a JS array literal is only as invisible as the stripper makes it."
     }
   ],
   "started": "2026-09-09",
