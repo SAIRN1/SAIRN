@@ -379,5 +379,47 @@ check('parseFloat\'s PARTIAL PARSE no longer sneaks a plausible wrong number in'
 });
 
 
+check('MONEY SUMS EXACTLY: 0.1 + 0.2 is 0.30, not 0.30000000000000004', () => {
+  // The sum used to accumulate IEEE754 doubles, so a long column of ordinary
+  // charges drifted by representation error -- on money, in a roll-up whose
+  // own header promises the totals line agrees with the buckets. Amounts are
+  // rounded to integer cents once at measurement and added as integers now.
+  // strictEqual on the exact decimal, deliberately: an epsilon comparison
+  // here would pass the very defect this arm exists to refuse.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 0.1 },
+      { id: 'C2', location_id: 'LOC-N', amount: 0.2 }] } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, 0.3);
+  assert.strictEqual(out.totals.production.value, 0.3);
+});
+
+check('...and a long column of cent-bearing amounts lands on the cent', () => {
+  // One hundred charges of $10.01. Float accumulation puts this at
+  // 1000.9999999999998; the ledger it describes says 1001.00.
+  const rows = [];
+  for (let i = 0; i < 100; i++) rows.push({ id: 'C' + i, location_id: 'LOC-N', amount: 10.01 });
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: rows } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, 1001);
+  assert.strictEqual(out.totals.production.value, 1001);
+});
+
+check('the TOTALS line adds cents too -- exact buckets cannot drift back into a float total', () => {
+  // Fixing pass 1 alone leaves `v += cell.value` summing dollar floats across
+  // buckets, which reintroduces at the totals line the drift just removed
+  // from the cells. Three locations whose exact values misadd as doubles.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-A', amount: 0.1 },
+      { id: 'C2', location_id: 'LOC-B', amount: 0.2 },
+      { id: 'C3', location_id: 'LOC-C', amount: 0.3 }] } } }));
+  assert.strictEqual(out.totals.production.value, 0.6,
+    'the totals line drifted: ' + out.totals.production.value);
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);

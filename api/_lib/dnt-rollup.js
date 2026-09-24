@@ -205,7 +205,19 @@ function rollup(input) {
       // (Upstream 17aa211e's comment, restored 2026-09-15: I removed it when I
       // restructured this loop for finding 1, which was not mine to do.)
       if (n === null) { cell.unread += 1; return; }
-      cell.value += n;
+      // ── SUMMED IN INTEGER CENTS, NOT FLOAT DOLLARS (2026-09-24) ─────────
+      // `cell.value += n` accumulated IEEE754 doubles, so 0.1 + 0.2 was
+      // 0.30000000000000004 and every long column of ordinary charges drifted
+      // by representation error -- on MONEY, in a roll-up whose own header
+      // promises the totals line agrees with the buckets. Each amount is
+      // rounded to cents ONCE, at measurement, and everything downstream adds
+      // integers, which IEEE754 does exactly (to 2^53, far past any ledger
+      // this serves). Dollars reappear in one place, at materialisation.
+      //
+      // Rounding to whole cents at ingestion is a decision, not a loss: these
+      // fields are charge/payment amounts, and a sub-cent fraction in one is
+      // upstream garbage that a float sum would have silently kept.
+      cell.value += Math.round(n * 100);
     });
   });
 
@@ -224,8 +236,14 @@ function rollup(input) {
         return;
       }
       const cell = acc[id + SEP + m.key];
+      // THE ONE PLACE CENTS BECOME DOLLARS for a bucket cell. A count metric's
+      // value is already the integer it claims to be; a sum's is integer cents
+      // and divides once here. c/100 for an exact integer c is the closest
+      // representable double, so the cell shows the amount the cents actually
+      // total -- not the amount plus fifteen additions' worth of drift.
       buckets[id].metrics[m.key] = cell
-        ? { value: cell.value, rows: cell.rows, unread: cell.unread }
+        ? { value: m.kind === 'sum' ? cell.value / 100 : cell.value,
+            rows: cell.rows, unread: cell.unread }
         : { value: 0, rows: 0, unread: 0 };
     });
   });
@@ -237,16 +255,24 @@ function rollup(input) {
   const ids = Object.keys(buckets).sort();
   const totals = {};
   metrics.forEach((m) => {
-    let v = 0, rows = 0, unread = 0, suppressed = false;
+    // The totals line adds INTEGER CENTS too -- summing the buckets' dollar
+    // values would reintroduce at this line the exact float drift pass 1 just
+    // removed. Each bucket value is c/100 for an integer c, and
+    // Math.round(value*100) recovers that c exactly, so this is a lossless
+    // re-read of the integer, not a second rounding. Counts round-trip
+    // unchanged through the same expression, which is why there is one code
+    // path rather than a kind switch to get wrong.
+    let vCents = 0, rows = 0, unread = 0, suppressed = false;
     ids.forEach((id) => {
       const cell = buckets[id].metrics[m.key];
       if (!cell || cell.value === null) { suppressed = true; return; }
-      v += cell.value; rows += cell.rows; unread += (cell.unread || 0);
+      vCents += Math.round(cell.value * 100);
+      rows += cell.rows; unread += (cell.unread || 0);
     });
     totals[m.key] = suppressed
       ? { value: null, rows: null, unread: null,
           unreadable: unreadable[m.resource] || 'suppressed' }
-      : { value: v, rows: rows, unread: unread };
+      : { value: vCents / 100, rows: rows, unread: unread };
   });
   // Rolled up across metrics so `complete` has one thing to read, and so a
   // caller can show the count without walking every bucket.

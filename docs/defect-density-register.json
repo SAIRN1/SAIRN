@@ -13714,6 +13714,56 @@
         }
       ],
       "recurrence_open": "The actions close these four instances and pin them with 34 fixture arms. They do NOT close: the general gap that a review verdict's numbered findings become nobody's work unless a human copies them into a row (these sat disclosed for six days); the tuple-in-call ambiguity (a name in a tuple passed as an argument is treated as driven, which is the chosen direction, not a proven one); and the JS half of named_only_mention still has no AST -- a name inside a JS array literal is only as invisible as the stripper makes it."
+    },
+    {
+      "commit": "df32b641d534",
+      "date": "2026-09-24",
+      "subject": "fix(dnt-rollup): money summed as IEEE754 doubles -- integer cents now, at the cell AND the totals line",
+      "files": [
+        "api/_lib/dnt-rollup.js",
+        "api/_lib/dnt-rollup.test.js"
+      ],
+      "lines_added": 73,
+      "lines_removed": 5,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "user-report",
+      "summary": "api/_lib/dnt-rollup.js summed money amounts as IEEE754 doubles: `cell.value += n` at the sum branch, and `v += cell.value` again at the totals line. 0.1 + 0.2 reported 0.30000000000000004; one hundred $10.01 charges totalled 1000.9999999999998 -- in a roll-up whose own header promises the totals line agrees with the buckets by construction, serving the SAIRNdental per-location production/collections figures. No crash, no warning; the number was simply not the number the ledger says. Fixed by accumulating integer cents in pass 1 and recovering each bucket's integer losslessly at the totals line, with three regression arms each verified to FAIL on the old code.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "af5aeddfb782",
+        "date": "2026-09-15",
+        "subject": "feat(sairndental): B2 cross-location roll-up -- and it returns null rather than a number it could not measure",
+        "lag_days": 9
+      },
+      "citation_note": "No section of docs/SAIRN-PROCESS-RULES.md names float accumulation of money; the closest standing statement is the cross-domain disciplines' fabricated-number class, which this is not -- the number was computed, just in the wrong arithmetic. Queue item 10 exists to make this a named, checkable shape.",
+      "contributing_factors": [
+        {
+          "factor": "Float accumulation is the language default and nothing on the platform refuses it: += on amounts reads as obviously correct and reviews passed it repeatedly",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Fixed here with integer cents; queue item 10 builds a Guardian-style check for this named shape (truthy-coercion/float-money) so the next instance is caught mechanically rather than by reading."
+        },
+        {
+          "factor": "The suite asserted sums only on values that happen to be exact in binary (100, 1200), so the drift class was structurally invisible to every existing arm",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Three arms added using 0.1/0.2/10.01 with strictEqual on the exact decimal -- an epsilon comparison would pass the defect the arm exists to refuse. Each verified red on the old code."
+        },
+        {
+          "factor": "The totals line re-summed bucket dollars, so a fix at the cell alone would have LOOKED complete while reintroducing the same drift one screen down",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both passes fixed together and a dedicated arm drives the totals line with buckets whose exact values misadd as doubles."
+        }
+      ],
+      "recurrence_open": "grep -c '+= ' over api/ finds hundreds of accumulations and nothing distinguishes a money one from a counter. Until item 10's primitive-obsession check lands, every other float-money sum on the platform -- and the platform has at least the sairncode accumulator and the biz rollups in the same shape -- is found only by reading."
     }
   ],
   "started": "2026-09-09",
