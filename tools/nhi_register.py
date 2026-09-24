@@ -280,7 +280,17 @@ IDENTITIES = [
             'SD_AUTH_SECRET. If it is unset, this identity does not yet exist '
             'in production and the SPLIT HAS NOT HAPPENED; that is a one '
             'command check (vercel env ls production) and it is NOT asserted '
-            'either way from here. DRAFTED 2026-09-23.'
+            'either way from here. DRAFTED 2026-09-23. '
+            'AND THE DEADLOCK THE PROCEDURE EXISTS FOR, because it is not '
+            'visible from this entry: rotating the key leaves every MFA user '
+            'unable to verify (500 MFA_UNAVAILABLE), unable to re-enrol '
+            '(409 MFA_ALREADY_ENABLED while mfa_enabled is true), and unable '
+            'to be reset (mfa_reset needs an OWNER session, and the Owner is '
+            'locked out too). Every route out runs through a session the state '
+            'prevents, so the SQL file is the only door -- not a shortcut '
+            'around the procedure. STEP 1 IS ROTATING AT STEDI, not touching '
+            'this key: that is the credential an attacker can use remotely and '
+            'immediately.'
         ),
     },
     {
