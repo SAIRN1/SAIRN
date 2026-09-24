@@ -12764,7 +12764,7 @@
       "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
     },
     {
-      "commit": "57874de9fbd3",
+      "commit": "44ac2ed17a3a",
       "date": "2026-09-24",
       "subject": "fix(probe): A8 of the rollup-list review probe has been CRASHING, not passing",
       "files": [
