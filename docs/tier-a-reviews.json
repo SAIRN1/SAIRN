@@ -2929,6 +2929,28 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-24T15:16:09Z",
+      "resources": [
+        "rf_draws",
+        "rf_entities",
+        "rf_jobs",
+        "rf_locations",
+        "rf_roof_sections"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-roofing-projected-isolation.test.js"
+      ],
+      "what": "TEST ONLY, no app source touched: six new arms in api/sd-data-roofing-projected-isolation.test.js closing my own finding from yesterday's discharge -- rf_locations has SIX license_hash-filtered read sites and the isolation arm drove ONE. Every one of the other five could lose its tenant filter with both suites green; every one now turns at least one arm red, re-measured per site after the change.\n\nThe five newly-driven sites: drawEntityFilter's location read (:7149), the roof-section entity filter's (:7368), the consolidation's location read (:8344), and BOTH entity-column FALLBACK retries (:8347, :8446) -- the copies of the filter that execute only on a half-migrated app, which no test had ever reached.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first:\n\n(1) THE MOCK GREW A __table DIMENSION AND I CHANGED SHARED HARNESS CODE TO DO IT. The mock was table-blind -- it filters the seeded array by =eq. clauses only -- and my four-table fixture broke on it: the buildings query returned the sections row, last-write-wins overwrote the building->location map with undefined, and the chain resolved to nothing. Rows may now declare __table and are matched only for that table; undeclared rows behave as before. VERIFY THE BACKWARD-COMPATIBILITY CLAIM rather than accepting it: the pre-existing arms all seed undeclared rows, and if any of them would now behave differently the claim is false. Also decide whether table-blindness should stay the default at all -- it is one absent __table away from the exact bug I hit.\n\n(2) THE FALLBACK ARMS ASSERT THEIR OWN PRECONDITION and that is the part to press: each asserts the forced 400 actually happened, so a wrapper that stops forcing it fails about the ANCHOR, not the subject. Check the wrapper's 400 is faithful to PostgREST's for an absent column (status 400, once per table, retried without the column) -- an unfaithful refusal drives the handler down a path production would never take.\n\n(3) MY OWN HELPERS SHADOWED AN EXISTING job() AND FOUR EXISTING ARMS WENT RED before I renamed to rl*. Function hoisting, same async scope, no error. The four arms recovered, but confirm from the diff that the rename touched ONLY my additions -- a rename that leaked into the pre-existing fixtures would be invisible in a green run.\n\n(4) THE CONSOLIDATION ARMS ASSERT THE QUERY, NOT THE PAYLOAD -- every rf_locations read the branch makes must carry license_hash=eq.A. That is weaker than a content assertion and deliberate: the branch can legitimately refuse for non-tenancy reasons. Decide whether query-shape assertions are acceptable evidence for GENUINE grading or whether these two arms should be graded apart.\n\n(5) site :8443 is deliberately NOT re-covered here -- the dispatchers suite's rf_locations [L] arm already turns red for it, verified in the same measurement. Confirm that division rather than trusting it.\n\nFILES: api/sd-data-roofing-projected-isolation.test.js",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T15:16:09Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
