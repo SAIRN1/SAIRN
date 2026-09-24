@@ -8910,7 +8910,19 @@ function sdInvExport(){
   // the value the engine wrote.
   function dispStatus(s){
     if(s.status==='consumed') return 'Cut';
-    if(s.reservedFor) return 'Allocated';
+    if(s.reservedFor){
+      // A LAPSED HOLD READS AS LAPSED, NOT AS ALLOCATED (2026-09-24). The row
+      // still carries reservedFor -- deliberately, it is the record of who had
+      // it -- so without this line a slab whose hold ran out an hour ago still
+      // displays "Allocated" and nobody goes near it. The word is what the
+      // whole expiry feature is for.
+      //
+      // DISPLAY ONLY. The server re-decides on every reserve; this cannot
+      // release anything and must not be read as having done so.
+      var m=(typeof sdHoldMinutesLeft==='function')?sdHoldMinutesLeft(s):null;
+      if(m!==null && m<=0) return 'Hold lapsed';
+      return 'Allocated';
+    }
     if(s.status==='in-stock') return 'Available';
     return s.status||'Unknown';
   }
@@ -8934,7 +8946,10 @@ function sdInvExport(){
   }
   function fmtMoney(n){ return '$'+Math.round(n).toLocaleString(); }
 
-  var STATUS_COLOR={Available:'var(--brand2)',Allocated:'#f59e0b',Cut:'#6366f1',Remnant:'#94a3b8'};
+  // 'Hold lapsed' is RED where 'Allocated' is amber, and that is deliberate:
+  // amber reads as "someone has this", which is exactly what a lapsed hold no
+  // longer means. Red is the colour that gets the row looked at.
+  var STATUS_COLOR={Available:'var(--brand2)',Allocated:'#f59e0b','Hold lapsed':'#ef4444',Cut:'#6366f1',Remnant:'#94a3b8'};
 
   // Phase 1b lineage cell. Resolves through the remnant chain, so a remnant
   // still shows the block it ultimately came from -- that survival across
@@ -9089,7 +9104,11 @@ function sdInvExport(){
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);font-size:12px">'+lineageCell(s)+'</td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border)"><span style="background:'+(STATUS_COLOR[ds]||'#6b7280')+'20;color:'+(STATUS_COLOR[ds]||'#6b7280')+';padding:2px 8px;border-radius:10px;font-size:11px;font-weight:700">'+escHtml(ds)+'</span></td>'
         +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);text-align:right">'+(c===null?'<span style="color:var(--muted)">—</span>':fmtMoney(c))+'</td>'
-        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.reservedFor||'—')+'</td>'
+        +'<td style="padding:9px 12px;border-bottom:1px solid var(--border);color:var(--muted)">'+escHtml(s.reservedFor||'—')
+        // The deadline, in the column that already names the holder. Without
+        // it a browsing salesperson sees "Chen bath" and has no way to know
+        // whether that is a live hold or one from March.
+        +((s.reservedFor&&typeof sdHoldLabel==='function'&&sdHoldLabel(s))?'<br><span style="font-size:11px">'+escHtml(sdHoldLabel(s))+'</span>':'')+'</td>'
         +'</tr>';
     });
     html+='</tbody></table>';
@@ -9562,8 +9581,17 @@ function sdInvExport(){
     var status = dispStatus(s);
     // The reservation is the answer the yard actually needs, so it is the
     // loudest thing on the card -- not a field halfway down a list.
-    var held = s.reservedFor
-      ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fee2e2;border:1px solid #ef4444;font-size:13px"><strong>RESERVED FOR ' + escHtml(s.reservedFor) + '</strong> — do not cut this for another job.</div>'
+    // A LAPSED HOLD GETS ITS OWN BANNER, and it is amber rather than red: the
+    // slab is takeable, but the name on it is not noise -- somebody quoted this
+    // slab to that customer and may still be selling it. Saying "AVAILABLE"
+    // with no further comment would throw away the only fact the yard needs to
+    // have a conversation about it.
+    var heldMinsLeft = (typeof sdHoldMinutesLeft === 'function') ? sdHoldMinutesLeft(s) : null;
+    var heldLabel = (typeof sdHoldLabel === 'function') ? sdHoldLabel(s) : '';
+    var held = (s.reservedFor && heldMinsLeft !== null && heldMinsLeft <= 0)
+      ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fef3c7;border:1px solid #f59e0b;font-size:13px"><strong>HOLD LAPSED</strong> — was reserved for ' + escHtml(s.reservedFor) + ' and the hold ran out. Available again, but check with them before cutting.</div>'
+      : s.reservedFor
+      ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fee2e2;border:1px solid #ef4444;font-size:13px"><strong>RESERVED FOR ' + escHtml(s.reservedFor) + '</strong>' + (heldLabel ? ' <span style="font-weight:600">(' + escHtml(heldLabel) + ')</span>' : '') + ' — do not cut this for another job.</div>'
       : (status === 'Cut'
         ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#e5e7eb;border:1px solid #9ca3af;font-size:13px"><strong>ALREADY CONSUMED</strong> — this slab has been cut.</div>'
         : '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#dcfce7;border:1px solid #22c55e;font-size:13px"><strong>AVAILABLE</strong> — not reserved for anyone.</div>');
@@ -13642,13 +13670,30 @@ async function saveQuote() {
     var qbSlab = (typeof sdSlabs !== 'undefined')
       ? sdSlabs.find(function(x){ return x.id === qbReservedSlabId; })
       : null;
-    var qbRes = await sdReserveSlab(qbSlab || { id: qbReservedSlabId }, q.client);
+    // WITH A DEADLINE (2026-09-24). A quote is in flight, not sold: holding the
+    // slab indefinitely against one is how the yard filled with reservations
+    // nobody would clear. The window is asked for here rather than left to the
+    // server's default so the reason is visible at the call site -- this is the
+    // quote path, and a quote is the thing that expires.
+    var qbRes = await sdReserveSlab(qbSlab || { id: qbReservedSlabId }, q.client,
+                                    SD_HOLD_MINUTES_QUOTE);
     if (!qbRes.ok) {
       if (typeof showToast === 'function') showToast(qbRes.message);
       if (typeof notify === 'function') notify(qbRes.message, 'err');
       return;
     }
+    // A TAKEOVER IS SAID OUT LOUD. The previous hold lapsed, which is correct
+    // and is the feature -- but the customer on that other quote has not
+    // necessarily been told, and the salesperson standing here is the only one
+    // who can do anything about it.
+    if (qbRes.tookOverFrom) {
+      var tovMsg = 'This slab was held for ' + qbRes.tookOverFrom
+        + ' and that hold had run out. It is now yours -- tell them if that quote is still live.';
+      if (typeof showToast === 'function') showToast(tovMsg);
+      if (typeof notify === 'function') notify(tovMsg, 'warn');
+    }
     q.reservedSlabId = qbReservedSlabId;
+    q.slabHeldUntil = (qbRes.slab && qbRes.slab.reservedUntil) || null;
     qbReservedSlabId = null;
     var chip = document.getElementById('qb-slab-chip');
     if (chip) chip.innerHTML = '';
@@ -13691,15 +13736,67 @@ function renderHistory() {
     el.innerHTML = '<div style="color:var(--muted);padding:20px;text-align:center">No saved quotes yet.</div>';
     return;
   }
-  el.innerHTML = quoteHistory.map(q =>
-    '<div class="hist-row">' +
-    '<span style="font-weight:600;color:var(--a)">' + q.num + '</span>' +
-    '<span>' + q.client + '</span>' +
-    '<span style="color:var(--muted);font-size:11px">' + q.project + '</span>' +
-    '<span style="font-weight:600">' + fmt(q.total) + '</span>' +
-    '<span style="font-size:11px;color:var(--muted)">' + q.date + '</span>' +
-    '</div>'
-  ).join('');
+  // THE HOLD IS SHOWN ON THE QUOTE, NOT ONLY ON THE SLAB (2026-09-24). A
+  // salesperson looking at their own quote list is the person who knows whether
+  // a deal is dead, and until now there was nowhere to act on that: the only
+  // way a reservation ended was by lapsing. The release button is here because
+  // this is where the decision is actually made.
+  el.innerHTML = quoteHistory.map(function(q){
+    var hold = '';
+    if (q.reservedSlabId && typeof sdSlabs !== 'undefined') {
+      var hs = sdSlabs.find(function(x){ return x.id === q.reservedSlabId; });
+      // Only offer a release for a slab THIS quote still holds. Offering it for
+      // one already taken over or consumed would be a button that answers 409.
+      if (hs && hs.status === 'reserved' && hs.reservedFor === q.client) {
+        // Styled inline rather than with `class="btn bo bsm"`, which twelve
+        // other buttons in this file use: NONE of those three classes has a
+        // CSS rule anywhere in the document, so copying them would ship a
+        // control that renders as bare browser default. Checked rather than
+        // assumed. Those twelve are a separate finding, not fixed here.
+        var lab = (typeof sdHoldLabel === 'function') ? sdHoldLabel(hs) : '';
+        var mins = (typeof sdHoldMinutesLeft === 'function') ? sdHoldMinutesLeft(hs) : null;
+        var lapsed = (mins !== null && mins <= 0);
+        hold = '<span style="font-size:11px;' + (lapsed ? 'color:#ef4444' : 'color:var(--muted)') + '">🪨 '
+          + escHtml(hs.colorName || hs.id) + (lab ? ' &middot; ' + escHtml(lab) : '')
+          + '</span> <button type="button" style="margin-left:6px;padding:2px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);font-size:11px;cursor:pointer" onclick="qbReleaseQuoteHold(' + JSON.stringify(q.num).replace(/"/g, '&quot;') + ')">Release</button>';
+      }
+    }
+    return '<div class="hist-row">' +
+      '<span style="font-weight:600;color:var(--a)">' + q.num + '</span>' +
+      '<span>' + q.client + '</span>' +
+      '<span style="color:var(--muted);font-size:11px">' + q.project + '</span>' +
+      '<span style="font-weight:600">' + fmt(q.total) + '</span>' +
+      '<span style="font-size:11px;color:var(--muted)">' + q.date + '</span>' +
+      (hold ? '<span>' + hold + '</span>' : '') +
+      '</div>';
+  }).join('');
+}
+
+// Releases the slab a saved quote is holding. SERVER FIRST, and the local row
+// is only cleared if the server agreed -- clearing it locally on a refusal
+// would show the slab as free on this device while another device still sees
+// the hold, which is the split-brain the reservation system exists to avoid.
+async function qbReleaseQuoteHold(quoteNum){
+  var q = quoteHistory.find(function(x){ return x.num === quoteNum; });
+  if (!q || !q.reservedSlabId) return;
+  var s = (typeof sdSlabs !== 'undefined')
+    ? sdSlabs.find(function(x){ return x.id === q.reservedSlabId; }) : null;
+  var r = await sdReleaseSlab(s || { id: q.reservedSlabId }, q.client);
+  if (!r.ok) {
+    if (typeof showToast === 'function') showToast(r.message);
+    if (typeof notify === 'function') notify(r.message, 'err');
+    return;
+  }
+  q.reservedSlabId = null;
+  q.slabHeldUntil = null;
+  st('stonedesk_quote_history', quoteHistory);
+  if (typeof dbSaveQuoteHistory === 'function') dbSaveQuoteHistory();
+  renderHistory();
+  if (typeof sdSlabsRender === 'function') { try { sdSlabsRender(); } catch(e){} }
+  var msg = r.released
+    ? (r.expired ? 'That hold had already lapsed; the slab is free.' : 'Slab released — it is available again.')
+    : 'That slab was not being held, so nothing changed.';
+  if (typeof showToast === 'function') showToast(msg);
 }
 
 // == CLIENT ESTIMATE ===========================================
@@ -38166,37 +38263,104 @@ async function slabSyncFromSupabase(){
 // Returns { ok:true, slab } or { ok:false, code, message }. NEVER throws and
 // never falls back to writing locally on failure -- a local write that the
 // server refused is precisely the double-sale this exists to stop.
-async function sdReserveSlab(slab, forWho){
+// ── AND THE HOLD EXPIRES (2026-09-24) ─────────────────────────────────────
+// The compare-and-swap above stopped the double-sale and replaced it with a
+// slower one: a quote that is never finished holds its slab for ever. Nobody
+// goes back to un-reserve a slab on a deal they lost, so the yard fills with
+// slabs "held for Ruiz kitchen" against a quote from March, and the next
+// person either cuts one anyway or stops believing the field. A reservation
+// that cannot lapse is a reservation nobody obeys.
+//
+// EXPIRY IS DECIDED ON THE SERVER, AND THIS FILE DELIBERATELY CANNOT DO IT.
+// `reservedUntil` is computed from the server's clock; the functions here only
+// ASK for a window and DISPLAY what came back. A client that could declare a
+// hold expired could back-date somebody else's and take the slab, which is the
+// double-sale with extra steps.
+var SD_HOLD_MINUTES_QUOTE = 120;
+
+// Minutes left on a hold, read from the row the server sent back.
+// null = no deadline (a hold made before this existed, or an indefinite one).
+// <= 0 = lapsed. THE CALLER MUST NOT ACT ON THIS -- it is for display only; the
+// server re-decides on every reserve, which is the only opinion that counts.
+function sdHoldMinutesLeft(slab){
+  if(!slab || slab.reservedUntil===undefined || slab.reservedUntil===null
+     || slab.reservedUntil==='') return null;
+  var t=Date.parse(String(slab.reservedUntil));
+  if(!isFinite(t)) return null;
+  return Math.ceil((t-Date.now())/60000);
+}
+// "for another 40 min", "HOLD LAPSED", or '' when there is no deadline. Empty
+// rather than "no expiry" on purpose: an indefinite hold is the pre-existing
+// normal case and labelling every one of them adds noise to every row.
+function sdHoldLabel(slab){
+  var m=sdHoldMinutesLeft(slab);
+  if(m===null) return '';
+  if(m<=0) return 'HOLD LAPSED';
+  if(m<60) return 'for another '+m+' min';
+  var h=Math.floor(m/60);
+  return 'for another '+h+'h '+(m-h*60)+'m';
+}
+
+async function sdSlabHoldCall(action, slab, forWho, holdMinutes){
   if(!slab || !slab.id) return {ok:false, code:'NO_SLAB', message:'No slab selected.'};
   var who=String(forWho||'').trim();
-  if(!who) return {ok:false, code:'NO_HOLDER', message:'Enter the customer name before reserving a slab.'};
+  if(!who) return {ok:false, code:'NO_HOLDER', message: action==='release'
+    ? 'Name whose hold is being released.'
+    : 'Enter the customer name before reserving a slab.'};
   var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
   if(!lic) return {ok:false, code:'NO_LICENSE', message:'Not signed in.'};
   try{
     var headers={'Content-Type':'application/json',Authorization:'Bearer '+lic};
     try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) headers['X-SD-Auth']=tok; }catch(e){}
     var payload=Object.assign({},slab,{reservedFor:who});
+    // Never sent on a release, and never invented here. The server refuses a
+    // non-integer rather than coercing it, so passing something through from a
+    // form field surfaces as a 400 with a message instead of a hold that
+    // expired in 1970.
+    if(action==='reserve' && holdMinutes!==undefined && holdMinutes!==null){
+      payload.holdMinutes=holdMinutes;
+    } else {
+      delete payload.holdMinutes;
+    }
     var res=await fetch('/api/sd-data',{method:'POST',headers:headers,
-      body:JSON.stringify({action:'reserve',resource:'slabs',payload:payload})});
+      body:JSON.stringify({action:action,resource:'slabs',payload:payload})});
     var j=null; try{ j=await res.json(); }catch(e){ j=null; }
     if(res.ok && j && j.ok){
       // Adopt the SERVER's version of the row, not a locally-guessed one --
-      // it is the copy that won.
+      // it is the copy that won. `data` is null on a release of a slab the
+      // server never had, which is a no-op and must not overwrite anything.
       if(typeof sdSlabs!=='undefined' && j.data){
         var i=sdSlabs.findIndex(function(x){return x.id===slab.id;});
         if(i>=0) sdSlabs[i]=j.data; else sdSlabs.push(j.data);
         if(typeof saveSlabs==='function') saveSlabs();
       }
-      return {ok:true, slab:j.data||null};
+      return {ok:true, slab:j.data||null, tookOverFrom:j.tookOverFrom||null,
+              released:j.released===true, expired:j.expired===true};
     }
     var err=(j&&j.error)||{};
     return {ok:false, code:err.code||('HTTP_'+res.status),
-            message:err.message||'Could not reserve that slab. Try again.'};
+            reservedFor:err.reservedFor||null,
+            expiresInMinutes:(typeof err.expiresInMinutes==='number')?err.expiresInMinutes:null,
+            message:err.message||('Could not '+action+' that slab. Try again.')};
   }catch(e){
-    // A network failure is NOT permission to reserve locally. Refuse and say
-    // why -- an unreachable server cannot tell you the slab is free.
-    return {ok:false, code:'OFFLINE', message:'Could not reach the server to reserve this slab, so it was not reserved. Check the connection and try again.'};
+    // A network failure is NOT permission to act locally. Refuse and say why --
+    // an unreachable server cannot tell you the slab is free, and it cannot
+    // tell you a release landed either.
+    return {ok:false, code:'OFFLINE', message: action==='release'
+      ? 'Could not reach the server, so this slab was NOT released and is still held. Check the connection and try again.'
+      : 'Could not reach the server to reserve this slab, so it was not reserved. Check the connection and try again.'};
   }
+}
+
+async function sdReserveSlab(slab, forWho, holdMinutes){
+  return sdSlabHoldCall('reserve', slab, forWho, holdMinutes);
+}
+
+// The other half. Used when a quote is abandoned or its slab is swapped --
+// without it the only way a hold ends is by lapsing, and a salesperson who
+// knows the deal is dead should not have to wait out the clock.
+async function sdReleaseSlab(slab, forWho){
+  return sdSlabHoldCall('release', slab, forWho);
 }
 
 async function slabSyncOne(slab){

@@ -2911,6 +2911,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T13:59:59Z",
+      "resources": [
+        "stonedesk_quote_history"
+      ],
+      "rules": [],
+      "files": [
+        "stonedesk.html"
+      ],
+      "what": "StoneDesk expiring slab holds. api/sd-data.js reserve now stamps a server-clock reservedUntil and a LAPSED hold loses the argument to the next caller; a new session-gated release verb clears your own hold or a lapsed one. stonedesk.html shows the remaining time, a red 'Hold lapsed' state, and a Release button on the quote that owns the hold. WHAT A REVIEWER SHOULD ATTACK, in order: (1) an existing reservation with NO reservedUntil must never read as expired -- getting that backwards releases every standing hold on the platform on deploy, silently; (2) whether release can be used as a way to TAKE a slab (release somebody else's, then reserve -- the compare-and-swap never sees a conflict because there is not one left); (3) whether any client-side expiry judgement in stonedesk.html feeds a write, which would let a fast clock take a live hold; (4) whether holdMinutes validation is really refusing rather than coercing -- Number('') is 0. tests/run_slab_hold_expiry_sabotage_probe.py plants all four and a further four; please check the MUTATIONS are the right ones rather than that they pass. NOT LIVE-VERIFIED: never driven against the deployed API, and the 2026-09-02 comment in this same branch records that only live driving caught the last predicate defect here.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-24T13:59:59Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

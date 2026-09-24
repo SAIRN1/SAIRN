@@ -103,12 +103,36 @@ test('the three callers are async, or the await is a syntax error waiting', () =
 // ---------------------------------------------------------------------------
 section('the helper refuses rather than guessing');
 
+// EXTRACTS sdSlabHoldCall, NOT sdReserveSlab (2026-09-24). The transport moved
+// there when 'release' was added, and sdReserveSlab is now a two-line wrapper
+// around it. Slicing the wrapper would have left every assertion below reading
+// a function body that no longer contains the thing being asserted.
+//
+// AND THE EXTRACTION FAILURE IS A REPORTED TEST, NOT A THROW. When the
+// signature changed, the bare `assert.ok(s > 0)` at module scope threw out of
+// the whole file: node printed a stack, the two sections after this one never
+// ran at all, and the process still exited 0 because the throw escaped the
+// runner. A test file that cannot find its subject must fail LOUDLY and keep
+// going -- the same "could not run is not a pass" rule the gates use.
 const ctx = { console };
 vm.createContext(ctx);
-const s = html.indexOf('async function sdReserveSlab(slab, forWho){');
-const e = html.indexOf('\n}', s) + 2;
-assert.ok(s > 0 && e > s, 'sdReserveSlab not found in stonedesk.html');
-vm.runInContext('var sdLicenseKey = function(){ return ctxLic; };\nvar ctxLic = "LIC";\n' + html.slice(s, e), ctx);
+const HOLD_SIG = 'async function sdSlabHoldCall(action, slab, forWho, holdMinutes){';
+const s = html.indexOf(HOLD_SIG);
+const e = s < 0 ? -1 : html.indexOf('\n}', s) + 2;
+let src = '';
+test('the reservation transport is findable in stonedesk.html', () => {
+  assert.ok(s > 0 && e > s,
+    'could not find `' + HOLD_SIG + '`. It was renamed or its signature '
+    + 'changed, and every assertion in this section reads its body -- they '
+    + 'would all be reading an empty string. Update HOLD_SIG here.');
+});
+if (s > 0 && e > s) {
+  src = html.slice(s, e);
+  vm.runInContext('var sdLicenseKey = function(){ return ctxLic; };\nvar ctxLic = "LIC";\n'
+    + src
+    + '\nasync function sdReserveSlab(a,b,c){ return sdSlabHoldCall("reserve",a,b,c); }'
+    + '\nasync function sdReleaseSlab(a,b){ return sdSlabHoldCall("release",a,b); }', ctx);
+}
 
 test('no slab -> refused, and never calls the network', async () => {
   ctx.fetch = () => { throw new Error('must not be called'); };
@@ -130,19 +154,16 @@ test('OFFLINE IS A REFUSAL, NOT A LOCAL RESERVATION', () => {
   // The tempting failure: "the server is unreachable, reserve it locally and
   // sync later". An unreachable server cannot tell you the slab is free, and
   // reserving on that basis is the double-sale with extra steps.
-  const src = html.slice(s, e);
   assert.match(src, /code:'OFFLINE'/);
   assert.ok(!/catch\s*\(e\)\s*\{[^}]*status\s*=\s*['"]reserved['"]/.test(src),
     'the catch path reserves locally');
 });
 
 test('a 409 is surfaced with the server\'s own message, not a generic one', () => {
-  const src = html.slice(s, e);
   assert.match(src, /message:err\.message\|\|/);
 });
 
 test('success adopts the SERVER\'s row rather than a locally-guessed one', () => {
-  const src = html.slice(s, e);
   assert.match(src, /sdSlabs\[i\]=j\.data/);
 });
 
@@ -154,6 +175,95 @@ test('the chip says Selected, not Reserved', () => {
     'the picker still tells the user a slab is Reserved at pick time');
   assert.strictEqual((html.match(/📦 Selected: <b>/g) || []).length, 2,
     'expected the quote and POS chips to both say Selected');
+});
+
+// ---------------------------------------------------------------------------
+section('the hold expires, and this file does not get a vote on when');
+
+// A fetch stand-in that records the request and answers with a slab row.
+function captureFetch(reply) {
+  const seen = [];
+  ctx.fetch = async (url, init) => {
+    seen.push(JSON.parse(init.body));
+    return { ok: true, status: 200, json: async () => reply };
+  };
+  ctx.sdSlabs = [];
+  ctx.saveSlabs = function () {};
+  return seen;
+}
+
+test('a quote reservation asks for a WINDOW, not an open-ended hold', () => {
+  // The whole defect being fixed is a hold nobody ever clears. If the quote
+  // path stops sending holdMinutes it silently reverts to the server default,
+  // which is not wrong but is no longer a decision anyone made here.
+  const i = html.indexOf('var qbRes = await sdReserveSlab(');
+  assert.ok(i > 0, 'the quote path does not reserve');
+  assert.match(html.slice(i, i + 260), /SD_HOLD_MINUTES_QUOTE/,
+    'the quote path no longer asks for a hold window');
+  assert.match(html, /var SD_HOLD_MINUTES_QUOTE\s*=\s*\d+;/,
+    'SD_HOLD_MINUTES_QUOTE is referenced but never defined');
+});
+
+test('holdMinutes reaches the wire on a reserve', async () => {
+  const seen = captureFetch({ ok: true, data: { id: 'S1', status: 'reserved' } });
+  return ctx.sdReserveSlab({ id: 'S1' }, 'Chen', 45).then(() => {
+    assert.strictEqual(seen.length, 1);
+    assert.strictEqual(seen[0].action, 'reserve');
+    assert.strictEqual(seen[0].payload.holdMinutes, 45);
+  });
+});
+
+test('...and is NEVER sent on a release, even if the slab object carries one', async () => {
+  const seen = captureFetch({ ok: true, data: { id: 'S1', status: 'in-stock' }, released: true });
+  return ctx.sdReleaseSlab({ id: 'S1', holdMinutes: 999 }, 'Chen').then(() => {
+    assert.strictEqual(seen[0].action, 'release');
+    assert.strictEqual(seen[0].payload.holdMinutes, undefined,
+      'a stale holdMinutes rode along on a release');
+  });
+});
+
+test('THE ONE THAT MATTERS: this file never decides a hold has expired', () => {
+  // sdHoldMinutesLeft/sdHoldLabel exist for DISPLAY. If either one ever gated a
+  // write -- "it looks expired, so reserve it" -- a device with a fast clock
+  // could take a live hold, which is the double-sale with a clock-skew step.
+  // The server recomputes on every reserve and is the only opinion that counts.
+  const callers = html.split(/\r?\n/)
+    .filter(l => !/^\s*(\/\/|\*)/.test(l))
+    .filter(l => /sdHoldMinutesLeft\s*\(/.test(l) || /sdHoldLabel\s*\(/.test(l));
+  assert.ok(callers.length > 0, 'the display helpers are defined and never used');
+  const writers = callers.filter(l =>
+    /sdReserveSlab|sdReleaseSlab|sdSlabHoldCall|sdData\s*\(/.test(l));
+  assert.deepStrictEqual(writers, [],
+    'a hold-expiry judgement is feeding a write: ' + JSON.stringify(writers));
+});
+
+test('an expiring hold is DISPLAYED, or the feature is invisible to the yard', () => {
+  // A hold that lapses silently is the same as no hold at all: the row still
+  // reads "Allocated" and nobody goes near the slab.
+  assert.match(html, /Hold lapsed/, 'no lapsed state is ever shown');
+  assert.match(html, /HOLD LAPSED/, 'the slab detail card never says the hold ran out');
+  assert.match(html, /function sdHoldLabel\(/, 'there is no way to render time remaining');
+});
+
+test('a takeover is surfaced to the salesperson, not swallowed', () => {
+  const i = html.indexOf('var qbRes = await sdReserveSlab(');
+  assert.match(html.slice(i, i + 1400), /qbRes\.tookOverFrom/,
+    'the quote path takes a lapsed slab from another customer and says nothing');
+});
+
+test('a release that the server refused does NOT clear the local row', () => {
+  // Clearing locally on a refusal shows the slab free on this device while
+  // another device still sees the hold -- the split-brain the whole
+  // reservation system exists to avoid.
+  const i = html.indexOf('async function qbReleaseQuoteHold(');
+  assert.ok(i > 0, 'the release path is gone');
+  const body = html.slice(i, i + 1200);
+  const guard = body.indexOf('if (!r.ok)');
+  const clear = body.indexOf('q.reservedSlabId = null;');
+  assert.ok(guard > 0 && clear > guard,
+    'the local row is cleared before the server answer is checked');
+  assert.match(body.slice(guard, clear), /return;/,
+    'the refusal path falls through into clearing the row anyway');
 });
 
 Promise.resolve().then(() => {

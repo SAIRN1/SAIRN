@@ -937,7 +937,7 @@ module.exports = async (req, res) => {
       'sf_vendor_prices':       ['read', 'write'],
       'sf_waivers':             ['read', 'write'],
       'sf_youth_participants':  ['read', 'write'],
-      'slabs':   ['read', 'write', 'reserve'],
+      'slabs':   ['read', 'write', 'reserve', 'release'],
       'profile': ['read', 'write'],
       'memory':  ['read', 'write'],
       // Yards, added 2026-09-03. The GAP 7 branch below described itself as
@@ -2399,7 +2399,49 @@ module.exports = async (req, res) => {
     // are still exactly what the read saw. If another request won in between,
     // PostgREST matches zero rows and this returns 409 -- it does not overwrite
     // and it does not silently succeed. Optimistic concurrency, one statement.
-    if (resource === 'slabs' && action === 'reserve') {
+    // ── AND THE HOLD EXPIRES (2026-09-24) ───────────────────────────────────
+    // The compare-and-swap above stopped the double-sale and replaced it with a
+    // slower one: a quote that is never finished holds its slab for ever. The
+    // salesperson who lost the deal does not go back and un-reserve it, so the
+    // yard fills with slabs that are "held for Ruiz kitchen" against a quote
+    // from March, and the next person either cuts one anyway or stops trusting
+    // the field. A reservation that cannot lapse is a reservation nobody obeys.
+    //
+    // ── EXPIRY IS LAZY, EVALUATED HERE, AND THAT IS A DESIGN DECISION ───────
+    // There is no scheduler on this platform -- Vercel functions run when
+    // called -- so a sweeper job would be a thing that can silently stop
+    // running while every row still LOOKS held. Instead nothing expires in the
+    // background: a lapsed hold is simply one that no longer wins an argument,
+    // decided at the moment two callers want the same slab, which is the only
+    // moment it matters. Nothing to schedule means nothing to notice has died.
+    //
+    // ── THE CLOCK IS THE SERVER'S, NEVER THE CALLER'S ───────────────────────
+    // `holdMinutes` is accepted from the payload; `reservedUntil` is COMPUTED
+    // here from Date.now(). A client that sent its own reservedUntil could
+    // back-date another salesperson's hold and take the slab, which is the
+    // original double-sale with extra steps. The field is overwritten on every
+    // reserve for that reason, not merged.
+    //
+    // ── AN EXISTING RESERVATION WITH NO reservedUntil NEVER EXPIRES ─────────
+    // Every slab reserved before today has no such field. Treating "absent" as
+    // "expired" would release every standing hold on this platform the moment
+    // this deploys, silently, which is a far worse failure than the one being
+    // fixed. Absent means indefinite -- exactly today's behaviour -- and only a
+    // reservation that was given a deadline can miss one.
+    const HOLD_MINUTES_DEFAULT = 120;
+    const HOLD_MINUTES_MAX = 60 * 24 * 30;
+    // Returns the ms remaining on a row's hold: Infinity when it has no
+    // deadline, <= 0 when it has lapsed. An UNPARSEABLE deadline returns
+    // Infinity rather than 0 -- garbage in the field must not silently hand the
+    // slab to the next caller, which is the fail-open direction.
+    const holdMsLeft = (row, nowMs) => {
+      const until = row && row.reservedUntil;
+      if (until === undefined || until === null || until === '') return Infinity;
+      const t = Date.parse(String(until));
+      if (!isFinite(t)) return Infinity;
+      return t - nowMs;
+    };
+    if (resource === 'slabs' && (action === 'reserve' || action === 'release')) {
       const slabId = payload && payload.id;
       const who = String((payload && payload.reservedFor) || '').trim();
       if (!slabId) {
@@ -2407,9 +2449,44 @@ module.exports = async (req, res) => {
         return;
       }
       if (!who) {
-        res.status(400).json({ error: { code: 'NO_HOLDER', message: 'reservedFor is required -- a reservation with nobody to hold it is not a reservation' } });
+        res.status(400).json({
+          error: {
+            code: 'NO_HOLDER',
+            message: action === 'release'
+              ? 'reservedFor is required on a release -- it names whose hold you are clearing, and releasing somebody else\'s by accident is the failure this asks about'
+              : 'reservedFor is required -- a reservation with nobody to hold it is not a reservation'
+          }
+        });
         return;
       }
+      // Validated, not trusted. A non-numeric or absurd hold is refused rather
+      // than coerced: Number('') is 0 and Number('abc') is NaN, and either one
+      // silently becomes "expires immediately" or "expired in 1970" if fed
+      // through Date. This is the platform's own Number('') defect, so it is
+      // refused at the edge instead of defended against downstream.
+      let holdMinutes = HOLD_MINUTES_DEFAULT;
+      if (action === 'reserve' && payload && payload.holdMinutes !== undefined
+          && payload.holdMinutes !== null) {
+        const raw = payload.holdMinutes;
+        // `true` and `[]` both survive Number(); typeof is the check that does
+        // not. A string is accepted because JSON bodies from forms carry one.
+        const ok = (typeof raw === 'number') || (typeof raw === 'string' && raw.trim() !== '');
+        const n = ok ? Number(raw) : NaN;
+        if (!isFinite(n) || n <= 0 || n > HOLD_MINUTES_MAX || Math.floor(n) !== n) {
+          res.status(400).json({
+            error: {
+              code: 'BAD_HOLD',
+              message: 'holdMinutes must be a whole number of minutes between 1 and '
+                + HOLD_MINUTES_MAX + '. Omit it for the default of '
+                + HOLD_MINUTES_DEFAULT + '.'
+            }
+          });
+          return;
+        }
+        holdMinutes = n;
+      }
+      const nowMs = Date.now();
+      const reservedUntil = new Date(nowMs + holdMinutes * 60000).toISOString();
       const base = 'sd_slabs?license_hash=eq.' + enc(licHash) + '&slab_id=eq.' + enc(String(slabId));
 
       const cur = await fetch(rest(base + '&select=data,updated_at'), { headers });
@@ -2421,8 +2498,20 @@ module.exports = async (req, res) => {
       // 'write' branch uses, precisely so that two devices racing on the same
       // unsynced slab collide on the unique index instead of clobbering.
       if (!Array.isArray(curRows) || !curRows.length) {
-        const merged = Object.assign({}, payload, { status: 'reserved', reservedFor: who });
+        // A release against a slab the server has never seen is not an error
+        // and is not a write. There is no hold to clear, and INSERTING a row to
+        // say so would create server state out of a request that asked for the
+        // absence of it.
+        if (action === 'release') {
+          res.status(200).json({ ok: true, data: null, released: false,
+                                 note: 'no server-side reservation existed for that slab' });
+          return;
+        }
+        const merged = Object.assign({}, payload, {
+          status: 'reserved', reservedFor: who, reservedUntil: reservedUntil
+        });
         delete merged.reservedFor_expected;
+        delete merged.holdMinutes;
         const ins = await fetch(rest('sd_slabs'), {
           method: 'POST',
           headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
@@ -2451,21 +2540,100 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: { code: 'SLAB_CONSUMED', message: 'That slab has already been consumed and cannot be reserved.' } });
         return;
       }
-      // Already held by someone else. Naming the holder is the whole point --
-      // "unavailable" sends a salesperson hunting, "held for Ruiz kitchen"
-      // ends the question.
-      if (curStatus === 'reserved' && curWho && curWho !== who) {
-        res.status(409).json({
-          error: {
-            code: 'ALREADY_RESERVED',
-            message: 'That slab is already reserved for ' + curWho + '.',
-            reservedFor: curWho
-          }
-        });
+      const msLeft = holdMsLeft(row, nowMs);
+      const lapsed = curStatus === 'reserved' && msLeft <= 0;
+      // Already held by someone else AND THE HOLD IS STILL GOOD. Naming the
+      // holder is the whole point -- "unavailable" sends a salesperson hunting,
+      // "held for Ruiz kitchen" ends the question. `expiresIn` is returned so
+      // the caller can say "for another 40 minutes" rather than implying the
+      // slab is gone for good; it is omitted entirely for an indefinite hold,
+      // because a missing field is honest where a made-up number is not.
+      // `action === 'reserve'` is load-bearing: release has its OWN refusal
+      // below with its own code, and without this guard a release of somebody
+      // else's hold answered ALREADY_RESERVED -- technically a refusal, but it
+      // tells the caller the wrong thing about what it just tried to do.
+      if (action === 'reserve' && curStatus === 'reserved' && curWho && curWho !== who && !lapsed) {
+        const err = {
+          code: 'ALREADY_RESERVED',
+          message: 'That slab is already reserved for ' + curWho + '.',
+          reservedFor: curWho
+        };
+        if (msLeft !== Infinity) {
+          err.reservedUntil = String(row.reservedUntil);
+          err.expiresInMinutes = Math.ceil(msLeft / 60000);
+          err.message = 'That slab is reserved for ' + curWho + ' for another '
+            + err.expiresInMinutes + ' minute(s).';
+        }
+        res.status(409).json({ error: err });
         return;
       }
 
-      const merged = Object.assign({}, row, payload, { status: 'reserved', reservedFor: who });
+      // ── RELEASE ────────────────────────────────────────────────────────────
+      // You may clear YOUR OWN hold, or one that has already lapsed. Clearing
+      // somebody else's live hold from here would be the double-sale wearing a
+      // different verb: release, then reserve, and the compare-and-swap above
+      // never sees a conflict because there is not one left to see.
+      if (action === 'release') {
+        if (curStatus === 'reserved' && curWho && curWho !== who && !lapsed) {
+          const err = {
+            code: 'NOT_YOUR_HOLD',
+            message: 'That slab is reserved for ' + curWho + ', not for ' + who
+              + '. A release clears your own hold; it is not a way to take one.',
+            reservedFor: curWho
+          };
+          if (msLeft !== Infinity) err.reservedUntil = String(row.reservedUntil);
+          res.status(409).json({ error: err });
+          return;
+        }
+        if (curStatus !== 'reserved') {
+          // Not held: already the requested end state. Reported as a no-op
+          // rather than as success-with-a-write, so a caller retrying a release
+          // cannot tell itself it did something it did not.
+          res.status(200).json({ ok: true, data: row, released: false,
+                                 note: 'that slab was not reserved' });
+          return;
+        }
+        const cleared = Object.assign({}, row, {
+          status: 'in-stock', reservedFor: '', reservedUntil: null,
+          // Kept, not erased. Who held it and until when is the audit trail for
+          // a slab that changed hands, and it is the only way to answer "who
+          // had this before me" after the fields above are overwritten.
+          releasedFrom: curWho || null,
+          releasedAt: new Date(nowMs).toISOString(),
+          releasedBecause: lapsed ? 'expired' : 'released'
+        });
+        delete cleared.reservedFor_expected;
+        delete cleared.holdMinutes;
+        const relGuard = '&updated_at=' + (curUpdated === null ? 'is.null' : 'eq.' + enc(curUpdated));
+        const rel = await fetch(rest(base + relGuard), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: cleared, updated_at: nowISO() })
+        });
+        const relRows = await rel.json();
+        if (!rel.ok) return upstream(res, relRows);
+        if (!Array.isArray(relRows) || !relRows.length) {
+          res.status(409).json({ error: { code: 'RESERVATION_RACE', message: 'Someone else changed this slab while you were releasing it. Reload the slab list and check before acting.' } });
+          return;
+        }
+        res.status(200).json({ ok: true, data: relRows[0].data, released: true,
+                               expired: lapsed });
+        return;
+      }
+
+      const merged = Object.assign({}, row, payload, {
+        status: 'reserved', reservedFor: who, reservedUntil: reservedUntil
+      });
+      delete merged.holdMinutes;
+      // A takeover is reported, never silent. The salesperson needs to know the
+      // slab was somebody else's five minutes ago, because the customer on the
+      // other quote has not necessarily been told.
+      const tookOverFrom = (lapsed && curWho && curWho !== who) ? curWho : null;
+      if (tookOverFrom) {
+        merged.takenOverFrom = tookOverFrom;
+        merged.takenOverAt = new Date(nowMs).toISOString();
+        merged.previousHoldExpired = String(row.reservedUntil);
+      }
       // THE COMPARE. Re-asserts the exact state the read saw; a change by any
       // other request in between matches zero rows.
       // KEYED ON updated_at, NOT ON THE JSONB FIELDS, AND THAT IS A CORRECTION.
@@ -2498,7 +2666,10 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: { code: 'RESERVATION_RACE', message: 'Someone else changed this slab while you were reserving it. Reload the slab list and pick again.' } });
         return;
       }
-      res.status(200).json({ ok: true, data: updRows[0].data });
+      res.status(200).json(tookOverFrom
+        ? { ok: true, data: updRows[0].data, tookOverFrom: tookOverFrom,
+            previousHoldExpired: String(row.reservedUntil) }
+        : { ok: true, data: updRows[0].data });
       return;
     }
 

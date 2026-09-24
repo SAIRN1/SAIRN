@@ -31,13 +31,20 @@ function mockRes() {
   res.json = function (b) { res.body = b; return res; };
   return res;
 }
-function mockReq(payload) {
+function mockReq(payload, action) {
   return {
     method: 'POST',
     headers: { authorization: 'Bearer SD-TEST-KEY' },
-    body: { action: 'reserve', resource: 'slabs', payload: payload }
+    body: { action: action || 'reserve', resource: 'slabs', payload: payload }
   };
 }
+
+// ISO timestamps relative to NOW, so no arm depends on the date it is run.
+// A fixture with a literal 2026 date passes today and starts failing the day
+// the wall clock walks past it, which is the "nothing announces the day a
+// check stops testing anything" shape -- here it would announce itself as a
+// reservation bug rather than as a stale fixture.
+function minutesFromNow(m) { return new Date(Date.now() + m * 60000).toISOString(); }
 
 let passed = 0;
 async function test(name, fn) {
@@ -245,6 +252,195 @@ async function main() {
     await loadHandler()(mockReq({ id: 'S9', reservedFor: 'Chen' }), res);
     assert.strictEqual(res.statusCode, 409);
     assert.strictEqual(res.body.error.code, 'ALREADY_RESERVED');
+  });
+
+  // ── THE HOLD EXPIRES (2026-09-24) ──────────────────────────────────────
+  // The compare-and-swap above stopped the double-sale and replaced it with a
+  // slower one: a quote that is never finished holds its slab for ever, and
+  // nobody goes back to un-reserve the slab on a deal they lost. A reservation
+  // that cannot lapse is one the yard stops obeying.
+
+  await test('BACKWARD COMPATIBILITY, AND IT IS THE ARM THAT MATTERS MOST: a '
+           + 'reservation with NO reservedUntil never expires', async () => {
+    // Every slab reserved before today has no such field. If absent read as
+    // "expired", deploying this would release every standing hold on the
+    // platform at once, silently -- a worse failure than the one being fixed,
+    // and one nobody would see until two people cut the same slab.
+    const calls = stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen' } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }), res);
+    assert.strictEqual(res.statusCode, 409);
+    assert.strictEqual(res.body.error.code, 'ALREADY_RESERVED');
+    assert.strictEqual(res.body.error.expiresInMinutes, undefined,
+      'it invented an expiry for a hold that has none');
+    assert.ok(!calls.some(c => c.method === 'PATCH'), 'it refused and wrote anyway');
+  });
+
+  await test('a LIVE hold still refuses -- and says how long is left', async () => {
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen',
+                         reservedUntil: minutesFromNow(40) } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }), res);
+    assert.strictEqual(res.statusCode, 409);
+    assert.strictEqual(res.body.error.code, 'ALREADY_RESERVED');
+    assert.ok(res.body.error.expiresInMinutes >= 39 && res.body.error.expiresInMinutes <= 41,
+      'expiresInMinutes was ' + res.body.error.expiresInMinutes);
+    assert.match(res.body.error.message, /another 4[01] minute/,
+      'the message does not say the hold is temporary: ' + res.body.error.message);
+  });
+
+  await test('a LAPSED hold is taken over, and the takeover is REPORTED', async () => {
+    const was = minutesFromNow(-5);
+    const res = mockRes();
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen',
+                         reservedUntil: was } });
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.data.reservedFor, 'Chen bath');
+    // Silent would be wrong. The customer on the other quote has not
+    // necessarily been told the hold ran out.
+    assert.strictEqual(res.body.tookOverFrom, 'Ruiz kitchen');
+    assert.strictEqual(res.body.data.takenOverFrom, 'Ruiz kitchen');
+    assert.strictEqual(res.body.data.previousHoldExpired, was);
+  });
+
+  await test('the deadline is the SERVER\'s: a caller-supplied reservedUntil is '
+           + 'overwritten, not merged', async () => {
+    // Accepting it would let a salesperson back-date somebody else's hold and
+    // take the slab -- the original double-sale with extra steps.
+    const res = mockRes();
+    stubBackend({ row: { id: 'S1', status: 'in-stock' } });
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath',
+                                  reservedUntil: '1999-01-01T00:00:00.000Z' }), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.notStrictEqual(res.body.data.reservedUntil, '1999-01-01T00:00:00.000Z');
+    assert.ok(Date.parse(res.body.data.reservedUntil) > Date.now(),
+      'the stored deadline is already in the past: ' + res.body.data.reservedUntil);
+  });
+
+  await test('holdMinutes is honoured', async () => {
+    const res = mockRes();
+    stubBackend({ row: { id: 'S1', status: 'in-stock' } });
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath', holdMinutes: 30 }), res);
+    assert.strictEqual(res.statusCode, 200);
+    const mins = (Date.parse(res.body.data.reservedUntil) - Date.now()) / 60000;
+    assert.ok(mins > 29 && mins <= 30.1, 'hold was ' + mins + ' minutes');
+    assert.strictEqual(res.body.data.holdMinutes, undefined,
+      'the request parameter was stored on the slab row as if it were data');
+  });
+
+  for (const bad of ['', '   ', 'abc', 0, -5, 1.5, true, null === undefined ? 0 : 60 * 24 * 30 + 1]) {
+    await test('a hold of ' + JSON.stringify(bad) + ' is REFUSED, not coerced', async () => {
+      // Number('') is 0 and Number('abc') is NaN, and either one becomes
+      // "expires immediately" or "expired in 1970" once it reaches Date. This
+      // is the platform's own Number('') defect, refused at the edge.
+      const calls = stubBackend({ row: { id: 'S1', status: 'in-stock' } });
+      const res = mockRes();
+      await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen', holdMinutes: bad }), res);
+      assert.strictEqual(res.statusCode, 400, 'accepted holdMinutes=' + JSON.stringify(bad));
+      assert.strictEqual(res.body.error.code, 'BAD_HOLD');
+      assert.strictEqual(calls.length, 0, 'it refused and still hit the network');
+    });
+  }
+
+  await test('an UNPARSEABLE reservedUntil fails CLOSED -- the hold stands', async () => {
+    // Garbage in that field must not hand the slab to the next caller. "I
+    // cannot read the deadline" is not "the deadline passed".
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen',
+                         reservedUntil: 'whenever' } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }), res);
+    assert.strictEqual(res.statusCode, 409);
+    assert.strictEqual(res.body.error.code, 'ALREADY_RESERVED');
+  });
+
+  // ---- release ----------------------------------------------------------
+  await test('RELEASE clears your own hold and records what it cleared', async () => {
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Chen bath',
+                         reservedUntil: minutesFromNow(40) } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.released, true);
+    assert.strictEqual(res.body.data.status, 'in-stock');
+    assert.strictEqual(res.body.data.reservedFor, '');
+    assert.strictEqual(res.body.data.reservedUntil, null);
+    // Who had it is the audit trail for a slab that changed hands.
+    assert.strictEqual(res.body.data.releasedFrom, 'Chen bath');
+    assert.strictEqual(res.body.data.releasedBecause, 'released');
+  });
+
+  await test('RELEASE IS NOT A WAY TO TAKE A SLAB: somebody else\'s live hold '
+           + 'is refused', async () => {
+    // Without this, release-then-reserve is the double-sale with two requests:
+    // the compare-and-swap never sees a conflict because there is not one left.
+    const calls = stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen',
+                                       reservedUntil: minutesFromNow(40) } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 409);
+    assert.strictEqual(res.body.error.code, 'NOT_YOUR_HOLD');
+    assert.strictEqual(res.body.error.reservedFor, 'Ruiz kitchen');
+    assert.ok(!calls.some(c => c.method === 'PATCH'), 'it refused and wrote anyway');
+  });
+
+  await test('...but a LAPSED hold of somebody else\'s may be released, and is '
+           + 'marked expired rather than released', async () => {
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz kitchen',
+                         reservedUntil: minutesFromNow(-1) } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen bath' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.expired, true);
+    assert.strictEqual(res.body.data.releasedBecause, 'expired');
+    assert.strictEqual(res.body.data.releasedFrom, 'Ruiz kitchen');
+  });
+
+  await test('releasing an unreserved slab is a NO-OP, reported as one', async () => {
+    const calls = stubBackend({ row: { id: 'S1', status: 'in-stock' } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.released, false);
+    assert.ok(!calls.some(c => c.method === 'PATCH'), 'a no-op still wrote');
+  });
+
+  await test('releasing a slab the server has never seen INSERTS NOTHING', async () => {
+    // A request asking for the absence of state must not create state.
+    const calls = stubBackend({ row: null });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S9', reservedFor: 'Chen' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.released, false);
+    assert.ok(!calls.some(c => c.method === 'POST'), 'a release inserted a row');
+  });
+
+  await test('a release with nobody named -> 400, and the message says why it '
+           + 'is asking', async () => {
+    const calls = stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Ruiz' } });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: '' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'NO_HOLDER');
+    assert.match(res.body.error.message, /whose hold/);
+    assert.strictEqual(calls.length, 0);
+  });
+
+  await test('a LOST RACE on release -> 409, never a silent no-op', async () => {
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Chen' },
+                  mutateBefore: true });
+    const res = mockRes();
+    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 409);
+    assert.strictEqual(res.body.error.code, 'RESERVATION_RACE');
+  });
+
+  await test('release requires a session too -- the licence key alone is not enough', async () => {
+    stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Chen' } });
+    const res = mockRes();
+    await loadHandler({ noSession: true })(mockReq({ id: 'S1', reservedFor: 'Chen' }, 'release'), res);
+    assert.strictEqual(res.statusCode, 403);
+    assert.match(res.body.error.message, /sign in first/i);
   });
 
   await test('and reserve itself requires a session -- the licence key alone is not enough', async () => {

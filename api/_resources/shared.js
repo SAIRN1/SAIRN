@@ -34,9 +34,20 @@ module.exports = {
   // compare-and-swap that REFUSES on conflict. The two verbs are kept apart on
   // purpose: ordinary slab edits stay cheap, and a reservation does not.
   //
-  // The handler branch is StoneDesk's, and the verb reaches only 'slabs'.
+  // 'release' on slabs (2026-09-24), the other half of an EXPIRING hold.
+  //
+  // WHY A SEPARATE VERB RATHER THAN `reserve` WITH AN EMPTY HOLDER: 'reserve'
+  // refuses an empty reservedFor, on the stated ground that "a reservation
+  // with nobody to hold it is not a reservation". Overloading it to mean
+  // "clear the hold" would make that refusal conditional on a field's
+  // emptiness, which is the same overload that made 'write' able to destroy a
+  // reservation. Releasing is a different decision with a different guard --
+  // you may only release YOUR OWN hold, or one that has already lapsed -- so
+  // it gets its own branch and its own refusal.
+  //
+  // The handler branch is StoneDesk's, and both verbs reach only 'slabs'.
   extraActions: {
-    slabs: ['reserve'],
+    slabs: ['reserve', 'release'],
   },
   resources: [
     'profile',

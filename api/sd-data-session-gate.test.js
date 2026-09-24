@@ -76,6 +76,7 @@ const GATED = [
   ['slabs', 'read'],
   ['slabs', 'write'],
   ['slabs', 'reserve'],
+  ['slabs', 'release'],
   ['profile', 'read'],
   ['profile', 'write'],
   ['memory', 'read'],
@@ -134,7 +135,7 @@ async function main() {
     const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
     const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/);
     assert.ok(m, 'the gate table is gone');
-    assert.match(m[0], /'slabs':\s*\['read', 'write', 'reserve'\]/);
+    assert.match(m[0], /'slabs':\s*\['read', 'write', 'reserve', 'release'\]/);
     assert.match(m[0], /'profile':\s*\['read', 'write'\]/);
     assert.match(m[0], /'memory':\s*\['read', 'write'\]/);
     // Yards, 2026-09-03. The GAP 7 branch described itself as carrying "the
@@ -179,7 +180,13 @@ async function main() {
     assert.match(m[0], /'sf_accounts':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_ledger':\s*\['read', 'write'\]/);
     assert.match(m[0], /'sf_vendor_prices':\s*\['read', 'write'\]/);
-    const pairs = (m[0].match(/'(read|write|reserve)'/g) || []).length;
+    // THE VERB LIST WAS HARDCODED AND SILENTLY UNDERCOUNTED (fixed 2026-09-24).
+    // It read /'(read|write|reserve)'/, so adding 'release' to the table made
+    // the count go DOWN relative to reality -- a new gated pair that this arm
+    // could not see at all. An arm whose job is "the table did not change size"
+    // must not have its own list of what counts as a row; it now counts every
+    // verb inside every array, whatever the verb is called.
+    const pairs = (m[0].match(/'[a-z_]+'(?=[,\]])/g) || []).length;
     // 17 -> 23 on 2026-09-22: phase 2's final three, six pairs. WHY THEY ARE
     // GATED, which is what this tripwire asks for: law_clients, law_matters and
     // law_deadlines were the last three resources in SAIRNlaw authorised by the
@@ -218,7 +225,14 @@ async function main() {
     // fault was not the hardcoded number, it was landing a change that tripped
     // it and leaving the suite red. If this line is what is blocking you, the
     // fix is two edits -- the count, and the paragraph above saying why.
-    assert.strictEqual(pairs, 57,
+    //
+    // 57 -> 58 on 2026-09-24: slabs gains 'release', one pair. WHY IT IS GATED,
+    // which is what this tripwire asks for: release clears a reservation, and
+    // an ungated release is the double-sale in two requests -- release the
+    // other salesperson's hold, then reserve, and the compare-and-swap never
+    // sees a conflict because there is not one left to see. It is the same
+    // authority as 'reserve' pointed the other way and it carries the same gate.
+    assert.strictEqual(pairs, 58,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
