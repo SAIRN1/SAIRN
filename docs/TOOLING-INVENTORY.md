@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**216 files in `tools/`.** By what actually invokes them:
+**217 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 63 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 28 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 41 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 150 |
+| CHECKER | 151 |
 | GENERATOR | 18 |
 | LIBRARY | 24 |
 | LIVE | 20 |
@@ -46,13 +46,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 18 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 10
+**The number to act on: 19 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 8 wired nowhere at all, and 11
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 18, by name, so this is actionable rather than a statistic:
+The 19, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -74,6 +74,7 @@ The 18, by name, so this is actionable rather than a statistic:
 | `sairn_self_state.py` | UNWIRED | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name |
 | `stale_row_sweep.py` | SUITE-ONLY | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file |
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
+| `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
 **Separately, 6 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
@@ -303,7 +304,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (27)
+## SUITE-ONLY (28)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -337,6 +338,7 @@ fixtures. Nothing points them at the real codebase.
 | `source_manifest.py` | GENERATOR | the sha256 of every source file vercel.json copies into the deploy output, at one commit, as a signed-able manifest.json. IT IS NOT SLSA BUILD PROVENANCE FOR THE PRODUCT and its own first line says so -- Vercel deploys from the push and no workflow touches the deployed bytes, so this attests what a commit was SUPPOSED to deploy, never that Vercel deployed it. Run by .github/workflows/source-manifest.yml on push; refuses with exit 2 if vercel.json's buildCommand is not the exact string it models, because a manifest of a file set that no longer deploys would still look clean | `source_manifest_probe.py` |
 | `stale_row_sweep.py` | CHECKER | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file | `stale_row_sweep_control.py` |
 | `sync_write_result_check.py` | CHECKER | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. | `run_sync_write_result_probe.py` |
+| `verification_plan_staleness_check.py` | CHECKER | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. | `run_verification_plan_staleness_probe.py` |
 
 ---
 
@@ -418,11 +420,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      216   git ls-files tools/
+  tools on disk                      217   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                61   report_only_checks.REGISTRY
-  tools invoked by tests/            155   tests/**/*.py, *.js
+  tools invoked by tests/            156   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

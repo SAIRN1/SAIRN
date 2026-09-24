@@ -654,6 +654,17 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'verification_plan_staleness_check.py': ('CHECKER',
+        'a verification-methodology plan that DISAGREES with the repo: an item '
+        'marked unclaimed whose commit has already landed, one marked in flight '
+        'with no live claim of that name, and one marked DONE that nothing in '
+        'the history matches -- the direction that flatters. Derives the answer '
+        'from git log, the claim files and the agent self-logs, in that order of '
+        'authority, and never lets a self-log contradict a commit. It CANNOT '
+        'catch an item the plan does not mark with a `<!-- verify: -->` comment, '
+        'and reports those as UNVERIFIABLE in their own column rather than as '
+        'clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL '
+        'when the plan is absent, which is its state today.'),
     'sairn_dead_function_sweep.py': ('CHECKER', 'a function with no caller anywhere'),
     'sairn_reachability_probe.py': ('CHECKER', 'the rendered-DOM half of reachability, from a browser snapshot'),
     'sairn_stale_snapshot_scan.py': ('CHECKER', 'a panel rendering from a snapshot nothing refreshes'),
