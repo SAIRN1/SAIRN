@@ -47,6 +47,7 @@ drawing it will be measured against, and it is the only spec that exists.
   * Judge arm quality. An arm that asserts True passes every count here. That is
     what mutation-testing is for, and it is a different tool.
 """
+import ast
 import io
 import json
 import os
@@ -163,11 +164,21 @@ def suites(subject, all_tests):
         'tests/run_%s_probe.py' % stem.replace('_', '-'),
         os.path.dirname(subject) + '/' + stem + '.test.js',
     }
-    imports = [
+    # TWO CLASSES, AND THEY ARE SEPARATE NOW (2026-09-24). They used to be one
+    # list, and folding them cost 19 artefacts their suites the first time the
+    # named-only rule was applied -- api/_lib/auth.js alone lost 51 real test
+    # files. A `.test.js` requires './_lib/auth' WITHOUT the extension, so a
+    # rule asking whether the string 'auth.js' appears free in the text answered
+    # "no" for every one of them. The named-only question is only meaningful for
+    # a hit that came from the BARE NAME; an explicit import is not a mention,
+    # it is a dependency, and nothing about cataloguing applies to it.
+    strong = [
         re.compile(r'^\s*import\s+%s\b' % re.escape(stem.replace('-', '_')), re.M),
         re.compile(r'^\s*from\s+%s\s+import' % re.escape(stem.replace('-', '_')), re.M),
         re.compile(r'require\([\'"][^\'"]*%s(?:\.js)?[\'"]\)' % re.escape(stem)),
         re.compile(r'from\s+[\'"][^\'"]*%s(?:\.js)?[\'"]' % re.escape(stem)),
+    ]
+    bare_name = [
         # A python tool driven as a SUBPROCESS rather than imported -- several
         # probes here shell out to the tool instead of importing it, and
         # excluding that shape would report those tools as unverified.
@@ -180,20 +191,127 @@ def suites(subject, all_tests):
         # PRODUCTION WRITE PATH as verified by the one file that deliberately
         # refuses to run it.
         #
-        # The exclusion is narrow on purpose: `'name.py':` with a colon after
-        # it. Requiring an invocation token on the same line was tried and
-        # over-corrected, dropping two tools whose probes name them in prose and
-        # cover them perfectly well.
-        re.compile(r'[\'"]%s[\'"](?!\s*:)' % re.escape(base)),
+        # THE COLON RULE IS GONE, 2026-09-24. It was narrow on purpose -- only
+        # `'name.py':`, a dict KEY -- and cody's review of it drove four more
+        # spellings of the identical semantics, every one of which counted as
+        # coverage: a set `EXCLUDE = {'w.py', 'x.py'}`, a list `SKIP = ['w.py']`,
+        # a tuple `('w.py',)`, and a dict VALUE `{'why': 'w.py'}`. The file that
+        # motivated the original fix is one refactor from restoring the defect:
+        # tests/run_selftest_sweep_probe.py's EXCLUDE is a dict ONLY because
+        # each entry carries a reason string. Drop the reasons, it becomes a
+        # set, and a production write path goes back to being reported as
+        # verified by the one file that deliberately refuses to run it.
+        #
+        # The rule encoded now is the PRINCIPLE the old comment stated one
+        # paragraph above the narrow regex and did not implement: being NAMED
+        # by a test file is not being TESTED by it. See named_only_mention().
+        re.compile(r'[\'"]%s[\'"]' % re.escape(base)),
     ]
     hits = []
     for t, txt in all_tests.items():
         if t.replace('\\', '/') in by_convention:
             hits.append(t)
             continue
-        if any(rx.search(txt) for rx in imports):
+        if any(rx.search(txt) for rx in strong):
             hits.append(t)
+            continue
+        if not any(rx.search(txt) for rx in bare_name):
+            continue
+        if named_only_mention(t, txt, base):
+            continue
+        hits.append(t)
     return sorted(hits)
+
+
+# ── NAMED IS NOT TESTED, AND IT IS DECIDED STRUCTURALLY (2026-09-24) ──────────
+# The previous rule was a negative lookahead for a colon, so it answered a
+# question about PUNCTUATION when the question is about POSITION: is this the
+# name of a thing the file drives, or an entry in a list of things it declines
+# to drive? Four spellings of "declines" had different punctuation and all four
+# read as coverage.
+#
+# For a PYTHON test file the position is decidable exactly, with ast: a string
+# literal that is only ever an element of a set/list/tuple or a key/value of a
+# dict is a catalogue entry, not a call. That also closes cody's SECOND finding
+# for free and by construction rather than by another pattern -- ast does not
+# see comments at all, so a test file containing nothing but
+# `# 'w.py' is not driven here` no longer returns w.py as a suite. It was
+# returning it, and that is the shape most likely to say the exact opposite of
+# what it is read as.
+#
+# For anything else -- a .js suite -- the comments are stripped first (using the
+# canonical stripper, which as of the same day parses regex literals) and the
+# bare-name search runs on what is left. There is no AST for that half and this
+# says so rather than implying one.
+#
+# WHAT IT DELIBERATELY DOES NOT DO: decide that a NAME plus an invocation token
+# is required. That was tried, measured, and over-corrected -- it dropped two
+# tools whose probes name them in prose and cover them perfectly well.
+def named_only_mention(test_path, text, base):
+    """True when `base` appears in this test file ONLY as a catalogue entry.
+
+    False when it appears anywhere a caller would actually reach it, and False
+    when this cannot be decided -- a could-not-tell must not silently remove a
+    suite, because the direction that loses a real suite is the expensive one.
+    """
+    if test_path.endswith('.py'):
+        try:
+            tree = ast.parse(text)
+        except SyntaxError:
+            return False           # COULD NOT TELL -> keep the suite
+        catalogued, free = 0, 0
+        inside = set()
+        # A DECLARED container, not any container. The first version of this
+        # marked every element of every collection literal and immediately
+        # failed its own fixture: `subprocess.run([exe, 'widget.py'])` puts the
+        # name in a LIST, and that list is an argument to a call -- the file is
+        # driving the tool, which is the opposite of cataloguing it. So only a
+        # collection that is the VALUE OF AN ASSIGNMENT counts, which is what
+        # `EXCLUDE = {...}` / `SKIP = [...]` actually are.
+        for node in ast.walk(tree):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+            val = getattr(node, 'value', None)
+            if not isinstance(val, (ast.Set, ast.List, ast.Tuple, ast.Dict)):
+                continue
+            for sub in ast.walk(val):
+                if isinstance(sub, ast.Constant) and isinstance(sub.value, str):
+                    inside.add(id(sub))
+        for node in ast.walk(tree):
+            if not (isinstance(node, ast.Constant) and isinstance(node.value, str)):
+                continue
+            if base not in node.value:
+                continue
+            if id(node) in inside:
+                catalogued += 1
+            else:
+                free += 1
+        # `free == 0` covers BOTH catalogue-only shapes at once: every string
+        # occurrence sits in a declared collection (catalogued > 0), or ast saw
+        # no string occurrence at all -- and since this function only runs on a
+        # bare-name regex hit, no-occurrence-in-the-AST means the mention lives
+        # in a COMMENT, which ast does not see. That closes cody's finding 2 by
+        # construction rather than by another pattern. This function is never
+        # reached for a convention or import hit, so there is no third source.
+        return free == 0
+    stripped = _strip_comments(text)
+    return not re.search(r'[\'"]%s[\'"]' % re.escape(base), stripped)
+
+
+def _strip_comments(text):
+    """The canonical stripper, or the text unchanged if it cannot be imported.
+
+    NOT a local reimplementation. tools/comment_quote_check.py owns this
+    question and has been wrong about it twice -- `https://` read as a comment,
+    then a quote inside a regex literal handing real comments to callers as
+    code. A second copy here would be a third chance to be wrong differently.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        from comment_quote_check import strip_comments
+        return strip_comments(text)
+    except Exception:
+        return text
 
 
 def arm_helpers(text):
@@ -262,8 +380,27 @@ def load_tests():
 # reason: this file's own source contains the string `--self-check` inside this
 # very regex, so a bare substring search reports THIS tool as having a self-test
 # it does not have.
+# BOTH LANGUAGES, 2026-09-24. The python form compares against sys.argv; the JS
+# form against process.argv (`includes` or `indexOf`). The JS half was simply
+# absent, so a JS tool with a working self-test was reported UNVERIFIED rather
+# than UNWIRED -- the exact conflation the UNWIRED state exists to end,
+# surviving in the other language. cody's review said it was not live that day;
+# adding the branch is cheaper than re-measuring that claim every time a JS
+# tool lands.
 SELFTEST_RX = re.compile(
     r"['\"](--self-?check|--selftest)['\"]\s*in\s*(?:sys\.)?argv", re.I)
+SELFTEST_JS_RX = re.compile(
+    r"argv\s*\.\s*(?:includes|indexOf)\s*\(\s*['\"](--self-?check|--selftest)['\"]", re.I)
+
+# THE BODY ANCHOR TAKES ANY SPELLING, 2026-09-24. It was the literal
+# 'def _selftest', and cody's review measured 2 of the 7 real self-tests naming
+# theirs `def selftest(` with no underscore -- both were counted over their
+# ENTIRE source, right that day only because those two tools had no arm-helper
+# calls outside the self-test. Right by luck is the anchor-stops-matching shape
+# this file's own arms() comment names.
+SELFTEST_DEF_RX = re.compile(
+    r'^[ \t]*(?:def\s+_?self_?test\w*\s*\(|function\s+_?self_?test\w*\s*\('
+    r'|(?:const|let|var)\s+_?self_?test\w*\s*=)', re.M | re.I)
 
 
 def selftest_of(subject):
@@ -272,13 +409,24 @@ def selftest_of(subject):
     executed every artefact it inspected would be an arbitrary-code runner."""
     src = io.open(os.path.join(REPO, subject), encoding='utf-8',
                   errors='replace').read()
-    m = SELFTEST_RX.search(src)
+    m = SELFTEST_RX.search(src) or SELFTEST_JS_RX.search(src)
     if not m:
         return None
     flag = m.group(1)
-    body = src[src.find('def _selftest'):] if 'def _selftest' in src else src
+    d = SELFTEST_DEF_RX.search(src)
+    if d:
+        body = src[d.start():]
+        narrowed = True
+    else:
+        # NO NAMED SELF-TEST FUNCTION FOUND, so the count below is over the
+        # WHOLE FILE and may include arm-helper calls that are not the
+        # self-test's. Said in the result rather than silently coinciding --
+        # which is what the old fallback did, and it was right by luck.
+        body = src
+        narrowed = False
     got = arms(body)
-    return {'flag': flag, 'arms': 0 if got is None else len(got)}
+    return {'flag': flag, 'arms': 0 if got is None else len(got),
+            'whole_file_count': not narrowed}
 
 
 def inspect(subject, all_tests):
@@ -435,6 +583,106 @@ def fixtures():
            suites('tools/widget.py',
                   {'tests/drives.py': "subprocess.run([exe, 'widget.py'])"})
            == ['tests/drives.py'])
+        # ── CODY'S FOUR SPELLINGS OF THE SAME EXCLUSION (obligation 69755622,
+        # findings 1 and 2, fixed 2026-09-24). The colon rule keyed on
+        # PUNCTUATION; a declared exclusion does not need a colon. All four
+        # counted as coverage when driven against the shipped regex, and the
+        # file that motivated the original fix is one refactor from restoring
+        # it -- drop EXCLUDE's reason strings and the dict becomes a set.
+        ck("a SET exclusion -- EXCLUDE = {'widget.py', 'x.py'} -- is not a "
+           'suite',
+           suites('tools/widget.py',
+                  {'tests/e1.py': "EXCLUDE = {'widget.py', 'x.py'}"}) == [])
+        ck("a LIST exclusion -- SKIP = ['widget.py'] -- is not a suite",
+           suites('tools/widget.py',
+                  {'tests/e2.py': "SKIP = ['widget.py']"}) == [])
+        ck("a TUPLE exclusion -- ('widget.py',) assigned -- is not a suite",
+           suites('tools/widget.py',
+                  {'tests/e3.py': "SKIP = ('widget.py',)"}) == [])
+        ck("a dict VALUE -- {'why': 'widget.py'} -- is not a suite",
+           suites('tools/widget.py',
+                  {'tests/e4.py': "NOTES = {'why': 'widget.py'}"}) == [])
+        ck('a COMMENT is not a suite. A test file containing only '
+           "# 'widget.py' is not driven here was returned as the suite that "
+           'verifies it -- the shape most likely to say the exact opposite of '
+           'what it is read as',
+           suites('tools/widget.py',
+                  {'tests/c.py': "# 'widget.py' is not driven here\npass\n"})
+           == [])
+        ck('...and a JS comment neither, which is decided by the CANONICAL '
+           'stripper rather than a second local one',
+           suites('tools/widget.js',
+                  {'tests/c.test.js': "// 'widget.js' is declined here\n"
+                                      'const x = 1;\n'}) == [])
+        ck('CONTROL: a catalogue entry BESIDE a real drive still counts -- the '
+           'question is whether ANY use reaches the tool, not whether every '
+           'use does',
+           suites('tools/widget.py',
+                  {'tests/both.py': "SKIP = ['widget.py']\n"
+                                    "subprocess.run([exe, 'widget.py'])\n"})
+           == ['tests/both.py'])
+        ck('CONTROL: an unparseable python test file KEEPS the suite -- a '
+           'could-not-tell must not silently remove one, because losing a real '
+           'suite is the expensive direction',
+           suites('tools/widget.py',
+                  {'tests/broken.py': "subprocess.run([exe, 'widget.py'\n"})
+           == ['tests/broken.py'])
+        ck('CONTROL: an explicit IMPORT is never subjected to the named-only '
+           'test. Folding the two classes cost api/_lib/auth.js all 51 of its '
+           'real suites on the first measured run, because a require() names '
+           'the module WITHOUT its extension',
+           suites('api/_lib/gizmo.js',
+                  {'api/thing.test.js':
+                   "const g = require('./_lib/gizmo');\ntest('a', 1);\n"
+                   "test('b', 2);\ntest('c', 3);\n"})
+           == ['api/thing.test.js'])
+        # ── FINDINGS 3 AND 4: the self-test anchor and the missing JS half ──
+        st_py = os.path.join(d, 'st_plain.py')
+        io.open(st_py, 'w', encoding='utf-8', newline='\n').write(
+            '"""T. It REFUSES bad input always."""\nimport sys\n'
+            'def selftest():\n'
+            "    ck('one', 1)\n    ck('two', 2)\n    ck('three', 3)\n"
+            "if '--selftest' in sys.argv:\n    selftest()\n")
+        st_js = os.path.join(d, 'st_tool.js')
+        io.open(st_js, 'w', encoding='utf-8', newline='\n').write(
+            '// A tool. It must fail closed.\n'
+            'function selfTest() {\n'
+            "  ck('one', 1);\n  ck('two', 2);\n  ck('three', 3);\n}\n"
+            "if (process.argv.includes('--selftest')) selfTest();\n")
+        st_anon = os.path.join(d, 'st_anon.py')
+        io.open(st_anon, 'w', encoding='utf-8', newline='\n').write(
+            '"""T. It REFUSES bad input always."""\nimport sys\n'
+            "ck('outside-a', 1)\nck('outside-b', 2)\nck('outside-c', 3)\n"
+            "if '--selftest' in sys.argv:\n    pass\n")
+        # REBOUND VIA globals() AND SNAPSHOTTED FIRST. The first version of
+        # this arm also wrote `REPO = d` on the line above the snapshot --
+        # inside a function that declares `global REPO` for the header arms --
+        # so the snapshot read the ALREADY-CLOBBERED value and the restore
+        # restored the temp dir. Every real run then reported COULD NOT READ
+        # THE TEST TREE: the fixture lock leaking state into the measurement it
+        # locks, which is this file's own temporary-state lesson in miniature.
+        real_repo2 = globals()['REPO']
+        globals()['REPO'] = d
+        try:
+            got_py = selftest_of('st_plain.py')
+            got_js = selftest_of('st_tool.js')
+            got_anon = selftest_of('st_anon.py')
+        finally:
+            globals()['REPO'] = real_repo2
+        ck('a self-test named WITHOUT the underscore is narrowed to its own '
+           'body -- def selftest( was counted over the whole file, right only '
+           'by luck in 2 of the 7 real tools',
+           bool(got_py) and got_py['arms'] == 3
+           and not got_py['whole_file_count'], got_py)
+        ck('a JS self-test (process.argv.includes) is detected at all -- the '
+           'python-only detector reported a JS tool with a working self-test '
+           'as UNVERIFIED rather than UNWIRED',
+           bool(got_js) and got_js['arms'] == 3
+           and not got_js['whole_file_count'], got_js)
+        ck('CONTROL: a flag with NO named self-test function is counted over '
+           'the whole file AND SAYS SO, instead of the two numbers silently '
+           'coinciding',
+           bool(got_anon) and got_anon['whole_file_count'], got_anon)
         ck('CONTROL: the tool NEVER pairs a claim to an arm -- the FAI document '
            'says the two lists must not be matched automatically, and a scoring '
            'function here would be the 38%-with-five-false-positives result '
@@ -519,9 +767,13 @@ def main(argv):
         print('  the same commit as its subject, so it is not independent of')
         print('  it (disciplines section 5).')
         for r in unwired:
-            print('    %-44s %s, %d arm(s), %d claim(s)'
+            print('    %-44s %s, %d arm(s)%s, %d claim(s)'
                   % (r['subject'], r['selftest']['flag'],
-                     r['selftest']['arms'], len(r['claims'])))
+                     r['selftest']['arms'],
+                     ' COUNTED OVER THE WHOLE FILE -- no named self-test '
+                     'function found, so calls outside it may be included'
+                     if r['selftest'].get('whole_file_count') else '',
+                     len(r['claims'])))
     else:
         print('    every new artefact has at least one suite.')
     print('')
