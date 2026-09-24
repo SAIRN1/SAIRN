@@ -60,7 +60,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # the output named criteria that had already moved -- a version stamp that does
 # not travel with the thing it stamps is worse than none, because it is read as
 # evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
-CRITERIA_VERSION = '2026-09-23.2'
+CRITERIA_VERSION = '2026-09-24.1'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -215,8 +215,35 @@ GUARDS = (
     # operands still have to be bare identifiers, so `if 'x' not in
     # os.environ: cannot(...)` is still a config check and still refused by
     # the negative fixture that already holds that shape.
+    # ── A STATE LABEL IS A REFUSAL VERB TOO, ADDED 2026-09-24, AND IT IS THE
+    # ── SIXTH TIME THIS TOOL HAS UNDER-CREDITED A BETTER-WRITTEN CONTROL ────
+    # tests/rebase_resolve_merge_control.py guards the rebase tool every clone
+    # on this machine uses, and it was reported UNGUARDED while carrying a
+    # guard STRONGER than any spelling above -- it tells a stale anchor apart
+    # from a no-op mutation and fails on BOTH:
+    #
+    #     if old not in src:
+    #         out_lines.append(('ANCHOR GONE', name, 'the mutation anchor is
+    #                            no longer in the tool, so this guard was NOT
+    #                            tested'))
+    #         continue
+    #     ...
+    #     if mutated == src:
+    #         out_lines.append(('NO-OP', name, 'replacement changed nothing'))
+    #
+    # and `main()` treats every non-CAUGHT verdict as a failure and exits 1. It
+    # does not raise, because it has to report every OTHER guard's verdict in
+    # the same run -- which is the same reason the `cannot(` family above does
+    # not raise, one spelling further on.
+    #
+    # THE MATCH IS STRUCTURAL, NOT A PHRASE LIST. What is accepted is a tuple
+    # whose first element is an ALL-CAPS STATE LABEL -- `append(('ANCHOR GONE'`
+    # -- because a state label is a machine-readable verdict and ordinary prose
+    # is not. A bare `append(` would match every accumulator in the tree, which
+    # is why the alternation is not simply widened to it.
     re.compile(r"\b[A-Za-z_]\w*\s+not\s+in\s+[A-Za-z_]\w*\s*:\s*\n?"
-               r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\(|cannot\()", re.I),
+               r"[^\n]{0,80}(?:raise|check\(|assert|sys\.exit|ok\(|cannot\("
+               r"|append\(\(\s*['\"][A-Z][A-Z -]{3,})", re.I),
 )
 
 
@@ -458,6 +485,28 @@ FIXTURES = [
      'if old not in ORIG:\n'
      "    check('ANCHOR MISSING -- not a pass', False, old)\n"
      "open(p,'w').write(s.replace(old,'b'))\n", True),
+    # ── THE STATE-LABEL SPELLING, LOCKED 2026-09-24 ─────────────────────
+    # The positive is verbatim from tests/rebase_resolve_merge_control.py, the
+    # control on the rebase tool every clone uses, which was reported UNGUARDED
+    # while carrying a guard STRONGER than any spelling above: it tells a stale
+    # anchor apart from a no-op mutation and fails on BOTH. The negative is the
+    # whole narrowing -- a bare `append(` is an accumulator and every probe in
+    # this tree has one, so only an ALL-CAPS STATE LABEL counts.
+    ('an anchor checked with `not in` and an ALL-CAPS STATE LABEL appended is '
+     'guarded -- the spelling a control uses when it must report every OTHER '
+     'verdict in the same run instead of crashing on the first',
+     's = open(p).read()\n'
+     'if old not in src:\n'
+     "    out.append(('ANCHOR GONE', name, 'this guard was NOT tested'))\n"
+     '    continue\n'
+     "open(p,'w').write(src.replace(old,'b'))\n", True),
+    ('NEGATIVE: `not in` followed by a PROSE append guards nothing -- an '
+     'accumulator is not a verdict, and every probe in this tree has one',
+     's = open(p).read()\n'
+     'if anchor not in s:\n'
+     "    notes.append('skipping this one for now')\n"
+     '    continue\n'
+     "open(p,'w').write(s.replace(anchor,'b'))\n", False),
     ('NEGATIVE: `not in` followed by CONTINUE is control flow and guards '
      'nothing -- this is the line the narrowing rests on',
      's = open(p).read()\n'
