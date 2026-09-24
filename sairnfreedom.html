@@ -3603,6 +3603,16 @@ function ageOn(dob, onDate){
   if(m<0 || (m===0 && t.getDate()<d.getDate())) age--;
   return age;
 }
+/* ONE normaliser for every (D)(1) name comparison in this function, and the
+   internal-whitespace collapse is the 2026-09-24 repair. Both matches used
+   bare trim().toLowerCase(), which leaves "Pat  Doe" -- two spaces, the
+   commonest data-entry slip there is -- unequal to "Pat Doe". The evasion ran
+   in BOTH directions: a payee typed with a doubled space missed the operator
+   roster, and an operator enrolled with one missed every payee. Found by H1
+   (seq #526), verified live; the test fixture had the same defect, collapsing
+   the whitespace itself before handing the string to the matcher, so the arm
+   that claimed to cover this passed while covering nothing. */
+function sfD1Name(v){ return String(v||'').trim().replace(/\s+/g,' ').toLowerCase(); }
 function operatorEligibility(o){
   var reasons=[];
   var age=ageOn(o.dob, localToday());
@@ -3619,7 +3629,7 @@ function operatorEligibility(o){
      lodge without appearing on the canteen roster. */
   var payrollMatch=null;
   getStaff().forEach(function(s){
-    if(s.paid && String(s.name||'').trim().toLowerCase()===String(o.name||'').trim().toLowerCase()) payrollMatch=s;
+    if(s.paid && sfD1Name(s.name)===sfD1Name(o.name) && sfD1Name(o.name)) payrollMatch=s;
   });
   if(o.paidCanteen || payrollMatch){
     reasons.push({ cite:'ORC 2915.09(D)(1)', text:
@@ -3642,16 +3652,17 @@ function operatorEligibility(o){
      WHOLE-VALUE, NOT SUBSTRING. A business named after its owner -- "Pat Doe
      Supply Co" -- is the commonest legitimate payee a post has, and a
      substring rule would flag every one of them and teach the panel to be
-     ignored. Same trim/lowercase normalisation the canteen match already uses.
+     ignored. Same normalisation as the canteen match, through sfD1Name() --
+     one function, so the two (D)(1) routes cannot normalise differently.
 
      BOTH EMPTY IS NOT A MATCH. Both sides are free text and either can be
      blank; without the guard an operator whose name never loaded would match
      every expense with no payee. */
   var payeeMatches = 0;
-  var opName = String(o.name||'').trim().toLowerCase();
+  var opName = sfD1Name(o.name);
   if(opName){
     getGamingExpenses().forEach(function(e){
-      if(String(e.payee||'').trim().toLowerCase()===opName) payeeMatches++;
+      if(sfD1Name(e.payee)===opName) payeeMatches++;
     });
   }
   if(payeeMatches){

@@ -62,7 +62,14 @@ function extract(startAnchor, endAnchor, label) {
   return HTML.slice(i, j + endAnchor.length);
 }
 
-const SRC = extract(
+// sfD1Name() is extracted WITH the function under test, never re-implemented:
+// a stub here that collapsed whitespace would test the stub, which is the
+// exact defect this file's own fixture just carried.
+const NORM_SRC = extract(
+  'function sfD1Name(v){',
+  '\n',
+  'sfD1Name');
+const SRC = NORM_SRC + extract(
   'function operatorEligibility(o){',
   '\n}',
   'operatorEligibility');
@@ -112,13 +119,31 @@ t('a gaming-account payment to an operator by name raises (D)(1)', () => {
 });
 
 t('the match is case- and whitespace-insensitive, like the canteen match', () => {
-  // The canteen match already normalises with trim().toLowerCase(); an operator
-  // typed one way on one roster and another way on the other is the ordinary
-  // case, not the exception.
-  for (const payee of ['pat doe', '  PAT DOE  ', 'Pat  Doe'.replace(/\s+/g, ' ')]) {
+  // ── THE THIRD FIXTURE NORMALISED ITSELF (fixed 2026-09-24) ───────────────
+  // It read `'Pat  Doe'.replace(/\s+/g, ' ')` -- the fixture collapsed the
+  // doubled space BEFORE handing the string to the matcher, so this arm
+  // claimed whitespace-insensitivity while testing 'Pat Doe' a second time.
+  // The matcher only trimmed, so a payee actually written with an internal
+  // double space -- the commonest data-entry slip there is -- evaded the
+  // (D)(1) match, verified live by H1 (seq #526), and the arm that existed to
+  // catch exactly that was green. A fixture that applies the transform the
+  // code under test is supposed to apply tests nothing but itself. The raw
+  // strings go in now, including a tab, and the app normalises through
+  // sfD1Name().
+  for (const payee of ['pat doe', '  PAT DOE  ', 'Pat  Doe', 'Pat	Doe']) {
     const r = evaluate(ELIGIBLE, { expenses: [{ payee, amount: 50 }] });
     assert.ok(hasPayeeReason(r), 'missed on payee ' + JSON.stringify(payee));
   }
+});
+
+t('...and the OPERATOR side normalises too -- a doubled space at enrolment '
+  + 'must not exempt every cheque', () => {
+  // The evasion ran in both directions and the fixture above only drives one.
+  const op = Object.assign({}, ELIGIBLE, { name: 'Pat  Doe' });
+  const r = evaluate(op, { expenses: [{ payee: 'Pat Doe', amount: 50 }] });
+  assert.ok(hasPayeeReason(r),
+    'an operator enrolled with a doubled space missed a clean-typed payee: '
+    + JSON.stringify(reasons(r)));
 });
 
 t('one match among many ordinary payments is still found', () => {
