@@ -138,12 +138,29 @@ function postgrestMock(rows, calls) {
     if (opts && opts.method === 'PATCH') {
       return { ok: true, status: 200, json: async function () { return [{ data: {} }]; } };
     }
+    // ── THE MOCK IS TABLE-BLIND BY DEFAULT, AND THAT IS ONLY SAFE FOR A
+    //    SINGLE-TABLE FIXTURE (2026-09-24) ──────────────────────────────────
+    // It filters the seeded array by the query's `=eq.` clauses and nothing
+    // else, so with a fixture spanning several tables EVERY query gets every
+    // row of that tenant. Harmless while each arm seeded one table; wrong the
+    // moment one does not. The rf_locations arms seed locations, buildings,
+    // jobs and sections together, and the sections row carries a
+    // `building_id` with no `location_id` -- so the BUILDINGS query returned
+    // it too, `bldLoc['BL-1']` was overwritten with undefined by last-write-
+    // wins, and the entity chain resolved to nothing. The CONTROL arm caught
+    // it: the refusal arm was green and the paired positive was not.
+    //
+    // A row may now declare `__table`, and is then matched ONLY for that
+    // table. Rows without it behave exactly as before, so every arm written
+    // against the old mock is untouched.
+    const table = (u.split('/rest/v1/')[1] || '').split('?')[0];
     const matches = rows.filter(function (r) {
+      if (r.__table && r.__table !== table) return false;
       return eqs.every(function (kv) { return String(r[kv[0]]) === kv[1]; });
     }).map(function (r) {
       if (!select || select.indexOf('*') !== -1) return r;
       const out = {};
-      select.forEach(function (c) { if (c in r) out[c] = r[c]; });
+      select.forEach(function (c) { if (c in r && c !== '__table') out[c] = r[c]; });
       return out;
     });
     return { ok: true, status: 200, json: async function () { return matches; } };
@@ -571,6 +588,268 @@ function rows(res) { return (res.body && res.body.data) || []; }
       + HASH_A + '&select=*')).json();
     assert.ok(whole[0].license_hash === HASH_A,
       'select=* did not return the whole row');
+  });
+
+  // ══ rf_locations -- THE FIVE READS NOTHING DROVE ════════════════════════
+  // FOUND 2026-09-24 while discharging a review. `rf_locations` has SIX
+  // license_hash-filtered read sites in api/sd-data.js and the isolation arm
+  // drives exactly ONE of them. Measured, not inferred: removing the tenant
+  // filter from each of the other five in turn left both roofing suites
+  // completely green.
+  //
+  //   :7149  drawEntityFilter()      -- rf_draws read, only when payload.entity_id is set
+  //   :7368  the roof-section filter -- rf_roof_sections read, same condition
+  //   :8344  rf_entities consolidate/preview_move, location attribution
+  //   :8347  ...its FALLBACK, taken when the entity_id column is absent (400)
+  //   :8446  ...the rf_locations read's OWN fallback, same condition
+  //
+  // THE DIFFERENCE BETWEEN COVERING A RESOURCE AND COVERING A QUERY. An
+  // arm-per-resource harness reports rf_locations as GENUINE and means one
+  // query; the tenant filter is written six times and five of them could be
+  // deleted without a single arm going red. Two of the five are FALLBACK
+  // paths, which is the worse half: they run only when the first select fails,
+  // so they are exactly the code a normal test run never reaches.
+  //
+  // EVERY ARM BELOW IS A COLLISION ARM, same design as the rest of this file.
+  // Both tenants own a location called `LOC-1`, mapped to DIFFERENT entities.
+  // That is realistic -- a location id is not a per-tenant name -- and it is
+  // what makes the assertion content-based rather than a count.
+  function rlLoc(licHash, entityId) {
+    return { __table: 'rf_locations', license_hash: licHash,
+             location_id: 'LOC-1', name: 'Main', active: true,
+             entity_id: entityId, data: { tenant: licHash } };
+  }
+  function rlJob(licHash, id, locationId) {
+    return { __table: 'rf_jobs', license_hash: licHash, job_id: id,
+             location_id: locationId, data: { id: id } };
+  }
+  function rlDraw(licHash, id, jobId) {
+    return { __table: 'rf_draws', license_hash: licHash, draw_id: id,
+             job_id: jobId, data: { id: id, amount: 100 } };
+  }
+  function rlBuilding(licHash, id, locationId) {
+    return { __table: 'rf_buildings', license_hash: licHash, building_id: id,
+             location_id: locationId, data: { id: id } };
+  }
+  function rlSection(licHash, id, buildingId) {
+    return { __table: 'rf_roof_sections', license_hash: licHash,
+             section_id: id, building_id: buildingId, status: 'active',
+             data: { id: id } };
+  }
+  function rlEntity(licHash, id) {
+    return { __table: 'rf_entities', license_hash: licHash, entity_id: id,
+             legal_name: id + ' Roofing', data: { id: id } };
+  }
+
+  section('rf_locations -- the FIVE reads no arm drove, and two of them are '
+    + 'FALLBACK paths');
+
+  await test('rf_locations [L-draws] the draw entity filter resolves locations '
+    + 'from tenant A ONLY -- asking for the OTHER tenant\'s entity matches '
+    + 'nothing', async () => {
+    // A's LOC-1 belongs to ENT-A; B's LOC-1 belongs to ENT-B. Asking as A for
+    // ENT-B must match no location, so no job, so no draw. Drop the tenant
+    // filter on the rf_locations read at :7149 and B's LOC-1 -> ENT-B enters
+    // the map, A's job at LOC-1 resolves to ENT-B, and A's own draw comes
+    // back under another company's entity.
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlJob(HASH_A, 'J-A', 'LOC-1'), rlDraw(HASH_A, 'D-A1', 'J-A')
+    ];
+    const { res } = await call(HASH_A, 'emp-1', 'owner',
+      { action: 'read', resource: 'rf_draws', payload: { entity_id: 'ENT-B' } },
+      seeded);
+    reached(res, 'the rf_draws read with an entity filter');
+    // THE KEY IS `draw_id`, NOT `id`. This branch responds with the PROJECTED
+    // row plus a summary, so `id` is undefined on every item -- an arm mapping
+    // `id` compares [undefined] against ['D-A1'] and fails the CONTROL while
+    // the refusal arm passes on an empty list. Caught by the control, which is
+    // exactly what it is for.
+    assert.deepStrictEqual(rows(res).map(function (d) { return d.draw_id; }), [],
+      'tenant A asked for tenant B\'s entity and got draws back: '
+      + JSON.stringify(rows(res)));
+  });
+
+  await test('rf_locations [L-draws-rev] CONTROL: asking for tenant A\'s OWN '
+    + 'entity DOES return the draw', async () => {
+    // Without this the arm above is satisfied by a filter that returns
+    // nothing for every entity -- including a handler that simply broke.
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlJob(HASH_A, 'J-A', 'LOC-1'), rlDraw(HASH_A, 'D-A1', 'J-A')
+    ];
+    const { res } = await call(HASH_A, 'emp-1', 'owner',
+      { action: 'read', resource: 'rf_draws', payload: { entity_id: 'ENT-A' } },
+      seeded);
+    reached(res, 'the rf_draws read with its own entity filter');
+    assert.deepStrictEqual(rows(res).map(function (d) { return d.draw_id; }), ['D-A1'],
+      'the entity filter dropped tenant A\'s own draw: ' + JSON.stringify(rows(res)));
+  });
+
+  await test('rf_locations [L-sections] the roof-section entity filter resolves '
+    + 'locations from tenant A ONLY', async () => {
+    // section -> building -> location -> entity. Same collision, one hop
+    // longer, and a different read site (:7368).
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlBuilding(HASH_A, 'BL-1', 'LOC-1'), rlSection(HASH_A, 'S-A1', 'BL-1')
+    ];
+    const { res } = await call(HASH_A, 'emp-1', 'owner',
+      { action: 'read', resource: 'rf_roof_sections',
+        payload: { entity_id: 'ENT-B' } }, seeded);
+    reached(res, 'the rf_roof_sections read with an entity filter');
+    // ASSERTED ON THE BRANCH'S OWN DECLARED FILTER ACCOUNTING, not on the item
+    // shape: the read responds with `data: evaluated`, sections passed through
+    // the registry evaluator, so no identity key survives predictably. The
+    // branch already publishes `entity_filter` and `filtered_out` precisely so
+    // a filtered list cannot look unfiltered -- which makes them the right
+    // things to assert and not a fallback.
+    assert.strictEqual(rows(res).length, 0,
+      'tenant A asked for tenant B\'s entity and got sections back: '
+      + JSON.stringify(res.body));
+    assert.strictEqual(res.body.filtered_out, 1,
+      'the branch did not report hiding tenant A\'s section, so the filter '
+      + 'either did not run or hid it silently: ' + JSON.stringify(res.body));
+  });
+
+  await test('rf_locations [L-sections-rev] CONTROL: tenant A\'s OWN entity '
+    + 'returns the section', async () => {
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlBuilding(HASH_A, 'BL-1', 'LOC-1'), rlSection(HASH_A, 'S-A1', 'BL-1')
+    ];
+    const { res } = await call(HASH_A, 'emp-1', 'owner',
+      { action: 'read', resource: 'rf_roof_sections',
+        payload: { entity_id: 'ENT-A' } }, seeded);
+    reached(res, 'the rf_roof_sections read with its own entity filter');
+    assert.strictEqual(rows(res).length, 1,
+      'the entity filter dropped tenant A\'s own section: '
+      + JSON.stringify(res.body));
+    assert.strictEqual(res.body.filtered_out, 0,
+      'the branch reported hiding a section when nothing should have been '
+      + 'hidden: ' + JSON.stringify(res.body));
+  });
+
+  // ── THE FALLBACK PATHS, which is the half a normal run never reaches ─────
+  // Both :8347 and :8446 exist because the `entity_id` column may not be
+  // present on a half-migrated app: the first select answers 400 and the
+  // handler retries WITHOUT that column. api/sd-data.js argues for that
+  // fallback in its own words -- "every branch would VANISH from a working app
+  // because a feature they never asked for was added". It is the right design
+  // AND it is a second copy of the tenant filter that only executes in a state
+  // no test had ever put the handler into.
+  //
+  // The wrapper below is the minimum that reaches it: any select naming
+  // `entity_id` answers 400 ONCE per table, exactly as PostgREST would for an
+  // absent column, and everything else goes to the real mock.
+  function withMissingEntityColumn(rows_, calls, onlyTable) {
+    const inner = postgrestMock(rows_, calls);
+    const refused = {};
+    return async function (url, opts) {
+      const u = String(url);
+      const table = (u.split('/rest/v1/')[1] || '').split('?')[0];
+      // SCOPED TO ONE TABLE when asked. The consolidation reads rf_entities
+      // with a select that also names entity_id, and refusing THAT one makes
+      // the branch bail before it ever reaches the locations fallback -- an
+      // arm that would have driven nothing while looking like it drove the
+      // hard path.
+      if ((!onlyTable || table === onlyTable)
+          && /select=[^&]*entity_id/.test(u) && !refused[table]) {
+        refused[table] = true;
+        calls.push({ url: u, opts: opts || null, forced400: true });
+        return { ok: false, status: 400,
+                 json: async function () { return { message: 'column does not exist' }; },
+                 text: async function () { return 'column rf_locations.entity_id does not exist'; } };
+      }
+      return inner(u, opts);
+    };
+  }
+
+  async function callMissingColumn(licHash, body, rows_, onlyTable) {
+    const calls = [];
+    const h = loadHandler(licHash,
+      withMissingEntityColumn(rows_ || [], calls, onlyTable));
+    const res = mockRes();
+    await h(mockReq(body, licHash, 'emp-1', 'owner'), res);
+    return { res: res, calls: calls };
+  }
+
+  await test('rf_locations [L-fallback] the entity-column FALLBACK read is '
+    + 'still tenant-scoped -- the copy of the filter nothing had executed',
+  async () => {
+    const seeded = [rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B')];
+    const { res, calls } = await callMissingColumn(HASH_A,
+      { action: 'read', resource: 'rf_locations' }, seeded);
+    reached(res, 'the rf_locations read on a half-migrated app');
+    // THE ARM IS ONLY MEANINGFUL IF THE FALLBACK ACTUALLY RAN. Asserted, not
+    // assumed: a wrapper that stopped forcing the 400 would leave this arm
+    // testing the SAME line the existing arm already covers.
+    assert.ok(calls.some(function (c) { return c.forced400; }),
+      'the first select was never refused, so the fallback path did not run');
+    assert.ok(calls.some(function (c) {
+      return /rf_locations\?/.test(c.url) && !/entity_id/.test(c.url)
+             && c.url.indexOf('license_hash=eq.' + HASH_A) !== -1; }),
+      'the fallback read carried no license_hash for tenant A: '
+      + JSON.stringify(calls.map(function (c) { return c.url; })));
+    assert.deepStrictEqual(
+      rows(res).map(function (x) { return (x.data && x.data.tenant) || x.tenant; })
+        .filter(function (x) { return x !== undefined; }),
+      [HASH_A],
+      'the fallback read returned another tenant\'s locations: '
+      + JSON.stringify(rows(res)));
+  });
+
+  await test('rf_locations [L-entities] the rf_entities consolidation resolves '
+    + 'its location attribution from tenant A ONLY', async () => {
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlEntity(HASH_A, 'ENT-A'), rlEntity(HASH_B, 'ENT-B')
+    ];
+    const { res, calls } = await call(HASH_A, 'emp-1', 'owner',
+      { action: 'consolidate', resource: 'rf_entities', payload: {} }, seeded);
+    // This branch can legitimately refuse for reasons that are not about
+    // tenancy, so the QUERY assertion is the one that must hold either way:
+    // whatever it did, the location read it made was tenant A's.
+    const locCalls = calls.filter(function (c) { return /rf_locations\?/.test(c.url); });
+    assert.ok(locCalls.length > 0,
+      'the consolidation made no rf_locations read at all, so this arm drove '
+      + 'nothing -- exit ' + res.statusCode + ' '
+      + JSON.stringify(res.body && res.body.error));
+    locCalls.forEach(function (c) {
+      assert.ok(c.url.indexOf('license_hash=eq.' + HASH_A) !== -1,
+        'a consolidation location read carried no tenant filter: ' + c.url);
+    });
+  });
+
+  await test('rf_locations [L-entities-fallback] the CONSOLIDATION\'s own '
+    + 'entity-column fallback read is tenant-scoped too -- the sixth and last '
+    + 'copy of this filter', async () => {
+    // The one the first five arms still did not reach. :8344 is the
+    // consolidation's location read and :8347 is its retry when `entity_id`
+    // is absent -- a copy of the tenant filter that executes only on a
+    // half-migrated app, inside a branch that attributes money to entities.
+    // The wrapper is scoped to rf_locations so the rf_entities read above it
+    // still succeeds and the branch actually gets this far.
+    const seeded = [
+      rlLoc(HASH_A, 'ENT-A'), rlLoc(HASH_B, 'ENT-B'),
+      rlEntity(HASH_A, 'ENT-A'), rlEntity(HASH_B, 'ENT-B')
+    ];
+    const { res, calls } = await callMissingColumn(HASH_A,
+      { action: 'consolidate', resource: 'rf_entities', payload: {} },
+      seeded, 'rf_locations');
+    assert.ok(calls.some(function (c) { return c.forced400; }),
+      'the entity-column select was never refused, so the fallback did not run '
+      + 'and this arm is testing the same line as [L-entities]');
+    const locCalls = calls.filter(function (c) {
+      return /rf_locations\?/.test(c.url) && !c.forced400; });
+    assert.ok(locCalls.length > 0,
+      'the consolidation made no fallback rf_locations read -- exit '
+      + res.statusCode + ' ' + JSON.stringify(res.body && res.body.error));
+    locCalls.forEach(function (c) {
+      assert.ok(c.url.indexOf('license_hash=eq.' + HASH_A) !== -1,
+        'the consolidation fallback location read carried no tenant filter: '
+        + c.url);
+    });
   });
 
   if (UNREACHED.length) {
