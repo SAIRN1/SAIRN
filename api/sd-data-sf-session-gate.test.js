@@ -1,9 +1,13 @@
 // api/sd-data-sf-session-gate.test.js
 // Run: node api/sd-data-sf-session-gate.test.js
 //
-// ELEVEN SAIRNfreedom RESOURCES REQUIRE AN EMPLOYEE SESSION. Three were armed
-// 2026-09-21 (sf_accounts, sf_ledger, sf_vendor_prices); eight more on
-// 2026-09-22, after hover2 audited all 35 and Michael made the call.
+// SOME SAIRNfreedom RESOURCES REQUIRE AN EMPLOYEE SESSION, and the count is
+// deliberately not written here -- it has changed four times and the list in
+// APPROVED below is the only place it should live. Three were armed 2026-09-21
+// (sf_accounts, sf_ledger, sf_vendor_prices); eight more on 2026-09-22 after
+// hover2 audited all 35 and Michael made the call; sf_members, sf_donor_awards
+// and sf_donor_tiers later the same day; sf_signatures on 2026-09-24, closing
+// the pair the 2026-09-22 finding named.
 //
 // ── WHAT THE EIGHT CARRY, because a gate with no recorded reason is the next
 //    session's mystery and this suite is where a reader will look ───────────
@@ -75,6 +79,33 @@ const EIGHT_ADDED = [
 ];
 const THREE_PRIOR = ['sf_accounts', 'sf_ledger', 'sf_vendor_prices'];
 
+// ── THE APPROVED SET, AS A SET ──────────────────────────────────────────────
+// Every sf_ resource Michael has approved a session gate for, across all four
+// batches. This is asserted as SET EQUALITY, which is the arm that used to be
+// written as "sf_signatures must be absent".
+//
+// WHY IT CHANGED SHAPE RATHER THAN JUST LOSING A NAME (2026-09-24): that arm
+// existed to catch a gate quietly widening to all 35. It did that by naming
+// the ONE resource left out. Closing sf_signatures emptied the list, and an
+// arm that iterates an empty list passes over no data -- the vacuous-green
+// shape this same suite already guards against in its first test. Set equality
+// has no such degenerate case: it fails on a resource added without approval
+// AND on a resource that quietly loses its gate, which the old arm could only
+// catch for three hardcoded names.
+const APPROVED = [
+  // 2026-09-21
+  'sf_accounts', 'sf_ledger', 'sf_vendor_prices',
+  // 2026-09-22, the eight hover2 audited and Michael approved
+  'sf_disbursements', 'sf_donations', 'sf_gaming_expenses', 'sf_operators',
+  'sf_service_appointments', 'sf_staff', 'sf_waivers', 'sf_youth_participants',
+  // 2026-09-22, the three the batch above named and left
+  'sf_members', 'sf_donor_awards', 'sf_donor_tiers',
+  // 2026-09-24, the other half of the pair the 2026-09-22 finding named:
+  // {docId, docTitle, version, hash, signer, typed, signed} -- a named person,
+  // their typed signature, and the governance document it binds them to.
+  'sf_signatures',
+];
+
 function gatedSet() {
   return new Set((CODE.match(/'(sf_\w+)':\s*\['read', 'write'\]/g) || [])
     .map((s) => s.match(/'(sf_\w+)'/)[1]));
@@ -89,10 +120,11 @@ function main() {
 
   test('the gated list was actually parsed -- a zero-length scan would make ' +
        'every set assertion below vacuously true', () => {
-    assert.ok(gatedSet().size >= 11,
-      'expected at least the 11 known gated sf_ resources, parsed ' +
-      gatedSet().size + '. A regex that matched nothing passes set equality ' +
-      'against another empty set, which is a green run over no data.');
+    assert.ok(gatedSet().size >= APPROVED.length,
+      'expected at least the ' + APPROVED.length + ' approved gated sf_ ' +
+      'resources, parsed ' + gatedSet().size + '. A regex that matched ' +
+      'nothing passes set equality against another empty set, which is a ' +
+      'green run over no data.');
   });
 
   test('every one of the eight added 2026-09-22 requires a session on BOTH verbs', () => {
@@ -136,42 +168,42 @@ function main() {
       'expected exactly 1 session-gate dispatch check, found ' + n);
   });
 
-  test('the remaining sf_ resources are NOT silently swept in -- this batch is ' +
-       'fourteen, and the rest are still an open decision', () => {
-    // A gate that quietly widened to all 35 would pass every assertion above
-    // and would be a product decision nobody made.
+  test('the gated set is EXACTLY the approved set -- nothing swept in, ' +
+       'nothing quietly dropped', () => {
+    // A gate that widened to all 35 would pass every assertion above and would
+    // be a product decision nobody made. A gate that LOST a resource would
+    // also pass them, except for the handful named in EIGHT_ADDED and
+    // THREE_PRIOR. Set equality catches both, for every resource, and cannot
+    // be satisfied by an empty gate.
     //
-    // ── THIS ARM REFUSED THE 2026-09-22 ADDITION AND WAS RIGHT TO ─────────
-    // `sf_members` was in the earlier batch's absence list, and adding it here
-    // tripped this arm exactly as designed, with a message naming both things
-    // to do. It is now gated ON PURPOSE, with `sf_donor_awards` and
-    // `sf_donor_tiers`, and the arm's JOB IS UNCHANGED rather than removed:
-    // `sf_signatures` is still an open decision and its absence is still what
-    // this asserts.
-    //
-    // WHY sf_members MOVED: the gate comment above it already called it an
-    // acknowledged gap rather than a decision. WHY sf_donor_awards MOVED: its
-    // rows are {donorKey, tierId, ...}, so the row says THIS PERSON GAVE AT
-    // LEAST THIS MUCH -- the same disclosure sf_donations was gated for.
-    // WHY sf_donor_tiers MOVED, and it is the weak one: it carries NO PERSON,
-    // and it is gated only so an awards row's opaque tierId cannot be resolved
-    // back to an amount. That is defence in depth, not an identity finding.
-    const g = gatedSet();
-    ['sf_signatures'].forEach((r) => {
-      assert.ok(!g.has(r),
-        r + ' is gated, but it was not in an approved batch. If that is ' +
-        'intended, update this arm AND the open-work row that still lists it ' +
-        'as an open decision -- do not let the row and the code disagree.');
-    });
-    // THE PAIRED POSITIVE. Without this, the arm above is satisfied by a gate
-    // that is EMPTY -- and an empty gate passes "nothing was swept in" while
-    // protecting nothing at all.
-    ['sf_members', 'sf_donor_awards', 'sf_donor_tiers'].forEach((r) => {
-      assert.ok(g.has(r),
-        r + ' was added to the gate on 2026-09-22 and is not there. This arm ' +
-        'asserts what IS gated as well as what is not, so it cannot be ' +
-        'satisfied by a gate that protects nothing.');
-    });
+    // WHY EACH OF THE LAST FOUR IS IN APPROVED, kept here because a gate with
+    // no recorded reason is the next session's mystery:
+    //   sf_members       member identity; the 2026-09-22 gate comment above it
+    //                    already called it an acknowledged gap, not a decision.
+    //   sf_donor_awards  {donorKey, tierId, ...} -- the row says THIS PERSON
+    //                    GAVE AT LEAST THIS MUCH, the same disclosure
+    //                    sf_donations was gated for.
+    //   sf_donor_tiers   the weak one, and labelled so it can be reversed on
+    //                    its own: NO PERSON on the row. Gated only so an awards
+    //                    row's opaque tierId cannot be resolved back to an
+    //                    amount. Defence in depth, not an identity finding.
+    //   sf_signatures    a named signer, their typed signature, and the
+    //                    document it binds them to. NOT a fact about a person
+    //                    but a reusable instrument that can be lifted off one
+    //                    document and re-applied to another -- which is why it
+    //                    is the sharpest of the four rather than the softest.
+    const g = [...gatedSet()].sort();
+    const a = [...APPROVED].sort();
+    const unapproved = g.filter((r) => !a.includes(r));
+    const lostItsGate = a.filter((r) => !g.includes(r));
+    assert.deepStrictEqual(
+      { gatedWithoutApproval: unapproved, approvedButUngated: lostItsGate },
+      { gatedWithoutApproval: [], approvedButUngated: [] },
+      'the gate and the approved list disagree. Widening it is a product ' +
+      'decision about who may see a duty roster or a bottle count; narrowing ' +
+      'it reopens a disclosure somebody closed on purpose. Either way, update ' +
+      'APPROVED here AND the open-work row in the same change -- do not let ' +
+      'the row and the code drift apart.');
   });
 }
 

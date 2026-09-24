@@ -187,7 +187,38 @@ async function main() {
     // who can open the app. Measured before the change: all six pairs answered
     // 200 with no token, against a control where law_invoices/read answered 401.
     // law_matters names the client and the matter.
-    assert.strictEqual(pairs, 23,
+    //
+    // 23 -> 55 LATER ON 2026-09-22, AND NOBODY WROTE THE REASON, which is the
+    // whole point of this tripwire and it did not work as intended. Three
+    // batches landed that day and this arm went red and STAYED red on
+    // origin/main until 2026-09-24. Reconstructed from the gate table's own
+    // comments rather than left blank:
+    //   sdn_contracts, sdn_discounts, sdn_invoices, sdn_pos, sdn_referrals
+    //     -- SAIRNdesign's five Tier A resources, ten pairs. Contracts,
+    //        discounts, invoices and POS were authorised by the licence key
+    //        alone for all eighteen resources in that map.
+    //   the eight SAIRNfreedom resources hover2 audited and Michael approved
+    //     -- sixteen pairs: a FELONY and gambling disqualification flag on a
+    //        named volunteer, MINORS' names, ORC 2915 payee records, a DOB the
+    //        app age-gates off, health and military status, a VA-adjacent
+    //        referral outcome.
+    //   sf_members, sf_donor_awards, sf_donor_tiers -- six pairs, the three
+    //        the batch above named and left.
+    //
+    // 55 -> 57 on 2026-09-24: sf_signatures, two pairs. The other half of the
+    // pair the 2026-09-22 finding named. sairnfreedom.html:5700 writes
+    // {docId, docTitle, version, hash, signer, typed, signed} -- a named
+    // person, their typed signature, and the governance document it binds them
+    // to. Not a fact ABOUT a person but a REUSABLE INSTRUMENT that can be
+    // lifted off one document and re-applied to another.
+    //
+    // WHY THE NUMBER IS STILL HARDCODED after going stale twice: a derived
+    // expectation would make this arm assert its own premise, and the arm's
+    // job is to STOP a resource being gated with no reason written down. The
+    // fault was not the hardcoded number, it was landing a change that tripped
+    // it and leaving the suite red. If this line is what is blocking you, the
+    // fix is two edits -- the count, and the paragraph above saying why.
+    assert.strictEqual(pairs, 57,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -241,11 +272,57 @@ async function main() {
         // gated as well as a read, a deactivated employee refused on a token
         // that is still cryptographically valid, and a token from another SAIRN
         // app refused.
-        sf_accounts: 'api/sf-session-gate.test.js',
-        sf_ledger: 'api/sf-session-gate.test.js',
-        sf_vendor_prices: 'api/sf-session-gate.test.js'
+        // -- sf_accounts, sf_ledger and sf_vendor_prices were listed here by
+        //    name until 2026-09-24. They are not gone; they moved to the
+        //    prefix rule below with the other twelve, because naming three of
+        //    fifteen by hand is how the other twelve came to be covered by
+        //    nothing. The suite is the same one.
+        // SAIRNdesign's five, 2026-09-22. Driven in their own suite for the
+        // same reason: that one mints sairndesign sessions.
+        sdn_contracts: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_discounts: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_invoices: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_pos: 'api/sd-data-sdn-session-gate.test.js',
+        sdn_referrals: 'api/sd-data-sdn-session-gate.test.js'
       };
-      const covered = [...drivenHere, ...Object.keys(drivenElsewhere)].sort();
+      // ── AND THE sf_ REMAINDER, COVERED BY A RULE RATHER THAN BY NAME ──────
+      // THIS ARM WAS RED ON origin/main FROM 2026-09-22 TO 2026-09-24 and the
+      // reason is worth more than the fix. The map above named three sf_
+      // resources; the gate held fifteen. Eleven of them -- minors' names, a
+      // felony and gambling disqualification flag, an ORC 2915 payee record --
+      // were gated in source and exercised by NOTHING, and this arm said so
+      // correctly for two days while the suite sat red and was read as noise.
+      // The comment forty lines above already records that happening once
+      // before, in this same arm, in September 2026. Twice is a design fault
+      // in the map, not in the people reading it.
+      //
+      // A per-resource line goes stale the moment a sixteenth is gated. A
+      // PREFIX RULE does not -- but a prefix rule is also how a coverage claim
+      // becomes a lie, so it is VERIFIED rather than trusted: the named suite
+      // must itself derive its list from SD_SESSION_GATED, which is asserted
+      // below. If somebody replaces that loop with a hand-typed list, this
+      // stops passing.
+      //
+      // KEPT SEPARATE FROM drivenElsewhere ON PURPOSE. Every entry in that map
+      // is checked by a literal mention of the resource name in the named
+      // suite, which is exactly the check a derived loop must fail -- it drives
+      // sf_disbursements without ever spelling it. Folding the prefix rule into
+      // that map would have meant weakening the literal-mention check for all
+      // eighteen named resources to accommodate one rule. These are verified by
+      // a different assertion instead, immediately below.
+      const SF_SUITE = 'api/sf-session-gate.test.js';
+      const drivenByDerivedLoop = inTable.filter((r) => r.indexOf('sf_') === 0);
+      const sfSuiteSrc = fs.readFileSync(
+        require.resolve('./' + SF_SUITE.replace('api/', '')), 'utf8');
+      assert.ok(sfSuiteSrc.indexOf('SD_SESSION_GATED') > -1,
+        SF_SUITE + ' no longer reads SD_SESSION_GATED, so the prefix rule '
+        + 'above is claiming coverage it cannot demonstrate. Either restore '
+        + 'the derived loop there, or list each sf_ resource here by name.');
+      assert.ok(sfSuiteSrc.indexOf('gatedSfResources') > -1,
+        SF_SUITE + ' no longer drives a derived list of gated sf_ resources. '
+        + 'The prefix rule above depends on that loop existing.');
+      const covered = [...drivenHere, ...Object.keys(drivenElsewhere),
+                       ...drivenByDerivedLoop].sort();
       assert.deepStrictEqual(inTable, covered,
         'a gated resource is driven by nothing: ' +
         inTable.filter((r) => covered.indexOf(r) === -1).join(', ') +

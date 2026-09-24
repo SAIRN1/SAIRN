@@ -12764,6 +12764,140 @@
       "recurrence_open": "45 grandfathered entries remain and most carry the same NOT ASSESSED wording this one did -- a deferral nobody has returned to. This is the second in one day to turn out to matter (stonedesk.html::b.amt and ::e.tax were the first), and neither was found by looking at the list. Nothing schedules a review of it. AND THE FOLD SHAPE REMAINS AMBIGUOUS TO THE TOOL: truthy_sum_check.py reports `+ (x || 0) * y` although its own docstring says multiplication is safe, so a report from it still cannot be read as a defect without driving the expression. That is deliberate and the safe direction, but it means the remaining 45 cannot be triaged from the report alone."
     },
     {
+      "commit": "0314dcd39463",
+      "date": "2026-09-24",
+      "subject": "fix(roofing): an inherited Object.prototype name was passing the role gate",
+      "files": [
+        "api/rf-auth.js",
+        "api/sd-data.js",
+        "tests/roofing_claim_gate_probe.py",
+        "tests/roofing_claim_gate_single_source.js"
+      ],
+      "lines_added": 202,
+      "lines_removed": 9,
+      "app": "sairnroofing",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/rf-auth.js built MANAGEMENT_ROLES and BROAD_READ_ROLES as plain object literals, so every key on Object.prototype indexed truthy: seesAllRows({role:'constructor'}) returned true, reproduced live. A session carrying an inherited name passed the role half of every SAIRNroofing gate -- seesAllRows, ownsRow, and the ~40 sites in api/sd-data.js that index those maps directly -- granting cross-assignee read and write on rf_claims and rf_claim_photos, both Tier A. It was inert only because a SEPARATE array-based allowlist at provisioning (RF_ROLES.indexOf) refuses an unknown role, which is distant code the gate was silently depending on rather than a property of the check itself. Second defect in the same finding: the rf_claims write branch never stripped the caller's own assigned_employee_id from the stored data blob, inert only because the read branch's Object.assign happens to overlay the real column last.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "b9b15bfbb5b2",
+        "date": "2026-08-24",
+        "subject": "feat(sairnroofing): Phase 1 credential-lifecycle auth backend, roles confirmed",
+        "lag_days": 31
+      },
+      "citation_note": "No standing rule on this platform names \"a JS object literal used as a membership set inherits Object.prototype, so an inherited name indexes truthy\". The closest are the cross-domain disciplines' warning about a guard that is safe only because of distant code, and the silent-failure sweep -- neither is about the prototype chain, and citing either would be a stretch dressed as a citation. Recorded as not-citable so the gap is visible: this is a candidate for a new rule, since the same plain-literal shape is present in nine other api/*.js role maps.",
+      "phase_note": "Injected at the moment the role maps were first written as object literals in b9b15bfb (SAIRNroofing Phase 1 auth backend). The shape is a design choice about how a membership set is represented, not a coding slip: the literal is correct-looking, matches eight other apps, and only fails on names it never intended to accept.",
+      "contributing_factors": [
+        {
+          "factor": "A JS object literal used as a membership set inherits every key on Object.prototype, so MANAGEMENT_ROLES['constructor'] is truthy. The set was correct about every name it meant to accept and silent about nine it never considered.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both maps are now built by roleSet() with a null prototype, which fixes the ~40 direct-index call sites in api/sd-data.js without editing any of them. seesAllRows also goes through hasRole(), an own-property check, so the gate holds even if a map is rebuilt as a literal."
+        },
+        {
+          "factor": "The defect was inert only because of a separate, array-based allowlist in a different branch of a different function (RF_ROLES.indexOf at provisioning). Nothing at the gate said so, and nothing at the allowlist said the gate depended on it.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "The gate no longer depends on it: an inherited name is refused at the gate itself, with the coupling and why it is not relied on written into the code at the role maps."
+        },
+        {
+          "factor": "Every behavioural arm in the existing suite drove real role names, so the suite could not have caught this and did not claim to. The gap was in which INPUTS were considered a role, not in the predicate's logic.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Eight arms added over nine inherited names covering both helpers, direct indexing of the exported maps, and the null prototype itself -- with a negative control asserting a plain literal of the same roles still leaks, so the arms cannot pass by testing nothing. Two sabotage mutations (arms 8 and 9) plant both defects back and are refused."
+        },
+        {
+          "factor": "The same plain-literal shape was copied into nine other api/*.js role maps (accounting, ledger, alf, bld, dnt, dnt-bi, leg, mech, and rf-auth's own KNOWN_CERTIFICATION_KEYS). A pattern propagated by copy was never re-qualified at each destination.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "Reported to Michael as a separate finding with the nine files named, rather than folded into this fix. Deliberately NOT swept here: byte-identical is not safe-in-context, so each destination needs its own role vocabulary and blast radius re-qualified, which is a decision to schedule and not a diff to ride along with a Tier A fix."
+        },
+        {
+          "factor": "The rf_claims write built its stored blob from the caller's whole payload and removed fields by an explicit delete list, so any field added to the payload is stored unless somebody remembers to add it. assigned_employee_id was never on the list.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "assigned_employee_id is stripped on the write, where the guarantee belongs, rather than relying on the read branch's Object.assign ordering. A suite arm asserts the delete exists AND that it precedes the POST."
+        }
+      ],
+      "recurrence_open": "The actions close this app's role maps and this app's claim write. They do NOT close the nine other api/*.js files carrying the identical plain-literal shape -- each is inert or not for its own reasons and none has been checked. They also do not close the delete-list shape generally: every resource whose stored blob is built from the caller's payload minus an explicit list has the same \"a new field is stored unless somebody remembers\" property, and no check counts those. Nothing on this platform currently detects either shape; both were found by reading, and a second reader is not a control."
+    },
+    {
+      "commit": "06df2a017e5b",
+      "date": "2026-09-24",
+      "subject": "fix(sairnfreedom): an executed signature was reachable on the licence key alone -- the second half of a pair closed by halves",
+      "files": [
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "api/sf-session-gate.test.js",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/run_sf_session_gate_sabotage_probe.py"
+      ],
+      "lines_added": 399,
+      "lines_removed": 82,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sf_signatures reached api/sd-data.js with no session gate: the SF_RESOURCES read and write branches dispatched on the licence hash alone, and the licence key is shipped to the browser and readable by anyone who can open the app. The row is {docId, docTitle, version, hash, signer, typed, signed} -- a named person, their typed signature, and the governance document it binds them to, with a hash of the text they signed. It is not a fact ABOUT a person but a reusable instrument that can be lifted off one document and re-applied to another, which is why it is sharper than the identity rows gated beside it. Named alongside sf_members in the 2026-09-22 finding; sf_members was closed that day and this one was left with the words 'the open-work row stays open'. Reachability was demonstrated live on 2026-09-22 -- 200 provisioned:true with no session token, against a control where sf_ledger answered 403 -- and exfiltration was NOT: every probe returned zero rows on that tenant.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "55889165384a",
+        "date": "2026-09-10",
+        "subject": "feat(sairnvet,sairnfreedom): the two apps that kept everything on one device now back it up -- 76 collections, SQL NOT RUN",
+        "lag_days": 14
+      },
+      "citation_note": "docs/SAIRN-PROCESS-RULES.md is about how this team works -- checks, claims, pushes, standing documents. It has no section naming 'a Tier A resource authorised by a licence key alone', which is a product-security shape rather than a process one. The rule this DOES violate is written in api/sd-data.js's own gate comment and in docs/CRITICALITY-TIERS.md, neither of which is a citable section. Recording not-citable rather than stretching PR 1.11, which is about a check failing closed when a dependency is absent and is not this.",
+      "contributing_factors": [
+        {
+          "factor": "SAIRNfreedom's 35 resources reached api/sd-data.js in one commit with no session gate of any kind -- the app had no per-employee auth, so the licence key was the whole boundary by construction and nothing in the change had to argue for it per resource",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Employee auth landed 2026-09-21 (schema, ROLES_BY_APP, api/sf-auth.js, X-SD-Auth in the client), which is what made a per-resource gate possible at all."
+        },
+        {
+          "factor": "The deferral comment described the ungated remainder as 'a duty roster or a bottle count'. That description does not cover a named person's executed signature, so anyone reading it to decide was deciding about the wrong set",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Replaced 2026-09-22 with the actual list. This change adds sf_signatures' row shape, read out of the app rather than off the schema."
+        },
+        {
+          "factor": "The finding named two resources and one batch closed one of them. The other was recorded as still open and stayed open for two days with nothing scheduled against it",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Closed. The suite arm that asserted its absence was replaced with set equality against an APPROVED list, which fails on an unapproved addition AND on a resource quietly losing its gate."
+        },
+        {
+          "factor": "Two suites guarding this gate were RED on origin/main from 2026-09-22 and nobody noticed: api/sf-session-gate.test.js asserted sf_members was ungated on the day it was gated, and api/sd-data-session-gate.test.js held a pair count of 23 against a table of 55 plus a coverage map naming 3 of 15 sf_ resources",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both repaired. The sf_ coverage half is now a derived loop driving every gated sf_ resource through the real dispatcher, with the coverage arm verifying that loop exists rather than trusting a hand-written map."
+        },
+        {
+          "factor": "The sabotage probe's widening mutation planted sf_members and sf_signatures, both of which became approved -- so the planted defect was a no-op and the probe reported the suite as silent when the suite was correct",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Mutation 6 now widens to sf_officers and sf_tickets; mutation 7 reopens sf_signatures so the closure has an arm holding it."
+        }
+      ],
+      "recurrence_open": "NOTHING STOPS THE NEXT RESOURCE BEING GATED BY HALVES. The approved list is set equality now, so a gate cannot widen or narrow silently -- but nothing schedules the DECISION for the resources still ungated, and 'nobody has made that call' is indistinguishable from 'the call was made and was no'. Separately, the two suites that went red for two days went red because a change landed that tripped them and was pushed anyway; no gate refuses a push that leaves a named guard suite failing, which is the general form of this and is not closed here."
+    },
+    {
       "commit": "44ac2ed17a3a",
       "date": "2026-09-24",
       "subject": "fix(probe): A8 of the rollup-list review probe has been CRASHING, not passing",
@@ -13000,71 +13134,6 @@
         }
       ],
       "recurrence_open": "THE CLASS IS NOT CLOSED, only these two instances. Nothing stops the next operator-facing message from stating a fact it does not read, and the 2026-09-17 split is not the last time a duty will move between env vars. Specifically still open: (1) no inventory exists of messages that NAME an env var, so the blast radius of the next such split is unknown -- a grep across api/ for env-var literals inside strings and comments would produce it and has not been run; (2) legacy ciphertexts are still keyed on SD_AUTH_SECRET, so both branches of the new message are live and WHICH ROWS ARE STILL LEGACY has never been measured (the revoke doc says the same, and the select is still unrun); (3) the fix is verified by reading and by the surrounding suites, NOT by driving either path -- no test decrypts a v2 value with the wrong key and reads the log line, so the derivation is argued correct rather than observed correct."
-    },
-    {
-      "commit": "0314dcd39463",
-      "date": "2026-09-24",
-      "subject": "fix(roofing): an inherited Object.prototype name was passing the role gate",
-      "files": [
-        "api/rf-auth.js",
-        "api/sd-data.js",
-        "tests/roofing_claim_gate_probe.py",
-        "tests/roofing_claim_gate_single_source.js"
-      ],
-      "lines_added": 202,
-      "lines_removed": 9,
-      "app": "sairnroofing",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/rf-auth.js built MANAGEMENT_ROLES and BROAD_READ_ROLES as plain object literals, so every key on Object.prototype indexed truthy: seesAllRows({role:'constructor'}) returned true, reproduced live. A session carrying an inherited name passed the role half of every SAIRNroofing gate -- seesAllRows, ownsRow, and the ~40 sites in api/sd-data.js that index those maps directly -- granting cross-assignee read and write on rf_claims and rf_claim_photos, both Tier A. It was inert only because a SEPARATE array-based allowlist at provisioning (RF_ROLES.indexOf) refuses an unknown role, which is distant code the gate was silently depending on rather than a property of the check itself. Second defect in the same finding: the rf_claims write branch never stripped the caller's own assigned_employee_id from the stored data blob, inert only because the read branch's Object.assign happens to overlay the real column last.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "b9b15bfbb5b2",
-        "date": "2026-08-24",
-        "subject": "feat(sairnroofing): Phase 1 credential-lifecycle auth backend, roles confirmed",
-        "lag_days": 31
-      },
-      "citation_note": "No standing rule on this platform names \"a JS object literal used as a membership set inherits Object.prototype, so an inherited name indexes truthy\". The closest are the cross-domain disciplines' warning about a guard that is safe only because of distant code, and the silent-failure sweep -- neither is about the prototype chain, and citing either would be a stretch dressed as a citation. Recorded as not-citable so the gap is visible: this is a candidate for a new rule, since the same plain-literal shape is present in nine other api/*.js role maps.",
-      "phase_note": "Injected at the moment the role maps were first written as object literals in b9b15bfb (SAIRNroofing Phase 1 auth backend). The shape is a design choice about how a membership set is represented, not a coding slip: the literal is correct-looking, matches eight other apps, and only fails on names it never intended to accept.",
-      "contributing_factors": [
-        {
-          "factor": "A JS object literal used as a membership set inherits every key on Object.prototype, so MANAGEMENT_ROLES['constructor'] is truthy. The set was correct about every name it meant to accept and silent about nine it never considered.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "Both maps are now built by roleSet() with a null prototype, which fixes the ~40 direct-index call sites in api/sd-data.js without editing any of them. seesAllRows also goes through hasRole(), an own-property check, so the gate holds even if a map is rebuilt as a literal."
-        },
-        {
-          "factor": "The defect was inert only because of a separate, array-based allowlist in a different branch of a different function (RF_ROLES.indexOf at provisioning). Nothing at the gate said so, and nothing at the allowlist said the gate depended on it.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "The gate no longer depends on it: an inherited name is refused at the gate itself, with the coupling and why it is not relied on written into the code at the role maps."
-        },
-        {
-          "factor": "Every behavioural arm in the existing suite drove real role names, so the suite could not have caught this and did not claim to. The gap was in which INPUTS were considered a role, not in the predicate's logic.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "Eight arms added over nine inherited names covering both helpers, direct indexing of the exported maps, and the null prototype itself -- with a negative control asserting a plain literal of the same roles still leaks, so the arms cannot pass by testing nothing. Two sabotage mutations (arms 8 and 9) plant both defects back and are refused."
-        },
-        {
-          "factor": "The same plain-literal shape was copied into nine other api/*.js role maps (accounting, ledger, alf, bld, dnt, dnt-bi, leg, mech, and rf-auth's own KNOWN_CERTIFICATION_KEYS). A pattern propagated by copy was never re-qualified at each destination.",
-          "kind": "process",
-          "action_status": "planned",
-          "action": "Reported to Michael as a separate finding with the nine files named, rather than folded into this fix. Deliberately NOT swept here: byte-identical is not safe-in-context, so each destination needs its own role vocabulary and blast radius re-qualified, which is a decision to schedule and not a diff to ride along with a Tier A fix."
-        },
-        {
-          "factor": "The rf_claims write built its stored blob from the caller's whole payload and removed fields by an explicit delete list, so any field added to the payload is stored unless somebody remembers to add it. assigned_employee_id was never on the list.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "assigned_employee_id is stripped on the write, where the guarantee belongs, rather than relying on the read branch's Object.assign ordering. A suite arm asserts the delete exists AND that it precedes the POST."
-        }
-      ],
-      "recurrence_open": "The actions close this app's role maps and this app's claim write. They do NOT close the nine other api/*.js files carrying the identical plain-literal shape -- each is inert or not for its own reasons and none has been checked. They also do not close the delete-list shape generally: every resource whose stored blob is built from the caller's payload minus an explicit list has the same \"a new field is stored unless somebody remembers\" property, and no check counts those. Nothing on this platform currently detects either shape; both were found by reading, and a second reader is not a control."
     }
   ],
   "started": "2026-09-09",

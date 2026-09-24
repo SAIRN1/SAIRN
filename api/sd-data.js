@@ -840,6 +840,10 @@ module.exports = async (req, res) => {
       //    MADE, not a decision that they are fine. sf_members and sf_signatures
       //    in particular carry identity; they were named in the 2026-09-22
       //    finding and are NOT in this batch, so the open-work row stays open.
+      //    ^^ BOTH ARE NOW GATED -- sf_members 2026-09-22, sf_signatures
+      //    2026-09-24, each with its reason in the blocks below. The sentence
+      //    above is left standing because it is the record of what was
+      //    deferred and why; this line exists so nobody reads it as current.
       //
       //    STILL BLOCKED, AND STATED RATHER THAN IMPLIED: these lines answer 403
       //    to every call that does not carry a session, and
@@ -883,6 +887,41 @@ module.exports = async (req, res) => {
       // AMOUNT half of a disclosure the awards gate just removed. That is
       // defence in depth, not an identity finding, and if Michael wants the
       // tier list public it is the one line here to take back out.
+      //
+      // ── THE LAST OF THE PAIR, CLOSED 2026-09-24 ─────────────────────────
+      // The 2026-09-22 finding named `sf_members` AND `sf_signatures`. Only
+      // the first was closed, and the comment above says so plainly: "the
+      // open-work row stays open". This is the second.
+      //
+      //   sf_signatures  READ OUT OF THE APP rather than off the schema,
+      //                  because the container here says nothing and the
+      //                  contents say everything. sairnfreedom.html:5700
+      //                  writes {docId, docTitle, version, hash, signer,
+      //                  typed, signed} -- A NAMED PERSON, THEIR TYPED
+      //                  SIGNATURE, and the governance document it binds
+      //                  them to. The app already refuses a mismatch with
+      //                  "a signature that does not match the name it is
+      //                  filed under is not evidence of anything", so the
+      //                  app itself calls this evidence.
+      //
+      //                  IT IS A SHARPER CASE THAN THE TWO IT ARRIVES WITH,
+      //                  not a weaker one. `sf_donor_awards` discloses a
+      //                  fact ABOUT a person; a stored signature is a
+      //                  REUSABLE INSTRUMENT that can be lifted off one
+      //                  document and re-applied to another. That is the
+      //                  argument docs/CRITICALITY-TIERS.md already carries
+      //                  for this row and for rf_proposals' decision shape.
+      //
+      //                  SAME TRADE AS THE FOURTEEN ABOVE, stated rather
+      //                  than implied: until sql/sairnfreedom_employee_auth_schema.sql
+      //                  is run this answers 403 to everybody, including the
+      //                  post's own officers. An app that refuses loudly is
+      //                  recoverable in one SQL run; an executed signature
+      //                  reachable with a browser-readable bearer token is
+      //                  not. No client change is needed and that was
+      //                  checked, not assumed -- sfData() at
+      //                  sairnfreedom.html:1821 already attaches X-SD-Auth
+      //                  whenever a token is held.
       'sf_accounts':            ['read', 'write'],
       'sf_disbursements':       ['read', 'write'],
       'sf_donor_awards':        ['read', 'write'],
@@ -893,6 +932,7 @@ module.exports = async (req, res) => {
       'sf_ledger':              ['read', 'write'],
       'sf_operators':           ['read', 'write'],
       'sf_service_appointments': ['read', 'write'],
+      'sf_signatures':          ['read', 'write'],
       'sf_staff':               ['read', 'write'],
       'sf_vendor_prices':       ['read', 'write'],
       'sf_waivers':             ['read', 'write'],
@@ -1043,6 +1083,11 @@ module.exports = async (req, res) => {
       'sf_ledger': 'sairnfreedom',
       'sf_operators': 'sairnfreedom',
       'sf_service_appointments': 'sairnfreedom',
+      // Added 2026-09-24 in the SAME edit as its gate entry, for the reason
+      // this table's own comment gives: the failure mode is the DISAGREEMENT,
+      // and a gated resource with no entry here resolves expectedApp to
+      // 'stonedesk' and refuses every correctly signed-in officer.
+      'sf_signatures': 'sairnfreedom',
       'sf_staff': 'sairnfreedom',
       'sf_vendor_prices': 'sairnfreedom',
       'sf_waivers': 'sairnfreedom',
@@ -10675,13 +10720,25 @@ module.exports = async (req, res) => {
     // other, nine thousand lines apart, and the one sitting next to the
     // resource map was the wrong one.
     //
-    // THE ACCURATE STATEMENT, AND IT IS NOT "THIS IS FINE": 3 of 35 sf_
-    // resources are session-gated. The other 32 are deliberately ungated and
-    // the reason is recorded at :778 -- "the finding was about Tier A,
-    // widening it further is a product decision about who may see a duty
-    // roster or a bottle count, and nobody has made that one." That is an
-    // honest open decision rather than an expired premise, and it is NOT
-    // corrected here because it is not a code fact to correct.
+    // THE ACCURATE STATEMENT, AND IT IS NOT "THIS IS FINE": as of 2026-09-22
+    // three of the 35 sf_ resources were session-gated. The rest were
+    // deliberately ungated and the reason was recorded at :778 -- "the finding
+    // was about Tier A, widening it further is a product decision about who
+    // may see a duty roster or a bottle count, and nobody has made that one."
+    // That was an honest open decision rather than an expired premise.
+    //
+    // ── DO NOT READ A COUNT OUT OF THIS COMMENT (2026-09-24) ───────────────
+    // "3 of 35" was written as a fact and stopped being one twice in three
+    // days: eight resources were gated on 2026-09-22, then three more the same
+    // day, then sf_signatures on 2026-09-24. THIS BLOCK IS THE FILE'S OWN
+    // EXAMPLE OF A COMMENT WHOSE PREMISE EXPIRED WHILE IT KEPT READING AS
+    // CURRENT DOCUMENTATION -- see the paragraph at the bottom, which says
+    // exactly that about a DIFFERENT comment thirty lines up. Three instances
+    // in one file is not a pattern any more, it is the house style failing.
+    //
+    // SD_SESSION_GATED near :886 is the only place the answer lives. Count it
+    // there, or run api/sd-data-sf-session-gate.test.js, which asserts the
+    // gated set equals the approved set in BOTH directions.
     //
     // BUT THE SET IT DESCRIBES IS UNDERSTATED, and that is worth naming where
     // the decision will next be read. "A duty roster or a bottle count" does
@@ -10693,7 +10750,12 @@ module.exports = async (req, res) => {
     // description. Driven live 2026-09-22 with a bare licence key and no
     // session token: sf_ledger and sf_accounts answered 403 FORBIDDEN,
     // sf_disbursements, sf_members, sf_youth_participants and sf_signatures
-    // all answered 200 provisioned:true.
+    // all answered 200 provisioned:true. THOSE FOUR ARE NOW GATED -- the first
+    // three on 2026-09-22, sf_signatures on 2026-09-24 -- so that measurement
+    // is a record of what was found, not a statement of current state. The
+    // named list stands: whoever decides about the resources that REMAIN open
+    // should decide against what they hold, not against "a duty roster or a
+    // bottle count".
     //
     // WHY THE WHOLE CORRECTION IS KEPT RATHER THAN THE LINE JUST REWRITTEN:
     // the identical shape -- a justification comment whose premise expired and

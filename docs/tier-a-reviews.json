@@ -2839,6 +2839,51 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-24T13:21:14Z",
+      "resources": [
+        "invoices",
+        "rf_proposals",
+        "sdn_contracts",
+        "sdn_discounts",
+        "sdn_invoices",
+        "sdn_pos",
+        "sdn_referrals",
+        "sf_accounts",
+        "sf_disbursements",
+        "sf_donations",
+        "sf_donor_awards",
+        "sf_donor_tiers",
+        "sf_gaming_expenses",
+        "sf_ledger",
+        "sf_members",
+        "sf_officers",
+        "sf_operators",
+        "sf_service_appointments",
+        "sf_signatures",
+        "sf_staff",
+        "sf_tickets",
+        "sf_vendor_prices",
+        "sf_waivers",
+        "sf_youth_participants"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-sf-session-gate.test.js",
+        "api/sd-data.js",
+        "api/sf-session-gate.test.js",
+        "tests/run_sf_session_gate_sabotage_probe.py"
+      ],
+      "what": "sf_signatures added to SD_SESSION_GATED and SD_GATE_APP in api/sd-data.js, closing the second half of the 2026-09-22 finding: a named signer, their typed signature and the governance document it binds them to were reachable on a browser-shipped licence key. Also repairs three stale arms found by running them -- api/sf-session-gate.test.js and api/sd-data-session-gate.test.js were both RED on origin/main since 2026-09-22 (a ungated-assertion naming a resource that had been gated; a pair count of 23 against a table of 55; a coverage map naming 3 of 15 sf_ resources so eleven were driven by nothing), and sabotage mutation 6 had become a no-op. WHAT A REVIEWER SHOULD ATTACK: whether the prefix rule in the coverage arm genuinely verifies coverage rather than asserting its own premise, and whether the set-equality replacement for the absence arm can go vacuous.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-24T13:21:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

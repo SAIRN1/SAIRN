@@ -32,8 +32,20 @@
 // grant surfaces as a 42501 that api/sf-auth.js turns into NOT_GRANTED, which
 // IS asserted, but the grant itself is a live-verification item.
 //
-// And the other 32 sf_ resources stay UNGATED by design. The last arm pins
-// that, so widening the gate is a deliberate act rather than a side effect.
+// Some sf_ resources stay UNGATED by design, and the last pair of arms drives
+// BOTH directions through the real dispatcher: an ungated resource is not
+// refused, a gated one is. That pairing is the arm's whole value -- on its own
+// the "stays ungated" half is satisfied by a gate that protects nothing.
+//
+// ── THE COUNT IS NOT WRITTEN HERE ANY MORE, AND THAT IS THE FIX ───────────
+// This header said "the other 32 sf_ resources stay UNGATED by design" and the
+// arm below named sf_members as its example. sf_members WAS GATED ON
+// 2026-09-22 and this suite went red and stayed red -- discovered 2026-09-24
+// while gating sf_signatures, two days later, by running it rather than by
+// anyone noticing. A suite pinned to a moving number is a suite that expires
+// on a date nobody writes down. The authoritative list is SD_SESSION_GATED in
+// api/sd-data.js; api/sd-data-sf-session-gate.test.js asserts it against the
+// approved set in both directions. This file's job is the CHAIN, not the list.
 
 'use strict';
 
@@ -287,17 +299,84 @@ async function provision(w, employee_id, role) {
     }
   });
 
-  await test('the other 32 sf_ resources stay UNGATED, deliberately', async () => {
-    // The finding was about Tier A. Widening the gate to a duty roster or a
-    // bottle count is a product decision nobody has made, and a gate that
-    // grows by accident is how an app stops working for its users.
+  await test('an UNGATED sf_ resource is not refused -- the gate did not widen '
+            + 'by accident', async () => {
+    // Widening the gate to a bottle count is a product decision nobody has
+    // made, and a gate that grows by accident is how an app stops working for
+    // its users.
+    //
+    // sf_bottle_fills, NOT sf_members. This arm named sf_members until
+    // 2026-09-24 and sf_members was gated on 2026-09-22, so it was asserting
+    // the opposite of the approved state for two days. sf_bottle_fills is the
+    // literal "bottle count" the deferral comment in api/sd-data.js uses as
+    // its example of what nobody has decided about, which makes it the entry
+    // most likely to still be ungated when somebody reads this next -- but if
+    // it is ever approved, this arm is the thing to move, not to delete.
     const w = world();
     const h = load('sd-data.js', LIC, w.fn);
-    const r = await call(h, { action: 'read', resource: 'sf_members', app_id: 'sairnfreedom' });
+    const r = await call(h, { action: 'read', resource: 'sf_bottle_fills', app_id: 'sairnfreedom' });
     assert.notStrictEqual(r.statusCode, 403,
-      'sf_members answered 403 with no session, so the gate has widened past '
-      + 'the three Tier A resources it was scoped to');
+      'sf_bottle_fills answered 403 with no session, so the gate has widened '
+      + 'past what was approved -- or it was approved and this arm was not '
+      + 'moved, which is the same disagreement seen from the other side');
   });
+
+  // ── THE PAIRED POSITIVE, AND IT IS READ OFF THE TABLE ────────────────────
+  // WITHOUT THIS, THE ARM ABOVE IS SATISFIED BY A GATE THAT PROTECTS NOTHING.
+  // "Not 403" is true of every resource when SD_SESSION_GATED is empty, so the
+  // negative on its own is a green run over an open door.
+  //
+  // WHY THE LIST IS DERIVED FROM api/sd-data.js RATHER THAN TYPED HERE
+  // (2026-09-24): api/sd-data-session-gate.test.js carries a coverage arm that
+  // asks whether every gated resource is DRIVEN somewhere, with a hand-written
+  // map naming the suite for each. That map named three sf_ resources and the
+  // gate held fifteen, so eleven of them -- minors' names, a felony flag, an
+  // ORC 2915 payee record -- were gated in source and exercised by nothing,
+  // and the arm had been red on origin/main since 2026-09-22 saying so. A
+  // derived loop cannot fall behind the table that way: gate a sixteenth
+  // resource and it is driven here in the same commit, with no list to update.
+  //
+  // It drives BOTH verbs and asserts ZERO database calls, because a refusal
+  // that still reaches the store is a refusal that leaked on the way.
+  const gatedSfResources = (function () {
+    const src = fs.readFileSync(path.join(__dirname, 'sd-data.js'), 'utf8');
+    const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/);
+    assert.ok(m, 'SD_SESSION_GATED is gone -- this loop would silently drive nothing');
+    const code = m[0].split('\n')
+      .map((l) => (/^\s*(\/\/|\*|\/\*)/.test(l) ? '' : l)).join('\n');
+    const out = [];
+    (code.match(/'(sf_\w+)':\s*\[([^\]]*)\]/g) || []).forEach((entry) => {
+      const name = entry.match(/'(sf_\w+)'/)[1];
+      (entry.match(/'(read|write|reserve)'/g) || [])
+        .forEach((a) => out.push([name, a.replace(/'/g, '')]));
+    });
+    return out;
+  }());
+
+  await test('the gated-resource list was actually parsed -- an empty loop '
+            + 'passes every arm it does not run', () => {
+    assert.ok(gatedSfResources.length >= 2,
+      'parsed ' + gatedSfResources.length + ' gated sf_ pairs out of '
+      + 'SD_SESSION_GATED. A regex that matched nothing produces a loop that '
+      + 'asserts nothing and reports green.');
+  });
+
+  for (const [resource, action] of gatedSfResources) {
+    await test('DRIVEN: ' + resource + '/' + action + ' -> 403 with a licence '
+              + 'key and NO session', async () => {
+      const w = world();
+      const h = load('sd-data.js', LIC, w.fn);
+      const r = await call(h, { action: action, resource: resource,
+                                app_id: 'sairnfreedom', payload: { id: 'X1' } });
+      assert.strictEqual(r.statusCode, 403,
+        resource + '/' + action + ' answered ' + r.statusCode + ' with no '
+        + 'session token, so it is reachable on the licence key alone -- a key '
+        + 'shipped to the browser. Body: ' + JSON.stringify(r.body));
+      assert.strictEqual(w.calls.length, 0,
+        resource + '/' + action + ' was refused but still made '
+        + w.calls.length + ' database call(s) on the way.');
+    });
+  }
 
   await test('the client actually sends the header the gate reads', async () => {
     // The fourth piece, asserted where the other three cannot see it. A gate

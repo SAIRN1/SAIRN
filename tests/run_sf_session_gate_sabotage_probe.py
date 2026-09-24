@@ -27,12 +27,23 @@ reverted as broken rather than fixed forward. Only the set-equality arm can see
 it.
 
 MUTATION 6 IS THE OPPOSITE DIRECTION AND IS EASY TO MISS: the gate WIDENS to
-sf_members and sf_signatures, which carry identity and were named in the
-2026-09-22 finding but were NOT in the batch Michael approved. Every
-"is it gated" assertion still passes; what has happened is a product decision
-nobody made, taken silently. The arm that asserts their ABSENCE is what catches
-it, and that arm is the one most likely to be deleted by somebody who reads it
-as an odd negative.
+resources nobody approved. Every "is it gated" assertion still passes; what has
+happened is a product decision nobody made, taken silently.
+
+── MUTATION 6 WENT STALE ON 2026-09-24 AND THIS IS THE RECORD OF IT ──────────
+It used to widen the gate to sf_members and sf_signatures. Both are now
+APPROVED -- sf_members on 2026-09-22, sf_signatures on 2026-09-24 -- so the
+mutation became a NO-OP that the suite passed for the correct reason while this
+probe reported it as a silent defect. A sabotage arm whose planted defect is no
+longer a defect is the exact "nothing announces the day a check stops testing
+anything" shape CLAUDE.md names, and it announced itself here only because the
+gate change and the probe run happened in the same hour.
+
+It now widens to sf_officers and sf_tickets, which are genuinely ungated, and
+MUTATION 7 was added at the same time to cover the other direction for the
+newly closed resource. THE GENERAL RULE, because this will recur: a sabotage
+arm that names specific resources has to be re-read every time the approved
+list moves -- it cannot be written once and trusted.
 """
 import os
 import sys
@@ -85,23 +96,34 @@ MUTATIONS = [
      "      if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) { /* copy */ }"),
 
     ("6. THE OPPOSITE DIRECTION, AND EASY TO MISS: the gate WIDENS to "
-     "sf_members and sf_signatures, which carry identity but were NOT in the "
-     "approved batch. Every 'is it gated' assertion still passes; a product "
-     "decision nobody made has been taken silently, and the open-work row now "
-     "disagrees with the code",
+     "sf_officers and sf_tickets, which nobody approved. Every 'is it gated' "
+     "assertion still passes; a product decision nobody made has been taken "
+     "silently, and the open-work row now disagrees with the code",
      SRC,
      "      'sf_operators':           ['read', 'write'],",
-     "      'sf_members':             ['read', 'write'],\n"
-     "      'sf_signatures':          ['read', 'write'],\n"
+     "      'sf_officers':            ['read', 'write'],\n"
+     "      'sf_tickets':             ['read', 'write'],\n"
      "      'sf_operators':           ['read', 'write'],"),
+
+    ("7. THE NEWLY CLOSED ONE IS QUIETLY REOPENED: sf_signatures -- a named "
+     "signer, their typed signature and the document it binds them to -- "
+     "loses its gate while the other fourteen keep theirs, so the batch still "
+     "looks armed. This arm exists because the resource it names was gated "
+     "the same day, and a closure with no arm holding it open is a closure "
+     "that lasts until the next edit",
+     SRC,
+     "      'sf_signatures':          ['read', 'write'],\n",
+     ""),
 ]
 
 if __name__ == '__main__':
     sys.exit(run_probe(
         SUITE, MUTATIONS,
-        title=('SAIRNfreedom: eleven resources including a felony flag, minors '
-               'and an ORC 2915 payee record must require a session -- on BOTH '
-               'verbs, through ONE check, with the expectedApp map agreeing'),
+        title=('SAIRNfreedom: the approved resources -- including a felony '
+               'flag, minors, an ORC 2915 payee record and an executed '
+               'signature -- must require a session on BOTH verbs, through '
+               'ONE check, with the expectedApp map agreeing, and the gate '
+               'must not widen past what was approved'),
         # BOTH staged: the worktree is at HEAD and neither the gate nor the
         # suite is committed when this first runs, so without staging the
         # baseline measures the OLD three-resource list against the NEW suite,
