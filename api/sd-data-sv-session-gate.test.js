@@ -232,20 +232,31 @@ const RESOURCES = ['sv_patients', 'sv_soapnotes', 'sv_billing'];
       'the gate does not verify against the handler-derived hash scoped to sairnvet');
   });
 
-  await test('and the map really is 41 resources, including the two that matter most', () => {
+  await test('and the map is at least as wide as when the gate landed, '
+           + 'including the two that matter most', () => {
     // MEASURED, not assumed: earlier prose (including this role's own first
     // report of this finding) said 36, echoing CRITICALITY-TIERS.md's rollup
-    // line for sairnvet. The live SV_RESOURCES map in api/sd-data.js is 41 --
-    // this assertion is pinned to the counted, driven number, not the quoted
-    // one, so a future drift between the tier rollup and the real map is
-    // visible here rather than silently carried forward a second time.
+    // line for sairnvet; the counted map was 41 when the gate landed.
+    //
+    // ── THE EXACT COUNT WENT RED AND SAT RED (fixed 2026-09-24) ────────────
+    // `=== 41` broke the day sv_scribe_consent became the 42nd resource
+    // (68a9d4bc, 2026-09-23) and the suite sat red at origin/main for a day,
+    // read as noise -- the third arm THIS WEEK found expired on its own
+    // count (the sf_ pair count and the FAI anchor are the others). An exact
+    // count on a map that legitimately grows is a fixture with an unannounced
+    // expiry date. What this arm actually protects is the GATE covering the
+    // whole map -- arm 4 above asserts that directly -- plus two properties a
+    // count can hold without expiring: the map never SHRINKS below the size
+    // the gate was verified at (a shrink is resources leaving the gate), and
+    // the two DEA-relevant names are still in it.
     const fs = require('fs');
     const path = require('path');
     const src = fs.readFileSync(path.join(__dirname, 'sd-data.js'), 'utf8');
     const a = src.indexOf('const SV_RESOURCES = {');
     const body = src.slice(a, src.indexOf('};', a));
     const names = (body.match(/(sv_\w+):/g) || []).map((x) => x.slice(0, -1));
-    assert.strictEqual(names.length, 41, 'the map is ' + names.length + ' resources, not 41');
+    assert.ok(names.length >= 41,
+      'the map SHRANK to ' + names.length + ' -- resources have left the gate');
     assert.ok(names.indexOf('sv_controlled') !== -1);
     assert.ok(names.indexOf('sv_patients') !== -1);
   });

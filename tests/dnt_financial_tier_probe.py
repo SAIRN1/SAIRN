@@ -63,9 +63,13 @@ MUTATIONS = [
     ("3. the role set widens to every dental role, so the tier exists and "
      "gates nobody",
      API,
-     "    const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true };",
-     "    const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true, "
-     "provider: true };"),
+     # ANCHOR UPDATED 2026-09-24: the role map moved inside roleSet() when the
+     # plain-object-literal prototype hole was closed platform-wide, and this
+     # arm sat on the old literal reporting ANCHOR-0 at origin/main -- a probe
+     # arm testing nothing while looking armed.
+     "    const DNT_FINANCIAL_ROLES = roleSet({ owner: true, frontdesk: true });",
+     "    const DNT_FINANCIAL_ROLES = roleSet({ owner: true, frontdesk: true, "
+     "provider: true });"),
 
     ("4. ONE resource silently leaves the tier -- the smallest possible diff, "
      "and A/R is the one a provider has least reason to see",
