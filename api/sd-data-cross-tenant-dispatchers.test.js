@@ -52,7 +52,10 @@
 //   rf_company_programs,
 //   rf_job_warranties, rf_prequal_documents, rf_safety_equipment, sen_visits,
 //   sc_dme, sf_members, sb_ap, leg_custodylog, leg_deathrecords, bld_draws,
-//   sd_exec_msgs
+//   sd_exec_msgs,
+//   sv_boarding, sv_clients, sv_farmcalls, sv_invoicing, sv_multisite,
+//   sv_petinsurance, sdn_projects, sdn_proposals, sdn_specitems,
+//   sdn_timeentries
 //
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.

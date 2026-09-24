@@ -288,6 +288,185 @@ Maryland write-up.
 - Whether individual circuit courts publish local holiday closures beyond the
   statewide list.
 
+## 9a. UPDATE 2026-08-28 — sources re-verified, two open items CLOSED, one access fact CORRECTED
+
+Run at Michael's direction to have Maryland decision-ready without seeding it.
+Nothing here changes the PASS verdict or either decision; it removes work and
+corrects one thing the gate got right on the day and that has since moved.
+
+### CORRECTION: `govt.westlaw.com` no longer answers a bare `curl`
+
+§1 records "plain curl 200 … no sign-in, no click-through, no terms acceptance,
+no paywall." **The no-paywall half is still true. The plain-curl half is not.**
+
+| request | result |
+|---|---|
+| bare `curl` | **HTTP 403** — a Cloudflare interstitial, *"Sorry, you have been blocked"* |
+| `curl` with a browser user-agent | **200, real rule text** |
+| the `/mdc/Browse/Index` page, browser UA | **200** |
+
+So it is a **header gate, not a paywall** — there is still no sign-in, no
+"I agree", and no charge, and Maryland is still not Tennessee. But the recipe
+changed, and a future session following §1 literally would read the 403 as the
+Tennessee outcome and wrongly re-gate the state. **Send a browser user-agent.**
+
+**The independent channel is unaffected** and all three still answer a bare
+`curl`: `mgaleg.maryland.gov` (statutes), `mdcourts.gov/administration/holidays`
+(the ingest target), and `mdcourts.gov/rules/ruleschanges` (the Rules Orders).
+§2's durable lesson — that currency is verifiable *without* the publisher — is
+now doing real work rather than being a nicety.
+
+### CLOSED: the 228th Rules Order's other nineteen rules
+
+§9 listed this as unaudited. It is now audited, from the order itself
+(`mdcourts.gov/sites/default/files/rules/order/ro228th_0.pdf`, 59pp).
+
+The order amends **1-101, 2-422, 3-325, 3-421, 4-203, 4-211, 4-231, 4-345,
+4-507, 5-601, 5-615, 5-804, 8-501, 10-203, 10-302, 16-903, 16-914, 19-728 and
+20-109**, and adopts new Title 15 Chapter 1700 and new Rule 19-803.
+
+**Only three could possibly touch a Title 2 civil deadline seed, and none does:**
+
+- **2-422** — re-read in the order's own text. The deadline sentence is
+  **preserved verbatim**: *"within 30 days after service of the request or
+  within 15 days after the date on which that party's initial pleading or motion
+  is required, whichever is later."* Only the response-format language after it
+  is restructured. **Deadline-neutral, now confirmed against the order rather
+  than inferred.** This also confirms DECISION TWO's chained floor survives the
+  amendment.
+- **1-101** — adds categories of special proceedings to section (o), the Title 15
+  applicability list. **Deadline-neutral.**
+- **20-109** — access to electronic case records by parties and attorneys.
+  **Deadline-neutral**, and despite sitting in Title 20 it does not touch the
+  e-service treatment in §4.
+
+Everything else is out of scope for Title 2 civil: **3-325 and 3-421 are
+District Court** (already flagged in §9 as a separate pass), **4-xxx are
+criminal**, **5-xxx are evidence**, **8-501 is appellate**, **10-xxx are
+guardianship**, **16-xxx are court administration**, **19-xxx are attorneys**,
+and Title 15 Chapter 1700 is assisted outpatient treatment.
+
+**The order carries TWO effective dates**, which §2 did not record: Title 15
+Chapter 1700 and Rules **1-101, 10-203, 10-302 and 16-914** took effect
+**1 July 2026** and are already in force; **everything else, including 2-422,
+takes effect 1 October 2026**.
+
+### CLOSED: the erratum nobody had seen
+
+The rules-changes page lists an **"Erratum to the 228th Rules Order"** that §2
+did not mention. Read: it replaces pages 11–12 to restore language
+"inadvertently omitted" from **Rule 4-211 (criminal — filing of a charging
+document)**. **No civil rule is touched and no deadline moves.**
+
+### CONFIRMED: the 228th is still the most recent Rules Order
+
+The page lists orders 220 through 228 and nothing later. The currency position
+in §2 still holds as of this date, established from the independent channel
+rather than from the publisher.
+
+### Rule 1-203 re-read verbatim, and it adds a fourth build item
+
+All three build items in §6 are confirmed against the current text. One more
+turned up that §6 does not have:
+
+**Rule 1-203(d) — EXTENSION OF TIME REQUIREMENTS UPON THE DEATH OF A PARTY.**
+*"Upon the death of a party, all time requirements under these rules applicable
+to that party shall be extended automatically from the date of death to the
+earlier of (1) 60 days after…"* An **automatic** extension of **every** period
+applicable to that party, triggered by an event the engine cannot see. It can
+only make a real deadline **later** than a computed one, so omitting it reports
+**EARLY** — safe, and a coverage disclosure rather than a blocker. But it is
+unusual enough to name: no other seeded jurisdiction has a rule that silently
+extends all of one party's deadlines at once.
+
+---
+
+## 9b. THE TWO DECISIONS, IN DECISION-READY FORM
+
+Stated so they can be taken up cold. Neither is mine to make; recommendations
+are given because a recommendation is more useful than a menu, not because the
+call has been made.
+
+### DECISION ONE — the ≤7-day / mail-extension interaction
+
+**The question.** Rule 1-203(a) excludes intermediate Saturdays, Sundays and
+holidays when *"the period of time allowed is seven days or less"*. Rule
+1-203(c) adds three days *"to the prescribed period"* for mailed service. On a
+mailed 7-day period, is the period tested **before** the three days (exclusion
+survives, later date) or **after** (exclusion lost, earlier date)?
+
+**Why it cannot be settled by picking the safe side.** The two readings differ by
+*which* is safe depending on the period length, so there is no
+direction-of-error tiebreak — the usual move in this engine does not work here.
+
+**What was searched and not found.** No committee note, no cross reference, no
+controlling authority. Oregon's ORCP 10 A answers the identical question
+expressly — the threshold is tested *"(without regard to section B of this
+rule)"*, i.e. before the extension — and that is **persuasive material, not
+Maryland law**. It is recorded in the Oregon seed for exactly this purpose.
+
+**⚠ THE THING THAT MAKES THIS CHEAPER THAN IT LOOKS: it is not reachable by any
+row a first Maryland batch would seed.** The readings diverge only on mailed
+periods of **4–7 days**, and every Title 2 civil period identified is far
+longer — Rule 2-321 answers are **30, 60 or 90 days**, and the three discovery
+rules are **30** with a **15**-day second limb. **A first batch can be seeded
+without deciding this at all**, provided nothing ≤7 days is included and the
+constraint is asserted the way Oklahoma's eleven-day carve-out is.
+
+**Recommendation.** Defer it. Seed no Maryland period of seven days or less, and
+add a test asserting none exists — the same guard Oklahoma carries for its six
+carved-out sections. If a short mailed row is ever needed, follow West
+Virginia's precedent and **refuse visibly** (`refused_contested_standard`)
+rather than resolve a rule against itself.
+
+### DECISION TWO — the discovery floor that chains off a computed date
+
+**The question.** All three Maryland discovery rules — 2-421(b) interrogatories,
+2-422(c) production, 2-424(b) admissions — give a defendant the later of 30 days
+from the request and *"15 days after the date on which that party's initial
+pleading or motion is **required**."* That second limb runs from **the output of
+another rule**, not from a date anyone hands over.
+
+**Why nothing seeded today handles it.** Every other later-of row in this engine
+— Ohio, Georgia, New Jersey, North Carolina, Washington, Virginia,
+Massachusetts, Missouri, Oregon, South Carolina — measures its floor from a date
+the **caller supplies**. `resolve_periods` limbs take an *event* and a *count*;
+no limb can say *"the result of computing rule X"*.
+
+**And the answer date is not a constant.** Rule 2-321 gives **30, 60 or 90 days**
+depending on how and where the defendant was served, and 2-321(c) extends it
+further to *"15 days after entry of the court's order"* on a Rule 2-322
+preliminary motion or a remand. So the floor is **45**, **75**, **105**, or a
+date that depends on a ruling the engine cannot see.
+
+**Why the stakes are the highest in any gate so far.** Rule 2-424 is
+**self-executing**: miss it and the facts are **deemed admitted**. A floor
+guessed short computes **EARLY on the one rule where an early date silently
+forfeits the case on the merits.** Everywhere else in this engine EARLY is the
+safe direction. Here it is not.
+
+**The three options, with what each actually costs:**
+
+| | What it is | Cost / risk |
+|---|---|---|
+| **1. Caller supplies the computed date** | Name the limb `date_initial_pleading_is_required`; the caller computes Rule 2-321 first | Buildable today with no engine change. Risk: a caller who picks the wrong branch (30 vs 60 vs 90) gets a floor that is EARLY. Mitigated by the trigger name and by refusing on a partial set |
+| **2. Build rule chaining** | Let a limb name another rule and have the engine compute it | The correct answer, and much the largest — a new capability, not a new row. Would also serve any future jurisdiction with the same shape |
+| **3. Refuse the defendant limb** | Seed only the plain 30-day row and disclose that a defendant's true deadline may be later | Safe in the EARLY direction, least useful, and on Rule 2-424 "least useful" means handing a user a date that forfeits admissions |
+
+**Recommendation, offered not taken.** **Option 1**, because it strictly
+dominates option 3: it is never worse — both are EARLY when the caller is
+uninformed — and it is *correct* whenever the caller knows which service branch
+applied, which a litigant in the matter always does. Pair it with an unmissable
+limb name and a refusal unless both dates are supplied. **Option 2 is the right
+answer if and only if a second jurisdiction turns up needing it**; building a
+chaining capability for one state is over-building, and nothing else seeded so
+far has this shape.
+
+**What would change the recommendation:** if the engine should never accept a
+date a caller had to compute by hand, option 3 with a loud disclosure is the
+honest fallback — but the disclosure has to say plainly that the date shown can
+be earlier than the real one, on a rule where being early admits the facts.
+
 ## 10. Verdict
 
 **PASS.** Sources are free, official, complete, permitted, `curl`-reachable, and

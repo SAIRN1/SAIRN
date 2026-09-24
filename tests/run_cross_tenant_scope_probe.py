@@ -459,7 +459,17 @@ def main():
     src = io.open(os.path.join(REPO, 'api/sd-data-cross-tenant-dispatchers.test.js'),
                   encoding='utf-8').read()
     units = _re.search(r'const UNITS = \[(.*?)\n\];', src, _re.S)
-    driven = set(_re.findall(r"\['([a-z0-9_]+)',\s*'[a-z0-9_]+'", units.group(1)))
+    # COMMENT LINES ARE STRIPPED BEFORE THE MEMBER REGEX RUNS (2026-09-24).
+    # A comment inside the UNITS block quoting SD_SESSION_GATED's
+    # `['read', 'write']` matched the member pattern and this arm reported a
+    # driven resource named "read" -- a comment counted as code, the same
+    # class fixed in first_article_inspection the same day. Line-level
+    # stripping is sufficient here because the block is this suite's own
+    # table, written in a known style; a full parser would be borrowed
+    # authority for a file this probe already trusts the shape of.
+    units_code = '\n'.join(l for l in units.group(1).split('\n')
+                           if not l.strip().startswith('//'))
+    driven = set(_re.findall(r"\['([a-z0-9_]+)',\s*'[a-z0-9_]+'", units_code))
     declared, _n = S.declared_coverage(src)
     extra = sorted(declared - driven)
     missing = sorted(driven - declared)
