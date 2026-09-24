@@ -564,3 +564,46 @@ those classes has a CSS rule. The seam check reports 18 standing
 could-not-tells around roleSet(). Review obligations opened: cody
 (sf-signatures batch, sairnvet completeness), hank (slab holds), cc
 (dnt-rollup cents).
+
+## 2026-09-24 (second pass) — nine-item queue, and three arms found red by running them
+
+Discharged first: hank's 2026-09-23T11:50:29Z obligation (bld_tna /
+exec_context isolation arms, overdue 32h) by RE-PLANTING three of the
+commit's six sabotage mutations rather than trusting the claim. No finding.
+
+1. **SAIRNvet notice** — the SOAP authorship card told every user
+   per-employee sign-in does not exist, eleven days after it shipped. Card
+   rewritten to its narrower true half; five code comments carrying the same
+   expired premise marked superseded in place.
+2. **Two competitive-gap audits recreated** (SAIRNvet, SAIRNlaw-first) from
+   cloud's findings, re-verified at HEAD. Four SAIRNvet "gaps" are BUILT;
+   SAIRNlaw's IOLTA reconciliation and conflict check are BUILT AND WIRED.
+   Invoice-level split-fee is deliberately NOT counted as partial origination
+   credit.
+3. **check 9 docs-only skip** — the Windows-only liveness probe exits 2 on
+   Linux and the gate read that as a failing seam, stranding every cloud
+   push. Predicate is named and driven in both directions.
+4. **golf_zones** evidence cell — "nothing computes an interval" was false;
+   three computations do. Tier B holds on the corrected reason.
+5. **sen_applicants** — "no PII" and "never individually read" both stale;
+   name+phone verified at the write site, both reads recorded.
+6. **hover2 roster gap** — exclusion was one literal name; role predicate now.
+7. **The three baseline reds:** two were EXPIRED FIXTURES (sv gate's `=== 41`
+   broke when sv_scribe_consent became the 42nd; dnt_financial_tier arm 3 sat
+   on a pre-roleSet anchor), and the third was MY OWN TYPO — there is no
+   tests/sairnvet_server_backup.js and never was.
+8. **23 StoneDesk buttons** (not 12 — counted this time) wore .btn/.bo/.bp/
+   .bsm with no rules anywhere; defined against the app's own .q-btn idiom.
+9. **Item 92** — sdCommissionFor split into a pure core + one-line shell;
+   saveQuote's unshift/shift mutate-and-roll-back replaced with
+   compute-commit-mutate.
+
+**FIVE EXPIRED ANCHORS/FIXTURES IN ONE PASS** (sv count, dnt arm 3, review-gate
+arms 3 and 9, the sc_dme negative control). Every one looked armed and tested
+nothing or tested the wrong thing. This is now the most common defect shape
+this session finds, ahead of silent failure.
+
+STANDING, for whoever is next: the seam check reports 18 could-not-tells
+around roleSet() (unchanged at baseline). The liveness probe still cannot run
+on Linux, so cloud pushes touching CODE still hit check 9 — named in that
+commit as a decision nobody has made.
