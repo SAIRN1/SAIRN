@@ -776,7 +776,7 @@
                 <button class="nav-btn" onclick="showPanel('specialty')" data-tip="Specialty coverage spot-checks and documentation checklists, recorded by your own coders">Specialty Coverage</button>
                 <button class="nav-btn" onclick="showPanel('transport')" data-tip="Critical care transport billing -- supplier air codes vs physician codes, kept separate">Critical Care Transport</button>
                 <button class="nav-btn" onclick="showPanel('ed')" data-tip="Emergency Department -- MDM-only leveling, critical care time, deleted-code corrections">Emergency Dept</button>
-                <button class="nav-btn" onclick="showPanel('pt')" data-tip="Physical Therapy -- 8-minute rule, KX threshold, CQ modifier, MPPR, 2026 RTM codes">Physical Therapy</button>
+                <button class="nav-btn" onclick="showPanel('pt')" data-tip="Physical Therapy -- 8-minute rule, KX threshold, GP and CQ modifiers, MPPR, 2026 RTM codes">Physical Therapy</button>
                 <button class="nav-btn" onclick="showPanel('mh')" data-tip="Mental Health -- license-gated codes, split time, telehealth POS, psychotherapy-notes tier">Mental Health</button>
                 <button class="nav-btn" onclick="showPanel('uc')" data-tip="Urgent Care -- payer branching S9083/S9088 vs E/M, POS 20, ED-code block">Urgent Care</button>
                 <button class="nav-btn" onclick="showPanel('eye')" data-tip="Optometry/Ophthalmology -- routine vs medical, refraction split, co-management modifiers">Optometry / Ophth</button>
@@ -1479,6 +1479,21 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <input type="text" id="pt-kxjust" placeholder="KX justification (real, not boilerplate)" class="search-input" style="min-width:240px;">
                 <input type="text" id="pt-pta" placeholder="PTA % e.g. 97110:40" class="search-input">
                 <input type="text" id="pt-cq" placeholder="CQ applied to e.g. 97110" class="search-input">
+                <!-- ── GP WAS ABSENT FROM THIS PANEL ENTIRELY (2026-09-23) ──
+                     The panel checked the 8-minute rule, the KX threshold, CQ,
+                     MPPR and the RTM windows, and had NO field and NO rule for
+                     the therapy DISCIPLINE modifier. GP is required on every
+                     always-therapy service furnished under a physical-therapy
+                     plan of care; a therapy claim without GN, GO or GP is
+                     returned as unprocessable, so this was the one missing
+                     modifier that stops a claim being adjudicated at all
+                     rather than changing what it pays.
+                     WHY IT WAS EASY TO MISS: "PT" already means something else
+                     in this app. The Modifier Routing panel's first section is
+                     the PT modifier -- a screening colonoscopy converting to
+                     diagnostic -- so a search for therapy modifiers finds "PT"
+                     everywhere and reads as covered. -->
+                <input type="text" id="pt-gp" placeholder="GP applied to e.g. 97110, 97140" class="search-input">
                 <input type="text" id="pt-rtm" placeholder="RTM codes e.g. 98985" class="search-input">
                 <input type="number" id="pt-rtmdays" placeholder="RTM monitoring days" class="search-input">
                 <button class="btn btn-primary" onclick="runPtCheck()">Check Session</button>
@@ -7961,6 +7976,7 @@ How to answer:
                 kx_justification: document.getElementById('pt-kxjust').value,
                 pta_percent_by_code: scParsePairs(document.getElementById('pt-pta').value),
                 cq_applied_codes: scParseList(document.getElementById('pt-cq').value),
+                gp_applied_codes: scParseList(document.getElementById('pt-gp').value),
                 same_day_codes: Object.keys(timed),
                 rtm_codes: scParseList(document.getElementById('pt-rtm').value),
                 rtm_monitoring_days: rtmDays === '' ? null : Number(rtmDays)
@@ -8231,6 +8247,7 @@ How to answer:
             eight_min:  'CMS Medicare Claims Processing Manual Ch. 5; APTA "Coding for Timed Codes" — total timed minutes are aggregated for the session, then converted to units: 8-22 min = 1, 23 = 2, 38 = 3, 53 = 4',
             kx:         'CMS Transmittal R13437CP, 2026 Annual Update of Per-Beneficiary Threshold Amounts — CY2026 KX threshold is $2,480 for PT and SLP COMBINED, and a separate $2,480 for OT; targeted medical review threshold is $3,000',
             cq:         'CMS MM12397 / CY2020 PFS final rule — the CQ modifier is required when a PTA furnishes more than 10% of a service; those services are paid at 85% of the otherwise applicable fee schedule amount (a 15% reduction of the FULL payment, not of the practice-expense component), effective 1 Jan 2022',
+            gp:         'CMS Medicare Claims Processing Manual Ch. 5 (Part B Outpatient Rehabilitation and CORF/OPT Services), HCPCS coding requirement — every ALWAYS-THERAPY service carries the modifier for the plan of care it was furnished under: GP physical therapy, GO occupational therapy, GN speech-language pathology. A therapy line submitted without one is returned as unprocessable, so this is the modifier that stops a claim being adjudicated at all rather than one that changes what it pays. THE CHAPTER IS CITED, NOT A SUBSECTION: the rule is long-standing and unambiguous, the exact section numbering was NOT re-verified against CMS in this session, and a precise-looking citation nobody checked is worse than an honest one.',
             mppr:       'APTA "Multiple Procedure Payment Reduction and the Physician Fee Schedule" — MPPR applies to the PRACTICE EXPENSE component of always-therapy services; the service with the highest PE RVU is paid at 100% and each remaining service at 50%, since 1 Apr 2013',
             rtm_2026:   'ASHA "CPT and HCPCS Code Changes for 2026" — the RTM set was expanded with 98979 (treatment management, first 10 minutes, at least one real-time interactive communication), 98984 (respiratory device supply 2-15 days), 98985 (musculoskeletal 2-15 days) and 98986 (cognitive behavioral therapy 2-15 days); the pre-existing device-supply codes now specify 16-30 days'
         };
@@ -8333,6 +8350,56 @@ How to answer:
                         'A PTA furnished ' + pct + '%, which does not exceed 10%. CQ is not required and triggers an avoidable 15% reduction.', 'cq'));
                 }
             });
+
+            // --- GP: the therapy DISCIPLINE modifier, missing until 2026-09-23 ---
+            // SCOPED TO THE TIMED CODES THIS PANEL WAS GIVEN, and that scope is
+            // the judgement rather than the rule. The 8-minute rule above only
+            // applies to timed therapy services, so every code in
+            // `timed_minutes_by_code` is a service this panel has already
+            // treated as therapy -- which makes it the one set that can be
+            // required to carry a discipline modifier without this app holding
+            // its own copy of the CMS always-therapy code list. A second copy
+            // of an annually-updated CMS list is the drift the KX constants are
+            // deliberately shared to avoid.
+            //
+            // RTM CODES ARE NOT CHECKED HERE AND THAT IS STATED RATHER THAN
+            // LEFT TO LOOK COVERED. 98975-98986 are not timed therapy services
+            // and whether a given RTM service furnished by a therapist takes a
+            // discipline modifier was not verified in this session. Silence is
+            // the honest answer; a block on an unverified rule would refuse
+            // compliant claims, which is the wrong direction to fail in and is
+            // the mistake this app's own DMEPOS gate records.
+            //
+            // GN AND GO ARE NAMED IN THE FINDING AND NOT ACCEPTED AS INPUT, on
+            // purpose. The first version took `97110:GO` and quietly treated it
+            // as satisfied -- an undocumented syntax the placeholder never
+            // mentions, which is a feature only its author can find. The
+            // finding says instead that an OT or SLP plan-of-care service takes
+            // GO or GN and does not belong on the physical-therapy check, which
+            // sends a coder to the right question rather than to a second
+            // modifier.
+            var gpApplied = (input.gp_applied_codes || []).map(function(c){ return String(c).trim().toUpperCase(); });
+            if (codes.length) {
+                codes.forEach(function(c){
+                    var code = String(c).trim().toUpperCase();
+                    if (gpApplied.indexOf(code) !== -1) return;
+                    findings.push(scPtFinding('block', 'GP modifier missing on ' + code,
+                        'Medicare requires the plan-of-care modifier on every always-therapy service. '
+                        + code + ' was billed as a timed therapy service with no GP recorded, and a therapy '
+                        + 'line without GN, GO or GP is returned as UNPROCESSABLE -- the claim is not '
+                        + 'denied, it is never adjudicated. If this service was furnished under an '
+                        + 'occupational-therapy or speech-language plan of care it takes GO or GN instead, '
+                        + 'and it does not belong on the physical-therapy check.', 'gp'));
+                });
+                gpApplied.forEach(function(code){
+                    if (codes.map(function(c){ return String(c).trim().toUpperCase(); }).indexOf(code) === -1) {
+                        findings.push(scPtFinding('warn', 'GP recorded on ' + code + ', which is not in this session',
+                            'GP was entered for a code with no timed minutes in this session. Either the '
+                            + 'minutes are missing from the session or the modifier is on the wrong code -- '
+                            + 'the same mismatch the CQ check reports the other way round.', 'gp'));
+                    }
+                });
+            }
 
             // --- MPPR ranking, on the PE component ---
             var sameDay = input.same_day_codes || [];
