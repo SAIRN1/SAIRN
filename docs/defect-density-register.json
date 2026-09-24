@@ -13305,6 +13305,95 @@
       "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
       "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
+    },
+    {
+      "commit": "6becc77fccaa",
+      "date": "2026-09-24",
+      "subject": "fix(platform): all 48 role membership sets get a null prototype, not just roofing",
+      "files": [
+        "api/_lib/auth.js",
+        "api/_lib/dental-bi.js",
+        "api/accounting.js",
+        "api/alf-alerts.js",
+        "api/alf-auth.js",
+        "api/bld-auth.js",
+        "api/dnt-auth.js",
+        "api/dnt-bi.js",
+        "api/law-auth.js",
+        "api/ledger.js",
+        "api/leg-auth.js",
+        "api/mech-auth.js",
+        "api/rf-auth.js",
+        "api/sd-data.js",
+        "api/sd-sub-data.js",
+        "api/sdn-auth.js",
+        "api/sen-auth.js",
+        "api/sen-portal.js",
+        "api/sf-auth.js",
+        "api/sv-auth.js",
+        "tests/dnt_bi_scope_probe.py",
+        "tests/role_maps_have_no_prototype.js",
+        "tests/roofing_claim_gate_probe.py",
+        "tests/run_exec_msgs_gate_sabotage_probe.py",
+        "tests/run_law_timeentry_trim_sabotage_probe.py",
+        "tests/run_law_trusttx_clearance_sabotage_probe.py",
+        "tests/run_leg_session_gate_sabotage_probe.py",
+        "tests/run_setup_demotion_sabotage_probe.py",
+        "tests/run_unconfirmed_write_sweep_sabotage_probe.py",
+        "tests/sairncode_gates_mutation_control.js",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 468,
+      "lines_removed": 105,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/_lib/auth.js built every role membership set as a plain object literal, and so did 48 sites across 19 files that follow the same convention: MANAGEMENT_ROLES, BROAD_READ_ROLES, AUTHENTICATED_ROLES, ALERT_ROLES, PRESCRIBER_ROLES, AI_COC_REVIEW_ROLES, FINANCIAL_ROLES, 25 function-local maps in api/sd-data.js, plus ROLES_BY_APP and AUTH_TABLE_BY_APP. A plain literal inherits Object.prototype, so MAP['constructor'] indexes truthy and an inherited name reads as a role at every `MAP[session.role]` gate on the platform -- money (accounting, ledger, trust reconciliation), clinical (MAR, incidents, credentials, veterinary prescribing), patient and employee PII, and statutory governance. ALL 48 WERE INERT FOR ONE DISTANT REASON, not for 48 local ones: verifySessionToken() re-validates payload.role against ROLES_BY_APP on every verification, so no session carrying an inherited name reached any gate. That is a single function 48 authorisation gates silently depended on, with nothing at either end saying so; narrowing its vocabulary or adding one caller that mints a session another way would open all 48 at once. Separately, ROLES_BY_APP is itself indexed by payload.app inside that function, where the plain literal made ROLES_BY_APP['constructor'] a truthy function that then threw on .indexOf -- a 500 where a null session was intended.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The convention predates the register and spread across 19 files over months; no single commit introduced it, and naming one would be a guess dressed as a citation."
+      },
+      "citation_note": "No standing rule on this platform names \"an object literal used as a membership set inherits Object.prototype, so an inherited name indexes truthy\". Recorded as not-citable for the second time in one day, deliberately: the first record (the SAIRNroofing instance) noted it as a candidate for a new rule, and finding the same shape at 48 sites within hours is the evidence that it should be one rather than a note on two records.",
+      "phase_note": "Injected at design: the literal form is the convention the platform adopted at its first auth build and copied to every app after. It is not a coding slip -- the literal is correct-looking and matches every neighbour -- which is why it survived 19 files and is recorded as a design phase rather than an implementation one.",
+      "contributing_factors": [
+        {
+          "factor": "A JS object literal used as a membership set inherits every key on Object.prototype, and the platform expressed EVERY role gate that way -- 48 literals across 19 files. Each set was correct about every name it meant to accept and silent about the nine it never considered.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All 48 now go through roleSet() in api/_lib/auth.js, which takes the literal and returns a null-prototype copy. ROLES_BY_APP and AUTH_TABLE_BY_APP too -- ROLES_BY_APP is indexed by payload.app inside verifySessionToken, where a plain literal made ROLES_BY_APP['constructor'] a truthy FUNCTION that then threw on .indexOf."
+        },
+        {
+          "factor": "All 48 were inert for ONE distant reason: verifySessionToken() re-validates payload.role against ROLES_BY_APP on every verification. Nothing at any of the 48 gates said it depended on that, and nothing at verifySessionToken said it was load-bearing for them. A single point whose narrowing would open 48 gates at once.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Each gate now refuses an inherited name on its own, so the central check is defence in depth rather than the only defence. The dependency is written down at api/_lib/auth.js where roleSet is defined, and the count of what depends on it is stated."
+        },
+        {
+          "factor": "The finding as reported named NINE files. The real population is 48 literals in 19 files. The nine came from grepping two identifier names; the platform also uses AUTHENTICATED_ROLES, ALERT_ROLES, PRESCRIBER_ROLES, AI_COC_REVIEW_ROLES, FINANCIAL_ROLES and 25 function-local maps inside api/sd-data.js that no name-based grep would reach.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The population is now derived by a SOURCE scan over git ls-files rather than by identifier name, and that scan is an arm of tests/role_maps_have_no_prototype.js with a non-zero-population control so it cannot report clean by having stopped matching."
+        },
+        {
+          "factor": "Nothing on this platform could see the shape. It is invisible by construction: a plain literal role map reads correctly, matches eighteen other apps, and fails only on names nobody writes.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/role_maps_have_no_prototype.js uses two structurally different methods -- a source scan (the only way to see the 25 function-local maps, which are never exported) and a runtime prototype check on the exported maps (the only way to catch one built correctly and mutated after) -- each with its own negative control. Registered in the push gate's GUARD_TESTS so it blocks rather than reports."
+        },
+        {
+          "factor": "Eight sabotage controls copy a working-tree api/ file into a worktree at HEAD and did not copy its shared dependency, so every one went red AT THE BASELINE the moment sd-data.js started calling a helper from api/_lib/auth.js. An unstaged DEPENDENCY of a staged file is the same gap as an unstaged file and nothing named it as a class.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "api/_lib/auth.js added to the stage list of all eight, each with the reason written at the line. The harness diagnosed it by name in its own output, which is why it took minutes rather than a session -- the mechanism worked; what was missing was the class having a name."
+        }
+      ],
+      "recurrence_open": "The actions close every role membership set currently in api/ and add a blocking guard against a new one. They do NOT close: (1) role maps expressed some other way -- an array read with .indexOf is safe and was counted and skipped, but a Set, a Map, or a switch would be outside both methods; (2) the same prototype-inheritance shape anywhere outside a role gate -- any object literal used as a lookup table keyed by caller-influenced data has it, and nothing counts those; (3) the client-side halves in the *.html files, which were not scanned at all; (4) the general question of what else, besides these role gates, silently depends on verifySessionToken's vocabulary check -- that dependency was discovered by reading, and nothing enumerates it."
     }
   ],
   "started": "2026-09-09",
