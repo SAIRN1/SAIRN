@@ -142,6 +142,7 @@ anything else — those need their own coherence checks, below.
 | 65b | A recorded **row-count baseline per table**, taken on a cadence from production, so a restore can be compared against something rather than only against itself | **S** | nothing |
 | 65c | The restore job itself — fetch a backup, stand up the target, load it, run 65a | **M** | **the plan question AND the scratch-environment decision** |
 | 65d | The control: restore a deliberately truncated copy and demand 65a find it. **Without this, 65a is a checker nobody has seen fail** | **S** | 65a |
+| 65e | **The acceptance rubric — what a human decides when the restore job exits 0.** Written 2026-09-25: `docs/2026-09-25-restore-acceptance-rubric.md`. Six sections (volume, field variety, placeholder values, referential coherence, temporal shape, and a sabotage arm), a three-state verdict, and section 1 answers **COULD NOT TELL for every table** until 65b exists | **DONE** | nothing — and it is deliberately a CHECKLIST, not a tool, because there is no restore artefact to run one against |
 
 **65a is worth building before 65c is unblocked**, and that is the recommendation
 rather than waiting: it is the piece with no dependency, it is the piece the
