@@ -144,6 +144,30 @@ found what one layer catches, and a DIFFERENT existing checker immediately found
 a defect in the probe written to hold the ablation's own fix. Neither could see
 the other's finding.
 
+## A fourth finding, and it is the corpus finding again one layer down
+
+`run_hover_audit_method_sabotage_probe.py` was the one probe the repairs above
+could not turn green, and the reason has nothing to do with hover auditing:
+its subject suite calls `defect_register.py --check`, which **exits 1
+platform-wide on ONE malformed record** (`094aed1fa42f`, cody, 2026-09-25) —
+both its `contributing_factors` carry `factor`/`action` instead of the required
+`kind`/`action_status`, and `found_by_session: cody` is refused because that
+field is reserved for a hover instance name.
+
+**One thing was fixed and the rest deliberately was not.** `app` read
+`SAIRNSCAPE` against the known value `sairnscape` — one app counted as two
+entities by every per-app figure in the file, a typo with exactly one correct
+answer. The vocabulary fields were left alone: choosing `kind` and
+`action_status` for somebody else's factors fabricates the judgement the field
+exists to record.
+
+**The class is the interesting part.** A single record failing a vocabulary
+check takes down every consumer of the whole file — the same all-or-nothing
+shape a conflict marker has. 289 good records are unusable because of one.
+A per-record quarantine (report the bad row, keep checking the rest) would have
+kept two probe suites in service, one of them the control on the hover
+auditor's own method. Filed as an open-work row against the record's author.
+
 ## Numbering note
 
 This landed as **discipline 12**, not 11: another session added a human-gated
