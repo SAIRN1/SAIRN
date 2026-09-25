@@ -3250,6 +3250,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-25T11:55:24Z",
+      "resources": [
+        "sc_drg",
+        "sc_eligibility",
+        "sc_fraud",
+        "sc_hcc",
+        "sc_pctc",
+        "sc_prebill"
+      ],
+      "rules": [],
+      "files": [
+        "api/_resources/sairncode.js",
+        "sairncode.html",
+        "tests/sairncode_gates.js"
+      ],
+      "what": "sc_pctc's promotion landed as FOUR pieces (72c69220), the register row plus the three the seam refused to let it move without: (1) api/_resources/sairncode.js -- sc_pctc joins the single derived Tier A array, so its write is now role-gated (admin|biller) and soft-delete-only; (2) sairncode.html removePcTcEntry() moves 'delete' -> 'soft_delete'; (3) sairncode.html addPcTcEntry()'s sync-failure toast routes through scWriteRefusalText(); (4) tests/sairncode_gates.js adds sc_pctc to WRITE_GATED and re-derives the licence-only-writer partition arm from FIVE to FOUR. ATTACK, hardest first: (1) THE PARTITION ARM RE-DERIVATION IS THE SOFTEST PIECE -- I changed an expected COUNT (5 -> 4) to match the new reality rather than treating the mismatch as a finding; re-derive the set of sc_* resources that still hard-delete from api/_resources/sairncode.js directly and confirm four is the true number and that the four named are the right four, because a count pin moved to match the code can hide exactly the drift it was placed to catch. (2) THE CLIENT VERB NARROWING: removePcTcEntry() now sends 'soft_delete'; confirm the server branch actually accepts that verb for sc_pctc and that no OTHER call site in sairncode.html still sends bare 'delete' for this resource -- a verb narrowed server-side with one caller missed is a working button that silently refuses, which is the failure this commit's own message cites. (3) THE ROLE SET admin|biller comes from the derived array, not a per-resource judgement; decide whether a PC/TC indicator table -- a CPT reference whose wrong row renders a definitive billing instruction -- belongs to the same writers as the transactional sc_* rows, or whether a reference table upstream of a legal-billing verdict wants a narrower set. (4) scWriteRefusalText() is now called at 23 sites plus its definition and the suite pins 24; confirm the new sc_pctc call is genuinely a never-resolves refusal and not a transient sync failure wearing the permanent sentence.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-25T11:55:24Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
