@@ -512,6 +512,87 @@ test('...and that narrowed check still catches a real migration', () => {
     'a migrated ' + f + ' would slip past the narrowed check');
 });
 
+// ── THE OTHER ROUTE TO ZERO PROVISIONERS HAD NO WIRING ARM (2026-09-25) ────
+// employee-lifecycle.js exports soleRoleDemotionRefusal() and documents the
+// route it closes at :340: "setActive() refuses DEACTIVATING the last holder
+// of a sole role. It says nothing about CHANGING that holder's role, and every
+// `setup` on this platform upserts on (license_hash, employee_id) writing the
+// role column -- so demoting the last owner is one call the deactivation guard
+// never sees."
+//
+// EVERY ARM ABOVE IS ABOUT set_active. Nothing asserted that an endpoint whose
+// setup WRITES A ROLE calls the demotion guard, and api/sv-auth.js shipped
+// without it -- found 2026-09-25 while investigating why SV-PINNACLE-2026 could
+// not be signed into while bootstrap answered 409 ALREADY_PROVISIONED, which is
+// precisely the dead-licence end state that route produces.
+//
+// DERIVED, NOT LISTED: the subject set is read off the files -- every
+// *-auth.js whose setup upserts on (license_hash, employee_id) with `role` in
+// the body -- so a NEW endpoint is covered the day it lands rather than the day
+// somebody remembers to add it. That is the expired-fixture class this arm
+// would otherwise join.
+//
+// GRANDFATHERED, BECAUSE TEN ARE UNGUARDED TODAY AND A RED ARM ON A GREEN TREE
+// TEACHES PEOPLE TO IGNORE THE FILE. Measured 2026-09-25: 16 endpoints write a
+// role in setup, 6 call the guard (grd, sb, scp, sd, sf, sv) and 10 do not.
+// Fixing ten endpoints is real work with ten customer-facing refusal sentences
+// to write, and it is not this change. The arm fails on a NEW unguarded
+// endpoint and on any of the six LOSING its guard -- both directions, so it
+// cannot be satisfied by an empty set.
+const DEMOTION_GUARDED = ['grd-auth.js', 'sb-auth.js', 'scp-auth.js',
+                          'sd-auth.js', 'sf-auth.js', 'sv-auth.js'];
+const DEMOTION_UNGUARDED_BASELINE = ['alf-auth.js', 'bld-auth.js', 'dnt-auth.js',
+  'law-auth.js', 'leg-auth.js', 'mech-auth.js', 'rf-auth.js', 'sc-auth.js',
+  'sdn-auth.js', 'sen-auth.js'];
+
+function setupRoleWriters() {
+  const fs2 = require('fs');
+  const out = { guarded: [], unguarded: [] };
+  fs2.readdirSync(API).filter((f) => /-auth\.js$/.test(f)).forEach((f) => {
+    const src = read(f);
+    const i = src.indexOf("action === 'setup'");
+    if (i === -1) return;
+    // To the NEXT action, not a fixed window: sv-auth's guard comment pushed
+    // its upsert past a 4000-char window on the first version of this arm and
+    // the endpoint read as "does not write a role" -- a detector measuring the
+    // wrong span and reporting clean.
+    const j = src.indexOf("action === '", i + 20);
+    const region = src.slice(i, j > 0 ? j : src.length);
+    if (!/on_conflict=license_hash,employee_id/.test(region)) return;
+    if (!/role,\s*pin_hash|role:\s*role/.test(region)) return;
+    (/soleRoleDemotionRefusal\s*\(/.test(region) ? out.guarded : out.unguarded).push(f);
+  });
+  return out;
+}
+
+test('the setup-writes-a-role set was actually found -- an empty scan passes '
+   + 'every assertion below vacuously', () => {
+  const r = setupRoleWriters();
+  assert.ok(r.guarded.length + r.unguarded.length >= 14,
+    'found only ' + (r.guarded.length + r.unguarded.length) + ' setup paths '
+    + 'that write a role; the detector is not finding them');
+});
+
+test('no endpoint LOSES its sole-role demotion guard', () => {
+  const r = setupRoleWriters();
+  const lost = DEMOTION_GUARDED.filter((f) => r.guarded.indexOf(f) === -1);
+  assert.deepStrictEqual(lost, [],
+    'these called soleRoleDemotionRefusal() in setup and no longer do, so the '
+    + 'sole active provisioner can demote themselves and leave the licence '
+    + 'unrecoverable (bootstrap refuses 409 once any credential exists): '
+    + lost.join(', '));
+});
+
+test('...and no NEW endpoint joins the unguarded set', () => {
+  const r = setupRoleWriters();
+  const isNew = r.unguarded.filter((f) => DEMOTION_UNGUARDED_BASELINE.indexOf(f) === -1);
+  assert.deepStrictEqual(isNew, [],
+    'these write a role in setup with no demotion guard and are not in the '
+    + 'grandfathered baseline: ' + isNew.join(', ') + '. Grandfathered means '
+    + '"predates the check", never "fine" -- the ten in the baseline are a real '
+    + 'open gap, listed in the comment above.');
+});
+
 test('the still-open list is accurate: those endpoints really have no set_active', () => {
   // If this fails because somebody wired one, move it to WIRED. A stale
   // "still open" list is how a closed gap gets worked twice -- which cost this

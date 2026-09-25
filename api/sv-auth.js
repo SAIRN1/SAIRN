@@ -357,6 +357,47 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'display_name max 128 chars' } });
         return;
       }
+      // ── THE ROUTE THAT KILLS A LICENCE, AND IT WAS OPEN HERE (2026-09-25) ──
+      // `setup` upserts writing the `role` column, so the sole active owner
+      // can set their OWN role to any of the five non-provisioning SV_ROLES
+      // and leave the practice with zero owners. set_active's last-admin guard
+      // never sees it -- api/_lib/employee-lifecycle.js:340 describes exactly
+      // this route and says so: "demoting the last owner is one call the
+      // deactivation guard never sees."
+      //
+      // AND THE END STATE IS UNRECOVERABLE BY DESIGN, which is what makes this
+      // sharp rather than untidy. `bootstrap` deliberately refuses 409
+      // ALREADY_PROVISIONED whenever ANY credential row exists, active or not,
+      // and its own comment calls that "the single most consequential line in
+      // the file" -- softening it would let anyone holding the browser-readable
+      // licence key deactivate their way to a fresh owner account and seize the
+      // practice, including its controlled-substance register. So the bootstrap
+      // refusal is RIGHT and must stay; the defect is the route that creates
+      // the dead state, not the refusal that then applies.
+      //
+      // FIVE APPS ALREADY CALL THIS GUARD (grd, sb, scp, sd, sf). SAIRNvet did
+      // not, and the reason is a genuinely subtle one worth naming: set_active
+      // passes `soleRole: null` with a comment arguing that is EXACT, because
+      // with one provisioning role the sole-role count and the
+      // provisioningRoles count are the same set. True for set_active -- and
+      // soleRoleDemotionRefusal reads the same field and returns null outright
+      // when it is absent (`if (!sole) return null`). The same `null` that is
+      // exact for one route disables the other.
+      const demote = await lifecycle.soleRoleDemotionRefusal({
+        provisioningRoles: PROVISIONING_ROLES, soleRole: 'owner',
+        newRole: role, employee_id: employee_id,
+        licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        soleMessage: 'This is the only active Owner on this practice licence. '
+          + 'Changing their role would leave the practice with none, and there '
+          + 'is no way back in through the app -- creating the first Owner is '
+          + 'refused once any credential exists. Add a second Owner first, then '
+          + 'change this one.'
+      });
+      if (demote) {
+        if (demote.upstream) return upstream(res, demote.upstream);
+        res.status(demote.status).json(demote.body);
+        return;
+      }
       const { pin_hash, pin_salt } = hashPin(pin);
       const r = await fetch(rest(TABLE + '?on_conflict=license_hash,employee_id'), {
         method: 'POST',

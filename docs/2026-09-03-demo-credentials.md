@@ -229,3 +229,45 @@ removed.
 route used on 2026-09-23 to mint the first Owner is closed. Recovering
 SAIRNvet access needs either the real PIN or a `setup` call from an
 already-authenticated Owner — neither of which exists in this document.
+
+
+---
+
+## WHY SAIRNvet IS LOCKED OUT — ROOT-CAUSED 2026-09-25, not guessed
+
+The 2026-09-25 Wave 3 re-run recorded that `SV-PINNACLE-2026` answers 401 and
+`bootstrap` answers 409 ALREADY_PROVISIONED, and said plainly that from outside
+it was **not possible** to tell a wrong PIN from a missing account. Reading the
+endpoint answers it.
+
+**`api/sv-auth.js`'s `setup` upserted the `role` column with NO demotion
+guard.** The sole active Owner could set their own role to any of the five
+non-provisioning `SV_ROLES` (`dvm`, `tech`, `assistant`, `manager`,
+`frontdesk`) and leave the practice with **zero Owners**. `set_active`'s
+last-admin guard never sees that route — `api/_lib/employee-lifecycle.js:340`
+documents it in exactly those words.
+
+**And the end state is unrecoverable by design, which is what makes this
+sharp.** `bootstrap` refuses 409 whenever ANY credential row exists, active or
+not, and its own comment calls that *"the single most consequential line in the
+file"*: softening it would let anyone holding the browser-readable licence key
+deactivate their way to a fresh Owner and seize the practice, including its
+controlled-substance register. **The refusal is right. The defect was the route
+that creates the dead state**, and it is closed now
+(`lifecycle.soleRoleDemotionRefusal` wired into `setup`, 2026-09-25).
+
+**WHAT THIS DOES AND DOES NOT MEAN FOR THE DEAD ROW.** It stops the NEXT
+licence dying this way. It does **not** revive `SV-PINNACLE-2026`: whatever
+state that row is in, no API path creates an Owner on a licence that already
+has credentials. Recovering it needs **direct database access** — set
+`role='owner', active=true` on one `sairnvet_employee_auth` row for that
+`license_hash`, or delete the rows and re-bootstrap. That is Michael's call and
+this document does not claim it has been done.
+
+**THE WORKING SET, driven 2026-09-25:**
+
+| App | Licence | Employee | PIN | Driven result |
+|---|---|---|---|---|
+| StoneDesk | `SD-AUDIT-2026` | `sairn-demo-owner` | `31840627` | **200, role owner** |
+| SAIRNbiz | `SB-TEST-2026` | `sairn-demo-owner` | `84350271` | **200, token issued — and used to sign in through the app's own `sbDoLogin()`** |
+| SAIRNvet | — | — | — | **NONE. No working credential exists.** |
