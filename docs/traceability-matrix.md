@@ -564,7 +564,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **&#128308; ALL 12 SAIRNscape resources are authorised by the LICENCE KEY ALONE &mdash; including TWO Tier A rows (`scp_quotes`, `invoices`), while `api/scp-auth.js` and a working sign-in already exist** | **CONFIRMED 2026-09-24 (Cody), from H2 seq 206** &mdash; measured by `tests/app_session_isolation.js`, which DOES cover this app: posture `measured NONE, recorded NONE`, so the sweep sees it and the a | `tests/app_session_isolation.js` |
+| **&#9989; The TWO Tier A SAIRNscape rows no longer answer on the licence key alone &mdash; `invoices` and `scp_quotes` now require a verified `sairnscape` session on read AND write** | **FIXED 2026-09-25 (Cody)** &mdash; `SD_SESSION_GATED` + `SD_GATE_APP` entries in `api/sd-data.js`, driven both directions in `api/sd-data-scp-session-gate.test.js` (18 arms: refusal on read and write | `api/sd-data-scp-session-gate.test.js`, `tests/app_session_isolation.js` |
 | **&#9989; A no-licence write wore an earlier 4xx&rsquo;s refusal, and the send button&rsquo;s retry handler outlived the design it belonged to** | **FIXED 2026-09-21 (Hank)** &mdash; `sairnscape.html`; new standing guard `tests/sairnscape_send_button_and_licence.js`, 10 assertions, **9 of 9 valid sabotages caught** | `tests/sairnscape_send_button_and_licence.js` |
 | **&#128308; Two HIGH findings in the same queue are UNOWNED: a row the queue ACCEPTED is erased by an in-flight flush, and every retryable 5xx is filed as a PERMANENT refusal** | **OPEN** &mdash; found by Fourth (`d3d8c5b2`), reproduced in `tests/sairnscape_outbound_queue_review_probe.js`, report-only | `tests/sairnscape_outbound_queue_review_probe.js` |
 | **Independent review of the `scp_quotes` outbound queue (CC) &mdash; a no-licence failure wears an earlier 4xx, and the retry handler outlives the design it was bound to** | **REVIEWED 2026-09-21 (Hank)** &mdash; `e491bcfa`, `tests/scp_quotes_review_probe.js`, report-only, exit 0. **2 HIGH findings, neither fixed by me** | `tests/scp_quotes_review_probe.js` |
@@ -639,17 +639,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 636 of 734 traced, 86.6%.
+For context and not as the headline: 637 of 735 traced, 86.7%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 636 citations come from
+### Where the 637 citations come from
 
 | source | citations |
 |---|---|
 | `index` | 309 |
 | `declared` | 270 |
-| `declared+index` | 47 |
+| `declared+index` | 48 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -783,7 +783,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 734   tests/**, api/** (both walked)
+  test files on disk                 735   tests/**, api/** (both walked)
   open-work rows citing a test       354   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
