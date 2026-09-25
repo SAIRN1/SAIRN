@@ -2615,6 +2615,27 @@
         "docs/tier-a-reviews.json",
         "tests/sabotage_harness.py"
       ]
+    },
+    {
+      "id": "cc-1790339930",
+      "session": "cc",
+      "subject": "cc-queue4b",
+      "task": "finish cc-queue4: the same three items, re-claimed after the 4h window lapsed mid-session (fourth 2026-09-23T19:58:58Z review already discharged; harness parse-vs-catch landed; 6 more probe repairs and the ablation writeup in flight) FILES: tests/sabotage_harness.py tests/run_defect_register_probe.py tests/run_law_phase2_session_sabotage_probe.py tests/run_sv_session_gate_sabotage_probe.py tests/session_gate_table_probe.py tests/run_reclassification_sweep_sabotage_probe.py tests/run_unconfirmed_write_sweep_sabotage_probe.py docs/tier-a-reviews.json docs/SAIRN-OPEN-WORK-INDEX.md",
+      "claimed_at": "2026-09-25T12:38:50Z",
+      "claimed_at_epoch": 1790339930.6940353,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "tests/run_defect_register_probe.py",
+        "tests/run_law_phase2_session_sabotage_probe.py",
+        "tests/run_reclassification_sweep_sabotage_probe.py",
+        "tests/run_sv_session_gate_sabotage_probe.py",
+        "tests/run_unconfirmed_write_sweep_sabotage_probe.py",
+        "tests/sabotage_harness.py",
+        "tests/session_gate_table_probe.py"
+      ]
     }
   ],
   "refusals": [
