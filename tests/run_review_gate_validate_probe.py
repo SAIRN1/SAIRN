@@ -216,6 +216,66 @@ def statuses_rederived_from_writers():
 
 statuses_rederived_from_writers()
 
+
+# ── --resources: NAMING THE SUBJECTS OF A JUDGEMENT THAT HAS NO DIFF ────────
+# 2026-09-25. The gate attributes obligations from a DIFF and excludes docs/
+# and .md by design -- CRITICALITY-TIERS.md names every Tier A resource, so
+# attributing its diff would make every push a Tier A push. Correct, and it
+# leaves one hole: a TIER PROMOTION lives only in that document, changes no
+# code, and is therefore the judgement with the widest blast radius on the
+# platform and the one thing that can never be reviewed. Two promotions
+# landed unreviewable on 2026-09-25 before this flag existed. The refusal
+# message had been saying "say which resource or rule and why" since it was
+# written, with no way to say it.
+def resources_flag():
+    real = json.load(io.open(LEDGER, encoding='utf-8'))
+    before = len(real.get('records') or [])
+
+    rc_, out_ = run(['--open', 'x', '--resources', 'definitely_not_a_resource'])
+    check('--resources REFUSES a name that is not Tier A -- the flag says '
+          'WHICH known resource a judgement is about, it cannot make one',
+          rc_ == 1 and 'not Tier A' in out_, 'rc=%s' % rc_)
+    check('...and writes NOTHING when it refuses',
+          len(json.load(io.open(LEDGER, encoding='utf-8')).get('records') or [])
+          == before)
+
+    rc_, out_ = run(['--open', 'x', '--resources', 'sen_branches',
+                     '--range', 'HEAD~1..HEAD'])
+    check('--resources and --range together are REFUSED rather than one '
+          'silently winning -- they answer the same question two ways',
+          rc_ == 1 and 'Pick one' in out_, 'rc=%s' % rc_)
+
+    def go():
+        rc2, out2 = run(['--open', 'a tier promotion with no diff to attribute',
+                         '--resources', 'sen_branches,dnt_cred_rules'])
+        check('--resources RECORDS an obligation naming exactly those '
+              'resources', rc2 == 0 and 'sen_branches' in out2
+              and 'dnt_cred_rules' in out2, 'rc=%s %s' % (rc2, out2[-160:]))
+        recs = json.load(io.open(LEDGER, encoding='utf-8'))['records']
+        new = recs[-1]
+        check('...and the record goes through the SAME writer as every other '
+              'obligation -- owner stamped, status open, rules present',
+              new.get('status') == 'open' and 'reviewer_owner' in new
+              and new.get('rules') == [] and 'owner_assigned_at' in new, new)
+        check('...and its files[] names the register, so a reviewer can see '
+              'the judgement has no code behind it',
+              new.get('files') == ['docs/CRITICALITY-TIERS.md'], new.get('files'))
+        check('...and the resources are exactly the two named, not a superset '
+              'scraped from the document',
+              sorted(new.get('resources') or []) == ['dnt_cred_rules',
+                                                     'sen_branches'],
+              new.get('resources'))
+
+    with_ledger({'merge_policy': MP, 'records': []}, go)
+
+    check('CONTROL: after the fixture is restored the real ledger is the '
+          'length it started at -- the arms above added nothing to it',
+          len(json.load(io.open(LEDGER, encoding='utf-8')).get('records') or [])
+          == before)
+
+
+resources_flag()
+
 # ── ARM 6: AN UNREADABLE LEDGER IS COULD-NOT-RUN, NOT SOUND. ──────────────
 def broken_json():
     original = io.open(LEDGER, encoding='utf-8', newline='').read()

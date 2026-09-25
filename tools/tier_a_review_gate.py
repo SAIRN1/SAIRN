@@ -1289,9 +1289,88 @@ def body_from_file_or(argv, fallback):
     return text.strip()
 
 
-def cmd_open(why, rng=None):
+# ── THE RECORD-WRITING HALF, SHARED (2026-09-25) ────────────────────────
+# Factored out when --resources landed, so the explicit-naming path and
+# the diff-attribution path write the SAME record through the SAME code.
+# Two spellings of a ledger write is how the two drift.
+def _open_record(why, hits, rule_hits):
+    data = load_reviews()
+    author = session_name()
+    owner, owner_note = assign_owner(author, data)
+    rec = {
+        'author_session': author,
+        'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'resources': sorted(hits),
+        # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
+        # A field that appears only when non-empty is a field every reader has
+        # to remember might be absent, and `set(r.get('rules') or [])` in three
+        # places is one missing `or []` away from a silent miss. Written on
+        # every record so the shape is one shape.
+        'rules': sorted(rule_hits),
+        'files': sorted(set(list(f for fs in hits.values() for f in fs)
+                            + list(f for fs in rule_hits.values() for f in fs))),
+        'what': why,
+        'status': 'open',
+        # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────
+        # This is the whole point: first-come is what produced four duplicate
+        # reviews in a day. See the OWNERSHIP block above OVERDUE_HOURS.
+        'reviewer_owner': owner,
+        'owner_assigned_at': (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                              if owner else None),
+        'reviewer_session': None,
+        'reviewed_at': None,
+        'verdict': None,
+    }
+    if owner_note:
+        rec['owner_note'] = owner_note
+    data['records'].append(rec)
+    save_reviews(data)
+    subjects = rec['resources'] + ['%s [rule]' % r for r in rec['rules']]
+    print('RECORDED -- %s owes an independent review on: %s'
+          % (rec['author_session'], ', '.join(subjects)))
+    if owner:
+        print('ASSIGNED TO %s, now, rather than left first-come. Only %s can '
+              'discharge it (or anybody after %dh, with --takeover).'
+              % (owner, owner, OWNER_STALE_HOURS))
+    else:
+        print('UNOWNED and first-come: %s' % owner_note)
+    print('Commit docs/tier-a-reviews.json with the change it covers.')
+    return 0
+
+
+def cmd_open(why, rng=None, named=None):
     resources = tier_a_resources()
     rules = coding_rules()
+    # ── NAMING THE RESOURCES OUTRIGHT (2026-09-25) ──────────────────────────
+    # The refusal below ends with "say which resource or rule and why -- an
+    # entry naming neither cannot be discharged by anybody." Until now there
+    # was no way to say it, so that sentence was advice with no route.
+    #
+    # THE CASE IT EXISTS FOR IS NOT AN EXCEPTION TO THE docs/ EXCLUSION, IT IS
+    # OUTSIDE IT. That exclusion is right and stays: CRITICALITY-TIERS.md
+    # names every Tier A resource by definition, so attributing a diff of it
+    # would make every push a Tier A push. But a TIER PROMOTION is a judgement
+    # that lives ONLY in that document -- no code changes, so the gate
+    # correctly raises nothing, and the judgement with the widest blast radius
+    # on the platform is the one thing that can never be reviewed. Michael's
+    # call, 2026-09-25, after two promotions landed unreviewable.
+    #
+    # IT CANNOT BE USED TO INVENT AN OBLIGATION: every name given must already
+    # be Tier A in the register, and a name that is not is refused rather than
+    # recorded. What it adds is the ability to say WHICH of the resources the
+    # register already knows about this judgement is about -- not to add one.
+    if named:
+        unknown = [n for n in named if n not in resources]
+        if unknown:
+            sys.stderr.write(
+                '--resources names %s, which %s not Tier A in '
+                'docs/CRITICALITY-TIERS.md. This flag says WHICH known Tier A '
+                'resources a judgement is about; it cannot make one.\n'
+                % (', '.join(unknown), 'is' if len(unknown) == 1 else 'are'))
+            return 1
+        hits = {n: ['docs/CRITICALITY-TIERS.md'] for n in named}
+        rule_hits = {}
+        return _open_record(why, hits, rule_hits)
     if rng:
         # ── RECORDING AN OBLIGATION FOR WORK ALREADY PUSHED (2026-09-16) ────
         # Without this there is no way to open an accurate record after the
@@ -1338,48 +1417,7 @@ def cmd_open(why, rng=None):
                          'Seven shipped rules sat in exactly that position until '
                          '2026-09-24.\n')
         return 1
-    data = load_reviews()
-    author = session_name()
-    owner, owner_note = assign_owner(author, data)
-    rec = {
-        'author_session': author,
-        'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
-        'resources': sorted(hits),
-        # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
-        # A field that appears only when non-empty is a field every reader has
-        # to remember might be absent, and `set(r.get('rules') or [])` in three
-        # places is one missing `or []` away from a silent miss. Written on
-        # every record so the shape is one shape.
-        'rules': sorted(rule_hits),
-        'files': sorted(set(list(f for fs in hits.values() for f in fs)
-                            + list(f for fs in rule_hits.values() for f in fs))),
-        'what': why,
-        'status': 'open',
-        # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────
-        # This is the whole point: first-come is what produced four duplicate
-        # reviews in a day. See the OWNERSHIP block above OVERDUE_HOURS.
-        'reviewer_owner': owner,
-        'owner_assigned_at': (time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
-                              if owner else None),
-        'reviewer_session': None,
-        'reviewed_at': None,
-        'verdict': None,
-    }
-    if owner_note:
-        rec['owner_note'] = owner_note
-    data['records'].append(rec)
-    save_reviews(data)
-    subjects = rec['resources'] + ['%s [rule]' % r for r in rec['rules']]
-    print('RECORDED -- %s owes an independent review on: %s'
-          % (rec['author_session'], ', '.join(subjects)))
-    if owner:
-        print('ASSIGNED TO %s, now, rather than left first-come. Only %s can '
-              'discharge it (or anybody after %dh, with --takeover).'
-              % (owner, owner, OWNER_STALE_HOURS))
-    else:
-        print('UNOWNED and first-come: %s' % owner_note)
-    print('Commit docs/tier-a-reviews.json with the change it covers.')
-    return 0
+    return _open_record(why, hits, rule_hits)
 
 
 def cmd_list():
@@ -1983,8 +2021,24 @@ def main(argv):
                 sys.stderr.write('--range needs A..B\n')
                 return 1
             rng = rng.strip()
+        named = None
+        if '--resources' in argv:
+            j = argv.index('--resources')
+            raw = argv[j + 1] if len(argv) > j + 1 else ''
+            named = [n.strip() for n in raw.split(',') if n.strip()]
+            if not named:
+                sys.stderr.write('--resources takes a comma-separated list '
+                                 'of Tier A resource names.' + chr(10))
+                return 1
+            if rng:
+                sys.stderr.write('--resources and --range answer the same '
+                                 'question two ways. Pick one: --range '
+                                 'attributes a real diff, --resources names '
+                                 'the subjects of a judgement that has no '
+                                 'diff to attribute.' + chr(10))
+                return 1
         try:
-            return cmd_open(why.strip(), rng)
+            return cmd_open(why.strip(), rng, named)
         except CouldNotTell as e:
             sys.stderr.write('COULD NOT TELL: %s\n' % e)
             return 2
