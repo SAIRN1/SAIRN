@@ -37,11 +37,33 @@
 // by coercing server-side would be a silent data change; refusing it tells the
 // caller.
 
+// ── THE SESSION HEADER, ADDED 2026-09-25 ─────────────────────────────────
+// `invoices` joined SD_SESSION_GATED on 2026-09-25 (it is Tier A on integrity
+// and was authorised by the licence key alone). Without a token every arm
+// below answers 403 before the amount guard is ever reached -- and a 403 is
+// not "the bad amount was refused", it is "the guard was never asked". So the
+// requests now carry a real SAIRNscape session.
+//
+// THE LICENCE HASH IS DERIVED, NOT TYPED. This file does NOT stub
+// api/_lib/license, so the handler computes sha256('K') from the bearer key
+// itself; signing against a hand-written constant would answer 403 and the
+// arms would fail for a reason that has nothing to do with amounts.
+
 'use strict';
 const path = require('path');
 const assert = require('assert');
+const crypto = require('crypto');
+
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET
+  || ['invoices', 'amount', 'fixture'].join('-');
 
 const HANDLER = path.join(__dirname, 'sd-data.js');
+const { signSessionToken } = require('./_lib/auth');
+
+const LICENSE_KEY = 'K';
+const LIC_HASH = crypto.createHash('sha256').update(LICENSE_KEY).digest('hex');
+const SESSION = signSessionToken({ app: 'sairnscape', employee_id: 'emp-1',
+                                   role: 'owner', license_hash: LIC_HASH });
 
 let pass = 0, fail = 0;
 const run = [];
@@ -66,6 +88,14 @@ async function write(payload, opts) {
       return { ok: true, status: 200,
                json: async () => [{ status: 'active', app_id: 'sairnscape' }] };
     }
+    // The gate re-checks that the signed-in employee is still ACTIVE. An
+    // unanswered lookup here is 403 CREDENTIAL_INACTIVE, which would fail every
+    // arm below for a reason that is not about amounts.
+    if (u.indexOf('_employee_auth') !== -1) {
+      return { ok: true, status: 200,
+               json: async () => [{ license_hash: LIC_HASH, employee_id: 'emp-1',
+                                    role: 'owner', active: true }] };
+    }
     if (u.indexOf('scp_invoices') !== -1 && init && init.method === 'POST') {
       out.stored = JSON.parse(init.body);      // what would have reached storage
       return { ok: true, status: 200, json: async () => [{ data: out.stored.data }] };
@@ -73,7 +103,9 @@ async function write(payload, opts) {
     return { ok: true, status: 200, json: async () => [] };
   };
   try {
-    await handler({ method: 'POST', headers: { authorization: 'Bearer K' },
+    await handler({ method: 'POST',
+                    headers: { authorization: 'Bearer ' + LICENSE_KEY,
+                               'x-sd-auth': SESSION },
                     body: { action: 'write', resource: 'invoices', app_id: 'sairnscape',
                             is_demo: true, payload: payload } }, res);
   } finally {

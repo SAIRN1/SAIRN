@@ -241,7 +241,23 @@ async function main() {
     // proposal and PO totals derive from; hours x billable_rate summed into
     // the month's billable value), and a Tier A resource on a licence key
     // alone is the exact finding that armed the first five.
-    assert.strictEqual(pairs, 66,
+    // 66 -> 70 on 2026-09-25: SAIRNscape's two Tier A resources, four pairs.
+    // WHY THEY ARE GATED, which is what this tripwire asks for: all twelve
+    // SAIRNscape resources dispatched on the licence hash alone with no session
+    // check of any kind -- the same shape as law_trusttx, SF_RESOURCES and
+    // SDN_RESOURCES before them, and SAIRNscape was swept with none of the
+    // three. `invoices` is money (the write branch already refuses a
+    // non-numeric amount because a string one reached a fold and printed
+    // -99450 on a tax report) and `scp_quotes` is the priced quote every
+    // invoice descends from.
+    //
+    // AND THE NAME IS THE PART TO READ TWICE: the RESOURCE is `invoices`,
+    // spelled bare, because SAIRNscape claimed it before the scp_ convention
+    // existed. The storage table is scp_invoices. A gate written against the
+    // table name gates nothing and every refusal arm anywhere still passes.
+    assert.match(m[0], /'invoices':\s*\['read', 'write'\]/);
+    assert.match(m[0], /'scp_quotes':\s*\['read', 'write'\]/);
+    assert.strictEqual(pairs, 70,
       'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
@@ -314,7 +330,18 @@ async function main() {
         sdn_projects: 'api/sd-data-sdn-session-gate.test.js',
         sdn_proposals: 'api/sd-data-sdn-session-gate.test.js',
         sdn_specitems: 'api/sd-data-sdn-session-gate.test.js',
-        sdn_timeentries: 'api/sd-data-sdn-session-gate.test.js'
+        sdn_timeentries: 'api/sd-data-sdn-session-gate.test.js',
+        // SAIRNscape's two, 2026-09-25. Driven in their own suite for the same
+        // reason: that one mints sairnscape sessions and this file mints
+        // StoneDesk ones.
+        //
+        // `invoices` IS SPELLED BARE ON PURPOSE and is not a typo for
+        // sdn_invoices or scp_invoices. SAIRNscape claimed the bare name
+        // before the scp_ convention existed; the storage table is
+        // scp_invoices and the RESOURCE the dispatch tests for is `invoices`.
+        // The named suite has an arm whose whole job is that distinction.
+        invoices: 'api/sd-data-scp-session-gate.test.js',
+        scp_quotes: 'api/sd-data-scp-session-gate.test.js'
       };
       // ── AND THE sf_ REMAINDER, COVERED BY A RULE RATHER THAN BY NAME ──────
       // THIS ARM WAS RED ON origin/main FROM 2026-09-22 TO 2026-09-24 and the

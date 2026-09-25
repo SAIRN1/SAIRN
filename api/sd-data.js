@@ -1046,7 +1046,38 @@ module.exports = async (req, res) => {
       'sdn_projects': ['read', 'write'],
       'sdn_proposals': ['read', 'write'],
       'sdn_specitems': ['read', 'write'],
-      'sdn_timeentries': ['read', 'write']
+      'sdn_timeentries': ['read', 'write'],
+      // ── SAIRNscape's TWO TIER A RESOURCES, 2026-09-25 ────────────────────
+      //    All twelve SAIRNscape resources were authorised by the licence key
+      //    alone -- the key is shipped to the browser and readable by anyone
+      //    who can open sairnscape.html -- and two of them are Tier A on
+      //    INTEGRITY: `invoices` (scp_invoices, money) and `scp_quotes` (the
+      //    priced quote every invoice descends from). Same shape as SF_RESOURCES
+      //    and SDN_RESOURCES before them; SAIRNscape was simply not swept with
+      //    either.
+      //
+      //    THE RESOURCE NAMES ARE BARE AND THAT IS DELIBERATE HISTORY, not an
+      //    oversight: `invoices` and `schedule` were claimed by SAIRNscape
+      //    before the scp_ convention existed, and the branches at :3528 and
+      //    :10512 already record other apps steering AROUND those names. They
+      //    are spelled here exactly as the dispatch spells them -- a gate on
+      //    'scp_invoices' would gate nothing at all, silently.
+      //
+      //    STOPPING AT TIER A IS THE SCOPE, the same rule SAIRNfreedom set and
+      //    SAIRNdesign followed. The other ten stay licence-only and
+      //    api/sd-data-scp-session-gate.test.js drives one of them so the day
+      //    somebody widens this, the widening is visible rather than silent.
+      //
+      //    THE CLIENT HALF NEEDS NO CHANGE and that was MEASURED, not assumed:
+      //    scpData() at sairnscape.html:2107 attaches X-SD-Auth from
+      //    SCP_SESSION_KEY on every call whenever a token exists -- there is no
+      //    per-call withSession flag to forget -- every scpData call site for
+      //    these two goes through that one helper, and both login paths
+      //    (scpDoLogin, scpDoBootstrap) write the token to sessionStorage
+      //    BEFORE scpApplyLoggedIn -> scpInit -> scpSyncFromServer runs. The
+      //    arms that check that read the shipped page rather than this comment.
+      'invoices': ['read', 'write'],
+      'scp_quotes': ['read', 'write']
     };
     // ── THE EXPECTED APP, PER GATED RESOURCE ────────────────────────────────
     // The gate below resolved this as "memory follows the caller, everything
@@ -1121,7 +1152,16 @@ module.exports = async (req, res) => {
       'sf_staff': 'sairnfreedom',
       'sf_vendor_prices': 'sairnfreedom',
       'sf_waivers': 'sairnfreedom',
-      'sf_youth_participants': 'sairnfreedom'
+      'sf_youth_participants': 'sairnfreedom',
+      // SAIRNscape's two, 2026-09-25, added in the SAME edit as their gate
+      // entries -- this pair of lists is never grown one half at a time, and
+      // the reason is at the top of this table: a resource gated above with no
+      // entry here resolves expectedApp to 'stonedesk', so every correctly
+      // signed-in SAIRNscape crew lead is refused FORBIDDEN "sign in first"
+      // whatever they do. `invoices` is the bare name the dispatch uses; there
+      // is no 'scp_invoices' resource to pin.
+      'invoices': 'sairnscape',
+      'scp_quotes': 'sairnscape'
     };
     // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
     // Both legs previously hardcoded app_id 'stonedesk' on write and filtered

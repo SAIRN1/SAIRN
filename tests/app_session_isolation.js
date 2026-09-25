@@ -198,7 +198,21 @@ const POSTURE = {
   // scp-auth, roles, auth table, a real sign-in, and scpData() attaching
   // X-SD-Auth on every call whenever a token exists (:2107), not behind a
   // per-call flag.
-  sairnscape:      { gate: 'NONE', auth: true,  why: 'DOCUMENTED in the open-work index 2026-09-24: all 12 resources licence-key-alone, TWO Tier A (scp_quotes, invoices); every gating precondition already met' },
+  //
+  // ── AND ON 2026-09-25 THE GAP THAT ROW DESCRIBED WAS CLOSED ──────────────
+  // `invoices` and `scp_quotes` joined SD_SESSION_GATED and SD_GATE_APP, and
+  // api/sd-data-scp-session-gate.test.js drives both directions.
+  //
+  // THE MEASURED VALUE DID NOT MOVE, AND THAT IS THIS COLUMN'S LIMIT RATHER
+  // THAN A GATE THAT DID NOT ARRIVE. The loop below counts a resource as gated
+  // only when it answers 401; SD_SESSION_GATED answers 403 FORBIDDEN. So every
+  // app whose gate is the shared table measures NONE or SOME on strength it
+  // does not get credit for here -- sairndesign's row says "1 of 18" for the
+  // same reason while nine of its resources are in that table. Recorded rather
+  // than fixed by widening the comparison to 401-or-403: which codes count as
+  // a gate is the premise this whole column rests on, and changing it would
+  // silently re-measure fourteen other rows in a commit about SAIRNscape.
+  sairnscape:      { gate: 'NONE', auth: true,  why: 'GAP CLOSED 2026-09-25 (Cody): the TWO Tier A resources (invoices, scp_quotes) now require a sairnscape session on read AND write via SD_SESSION_GATED + SD_GATE_APP, driven by api/sd-data-scp-session-gate.test.js; the other ten stay licence-only, deliberately, and are disclosed there. Still measured NONE here because this column counts 401 only and that gate answers 403 -- see the note above' },
   // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in
   // 760a34a9 and was live-verified in 30a9f179, taking sairnlegacy from measured
   // NONE to measured ALL -- and this suite FAILED until this row was updated,
