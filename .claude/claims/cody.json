@@ -2324,8 +2324,8 @@
       "task": "H1 batch retiers: sd_approvals, law_picases, law_clerequirements, sc_pctc, sb_perf, sb_vends, alf_signals, alf_activities read individually plus rf_buildings null-overwrite fix and sb_perf role gate FILES: docs/CRITICALITY-TIERS.md api/sd-data.js",
       "claimed_at": "2026-09-24T21:55:07Z",
       "claimed_at_epoch": 1790286907.3080685,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-25T12:35:40Z",
       "files": [
         "api/sd-data.js",
         "docs/CRITICALITY-TIERS.md"
