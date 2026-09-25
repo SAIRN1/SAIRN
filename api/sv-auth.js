@@ -272,7 +272,41 @@ module.exports = async (req, res) => {
       const existingRows = await existing.json();
       if (!existing.ok) return upstream(res, existingRows);
       if (Array.isArray(existingRows) && existingRows.length > 0) {
-        res.status(409).json({ error: { code: 'ALREADY_PROVISIONED', message: 'This practice already has employee credentials set up — use action:setup instead' } });
+        // ── THE REFUSAL NAMED A REMEDY THAT CANNOT WORK (2026-09-25) ──────
+        // The gate above is CORRECT and is not being softened -- the paragraph
+        // it carries is the whole reason SAIRNvet's controlled-substance
+        // register cannot be seized by anybody holding the licence string. What
+        // was wrong was the sentence: "use action:setup instead" is impossible
+        // advice in the exact state that produces the most confusing 409, which
+        // is zero ACTIVE credentials. setup requires an Owner SESSION, and a
+        // practice with no active Owner cannot obtain one -- so the operator was
+        // sent round a loop the API had already closed, with nothing telling
+        // them so. That is PR 1.5, the confident line printed after the error.
+        //
+        // MEASURED, NOT HYPOTHETICAL. On 2026-09-25 SV-PINNACLE-2026/38471260
+        // answered 401 and bootstrap answered this 409, and the session chasing
+        // it could not tell a wrong PIN from a dead licence -- correctly, since
+        // login answers 401 identically for a wrong PIN and an unknown
+        // employee. The message is the only place that gap could be closed.
+        //
+        // BOTH CASES, WITHOUT SAYING WHICH, AND THAT IS DELIBERATE. Naming
+        // whether an active Owner exists would tell an unauthenticated caller
+        // holding only the licence key whether this practice is currently
+        // locked out. It buys them nothing against the API -- bootstrap refuses
+        // either way and login still needs a PIN -- but it is a free bit to a
+        // social-engineering pretext, and the legitimate operator does not need
+        // it: they need to know the DB-access path EXISTS, which both halves of
+        // this sentence now say. Zero change in what is disclosed; the dead end
+        // stops being silent. A stronger version -- a distinct code per case --
+        // was considered and rejected on that ground; a reviewer may overrule.
+        //
+        // SIXTEEN OTHER ENDPOINTS CARRY THE SAME SENTENCE and are deliberately
+        // NOT changed here: the task was SAIRNvet, each app's wording differs,
+        // and "byte-identical is not safe-in-context" means propagating this
+        // needs each one's own re-read rather than a sweep. Recorded in
+        // docs/SAIRN-OPEN-WORK-INDEX.md rather than left for somebody to
+        // rediscover.
+        res.status(409).json({ error: { code: 'ALREADY_PROVISIONED', message: 'This practice already has employee credentials, so bootstrap is refused — deliberately, and it is refused even if every one of those credentials is inactive. If an Owner can still sign in, use action:setup to add or restore credentials. If no Owner credential is active, this licence cannot be recovered through this API at all and needs direct database access — bootstrap will never mint a replacement Owner, because that would let anyone holding the licence key deactivate their way into the practice.' } });
         return;
       }
       const { pin_hash, pin_salt } = hashPin(pin);

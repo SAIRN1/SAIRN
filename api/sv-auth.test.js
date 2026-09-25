@@ -258,6 +258,53 @@ t('the existence probe does NOT filter on active', () => {
 t('a second bootstrap is refused with ALREADY_PROVISIONED', () => {
   assert.ok(SRC.indexOf('ALREADY_PROVISIONED') !== -1);
 });
+// ── THE REFUSAL MUST NOT NAME A REMEDY THAT CANNOT WORK (2026-09-25) ────────
+// The message said only "use action:setup instead". setup requires an Owner
+// SESSION, so in the one state that produces the most confusing 409 -- zero
+// ACTIVE credentials, which the probe above deliberately still 409s on -- the
+// advice was impossible and nothing said so. Measured on 2026-09-25:
+// SV-PINNACLE-2026 answered 401 at login and bootstrap answered this 409, and
+// the session chasing it could not tell a wrong PIN from a dead licence.
+//
+// ANCHORED ON THE MESSAGE STRING, WHICH IS THE THING THAT WAS WRONG. An arm
+// asserting only the code would have passed throughout, which is why one
+// existed and this did not.
+t('...and the refusal names BOTH remedies, including the one setup cannot reach', () => {
+  const i = SRC.indexOf("code: 'ALREADY_PROVISIONED'");
+  assert.ok(i !== -1, 'the refusal was not found');
+  const msg = SRC.slice(i, SRC.indexOf('\n', i));
+  assert.ok(/action:setup/.test(msg),
+    'the Owner-can-still-sign-in path must still be named');
+  assert.ok(/database access/.test(msg),
+    'the zero-active-Owner state is recoverable ONLY by direct database access, '
+    + 'and a refusal that names only action:setup sends that operator round a '
+    + 'loop this API has already closed');
+  assert.ok(/inactive/.test(msg),
+    'and it must say the refusal holds even when every credential is inactive, '
+    + 'which is the state the old wording was most misleading in');
+});
+// CONTROL: and it must NOT disclose WHICH of the two states the caller is in.
+// That would tell an unauthenticated caller holding only the licence key
+// whether the practice is currently locked out -- worth nothing against the
+// API, a free bit to a pretext. This arm is what stops the message above being
+// "improved" into an oracle.
+t('CONTROL: the refusal does not reveal whether an active Owner exists', () => {
+  const i = SRC.indexOf("action === 'bootstrap'");
+  const j = SRC.indexOf("action === 'login'");
+  const branch = SRC.slice(i, j);
+  const k = branch.indexOf("code: 'ALREADY_PROVISIONED'");
+  const msg = branch.slice(k, branch.indexOf('\n', k));
+  assert.ok(/\bIf\b[\s\S]*\bIf\b/.test(msg),
+    'both states are stated conditionally ("If an Owner can still sign in ... '
+    + 'If no Owner credential is active"), so the sentence is the same in both');
+  // The probe that feeds this branch selects `id` only. A message that could
+  // name the caller's state would need `active` in that select, so the absence
+  // of it is the structural half of this control rather than a reading of prose.
+  const probe = branch.slice(branch.indexOf('select=id'), branch.indexOf('select=id') + 80);
+  assert.ok(probe.indexOf('active') === -1,
+    'the existence probe reads no `active` column, so this branch CANNOT know '
+    + 'which state it is in even if somebody rewrote the message');
+});
 
 // ── 6. THE DEACTIVATION LIFECYCLE, THROUGH THE SHARED HELPER ──────────────
 // REWRITTEN 2026-09-13, AND WHY MATTERS MORE THAN WHAT. This section used to
