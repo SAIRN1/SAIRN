@@ -1,5 +1,12 @@
 # Worldwide external competitive research — plumbing, electrical, HVAC
 
+**Sourcing caveat, read this before anything else below:** this session's
+outbound network could not reach any vendor, trade-press, or patent-office
+domain. Every vendor-attributed fact in this document is a `WebSearch`
+index snippet of that vendor's own domain, not an opened page — one grade
+below this series' normal standard. Full disclosure and the direct test
+evidence are in §0.
+
 **Research pass, 2026-09-25. No code written, no app file touched.** Written
 by a standalone cloud session under `docs/cloud-research/` per instruction
 (new files only, new branch, no PR). This is the trade-wide companion to
@@ -225,13 +232,24 @@ company's own site; none independently fetched in this pass)
   under the AIM Act and the first against a corporate executive. This is
   directly relevant to how seriously a SAIRNmechanical customer should be
   expected to take the compliance surface the app already models.
-- **A penalty-figure discrepancy, unresolved in this pass**: trade press
-  cites a current per-day-per-violation ceiling of $59,114 (a 2025
-  inflation-adjusted figure), while multiple vendor pages in §2.1 cite
-  $44,539/day. **These are two different figures from sources gathered in
-  the same pass and this document does not reconcile them** — flagged
-  rather than silently picking one, in the same spirit as this series'
-  refusal to fill in a fact it cannot verify.
+- **A penalty-figure discrepancy, now resolved**: $44,539/day/violation is
+  the current, correct administrative maximum under Clean Air Act §113(d)
+  — set by 40 CFR Part 19, Table 1 to §19.4 (not Part 84 itself, which
+  covers the substantive AIM Act rule, not penalty dollar amounts), from
+  the January 8, 2025 Federal Register inflation adjustment, independently
+  repeated across several unrelated legal/compliance sources, and still
+  current because OMB Memorandum M-26-11 (April 17, 2026) cancelled the
+  2026 inflation-adjustment cycle platform-wide (the government shutdown
+  left the Bureau of Labor Statistics unable to produce the October 2025
+  CPI-U figure the adjustment depends on) — so no 2026 rule superseded it.
+  The $59,114 figure traces to exactly one source across every search
+  variant run (a single vendor's own marketing blog) with no independent
+  corroboration and no explainable single-year-inflation arithmetic (it is
+  ~32.7% above $44,539, far larger than any adjustment in this series' own
+  history). Full sourcing and the specific reasoning are in
+  `docs/cloud-research/SAIRNmechanical-external-competitive-gap-audit-2026-09-25.md`
+  §2.7, not repeated in full here since this document's own scope is the
+  trade-wide market, not SAIRNmechanical's specific record.
 - **The regulatory picture on R-410A specifically is still moving**: trade
   press reports the EPA both offering "temporary relief" on R-410A
   installations and separately removing an R-410A installation deadline,
@@ -261,10 +279,13 @@ carrying forward to any future SAIRN decision about this vertical:
    its formula; SAIRNmechanical's refusal to hardcode one is defensible on
    the evidence gathered, not merely cautious.
 2. **Data portability (CSV import/export) is confirmed table stakes**
-   across essentially every general FSM vendor surveyed — this is the one
-   item in this pass where the market gap is unambiguous and the fix is not
-   novel engineering, only building what the disabled button already
-   promises.
+   across essentially every general FSM vendor surveyed — the market gap is
+   unambiguous and the fix is not novel engineering. Whether that gap is
+   fully open, partly built, or already met for any specific SAIRN app is a
+   caller-level question this trade-wide document does not answer; the
+   companion SAIRNmechanical document's §2.6 answers it for that app
+   specifically, and the answer there is more nuanced than a single
+   disabled button.
 3. **No forcing function has yet emerged for plumbing or electrical the way
    the AIM Act did for HVAC.** The 2026 NEC is the nearest candidate and has
    not (yet) produced a comparable vendor category. This is evidence, not a
@@ -285,7 +306,10 @@ carrying forward to any future SAIRN decision about this vertical:
 - **No competitor product was used, demoed, or tested.**
 - **No pricing figure here should be quoted to a prospect** until re-read
   from the live page.
-- The penalty-figure discrepancy in §4 is stated, not resolved.
+- §4's AIM Act penalty-figure resolution is a multiply-corroborated
+  secondary-source read, not a primary-source page read (`ecfr.gov` and
+  `federalregister.gov` were both `EGRESS_BLOCKED`) — re-confirm from
+  `ecfr.gov` directly before this figure appears in anything contractual.
 - This document does not decide whether SAIRN should build a plumbing or
   electrical trade into SAIRNmechanical, or any specific feature named
   above — that is a `sairn-software-architect` and `sairn-decision-gate`
