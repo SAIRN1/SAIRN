@@ -3329,6 +3329,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-25T13:39:30Z",
+      "resources": [
+        "rf_certifications",
+        "sb_train",
+        "sdn_timeentries"
+      ],
+      "rules": [],
+      "files": [
+        "tools/register_freshness_check.py"
+      ],
+      "what": "register_freshness_check.py gains a DEAD-FUNCTION arm (item 3): a cell naming a function that exists in NONE of the files it cites is a RENAME or a deletion, not a line drift, and a repoint would hide it. Swept platform-wide: ZERO real findings. The Tier A names the gate matched (rf_certifications, sb_train, sdn_timeentries) appear ONLY as illustrative resource names inside the new comment block explaining the two narrowings -- no code serves them and none is read by the tool. WHAT A REVIEWER SHOULD ATTACK: (1) THE TWO NARROWINGS ARE WHERE A REAL FINDING COULD BE LOST. Unnarrowed the sweep reported 131; narrowing 1 drops any name that is a registered resource, narrowing 2 requires the name to look like a function (`name()` or camelCase). A genuinely dead function whose name COLLIDES with a resource name, or one written in snake_case, is invisible to this check -- decide whether either shape is reachable in how this register is actually written. (2) THE LAST EXCLUSION IS BY EXISTENCE-ANYWHERE (`git grep -w`), which means a function that exists in a DIFFERENT app's file passes even when the cell cites only this app's file. That is deliberate (cross-app precedents are cited constantly) but it is the widest hole in the check: confirm it cannot mask a within-app rename to a name that happens to exist elsewhere. (3) ZERO IS A CLAIM. Re-run it and confirm the sweep really inspects a non-trivial population rather than reporting zero because a regex stopped matching -- the failure mode this tool's own fixtures exist for.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-25T13:39:30Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
