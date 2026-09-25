@@ -526,6 +526,16 @@ test('...and that narrowed check still catches a real migration', () => {
 // not be signed into while bootstrap answered 409 ALREADY_PROVISIONED, which is
 // precisely the dead-licence end state that route produces.
 //
+// AND THE DETECTOR SHIPPED WITH A DEAD ALTERNATIVE (repaired 2026-09-25).
+// The regex below was written through a heredoc and its `\\b` arrived as a RAW
+// 0x08 BACKSPACE, so `role:\\s*role\\b` could never match. It was invisible
+// because the FIRST alternative matched everywhere it needed to -- the classic
+// vacuous-green-with-a-dead-pattern shape, and the fourth instance of
+// code-scrubber item 18 on this platform. tools/control_char_check.py caught it
+// at the push gate. Repaired by building the escape with chr(92), which is the
+// rule that entry states, and the corrected pattern was RE-MEASURED rather than
+// assumed: still 16 endpoints, so nothing was hiding behind the dead half.
+//
 // DERIVED, NOT LISTED: the subject set is read off the files -- every
 // *-auth.js whose setup upserts on (license_hash, employee_id) with `role` in
 // the body -- so a NEW endpoint is covered the day it lands rather than the day
@@ -559,7 +569,7 @@ function setupRoleWriters() {
     const j = src.indexOf("action === '", i + 20);
     const region = src.slice(i, j > 0 ? j : src.length);
     if (!/on_conflict=license_hash,employee_id/.test(region)) return;
-    if (!/role,\s*pin_hash|role:\s*role/.test(region)) return;
+    if (!/role,\s*pin_hash|role:\s*role\b/.test(region)) return;
     (/soleRoleDemotionRefusal\s*\(/.test(region) ? out.guarded : out.unguarded).push(f);
   });
   return out;

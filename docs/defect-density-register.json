@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -13978,7 +13978,7 @@
       "injection": {
         "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
       },
-      "citation_note": "PR §1.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
       "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
       "contributing_factors": [
         {
@@ -14413,6 +14413,57 @@
         }
       ],
       "recurrence_open": "The fix closes the new-branch range for this gate. It closes nothing about the class: no tool on this platform asks whether a gate is PASSABLE on input shapes it has never received, and the other pre-push checks share the same stdin parsing without sharing this function. A gate that cannot be passed is indistinguishable from one that has never been tripped, and only somebody needing the blocked operation will ever find the difference."
+    },
+    {
+      "commit": "7f952aa8de26",
+      "date": "2026-09-25",
+      "subject": "fix(sv-auth): setup could demote the last Owner and kill the licence -- the route that made SAIRNvet unrecoverable",
+      "files": [
+        "api/_lib/employee-lifecycle-wiring.test.js",
+        "api/sv-auth.js",
+        "docs/2026-09-03-demo-credentials.md"
+      ],
+      "lines_added": 164,
+      "lines_removed": 0,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sv-auth.js's setup action upserted the role column on (license_hash, employee_id) with no sole-role demotion guard, so the sole active Owner of a SAIRNvet practice could set their own role to any of the five non-provisioning SV_ROLES (dvm, tech, assistant, manager, frontdesk) and leave the licence with ZERO Owners. set_active's last-admin guard cannot see that route -- api/_lib/employee-lifecycle.js:340 documents it -- and bootstrap correctly refuses 409 ALREADY_PROVISIONED whenever any credential row exists, so the resulting state is UNRECOVERABLE THROUGH THE API on an app holding a DEA-relevant controlled-substance register. Five sibling endpoints already called the shared guard; SAIRNvet did not, because set_active deliberately passes soleRole:null (exact for that route, since one provisioning role makes the two counts identical) and soleRoleDemotionRefusal reads the same field and no-ops when it is absent. Found while root-causing why SV-PINNACLE-2026 answers 401 on its documented PIN while bootstrap answers 409 -- the observable signature of exactly this end state. Fixed by wiring the shared guard with a SAIRNvet-vocabulary refusal; three new derived wiring arms now fail on a new unguarded endpoint and on any of the six losing its guard.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "29b1f1d53fad",
+        "date": "2026-09-13",
+        "subject": "feat(sairnvet): per-employee auth -- the last app without it held the DEA register",
+        "lag_days": 12
+      },
+      "citation_note": "The nearest standing statement is api/_lib/employee-lifecycle.js:340's own paragraph naming this route, which is a code comment rather than a numbered PROCESS-RULES section. No PR section covers 'a guard that exists and is not called by one of its intended call sites'.",
+      "contributing_factors": [
+        {
+          "factor": "One field, soleRole, is read by two routes with opposite semantics: set_active treats null as \"count over provisioningRoles\" (exact here) and soleRoleDemotionRefusal treats null as \"do not guard at all\"",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sv-auth passes soleRole:'owner' explicitly at the demotion call site, with a comment naming the two readings so the next endpoint does not repeat it."
+        },
+        {
+          "factor": "The wiring suite's 162 arms were all about set_active; no arm asserted that an endpoint whose setup WRITES a role calls the demotion guard, so ten endpoints plus this one could ship unguarded with a green suite",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Three arms added with the subject set DERIVED from the files (setup region up to the next action, upsert on license_hash,employee_id with role in the body), failing on a new unguarded endpoint and on a lost guard; sabotage-verified."
+        },
+        {
+          "factor": "The unrecoverable end state is created by one endpoint and enforced by another, so neither file's author could see the whole failure from their own change",
+          "kind": "latent-condition",
+          "action_status": "declined",
+          "note": "Nothing structurally connects a route that can reach zero provisioners to the refusal that makes zero permanent. Naming it rather than inventing a mechanism; the derived wiring arm is the closest available proxy."
+        }
+      ],
+      "recurrence_open": "TEN endpoints still write a role in setup with no demotion guard -- alf, bld, dnt, law, leg, mech, rf, sc, sdn, sen -- and each is one self-demotion from the same unrecoverable state. They are grandfathered in the new wiring arm, which means 'predates the check', not 'fine'. Several hold regulated records (alf MAR, dnt charges, law trust). Fixing them is ten endpoints and ten customer-facing refusal sentences and was not this change."
     }
   ],
   "started": "2026-09-09",
