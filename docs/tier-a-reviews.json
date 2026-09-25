@@ -3413,6 +3413,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-25T16:48:14Z",
+      "opened_at_sha": "035c1f72a6681804e0ec3b2c2df95ee31507f138",
+      "resources": [
+        "sc_claims",
+        "sc_coded_items",
+        "sc_compliance",
+        "sc_settings"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data.js",
+        "tests/sairncode_gates.js",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "what": "Made while discharging cc's 2026-09-23T20:55:16Z obligation on 5c781b99 (the commit that closed eight days of sixteen Tier A sc_ resources writable on the licence key alone). NO AUTHORIZATION LOGIC CHANGED -- api/sd-data.js's diff is COMMENTS ONLY, verified mechanically (`git diff -U0 | grep -v '^[-+]\\s*//'` is empty). What changed is one live probe, one suite, one GUARD_TESTS entry and two dead comments inside a live security gate.\n\n(1) tools/sc_tier_a_write_gate_live_probe.py CONTRADICTED ITSELF AND WAS REPAIRED BY DERIVING A SECOND LIST. Section 4 demanded 403 FORBIDDEN from a coder on every name in the DERIVED Tier A list, while its own control arm twelve lines later demanded 200 on sc_coded_items -- which the override map admits `coder` to. Section 5b asserted an admin hard-delete on sc_coded_items returns 200, on a resource whose `delete` verb the registry had withdrawn. New write_role_overrides() parses SC_TIER_A_WRITE_ROLES_BY_RESOURCE out of api/sd-data.js; the deny population is the Tier A list minus the coder overrides (23 of 24); section 5's auditor loop, which excluded sc_compliance BY NAME, is derived the same way; 5b's control moved onto RESOURCES-minus-Tier-A (sc_encoder today).\n\n(2) tests/sairncode_gates.js WRITE_GATED gained an arm reading its ROLE half. The table's resource half was compared against the handler and its role half was never read at all, and had drifted -- sc_coded_items said 'admin|biller' while the handler granted ['admin','biller','coder']. 176 -> 177.\n\n(3) tests/sairncode_gates.js IS IN GUARD_TESTS NOW, so this suite blocks a push for the first time. Measured cost 0.40s.\n\nATTACK THESE SIX:\n\n(1) I DID NOT DRIVE THE LIVE PROBE. No SC_LICENSE/SC_EMP/SC_PIN in this clone, so it exits 2 UNVERIFIED and every change to it is verified only by replaying its arms against the real handler IN-PROCESS (103 arms, 0 failures, scratch harness, not committed). The deployed function is still unverified for this gate in both directions, and the probe is now materially more complex than it was. If those credentials exist, RUN IT -- that is the check both cc and I owe and neither paid.\n\n(2) THE 5b CONTROL NOW WRITES AND DESTROYS A ROW ON A LIVE TENANT that the old version did not (ZZ-GATE-HARD on whichever resource still hard-deletes, sc_encoder today). The destroy IS the control, so it is deliberately absent from the cleanup list -- meaning a run that dies between the write and the delete leaves it behind. Decide whether that is acceptable or whether it should also be in `made`. I chose not to because a row in `made` gets a SECOND delete and the arm's whole subject is that the first one worked.\n\n(3) THE ORDER OF THE NEW FAIL-CLOSED READS. Three registry/handler reads now run BEFORE the credential check, so a clone that cannot run node reports UNVERIFIED about the registry rather than about credentials. I think that is right -- it is the more specific fact -- but it changes which of two true UNVERIFIED reasons an operator sees first, and the credential one is the common case.\n\n(4) ADDING tests/sairncode_gates.js TO GUARD_TESTS IS A BLOCKING CHANGE FOR ALL FIVE CLONES and it is the decision cc explicitly declined to take alone. My grounds: it is a seam by the registry's own definition, it has a recorded defect (eight days, PHI), and the wall-time objection measures 0.40s. What I did NOT do is check whether the suite is stable under every clone's state -- it reads api/sd-data.js, api/_lib/auth.js, api/_resources/sairncode.js and sairncode.html, so any clone mid-edit on those now has a blocked push where it previously had a green one. If that is wrong, the entry comes out and report_only_checks.py is the right home instead.\n\n(5) THE WRITE_GATED ROLE ARM COMPARES A HAND-WRITTEN TABLE AGAINST rolesFor(), WHICH PARSES api/sd-data.js WITH A REGEX. Three regexes feed it (SC_TIER_A_WRITE_ROLES, the override map, sc_settings' narrowing) and each already asserts its own match, but a regex that starts matching a DIFFERENT construct stays unique and stays invisible -- the anchor-drift class. Check the three still bind to what their names say, and specifically whether my new arm could go green on a handler that stopped gating entirely.\n\n(6) I REWROTE COMMENTS INSIDE A LIVE AUTHORIZATION GATE. Two passages argued the sc_claims coder exclusion from the premise that sc_coded_items is \"ungated\", false since 2026-09-23. I corrected the premise and kept the conclusion, and I kept the old wording with its date rather than deleting it. Read whether the corrected argument is actually the argument, or whether admitting `coder` by named exception changes what the right answer for sc_claims is. That is a product question and I answered it KEEP, which is a judgement, not a measurement.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-25T16:48:14Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
