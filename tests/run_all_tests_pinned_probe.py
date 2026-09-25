@@ -126,30 +126,39 @@ import run_all_tests as R                                          # noqa: E402
 head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO, capture_output=True,
                       text=True).stdout.strip()
 landed = {}
-real_run = subprocess.run
+real_popen4 = subprocess.Popen
 
 
 def spy(cmd, **kw):
-    # The inner invocation is the one whose cwd is the worktree.
-    if isinstance(cmd, list) and cmd and str(cmd[0]) == sys.executable \
-            and any('run_all_tests.py' in str(c) for c in cmd[1:]):
+    # THE SPY IS AIMED AT Popen, NOT run, AND THAT IS NOT A DETAIL. It targeted
+    # subprocess.run until pinned_main was changed to relay the child's output
+    # through Popen -- at which point the spy silently stopped intercepting and
+    # this arm ran the REAL 590-file suite inside a worktree for eleven minutes
+    # before it was killed. A test double is a second copy of a signature and it
+    # stops agreeing the moment the original moves.
+    if isinstance(cmd, list) and cmd and str(cmd[0]) == sys.executable             and any('run_all_tests.py' in str(c) for c in cmd[1:]):
         landed['cwd'] = kw.get('cwd')
         landed['sha'] = subprocess.run(
             ['git', 'rev-parse', 'HEAD'], cwd=kw.get('cwd'),
             capture_output=True, text=True).stdout.strip()
         landed['has_tests'] = os.path.isdir(os.path.join(kw.get('cwd'), 'tests'))
-
-        class _R(object):
-            returncode = 0
-        return _R()
-    return real_run(cmd, **kw)
+        kw.pop('cwd', None)
+        return real_popen4([sys.executable, '-c', 'pass'], **kw)
+    return real_popen4(cmd, **kw)
 
 
-subprocess.run = spy
+subprocess.Popen = spy
 try:
     rc = R.pinned_main(['--pinned', '--pinned-ignore-dirty', '--quiet'])
 finally:
-    subprocess.run = real_run
+    subprocess.Popen = real_popen4
+
+# AND THE ARM THAT WOULD HAVE CAUGHT THE MISS: with the spy aimed at the wrong
+# function `landed` is empty, and the checks below would compare None to None
+# in a way that can read as a pass. Assert the interception happened FIRST.
+check('the spy actually intercepted the inner invocation',
+      bool(landed), 'landed is empty -- the spy is aimed at the wrong function '
+      'and this arm just ran the real suite')
 
 check('pinned_main returned the inner run\'s code', rc == 0, 'got %r' % rc)
 check('the suite ran with cwd set to a worktree, NOT the clone',
@@ -165,6 +174,49 @@ check('...pinned to the requested commit',
 check('...and the worktree was removed afterwards',
       landed.get('cwd') and not os.path.exists(landed['cwd']),
       'still present: %r' % landed.get('cwd'))
+
+print('')
+print('5. --out really holds the INNER run, not just the outer banner')
+# THE ARM THAT WAS MISSING AND COST A WRONG COMMIT MESSAGE. The first version
+# of pinned_main used subprocess.run(inner, cwd=wt), which hands the child this
+# process's OS-level stdout -- straight past a replaced sys.stdout. So --out
+# captured the PINNED banner and the FULL OUTPUT WRITTEN TO footer and lost
+# every one of the 590 files in between, while the file existed, had content
+# and looked plausible. That is the truncation defect these flags exist to fix,
+# reintroduced one layer up, and it was found by reading the file rather than
+# by any arm.
+#
+# Driven with a stub inner process rather than the real suite: the property
+# under test is whether the child's stdout REACHES the --out file, and a child
+# that prints one recognisable line proves that as well as one that prints
+# 590.
+marker = 'INNER-RAN-HERE-%d' % os.getpid()
+outfile = os.path.join(tempfile.gettempdir(), 'sairn-pinned-probe-%d.txt' % os.getpid())
+real_popen = subprocess.Popen
+
+
+def popen_spy(cmd, **kw):
+    if isinstance(cmd, list) and any('run_all_tests.py' in str(c) for c in cmd[1:]):
+        cmd = [sys.executable, '-c', 'print("%s")' % marker]
+        kw.pop('cwd', None)
+    return real_popen(cmd, **kw)
+
+
+subprocess.Popen = popen_spy
+try:
+    R.main(['--out', outfile, '--pinned', '--pinned-ignore-dirty', '--quiet'])
+finally:
+    subprocess.Popen = real_popen
+body = io.open(outfile, encoding='utf-8', errors='replace').read() if os.path.exists(outfile) else ''
+check('the --out file exists', bool(body), 'empty or absent: %r' % outfile)
+check('...and carries the PINNED banner (the outer half)',
+      'PINNED: running in a throwaway worktree' in body, body[:200])
+check("...AND the inner run's own output, which is the half that was lost",
+      marker in body, body[:400])
+try:
+    os.remove(outfile)
+except OSError:
+    pass
 
 print('')
 if bad:

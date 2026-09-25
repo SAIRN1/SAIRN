@@ -647,8 +647,26 @@ def pinned_main(argv):
         inner = [sys.executable, os.path.join(wt, 'tools', 'run_all_tests.py')]
         inner += [a for a in argv
                   if a not in ('--pinned', '--pinned-ignore-dirty', '--rev', rev)]
-        r = subprocess.run(inner, cwd=wt)
-        return r.returncode
+        # ── THE CHILD'S OUTPUT IS RELAYED THROUGH sys.stdout, NOT INHERITED ──
+        # `subprocess.run(inner, cwd=wt)` hands the child this process's OS-level
+        # file descriptor, which goes straight past a replaced `sys.stdout`. So
+        # --out captured only the banner above and the footer below, and LOST
+        # THE ENTIRE RUN -- the exact defect these flags exist to fix,
+        # reintroduced one layer up, and silent: the file existed, had content
+        # and looked plausible. Found by reading the file rather than by any
+        # arm, which is why tests/run_all_tests_pinned_probe.py now has one.
+        #
+        # Relaying line by line rather than capturing and printing at the end
+        # keeps the terminal live for a two-hour run; a `communicate()` would
+        # show nothing until it finished.
+        proc = subprocess.Popen(inner, cwd=wt, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, text=True,
+                                encoding='utf-8', errors='replace', bufsize=1)
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+        proc.stdout.close()
+        return proc.wait()
     finally:
         rm = _git('worktree', 'remove', '--force', wt)
         if rm.returncode != 0:
