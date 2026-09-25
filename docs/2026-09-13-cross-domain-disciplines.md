@@ -1,4 +1,4 @@
-# Cross-domain disciplines — ten standing conventions for any checker built here
+# Cross-domain disciplines — eleven standing conventions for any checker built here
 
 **Read this before building any checker, probe, gate or tool.**  These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
@@ -386,8 +386,6 @@ every incident in this file's registers points).
 
 ---
 
-## The failure mode seven of the NINE share
-
 ## 10. Segmented verification — no long run whose first check is at the end
 
 **The convention: break one long unverifiable run into short segments, each
@@ -446,19 +444,87 @@ runs whose LENGTH is the risk, not about making everything incremental.
 
 ---
 
-## The failure mode seven of the first eight share
+## 11. Human-gated auto-remediation — a fixer may not approve its own fix
 
-Seven of these conventions defend against the same thing: **a check that reads as
-coverage and structurally cannot fire.** (Items 7 and 9 are the exceptions and are worth
-holding separately. Item 7 defends against a correct thing moved into a context
-where its assumptions no longer hold, which none of the others would catch;
-item 9 is upstream of every check — it prices how much rigor an item deserves
-before any check exists, so it cannot share a failure mode with the checks it
-sizes.) A criterion tuned to the data.
+**The convention: a tool that DETECTS drift may PROPOSE the repair, and may
+never apply it. The proposal lands through a review a human performs.**
+(Methodology item 103, adopted 2026-09-25 on Michael's decision about item
+102 phase 2.)
+
+Borrowed from GitOps, which formalised exactly this as the **plan/apply
+split**: drift between declared and actual state is continuously detected
+and *proposed*, and it reaches the cluster only through a reviewed merge —
+enforced PR review even for mechanical infrastructure fixes, precisely
+because "mechanical" is a judgement somebody has to make about each case.
+The live software-engineering precedent is a coding-agent drift tool that
+opens two draft PRs per finding — revert, or adopt — and leaves the choice
+to a reviewer rather than picking one.
+
+**Why it is a convention and not advice.** It is the same failure as item 8's
+`--check` comparing a document to its own output, moved one step later: there,
+a generator judged what it had produced; here, a detector would bless what it
+had repaired. In both the comparison is real and the *independence* is gone,
+and the output reads exactly like a check that passed. This platform has the
+receipt: `tools/tooling_inventory.py` refuses to generate rather than emit a
+blank cell, and the push gate treats that refusal as a finding — a generator
+that had quietly filled the cell in would have looked identical to a clean
+run.
+
+**It binds harder here than in infrastructure, and that is the local
+addition.** A GitOps drift is usually a fact — a replica count, an image tag.
+A register cell is usually a **judgement**: a tier, a confidentiality class,
+a compliance argument. The one genuinely mechanical part of such a cell is a
+line number, and even that is only proposed:
+`tools/register_freshness_propose.py` repoints a citation **only** when the
+named identifier has exactly one definition-like line today, refuses with a
+reason when there are several (choosing is the judgement) or none (the cell
+needs re-reading, not repointing), and withdraws any batch that does not
+clear its own findings and nobody else's.
+
+**How to implement it.**
+- The detector has **no write path to its subject**, asserted on the source
+  rather than promised in prose. `tools/register_freshness_check.py` carries
+  that as a fixture.
+- The proposer works on a **throwaway branch**, refuses a dirty tree, and
+  restores HEAD **verified by sha**.
+- The proposal **verifies itself before it is offered** — re-run the
+  detector, require the claimed findings gone and no others.
+- When the PR-opening tool is absent, **say so and stop**. Falling back to a
+  direct write is the one behaviour the convention forbids, and it is the
+  convenient one.
+
+**Where it does not transfer, said plainly.** Fully reversible,
+self-verifying machine state with no judgement in it — a regenerated derived
+document whose generator is itself gated, a formatter — is not what this is
+about; `master_plan.py` regenerating `docs/MASTER-PLAN.md` is a generator
+doing its job, and the check on it is a separate `--check`. The line is
+whether the artefact encodes a DECISION somebody could be wrong about. If it
+does, the fixer proposes.
+
+---
+
+
+## The failure mode eight of the eleven share
+
+Eight of these conventions defend against the same thing: **a check that reads as
+coverage and structurally cannot fire.** (Items 7, 9 and 10 are the exceptions
+and are worth holding separately. Item 7 defends against a correct thing moved
+into a context where its assumptions no longer hold, which none of the others
+would catch; item 9 is upstream of every check — it prices how much rigor an
+item deserves before any check exists, so it cannot share a failure mode with
+the checks it sizes; item 10 is about a check that fires correctly and fires
+TOO LATE, which is a property of the schedule rather than of the check.)
+A criterion tuned to the data.
 A score that averages away the half that broke. A rate over a denominator
 nobody stated. An alarm set at the cliff edge. A validation fed by its own
 subject. A replication that shares a blind spot. An anchor that quietly stopped
 matching.
+
+**Item 11 is the eighth member, and it arrives last because it is the newest
+spelling of the oldest failure here:** a fixer that applies its own repair
+produces output indistinguishable from a check that passed, for the same
+reason item 8's `--check` did when it compared a document to its own output.
+The comparison is real; the independence is gone.
 
 **Item 8 arrives at that same failure mode by a different route, which is why it
 is separate rather than folded in.** Items 1–6 are about a check built wrong.
