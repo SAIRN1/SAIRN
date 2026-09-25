@@ -32,6 +32,16 @@ module.exports = {
   // is a description of a physical thing whose serial gets corrected and whose
   // location changes. It carries an UPDATE grant; it still carries no DELETE.
     'mech_site_assets',
+  // Business insurance / COI (2026-09-25) -- see sql/mech_insurance_schema.sql
+  // and api/_lib/mech-insurance.js. Measured before building: the app had ZERO
+  // hits for insurance, COI, general liability, workers comp or umbrella.
+  //
+  // NOT a second mech_credentials. That one holds what an EMPLOYEE holds and
+  // answers "who can I dispatch"; this holds what the COMPANY holds and
+  // answers "may this company be on that site at all". Upsert like
+  // mech_site_assets -- a policy row describes a certificate -- and a RENEWAL
+  // is a new policy_key rather than an overwrite. No DELETE.
+    'mech_insurance_policies',
   // ── THE LAST LOCAL-ONLY COLLECTIONS ON THE PLATFORM (2026-09-10) ────────
   // tools/local_only_collection_check.py reported this app as 5 of 5 with NO
   // route to a server -- the only one left undeclared after that day's sweep.
@@ -88,5 +98,13 @@ module.exports = {
   // legally open.
   extraActions: {
     mech_credentials: ['eligibility'],
+    // 'readiness' is its own verb rather than a flag on read, for the reason
+    // `eligibility` is: it takes a QUESTION -- what this certificate holder
+    // asked for -- and a read that quietly answered a question nobody asked
+    // would be a default insurance requirement by the back door, which
+    // api/_lib/mech-insurance.js refuses at length. Declared here because the
+    // router refuses any verb that is not read/write unless a module owns it,
+    // and an undeclared action is a feature that exists and cannot be reached.
+    mech_insurance_policies: ['readiness'],
   },
 };

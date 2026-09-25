@@ -1945,6 +1945,197 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNMECHANICAL BUSINESS INSURANCE / COI (2026-09-25) ──────────────
+    // sql/mech_insurance_schema.sql and api/_lib/mech-insurance.js.
+    //
+    // NOT a second copy of mech_credentials. That resource holds what an
+    // EMPLOYEE holds and answers "who can I dispatch"; this one holds what the
+    // COMPANY holds and answers "may this company be on that site at all". A
+    // technician with a current 608 card working for a business whose general
+    // liability lapsed last month is dispatchable under one and refused at the
+    // gate by the other, and neither answer is the other's.
+    //
+    // UPSERT like mech_site_assets, not append-only like mech_credentials: a
+    // policy ROW is a description of a certificate -- a policy number gets
+    // corrected, a carrier name is re-read off the ACORD form. A RENEWAL is a
+    // new policy_key with its own dates, which is how the engine can show
+    // current cover while the prior term stays on the record. No DELETE.
+    //
+    // READ is any authenticated employee. WRITE is management only, and here
+    // that reasoning DOES transfer from mech_credentials rather than from
+    // mech_site_assets: the company's insurance position is not a machine a
+    // technician is standing in front of, and a coverage limit typed by
+    // whoever happens to be signed in is a number an owner will be shown.
+    //
+    // `readiness` is a THIRD action rather than a flag on read, for the same
+    // reason mech_credentials has `eligibility`: it takes a question -- what
+    // THIS certificate holder asked for -- and a read that quietly answered a
+    // question nobody asked would be a default requirement list by the back
+    // door, which api/_lib/mech-insurance.js refuses at length.
+    if (resource === 'mech_insurance_policies' &&
+        (action === 'read' || action === 'write' || action === 'readiness')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnmechanical');
+      if (!session) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+        return;
+      }
+      // Every endorsement column is in this list for the reason the AIM Act
+      // columns are in the asset one: the engine can compare perfectly and
+      // still report "unknown, and unknown is not carried" for every
+      // requirement for ever, because the column it reads was never fetched.
+      const INS_DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+      const insCols = 'policy_key,kind,carrier,policy_no,effective_on,expires_on,' +
+        'each_occurrence,aggregate_limit,certificate_holder,' +
+        'additional_insured,waiver_of_subrogation,primary_noncontributory,' +
+        'per_project_aggregate,status,notes,recorded_by,created_at,updated_at';
+
+      // The stored row shape -> the engine's policy shape. One place, so read
+      // and readiness cannot drift into describing the same row differently.
+      const toPolicy = function (row) {
+        return {
+          policy_id: row.policy_key,
+          kind: row.kind,
+          carrier: row.carrier,
+          policy_no: row.policy_no,
+          effective_on: row.effective_on,
+          expires_on: row.expires_on,
+          each_occurrence: row.each_occurrence,
+          aggregate: row.aggregate_limit,
+          certificate_holder: row.certificate_holder,
+          endorsements: {
+            additional_insured: typeof row.additional_insured === 'boolean' ? row.additional_insured : null,
+            waiver_of_subrogation: typeof row.waiver_of_subrogation === 'boolean' ? row.waiver_of_subrogation : null,
+            primary_noncontributory: typeof row.primary_noncontributory === 'boolean' ? row.primary_noncontributory : null,
+            per_project_aggregate: typeof row.per_project_aggregate === 'boolean' ? row.per_project_aggregate : null
+          }
+        };
+      };
+
+      if (action === 'read' || action === 'readiness') {
+        const r = await fetch(rest('mech_insurance_policies?license_hash=eq.' + enc(licHash) +
+          '&select=' + insCols + '&order=expires_on.desc.nullslast'), { headers });
+        // Fails CLOSED, showing nothing, rather than an empty board that reads
+        // as "no policies recorded" on a registry that was never provisioned.
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const ins = require('./_lib/mech-insurance');
+        const today = INS_DATE_RE.test(String((req.body.payload || {}).today || ''))
+          ? req.body.payload.today : null;
+        if (!today) {
+          res.status(400).json({ error: { code: 'NO_TODAY', message: 'today (YYYY-MM-DD) is required — this board will not assume a clock.' } });
+          return;
+        }
+        const policies = (Array.isArray(rows) ? rows : []).map(toPolicy);
+        if (action === 'read') {
+          const board = ins.evaluateCoverage(policies, today,
+            { warn_days: (req.body.payload || {}).warn_days });
+          res.status(200).json({ ok: true, provisioned: true, data: rows, board: board });
+          return;
+        }
+        // readiness: the requirements are the CALLER'S, always.
+        const out = ins.coverageReadiness({
+          today: today,
+          policies: policies,
+          warn_days: (req.body.payload || {}).warn_days,
+          requirements: (req.body.payload || {}).requirements
+        });
+        if (!out.ok) {
+          res.status(400).json({ error: out.error });
+          return;
+        }
+        res.status(200).json({ ok: true, provisioned: true, readiness: out });
+        return;
+      }
+
+      // ── WRITE ────────────────────────────────────────────────────────────
+      if (!mechAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'NOT_PERMITTED', message: 'Recording the company insurance position is a management action — a coverage limit typed by whoever is signed in is a number an owner will be shown.' } });
+        return;
+      }
+      const ip = req.body.payload || {};
+      const insLib = require('./_lib/mech-insurance');
+      if (!ip.policy_key || !String(ip.policy_key).trim()) {
+        res.status(400).json({ error: { code: 'NO_POLICY_KEY', message: 'policy_key is required — it is what makes a renewal a new row rather than an overwrite.' } });
+        return;
+      }
+      if (!insLib.POLICY_KINDS[String(ip.kind || '').trim()]) {
+        res.status(400).json({ error: { code: 'BAD_KIND', message: 'kind must be one of: ' + Object.keys(insLib.POLICY_KINDS).join(', ') + '. An unknown coverage is refused rather than stored, because a board that groups by a category nobody defined has a silent bucket in it.' } });
+        return;
+      }
+      // A limit that is present but not a number is REFUSED, never dropped to
+      // null. Silently storing null would tell somebody who just typed a limit
+      // that none is recorded -- and the board reports that as UNKNOWN, which
+      // reads as their fault rather than the app's.
+      const limits = {};
+      for (const f of ['each_occurrence', 'aggregate_limit']) {
+        const v = ip[f];
+        if (v === null || v === undefined || String(v).trim() === '') { limits[f] = null; continue; }
+        const n = Number(v);
+        if (!Number.isFinite(n) || n < 0) {
+          res.status(400).json({ error: { code: 'BAD_LIMIT', message: f + ' must be a non-negative number, or left empty if nobody has typed what the certificate says. Do not enter 0 to mean unknown — 0 is a limit of zero and it fails every requirement.' } });
+          return;
+        }
+        limits[f] = n;
+      }
+      // Four tri-states, refused rather than coerced. Boolean('false') is true.
+      const ends = {};
+      for (const f of ['additional_insured', 'waiver_of_subrogation',
+                       'primary_noncontributory', 'per_project_aggregate']) {
+        const v = ip[f];
+        if (typeof v === 'boolean') { ends[f] = v; continue; }
+        if (v !== null && v !== undefined && String(v).trim() !== '') {
+          res.status(400).json({ error: { code: 'BAD_ENDORSEMENT_FLAG', message: f + ' must be true, false, or left empty if nobody has recorded it. Empty is stored as unstated, not as no — and only a recorded true satisfies a requirement.' } });
+          return;
+        }
+        ends[f] = null;
+      }
+      for (const f of ['effective_on', 'expires_on']) {
+        const v = ip[f];
+        if (v !== null && v !== undefined && String(v).trim() !== '' && !INS_DATE_RE.test(String(v))) {
+          res.status(400).json({ error: { code: 'BAD_POLICY_DATE', message: f + ' must be YYYY-MM-DD, or left empty. It was not stored, because an expiry silently dropped reads on the board as a policy with no expiry recorded.' } });
+          return;
+        }
+      }
+      const wr = await fetch(rest('mech_insurance_policies?on_conflict=license_hash,policy_key'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          policy_key: String(ip.policy_key).trim(),
+          kind: String(ip.kind).trim(),
+          carrier: ip.carrier == null ? null : String(ip.carrier),
+          policy_no: ip.policy_no == null ? null : String(ip.policy_no),
+          effective_on: INS_DATE_RE.test(String(ip.effective_on || '')) ? ip.effective_on : null,
+          expires_on: INS_DATE_RE.test(String(ip.expires_on || '')) ? ip.expires_on : null,
+          // NULL is a real state on both: nobody has typed what the
+          // certificate says. It is NOT a limit of zero.
+          each_occurrence: limits.each_occurrence,
+          aggregate_limit: limits.aggregate_limit,
+          certificate_holder: ip.certificate_holder == null ? null : String(ip.certificate_holder),
+          additional_insured: ends.additional_insured,
+          waiver_of_subrogation: ends.waiver_of_subrogation,
+          primary_noncontributory: ends.primary_noncontributory,
+          per_project_aggregate: ends.per_project_aggregate,
+          status: String(ip.status || 'active'),
+          notes: ip.notes == null ? null : String(ip.notes),
+          recorded_by: session.employee_id || null,
+          updated_at: nowISO()
+        })
+      });
+      const insRows = await wr.json();
+      if (wr.status === 404 || wr.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The insurance registry is not set up — run sql/mech_insurance_schema.sql' } });
+        return;
+      }
+      if (!wr.ok) return upstream(res, insRows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(insRows) && insRows[0]) || null });
+      return;
+    }
+
     // ── SAIRNMECHANICAL TECHNICIAN CREDENTIALS (2026-09-02) ─────────────────
     // sql/mech_credentials_schema.sql and api/_lib/mech-credentials.js.
     // SAIRNmechanical's FIRST data resource -- it had complete per-employee
