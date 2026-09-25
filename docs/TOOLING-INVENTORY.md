@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**223 files in `tools/`.** By what actually invokes them:
+**224 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 32 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 43 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -40,6 +40,7 @@ By what they are, independent of wiring:
 | LIBRARY | 24 |
 | LIVE | 20 |
 | REPORTER | 1 |
+| TOOL | 1 |
 
 **69 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -309,7 +310,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (31)
+## SUITE-ONLY (32)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -333,6 +334,7 @@ fixtures. Nothing points them at the real codebase.
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_selftest_independence_probe.py` |
 | `primitive_obsession_check.py` | CHECKER | a NEW occurrence of three shapes where a raw primitive crosses a boundary unparsed, each already paid for here: a measured value defended into a default (Number(x)||0 -- empty, unreadable and a legitimate zero collapse into one number, the sairndental silent-$0 shape), a config read where Number('') is 0 (a cleared env var becomes a switched-off feature that looks configured), and a locale date string stored or compared as data (toLocaleDateString does not sort and differs per viewer). 233 existing keys grandfathered; refuses (exit 2) when its own fixture lock fails OR when a whole baselined shape finds zero matches, because a detector that went blind must never look like progress. Disjoint from truthy_sum_check by construction: that one requires coercion ABSENT, these require it present or absent-but-locale | `run_primitive_obsession_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
+| `register_freshness_propose.py` | TOOL | a drifted register citation that CAN be repaired mechanically -- and offers the repair as a branch a human merges, never a write. Proposes ONLY a line-number repoint whose identifier has exactly ONE definition-like line today; several definitions, none at all, a dead sha or a dead path are refused WITH the reason, because those need a read rather than a repoint. Each batch re-runs the checker and is withdrawn unless it clears its own findings and nobody else's. Never merges, never force-pushes, never writes main | `run_register_freshness_propose_probe.py` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py`, `run_concurrency_retry_probe.py`, `run_suite_lock_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
@@ -430,11 +432,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      223   git ls-files tools/
+  tools on disk                      224   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            160   tests/**/*.py, *.js
+  tools invoked by tests/            161   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

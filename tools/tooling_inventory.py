@@ -690,6 +690,16 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'register_freshness_propose.py': ('TOOL',
+        'a drifted register citation that CAN be repaired mechanically -- '
+        'and offers the repair as a branch a human merges, never a write. '
+        'Proposes ONLY a line-number repoint whose identifier has exactly '
+        'ONE definition-like line today; several definitions, none at all, '
+        'a dead sha or a dead path are refused WITH the reason, because '
+        'those need a read rather than a repoint. Each batch re-runs the '
+        'checker and is withdrawn unless it clears its own findings and '
+        "nobody else's. Never merges, never force-pushes, never writes "
+        'main'),
     'verification_plan_staleness_check.py': ('CHECKER',
         'a verification-methodology plan that DISAGREES with the repo: an item '
         'marked unclaimed whose commit has already landed, one marked in flight '
