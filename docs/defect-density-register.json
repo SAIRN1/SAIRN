@@ -14324,6 +14324,180 @@
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
     },
     {
+      "commit": "035c1f72a668",
+      "date": "2026-09-25",
+      "subject": "review(tier-a): discharge cc's 2026-09-23 SAIRNcode gate obligation -- the LIVE probe was left asserting a Tier A record could still be destroyed",
+      "files": [
+        "api/sd-data.js",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/run_sc_tier_a_live_probe_probe.py",
+        "tests/sairncode_gates.js",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "lines_added": 361,
+      "lines_removed": 74,
+      "app": "sairncode",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "tools/sc_tier_a_write_gate_live_probe.py -- the ONLY tool that checks SAIRNcode's Tier A write gate against the DEPLOYED function -- could not pass against a correct deployment, and one of its two broken arms would have failed by accusing the fix of being over-broad. Section 4 asserts a coder write is 403 FORBIDDEN on every name in `SIX`, which is DERIVED from api/_resources/sairncode.js -- so sc_coded_items joined that deny loop automatically when 5c781b99 re-tiered it A, while the same commit added `sc_coded_items: ['admin','biller','coder']` to SC_TIER_A_WRITE_ROLES_BY_RESOURCE precisely so coders kept their own panel. The probe's own CONTROL arm twelve lines later demands 200 on that identical call. Section 5b asserts `admin hard-delete on sc_coded_items still works -> 200` with failure text \"the refusal is blanket rather than Tier A only\", on a resource whose destroying `delete` verb the registry had just withdrawn. Both DRIVEN against the real handler in-process 2026-09-25: coder write -> 200 (probe expected 403), admin delete -> 400 (probe expected 200). A DERIVED LIST IS NOT AUTOMATICALLY A CORRECT LIST: the derivation was the right fix for the 2026-09-15 hand-written-six defect and is still right, but a derivation cannot know that a SECOND mechanism carves an exception out of the same population. Fixed by reading both sides from the handler -- a new write_role_overrides() parses the override map out of api/sd-data.js, the deny population is SIX minus the coder overrides, the coder-allowed names are driven as ALLOW, section 5's auditor loop (which excluded sc_compliance BY NAME, the same assumption one arm over) is derived the same way, and 5b's control moved onto RESOURCES-minus-Tier-A with UNVERIFIED rather than a pass if that population ever empties.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5c781b99094e",
+        "date": "2026-09-23",
+        "subject": "fix(sairncode): SIXTEEN Tier A resources were writable on the licence key alone and hard-deletable, for eight days",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "factor": "Section 4's population was DERIVED from the Tier A registry while the role exception that carves sc_coded_items out of it lives in a different file (api/sd-data.js) and was not read at all -- so one half of the gate's definition was authoritative to the probe and the other half was invisible to it.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "write_role_overrides() parses SC_TIER_A_WRITE_ROLES_BY_RESOURCE out of api/sd-data.js and both the coder deny/allow split and the auditor deny/allow split are computed from it; neither is named by hand any more."
+        },
+        {
+          "factor": "Section 5b's control subject was a hardcoded resource name (sc_coded_items) chosen when that resource was not Tier A. Nothing tied the name to the property the control needs, which is 'still hard-deletes'.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the control subject is derived as RESOURCES minus the Tier A soft-delete list and reports UNVERIFIED rather than passing if that population is empty."
+        },
+        {
+          "factor": "The commit that broke the probe was a SECURITY FIX under time pressure, and the probe cannot be run in any clone without live credentials the repo deliberately does not carry -- so the author had no cheap way to notice, and the expensive way was blocked on Michael running sql/demo_owner_credentials_2026-09-03.sql.",
+          "kind": "latent-condition",
+          "action_status": "not-actionable",
+          "note": "Unchanged. The probe still cannot run here. What changed is that its arms were replayed against the REAL handler in-process (103 arms, 0 failures) while discharging the review, which is a cheap check that did not previously exist -- but it was a scratch harness and is NOT committed, so the next change to this probe has the same blind spot."
+        },
+        {
+          "factor": "tests/run_sc_tier_a_live_probe_probe.py exists and is a genuine probe-of-the-probe, but its arms are about SHAPE -- credentials from the environment, cleanup is a finding, the registry required exactly once -- and none of them compares an assertion to what the handler would actually answer. A probe asserting the opposite of correct behaviour passes every one of them.",
+          "kind": "detection",
+          "action_status": "planned",
+          "action": "Make the in-process replay a committed arm of tests/run_sc_tier_a_live_probe_probe.py: boot api/sd-data.js with a fixture secret and assert every expected status the probe asserts against what the handler answers. NOT DONE HERE -- it changes what that probe is (it currently reads source shape and never boots the handler) and that belongs to its owner, not to a review discharge."
+        }
+      ],
+      "recurrence_open": "THE CLASS IS OPEN PLATFORM-WIDE AND THIS FIX IS ONE INSTANCE OF IT. Nothing asks whether a live probe's assertions still match what the code answers -- every other *_live_probe.py on this platform can rot the same way, silently, because a probe that cannot run reports UNVERIFIED and an UNVERIFIED probe is indistinguishable from a correct one. tools/pinned_list_drift_check.py sweeps for stale LISTS; there is no equivalent sweep for stale EXPECTED STATUS CODES. Also still open: the in-process replay that found both arms was a scratch harness and is not committed, so the next change to this probe has the same blind spot the last one did. AND THE PROBE STILL HAS NOT RUN -- the gate is unverified against the deployed function in both directions, which is the original obligation's point (2) and is blocked on credentials, not on code."
+    },
+    {
+      "commit": "035c1f72a668",
+      "date": "2026-09-25",
+      "subject": "review(tier-a): discharge cc's 2026-09-23 SAIRNcode gate obligation -- the LIVE probe was left asserting a Tier A record could still be destroyed",
+      "files": [
+        "api/sd-data.js",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/run_sc_tier_a_live_probe_probe.py",
+        "tests/sairncode_gates.js",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "lines_added": 361,
+      "lines_removed": 74,
+      "app": "sairncode",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tests/sairncode_gates.js's WRITE_GATED table declares, one resource at a time, who may write each write-gated SAIRNcode resource -- and its own header says in capitals that it is THE CLAIM, the handler is THE FACT, and \"a disagreement is a finding\", spelled out by hand rather than generated precisely so it cannot agree with itself by construction. HALF OF IT WAS NEVER READ. The only consumer anywhere in the suite was `Object.keys(WRITE_GATED)`, so the resource-name half was compared against the handler and the ROLE half ('admin|biller' etc) was decoration. It had already drifted: `sc_coded_items: 'admin|biller'` while the handler granted ['admin','biller','coder'], from 5c781b99 on 2026-09-23 until 2026-09-25. Every OTHER role assertion in the suite goes through rolesFor(), which PARSES SC_TIER_A_WRITE_ROLES, SC_TIER_A_WRITE_ROLES_BY_RESOURCE and sc_settings' narrowing out of api/sd-data.js -- correct for catching a gate that disappears, and structurally incapable of catching one that is WIDENED, because it derives from the thing being widened. So the one independent hand-written statement of who may write what was the one thing nothing read. Fixed: the cell is corrected and a new arm compares the table's role half against rolesFor() for all 24 rows. DRIVEN NEGATIVE IN BOTH DIRECTIONS in a throwaway git worktree, never in the clone -- restoring the old 'admin|biller' cell fails the arm and names the disagreeing row, and ADDING 'auditor' to the handler's sc_coded_items override fails it too and fails it FIRST, i.e. it is the discriminating arm. Also corrected: the comment `// the one per-resource override`, which has described two overrides since 2026-09-23.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5c781b99094e",
+        "date": "2026-09-23",
+        "subject": "fix(sairncode): SIXTEEN Tier A resources were writable on the licence key alone and hard-deletable, for eight days",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "factor": "The table's value half had no consumer. `Object.keys()` reads keys; nothing in 1,200 lines of suite ever read WRITE_GATED[r]. A data structure whose header states its purpose in capitals, half of which is unreferenced, reads as covered on every review -- the prose is the evidence and the prose is not executable.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a new arm in section 5 builds 'resource=roles' strings from the table and from rolesFor() and compares them for all 24 rows, so every cell is now load-bearing."
+        },
+        {
+          "factor": "Every other role assertion derives from api/sd-data.js by regex, which is the right call for catching a gate that vanishes and is structurally blind to one that is widened -- rolesFor() cannot disagree with the handler because it IS the handler. Nothing in the suite was independent of its subject on the role question until this arm.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the new arm is the independent side. Its negative control specifically drives the widening direction (adding 'auditor' to the override) and confirms nothing else in the suite catches it."
+        },
+        {
+          "factor": "The 2026-09-23 change swept five stale pins in four files and reported each one loudly, so the sweep looked complete. It could not report this one: an unread value cannot be reported stale by anything, which is why it was the sixth and was found by reading rather than by a control.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "closed for this table. The general shape -- a hand-written claim structure whose values nothing reads -- has no platform sweep and is named in recurrence_open."
+        }
+      ],
+      "recurrence_open": "THE GENERAL SHAPE IS UNGUARDED: a hand-written claim table whose values nothing reads is indistinguishable, in source and in review, from one that is checked -- and this platform builds those deliberately, because a derived table agrees with itself. No sweep asks \"is every field of this declared-as-independent structure actually consumed by an assertion\". tools/pinned_list_drift_check.py answers the adjacent question (is this LIST stale against its source) and cannot answer this one. Also still open: the widening direction is now caught for SAIRNcode's override map only. Every other app whose role gates are asserted through a regex-parsed copy of the handler has the same blind spot and was not swept here."
+    },
+    {
+      "commit": "035c1f72a668",
+      "date": "2026-09-25",
+      "subject": "review(tier-a): discharge cc's 2026-09-23 SAIRNcode gate obligation -- the LIVE probe was left asserting a Tier A record could still be destroyed",
+      "files": [
+        "api/sd-data.js",
+        "docs/tier-a-reviews.json",
+        "docs/traceability-matrix.md",
+        "tests/run_sc_tier_a_live_probe_probe.py",
+        "tests/sairncode_gates.js",
+        "tools/sairn_push_gate_hook.py",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "lines_added": 361,
+      "lines_removed": 74,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "api/sd-data.js argued a live authorization decision from a premise that had stopped being true, in two places, one of them inside the override map's own header. The paragraph \"TWO THINGS TO DECIDE AGAINST REAL USE\" said \"the coder's own resource is sc_coded_items, which is NOT gated, so the split is coherent\", and the sc_claims entry in SC_TIER_A_WRITE_ROLES_BY_RESOURCE's header said \"sc_coded_items, is ungated and that is their real job\" -- both the stated GROUNDS for excluding `coder` from sc_claims. 5c781b99 re-tiered sc_coded_items A on 2026-09-23 because the row carries a verbatim quote from a clinical note, so it has required a real employee session since then. The CONCLUSION still holds and the REASON does not: what keeps coders on their own resource is now a named exception in that same map, which is a stronger footing than an absent gate but not the same one. The same \"UNGATED\" wording was in tools/sc_tier_a_write_gate_live_probe.py's docstring, where it sat directly above the two arms that had gone self-contradictory for exactly this reason. Not cosmetic: the next session asked to widen or narrow sc_claims reads that paragraph, and it argues from a fact about the codebase that is false. Corrected in all three places, with the old wording and its date kept rather than deleted, so a reader can see the argument moved rather than finding a clean comment that was never wrong.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "5c781b99094e",
+        "date": "2026-09-23",
+        "subject": "fix(sairncode): SIXTEEN Tier A resources were writable on the licence key alone and hard-deletable, for eight days",
+        "lag_days": 2
+      },
+      "contributing_factors": [
+        {
+          "factor": "The comment stating the grounds for the sc_claims decision lives beside the sc_claims entry, and the fact it depends on is about a DIFFERENT resource in the same map. A tier change to sc_coded_items has no reason to make anybody read the sc_claims paragraph, and nothing links them.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "both passages now name the override that carries the argument, so the dependency is explicit at both ends and a reader editing the override sees what rests on it."
+        },
+        {
+          "factor": "The 2026-09-23 change added the sc_coded_items override and wrote a correct new paragraph explaining it -- three paragraphs below the two that contradicted it. Adding the right prose beside the change is not the same as re-reading the prose the change falsified, and reviewing a diff shows the added lines rather than the unchanged ones they now conflict with.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "found by reading the whole comment block rather than the diff, while discharging the review obligation for that commit -- which is what independent review is for and is why the obligation existed."
+        },
+        {
+          "factor": "No checker on this platform compares a claim made in a comment against the code in the same file. Rule 2.3 ('a fact with a tense needs a read') is a discipline, not a gate, and comment_sensitivity_check.py answers a different question.",
+          "kind": "detection",
+          "action_status": "not-actionable",
+          "note": "A general comment-vs-code checker is not buildable at useful precision -- the claim here is 'resource X is not gated', which requires understanding which construct gates. What IS buildable and is named in recurrence_open is much narrower: the specific resource names appearing in SC_TIER_A_WRITE_ROLES_BY_RESOURCE's own header block could be checked against the map's keys and against the Tier A list."
+        }
+      ],
+      "recurrence_open": "NOTHING GUARDS IT AND THE NARROW VERSION IS NOT BUILT. A checker could assert that every sc_ resource NAMED in SC_TIER_A_WRITE_ROLES_BY_RESOURCE's header block is described consistently with the map's keys and the Tier A list -- that specific, bounded check would have caught this the day it broke. It is not built, and a general comment-vs-code checker is not worth building. So the standing situation is unchanged: a tier promotion still falsifies prose in api/sd-data.js silently, and the only thing that finds it is somebody reading the whole block during an independent review rather than reading the diff. The three corrected passages are corrected; the fourth one nobody has read yet is not."
+    },
+    {
       "commit": "094aed1fa42f",
       "date": "2026-09-25",
       "subject": "fix(sairnscape): the two Tier A rows stop answering on the licence key alone",
