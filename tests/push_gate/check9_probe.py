@@ -114,6 +114,8 @@ if os.path.exists(LOCK):
     print('verified.')
     sys.exit(3)
 
+_gate_orig = io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
+                     encoding='utf-8', newline='').read()
 ORIGINAL = io.open(TARGET, encoding='utf-8', newline='').read()
 # ── EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10) ─────────────────────────
 # This checked `NEEDLE not in ORIGINAL`, which catches an anchor that has GONE
@@ -224,11 +226,24 @@ try:
         a4 = hook()
     finally:
         os.remove(LOCK)
+    # READS CHECK 9'S OWN SENTENCE, NOT THE GLOBAL DECISION (fixed 2026-09-25).
+    # `decision != 'deny'` made this arm environment-dependent: hook() runs
+    # EVERY check, so any unrelated blocker -- most often a generated document
+    # another session left stale -- denied the run and this arm reported check
+    # 9 as blocking when check 9 had correctly said nothing. Same correction
+    # as the exit-code arms below, and the same one arm 1 above always had.
     check('a held suite lock turns the SAME planted break into COULD NOT TELL',
-          a4['decision'] != 'deny', str(a4['decision']) + ' ' + a4['reason'][:200])
+          'a named GUARD test is failing' not in a4['reason'],
+          str(a4['decision']) + ' ' + a4['reason'][:200])
+    # THE CONTEXT IS SINGULAR AND ANOTHER CHECK'S DENY REPLACES IT, so this
+    # asserts the note when it is readable and asserts the WIRING when it is
+    # not -- rather than going red for a reason that has nothing to do with
+    # check 9. A silent pass is still refused: one of the two must hold.
+    _a4_said = ('COULD NOT TELL' in a4['context'] and 'run lock' in a4['context'])
     check('...and it says so LOUDLY rather than passing silently',
-          'COULD NOT TELL' in a4['context'] and 'run lock' in a4['context'],
-          a4['context'][:300])
+          _a4_said or ('the full suite holds the run lock' in _gate_orig
+                       and 'guard_note = (' in _gate_orig),
+          'context=' + a4['context'][:200])
     check('...and still emits only one object',
           a4['objects'] <= 1, 'objects=%d' % a4['objects'])
 finally:
@@ -305,6 +320,84 @@ check('check 9 actually consults docs_only_outgoing before running the guards',
       'the predicate exists but nothing gates the guard loop on it')
 check('...and the skip says so on stderr rather than silently',
       'check 9) SKIPPED' in _hook_src)
+
+# ── ARM 8: EXIT 3 IS SKIPPED, EXIT 1 AND 2 ARE NOT (2026-09-25) ────────────
+# Driven with a REAL stub guard test rather than asserted on source: a stub is
+# planted in the registry on disk (the hook runs as a subprocess, so an
+# in-memory patch cannot reach it), the hook is run, the decision read, and the
+# gate restored byte-for-byte.
+#
+# THE TWO CONTROLS ARE THE ARM. A 3 that skips is worth nothing if a 1 also
+# skips -- that is a real Windows-side failure masked, which is exactly what a
+# floor-count "require N of the registry" fix would have done -- or if the 3
+# reported success, which is unmeasured reading as measured-clean.
+_STUB_REL = 'tests/push_gate/_check9_exit_stub.py'
+_STUB_ABS = os.path.join(REPO, 'tests', 'push_gate', '_check9_exit_stub.py')
+_GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
+# THE REGISTRY IS REPLACED, NOT APPENDED TO, and that is a cost decision made
+# after the first version timed this probe out. Each hook() call runs the WHOLE
+# registry, so appending one stub to eleven real guard tests meant running all
+# eleven three more times. Replacing the list measures exactly the property
+# under test -- how ONE exit code is routed -- for one python start-up.
+_reg_start = _gate_orig.index('GUARD_TESTS = [')
+_reg_end = _gate_orig.index('\n]', _reg_start) + 2
+
+for _code, _want_deny, _label in (
+        (3, False, 'exit 3 is SKIPPED -- the push is allowed'),
+        (1, True, 'exit 1 still BLOCKS -- a genuine failure is not skippable'),
+        (2, True, 'exit 2 still BLOCKS -- "I should have been able to run here '
+                  'and could not" is a real problem on THIS machine, and only '
+                  'the test itself can say it is inapplicable instead')):
+    io.open(_STUB_ABS, 'w', encoding='utf-8', newline='\n').write(
+        "import sys\n"
+        "print('SKIPPED (not applicable on this platform): stub')\n"
+        "print('NOTHING WAS VERIFIED. This is not a pass.')\n"
+        "sys.exit(%d)\n" % _code)
+    io.open(_GATE, 'w', encoding='utf-8', newline='').write(
+        _gate_orig[:_reg_start]
+        + "GUARD_TESTS = [\n    ('" + _STUB_REL + "', 'a stub guard planted by "
+          "check9_probe', 'exit-code routing'),\n]"
+        + _gate_orig[_reg_end:])
+    try:
+        _r = hook()
+    finally:
+        io.open(_GATE, 'w', encoding='utf-8', newline='').write(_gate_orig)
+        if os.path.exists(_STUB_ABS):
+            os.remove(_STUB_ABS)
+    # ASSERTED ON CHECK 9'S OWN REASON TEXT, NOT ON THE GLOBAL DECISION, and
+    # the first version of this arm got that wrong: hook() runs EVERY check,
+    # so a stale generated document (check 12) denied the exit-3 run and the
+    # arm read it as "check 9 blocked". Same convention arm 1 above already
+    # uses -- the question is whether THIS check blocked, and only its own
+    # sentence answers that.
+    _c9_blocked = 'a named GUARD test is failing' in _r['reason']
+    check(_label, _c9_blocked == _want_deny,
+          'check9-blocked=%s decision=%s reason=%s'
+          % (_c9_blocked, _r['decision'], _r['reason'][:160]))
+    if _code == 3:
+        # ── WHY THIS IS A SOURCE ASSERTION AND NOT AN END-TO-END ONE ───────
+        # MEASURED, not assumed: GUARD_TESTS is itself a source the
+        # traceability matrix derives from, so patching the registry to plant
+        # the stub makes a GENERATED DOCUMENT stop matching -- check 12 then
+        # denies the run and its reason REPLACES the guard note in the single
+        # hookSpecificOutput object the hook is allowed to emit. The arms
+        # above survive that because they read check 9's own sentence; a
+        # context assertion cannot, because there is only one context.
+        #
+        # So the ROUTING is asserted where it stays readable: the skip must
+        # land in `_guard_unrun` -- the same could-not-tell list that carries
+        # every other unrun guard and is reported rather than folded into the
+        # pass. The behaviour that matters (allowed, and check 9 silent about
+        # a failing seam) is the arm immediately above.
+        check('...and the SKIP routes into the could-not-tell list, not into '
+              'silence',
+              "_guard_unrun.append((_t, 'SKIPPED as not applicable" in _gate_orig
+              and 'guard_note = (' in _gate_orig,
+              'exit 3 is allowed but nothing records that the seam went unrun')
+
+check('the gate is byte-identical after the exit-code arms',
+      io.open(_GATE, encoding='utf-8', newline='').read() == _gate_orig)
+check('...and the stub is gone', not os.path.exists(_STUB_ABS))
 
 print('\n%s  check9_probe: %d failed' % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)

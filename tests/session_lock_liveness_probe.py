@@ -41,8 +41,32 @@ that denied for some unrelated reason would look identical.
 
 Exit 0 when every arm holds, 1 when one does not, 2 when the probe could not
 set itself up -- which means nothing was tested.
+
+── AND 3 WHEN THIS PLATFORM CANNOT HOST THE PROBE AT ALL (2026-09-25) ────────
+THREE STATES, NOT TWO, AND THE THIRD IS NOT A PASS EITHER. The liveness
+backend under test is `tools/session_lock_check.py`'s Windows process-start-time
+signature -- kernel32 OpenProcess/GetProcessTimes via ctypes, with a PowerShell
+.ToFileTime() second opinion. Neither exists on Linux. On the cloud lane this
+probe therefore exited 2 COULD NOT TEST, push-gate check 9 read every nonzero
+exit as a FAILING SEAM, and every cloud push touching code was denied behind an
+override the auto-mode classifier correctly refuses.
+
+2 AND 3 ARE DIFFERENT FACTS AND COLLAPSING THEM WAS THE DEFECT:
+  2 = "I should have been able to run here and could not"  -- a real problem
+      on THIS machine, which must keep blocking.
+  3 = "this arm does not apply to this platform"           -- nothing is
+      wrong, and nothing was verified either.
+
+WHAT 3 MUST NOT BECOME. It is not exit 0. A skip that reports success is the
+unmeasured-reads-as-measured-clean failure this repo has now paid for three
+times; the skip prints what it did not check and why, every run. And check 9
+does not LOWER a required count to accommodate it -- a floor count would mask
+a genuine Windows-side FAILURE of this same probe identically, which is the
+zero-checkable-of-N shape. Check 9 removes this probe from the required set
+for THAT RUN ONLY, by exit code, and says so on stderr.
 """
 import contextlib
+import ctypes
 import importlib.util
 import io
 import json
@@ -54,6 +78,45 @@ import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REAL_TOOL = os.path.join(REPO, 'tools', 'session_lock_check.py')
+
+# ── EXIT 3: NOT APPLICABLE ON THIS PLATFORM ────────────────────────────────
+# Named rather than inlined so tools/sairn_push_gate_hook.py can refer to the
+# same number, and so grepping for the constant finds both ends of the
+# contract. See the header for why 3 is neither 0 nor 2.
+EXIT_SKIPPED = 3
+
+
+def skip_not_applicable(why):
+    """Say what was NOT checked, then exit 3. Never exit 0.
+
+    The message is deliberately in the same voice as refuse(): a reader
+    skimming output must not be able to mistake this for a pass, because the
+    whole defect class this repo keeps paying for is unmeasured reading as
+    measured-clean.
+    """
+    print('SKIPPED (not applicable on this platform): ' + why)
+    print('NOTHING ABOUT THE SESSION LOCK WAS VERIFIED HERE. This is not a')
+    print('pass and must not be counted as one -- the liveness verdict, the')
+    print('pid-recycling arm and the UNKNOWN fallback are all unchecked on')
+    print('this run. Run this probe on Windows to get a real answer.')
+    sys.exit(EXIT_SKIPPED)
+
+
+# THE GATE ITSELF. Checked against the BACKEND's requirement, not against a
+# guess about the runner: session_lock_check's start-time signature is
+# kernel32 OpenProcess/GetProcessTimes through ctypes.WinDLL plus a PowerShell
+# second opinion, and `ctypes.WinDLL` does not exist off Windows. Asking for
+# the attribute is a stronger test than comparing sys.platform, because it
+# fails the same way the subject would rather than by a string somebody may
+# rename -- and it would correctly refuse on a Windows Python built without
+# it, which a platform string cannot see.
+if not hasattr(ctypes, 'WinDLL'):
+    skip_not_applicable(
+        'tools/session_lock_check.py reads a process start-time signature '
+        'through kernel32 (ctypes.WinDLL OpenProcess/GetProcessTimes) with a '
+        'PowerShell .ToFileTime() second opinion. Neither exists here '
+        '(sys.platform=%s), so the arms have no subject to drive -- this is '
+        'inapplicability, not failure.' % sys.platform)
 
 failures = []
 arms = 0

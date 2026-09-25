@@ -1661,6 +1661,36 @@ def main():
             except Exception as _e:
                 _guard_unrun.append((_t, '%s: %s' % (type(_e).__name__, _e)))
                 continue
+            # ── EXIT 3 IS "NOT APPLICABLE HERE", AND IT IS NOT A PASS ──
+            # Added 2026-09-25 with tests/session_lock_liveness_probe.py's
+            # EXIT_SKIPPED. That probe drives a Windows process-start-time
+            # signature (kernel32 via ctypes) that does not exist on Linux, so
+            # on the cloud lane it exited 2 and THIS LOOP READ EVERY NONZERO
+            # EXIT AS A FAILING SEAM -- denying every cloud push that touched
+            # code, behind an override the auto-mode classifier correctly
+            # refuses.
+            #
+            # THREE STATES, AND THE FIX IS PER-RUN AND PER-TEST, NOT A FLOOR.
+            # The tempting shape -- "require at least N of the registry to
+            # pass" -- would mask a genuine WINDOWS-SIDE FAILURE of this same
+            # probe identically, because a floor cannot tell which member is
+            # missing or why. That is the zero-checkable-of-N shape. So a 3
+            # removes THAT ONE TEST from the required set for THAT ONE RUN,
+            # by its own exit code, and the removal is reported in the same
+            # could-not-tell channel as every other unrun guard -- never
+            # folded into the pass.
+            #
+            # 2 STILL BLOCKS. "I should have been able to run here and could
+            # not" is a real problem on this machine; only "this does not
+            # apply to this platform" is skippable, and only the test itself
+            # can say which it is.
+            if _r.returncode == 3:
+                _skip_out = ((_r.stdout or '') + (_r.stderr or '')).strip().splitlines()
+                _skip_why = next((l.strip() for l in _skip_out
+                                  if l.strip().startswith('SKIPPED')), 'exit 3')
+                _guard_unrun.append((_t, 'SKIPPED as not applicable on this '
+                                         'platform -- ' + _skip_why[:300]))
+                continue
             if _r.returncode != 0:
                 _out = ((_r.stdout or '') + (_r.stderr or '')).strip().splitlines()
                 _guard_fail.append((_t, _guards, _why,
