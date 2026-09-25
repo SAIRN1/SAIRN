@@ -2958,6 +2958,17 @@
         "tests/run_review_gate_validate_probe.py",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "hank-1790346824",
+      "session": "hank",
+      "subject": "hank",
+      "task": "open 10 regfresh proposal PRs, vercel cron collision item 93, review gate hash staleness item 102 part 4, upgrade audit, item 65 lived-in data rubric",
+      "claimed_at": "2026-09-25T14:33:44Z",
+      "claimed_at_epoch": 1790346824.5962458,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
