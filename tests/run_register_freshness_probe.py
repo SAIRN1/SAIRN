@@ -21,6 +21,8 @@ import sys
 import tempfile
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import register_freshness_check as S    # noqa: E402
 TOOL = os.path.join(REPO, 'tools', 'register_freshness_check.py')
 
 fails = []
@@ -104,6 +106,51 @@ rc, out = run_in(make_tree(6, tiers_row=ROW_OK, reviews={'records': [
 check('a prose sha that does not resolve is exit 1 (this fixture tree is not '
       'a git repo, so ANY sha fails -- which is the point being driven)',
       rc == 1 and 'deadbeef99' in out, 'rc=%s' % rc)
+
+
+# ── THE DEAD-FUNCTION ARM, AND THE HOUR IT WAS BLIND (2026-09-25) ───────────
+# check_dead_functions() reports a cell naming a function that exists in NONE
+# of the files it cites. Its exclusion asks "does this name exist anywhere in
+# the app sources" so a cross-app precedent (`sbThreeWayMatch`, real, in
+# sairnbiz.html, cited by bld_deliveries) is not reported.
+#
+# THE FIRST VERSION SEARCHED EVERY TRACKED .py TOO -- INCLUDING ITS OWN
+# SOURCE -- and its comment block names `saveTimeEntry()` as the defect it
+# was built to catch. So the check was SILENT on the exact case it exists
+# for: the documentation of a dead function kept that function alive. Found
+# by an adversarial pass planting names through it, not by review. These arms
+# drive the planted cases so it cannot go blind that way again.
+def dead_function_arm():
+    pc = {}
+    known = {'sdn_timeentries', 'bld_deliveries'}
+
+    def reports(ev):
+        return bool(S.check_dead_functions('fx', ev, pc, known))
+
+    check('THE ORIGINAL DEFECT: a cell naming `saveTimeEntry()` -- renamed to '
+          'saveTime() -- REPORTS. The tool\'s own docstring names it, and for '
+          'an hour that kept it alive',
+          reports("`saveTimeEntry()` at `sairndesign.html:10`"))
+    check('a name that exists NOWHERE at all reports',
+          reports("`definitelyNotARealFunctionXyz()` at `sairndesign.html:10`"))
+    check('CONTROL: the REAL function in that file is silent -- else the arm '
+          'above passes by reporting everything',
+          not reports("`saveTime()` at `sairndesign.html:10`"))
+    check('CONTROL: a cross-app precedent is silent, which is the whole '
+          'reason the exclusion exists',
+          not reports("`sbThreeWayMatch()` at `sairndesign.html:10`"))
+    check('a snake_case name written with () still reports -- the '
+          'function-shape narrowing is about the CALL form, not only camelCase',
+          reports("`save_time_entry()` at `sairndesign.html:10`"))
+    check('a registered RESOURCE name is never treated as a function',
+          not reports("`sdn_timeentries` at `sairndesign.html:10`"))
+    check('THE SELF-REFERENCE GUARD: the exclusion does not search tools/ or '
+          'tests/, so a tool naming a function in prose cannot keep it alive',
+          not S._exists_anywhere('definitelyNotARealFunctionXyz')
+          and S._exists_anywhere('saveTime'))
+
+
+dead_function_arm()
 
 # ── SABOTAGE: break the comparator, the fixture lock must refuse to judge ────
 src = io.open(TOOL, encoding='utf-8', newline='').read()

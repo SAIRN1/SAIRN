@@ -220,10 +220,26 @@ def _exists_anywhere(name, _memo={}):
     list; excluding it by EXISTENCE means a genuinely dead function -- one
     that exists nowhere at all -- still reports, which is the case this check
     was built for.
+
+    ── AND IT WENT BLIND ON ITS OWN SUBJECT WITHIN THE HOUR (2026-09-25) ────
+    The first version grepped every tracked .html/.js/.py, which includes
+    THIS FILE -- and this file's comment block names `saveTimeEntry()` as the
+    defect it was built to catch. So the check was silent on the exact case
+    it exists for: the documentation of a dead function kept that function
+    alive. Found by an adversarial pass driving planted names through it, not
+    by review, and it is the self-reference trap this repo has now recorded
+    three times (the `--self-check` regex, the never-merges fixture arm, and
+    this).
+
+    So the search is scoped to what a citation could legitimately mean: APP
+    AND API SOURCES. tools/ and tests/ are excluded because a tool naming a
+    function in prose is not that function existing, and a register cell
+    never cites a tool as the home of an app function.
     """
     if name not in _memo:
         r = subprocess.run(['git', 'grep', '-l', '-w', '--', name,
-                            '--', '*.html', '*.js', '*.py'], cwd=REPO,
+                            '--', '*.html', 'api/*.js', 'api/_lib/*.js',
+                            'api/_resources/*.js'], cwd=REPO,
                            capture_output=True, text=True, encoding='utf-8',
                            errors='replace')
         _memo[name] = bool((r.stdout or '').strip())
