@@ -15,7 +15,17 @@
  *   3. Paste this whole file. It returns immediately and runs in the
  *      background; poll `SCT.report()` until `SCT.running` is false.
  *
- * ── THE TAB MUST STAY FOREGROUND, AND HERE IS WHY ────────────────────────
+ * ── THE FOREGROUND RULE IS RETIRED (2026-09-25) -- READ THIS FIRST ───────
+ * Step 2 below and the section under it describe the OLD contract and are kept
+ * because they are the record of why the driver looked the way it did. The
+ * throttling they describe is real and was re-measured on 2026-09-25 (a 50 ms
+ * timer taking 517 ms in an unfocused tab). What changed is that the driver no
+ * longer RACES it: every wait is quiescence-polled rather than a fixed 320 ms,
+ * so a clamped tab lengthens the sweep and cannot manufacture a blank panel.
+ * Keep the tab foreground if you can -- it is faster -- but a hidden run is
+ * now usable, and `timerClampMs` in the report says which kind you got.
+ *
+ * ── THE TAB MUST STAY FOREGROUND, AND HERE IS WHY (HISTORICAL) ───────────
  * Chrome throttles setTimeout in a hidden tab to roughly nothing. StoneDesk's
  * sbNav() puts EVERY panel's render hook inside a setTimeout, so a hidden tab
  * never renders any panel body. The first run of this driver was done hidden
@@ -48,6 +58,16 @@
  *      `svRenderAccess()` writes "Loading sign-ins..." and then fills the
  *      table from a real `/api/sv-auth` round trip, which takes longer than
  *      the 320ms wait, so what got measured was the placeholder.
+ *
+ *      SUPERSEDED 2026-09-25 -- THE FIXED WAIT IS GONE ENTIRELY. Lessons 4 and
+ *      the foreground rule above were both symptoms of one defect: a CONSTANT
+ *      racing a render. Waits are quiescence-polled now (sample until the
+ *      panel's chars/ctrls are identical three reads running, ceiling 6s), so
+ *      a throttled tab makes the sweep SLOWER rather than WRONG, and the tab
+ *      no longer has to be babysat. A panel that never goes quiet lands in
+ *      COULD_NOT_SETTLE and is excluded from the blank finding: "still
+ *      rendering when I gave up" and "renders nothing" are different facts.
+ *      The measured clamp is reported as timerClampMs on every run.
  *
  *      THE TRAP IS THE SECOND PASS, not the first. Re-running the driver
  *      reproduced 0 controls EXACTLY -- which reads as confirmation and is
@@ -148,6 +168,80 @@
                     chars, ctrls, missing, threw, errs: SCT.errors.slice(before) });
   }
 
+  // ── THE FIXED WAIT IS GONE. IT WAS A GUESS RACING A RENDER (2026-09-25) ──
+  // 320ms was tuned on a FOREGROUND tab. Chrome clamps setTimeout in a hidden
+  // or unfocused tab to roughly one per second, and the render hooks this is
+  // waiting for are THEMSELVES setTimeout(0) -- so in a throttled tab the wait
+  // and the thing it waits for are clamped together and the wait loses. That
+  // produced 67 uniform, plausible, entirely false blank-panel findings on the
+  // driver's first run, and it is why the tab had to be babysat in the
+  // foreground ever since.
+  //
+  // A FIXED WAIT CANNOT BE RIGHT. Too short and a slow panel reads blank; too
+  // long and a 67-panel sweep takes minutes for no gain -- and neither number
+  // is knowable in advance, because it depends on the tab's focus state, the
+  // machine, and whether the panel fetches. So do not guess: MEASURE WHEN THE
+  // PANEL STOPPED CHANGING.
+  //
+  // QUIESCENCE, NOT A DEADLINE. Sample (chars, ctrls) repeatedly; a panel is
+  // settled when the pair is IDENTICAL for QUIET_SAMPLES consecutive reads.
+  // A throttled tab then simply takes longer -- it cannot produce a false
+  // blank, because a blank that is still changing is not yet quiet.
+  //
+  // AND THE CEILING IS A THIRD STATE, NOT A VERDICT. If a panel never goes
+  // quiet within SETTLE_CEILING_MS the row is marked `settled:false` and is
+  // EXCLUDED from the blank finding rather than counted as blank -- "still
+  // rendering when I gave up" and "renders nothing" are different facts, and
+  // folding one into the other is how this detector lied the first time.
+  // ── POLLING WAS NOT ENOUGH, AND RUNNING IT SAID SO (2026-09-25) ────────
+  // The first version of this fix replaced the fixed 320ms wait with a
+  // setTimeout POLL: sample until the panel's chars/ctrls repeat, ceiling 6s.
+  // Correct in principle and useless in practice, MEASURED on SAIRNbiz with
+  // the tab hidden: `settleMs` came back at 51,996 for a 6,000 ceiling.
+  //
+  // WHY, AND IT IS THE SAME DEFECT ONE LEVEL UP: the ceiling is only CHECKED
+  // when a poll fires, and the poll is itself a setTimeout. Chrome clamps
+  // chained timers in a hidden tab progressively -- measured 668ms here early
+  // on and far worse after a few minutes -- so a 6s ceiling enforced by a
+  // clamped timer is not a 6s ceiling. I had replaced a constant that raced a
+  // render with a ceiling that raced the same clock.
+  //
+  // MutationObserver IS THE PRIMITIVE THAT IS NOT THROTTLED. It fires on DOM
+  // mutation regardless of visibility, so the panel itself tells us when it
+  // changed instead of us asking on a clock we do not control. ONE clamped
+  // timer is still needed for "nothing has happened for a while" -- there is
+  // no unthrottled way to observe an absence -- but one is affordable where
+  // three-plus polls were not, and a wall-clock ceiling is enforced on the
+  // mutation callback too so a panel that never stops mutating still ends.
+  const QUIET_MS = 250;           // requested; clamped, and that is fine
+  const SETTLE_CEILING_MS = 8000; // wall-clock, checked on every mutation
+
+  function whenQuiet(arg, done) {
+    const t0 = Date.now();
+    const el = resolve(arg);
+    if (!el) return done({ settled: true, ms: 0 });
+    let timer = null, obs = null, finished = false;
+    const finish = (settled) => {
+      if (finished) return;
+      finished = true;
+      if (timer) clearTimeout(timer);
+      if (obs) obs.disconnect();
+      done({ settled: settled, ms: Date.now() - t0 });
+    };
+    const arm = () => { if (timer) clearTimeout(timer); timer = setTimeout(() => finish(true), QUIET_MS); };
+    try {
+      obs = new MutationObserver(() => {
+        // THE CEILING LIVES HERE, not only on the timer: a panel mutating
+        // forever (a clock, a poller) would otherwise re-arm the quiet timer
+        // for ever and this control would never return.
+        if (Date.now() - t0 >= SETTLE_CEILING_MS) return finish(false);
+        arm();
+      });
+      obs.observe(el, { childList: true, subtree: true, characterData: true, attributes: true });
+    } catch (e) { return done({ settled: true, ms: Date.now() - t0 }); }
+    arm();
+  }
+
   (function tick() {
     if (SCT.i >= SCT.controls.length) { SCT.running = false; return; }
     const { el, arg } = SCT.controls[SCT.i];
@@ -155,9 +249,13 @@
     const before = SCT.errors.length;
     let threw = null;
     try { el.click(); } catch (e) { threw = String((e && e.message) || e); }
-    // 320ms: sbNav's render hooks are themselves in a setTimeout(0), and some
-    // renders chain a second one. Shorter reported blank panels that were not.
-    setTimeout(() => { record(arg, label, before, threw); SCT.i++; setTimeout(tick, 15); }, 320);
+    whenQuiet(arg, (q) => {
+      record(arg, label, before, threw);
+      const row = SCT.rows[SCT.rows.length - 1];
+      if (row) { row.settled = q.settled; row.settleMs = q.ms; }
+      SCT.i++;
+      setTimeout(tick, 15);
+    });
   })();
 
   // Lesson 4. Run AFTER the driver finishes, and believe this over report()'s
@@ -189,17 +287,42 @@
 
   SCT.report = function () {
     const r = SCT.rows;
+    // ── THE TIMER CLAMP IS MEASURED AND REPORTED, NOT INFERRED FROM FOCUS ──
+    // `visibilityState` was recorded so a throttled run could be thrown away.
+    // With quiescence polling a throttled run is SURVIVABLE, so what a reader
+    // needs is not the flag but the FACT: how much slower timers actually ran.
+    // SCT.clampMs is measured once at start-up; well above the requested 50ms
+    // means the tab was throttled and the sweep simply took longer.
+    const unsettled = r.filter(x => x.settled === false).map(x => x.arg + ' gave-up-after=' + x.settleMs + 'ms');
     return {
       navFn: NAV_FN,
-      visibility: document.visibilityState,      // 'hidden' invalidates the run
+      visibility: document.visibilityState,
+      hasFocus: (typeof document.hasFocus === 'function') ? document.hasFocus() : null,
+      timerClampMs: SCT.clampMs,                 // requested 50; >400 means throttled
       running: SCT.running,
       driven: r.length, navControls: SCT.controls.length,
+      // NOT A FINDING, AND KEPT OUT OF F2 DELIBERATELY: a panel that was still
+      // changing when the ceiling hit is "I gave up watching", not "it renders
+      // nothing". Folding the two is exactly how this detector lied the first
+      // time it ran.
+      COULD_NOT_SETTLE: unsettled,
       F1_nav_dead: r.filter(x => !x.vis).map(x => x.arg + (x.exists ? ' [exists,hidden]' : ' [NO ELEMENT]')),
-      F2_blank: r.filter(x => x.vis && x.chars < 40).map(x => x.arg + ' chars=' + x.chars + ' ctrls=' + x.ctrls),
+      F2_blank: r.filter(x => x.vis && x.settled !== false && x.chars < 40).map(x => x.arg + ' chars=' + x.chars + ' ctrls=' + x.ctrls),
       F3_threw: r.filter(x => x.threw || x.errs.length).map(x => ({ id: x.arg, threw: x.threw, errs: x.errs.slice(0, 3) })),
       F4_handler_gone: r.filter(x => x.missing.length).map(x => x.arg + ': ' + x.missing.join(',')),
       totalErrors: SCT.errors.length
     };
   };
-  return 'started: ' + SCT.controls.length + ' ' + NAV_FN + '() controls, visibility=' + document.visibilityState;
+  // Measure the clamp once, at start-up, so every report can state it as a
+  // fact rather than leaving a reader to infer it from the focus flag.
+  SCT.clampMs = null;
+  (function () {
+    const t0 = Date.now();
+    setTimeout(() => { SCT.clampMs = Date.now() - t0; }, 50);
+  })();
+  return 'started: ' + SCT.controls.length + ' ' + NAV_FN
+       + '() controls, visibility=' + document.visibilityState
+       + ' -- a hidden tab no longer invalidates the run: waits are quiescence'
+       + '-polled, so throttling makes it SLOWER, not wrong. Read timerClampMs'
+       + ' and COULD_NOT_SETTLE in report().';
 })()
