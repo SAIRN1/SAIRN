@@ -4804,6 +4804,30 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     } catch(e) { _sdBase = ''; _sdCtx = null; }
     var _sdGuard='You are the AI assistant for StoneDesk, a stone fabrication shop management platform. Be concise, practical, and industry-specific. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
     var sys = _sdBase ? (_sdBase + '\n\n' + _sdGuard) : _sdGuard;
+    // ── THE READ HALF, MOVED TO THE PATH THAT RUNS (2026-09-25) ───────────
+    // The WRITE half was already moved here -- see the line below and its
+    // comment. The READ half was not, and stayed in the patched
+    // `window.sendMessage` at :30670, whose third line is
+    // `getElementById('userInput')` with an early return. THAT ID DOES NOT
+    // EXIST ANYWHERE IN THIS FILE: zero as `id="userInput"`, zero as
+    // `id='userInput'`, zero built via setAttribute or `.id =`. So that
+    // function returns before reaching the fold, every call, for every
+    // caller.
+    //
+    // WHAT THAT COST, and it is the shape worth naming: loadNetworkIntelligence()
+    // fires on every page load and really does fetch, so the GET was live, the
+    // cache was written, and `window._sairnNetIntel` was populated -- and its
+    // ONLY consumer was inside the dead function. A feature that fetches on
+    // every load and can never use what it fetched looks identical from the
+    // network tab to one that works.
+    try {
+      if (window._sairnNetIntel && window._sairnNetIntel.insights
+          && window._sairnNetIntel.insights.length) {
+        sys += '\n\nSAIRN NETWORK INTELLIGENCE (anonymized patterns from other '
+             + 'stonedesk installs): '
+             + window._sairnNetIntel.insights.slice(0, 5).join(' | ');
+      }
+    } catch(e) {}
     // Fire the extraction trigger from the path that actually runs. The
     // server half is already correct and is untouched.
     try { if (typeof sendNetworkInsight === 'function') sendNetworkInsight('feature_usage', 'ai_chat_message_sent'); } catch(e) {}

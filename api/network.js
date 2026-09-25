@@ -15,6 +15,28 @@
 // session, and guessing wrong risks writing into someone else's system.
 // Flagged here for a human to check; this migration builds new instead.
 //
+// ── THAT DEAD-CODE FINDING IS HALF-CLOSED, AND THE HALVES MOVED IN
+//    OPPOSITE DIRECTIONS (re-verified from repo state 2026-09-25) ─────────
+// WRITE: CLOSED. sendNetworkInsight() is called from the LIVE chat path
+//   (stonedesk.html:4809, inside sdAISend) and from :30699. The paragraph
+//   below saying it "never actually fires in real usage today" is TRUE AS
+//   WRITTEN and false now; it is kept because it is the record of why this
+//   endpoint was built anyway.
+// READ: was STILL DEAD until 2026-09-25, exactly as described. #userInput
+//   does not exist in stonedesk.html in any spelling (measured: 0 as
+//   id="...", 0 as id='...', 0 via setAttribute, 0 via .id =), so the
+//   patched window.sendMessage returned on its third line every call and
+//   the ONLY consumer of window._sairnNetIntel sat inside it. The GET fired
+//   on every page load and its result could never be used -- which from the
+//   network tab is indistinguishable from a feature that works. The fold is
+//   now in the live path beside the write.
+// LIVE-VERIFIED the same day: GET /api/network?app=stonedesk -> 200
+//   {"ok":true,"insights":[]}; POST -> 200 {"ok":true}; network_insights is
+//   present in db/schema_snapshot.json. The EMPTY insights array is correct
+//   rather than broken -- MIN_OCCURRENCES is 3 within LOOKBACK_DAYS 30 and
+//   the table has not reached it -- but it does mean this feature has never
+//   yet produced output for a user.
+//
 // DEAD-CODE FINDING (report this, don't silently fix or silently ignore):
 // the only POST call site, sendNetworkInsight() (stonedesk.html:21921), is
 // only ever invoked from inside window.sendMessage's DOMContentLoaded

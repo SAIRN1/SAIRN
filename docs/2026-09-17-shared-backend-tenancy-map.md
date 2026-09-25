@@ -82,9 +82,15 @@ here so nobody proposes the shared breaker for row 1 as an improvement.
   named from the code, not measured against the live database, and nothing here
   says which shared row is actually hot.
 - **Storage and egress quotas.** No per-tenant accounting exists to read.
-- **The SAIRN Intelligence Network's shared key**, flagged elsewhere as a SPOF:
-  it is not in this repository's `api/` surface, so it is named and not mapped.
-  Whoever holds it should append a row rather than leave the absence looking
-  like an all-clear.
+- **The SAIRN Intelligence Network's shared key**, flagged elsewhere as a SPOF.
+  **CORRECTED 2026-09-25: the sentence here said "it is not in this
+  repository's `api/` surface", and that is false.** `api/network.js` exists
+  and has since 2026-08-01 (`8c7d2e7d`); its schema is `sql/network_schema.sql`
+  and `network_insights` is present in `db/schema_snapshot.json`, so the table
+  is live. What IS true and was the real point: the endpoint is **cross-tenant
+  by design** -- it aggregates every install sharing an `app_id`, keyed on the
+  same SUPABASE_SERVICE_ROLE_KEY as everything else, and the row it would add
+  to the map above is `network_insights` / all shops of one app / no
+  `license_hash` column at all. Mapped now rather than named.
 - **Whether any of this has ever happened.** This is a map of what is POSSIBLE.
   No incident is claimed, and no row here should be read as one.
