@@ -14589,6 +14589,55 @@
       "recurrence_open": "The fix closes the new-branch range for this gate. It closes nothing about the class: no tool on this platform asks whether a gate is PASSABLE on input shapes it has never received, and the other pre-push checks share the same stdin parsing without sharing this function. A gate that cannot be passed is indistinguishable from one that has never been tripped, and only somebody needing the blocked operation will ever find the difference."
     },
     {
+      "commit": "0f57c0dbcbf7",
+      "date": "2026-09-25",
+      "subject": "fix(sv-auth): the bootstrap 409 named a remedy that CANNOT work -- action:setup needs the Owner session a dead licence cannot get",
+      "files": [
+        "api/sv-auth.js",
+        "api/sv-auth.test.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ],
+      "lines_added": 83,
+      "lines_removed": 1,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "api/sv-auth.js's bootstrap refusal named a remedy that cannot work in the exact state that produces the most confusing 409. The message was \"This practice already has employee credentials set up -- use action:setup instead\", and `setup` requires an Owner SESSION. The existence probe feeding that 409 carries NO `active` filter, deliberately, so a licence whose every credential is inactive also gets it -- and that licence has no Owner who can sign in, so it cannot obtain the session `setup` demands. The operator was sent round a loop the API had already closed, with nothing saying so: PR 1.5, the confident line printed after the error. MEASURED rather than reasoned -- on 2026-09-25 SV-PINNACLE-2026/38471260 answered 401 at login and bootstrap answered this 409, and the session chasing it could not tell a wrong PIN from a dead licence, correctly, because login answers 401 identically for a wrong PIN and an unknown employee. THE GATE IS NOT THE DEFECT AND WAS NOT TOUCHED: the no-active-filter probe is what stops anybody holding the browser-readable licence key deactivating their way to a fresh Owner and seizing the practice including its controlled-substance register, and the route that actually creates the dead state was closed the previous day in 7f952aa8. The message now names BOTH remedies -- action:setup if an Owner can still sign in, direct database access if none is active -- and states them conditionally so it does not reveal WHICH case the caller is in, because that would tell an unauthenticated licence-key holder whether the practice is locked out. Two new arms plus a control in api/sv-auth.test.js; the control's second half is structural rather than prose-reading, asserting the existence probe selects no `active` column so the branch cannot know its own state even if the message were rewritten.",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The message has read 'use action:setup instead' since bootstrap was first written for SAIRNvet, so there is no commit that INTRODUCED the wrong sentence -- what changed is that the state it is wrong in became reachable. Dating the injection to the file's creation would produce a discovery lag that describes nothing, and dating it to 7f952aa8's predecessor would assert a cause that commit did not have."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The refusal's remedy and the precondition that remedy needs live in two different branches of the same file. `bootstrap` says 'use action:setup'; `setup`'s first line requires an Owner session. Nothing connected the two, and the connection only fails in a state (zero active credentials) that the probe deliberately treats identically to the ordinary one.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "the message names both remedies and the precondition each needs, so the impossible branch is stated rather than implied."
+        },
+        {
+          "factor": "Every arm covering this refusal asserted the error CODE. `api/sv-auth.test.js` had `assert.ok(SRC.indexOf('ALREADY_PROVISIONED') !== -1)` and nothing read the message string -- so the wording could say anything, including advice that cannot be followed, and the suite stayed green.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "two arms now anchor on the message string itself (action:setup named, database access named, the inactive case named) plus a control that the wording does not disclose which state the caller is in."
+        },
+        {
+          "factor": "The dead state is only reachable through a route that existed until 2026-09-25 (setup upserting role with no sole-Owner demotion guard), so for most of the file's life the message was merely terse rather than wrong. It became wrong the first time a licence actually reached zero active Owners, and nothing re-read the message when that became possible.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the creating route is closed (7f952aa8, lifecycle.soleRoleDemotionRefusal wired into setup). This record is the message half, which that fix did not reach."
+        }
+      ],
+      "recurrence_open": "SIXTEEN OTHER ENDPOINTS STILL CARRY THE SAME SENTENCE and were deliberately not swept -- alf, bld, dnt, grd, law, leg, mech, rf, sb, sc, scp, sd, sdn, sen, sf plus SAIRNveterans, each with its own noun and SAIRNveterans already diverging with \"sign in instead.\" Sixteen wordings, not one find-replace, and byte-identical is not safe-in-context: each needs its own read of whether that app's recovery story is the same one. Filed as an open-work row with the population derived by grep rather than listed. ALSO OPEN, and broader: nothing on this platform checks whether an error message's named remedy is reachable in the state that produced the error. That is the general class and no checker exists for it -- the arms added here are specific to this one refusal. AND THE LIVE HALF IS UNVERIFIED: the new message has not been observed from the deployed function, because SAIRNvet has no working credential to reach it with and the 409 requires a valid licence. The wording is verified only at source."
+    },
+    {
       "commit": "7f952aa8de26",
       "date": "2026-09-25",
       "subject": "fix(sv-auth): setup could demote the last Owner and kill the licence -- the route that made SAIRNvet unrecoverable",
