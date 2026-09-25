@@ -14324,7 +14324,7 @@
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
     },
     {
-      "commit": "11ac1fd38ae0",
+      "commit": "094aed1fa42f",
       "date": "2026-09-25",
       "subject": "fix(sairnscape): the two Tier A rows stop answering on the licence key alone",
       "files": [
