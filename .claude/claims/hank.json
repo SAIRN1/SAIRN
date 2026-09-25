@@ -2944,6 +2944,20 @@
         "tests/run_register_feed_gate_probe.py",
         "tools/register_feed_gate.py"
       ]
+    },
+    {
+      "id": "hank-1790341557",
+      "session": "hank",
+      "subject": "tooling",
+      "task": "tier-a-open-resources explicit --resources on --open so a register-cell judgement can be recorded FILES: tools/tier_a_review_gate.py tests/run_review_gate_validate_probe.py",
+      "claimed_at": "2026-09-25T13:05:57Z",
+      "claimed_at_epoch": 1790341557.5486348,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_review_gate_validate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
