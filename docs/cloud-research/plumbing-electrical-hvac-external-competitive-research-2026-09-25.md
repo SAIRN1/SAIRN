@@ -184,6 +184,86 @@ templates and workflows layered on one shared generic core, not separate
 trade-native products. This matches the original research's central
 conclusion exactly and extends it with a concrete, current example.
 
+### 2.7 A tunnel-vision check: three lenses the FSM/refrigerant-vendor view
+above cannot see, run as a deliberate re-pass
+
+Everything above stays inside one lens — "what does a field-service or
+refrigerant-compliance vendor sell." Re-run through three other lenses
+before treating §2.1–§2.6 as the complete market picture. All three
+produced real, sourced findings; none came back manufactured, and two
+sub-questions inside them came back genuinely negative, reported as such.
+
+**State-level regulatory layer, beyond the two federal rules.** 40 CFR
+82.166 (EPA-608 recordkeeping — technician-cert-on-file, refrigerant-
+invoice retention, 3-year minimum) is confirmed real but is **bundled into
+the same leak-rate-calculator tooling already catalogued in §2.1, not sold
+as a distinct product** — every vendor and comparison source found treats
+recordkeeping as inseparable from the leak-repair threshold. That is a
+negative finding, stated plainly rather than stretched. The one genuinely
+new layer: **California's CARB Refrigerant Management Program (R3)**,
+confirmed directly on `arb.ca.gov`/`rmpr3.arb.ca.gov`, not just a vendor
+claim — registration above 50lb, annual reporting above 200lb due March 1,
+**5-year on-site record retention** (versus EPA's 3), an unrepairable
+leaker must be retrofitted or retired within **6 months** (versus the AIM
+Act's 1 year), enforced independently of EPA with its own penalty
+authority up to $10,000/day. A vendor's own domain (Axiom Cloud) states
+plainly that "AIM Act compliance is not a valid defense under CARB rules"
+— the two regimes layer, they do not substitute for each other. At least
+one already-catalogued vendor (RefriTrak) is now selling state-overlay
+logic naming six states with rules beyond the federal floor (CA, NY, NJ,
+WA, MD active; CT federal-floor-only as of the source), including a named
+NY 2026 sourcing restriction on R-404A/R-507A. **This is the one clean,
+previously unmodeled regulatory tier this re-pass found.**
+
+**Insurance/liability**, checked directly against each of the six FSM
+vendors already surveyed in §2.2: a clean six-for-six negative on EMR
+(experience-modification-rate) and OSHA-recordable tracking — no vendor
+advertises either, on their own domain, in any form. Certificate-of-
+insurance is more interesting for what it reveals than what it builds:
+Housecall Pro sells a real, shipped feature (an embedded Coverdash
+integration) that helps a contractor *buy and show their own* insurance —
+outward-facing, not a tracking system for others' documents. BuildOps'
+own site states its COI/lien-waiver compliance workflow is **"currently
+handled via manual attachments," with automation "planned for future
+releases"** — i.e., BuildOps itself documents that it has not solved
+inbound COI tracking either. The dedicated COI-tracking industry that does
+exist (myCOI, Certificial) is confirmed to operate **entirely outside any
+FSM software stack**, pulling policy data directly from a contractor's
+insurance agent or carrier rather than from field-service software at
+all. Two names in this pass's original research brief (a "Wrangle" and a
+"Cotality" as COI-tracking vendors) do not appear to be real matches for
+this category on the evidence gathered — the real companies under those
+names are an ERISA benefits-compliance firm and a property-insurer claims
+platform respectively — reported as a brief error rather than forced into
+a finding.
+
+**Franchise/multi-location** confirms and adds concrete detail to an
+already-flagged gap rather than discovering a new one. ServiceTitan's
+"Enterprise Hub" (roll-up reporting, shared org-wide configuration,
+centralized contact center) and a separately named Franchise Management
+product are real and vendor-documented; Housecall Pro's multi-location
+model is a parent/child account structure with location-scoped visibility
+and an "account cloning" tool specifically for onboarding new franchisees;
+BuildOps has a named enterprise page with thinner public detail; Service
+Fusion is the clear outlier, its own site saying multi-location support
+"may" work and to contact sales to confirm. **No source, across any
+vendor, surfaced a specific named royalty-reporting feature** — the
+franchise royalty percentages that did surface came from general
+franchise-agreement explainer content, not a product screenshot, so this
+appears to be unconfirmed industry-wide, not a SAIRNmechanical-specific
+absence. On the franchise-brand side: **Authority Brands** (owner of One
+Hour Heating & Air Conditioning, among 15 brands) runs its own proprietary
+Successware platform and discloses a $100/month per-franchisee technology
+fee; separately, ServiceTitan's own 2020 acquisition announcement for
+Servant Systems confirms **Aire Serv, Mr. Rooter, and Mr. Electric** (all
+Neighborly brands) have run on ServiceTitan since 2012. **Correction
+worth flagging plainly**: this pass's own research brief grouped One Hour
+Heating & Air Conditioning together with the Neighborly-family brands —
+that is wrong. One Hour is an Authority Brands franchise on a different,
+proprietary platform; Neighborly and Authority Brands are two separate
+umbrellas mandating two different stacks, not one family. Caught and
+corrected here before it could ship as a factual error.
+
 ---
 
 ## 3. Patent screen — unverified, no conclusion drawn
@@ -294,13 +374,31 @@ carrying forward to any future SAIRN decision about this vertical:
    moving *later* than an earlier pass recorded it (Spain's Verifactu, the
    EU F-Gas certification deadline), so a "not yet" here should not be read
    as permanent.
+4. **A state-level regulatory tier sits on top of the federal picture this
+   platform already models, confirmed directly on the regulator's own
+   domain, not inferred from a vendor** (§2.7): California's CARB R3
+   program is materially stricter than either federal rule SAIRNmechanical
+   carries and is enforced independently, and multiple states beyond
+   California now have HFC rules of their own. Any refrigerant-compliance
+   feature scoped as "federal-only" should carry that as a stated
+   boundary, the same way this platform already states its
+   plumbing/electrical boundary, rather than as a silent gap.
+5. **The FSM peer set has not solved inbound insurance/liability tracking
+   either** (§2.7) — a six-for-six negative on EMR/OSHA tracking, and the
+   one vendor most likely to have solved certificate-of-insurance tracking
+   (BuildOps) documents its own version as still manual. A future
+   SAIRNmechanical feature here would be closer to parity than to catching
+   up, which changes how it should be prioritized against features where
+   the market has clearly moved and the platform has not.
 
 ---
 
 ## 6. What this document does NOT establish
 
 - **No vendor page was opened directly, at all, in this pass.** Every claim
-  above is a search-engine snippet of a vendor's own domain.
+  above is a search-engine snippet of a vendor's own domain — including
+  §2.7's CARB finding, where `arb.ca.gov`/`rmpr3.arb.ca.gov` are a
+  regulator's domain read the same way, not an opened page.
 - **No patent claim was read.** §3 names candidates for a real screen and
   performs none.
 - **No competitor product was used, demoed, or tested.**

@@ -314,6 +314,92 @@ hand-read of every non-zero hit, this series' own standing method:
   (document + expiry + current/expiring/expired + a real consequence when
   it lapses) is a proven, in-platform pattern, not a novel build.
 
+### 2.9 State-level regulatory layer — CARB R3, the one new real gap this
+pass found, and it is confirmed at zero
+
+A deliberate tunnel-vision re-pass (full sourcing in the trade-wide
+companion document §2.7) found a state-level refrigerant-compliance regime
+SAIRNmechanical does not model at all: **`CARB`, `California`, and `R3`
+all appear 0 times in `sairnmechanical.html`.** California's CARB
+Refrigerant Management Program is confirmed — directly on `arb.ca.gov` and
+`rmpr3.arb.ca.gov`, not from a vendor claim — to be materially stricter
+than either federal rule the app already carries: registration above
+50lb, annual reporting above 200lb, **5-year on-site record retention**
+against EPA's 3, an unrepairable leaker must be retrofitted or retired
+within **6 months** against the AIM Act's 1 year, and CARB enforces
+independently of EPA with its own penalty authority up to $10,000/day. A
+vendor's own domain states plainly that federal AIM Act compliance is "not
+a valid defense" under CARB — the regimes layer, they do not substitute.
+At least one vendor already catalogued in this series (RefriTrak) sells
+state-overlay logic today, naming six states with rules beyond the
+federal floor. **Unlike §2.1's leak-rate math or §2.4's permit workflow,
+this is not a case of the market being no further ahead than
+SAIRNmechanical — CARB is a live, independently enforced regulatory
+programme with a real, disclosed dollar penalty, and the app's own two
+modeled rules (82.157, 84.106) currently have no third rule beside them
+for any customer operating a covered system in California.** Whether to
+build a third rule, and whether to gate it on a jurisdiction field already
+present in `mech_credentials` or model it as its own compliance object, is
+exactly the kind of decision this series declines to make (§5) — but the
+absence itself is real, sourced from the regulator's own domain, and does
+not depend on any vendor's marketing claim.
+
+### 2.10 Insurance/liability, revisited — the FSM peer set has not solved
+this either
+
+§2.8 found `insurance` at zero hits in SAIRNmechanical and recommended
+building on the in-platform pattern SAIRNroofing already proves. A direct
+check of the same six FSM vendors already surveyed in §2.2 sharpens what
+kind of gap this actually is: **a clean six-for-six negative on EMR
+(experience-modification-rate) and OSHA-recordable tracking** — no
+vendor's own domain advertises either. Certificate-of-insurance is more
+nuanced than a flat gap: Housecall Pro ships a real, embedded feature
+(Coverdash) that helps a contractor buy and *show their own* insurance,
+which is a different problem than tracking documents belonging to others.
+**BuildOps' own site states its COI/lien-waiver workflow is "currently
+handled via manual attachments," with automation "planned for future
+releases"** — i.e. the FSM vendor best-positioned to have solved inbound
+COI tracking documents that it has not. The dedicated industry that has
+solved COI tracking (myCOI, Certificial) is confirmed to operate entirely
+outside any FSM software stack, pulling policy data from a contractor's
+broker or carrier directly rather than integrating with field-service
+software at all. **This changes how §4's insurance-tracking item should be
+read**: it is a real, confirmed-absent capability worth building on a
+proven in-platform pattern (SAIRNroofing), but it is closer to
+market-parity than to catching up to a solved problem — nobody in the
+peer set has this solved either, which is different from the leak-rate or
+data-portability items where specific competitors demonstrably have.
+
+### 2.11 Franchise/multi-location — confirms an already-known gap with
+real detail, rather than discovering a new one
+
+Ground truth already established (§1, and independently by grep): `SAIRN`
+mechanical carries zero markers for multi-location, multi-site, franchise,
+or royalty concepts — it is single-location by construction, same as its
+HVAC-only scope is a construction choice rather than an oversight. This
+pass's market check confirms what a multi-location HVAC operator actually
+gets from the FSM vendors already surveyed, which is real and concrete
+rather than a restatement: ServiceTitan's "Enterprise Hub" (cross-location
+roll-up reporting, shared configuration, centralized contact center) and a
+named Franchise Management product; Housecall Pro's parent/child account
+model with an "account cloning" tool built specifically for onboarding new
+franchise locations; Authority Brands (owner of the One Hour Heating & Air
+Conditioning franchise, among 15 brands) running its own proprietary
+Successware platform with a disclosed $100/month per-franchisee technology
+fee; and, via ServiceTitan's own 2020 acquisition announcement, Neighborly
+brands Aire Serv, Mr. Rooter and Mr. Electric confirmed running on
+ServiceTitan since 2012 — a separate franchise umbrella from Authority
+Brands, not the same family (a grouping error this pass's own research
+brief made and its own research caught and corrected). **No source found a
+named royalty-reporting feature in any platform surveyed** — this appears
+unconfirmed industry-wide, not a SAIRNmechanical-specific absence, so it
+should not be listed as a gap on the strength of this pass. Net effect:
+this angle sharpens what "multi-location support" would concretely need
+to look like if SAIRN ever pursued it (a parent/child account and
+permission model, cross-location dispatch, roll-up reporting) but does
+not change the priority ranking below — the scope boundary was already
+known, and this pass found detail, not a new argument to cross it.
+
 ---
 
 ## 3. Patent screen — unverified, no conclusion drawn
@@ -332,45 +418,68 @@ is designed, regardless of what this pass could confirm about it.
 
 ## 4. What this means for SAIRNmechanical, in priority order
 
-Reading §2 against the internal audit's own open-items list:
+Reading §2 against the internal audit's own open-items list. The order
+changed from this document's first draft: the tunnel-vision re-pass (§2.9)
+surfaced a real regulatory exposure that the FSM-peer-set lens could not
+have found, and it is ranked above the export/insurance items now on the
+strength of being an independently enforced state programme with a
+disclosed dollar penalty, not a UX or parity gap:
 
-1. **The `mech_quotes` / `mech_site_assets` export gap is the cheapest,
+1. **The CARB R3 state-regulatory layer is the highest-stakes item in
+   this document** (§2.9) — not because it is cheap (it is the least
+   cheap item on this list; a third compliance rule is real design work),
+   but because it is the one item here backed by an active regulator's own
+   domain disclosing an independent penalty authority up to $10,000/day,
+   for any SAIRNmechanical customer covered by the programme today,
+   modeled nowhere in the app. Whether and how to build it is explicitly
+   not decided here (§5) — the absence itself is what this pass adds.
+2. **The `mech_quotes` / `mech_site_assets` export gap is the cheapest,
    most defensible fix left** — not "data portability" broadly, which is
    already half-built to a high standard: `mech_credentials` has a real,
    live export (§2.6). The other two Tier A resources have no export
    surface at all, disabled or otherwise, which is the actual, narrower gap
    against the market consensus that CSV export is table stakes.
-2. **Business-level certificate-of-insurance tracking is a second,
-   independent low-cost fix** (§2.8) — the primitive already exists
-   elsewhere on the platform (SAIRNroofing's document+expiry+consequence
-   pattern), `insurance` is confirmed at zero hits, and commercial/hospital
-   HVAC work routinely requires furnishing proof of coverage before
-   dispatch.
-3. **A transparent leak-rate calculation, if built, would be a real
+3. **Business-level certificate-of-insurance tracking is a second,
+   independent low-cost fix** (§2.8, sharpened by §2.10) — the primitive
+   already exists elsewhere on the platform (SAIRNroofing's
+   document+expiry+consequence pattern), `insurance` is confirmed at zero
+   hits, and commercial/hospital HVAC work routinely requires furnishing
+   proof of coverage before dispatch. Ranked below the export gap and CARB
+   specifically because §2.10 confirms the FSM peer set has not solved
+   this either — it is a parity opportunity, not a catch-up requirement.
+4. **A transparent leak-rate calculation, if built, would be a real
    differentiator** rather than mere parity, because the two vendors
    closest to this category do not disclose their methodology and
    SAIRNmechanical's existing discipline (cite the exact CFR section, never
    silently combine two rules) is a stronger foundation to build a
    disclosed formula on than either competitor currently shows.
-4. **Manual J and backflow are correctly left undisclosed-and-open rather
+5. **Manual J and backflow are correctly left undisclosed-and-open rather
    than built** — the market's own leaders either partner (one vendor, one
    partner, across six surveyed) or disclaim (the two vendors with in-house
    calculators both disclose their limits). SAIRNmechanical's current
    posture already matches the more honest half of the market.
-5. **Permits and geothermal remain genuinely low-priority** relative to the
+6. **Permits and geothermal remain genuinely low-priority** relative to the
    app's actual FSM peer set, whatever their value against a purpose-built
    permitting or geothermal-training product might be.
-6. **The plumbing/electrical scope boundary remains correct** — see the
+7. **The plumbing/electrical scope boundary remains correct** — see the
    trade-wide companion document §5 for the full reasoning; no competitor
    has solved this either, and the one regulatory candidate that could
    change that (the 2026 NEC) has not yet produced a comparable vendor
    category.
+8. **The single-location scope boundary remains correct, now with concrete
+   detail on what crossing it would require** (§2.11) — parent/child
+   accounts, cross-location dispatch, roll-up reporting. This pass found
+   texture, not a new argument to build it; it stays last.
 
 ---
 
 ## 5. What this document does NOT establish
 
-- **No vendor page was opened directly, at all, in this pass.**
+- **No vendor page was opened directly, at all, in this pass.** The same
+  is true of the regulator pages behind §2.9's CARB finding — `arb.ca.gov`
+  and `rmpr3.arb.ca.gov` are WebSearch snippets of the regulator's own
+  domain, not an opened page, the same evidence grade as every vendor
+  claim in this document, just a different kind of source.
 - **No patent claim was read.**
 - **No competitor product was used, demoed, or tested.**
 - **No pricing figure here should be quoted to a prospect** until re-read
