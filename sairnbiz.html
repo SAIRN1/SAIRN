@@ -3766,6 +3766,36 @@ function sbVendorPaidYTD(){
   });
   return by;
 }
+// ── THE BOUNDED RESIDUAL IN THE LINE ABOVE, MADE VISIBLE (2026-09-25) ──────
+// `paidDate` is stamped by sbPayBill and a row marked Paid AT CREATION never
+// gets one, so the year falls back to the BILL date. For a legacy row created
+// as Paid against a prior-year bill date, the payment may well have happened
+// this year -- and it is excluded, which UNDER-counts toward the IRS $600
+// 1099 threshold. Under-counting is the direction that silently files
+// nothing, which is the exact harm the derivation was built to fix.
+//
+// IT IS NOT FIXED BY COUNTING IT, because the data does not say when it was
+// paid: a prior-year bill marked Paid at creation is genuinely ambiguous, and
+// guessing "this year" would over-state the threshold on rows that were paid
+// last year. THAT IS A THIRD STATE, so it is DISCLOSED rather than folded
+// into either total -- the same rule this platform applies to a read that
+// could not be read.
+//
+// A vendor is flagged when its undated prior-year total could carry it over
+// $600, because the only wrong answer is a silent one.
+function sbVendorPaidUndatedPriorYear(){
+  var year=String(new Date().getFullYear());
+  var by={};
+  sbNormalizeBills(ld('sb_ap',[])).forEach(function(b){
+    if(!b||b.status!=='Paid')return;
+    if(b.paidDate)return;                       // a stamped payment is dated
+    if(String(b.date||'').slice(0,4)===year)return;   // and this year already counts
+    var k=String(b.vendor||'').trim().toLowerCase();
+    if(!k)return;
+    by[k]=(by[k]||0)+(Number(b.amt)||0);
+  });
+  return by;
+}
 function rVends(){
   var v=ld('sb_vends',[]);
   var paid=sbVendorPaidYTD();
@@ -3784,6 +3814,23 @@ function rVends(){
   Object.keys(paid).forEach(function(k){if(!listed[k]){unName.push(k);unSum+=paid[k];}});
   if(unName.length){
     html+='<tr><td colspan="8" style="color:var(--muted);font-size:12px;">'+fmt(unSum)+' paid this year to '+unName.length+' payee(s) with no vendor row (not counted above, including in the 1099 count): '+H(unName.join(', '))+'</td></tr>';
+  }
+  // THE UNDATED PRIOR-YEAR RESIDUAL, DISCLOSED PER VENDOR WHERE IT COULD
+  // CHANGE THE 1099 ANSWER. A row marked Paid at creation carries no
+  // paidDate, so its year is the BILL's -- and one dated last year is left
+  // out of YTD even though the cheque may have been written this year. The
+  // only vendors named are those where the undated amount could carry them
+  // over the $600 threshold, so the note stays a signal rather than becoming
+  // furniture nobody reads.
+  var und=sbVendorPaidUndatedPriorYear();
+  var atRisk=[],riskSum=0;
+  v.forEach(function(x){
+    var k=String(x.name||'').trim().toLowerCase();
+    var u=und[k]||0;
+    if(u>0&&spendOf(x)<600&&(spendOf(x)+u)>=600){atRisk.push(x.name+' ('+fmt(u)+' undated)');riskSum+=u;}
+  });
+  if(atRisk.length){
+    html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>1099 COULD NOT BE DECIDED for '+atRisk.length+' vendor(s).</strong> '+fmt(riskSum)+' of payments are marked Paid with no payment date against a prior-year bill, so this app cannot tell which year they were paid in. Counted in NEITHER total. Each of these is under $600 YTD but would cross it if the undated amount was paid this year -- check the cheque dates before filing: '+H(atRisk.join('; '))+'</td></tr>';
   }
   $('vntbody').innerHTML=html;
 }

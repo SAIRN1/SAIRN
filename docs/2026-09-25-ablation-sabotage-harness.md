@@ -1,3 +1,15 @@
+> **CORRECTION, 2026-09-25 (same session):** this document says the corpus is
+> **27 probes**. It is **65** — the count came from a grep matching one import
+> spelling, so the sweep below ran against a subset of the corpus it claimed.
+> Every arm it fixed was really broken, but **the coverage claim was overstated
+> by more than half**, and "15 of ~180 arms across 27 probes" is really 15 arms
+> out of a larger population. Measured, with the corrected figures and the
+> gate decision they support, in
+> `docs/2026-09-25-probe-corpus-cost-and-decision.md`. Left in place rather
+> than rewritten: a number I published and then corrected is exactly the
+> instrument-drift this platform keeps recording, and hiding the first version
+> would remove the evidence.
+
 # Ablation test 1: what does the sabotage harness's own verdict actually catch?
 
 **2026-09-25 (CC).** Methodology item 98 — ablation testing, SpaceX's technique

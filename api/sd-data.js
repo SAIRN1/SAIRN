@@ -3048,8 +3048,13 @@ module.exports = async (req, res) => {
       // outage. The window this leaves (delete and write racing) is the same
       // one the upsert always had, and closing it needs a database-side
       // predicate, not a second read.
-      const custData = Object.assign({}, payload);
-      delete custData.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // COLUMN LIST VERIFIED AGAINST THE READ (:2939): it selects
+      // customer_id,data and spreads {id: customer_id} + data, so `id` is the
+      // only real column here. `_deleted_at` is DELIBERATELY NOT stripped --
+      // it lives inside data by design, and both the tombstone action and the
+      // 409 resurrection guard above read it there.
+      const custData = storedBlob(payload, ['id']);
       const w = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -3355,9 +3360,13 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const leadData = Object.assign({}, payload);
-      delete leadData.id;
-      delete leadData.assigned_employee_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // COLUMN LIST VERIFIED AGAINST THE READ (:3308): it selects
+      // lead_id,assigned_employee_id,data and spreads
+      // {id, assigned_employee_id} + data, so BOTH are real columns -- and
+      // assigned_employee_id is resolved server-side, never taken from the
+      // payload, so a blob copy would shadow the resolved value on read.
+      const leadData = storedBlob(payload, ['id', 'assigned_employee_id']);
       const r = await fetch(rest('sd_crm?on_conflict=license_hash,lead_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),

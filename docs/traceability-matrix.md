@@ -199,7 +199,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#128993; `tools/cross_tenant_isolation_scope.py` reports `NONE` for a tenant boundary it has no vocabulary for &mdash; `exec_context` now has TEN arms and a passing sabotage control, and the headline coverage table reads it as untested** | **FOUND 2026-09-23 (Hank) while landing `9ae85897`, NOT FIXED.** The tool is a MEASURER: changing its criteria changes every verdict it has ever issued, so it needs its own commit, its own fixtures an | `api/sd-data-exec-context-isolation.test.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128993; A `none (...)` isolation declaration&rsquo;s REASON is prose NOTHING re-reads &mdash; one cited &ldquo;Tier B&rdquo; for a resource that had been re-tiered A, and the stale reason hid real Tier A coverage until `6f049877`** | **DECIDED 2026-09-24 (CC), in the verdict on hank&rsquo;s 2026-09-23T17:54:33Z Tier A record: the check is OWED. NOT BUILT** &mdash; it is a change to the MEASURER (`tools/cross_tenant_isolation_scope | `api/dnt-bi.test.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128993; `tier_a_review_gate.py`&rsquo;s matcher counts an ENGLISH WORD in a comment as a Tier A resource &mdash; it demanded an obligation for `quotes` on a push whose only occurrence of that string was the verb in my own explanatory comment** | **FOUND 2026-09-25 (CC)**, while pushing the sabotage-probe repairs. The blocking file was `tests/run_sv_session_gate_sabotage_probe.py`; the single hit is the sentence &ldquo;It now **quotes** the ga | `tests/run_sv_session_gate_sabotage_probe.py` |
-| **&#128308; NOTHING RUNS THE SABOTAGE-PROBE CORPUS &mdash; 27 probes hold the negative controls for the platform&rsquo;s gates, and 15 arms across 12 of them were failing on main with the signal going nowhere** | **FOUND 2026-09-25 (CC) by the item-98 ablation of `tests/sabotage_harness.py`** &mdash; the experiment was designed to measure one layer and established this instead. Every one of the 15 is now fixed | `tests/sabotage_harness.py` |
+| **&#128308; UNTRUSTED TEXT REACHES A SYSTEM PROMPT UNFENCED AT 15 SITES, and ZERO prompt-injection neutralisation exists anywhere on this platform** | **BUILT AND MEASURED 2026-09-25 (CC)** &mdash; `tools/adversarial_prompt_corpus.py` (report-only) with a generated 8-family / 19-payload injection corpus and a blind lock that STOPS the sweep rather t | `tests/run_adversarial_prompt_corpus_probe.py` |
+| **&#128308; NOTHING RUNS THE SABOTAGE-PROBE CORPUS &mdash; 65 probes hold the negative controls (CORRECTED 2026-09-25 from 27 -- the first count matched one import spelling) for the platform&rsquo;s gates, and 15 arms across 12 of them were failing (of a corpus more than twice the size first reported) on main with the signal going nowhere** | **FOUND 2026-09-25 (CC) by the item-98 ablation of `tests/sabotage_harness.py`** &mdash; the experiment was designed to measure one layer and established this instead. Every one of the 15 is now fixed | `tests/sabotage_harness.py` |
 | ~~**&#128993; `tests/sabotage_harness.py` scores a mutant that FAILS TO PARSE identically to one the suite refused**~~ **&#9989; FIXED 2026-09-25 (CC)** | **FIXED.** `_parse_error()` runs `node --check` (.js), `ast.parse` (.py) or an HTML-parser extraction plus `node --check` per inline script block (.html) between plant and run; a non-parsing mutant no | `tests/run_sabotage_harness_parse_check_probe.py`, `tests/sabotage_harness.py` |
 | **&#128308; `tests/run_cross_tenant_scope_probe.py` is RED on main &mdash; the declaration-vs-driven arm reads a COMMENT inside the dispatcher suite&rsquo;s UNITS block as a table row (phantom resource `read`, 179 driven vs 178 declared)** | **FOUND 2026-09-24 (CC) while re-running the sabotage control for hank&rsquo;s 2026-09-23T17:54:33Z Tier A review. NOT the reviewed commit&rsquo;s fault: `7cfc2c24` (four hours later) added a comment  | `tests/run_cross_tenant_scope_probe.py` |
 | **&#9989; The hover self-health SessionStart hook was registered by ABSOLUTE PATH into ONE clone, so the SECOND auditor self-checked the FIRST one&rsquo;s log on every firing and its own was never checked at all** | **FIXED 2026-09-22 (Hank)** &mdash; `tools/hover_self_health_shim.py` (NEW) + `tests/run_hover_self_health_shim_probe.py` (NEW, 8 arms). **One residual is hover2&rsquo;s to close, named below** | `tests/run_hover_self_health_shim_probe.py` |
@@ -641,15 +642,15 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 638 of 735 traced, 86.8%.
+For context and not as the headline: 639 of 736 traced, 86.8%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 638 citations come from
+### Where the 639 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 310 |
+| `index` | 311 |
 | `declared` | 270 |
 | `declared+index` | 48 |
 | `GUARD_TESTS+index` | 6 |
@@ -784,8 +785,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 735   tests/**, api/** (both walked)
-  open-work rows citing a test       356   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 736   tests/**, api/** (both walked)
+  open-work rows citing a test       357   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

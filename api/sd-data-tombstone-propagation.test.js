@@ -167,8 +167,15 @@ test('THE PAIRED NEGATIVE: the read filter is still is.null, so tombstones did n
 // to the same rule.
 
 test('the sd_customers WRITE refuses a soft-deleted row with 409 DELETED', () => {
-  const i = SRC.indexOf("const custData = Object.assign({}, payload);");
+  // RE-ANCHORED 2026-09-25: the blob builder became storedBlob(payload, ['id'])
+  // when api/_lib/blob.js was adopted on this branch, so the Object.assign
+  // spelling this arm quoted stopped existing. Anchored on the VARIABLE now,
+  // which is what the guard actually sits in front of, rather than on one
+  // spelling of how it is built.
+  const i = SRC.indexOf('const custData =');
   assert.ok(i > 0, 'the sd_customers write body moved -- re-anchor this arm');
+  assert.strictEqual(SRC.indexOf('const custData =', i + 1), -1,
+    'custData is built in two places -- this arm would guard whichever came first');
   const before = SRC.slice(Math.max(0, i - 2600), i);
   assert.ok(/_deleted_at/.test(before) && /'DELETED'/.test(before)
     && /409/.test(before),

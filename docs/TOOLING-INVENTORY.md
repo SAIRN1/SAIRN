@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**225 files in `tools/`.** By what actually invokes them:
+**226 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 32 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 33 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 44 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 156 |
+| CHECKER | 157 |
 | GENERATOR | 19 |
 | LIBRARY | 24 |
 | LIVE | 21 |
@@ -47,16 +47,17 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 23 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 9 wired nowhere at all, and 14
+**The number to act on: 24 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 9 wired nowhere at all, and 15
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 23, by name, so this is actionable rather than a statistic:
+The 24, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
+| `adversarial_prompt_corpus.py` | SUITE-ONLY | untrusted text -- OCR output, an uploaded image's extracted text, a customer-written complaint, a free-text note -- reaching an app's SYSTEM PROMPT with no delimiter between the two, which is the half of indirect prompt injection that needs no model call: before a payload can redirect a prompt it has to get there. Ships a generated 8-family injection corpus and says in its own output that a generated corpus is not an exhaustive one and that a fence is a mitigation rather than a proof. Its blind lock runs FIRST and a failed lock STOPS the sweep (exit 2) instead of reporting findings from criteria that cannot classify a known case -- not decorative: the lock removed two over-broad field hints before the tool ever saw real code, one of which matched the Anthropic API's own messages envelope field and would have reported 100% of sites |
 | `append_only_read_order_scan.py` | SUITE-ONLY | an APPEND-ONLY TRAIL READ that comes back in an undefined order -- Postgres promises nothing about a SELECT with no ORDER BY and PostgREST forwards that through, so on a small table a seq scan returns heap order and the read LOOKS like insertion order for the whole of development, then stops the first time the planner picks an index. It exists because the SAIRNcare fix that closed six of these was commissioned as THREE, and the other three were found only by enumerating the class by hand. The population is derived TWICE -- by DB grant and by the appendOnlyExisting contract -- because a grant-only test misses the two tables that carry UPDATE for merge-duplicates. REPORT-ONLY on purpose: five of the six unordered reads on its first real run were correct (they feed a latestBy that breaks ties on an id), so a gate would have denied five real pushes; deciding which an unordered read is needs the CONSUMER read, and a scanner that guessed would be a fabricated verdict in the shape of a measurement |
 | `bypass_log.py` | UNWIRED | item 86, the battleshort pattern -- every push-gate override recorded in its OWN log, and a REPEATEDLY bypassed check reported as a defect in the CHECK rather than a discipline problem in whoever keeps bypassing it. Until this, SAIRN_SEED_GATE=off returned from the hook before a single check ran and NOTHING recorded that it happened. Both override sites now record, FAIL-SAFE: a push is never blocked because its logging failed, proven by driving the hook with the logger deliberately broken. A STANDING bypass with no expires_at is INVALID rather than permanent -- that is the switch nobody flips back. An empty log is evidence about the HOOK, not the platform: --no-verify never reaches it |
 | `coding_rule_discovery.py` | SUITE-ONLY | a coding or billing RULE that nobody has registered for independent review. docs/coding-rule-registry.json is hand-written -- no property of a function tells you it encodes a federal billing rule -- and that is true of the JUDGEMENT but was never true of the CANDIDATE SET. This derives candidates from the codebase's OWN conventions: a function that calls a `*Finding(sev, rule, detail, sourceKey)` builder, or a PURE function called from a markup-wired handler that cites a `*_SOURCES` map. On the day it was written: 41 candidates in sairncode.html against 8 registered. It registers nothing -- what a rule DECIDES, what the HARM is and which source says so is the judgement the registry holds, and a tool that auto-registered would fill it with guesses. Third instance of the split sairn_app_map_check and this file already make: judgement human, enumeration derived. WHAT IT CANNOT SEE, printed on every run: a rule written in NEITHER convention |
@@ -310,13 +311,14 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (32)
+## SUITE-ONLY (33)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `adversarial_prompt_corpus.py` | CHECKER | untrusted text -- OCR output, an uploaded image's extracted text, a customer-written complaint, a free-text note -- reaching an app's SYSTEM PROMPT with no delimiter between the two, which is the half of indirect prompt injection that needs no model call: before a payload can redirect a prompt it has to get there. Ships a generated 8-family injection corpus and says in its own output that a generated corpus is not an exhaustive one and that a fence is a mitigation rather than a proof. Its blind lock runs FIRST and a failed lock STOPS the sweep (exit 2) instead of reporting findings from criteria that cannot classify a known case -- not decorative: the lock removed two over-broad field hints before the tool ever saw real code, one of which matched the Anthropic API's own messages envelope field and would have reported 100% of sites | `run_adversarial_prompt_corpus_probe.py` |
 | `append_only_read_order_scan.py` | CHECKER | an APPEND-ONLY TRAIL READ that comes back in an undefined order -- Postgres promises nothing about a SELECT with no ORDER BY and PostgREST forwards that through, so on a small table a seq scan returns heap order and the read LOOKS like insertion order for the whole of development, then stops the first time the planner picks an index. It exists because the SAIRNcare fix that closed six of these was commissioned as THREE, and the other three were found only by enumerating the class by hand. The population is derived TWICE -- by DB grant and by the appendOnlyExisting contract -- because a grant-only test misses the two tables that carry UPDATE for merge-duplicates. REPORT-ONLY on purpose: five of the six unordered reads on its first real run were correct (they feed a latestBy that breaks ties on an id), so a gate would have denied five real pushes; deciding which an unordered read is needs the CONSUMER read, and a scanner that guessed would be a fabricated verdict in the shape of a measurement | `run_append_only_read_order_probe.py` |
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py`, `stale_row_sweep_control.py` |
 | `claim_search.py` | ADVISORY | the gap between a WRITTEN CLAIM about what is built and the code that implements it -- this platform's most recurring incident class, and the half nobody does is RETRIEVAL. Checking is easy once the implementation is in front of you; finding it from an English sentence is not, because "pinned to an exact version" appears nowhere in a <script src=...> tag. BM25 over identifier-split tokens and comment prose, with an optional structural rerank. IT NEVER RETURNS A VERDICT in any mode -- the conformance judgement stays with a reader and with independent review where the claim matters, and a retrieval tool that also graded would be an assertion nobody re-checked with a search index underneath it. --verify excludes .md, because the first real run ranked the document a claim was copied out of above the code it describes. The embedding stage of "hybrid lexical + embedding + rerank" is ABSENT, not stubbed, and says so every run. | `run_claim_search_probe.py` |
@@ -433,11 +435,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      225   git ls-files tools/
+  tools on disk                      226   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            161   tests/**/*.py, *.js
+  tools invoked by tests/            162   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
