@@ -2938,8 +2938,8 @@
       "task": "register-feed-newbranch a new-branch push is measured as ALL history FILES: tools/register_feed_gate.py tests/run_register_feed_gate_probe.py",
       "claimed_at": "2026-09-25T12:30:13Z",
       "claimed_at_epoch": 1790339413.037921,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-25T12:41:22Z",
       "files": [
         "tests/run_register_feed_gate_probe.py",
         "tools/register_feed_gate.py"
