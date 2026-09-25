@@ -147,11 +147,23 @@ const POSTURE = {
   sairndental:     { gate: 'ALL',  auth: true,  why: 'PHI and the financial tier' },
   sairnroofing:    { gate: 'ALL',  auth: true,  why: 'claims and claim photos' },
   sairnsenior:     { gate: 'ALL',  auth: true,  why: 'claims, pay rates and payer contracts' },
-  sairnlaw:        { gate: 'SOME', auth: true,  why: 'PHASE 1 of a deliberate, sequenced rollout (2026-09-05): the fifteen generic resources are gated, four bespoke ones are not YET. See section 5' },
+  // MEASURED MOVED TO ALL THE MOMENT 403 WAS COUNTED (2026-09-25), and the
+  // gate that completed it landed on 2026-09-22. This row read SOME for three
+  // days AFTER phase 2 finished, not because anything was missed but because
+  // the four bespoke resources answer 403 and this column only counted 401.
+  // 16 x 401 + 4 x 403 = 20 of 20. The sequenced rollout the old `why`
+  // describes is DONE; section 5's PHASE_1_UNGATED/PHASE_2_GATED partition is
+  // the arm that actually tracked it correctly the whole time.
+  sairnlaw:        { gate: 'ALL',  auth: true,  why: 'COMPLETE. The sequenced rollout finished 2026-09-22 (law_trusttx 2026-09-16, then law_clients/law_matters/law_deadlines): all 20 refuse a no-session read -- 16 with 401 NO_SESSION from the generic SAIRNlaw branch, 4 with 403 FORBIDDEN from SD_SESSION_GATED. This row said SOME until 2026-09-25 purely because the column could not see a 403; section 5 tracked the partition correctly throughout' },
   sairnbuild:      { gate: 'SOME', auth: true,  why: 'DOCUMENTED at BLD_RESOURCES: the shared job record is read by every role; bld_bids and bld_tna gate because each has a real per-person visibility rule' },
   stonedesk:       { gate: 'SOME', auth: true,  why: 'DOCUMENTED at SD_LOCAL_RESOURCES: the shared shop record; personnel and financial data gate elsewhere' },
   sairnmechanical: { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 2 of 6 gate and nothing records why the other four do not' },
-  sairndesign:     { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 1 of 18 gates (the assignment rule); nothing records the posture for the rest' },
+  // THE VERDICT LETTER DID NOT MOVE AND THE ROW WAS STILL WRONG (2026-09-25).
+  // It said "1 of 18 gates" -- true only of 401s. Nine sdn_ resources are in
+  // SD_SESSION_GATED and answer 403, so it is TEN of eighteen. A row whose
+  // letter is right for the wrong reason is the hardest kind to notice, which
+  // is why the count is spelled out here rather than left as SOME.
+  sairndesign:     { gate: 'SOME', auth: true,  why: 'PARTLY DOCUMENTED -- 10 of 18 gate: sdn_clients by the bespoke per-employee assignment rule (401), plus the NINE Tier A resources in SD_SESSION_GATED (403, five armed 2026-09-22 and four more 2026-09-24). The remaining eight are a product decision nobody has made. This row read "1 of 18" until 2026-09-25 because the column counted only 401' },
   // CORRECTED 2026-09-23. It recorded NONE with the reason 'SAIRNvet has NO
   // per-employee authentication -- role is a self-selected dropdown, never
   // server-verified. A gate here would gate on a session that does not
@@ -170,7 +182,15 @@ const POSTURE = {
   // bootstrap returned 409 ALREADY_PROVISIONED. The table exists and the
   // refusal is the real one.
   sairnvet:        { gate: 'ALL',  auth: true,  why: 'DOCUMENTED at SV_RESOURCES and VERIFIED LIVE 2026-09-23: every resource requires a verified sairnvet session (api/sd-data.js:10502, 401 NO_SESSION), and the employee-auth migration is confirmed run -- bootstrap 200, login 200, re-bootstrap 409' },
-  sairnfreedom:    { gate: 'NONE', auth: false, why: 'DOCUMENTED at SF_RESOURCES: no per-employee authentication either' },
+  // WRONG ON BOTH COLUMNS UNTIL 2026-09-25, and the `auth` half was wrong
+  // independently of the 401/403 blindness. api/sf-auth.js exists,
+  // ROLES_BY_APP.sairnfreedom carries ten capability roles and
+  // AUTH_TABLE_BY_APP maps sairnfreedom_employee_auth -- so "no per-employee
+  // authentication either" was false whatever this column could see. Fifteen
+  // sf_ resources were gated across 2026-09-21/22/24 and every one answers
+  // 403, so the gate column read NONE while more than a third of the app was
+  // behind a session.
+  sairnfreedom:    { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25. 15 of 35 gate, all via SD_SESSION_GATED (403 FORBIDDEN) -- the Tier A three armed 2026-09-21, eight more after the hover audit 2026-09-22, sf_signatures and the rest 2026-09-24. Per-employee auth DOES exist (api/sf-auth.js, ten capability roles, sairnfreedom_employee_auth); the old row denied both facts' },
   // READS are still licence-only on all 28 and that is what this column
   // measures. The WRITE posture is no longer NONE: on 2026-09-14 Michael
   // decided the six Tier A billing resources -- sc_ar, sc_claims, sc_revenue,
@@ -199,20 +219,20 @@ const POSTURE = {
   // X-SD-Auth on every call whenever a token exists (:2107), not behind a
   // per-call flag.
   //
-  // ── AND ON 2026-09-25 THE GAP THAT ROW DESCRIBED WAS CLOSED ──────────────
+  // ── AND ON 2026-09-25 THE GAP THAT ROW DESCRIBED WAS CLOSED, THEN THE
+  //    COLUMN THAT COULD NOT SEE IT WAS FIXED TOO ──────────────────────────
   // `invoices` and `scp_quotes` joined SD_SESSION_GATED and SD_GATE_APP, and
   // api/sd-data-scp-session-gate.test.js drives both directions.
   //
-  // THE MEASURED VALUE DID NOT MOVE, AND THAT IS THIS COLUMN'S LIMIT RATHER
-  // THAN A GATE THAT DID NOT ARRIVE. The loop below counts a resource as gated
-  // only when it answers 401; SD_SESSION_GATED answers 403 FORBIDDEN. So every
-  // app whose gate is the shared table measures NONE or SOME on strength it
-  // does not get credit for here -- sairndesign's row says "1 of 18" for the
-  // same reason while nine of its resources are in that table. Recorded rather
-  // than fixed by widening the comparison to 401-or-403: which codes count as
-  // a gate is the premise this whole column rests on, and changing it would
-  // silently re-measure fourteen other rows in a commit about SAIRNscape.
-  sairnscape:      { gate: 'NONE', auth: true,  why: 'GAP CLOSED 2026-09-25 (Cody): the TWO Tier A resources (invoices, scp_quotes) now require a sairnscape session on read AND write via SD_SESSION_GATED + SD_GATE_APP, driven by api/sd-data-scp-session-gate.test.js; the other ten stay licence-only, deliberately, and are disclosed there. Still measured NONE here because this column counts 401 only and that gate answers 403 -- see the note above' },
+  // THE ROW THEN SAT AT NONE FOR SEVERAL HOURS WITH TWO RESOURCES GATED, and
+  // said so in its own `why` -- "still measured NONE here because this column
+  // counts 401 only and that gate answers 403". That was an honest disclosure
+  // of a blind spot and it was the wrong place to leave it: a column that
+  // reports NONE for a gated app is not a column with a caveat, it is a column
+  // giving the wrong answer. The comparison is fixed above, this row now
+  // measures SOME, and the same fix moved three other rows that had been
+  // wrong for longer -- sairnlaw, sairnfreedom and shared.
+  sairnscape:      { gate: 'SOME', auth: true,  why: 'GAP CLOSED 2026-09-25 (Cody): the TWO Tier A resources (invoices, scp_quotes) require a sairnscape session on read AND write via SD_SESSION_GATED + SD_GATE_APP, 403 FORBIDDEN, driven by api/sd-data-scp-session-gate.test.js and live-verified by tools/scp_session_gate_live_probe.py. 2 of 12 gate; the other ten stay licence-only, deliberately, and scp_vendors is driven as the disclosure. This row read NONE until the 401-only comparison was fixed later the same day' },
   // MEASURED MOVED, SO THIS ROW MOVED WITH IT (2026-09-21). CC's gate landed in
   // 760a34a9 and was live-verified in 30a9f179, taking sairnlegacy from measured
   // NONE to measured ALL -- and this suite FAILED until this row was updated,
@@ -227,7 +247,14 @@ const POSTURE = {
   // honest division: the column says whether a decision was written down, and an
   // undocumented posture is the signal to go and look, not the finding itself.
   sairnlegacy:     { gate: 'ALL',  auth: true,  why: 'DECIDED AND FIXED 2026-09-21 (CC): every leg_* resource requires a SAIRNlegacy session. Found by the hover auditor as a CRITICAL gap -- 36 resources including leg_custodylog (chain of custody for human remains) and leg_preneed (Tier A) were licence-only. Gate 760a34a9, obligation b9f1779a, live-verified 30a9f179' },
-  shared:          { gate: 'NONE', auth: false, why: 'the cross-app resources. NONE of the seven answers 401 to a no-session read -- five answer something else entirely (they are not plain read/write resources), and render_usage and shared_knowledge are licence-only. Recorded rather than gated: `shared` is not an app and has no session to bind to' },
+  // THE OLD `why` WAS THE BLINDNESS WRITTEN DOWN AS A FINDING (2026-09-25).
+  // It said five of the seven "answer something else entirely (they are not
+  // plain read/write resources)". Driven: slabs, profile, memory, employees
+  // and employee_profile all answer 403 FORBIDDEN with a message naming a
+  // required session. They are not a different kind of resource -- they are
+  // gated, by the shared table, and the sentence explaining them away was
+  // written because the column could only see 401.
+  shared:          { gate: 'SOME', auth: true,  why: 'CORRECTED 2026-09-25. 5 of 7 gate -- slabs, profile, memory, employees and employee_profile all answer 403 FORBIDDEN naming a required session; render_usage and shared_knowledge are licence-only by design. The old row called the five "not plain read/write resources", which was the 401-only measurement explaining away what it could not see. `shared` is still not an app -- the session these bind to belongs to the CALLING app, which is what SD_GATE_APP resolves' },
   sairncash:       { gate: 'NONE', auth: false, why: 'registers no resources on this endpoint at all' },
 };
 
@@ -323,7 +350,41 @@ section('0. the fixture really is a token, and really is app-bound');
   // two halves genuinely differ. Stated rather than left for a reader to infer
   // from a row that looks unchanged; the write side is driven by
   // tests/sairncode_gates.js, which is where that assertion belongs.
+  // ── 401 WAS NOT THE ONLY SESSION REFUSAL, AND COUNTING ONLY IT MADE THIS
+  //    COLUMN BLIND TO THE COMMONEST GATE ON THE PLATFORM (fixed 2026-09-25)
+  //
+  // This counted a resource as gated only when the no-session read answered
+  // 401. Bespoke per-app gates answer 401 NO_SESSION; the SHARED gate --
+  // `SD_SESSION_GATED` in api/sd-data.js, which is what every sweep since
+  // 2026-09-16 has actually been adding resources to -- answers 403 FORBIDDEN.
+  // So the one column whose job is noticing an ungated app could not see any
+  // of them, and it said so wrongly for weeks in four places at once:
+  //   sairnlaw      measured SOME while phase 2 finished it on 2026-09-22
+  //                 (16 x 401 + 4 x 403 = 20 of 20 -> ALL)
+  //   sairnfreedom  measured NONE with FIFTEEN sf_ resources gated
+  //   sairnscape    measured NONE with its two Tier A resources gated
+  //   shared        measured NONE with five of seven gated
+  // and sairndesign's row read "1 of 18" while ten of eighteen refuse.
+  //
+  // THE REFUSAL'S CODE IS ASSERTED, NOT JUST ITS STATUS, and that is the half
+  // that keeps this from trading one wrong answer for another. "Any 403" would
+  // count a future role gate, a tenancy refusal or a validation error as a
+  // session gate and inflate the column the other way -- the same mistake in
+  // the opposite direction. Only the two refusals that MEAN "you have no
+  // session" count, and anything else that refuses is collected and reported
+  // rather than silently dropped into either bucket.
+  //
+  // MEASURED BEFORE THE CHANGE, so this is not a guess: across all 17 apps
+  // every 401 carried NO_SESSION and every one of the 40 403s carried
+  // FORBIDDEN with a message naming a required session. Not one 403 was a
+  // non-session refusal. The `shared` row's own prose claimed five of its
+  // seven "answer something else entirely (they are not plain read/write
+  // resources)" -- they do not; slabs, profile, memory, employees and
+  // employee_profile all answer FORBIDDEN "a valid employee session is
+  // required". That sentence was the blindness written down as a finding.
+  const SESSION_REFUSALS = { 401: 'NO_SESSION', 403: 'FORBIDDEN' };
   const measured = {};
+  const oddRefusals = [];
   for (const app of reg.APP_NAMES) {
     const names = reg.RESOURCE_NAMES_BY_APP[app] || [];
     if (!names.length) { measured[app] = 'NONE'; continue; }
@@ -334,10 +395,23 @@ section('0. the fixture really is a token, and really is app-bound');
       // gated. Caught because the recorded table disagreed with the
       // measurement, which is the table doing its job.
       const out = await call(h, r, null, null);
-      if (out.code === 401) gated++;
+      const want = SESSION_REFUSALS[out.code];
+      if (!want) continue;
+      const got = (out.body && out.body.error && out.body.error.code) || '(none)';
+      if (got === want) { gated++; continue; }
+      // A refusal with the right STATUS and the wrong CODE is not a session
+      // gate and is not counted as one -- it is reported, because it is either
+      // a new refusal shape this column has to learn or a gate that changed
+      // its code, and both are findings rather than noise.
+      oddRefusals.push(app + '/' + r + ' -> ' + out.code + ' ' + got
+                       + ' (expected ' + want + ')');
     }
     measured[app] = gated === 0 ? 'NONE' : (gated === names.length ? 'ALL' : 'SOME');
   }
+  ok(oddRefusals.length === 0,
+     'every 401/403 on a no-session read is one of the two SESSION refusals '
+     + '(401 NO_SESSION, 403 FORBIDDEN) -- anything else would be counted as a '
+     + 'gate it is not: ' + (oddRefusals.join('; ') || 'none'));
   for (const app of Object.keys(measured)) {
     ok(POSTURE[app] && POSTURE[app].gate === measured[app],
        app + ': measured ' + measured[app] + ', recorded '
