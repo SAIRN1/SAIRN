@@ -194,6 +194,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **&#128993; SIXTEEN `api/*-auth.js` bootstrap refusals still name a remedy that CANNOT WORK in the state that produces the most confusing 409 &mdash; `action:setup`, which requires an Owner session a zero-active-Owner licence cannot obtain** | **FIXED IN SAIRNvet ONLY, 2026-09-25 (Fourth).** `api/sv-auth.js`&rsquo;s 409 now names BOTH remedies &mdash; `action:setup` if an Owner can still sign in, and DIRECT DATABASE ACCESS if none is active | `api/sv-auth.test.js` |
 | **&#128993; TEN review records in `docs/tier-a-reviews.json` cite a sha that NO LONGER RESOLVES &mdash; the record&rsquo;s own pointer to the work it reviewed is dead** | **MEASURED 2026-09-25 (Hank) by `tools/register_freshness_check.py`; NOT repaired, deliberately.** A repair here is a per-record JUDGEMENT (which of several same-day commits did this record review?),  | `tests/app_session_isolation_probe.py`, `tests/server_wins_hydration.js` |
 | **&#128993; The coding-rule review channel is built and CANNOT HOLD AN OBLIGATION FOR ITSELF** | **BUILT 2026-09-24 (CC) in `c478772e`. INDEPENDENT REVIEW OWED, AND THE GATE STILL CANNOT EXPRESS IT.** The new half keys on `docs/coding-rule-registry.json`; the build touched `tools/tier_a_review_ga | `tests/run_coding_rule_channel_probe.py` |
 | ~~**&#128993; NINE MORE `api/*.js` role maps are plain object literals, so an inherited `Object.prototype` name indexes truthy**~~ **&#9989; SWEPT 2026-09-24 &mdash; and IT WAS NOT NINE, IT WAS 48 ACROSS 19 FILES** | **FIXED 2026-09-24 (Hank)** &mdash; `dadfedf4`. Michael&rsquo;s decision was one coordinated sweep with each site&rsquo;s blast radius confirmed first, explicitly NOT a verbatim copy of the SAIRNroofi | `tests/role_maps_have_no_prototype.js` |
@@ -787,7 +788,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 736   tests/**, api/** (both walked)
-  open-work rows citing a test       357   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       358   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 11   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
