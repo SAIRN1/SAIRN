@@ -2636,6 +2636,23 @@
         "tests/sabotage_harness.py",
         "tests/session_gate_table_probe.py"
       ]
+    },
+    {
+      "id": "cc-1790343582",
+      "session": "cc",
+      "subject": "cc-queue5",
+      "task": "discharge cc's most overdue review (fourth 2026-09-23T20:47:17Z tombstones), then measure the 27-probe corpus wall-clock and DECIDE gate-vs-manual, fix vendor YTD prior-year-bill-date undercount, AI red-team adversarial-prompt controls (item 8), outside-practitioner validation per vertical (item 72), and convert 2 more hand-rolled blob builders individually FILES: docs/tier-a-reviews.json sairnbiz.html tests/sairnbiz_vendor_ytd_derivation.js docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js",
+      "claimed_at": "2026-09-25T13:39:42Z",
+      "claimed_at_epoch": 1790343582.0516953,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "sairnbiz.html",
+        "tests/sairnbiz_vendor_ytd_derivation.js"
+      ]
     }
   ],
   "refusals": [
