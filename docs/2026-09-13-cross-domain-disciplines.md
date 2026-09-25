@@ -445,6 +445,57 @@ runs whose LENGTH is the risk, not about making everything incremental.
 ---
 
 ## 11. Human-gated auto-remediation — a fixer may not approve its own fix
+## 12. Ablation over chaos — measure ONE layer's contribution, not the system's luck
+
+**Borrowed from SpaceX's heatshield practice, and the distinction from item 70's
+chaos engineering is the whole value.** Chaos asks *does the platform survive a
+random failure*. Ablation asks *what does THIS layer catch that nothing else
+would* — one named protective layer removed deliberately, instrumented on that
+exact spot, on code already believed clean.
+
+**FIRST RUN, 2026-09-25, and it paid for itself immediately**
+(`docs/2026-09-25-ablation-sabotage-harness.md`). Subject: `tests/sabotage_harness.py`'s
+per-mutation verdict, which was `rc != 0` — so a mutant that failed to PARSE was
+indistinguishable from one the suite refused, for all 27 probes that share the
+harness. Measured contribution: **6 arms across 6 probes had been reporting
+CAUGHT on mutants that never compiled**, and nothing else on this platform could
+see them (`mutation_anchor_check.py` proves an anchor is unique, never that the
+result parses).
+
+**THREE THINGS THAT MAKE IT WORK, each learned in that one run:**
+
+* **Pick a layer whose SIGNAL IS AMBIGUOUS.** The value came from CAUGHT and
+  CRASHED printing the same word. A layer with an unambiguous verdict has more
+  to learn from a sabotage control than from ablation.
+* **A NEW layer needs no sandbox** — the ablated condition is a git ref. That is
+  the cheapest form this experiment takes, and the reason to run it at the
+  moment a layer lands rather than later.
+* **MEASURE PER ARM, NOT PER EXIT CODE.** 6 of the 15 findings were invisible at
+  the exit-code level: the probes exited non-zero in BOTH conditions, for
+  different reasons, so an exit-code comparison would have reported no change.
+
+**AND THE SECOND-ORDER FINDING OUTRANKED THE FIRST, which is the pattern to
+expect rather than a one-off:** the experiment was designed to price one layer
+and established instead that **nothing runs the probe corpus at all** — 15 arms
+across 12 of 27 probes were unreliable (6 malformed mutants, 7 stale anchors,
+2 expired premises, 2 stale fixtures) and no gate, hook or sweep would have
+said so. Ablation puts a layer under a bright light; what it mostly finds is
+what else that light falls on.
+
+**WHERE IT DOES NOT TRANSFER, said plainly:** ablating a layer on LIVE data or a
+shared clone is not this practice, it is an outage. The subject must be code
+already believed clean and a condition you can restore byte-for-byte — and the
+restoration must be VERIFIED, not assumed, which is what the harness's own
+byte-identical arms are for.
+
+**AND THE CLASS IT STILL CANNOT SEE:** a mutant that parses and is caught for
+the WRONG reason. The layer proves the mutant compiles; nothing proves the suite
+went red about the property the arm's name claims. All six rewrites were
+hand-read for that, and hand-reading is not a check.
+
+---
+
+## The failure mode seven of the first eight share
 
 **The convention: a tool that DETECTS drift may PROPOSE the repair, and may
 never apply it. The proposal lands through a review a human performs.**

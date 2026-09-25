@@ -49,9 +49,13 @@ SUITE = os.path.join('api', 'sd-data-law-phase2-session.test.js')
 API = os.path.join('api', 'sd-data.js')
 APP = 'sairnlaw.html'
 
+# ANCHOR RE-DERIVED 2026-09-25: law_deadlines stopped being the map's LAST row
+# when the SAIRNdesign gates were appended below it, so it gained a trailing
+# comma and this three-line block matched NOTHING -- both arms that use it sat
+# ANCHOR-0 red on main, testing nothing while looking armed.
 ENTRIES = ("      'law_clients': ['read', 'write'],\n"
            "      'law_matters': ['read', 'write'],\n"
-           "      'law_deadlines': ['read', 'write']\n")
+           "      'law_deadlines': ['read', 'write'],\n")
 
 MUTATIONS = [
     ("1. ALL THREE LEAVE THE TABLE -- a firm's client list, matter list and "
@@ -59,7 +63,11 @@ MUTATIONS = [
      "shipped in from 2026-08-16 until 2026-09-22",
      API,
      ENTRIES,
-     "      'law_phase2_placeholder_removed': ['read']\n"),
+     # TRAILING COMMA REQUIRED: the anchor above now ends in one (law_deadlines
+     # is no longer the map's last row), so a replacement without it splices an
+     # entry with no separator before the SAIRNdesign rows -- which is a
+     # SyntaxError, i.e. a malformed mutant, not a planted defect.
+     "      'law_phase2_placeholder_removed': ['read'],\n"),
 
     ("2. ONLY THE READ HALVES LEAVE -- the half-applied fix a hurried edit "
      "produces: the records are private to read and open to write",
@@ -67,7 +75,7 @@ MUTATIONS = [
      ENTRIES,
      "      'law_clients': ['write'],\n"
      "      'law_matters': ['write'],\n"
-     "      'law_deadlines': ['write']\n"),
+     "      'law_deadlines': ['write'],\n"),
 
     ("3. SD_GATE_APP LOSES THEM, so the gate verifies against 'stonedesk' and "
      "refuses every correctly signed-in attorney -- an OUTAGE, not a hole",

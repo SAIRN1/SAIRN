@@ -56,7 +56,7 @@ MUTATIONS = [
     ("2. slabs leaves the table -- the whole inventory readable and WRITABLE by "
      "anyone holding the link the shop was told to send customers",
      API,
-     "      'slabs':   ['read', 'write', 'reserve'],",
+     "      'slabs':   ['read', 'write', 'reserve', 'release'],",
      ""),
 
     ("3. locations leaves the table. The GAP 7 branch describes itself as "
@@ -76,7 +76,7 @@ MUTATIONS = [
     ("5. only the READ of slabs is gated, so the licence key alone can still "
      "write and reserve",
      API,
-     "      'slabs':   ['read', 'write', 'reserve'],",
+     "      'slabs':   ['read', 'write', 'reserve', 'release'],",
      "      'slabs':   ['read'],"),
 
     ("6. the refusal stops being a refusal -- the gate computes its answer and "

@@ -66,9 +66,17 @@ MUTATIONS = [
 
     # 3. THE SHAPE THIS FILE IS NAMED FOR. A document that cannot be read
     #    becomes a document with no match -- and the exit code stays 0.
+    # ── REWRITTEN 2026-09-25: THE ORIGINAL MUTANT DID NOT PARSE ────────────
+    # It replaced the `raise` line only and left its continuation line -- the
+    # `% (path, type(e).__name__, e))` -- dangling at the old indent, so the
+    # tool died on `unexpected indent` and the suite went red about SYNTAX,
+    # not about an unreadable .docx reading as empty. Scored CAUGHT until the
+    # harness's 2026-09-25 parse check. The rewrite replaces the whole raise
+    # statement, which is the defect as somebody would actually write it.
     ('an unreadable .docx goes back to reading as empty', TOOL,
-     "            raise Unreadable('%s could not be read as a .docx (%s: %s)'",
-     "            return ''  # SABOTAGE  ('%s could not be read as a .docx (%s: %s)'"),
+     "            raise Unreadable('%s could not be read as a .docx (%s: %s)'\n"
+     "                             % (path, type(e).__name__, e))",
+     "            return ''  # SABOTAGE: unreadable reads as empty"),
 
     # 4. The library, not the document. Absent pypdf means EVERY PDF in the
     #    corpus is swept as clean, which is the widest of the five.

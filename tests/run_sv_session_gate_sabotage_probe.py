@@ -91,8 +91,15 @@ MUTATIONS = [
      "read the rows, which passes every status-code assertion and leaks "
      "anyway",
      SD,
-     "    if (SV_RESOURCES[resource]) {\n      const svSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnvet');\n      if (!svSess) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });\n        return;\n      }\n    }\n    if (SV_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });",
-     "    if (SV_RESOURCES[resource] && action === 'read') {\n      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });\n      if (!verifySessionToken(tokenFromRequest(req), licHash, 'sairnvet')) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'no' } });\n        return;\n      }"),
+     # ── ANCHOR RE-DERIVED 2026-09-25 ────────────────────────────────────
+     # This quoted the read's QUERY LINE, which gained a `Prefer: count=exact`
+     # header on 2026-09-24 (the truncation-disclosure fix) -- so the anchor
+     # matched nothing and the arm sat ANCHOR-0 red on main while looking
+     # armed. It now quotes the gate block and the read branch's OPENING LINE
+     # only: the gate still moves behind the branch entry, which is the
+     # property, and the query's own text is no longer part of the anchor.
+     "    if (SV_RESOURCES[resource]) {\n      const svSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnvet');\n      if (!svSess) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was read or saved. Sign out and sign in again, then try once more.' } });\n        return;\n      }\n    }\n    if (SV_RESOURCES[resource] && action === 'read') {\n",
+     "    if (SV_RESOURCES[resource] && action === 'read') {\n      if (!verifySessionToken(tokenFromRequest(req), licHash, 'sairnvet')) {\n        res.status(401).json({ error: { code: 'NO_SESSION', message: 'no' } });\n        return;\n      }\n"),
 
     ("6. [CLIENT] THE TRANSPORT STOPS SENDING THE TOKEN -- the gate becomes "
      "an outage on all 14 call sites, which is how a security fix gets "

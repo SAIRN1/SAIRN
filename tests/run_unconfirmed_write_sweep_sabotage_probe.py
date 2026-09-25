@@ -100,11 +100,21 @@ MUTATIONS = [
      "  if (!Array.isArray(rows)) return 'UNKNOWN';                  // not the shape asked for",
      "  if (!Array.isArray(rows)) return 'WROTE';                    // not the shape asked for"),
 
+    # ── REWRITTEN 2026-09-25: THE ORIGINAL MUTANT DID NOT PARSE ────────────
+    # It replaced `{ error: { code: ...` with `{ ok: true, code: ...`, dropping
+    # one `{` while the block's closing `} } });` stayed -- so the file died on
+    # `missing ) after argument list` and the suite was red about SYNTAX rather
+    # than about UNKNOWN being reported as success. Scored CAUGHT until the
+    # harness's 2026-09-25 parse check. Rewritten as the whole statement, which
+    # is also the honest shape of the defect: the whole refusal becomes a 200.
     ("8. refuseUnconfirmedWrite ANSWERS SUCCESS -- UNKNOWN is reported as a "
      "write that landed",
      SD,
-     "  res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',",
-     "  res.status(200).json({ ok: true, code: 'WRITE_UNCONFIRMED',"),
+     "  res.status(502).json({ error: { code: 'WRITE_UNCONFIRMED',\n"
+     "    message: 'The data store accepted the request but its answer could not be read, so '\n"
+     "      + 'whether the change to ' + what + ' was saved is UNKNOWN -- it was not confirmed '\n"
+     "      + 'and it was not refused. Refresh and check the current value before trying again.' } });",
+     "  res.status(200).json({ ok: true, code: 'WRITE_UNCONFIRMED' });"),
 
     ("9. THE PREDICATE STOPS WALKING THE PATCH and keys on the read's spelling "
      "again -- the exact narrowing that hid four live sites while reporting "

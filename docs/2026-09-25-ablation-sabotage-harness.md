@@ -32,7 +32,7 @@ every gate and every generated document; all 27 probes were believed passing.
 
 ## What slipped through that every other layer also missed
 
-**THREE probes were reporting CAUGHT on mutants that never parsed.** Each had
+**SIX probe arms were reporting CAUGHT on mutants that never parsed.** Each had
 been green for as long as the arm existed, and no other layer on this platform —
 not the push gate, not the suites themselves, not `mutation_anchor_check.py`,
 which verifies an anchor is unique but never that the RESULT compiles — could
@@ -43,17 +43,24 @@ see it:
 | `active_credential_gate_probe.py` | 6, the logging try/catch | `try {` → `if (true) {`, orphaning `} catch` | nothing — SyntaxError |
 | `dnt_bi_scope_probe.py` | 2, the failed scope lookup | replacement ended in a dangling `if (false) {` | nothing — Unexpected end of input |
 | `law_resources_phase_boundary_probe.py` | 6, a folded bespoke resource | `[].concat([...new Set(` — unbalanced paren | nothing — Unexpected end of input |
+| `run_reclassification_sweep_sabotage_probe.py` | the unreadable `.docx` | replaced the `raise` line, left its continuation dangling | nothing — unexpected indent |
+| `run_unconfirmed_write_sweep_sabotage_probe.py` | 8, UNKNOWN answering success | dropped one `{` while the block's `} } });` stayed | nothing — missing `)` after argument list |
+| `run_law_phase2_session_sabotage_probe.py` | 1 and 2 (after their anchors were repaired) | replacement entry with no trailing comma, spliced mid-map | nothing — Unexpected string |
 
-**That is the layer's individual contribution, measured rather than argued: 3
-arms out of ~180, in three separate probes, written by three different sessions,
-all green.** Each claimed a specific security or correctness property was
-enforced. None of the three was evidence of anything.
+**That is the layer's individual contribution, measured rather than argued: 6
+arms across 6 probes, written by at least three different sessions, all green
+or silently ANCHOR-0.** Each claimed a specific security or correctness property
+was enforced. None was evidence of anything. **The last row is the sharpest: it
+was introduced BY THIS QUEUE, when repairing a stale anchor changed the splice
+context — so the layer caught a malformed mutant that did not exist an hour
+earlier, which is the strongest available evidence it is load-bearing going
+forward rather than a one-off cleanup.**
 
 ## And the ablation found a second class the layer does NOT catch
 
-Running all 27 in both conditions surfaced **five more arms that were red on
-main for a different reason entirely** — stale anchors (ANCHOR-0) and, in two
-cases, premises that had expired:
+Running all 27 in both conditions surfaced **nine more arms that were red on
+main for a different reason entirely** — stale anchors (ANCHOR-0), premises that
+had expired, and two baselines held red by a stale FIXTURE:
 
 * `law_trusttx_session_probe.py` arms 1 and 4 — `SD_SESSION_GATED` and
   `SD_GATE_APP` both grew past the single-line literals the anchors quoted.
@@ -68,7 +75,28 @@ cases, premises that had expired:
   pins the acceptance count at 11 and `24b7e3fb` legitimately removed one on
   2026-09-18. **The pin did its job** (an acceptance removed IS a decision) and
   then sat unmoved for six days, holding the suite AND the probe behind it out
-  of service.
+  of service. Re-verified before moving it: a full `fail_open_check.py` run
+  reports 10 live acceptances and **no stale ones**, so the removal really was
+  a fix rather than a fail-open that moved.
+* `run_law_phase2_session_sabotage_probe.py` arms 1 and 2, `session_gate_table_probe.py`
+  arms 2 and 5, `run_sv_session_gate_sabotage_probe.py` arm 5 — five more stale
+  anchors, all from the same cause in different files: a map grew a row
+  (`law_deadlines` gained a trailing comma; `slabs` gained a `release` verb) or
+  a query gained a header (`Prefer: count=exact`, 2026-09-24), and the arm
+  quoted the old spelling. **The sv arm is the instructive one:** its anchor
+  included the read's whole query line, so a header added for an unrelated
+  truncation-disclosure fix silently disarmed a DEA-relevant gate-ordering
+  control. Re-anchored on the branch's opening line only.
+* `run_hover_audit_method_sabotage_probe.py` — baseline red on a stale FIXTURE,
+  not a stale anchor: `tests/run_defect_register_probe.py`'s TRAP8 took "the
+  last commit touching `.claude/claims/`" and assumed it was bookkeeping-only.
+  Claims commits now routinely carry `docs/tier-a-reviews.json`, which is not in
+  `BOOKKEEPING` (it is a real record, not a generated document), so the commit
+  was MIXED, `--add` correctly declined to refuse it, and the arm failed **about
+  its own fixture while reading as a defect in the guard**. The fixture now
+  asks `is_bookkeeping_only()` itself over recent history — the predicate the
+  arm exists to prove is wired — and says COULD NOT RUN if no such commit
+  exists in the window.
 
 **The layer being ablated did not catch any of these five** — a stale anchor and
 an expired premise are visible to the harness's existing ANCHOR-0/SILENT arms,
@@ -89,8 +117,39 @@ signal had nowhere to go, because no gate runs the probe corpus.
    conditions, for different reasons.
 4. **The second-order finding outranked the first.** The experiment was designed
    to measure one layer's contribution; what it actually established is that the
-   probe corpus has no runner, so 8 of ~180 arms across 27 probes were
-   unreliable and nothing was going to say so. Filed as an open-work row.
+   probe corpus has no runner, so **15 arms across 12 of the 27 probes** were
+   unreliable — 6 malformed mutants, 7 stale anchors, 2 expired premises, and 2
+   baselines held red by stale fixtures — and nothing was going to say so.
+   Filed as an open-work row.
+5. **A THIRD CLASS THE LAYER CANNOT SEE, stated because the count above would
+   otherwise read as complete:** a mutant that PARSES and is caught for the
+   wrong reason. `_parse_error` proves the mutant compiles; nothing proves the
+   suite went red about the property the arm's name claims. Every one of the six
+   rewrites here was re-read by hand for that, and hand-reading is not a check.
+
+## A third finding, from running the platform's OWN control-guard checker after
+
+`tools/sabotage_control_check.py` reported **1 UNGUARDED** control out of 83 —
+`tests/run_claim_doc_freshness_probe.py`, written by this session the day
+before. Its mutations edit an in-memory FIXTURE rather than a tracked file, so a
+rename cannot reach them; the quiet failure is identical anyway. An anchor that
+stops matching leaves the "mutated" text byte-identical to the clean one, the
+checker under test correctly answers OK, and **the NEGATIVE arm reads that OK as
+a pass**. Every mutation now asserts its anchor matches exactly once and that
+the replacement changed something. **Re-measured: 83 of 83 guarded, 0
+unguarded.**
+
+Worth recording because of what it says about the practice: the ablation above
+found what one layer catches, and a DIFFERENT existing checker immediately found
+a defect in the probe written to hold the ablation's own fix. Neither could see
+the other's finding.
+
+## Numbering note
+
+This landed as **discipline 12**, not 11: another session added a human-gated
+auto-remediation convention within the same hour, and a rebase had to pick an
+order. Both are on origin; mine renumbered. Recorded because the CLAUDE.md
+pointer now says COUNT THE HEADINGS for exactly this reason.
 
 ## Reproducing it
 

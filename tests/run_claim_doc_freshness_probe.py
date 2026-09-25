@@ -85,7 +85,18 @@ def main():
             code == 0 and out.count(' OK ') >= 4, 'exit %d\n%s' % (code, out[-400:]))
 
         print('\nNEGATIVE -- each drift direction is caught, one at a time')
+        # ── EVERY MUTATION ASSERTS ITS ANCHOR IS UNIQUE FIRST ─────────────
+        # (2026-09-25, after tools/sabotage_control_check.py reported this
+        # file as the platform's ONE unguarded control.) These mutate an
+        # in-memory FIXTURE rather than a tracked file, so a rename cannot
+        # reach them -- but the quiet failure is the same either way: an
+        # anchor that stops matching leaves the "mutated" text identical to
+        # the clean one, the checker correctly reports OK, and the NEGATIVE
+        # arm reads that as a pass. A count catches both a miss and a
+        # multi-match; presence catches only the miss.
+        assert CLAUDE_MD.count('Expire after 4 hours') == 1,             'fixture anchor not unique -- the drift arm would mutate nothing'
         drifted = CLAUDE_MD.replace('Expire after 4 hours', 'Expire after 6 hours')
+        assert drifted != CLAUDE_MD, 'the sabotage did not apply'
         io.open(cmd_, 'w', encoding='utf-8').write(drifted)
         code, out = run(base)
         arm('CLAUDE.md hours moved 4 -> 6: expiry-hours DRIFTED, exit 1',
@@ -93,10 +104,12 @@ def main():
             'exit %d\n%s' % (code, out[-400:]))
         io.open(cmd_, 'w', encoding='utf-8').write(CLAUDE_MD)
 
+        assert CLAUDE_MD.count('| Fourth |') == 1,             'fixture anchor not unique -- the fifth-clone arm would mutate nothing'
         fifth = CLAUDE_MD.replace(
             '| Fourth |',
             '| Fifth | `Documents\\SAIRN-fifth` | `SAIRN-ACTIVE-WORK-fifth.md` |'
             ' `.claude/claims/fifth.json` | build |\n| Fourth |')
+        assert fifth != CLAUDE_MD, 'the sabotage did not apply'
         io.open(cmd_, 'w', encoding='utf-8').write(fifth)
         code, out = run(base)
         arm('a FIFTH build clone appears: "four" goes stale in both docs, caught',
@@ -104,8 +117,10 @@ def main():
             'exit %d\n%s' % (code, out[-400:]))
         io.open(cmd_, 'w', encoding='utf-8').write(CLAUDE_MD)
 
+        assert TOOL_SRC.count('read all four SAIRN-ACTIVE-WORK files') == 1,             'fixture anchor not unique -- the reworded-anchor arm would mutate nothing'
         reworded = TOOL_SRC.replace('read all four SAIRN-ACTIVE-WORK files',
                                     'read every SAIRN-ACTIVE-WORK file')
+        assert reworded != TOOL_SRC, 'the sabotage did not apply'
         io.open(tsrc, 'w', encoding='utf-8').write(reworded)
         code, out = run(base)
         arm('a reworded anchor is ANCHOR-GONE, not silently skipped',

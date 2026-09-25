@@ -902,8 +902,28 @@ try:
         os.makedirs(os.path.dirname(_dst), exist_ok=True)
         io.open(_dst, 'w', encoding='utf-8', newline=chr(10)).write(
             io.open(_src, encoding='utf-8').read())
-    _book = git(REPO, 'log', '-1', '--format=%H', '--',
-                '.claude/claims/').stdout.strip()
+    # ── THE FIXTURE IS CHOSEN BY THE PREDICATE, NOT BY A PATH GUESS ────────
+    # (2026-09-25.) This took "the last commit touching .claude/claims/" and
+    # ASSUMED it was bookkeeping-only. It stopped being: claims commits now
+    # routinely carry docs/tier-a-reviews.json, which is NOT in BOOKKEEPING
+    # (it is a real record, not a generated document), so the commit is MIXED,
+    # `--add` correctly does not refuse it, and TRAP8/TRAP9 failed about the
+    # FIXTURE while reading as a defect in the guard. Found by the sabotage
+    # probe that wraps this suite going red on its baseline.
+    #
+    # The commit is now picked by asking is_bookkeeping_only() itself over
+    # recent history -- the predicate this arm exists to prove is wired -- and
+    # if no such commit exists in the window the arm says COULD NOT RUN rather
+    # than passing on nothing.
+    _book = ''
+    for _sha in (git(REPO, 'log', '-40', '--format=%H').stdout or '').split():
+        _info = DR.derive(_sha)
+        if _info and DR.is_bookkeeping_only(_info.get('files') or []):
+            _book = _sha
+            break
+    if not _book:
+        check('TRAP8 COULD NOT RUN -- no bookkeeping-only commit in the last 40, '
+              'so the entry-point arm was not driven (NOT a pass)', False, True)
     if _book:
         rc, out = run(_wt3, '--add', '--commit', _book, '--app', 'PLATFORM',
                       '--layer', 'product', '--severity', 'low', '--method',
