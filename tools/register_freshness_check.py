@@ -59,9 +59,23 @@ embedded in `what`/`verdict` prose (must resolve).
   mechanical can say the tier is right.
 * Shas the reseat tool repairs may be transiently dangling mid-rebase; this
   runs against the working tree and says so rather than guessing.
-* The four narrow tools are NOT retired here. Retiring a running check is a
-  decision with an owner, recorded in the open-work index, not a side effect
-  of a new tool landing.
+* The four narrow tools are NOT retired, and after measuring, they must not
+  be. PARITY AUDIT, 2026-09-25, before any retirement: 0 of 4 are covered by
+  this tool, so retiring any would DELETE a check rather than consolidate
+  one. `sairn_app_map_check.py` compares a declared route against a LIVE
+  FETCH of the deployment -- nothing here fetches anything. `claim_provenance
+  .py` is item 23's RECORDING half and deliberately judges nothing, so there
+  is no comparison to be at parity with. `sairn_claim_doc_freshness.py`
+  checks a TOOL'S OWN prose against CLAUDE.md, the claims directory and the
+  status directory -- none of which this reads. `dependency_graph.py`'s SPOF
+  retirement half recomputes a dependency GRAPH against
+  docs/SPOF-REGISTER.md, a register this tool does not open.
+  WHAT WAS TRUE was that each re-invented the SHAPE -- compare committed
+  evidence against freshly recomputed truth. Sharing a shape is not sharing a
+  subject, and consolidation that goes by resemblance is how coverage
+  disappears quietly. The duplication worth ending is the PATTERN, and the
+  place to end it is a shared helper the next one is written against, not a
+  retirement of four checks that each look at something else.
 """
 import io
 import json
