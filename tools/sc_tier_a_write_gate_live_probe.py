@@ -3,8 +3,13 @@ the LIVE endpoint.
 
 WHY THIS EXISTS. The gate shipped on 2026-09-14 and was verified two ways that
 are both real and neither of which is live: tests/sairncode_gates.js drives the
-REAL handler in-process (102 arms) and tests/sairncode_gates_mutation_control.js
-proves those arms refuse 25 planted defects. What neither can prove is that the
+REAL handler in-process and tests/sairncode_gates_mutation_control.js proves those
+arms refuse a planted defect at every one of its anchors. (Both figures were
+written out here as "102 arms" and "25 planted defects" and were stale by
+2026-09-25 -- 177 and 29. A count of somebody else's checks, copied into a third
+file, is the rot class this platform records most often; the suites print their
+own totals and that is the only place the number belongs.) What neither can prove
+is that the
 DEPLOYED function behaves the same way, and CLAUDE.md's push protocol is explicit
 that a clean push is not proof. The client half WAS live-verified by fetching the
 deployed page; the server half sits BELOW the licence check, so it cannot be
@@ -30,20 +35,32 @@ and why:
   * two credentials -- zz-gate-coder (role coder) and zz-gate-auditor (auditor),
     because the DENY-by-ROLE path needs a real subject and a no-session refusal
     only proves the session half
-  * up to three data rows -- ZZ-GATE-CLAIM in sc_claims, ZZ-GATE-COMP in
-    sc_compliance, and ZZ-GATE-CODED in sc_coded_items. The third is the
-    coder's own UNGATED resource, written by the control arm that makes the
-    six refusals a split rather than a lockout. It said "two" until
-    2026-09-15 because the control arm was added after this paragraph was
-    written and nothing re-reads a docstring; the row it leaves behind is a
-    SUCCESSFUL write, so it is the one row here that a reader would find in
-    real data.
+  * up to four data rows -- ZZ-GATE-CLAIM in sc_claims, ZZ-GATE-COMP in
+    sc_compliance, ZZ-GATE-CODED in sc_coded_items, and ZZ-GATE-HARD on
+    whichever sc_ resource still hard-deletes. The third is the coder's own
+    resource, written by the control arm that makes the refusals a split
+    rather than a lockout. It said "two" until 2026-09-15 because the control
+    arm was added after this paragraph was written and nothing re-reads a
+    docstring; ZZ-GATE-CODED is a SUCCESSFUL write, so it is the one row here
+    that a reader would find in real data. ZZ-GATE-HARD is destroyed by the
+    arm that creates it -- destroying it IS the control.
 
-UNLIKE the roofing probe, this one CAN clean up: SAIRNcode declares a `delete`
-verb on all 28 resources and an admin session may use it, so the rows are deleted
-and both credentials are DEACTIVATED (never orphaned active). Cleanup is reported
-per item and a failure to clean up is a FINDING, not a silent exit -- a probe that
-leaves live credentials behind is worse than one that never ran.
+    THE WORD "UNGATED" SAT IN THAT SENTENCE UNTIL 2026-09-25 and had been false
+    since 2026-09-23: sc_coded_items was re-tiered A, so it needs a real
+    employee session like every other Tier A resource. What keeps the coder on
+    it is a NAMED OVERRIDE in SC_TIER_A_WRITE_ROLES_BY_RESOURCE, not an absent
+    gate -- and the section-4 loop below demanded 403 on that very call for two
+    days while its own control arm twelve lines later demanded 200.
+
+UNLIKE the roofing probe, this one CAN clean up, BUT NOT WITH ONE VERB. 24 of the
+28 sc_* resources are Tier A and grant `soft_delete` instead of a destroying
+`delete`; only the four that are not still take `delete`. The verb is DERIVED per
+resource from the registry rather than assumed -- this paragraph said "declares a
+`delete` verb on all 28 resources" until 2026-09-25, which had been wrong since
+2026-09-15 and wrong about sixteen more resources since 2026-09-23. Rows are
+removed and both credentials are DEACTIVATED (never orphaned active). Cleanup is
+reported per item and a failure to clean up is a FINDING, not a silent exit -- a
+probe that leaves live credentials behind is worse than one that never ran.
 
 CREDENTIALS COME FROM THE ENVIRONMENT, NEVER THIS FILE:
 
@@ -68,15 +85,28 @@ sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import sairn_http                                                # noqa: E402
 
 
-def soft_delete_only():
-    """The Tier A names that may be hidden and never destroyed, READ FROM THE
-    REGISTRY by running it. Not typed here: a copy of that list in a probe is
-    the drift api/_resources exists to prevent, and it would go stale silently
-    the first time a resource is added -- the probe would then hard-delete a
-    Tier A record while reporting a clean run, which is the worst possible
-    direction for this particular tool to be wrong in."""
-    src = ('process.stdout.write(JSON.stringify('
-           'require("./api/_resources/sairncode").tierASoftDeleteOnly||[]));')
+def _read_registry():
+    """BOTH lists out of the registry in ONE node call -- the resource set and
+    the Tier A soft-delete-only subset.
+
+    Not typed here: a copy of either list in a probe is the drift api/_resources
+    exists to prevent, and it would go stale silently the first time a resource
+    is added -- the probe would then hard-delete a Tier A record while reporting
+    a clean run, which is the worst possible direction for this particular tool
+    to be wrong in.
+
+    ── ONE require(), AND A CONTROL ENFORCES THAT (2026-09-25) ─────────────────
+    The two readers below were briefly two separate node calls with a require()
+    each, and tests/run_sc_tier_a_live_probe_probe.py refused it immediately:
+    "the registry is required EXACTLY ONCE, so there is one source and not two
+    that can disagree". They could not actually have disagreed -- same module,
+    same process-per-call -- but the rule is structural and the arm is right to
+    hold it without reasoning about whether this instance was safe, which is
+    what a control is for. One call, one require, two lists.
+    """
+    src = ('var r=require("./api/_resources/sairncode");'
+           'process.stdout.write(JSON.stringify({'
+           'resources:r.resources||[],soft:r.tierASoftDeleteOnly||[]}));')
     try:
         r = subprocess.run(['node', '-e', src], cwd=ROOT,
                            capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
@@ -85,10 +115,75 @@ def soft_delete_only():
     if r.returncode != 0:
         return None, (r.stderr or '')[:300]
     try:
-        names = json.loads(r.stdout)
+        return json.loads(r.stdout), None
     except ValueError as e:
         return None, str(e)
+
+
+def soft_delete_only():
+    """The Tier A names that may be hidden and never destroyed."""
+    data, err = _read_registry()
+    if data is None:
+        return None, err
+    names = data.get('soft') or []
     return (names, None) if names else (None, 'the registry returned an empty list')
+
+
+def all_sc_resources():
+    """Every sc_* resource name. Needed so the 5b CONTROL can pick a resource
+    that genuinely still hard-deletes instead of naming one that was re-tiered
+    out from under it."""
+    data, err = _read_registry()
+    if data is None:
+        return None, err
+    names = data.get('resources') or []
+    return (names, None) if names else (None, 'the registry returned an empty list')
+
+
+def write_role_overrides():
+    """The per-resource write-role exceptions, READ OUT OF api/sd-data.js.
+
+    ── WHY THIS HAD TO EXIST (2026-09-25) ──────────────────────────────────────
+    Section 4 below asserted a coder is refused 403 FORBIDDEN on every name in
+    `soft_delete_only()`, and that list is DERIVED -- correctly -- so when
+    sc_coded_items was re-tiered A on 2026-09-23 it joined the deny loop
+    automatically. But the same commit added `sc_coded_items` to
+    SC_TIER_A_WRITE_ROLES_BY_RESOURCE with `coder` on it, precisely so the tier
+    change would not lock coders out of their own panel. So the deny loop
+    demanded 403 on a call the CONTROL ARM TWELVE LINES LATER demands 200 on,
+    and this probe could not pass against a correct deployment. Driven against
+    the real handler in-process on 2026-09-25: `coder write sc_coded_items` is
+    200.
+
+    A DERIVED LIST IS NOT AUTOMATICALLY A CORRECT LIST. The derivation was the
+    right fix for the 2026-09-15 defect (a hand-written six against a register of
+    seven) and it is still right; what it cannot know is that a second mechanism
+    carves an exception out of the same population. Both sides are read from the
+    handler now, so a new override cannot desynchronise this probe again.
+
+    Returns (mapping, error). A mapping of resource -> list of roles, holding
+    only the resources that DEPART from SC_TIER_A_WRITE_ROLES.
+    """
+    src = ('var s=require("fs").readFileSync("api/sd-data.js","utf8");'
+           'var m=/const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = \\{([\\s\\S]*?)\\};/.exec(s);'
+           'if(!m){process.stderr.write("override map not found");process.exit(3);}'
+           'var out={},re=/(\\w+)\\s*:\\s*\\[([^\\]]*)\\]/g,e;'
+           'while((e=re.exec(m[1]))!==null){'
+           'out[e[1]]=JSON.parse("["+e[2].replace(/\'/g,\'"\').replace(/,\\s*$/,"")+"]");}'
+           'process.stdout.write(JSON.stringify(out));')
+    try:
+        r = subprocess.run(['node', '-e', src], cwd=ROOT,
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace', timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        return None, '%s: %s' % (type(e).__name__, e)
+    if r.returncode != 0:
+        return None, (r.stderr or '')[:300]
+    try:
+        return json.loads(r.stdout), None
+    except ValueError as e:
+        return None, str(e)
+
 
 AUTH = 'https://sairn.vercel.app/api/sc-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
@@ -105,6 +200,10 @@ AUDITOR_PIN = os.environ.get('SC_AUDITOR_PIN', '')
 CLAIM_ROW = 'ZZ-GATE-CLAIM'
 COMP_ROW = 'ZZ-GATE-COMP'
 CODED_ROW = 'ZZ-GATE-CODED'
+# The 5b CONTROL's own row, on whichever sc_ resource still hard-deletes. It is
+# written and destroyed inside that arm -- the destroy IS the control -- so it
+# never joins the cleanup list.
+HARD_ROW = 'ZZ-GATE-HARD'
 
 fails = []
 notes = []
@@ -120,9 +219,10 @@ def unverified(why):
     print('\nUNVERIFIED -- the gate was NOT exercised, and this is not a pass.')
     print('  ' + why)
     print('\n  This is the THIRD state, reported as itself. The in-process suite')
-    print('  (tests/sairncode_gates.js, 102 arms) and its mutation control (25')
-    print('  planted defects, all caught) still stand; what is missing is proof')
-    print('  that the DEPLOYED function behaves the same way.')
+    print('  (tests/sairncode_gates.js) and its mutation control still stand --')
+    print('  run them for their own totals rather than trusting a count copied')
+    print('  into this file, which was stale by 2026-09-25. What is missing is')
+    print('  proof that the DEPLOYED function behaves the same way.')
     sys.exit(2)
 
 
@@ -147,6 +247,26 @@ def main():
         unverified('could not read tierASoftDeleteOnly from '
                    'api/_resources/sairncode.js, so the cleanup verb for each '
                    'resource is unknown: %s' % why)
+
+    # FAIL CLOSED FOR THE SAME REASON, on the other half of the population.
+    # Without the override map this probe cannot tell a resource the gate
+    # legitimately opens to a coder from one it should refuse, so section 4
+    # would either demand 403 on an allowed call or skip the refusal entirely.
+    # Both are worse than UNVERIFIED.
+    overrides, why_ov = write_role_overrides()
+    if overrides is None:
+        unverified('could not read SC_TIER_A_WRITE_ROLES_BY_RESOURCE from '
+                   'api/sd-data.js, so which Tier A resources legitimately admit '
+                   'a coder is unknown: %s' % why_ov)
+
+    # And the full registry, for the 5b CONTROL's hard-delete subject. Same
+    # third state: a guessed name is how that control ended up pointed at a
+    # resource that had been re-tiered out from under it.
+    all_resources, why_all = all_sc_resources()
+    if all_resources is None:
+        unverified('could not read the sc_* resource list from '
+                   'api/_resources/sairncode.js, so no resource can be shown to '
+                   'still hard-delete: %s' % why_all)
 
     if not LICENSE or not EMP or not PIN:
         unverified('SC_LICENSE, SC_EMP and SC_PIN are not all set in the '
@@ -228,6 +348,14 @@ def main():
                     key=LICENSE, token=admin)
     check('admin write sc_claims -> %s' % st, st == 200, json.dumps(body)[:200])
 
+    # EVERY ROW THIS PROBE CREATES, AND THE CLEANUP READS THIS RATHER THAN A
+    # SECOND LIST. The three fixed rows are unconditional -- a delete of an
+    # absent id answers 200, so a skipped section costs nothing -- and the
+    # override-driven ALLOW arms append theirs, because which resource they
+    # write is not known until api/sd-data.js has been read.
+    made = [('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW),
+            ('sc_coded_items', CODED_ROW)]
+
     # ── 4. DENY BY ROLE ──────────────────────────────────────────────────────
     # A no-session refusal proves the SESSION half only. The role half needs a
     # real signed-in subject whose role is not on the list.
@@ -257,7 +385,19 @@ def main():
                   st == 200 and tokens[emp], json.dumps(body)[:200])
 
         if tokens.get(CODER_ID):
-            for res in SIX:
+            # ── THE DENY POPULATION IS SIX MINUS THE OVERRIDES (2026-09-25) ───
+            # `SIX` is every Tier A name, and sc_coded_items is one of them --
+            # but the handler's override map admits `coder` to it deliberately,
+            # so demanding 403 here contradicted the CONTROL arm below outright.
+            # See write_role_overrides() for how long that stood and what the
+            # in-process drive measured.
+            coder_allowed = sorted(r for r in SIX
+                                   if 'coder' in (overrides.get(r) or []))
+            deny = [r for r in SIX if r not in coder_allowed]
+            print('  the deny population is %d of %d -- %s admit a coder by named '
+                  'override and are driven as ALLOW below'
+                  % (len(deny), len(SIX), ', '.join(coder_allowed) or '(none)'))
+            for res in deny:
                 st, body = post(DATA, {'action': 'write', 'resource': res,
                                        'app_id': 'sairncode',
                                        'payload': {'id': 'ZZ-GATE-CODER'}},
@@ -265,25 +405,54 @@ def main():
                 c = (body or {}).get('error', {}).get('code', '') if isinstance(body, dict) else ''
                 check('coder write %-22s -> %s %s' % (res, st, c),
                       st == 403 and c == 'FORBIDDEN', json.dumps(body)[:160])
-            # The coder's OWN resource is ungated, which is what makes the six
-            # above a split rather than a lockout.
-            st, body = post(DATA, {'action': 'write', 'resource': 'sc_coded_items',
-                                   'app_id': 'sairncode',
-                                   'payload': {'id': CODED_ROW}},
-                            key=LICENSE, token=tokens[CODER_ID])
-            check('CONTROL: coder write sc_coded_items -> %s (its own resource, '
-                  'ungated)' % st, st == 200, json.dumps(body)[:200])
+            # THE OTHER DIRECTION, AND IT IS WHAT MAKES THE REFUSALS A SPLIT
+            # RATHER THAN A LOCKOUT. sc_coded_items is Tier A and IS gated -- it
+            # carries a verbatim quote from a clinical note -- so this is not
+            # "the ungated resource" it was called until 2026-09-25. It is the
+            # gated resource the override keeps open to the role named for it,
+            # which is a stronger claim and the one worth driving.
+            for res in coder_allowed:
+                row = CODED_ROW if res == 'sc_coded_items' else 'ZZ-GATE-CODER-OK'
+                st, body = post(DATA, {'action': 'write', 'resource': res,
+                                       'app_id': 'sairncode',
+                                       'payload': {'id': row}},
+                                key=LICENSE, token=tokens[CODER_ID])
+                check('CONTROL: coder write %-22s -> %s (gated, and the named '
+                      'override admits coder: %s)'
+                      % (res, st, '|'.join(overrides.get(res) or [])),
+                      st == 200, json.dumps(body)[:200])
+                # A ROW THIS PROBE CREATED IS A ROW IT CLEANS UP. The three
+                # fixed rows are named at the top; an override-driven ALLOW arm
+                # is the one write site whose resource is not known until the
+                # handler is read, so it registers itself here rather than
+                # relying on a hand-kept cleanup list that would silently orphan
+                # the next one.
+                if (res, row) not in made:
+                    made.append((res, row))
 
-        # ── 5. THE ONE PER-RESOURCE OVERRIDE ─────────────────────────────────
+        # ── 5. THE PER-RESOURCE OVERRIDES, DRIVEN AS EXCEPTIONS ──────────────
+        # DERIVED 2026-09-25, for the same reason the coder population above is:
+        # this loop excluded sc_compliance by NAME. That is correct only while
+        # sc_compliance is the only auditor override, and the coder arm one block
+        # up is the proof that assumption expires -- it demanded 403 on
+        # sc_coded_items for two days after a second override was added. Reading
+        # the map for both roles means neither arm can desynchronise again.
         if tokens.get(AUDITOR_ID):
-            print('\n5. the auditor override -- sc_compliance only')
-            st, body = post(DATA, {'action': 'write', 'resource': 'sc_compliance',
-                                   'app_id': 'sairncode',
-                                   'payload': {'id': COMP_ROW, 'finding': 'ZZ GATE PROBE'}},
-                            key=LICENSE, token=tokens[AUDITOR_ID])
-            check('auditor write sc_compliance -> %s' % st, st == 200,
-                  json.dumps(body)[:200])
-            for res in [r for r in SIX if r != 'sc_compliance']:
+            auditor_allowed = sorted(r for r in SIX
+                                     if 'auditor' in (overrides.get(r) or []))
+            print('\n5. the auditor overrides -- %s only'
+                  % (', '.join(auditor_allowed) or '(none)'))
+            for res in auditor_allowed:
+                row = COMP_ROW if res == 'sc_compliance' else 'ZZ-GATE-AUD-OK'
+                st, body = post(DATA, {'action': 'write', 'resource': res,
+                                       'app_id': 'sairncode',
+                                       'payload': {'id': row, 'finding': 'ZZ GATE PROBE'}},
+                                key=LICENSE, token=tokens[AUDITOR_ID])
+                check('auditor write %-22s -> %s' % (res, st), st == 200,
+                      json.dumps(body)[:200])
+                if (res, row) not in made:
+                    made.append((res, row))
+            for res in [r for r in SIX if r not in auditor_allowed]:
                 st, body = post(DATA, {'action': 'write', 'resource': res,
                                        'app_id': 'sairncode',
                                        'payload': {'id': 'ZZ-GATE-AUD'}},
@@ -311,12 +480,42 @@ def main():
     c = (body or {}).get('error', {}).get('code', '') if isinstance(body, dict) else ''
     check('admin hard-delete on sc_claims is REFUSED -> %s %s' % (st, c),
           st != 200, 'the row was destroyed: ' + json.dumps(body)[:200])
-    st, body = post(DATA, {'action': 'delete', 'resource': 'sc_coded_items',
-                           'app_id': 'sairncode', 'payload': {'id': CODED_ROW}},
-                    key=LICENSE, token=admin)
-    check('CONTROL: admin hard-delete on sc_coded_items still works -> %s' % st,
-          st == 200,
-          'the refusal is blanket rather than Tier A only: ' + json.dumps(body)[:200])
+    # ── THE CONTROL WAS POINTED AT A RECORD THAT STOPPED BEING DELETABLE ─────
+    # It named sc_coded_items and asserted 200, "the refusal is blanket rather
+    # than Tier A only" being its failure text. sc_coded_items was re-tiered A on
+    # 2026-09-23 and the registry withdrew its `delete`, so this arm was
+    # GUARANTEED to fail against a CORRECT deployment -- and to fail by accusing
+    # the fix of being over-broad, in the exact vocabulary of a genuine finding.
+    # Driven in-process on 2026-09-25: admin delete on sc_coded_items answers
+    # 400, the envelope refusing a verb the resource no longer declares.
+    #
+    # DERIVED, so it cannot happen again: the control needs a resource that
+    # genuinely still hard-deletes, and that is RESOURCES minus the Tier A list
+    # -- today sc_encoder, sc_scrubrules, sc_specialty_checks,
+    # sc_specialty_checklists, all four measured at 200. It picks the first by
+    # sort order rather than naming one, and UNVERIFIED is the answer if the
+    # population is ever empty, because a blanket-refusal control with nothing
+    # to control on is not a pass.
+    hard_delete = sorted(r for r in (all_resources or []) if r not in soft_only)
+    if not hard_delete:
+        notes.append('every sc_* resource is Tier A now, so the 5b CONTROL had no '
+                     'hard-deletable resource to prove the refusal is Tier A only '
+                     'rather than blanket -- that half is UNVERIFIED, not passed.')
+        print('  CONTROL SKIPPED -- no hard-deletable sc_ resource remains. '
+              'Reported, never silently passed.')
+    else:
+        ctl = hard_delete[0]
+        st, body = post(DATA, {'action': 'write', 'resource': ctl,
+                               'app_id': 'sairncode', 'payload': {'id': HARD_ROW}},
+                        key=LICENSE, token=admin)
+        check('CONTROL SETUP: admin write %s -> %s' % (ctl, st), st == 200,
+              json.dumps(body)[:200])
+        st, body = post(DATA, {'action': 'delete', 'resource': ctl,
+                               'app_id': 'sairncode', 'payload': {'id': HARD_ROW}},
+                        key=LICENSE, token=admin)
+        check('CONTROL: admin hard-delete on %s still works -> %s' % (ctl, st),
+              st == 200,
+              'the refusal is blanket rather than Tier A only: ' + json.dumps(body)[:200])
 
     # ── 6. CLEAN UP, AND REPORT IT ───────────────────────────────────────────
     # A failure to clean up is a FINDING. A probe that leaves live credentials
@@ -326,6 +525,12 @@ def main():
     # succeeds. The other two rows are deleted unconditionally even when the
     # section that writes them was skipped -- a delete of an absent id answers
     # 200 -- so this one follows the same shape rather than adding a branch.
+    #
+    # IT IS `made` NOW RATHER THAN THOSE THREE NAMES RETYPED (2026-09-25). The
+    # override-driven ALLOW arms write a resource that is not known until
+    # api/sd-data.js has been read, so a hand-kept cleanup list would orphan a
+    # live row on this tenant the next time an override is added -- the same
+    # shape of staleness the paragraph below already records this loop having.
     #
     # THE VERB DIFFERS BY RESOURCE NOW, AND THE PROBE IS WHY IT HAD TO (item 97,
     # 2026-09-15). sc_claims and sc_compliance are Tier A and no longer accept a
@@ -338,8 +543,7 @@ def main():
     # AND SOFT-DELETED ROWS DO NOT VANISH, so the read-back that follows checks
     # the row is EXCLUDED FROM READS rather than gone. A probe asserting absence
     # from the table would now fail against a correct implementation.
-    for res, row in (('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW),
-                     ('sc_coded_items', CODED_ROW)):
+    for res, row in made:
         verb = 'soft_delete' if res in soft_only else 'delete'
         st, body = post(DATA, {'action': verb, 'resource': res,
                                'app_id': 'sairncode', 'payload': {'id': row}},

@@ -184,12 +184,24 @@ const SC_RETENTION_FLOOR_YEARS = 10;
 // complexity: six lists to keep true instead of one. Widening or narrowing this
 // is one edit.
 //
-// TWO THINGS TO DECIDE AGAINST REAL USE, both one edit to this line:
-//   * a `coder` cannot write sc_claims. In this app the coder's own resource is
-//     sc_coded_items, which is NOT gated, so the split is coherent -- but if a
-//     coder is expected to create claims, add 'coder' here.
-//   * an `auditor` cannot write sc_compliance. Recording a finding is arguably
-//     the auditor's job; the role is read-shaped by name and is left out.
+// TWO THINGS WERE LEFT TO DECIDE AGAINST REAL USE. BOTH WERE DECIDED ON
+// 2026-09-14 AND THE ANSWERS LIVE IN SC_TIER_A_WRITE_ROLES_BY_RESOURCE BELOW,
+// not on this line -- that is what the override map is for, and each decision
+// is argued where it is recorded rather than here:
+//   * a `coder` cannot write sc_claims. DECIDED: still excluded.
+//   * an `auditor` cannot write sc_compliance. DECIDED: added.
+//
+// ── AND THE PREMISE THE FIRST DECISION WAS ARGUED ON MOVED (2026-09-23) ─────
+// This paragraph used to say the sc_claims split was coherent because "the
+// coder's own resource is sc_coded_items, which is NOT gated". sc_coded_items
+// was re-tiered A on 2026-09-23 and IS gated now -- it carries a verbatim quote
+// from a clinical note. The split is still coherent, but for a DIFFERENT
+// reason: the override map admits `coder` to sc_coded_items explicitly, so the
+// coder keeps write access to their own resource through a named exception
+// rather than through the absence of a gate. Left uncorrected, this sentence
+// and the sc_claims paragraph below both argued a live security decision from a
+// premise that had stopped being true, which is how a gate gets widened by
+// somebody reading the comment instead of the code.
 // ── THE SEVEN MAY BE HIDDEN, NEVER DESTROYED (2026-09-15, item 97) ─────────
 // IMPORTED, NOT RETYPED. This is the list api/_resources/sairncode.js uses to
 // decide which verb each resource grants, and the two must agree exactly or the
@@ -226,8 +238,13 @@ const SC_TIER_A_WRITE_GATED = SC_TIER_A_SOFT_DELETE_ONLY;
 // with open:
 //
 //   sc_claims  -- `coder` stays EXCLUDED. Coherent with the split this app
-//     already has: the coder's own resource, sc_coded_items, is ungated and
-//     that is their real job. Claims SUBMISSION is billing-side by design,
+//     already has: the coder's own resource is sc_coded_items and that is
+//     their real job. (That clause read "sc_coded_items, is ungated" until
+//     2026-09-25. It was gated on 2026-09-23 and the argument now rests on the
+//     sc_coded_items override two paragraphs down, which keeps `coder` on it
+//     deliberately -- a stronger footing than an absent gate, but not the same
+//     one, and the sentence had not moved.) Claims SUBMISSION is billing-side
+//     by design,
 //     matching the standard division between coding and billing even where
 //     SAIRNcode gives them separate roles. No change; recorded because "we
 //     looked and decided not to" is a different fact from "nobody asked".

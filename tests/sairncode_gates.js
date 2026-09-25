@@ -165,7 +165,7 @@ const WRITE_GATED = {
   sc_claims: 'admin|biller',
   sc_revenue: 'admin|biller',
   sc_denial: 'admin|biller',
-  sc_compliance: 'admin|biller|auditor',   // the one per-resource override
+  sc_compliance: 'admin|biller|auditor',   // a per-resource override; there are two
   sc_credential_scope: 'admin|biller',
   // ── THE SEVENTH, ADDED 2026-09-15 AFTER A LIVE PROBE FOUND IT OPEN ────────
   // The 2026-09-14 gate was a hand-written list of SIX and the register says
@@ -208,7 +208,16 @@ const WRITE_GATED = {
   // ORDINARY write now needs a session too, so it is unconditionally gated and
   // the conditional table no longer describes it.
   sc_auth_requests: 'admin|biller',
-  sc_coded_items: 'admin|biller',
+  // ── THE SECOND OVERRIDE, AND THIS CELL WAS WRONG FOR TWO DAYS (2026-09-25) ─
+  // It read 'admin|biller'. The handler grants ['admin','biller','coder'] --
+  // sc_coded_items is the coder's own resource and the override admits them,
+  // which is the half that makes the sc_claims coder-exclusion a split rather
+  // than a lockout. Nothing caught the disagreement because until today only
+  // Object.keys() of this table was ever read: the RESOURCE half was checked
+  // against the handler and the ROLE half was decoration, in a table whose own
+  // header says in capitals that it is the claim and a disagreement is a
+  // finding. Arm 5b below now reads the values, so this cell is load-bearing.
+  sc_coded_items: 'admin|biller|coder',
   sc_dme: 'admin|biller',
   sc_drg: 'admin|biller',
   sc_eligibility: 'admin|biller',
@@ -814,6 +823,28 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     ok(JSON.stringify(writeGated.sort()) === JSON.stringify(expectGated),
        'an ORDINARY write is gated on exactly the one the handler argues for ('
        + expectGated.join(', ') + ') -- measured: [' + writeGated.join(', ') + ']');
+    // ── THE ROLE HALF OF THE TABLE WAS DECORATION (2026-09-25) ──────────────
+    // The arm above compares Object.keys(WRITE_GATED) against the handler, and
+    // that was the ONLY read of this table anywhere in the suite. So half of it
+    // -- the 'admin|biller' strings -- was never checked against anything, in a
+    // table whose own header says in capitals that it is THE CLAIM, the handler
+    // is THE FACT, and "a disagreement is a finding". It had already drifted:
+    // sc_coded_items read 'admin|biller' while the handler granted
+    // ['admin','biller','coder'], from 2026-09-23 until this arm was written.
+    //
+    // WHY THIS IS NOT SELF-AGREEING. rolesFor() parses SC_TIER_A_WRITE_ROLES,
+    // SC_TIER_A_WRITE_ROLES_BY_RESOURCE and sc_settings' own narrowing out of
+    // api/sd-data.js -- the FACT -- and the table above is hand-written from a
+    // reading of the posture. A widened constant, a new override, or a deleted
+    // one now fails here instead of being ratified silently.
+    const roleClaims = Object.keys(WRITE_GATED).sort()
+      .map((r) => r + '=' + WRITE_GATED[r]).join('  ');
+    const roleFacts = Object.keys(WRITE_GATED).sort()
+      .map((r) => r + '=' + rolesFor(r).join('|')).join('  ');
+    ok(roleClaims === roleFacts,
+       'and the WRITE_GATED table\'s ROLE half agrees with the handler on every '
+       + 'one of the ' + Object.keys(WRITE_GATED).length + ' rows -- claim: ['
+       + roleClaims + '] fact: [' + roleFacts + ']');
     // THE CONDITIONAL GATE IS NOT COUNTED HERE, and that is the honest figure.
     // sc_auth_requests gates only the sign-off write, so a plain write to it is
     // open like the other 26 ordinary writes. Counting it as gated would report 2 of 28 when

@@ -116,14 +116,20 @@ check('a node failure returns (None, reason) rather than an empty list -- an '
       re.search(r'return None,', SRC) is not None)
 
 print('\n4. EVERYTHING IT CREATES IS RECOGNISABLY DISPOSABLE')
-for const in ('CODER_ID', 'AUDITOR_ID', 'CLAIM_ROW', 'COMP_ROW', 'CODED_ROW'):
+# HARD_ROW joined 2026-09-25 with the 5b CONTROL's move onto a resource that
+# genuinely still hard-deletes. Its arm destroys it, so it should never survive a
+# complete run -- but a run that dies between the write and the delete leaves it
+# on a real tenant, which is exactly the population this arm exists for.
+for const in ('CODER_ID', 'AUDITOR_ID', 'CLAIM_ROW', 'COMP_ROW', 'CODED_ROW',
+              'HARD_ROW'):
     val = getattr(P, const)
     check('%s is labelled ZZ-GATE-* (%r), so a reader finding it in real data '
           'knows what it is' % (const, val),
           isinstance(val, str) and val.lower().startswith('zz-gate'), val)
-check('CONTROL: the five labels are DISTINCT, or cleanup of one would look like '
+check('CONTROL: the six labels are DISTINCT, or cleanup of one would look like '
       'cleanup of another',
-      len({P.CODER_ID, P.AUDITOR_ID, P.CLAIM_ROW, P.COMP_ROW, P.CODED_ROW}) == 5)
+      len({P.CODER_ID, P.AUDITOR_ID, P.CLAIM_ROW, P.COMP_ROW, P.CODED_ROW,
+           P.HARD_ROW}) == 6)
 
 print('\n5. CLEANUP IS A FINDING WHEN IT FAILS, NOT A SILENT EXIT')
 check('the file says a cleanup failure is a FINDING',

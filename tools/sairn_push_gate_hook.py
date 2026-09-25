@@ -365,6 +365,34 @@ GUARD_TESTS = [
      'catch one built correctly and mutated after) -- and each carries a '
      'negative control, because a regex that stopped matching produces exactly '
      'the same clean output as a clean repo.'),
+    ('tests/sairncode_gates.js',
+     "SAIRNcode's Tier A write gate and soft-delete list still equal the Tier A "
+     'sc_* rows in docs/CRITICALITY-TIERS.md, in both directions',
+     'THE PUREST CASE THIS REGISTRY HAS, BECAUSE THE MECHANISM WORKED AND '
+     'NOBODY WAS REQUIRED TO LOOK. Both gates derive from ONE array in '
+     'api/_resources/sairncode.js, and this suite pins that array against the '
+     'tier register. Sixteen sc_* resources were re-tiered A between 2026-09-15 '
+     'and 2026-09-23 and the array did not move, so for EIGHT DAYS every one of '
+     'them accepted a write carrying the LICENCE KEY ALONE and could be '
+     'HARD-DELETED -- including sc_hcc (a named patient joined to a diagnosis '
+     'grouping and its dollar value), sc_eligibility (a named patient joined to '
+     'payer and plan) and sc_providers (the QP status that selects between two '
+     'CMS conversion factors, so a licence-key write changed what every unit '
+     'billed under that provider is worth). THIS SUITE WAS RED FOR ALL EIGHT '
+     'DAYS SAYING EXACTLY THAT. It was not in this registry and not in '
+     'report_only_checks.py either, so literally nothing in the repo ran it and '
+     'its red never cost anybody anything -- a different failure from an absent '
+     'check, and the one the author of the fix (cc, 5c781b99) named as still '
+     'open because a blocking-registry entry was not theirs to add '
+     'unilaterally. ADDED 2026-09-25 while discharging that review obligation, '
+     'with the objection MEASURED rather than argued: the wall-time cost is '
+     '0.40s, which is the cheapest entry in this registry. It is a SEAM by the '
+     "registry's own definition -- the tier register and the resource array are "
+     'maintained by different sessions for different reasons, and the register '
+     'moving alone is how this arrived. A second seam rides along: the '
+     'WRITE_GATED role table is hand-written from the posture and compared '
+     'against the roles parsed out of api/sd-data.js, so a silently widened '
+     'SC_TIER_A_WRITE_ROLES_BY_RESOURCE fails here and nowhere else.'),
 ]
 
 
