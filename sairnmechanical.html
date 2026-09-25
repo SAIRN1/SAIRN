@@ -960,6 +960,25 @@ async function callClaude(system, messages, maxTokens) {
         <select id="ma-gwp" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
           <option value="">Not stated</option><option value="true">Yes</option><option value="false">No</option>
         </select></div>
+      <!-- 17 CCR 95380 et seq. (CARB Refrigerant Management Program), the
+           THIRD rule and the only STATE one. This field is the feature: a
+           California program cannot be applied to an asset whose state nobody
+           recorded, so without it the board answers UNKNOWN JURISDICTION for
+           every asset -- correct, and useless. Blank is a real answer and is
+           stored as NULL; anything that is not two letters is REFUSED rather
+           than stored, because "Calif." would silently read as out of scope. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Site state</label>
+        <input id="ma-state" maxlength="2" placeholder="CA, OH&hellip; blank if not recorded" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box;text-transform:uppercase"></div>
+      <!-- A SECOND GWP QUESTION, NOT A REUSE OF THE ONE ABOVE. The two rules
+           have different floors -- 53 federally, 150 for the state program --
+           and a refrigerant between them is in scope under one and out under
+           the other. The app carries no GWP table for the same reason it
+           carries none for 53. If the answer above is already NO, this one is
+           DEDUCED rather than asked: at or below 53 is necessarily below 150. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">High-GWP over 150? (CARB)</label>
+        <select id="ma-gwp150" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Not stated</option><option value="true">Yes</option><option value="false">No</option>
+        </select></div>
       <!-- NOTHING ELSE STARTS THE 30-DAY CLOCK. Left blank means no repair
            clock is running and the board says so; the install date and today
            are never substituted. -->
@@ -977,8 +996,8 @@ async function callClaude(system, messages, maxTokens) {
 
   <div class="card">
     <div class="tw"><table>
-      <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Section 608<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 82.157 &middot; 50 lb</div></th><th>AIM Act<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 84.106 &middot; 15 lb</div></th></tr></thead>
-      <tbody id="mech-asset-tbody"><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+      <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Section 608<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 82.157 &middot; 50 lb</div></th><th>AIM Act<div style="font-weight:400;font-size:10px;color:var(--g400)">40 CFR 84.106 &middot; 15 lb</div></th><th>CARB<div style="font-weight:400;font-size:10px;color:var(--g400)">17 CCR 95380 &middot; over 50 lb &middot; CA only</div></th></tr></thead>
+      <tbody id="mech-asset-tbody"><tr><td colspan="9" style="text-align:center;padding:18px;color:var(--g400)">
         Loading&hellip;
       </td></tr></tbody>
     </table></div>
@@ -2454,6 +2473,24 @@ function mechData(action, resource, payload) {
     // Not "below". Nobody has stated what is in the machine.
     unknown_substance: 'SUBSTANCE UNSTATED'
   };
+  // -- AND A THIRD MAP, FOR A THIRD RULE. Six states, not five: the state
+  // program has a JURISDICTION axis neither federal rule has, and
+  // unknown_jurisdiction must never fall through to a green "below".
+  var MECH_CARB_STYLE = {
+    at_or_above:          'background:#fef3c7;color:#92400e',
+    below:                'background:#dcfce7;color:#166534',
+    not_applicable:       'background:#e5e7eb;color:#374151',
+    unknown_charge:       'background:#fee2e2;color:#991b1b',
+    unknown_substance:    'background:#fee2e2;color:#991b1b',
+    unknown_jurisdiction: 'background:#fee2e2;color:#991b1b'
+  };
+  var MECH_CARB_LABEL = {
+    at_or_above: 'over 50 lb, CA', below: 'not over 50 lb',
+    not_applicable: 'out of scope', unknown_charge: 'NEVER WEIGHED',
+    unknown_substance: 'SUBSTANCE UNSTATED',
+    // Not "out of scope". Nobody has said where the machine is.
+    unknown_jurisdiction: 'STATE NOT RECORDED'
+  };
   var MECH_REPAIR_STYLE = {
     open:             'background:#fef3c7;color:#92400e',
     overdue:          'background:#fee2e2;color:#991b1b',
@@ -2479,7 +2516,7 @@ function mechData(action, resource, payload) {
     var body = document.getElementById('mech-asset-tbody');
     if (!body) return;
     if (!board || !board.rows || !board.rows.length) {
-      body.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:18px;color:var(--g400)">' +
+      body.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:18px;color:var(--g400)">' +
         (emptyMsg || 'No site assets recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.') +
         '</td></tr>';
       return;
@@ -2488,6 +2525,7 @@ function mechData(action, resource, payload) {
       var ss = MECH_SCOPE_STYLE[r.refrigerant_scope] || MECH_SCOPE_STYLE.unknown_charge;
       var ws = MECH_WARRANTY_STYLE[r.warranty_status] || MECH_WARRANTY_STYLE.unknown;
       var as = MECH_AIM_STYLE[r.aim_scope] || MECH_AIM_STYLE.unknown_substance;
+      var cs = MECH_CARB_STYLE[r.carb_scope] || MECH_CARB_STYLE.unknown_jurisdiction;
       // `no_leak_recorded` deliberately renders NOTHING rather than a green
       // badge. Most units have no leak recorded, and a reassuring pill on
       // every row would make the handful that are genuinely overdue read as
@@ -2520,6 +2558,15 @@ function mechData(action, resource, payload) {
         // disagreement is the fact the column exists to show.
         '<td><span style="' + as + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
           mechEsc(MECH_AIM_LABEL[r.aim_scope] || r.aim_scope || '—') + '</span>' + rep + '</td>' +
+        // THE THIRD COLUMN, and it can disagree with BOTH of the others on the
+        // same row. A unit weighed at exactly 50 lb is `at/above` under 82.157
+        // and `not over 50 lb` here, because the federal rule reaches 50 OR
+        // MORE and the state one reaches MORE THAN 50. The state is printed
+        // beside the badge so a reader can see which jurisdiction produced the
+        // answer rather than assuming one.
+        '<td><span style="' + cs + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
+          mechEsc(MECH_CARB_LABEL[r.carb_scope] || r.carb_scope || '—') + '</span>' +
+          '<div style="font-size:11px;color:var(--g400)">' + mechEsc(r.site_state || 'state not recorded') + '</div></td>' +
         '</tr>';
     }).join('');
   }
@@ -2595,6 +2642,7 @@ function mechData(action, resource, payload) {
       return;
     }
     var gw = g('ma-gwp');
+    var gw150 = g('ma-gwp150');
     // Caught here as well as at the endpoint, and the endpoint is the one that
     // counts -- this only spares a round trip. A verification with no
     // detection date would stop a clock that was never started.
@@ -2629,11 +2677,20 @@ function mechData(action, resource, payload) {
       // The endpoint refuses a non-boolean rather than coercing, because
       // Boolean('false') is true.
       hfc_gwp_over_53: gw === 'true' ? true : (gw === 'false' ? false : null),
+      // 17 CCR 95380 et seq. Blank site_state is a real answer -- nobody has
+      // recorded where the machine is -- and the endpoint stores NULL. A value
+      // that is not two letters is REFUSED there, not silently dropped.
+      site_state: g('ma-state') || null,
+      gwp_over_150: gw150 === 'true' ? true : (gw150 === 'false' ? false : null),
       leak_detected_on: g('ma-leak-detected') || null,
       leak_repair_verified_on: g('ma-leak-verified') || null
     };
     mechData('write', 'mech_site_assets', payload).then(function (res) {
       if (res.body && res.body.ok) {
+        // ma-state is DELIBERATELY NOT CLEARED. The next asset entered is
+        // overwhelmingly at the same site, and clearing it would put
+        // `unknown_jurisdiction` on every second row of the board -- the state
+        // rule silently answering nothing because of a form reset.
         ['ma-id', 'ma-serial', 'ma-make', 'ma-model', 'ma-location', 'ma-installed', 'ma-charge',
          'ma-warranty-expires', 'ma-leak-detected', 'ma-leak-verified']
           .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });

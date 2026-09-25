@@ -131,6 +131,25 @@ alter table public.mech_site_assets
   add column if not exists leak_detected_on        date,
   add column if not exists leak_repair_verified_on date;
 
+-- ── AND TWO MORE FOR THE STATE RULE, 2026-09-25 ────────────────────────────
+-- CARB's Refrigerant Management Program (17 CCR 95380 et seq.) is a CALIFORNIA
+-- rule, and this registry had no column saying where an asset was. Without
+-- `site_state` the engine answers `unknown_jurisdiction` for every asset --
+-- which is the correct answer and a useless one, so the column is the feature.
+--
+-- BOTH ARE NULLABLE WITH NO DEFAULT, and that is load-bearing in the same way
+-- hfc_gwp_over_53 is. A `site_state` defaulted to anything would assert a
+-- jurisdiction nobody recorded. A `gwp_over_150` defaulted to false would read
+-- every unweighed refrigerant as out of scope under a program that may reach
+-- it -- unearned clearance, the one failure this table's whole design refuses.
+--
+-- gwp_over_150 IS ITS OWN COLUMN rather than a reuse of hfc_gwp_over_53: the
+-- two rules have different GWP floors (150 and 53), and a refrigerant in the
+-- 54-149 band is in scope under one and out under the other.
+alter table public.mech_site_assets
+  add column if not exists site_state              text,
+  add column if not exists gwp_over_150            boolean;
+
 create index if not exists idx_mech_asset_license
   on public.mech_site_assets (license_hash, created_at desc);
 -- "what is at this customer's site" is the question this table is asked.
@@ -176,6 +195,19 @@ select column_name, is_nullable, column_default
 -- Expect three rows, all is_nullable = YES, all column_default = NULL.
 -- THREE ROWS. Fewer means the ALTER above did not run and the board's AIM Act
 -- counts are being computed from columns that are not there.
+
+-- And the two CARB columns, on exactly the same argument. A site_state with a
+-- default asserts a jurisdiction nobody recorded; a gwp_over_150 defaulted to
+-- false reads every unstated refrigerant as out of scope under a program that
+-- may reach it:
+select column_name, is_nullable, column_default
+  from information_schema.columns
+ where table_schema = 'public' and table_name = 'mech_site_assets'
+   and column_name in ('site_state', 'gwp_over_150')
+ order by column_name;
+-- Expect TWO rows, both is_nullable = YES, both column_default = NULL.
+-- Fewer means the CARB board is computing from columns that are not there and
+-- every asset will read `unknown_jurisdiction` for ever.
 
 -- And confirm the grant is select+insert+update, with NO delete:
 select privilege_type

@@ -407,6 +407,125 @@ test('overriding only the 608 threshold leaves 84.106 at 15', () => {
   assert.strictEqual(b.aim.threshold_lb, 15);
 });
 
+// ── THE THIRD RULE: A STATE ONE, WITH AN AXIS NEITHER FEDERAL LIMB HAS ─────
+// The arm that matters is the BOUNDARY one. 40 CFR 82.157 reaches 50 lb or
+// more; the CARB program reaches MORE THAN 50 lb. A shared threshold constant
+// with a shared comparison would have answered one of those wrongly at exactly
+// 50 and nothing would have said so.
+section('THE THIRD RULE: 17 CCR 95380, and it is a CALIFORNIA rule');
+
+const CA = { asset_id: 'K1', customer_name: 'C', site_name: 'S', site_state: 'CA',
+             asset_type: 'chiller', refrigerant_type: 'r134a' };
+
+test('no state recorded is unknown_jurisdiction -- NOT below, NOT out of scope', () => {
+  const r = m.carbScope({ asset_type: 'rtu', refrigerant_type: 'r410a',
+                          refrigerant_charge_lb: 900, gwp_over_150: true });
+  assert.strictEqual(r.scope, 'unknown_jurisdiction');
+  assert.ok(/NOT a finding/.test(r.reason), r.reason);
+});
+
+test('a site outside California is not_applicable, and the state is NAMED', () => {
+  const r = m.carbScope(Object.assign({}, CA, { site_state: 'OH',
+    refrigerant_charge_lb: 900, gwp_over_150: true }));
+  assert.strictEqual(r.scope, 'not_applicable');
+  assert.ok(/recorded in OH/.test(r.reason), r.reason);
+});
+
+test('the state is case- and space-insensitive, because a roster types it by hand', () => {
+  assert.strictEqual(m.carbScope(Object.assign({}, CA, { site_state: ' ca ',
+    refrigerant_charge_lb: 900, gwp_over_150: true })).scope, 'at_or_above');
+});
+
+test('THE BOUNDARY: at exactly 50 lb the federal rule is IN and CARB is OUT', () => {
+  const asset = { asset_id: 'K', customer_name: 'C', site_name: 'S', site_state: 'CA',
+                  asset_type: 'chiller', refrigerant_type: 'r134a',
+                  refrigerant_charge_lb: 50, hfc_gwp_over_53: true, gwp_over_150: true };
+  assert.strictEqual(m.refrigerantScope(asset).scope, 'at_or_above');
+  assert.strictEqual(m.carbScope(asset).scope, 'below');
+});
+
+test('...and one tenth of a pound over, CARB is in scope too', () => {
+  assert.strictEqual(m.carbScope(Object.assign({}, CA,
+    { refrigerant_charge_lb: 50.1, gwp_over_150: true })).scope, 'at_or_above');
+});
+
+test('above the threshold with the substance unstated is unknown_substance', () => {
+  const r = m.carbScope(Object.assign({}, CA, { refrigerant_charge_lb: 900 }));
+  assert.strictEqual(r.scope, 'unknown_substance');
+  assert.ok(/NOT a finding/.test(r.reason), r.reason);
+});
+
+test('THE ONE SOUND DEDUCTION: at or below GWP 53 is necessarily below 150, so the contractor is not asked twice', () => {
+  const r = m.carbScope(Object.assign({}, CA,
+    { refrigerant_charge_lb: 900, hfc_gwp_over_53: false }));
+  assert.strictEqual(r.scope, 'not_applicable');
+  assert.strictEqual(r.derived_from, 'hfc_gwp_over_53');
+});
+
+test('NEGATIVE CONTROL: the CONVERSE is not taken -- above 53 says NOTHING about 150, and a refrigerant in the 54-149 band must stay unknown', () => {
+  const r = m.carbScope(Object.assign({}, CA,
+    { refrigerant_charge_lb: 900, hfc_gwp_over_53: true }));
+  assert.strictEqual(r.scope, 'unknown_substance');
+});
+
+test('gwp_over_150 stated false is not_applicable, and it wins over the deduction', () => {
+  assert.strictEqual(m.carbScope(Object.assign({}, CA,
+    { refrigerant_charge_lb: 900, gwp_over_150: false, hfc_gwp_over_53: true })).scope,
+    'not_applicable');
+});
+
+test('no charge recorded in California is unknown_charge, never below', () => {
+  assert.strictEqual(m.carbScope(Object.assign({}, CA, { gwp_over_150: true })).scope,
+    'unknown_charge');
+});
+
+test('a unit holding no refrigerant is not_applicable even in California', () => {
+  assert.strictEqual(m.carbScope(Object.assign({}, CA,
+    { refrigerant_type: 'none', refrigerant_charge_lb: 900 })).scope, 'not_applicable');
+});
+
+test('the scope answer says what this app does NOT assert', () => {
+  const r = m.carbScope(Object.assign({}, CA,
+    { refrigerant_charge_lb: 900, gwp_over_150: true }));
+  assert.ok(/does NOT encode their frequency or deadlines/.test(r.reason), r.reason);
+});
+
+test('the board reports the third rule as its OWN block, with its own citation and an unknown_jurisdiction count the federal tallies do not have', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET.concat([
+    Object.assign({}, CA, { asset_id: 'K9', refrigerant_charge_lb: 900, gwp_over_150: true })
+  ]), TODAY);
+  assert.strictEqual(b.carb.citation, '17 CCR 95380 et seq.');
+  assert.strictEqual(b.carb.gwp_floor, 150);
+  assert.strictEqual(b.carb.state, 'CA');
+  assert.strictEqual(b.carb.scope.at_or_above, 1);
+  // Every TWO_RULE_FLEET row has no site_state at all.
+  assert.strictEqual(b.carb.unknown_jurisdiction_count, TWO_RULE_FLEET.length);
+  assert.ok(/NOT encoded/.test(b.carb.not_asserted), b.carb.not_asserted);
+});
+
+test('the three tallies are SEPARATE -- no merged "in scope" number exists', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY);
+  assert.ok(b.refrigerant && b.aim && b.carb);
+  assert.ok(!('in_scope' in b), 'a merged verdict appeared');
+});
+
+test('every row carries the third rule beside the other two, and site_state is normalised on the row', () => {
+  const b = m.evaluateRegistry([Object.assign({}, CA, { asset_id: 'K7',
+    site_state: 'ca', refrigerant_charge_lb: 900, gwp_over_150: true })], TODAY);
+  assert.strictEqual(b.rows[0].site_state, 'CA');
+  assert.strictEqual(b.rows[0].carb_scope, 'at_or_above');
+  assert.ok(b.rows[0].carb_reason);
+});
+
+test('the CARB threshold and GWP floor are independently overridable, and overriding them does not move either federal rule', () => {
+  const b = m.evaluateRegistry(TWO_RULE_FLEET, TODAY,
+    { carb_threshold_lb: 5, carb_gwp_floor: 9 });
+  assert.strictEqual(b.carb.threshold_lb, 5);
+  assert.strictEqual(b.carb.gwp_floor, 9);
+  assert.strictEqual(b.aim.threshold_lb, 15);
+  assert.strictEqual(b.threshold_lb, 50);
+});
+
 // The engine still asserts no GWP figure for any named refrigerant -- the
 // substance is stated by the contractor, for the reason the header gives.
 test('the module carries NO refrigerant-to-GWP table', () => {

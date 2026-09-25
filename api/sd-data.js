@@ -1759,6 +1759,11 @@ module.exports = async (req, res) => {
       const cols = 'asset_id,customer_name,site_name,site_address,asset_type,make,model,serial_no,' +
         'location_on_site,installed_on,has_warranty,warranty_expires_on,refrigerant_type,' +
         'refrigerant_charge_lb,hfc_gwp_over_53,leak_detected_on,leak_repair_verified_on,' +
+        // The two CARB columns are in this list for the identical reason the
+        // three AIM ones are: the engine can compute 17 CCR 95380 scope
+        // perfectly and still report `unknown_jurisdiction` for every asset
+        // for ever, because the column it reads was never fetched.
+        'site_state,gwp_over_150,' +
         'status,notes,recorded_by,created_at,updated_at';
 
       if (action === 'read') {
@@ -1841,6 +1846,33 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'BAD_GWP_FLAG', message: 'hfc_gwp_over_53 must be true, false, or left empty if nobody has stated whether the refrigerant is an HFC above GWP 53. Empty is stored as unstated, not as no.' } });
         return;
       }
+      // ── THE THIRD RULE'S FIELDS (17 CCR 95380 et seq.) ──────────────────
+      // gwp_over_150 is a SECOND tri-state, not a reuse of the one above: the
+      // two rules have different GWP floors and a refrigerant in the 54-149
+      // band is in scope under one and out under the other. Refused the same
+      // way and for the same reason -- Boolean('false') is true.
+      let gwp150 = null;
+      if (typeof p.gwp_over_150 === 'boolean') {
+        gwp150 = p.gwp_over_150;
+      } else if (p.gwp_over_150 !== null && p.gwp_over_150 !== undefined &&
+                 String(p.gwp_over_150).trim() !== '') {
+        res.status(400).json({ error: { code: 'BAD_GWP150_FLAG', message: 'gwp_over_150 must be true, false, or left empty if nobody has stated whether the refrigerant is high-GWP for the California program. Empty is stored as unstated, not as no.' } });
+        return;
+      }
+      // site_state: stored UPPERCASE and two letters, or refused. A free-text
+      // state is a state rule that matches "CA" and misses "Ca", "calif." and
+      // "California" -- and a miss here reads on the board as out of scope.
+      // Empty is a real answer (nobody has recorded it) and is stored as null.
+      let siteState = null;
+      if (p.site_state !== null && p.site_state !== undefined &&
+          String(p.site_state).trim() !== '') {
+        const st = String(p.site_state).trim().toUpperCase();
+        if (!/^[A-Z]{2}$/.test(st)) {
+          res.status(400).json({ error: { code: 'BAD_SITE_STATE', message: 'site_state must be a two-letter state code such as CA or OH, or left empty if nobody has recorded it. It was not stored, because a state that does not match exactly reads on the board as out of scope under a state rule.' } });
+          return;
+        }
+        siteState = st;
+      }
       const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
       // A leak date that is present but malformed is REFUSED, not dropped to
       // null. Silently storing null would tell the technician who just typed
@@ -1890,6 +1922,10 @@ module.exports = async (req, res) => {
           // 40 CFR 84.106. null is a real state on all three -- unstated
           // substance, no leak recorded, no verification recorded.
           hfc_gwp_over_53: gwpOver,
+          // 17 CCR 95380 et seq. null is a real state on both -- no state
+          // recorded, and no substance stated for the state rule's floor.
+          site_state: siteState,
+          gwp_over_150: gwp150,
           leak_detected_on: DATE_RE.test(String(p.leak_detected_on || '')) ? p.leak_detected_on : null,
           leak_repair_verified_on: DATE_RE.test(String(p.leak_repair_verified_on || '')) ? p.leak_repair_verified_on : null,
           status: status,

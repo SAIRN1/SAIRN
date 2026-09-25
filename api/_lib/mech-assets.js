@@ -102,6 +102,52 @@ const AIM_GWP_FLOOR = 53;
 const AIM_REPAIR_DAYS = 30;
 const AIM_VERIFY_FOLLOWUP_DAYS = 10;
 
+// ── AND A THIRD RULE, WHICH IS A STATE ONE (2026-09-25) ────────────────────
+// CARB's Refrigerant Management Program, 17 CCR 95380 et seq. Both rules above
+// are FEDERAL and reach every asset in the registry; this one reaches only
+// assets in California, and until now the registry had no way to say where an
+// asset was. THAT IS THE FIRST GAP, not the threshold: a state rule applied to
+// an asset whose state nobody recorded is a guess with a citation on it.
+//
+// SO THERE IS A SIXTH SCOPE HERE THAT NEITHER FEDERAL LIMB HAS:
+// `unknown_jurisdiction`. Not `below`, not `not_applicable`. An asset with no
+// state recorded is NOT a finding that CARB does not reach it, exactly as
+// `unknown_substance` is not a finding that the AIM Act does not.
+//
+// ── THE 50 lb BOUNDARY IS NOT THE SAME 50 lb, AND THAT IS WHY THIS IS ITS
+// ── OWN LIMB RATHER THAN A FLAG ON refrigerantScope.
+// 40 CFR 82.157 reaches an appliance normally containing 50 pounds OR MORE.
+// The CARB program reaches a system containing MORE THAN 50 pounds. A unit
+// weighed at exactly 50.0 lb is therefore IN scope federally and OUT of scope
+// under the state rule, and a shared threshold constant with a shared
+// comparison would have silently answered one of those wrongly. Driven both
+// ways in the test file at exactly 50.
+//
+// ── THE GWP FLOOR IS DIFFERENT TOO, AND ONE DIRECTION OF IT IS DEDUCIBLE ───
+// CARB's high-GWP floor for this program is 150; the AIM Act's is 53. Those
+// are different questions and the contractor answers them separately --
+// `gwp_over_150` is its own tri-state for the same reason `hfc_gwp_over_53`
+// is: this file carries no GWP table and will not seed one.
+//
+// BUT ONE IMPLICATION IS SOUND AND IS TAKEN: if the contractor has already
+// stated the refrigerant is NOT above 53, it cannot be above 150, so the CARB
+// substance test answers `not_applicable` without asking again. The converse
+// is NOT sound -- above 53 says nothing about 150 -- and is not taken. A
+// refrigerant in the 54-149 band (R-152a sits at about 124) is in AIM scope
+// and out of CARB's, which is precisely the case the asymmetry protects.
+//
+// ── WHAT THIS LIMB DOES NOT ASSERT ────────────────────────────────────────
+// Inspection frequency, registration deadlines, reporting cadence and the
+// tiering by system size are NOT encoded. They are real parts of the program
+// and this file does not carry them, because the same rule the AIM block
+// states applies here: a number this app asserted, which a contractor then
+// acted on, with no source behind it. The scope answer says the program may
+// reach the unit and says to confirm the duties against the current rule.
+const CARB_RMP_THRESHOLD_LB = 50;
+const CARB_RMP_CITATION = '17 CCR 95380 et seq.';
+const CARB_GWP_FLOOR = 150;
+const CARB_STATE = 'CA';
+
 // Trade taxonomy. The research is explicit that this is the ONLY part that
 // differs per trade -- the schema does not. Unknown types are refused on write
 // rather than stored, so a board can never group by a category nobody defined.
@@ -253,6 +299,89 @@ function aimScope(asset, thresholdLb, gwpFloor) {
   }, base);
 }
 
+// ── THE THIRD, STATE-SCOPED LIMB. See the CARB block above the constants.
+// Written as its own function for the same reason aimScope is: three answers
+// must be producible side by side without any of them being "the" answer, and
+// this one has an axis -- jurisdiction -- that neither federal limb has.
+function carbScope(asset, thresholdLb, gwpFloor) {
+  const t = Number.isFinite(thresholdLb) ? thresholdLb : CARB_RMP_THRESHOLD_LB;
+  const g = Number.isFinite(gwpFloor) ? gwpFloor : CARB_GWP_FLOOR;
+  const base = { threshold_lb: t, citation: CARB_RMP_CITATION, gwp_floor: g,
+                 state: CARB_STATE };
+  if (!asset || typeof asset !== 'object') {
+    return Object.assign({ scope: 'unknown_jurisdiction', reason: 'no asset' }, base);
+  }
+  // JURISDICTION IS ASKED FIRST, and a missing answer stops here. Reaching the
+  // charge test with no state would mean reporting a Californian threshold
+  // against an asset that may be in Ohio.
+  const st = String(asset.site_state == null ? '' : asset.site_state).trim().toUpperCase();
+  if (!st) {
+    return Object.assign({
+      scope: 'unknown_jurisdiction',
+      reason: 'no state recorded for this site, so a state rule cannot be applied — '
+        + 'this is NOT a finding that the program does not reach it'
+    }, base);
+  }
+  if (st !== CARB_STATE) {
+    return Object.assign({
+      scope: 'not_applicable', site_state: st,
+      reason: 'this site is recorded in ' + st + ', and this is a California program'
+    }, base);
+  }
+  if (asset.refrigerant_type === 'none') {
+    return Object.assign({ scope: 'not_applicable', site_state: st,
+      reason: 'this unit holds no refrigerant' }, base);
+  }
+  const lb = chargeLb(asset.refrigerant_charge_lb);
+  if (lb === null || lb < 0) {
+    return Object.assign({
+      scope: 'unknown_charge', site_state: st,
+      reason: 'no full charge recorded, so the threshold cannot be applied to this unit'
+    }, base);
+  }
+  // MORE THAN, not at-or-above. See the boundary note above the constants: the
+  // federal leak-repair rule reaches 50 lb exactly and this one does not.
+  if (lb <= t) {
+    return Object.assign({
+      scope: 'below', charge_lb: lb, site_state: st,
+      reason: 'recorded full charge is not above the threshold, so this program does '
+        + 'not reach it whatever the refrigerant is'
+    }, base);
+  }
+  if (asset.gwp_over_150 === true) {
+    return Object.assign({
+      scope: 'at_or_above', charge_lb: lb, site_state: st,
+      reason: 'recorded full charge is above the threshold and the refrigerant is '
+        + 'recorded as high-GWP for this program — registration, leak inspection and '
+        + 'reporting duties may apply; this app does NOT encode their frequency or '
+        + 'deadlines, so confirm them against the current rule'
+    }, base);
+  }
+  if (asset.gwp_over_150 === false) {
+    return Object.assign({
+      scope: 'not_applicable', charge_lb: lb, site_state: st,
+      reason: 'recorded as not high-GWP for this program, so it does not reach it'
+    }, base);
+  }
+  // THE ONE SOUND DEDUCTION, AND ONLY THIS ONE. At or below 53 is necessarily
+  // below 150. The converse is not taken -- see the constants block.
+  if (asset.hfc_gwp_over_53 === false) {
+    return Object.assign({
+      scope: 'not_applicable', charge_lb: lb, site_state: st,
+      derived_from: 'hfc_gwp_over_53',
+      reason: 'the refrigerant is already recorded as at or below GWP 53, which is '
+        + 'necessarily below ' + g + ', so this program does not reach it — derived, '
+        + 'not asked again'
+    }, base);
+  }
+  return Object.assign({
+    scope: 'unknown_substance', charge_lb: lb, site_state: st,
+    reason: 'recorded full charge is above the threshold, but nobody has stated '
+      + 'whether this refrigerant is high-GWP for this program — this is NOT a '
+      + 'finding that the program does not apply'
+  }, base);
+}
+
 // ── THE REPAIR CLOCK, AND IT ONLY RUNS ON A DATE SOMEBODY RECORDED ─────────
 // 40 CFR 84.106 gives 30 days from a leak exceeding the applicable rate to
 // identify and repair it, with an initial verification test in that window and a
@@ -342,11 +471,15 @@ function evaluateRegistry(assets, today, opts) {
       // BOTH RULES, SIDE BY SIDE. Neither is "the" answer -- see the AIM Act
       // block at the top of this file.
       const aim = aimScope(a, o.aim_threshold_lb, o.aim_gwp_floor);
+      // THE THIRD RULE, and the only state-scoped one. Reported beside the two
+      // federal limbs rather than merged into them -- see the CARB block.
+      const carb = carbScope(a, o.carb_threshold_lb, o.carb_gwp_floor);
       const clock = aimRepairClock(a, today, o.aim_repair_days, o.aim_followup_days);
       return {
         asset_id: a.asset_id,
         customer_name: a.customer_name || null,
         site_name: a.site_name || null,
+        site_state: a.site_state ? String(a.site_state).trim().toUpperCase() : null,
         asset_type: a.asset_type || null,
         make: a.make || null,
         model: a.model || null,
@@ -364,7 +497,9 @@ function evaluateRegistry(assets, today, opts) {
         aim_repair_state: clock.state,
         aim_repair_due_on: clock.repair_due_on,
         aim_repair_days_left: clock.days_left,
-        aim_repair_reason: clock.reason
+        aim_repair_reason: clock.reason,
+        carb_scope: carb.scope,
+        carb_reason: carb.reason
       };
     });
 
@@ -377,11 +512,18 @@ function evaluateRegistry(assets, today, opts) {
                       unknown_charge: 0, unknown_substance: 0 };
   const aimRepair = { open: 0, overdue: 0, repair_verified: 0,
                       no_leak_recorded: 0, unknown: 0 };
+  // SIX BUCKETS, NOT FIVE. `unknown_jurisdiction` is the state-rule axis the
+  // two federal tallies do not have, and folding it into unknown_charge would
+  // hide the fact that the registry does not know where its assets are.
+  const carbCounts = { at_or_above: 0, below: 0, not_applicable: 0,
+                       unknown_charge: 0, unknown_substance: 0,
+                       unknown_jurisdiction: 0 };
   rows.forEach(function (r) {
     warranty[r.warranty_status] = (warranty[r.warranty_status] || 0) + 1;
     refrigerant[r.refrigerant_scope] = (refrigerant[r.refrigerant_scope] || 0) + 1;
     aimCounts[r.aim_scope] = (aimCounts[r.aim_scope] || 0) + 1;
     aimRepair[r.aim_repair_state] = (aimRepair[r.aim_repair_state] || 0) + 1;
+    carbCounts[r.carb_scope] = (carbCounts[r.carb_scope] || 0) + 1;
   });
 
   // Sites, derived rather than stored: the research's shape is
@@ -416,6 +558,25 @@ function evaluateRegistry(assets, today, opts) {
       unknown_substance_count: aimCounts.unknown_substance,
       overdue_repair_count: aimRepair.overdue
     },
+    // ── THE THIRD RULE, AND THE ONLY STATE ONE ─────────────────────────────
+    // Its own block for the same reason `aim` has one, plus a reason neither
+    // federal limb needs: `unknown_jurisdiction_count`. A registry that does
+    // not know where its assets are cannot answer a state rule at all, and
+    // that number says so on the face of the board rather than leaving every
+    // such asset looking out of scope.
+    carb: {
+      threshold_lb: Number.isFinite(o.carb_threshold_lb) ? o.carb_threshold_lb : CARB_RMP_THRESHOLD_LB,
+      citation: CARB_RMP_CITATION,
+      gwp_floor: Number.isFinite(o.carb_gwp_floor) ? o.carb_gwp_floor : CARB_GWP_FLOOR,
+      state: CARB_STATE,
+      scope: carbCounts,
+      unknown_substance_count: carbCounts.unknown_substance,
+      unknown_jurisdiction_count: carbCounts.unknown_jurisdiction,
+      // SAID IN THE PAYLOAD, not only in a comment, because this block will be
+      // read by somebody who never opens this file.
+      not_asserted: 'inspection frequency, registration deadlines, reporting '
+        + 'cadence and tiering by system size are NOT encoded by this app'
+    },
     // Surfaced beside the totals rather than under them, same as the credential
     // board: a registry that buries its unknowns reads as a clean bill.
     unknown_charge_count: refrigerant.unknown_charge,
@@ -426,6 +587,11 @@ function evaluateRegistry(assets, today, opts) {
 
 module.exports = {
   DEFAULT_WARN_DAYS,
+  CARB_RMP_THRESHOLD_LB,
+  CARB_RMP_CITATION,
+  CARB_GWP_FLOOR,
+  CARB_STATE,
+  carbScope,
   EPA_LEAK_THRESHOLD_LB,
   EPA_THRESHOLD_CITATION,
   AIM_LEAK_THRESHOLD_LB,

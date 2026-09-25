@@ -378,6 +378,90 @@ async function main() {
     assert.strictEqual(res.body.board.aim.threshold_lb, 5);
   });
 
+  // ── THE THIRD RULE'S TWO COLUMNS, SAME TWO QUESTIONS ────────────────────
+  // Fetched, and stored. Either one missing produces a board that answers
+  // `unknown_jurisdiction` for every asset for ever, which on screen is
+  // indistinguishable from a state rule that ran and reached nothing.
+
+  await test('the CARB columns are actually FETCHED', async () => {
+    const { handler, calls } = loadHandler({ rows: [] });
+    await handler(mockReq('read', { today: '2026-09-02' }), mockRes());
+    const url = calls.find(c => c.method === 'GET').url;
+    ['site_state', 'gwp_over_150'].forEach(function (c) {
+      assert.ok(url.indexOf(c) !== -1,
+        c + ' is not in the select list -- the CARB board would read unknown_jurisdiction forever');
+    });
+  });
+
+  await test('the CARB fields are actually STORED, and site_state is upper-cased on the way in', async () => {
+    const { handler, calls } = loadHandler({});
+    await handler(mockReq('write', Object.assign({}, GOOD, {
+      site_state: ' ca ', gwp_over_150: true
+    })), mockRes());
+    const sent = JSON.parse(calls.find(c => c.method === 'POST').body);
+    assert.strictEqual(sent.site_state, 'CA');
+    assert.strictEqual(sent.gwp_over_150, true);
+  });
+
+  await test('a site_state that is not two letters is REFUSED, not stored -- "Calif." would read as out of scope', async () => {
+    for (const v of ['California', 'Calif.', 'C', 'CAL', '1A']) {
+      const res = mockRes();
+      await loadHandler({}).handler(mockReq('write', Object.assign({}, GOOD, { site_state: v })), res);
+      assert.strictEqual(res.statusCode, 400, 'accepted ' + JSON.stringify(v));
+      assert.strictEqual(res.body.error.code, 'BAD_SITE_STATE');
+    }
+  });
+
+  await test('an EMPTY site_state is a real answer and is stored as null, never refused', async () => {
+    for (const v of ['', '   ', null, undefined]) {
+      const p = Object.assign({}, GOOD);
+      if (v === undefined) delete p.site_state; else p.site_state = v;
+      const { handler, calls } = loadHandler({});
+      await handler(mockReq('write', p), mockRes());
+      const sent = JSON.parse(calls.find(c => c.method === 'POST').body);
+      assert.strictEqual(sent.site_state, null,
+        'unrecorded state was stored as ' + JSON.stringify(sent.site_state));
+    }
+  });
+
+  await test('gwp_over_150 is a TRI-STATE: a non-boolean is refused rather than coerced, because Boolean("false") is true', async () => {
+    for (const v of ['false', 'true', 'yes', 0, 1]) {
+      const res = mockRes();
+      await loadHandler({}).handler(mockReq('write', Object.assign({}, GOOD, { gwp_over_150: v })), res);
+      assert.strictEqual(res.statusCode, 400, 'accepted ' + JSON.stringify(v));
+      assert.strictEqual(res.body.error.code, 'BAD_GWP150_FLAG');
+    }
+  });
+
+  await test('...and unstated gwp_over_150 is stored as null, not as false', async () => {
+    for (const v of ['', null, undefined]) {
+      const p = Object.assign({}, GOOD);
+      if (v === undefined) delete p.gwp_over_150; else p.gwp_over_150 = v;
+      const { handler, calls } = loadHandler({});
+      await handler(mockReq('write', p), mockRes());
+      const sent = JSON.parse(calls.find(c => c.method === 'POST').body);
+      assert.strictEqual(sent.gwp_over_150, null,
+        'unstated was stored as ' + JSON.stringify(sent.gwp_over_150));
+    }
+  });
+
+  await test('read returns all THREE rules, and the CARB block carries its own citation and an unknown_jurisdiction count', async () => {
+    const { handler } = loadHandler({ rows: [
+      { asset_id: 'A1', customer_name: 'C', site_name: 'S', asset_type: 'chiller',
+        refrigerant_type: 'r134a', refrigerant_charge_lb: 900, hfc_gwp_over_53: true },
+      { asset_id: 'A2', customer_name: 'C', site_name: 'S', site_state: 'CA', asset_type: 'chiller',
+        refrigerant_type: 'r134a', refrigerant_charge_lb: 900, gwp_over_150: true }
+    ] });
+    const res = mockRes();
+    await handler(mockReq('read', { today: '2026-09-02' }), res);
+    const b = res.body.board;
+    assert.strictEqual(b.carb.citation, '17 CCR 95380 et seq.');
+    assert.strictEqual(b.carb.unknown_jurisdiction_count, 1);
+    assert.strictEqual(b.carb.scope.at_or_above, 1);
+    // And no merged verdict appeared alongside the three.
+    assert.ok(!('in_scope' in b));
+  });
+
   console.log('\n' + (process.exitCode ? 'FAILURES ABOVE' : 'ALL ' + passed + ' MECH-ASSET-ENDPOINT ASSERTIONS PASS'));
 }
 
