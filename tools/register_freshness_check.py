@@ -73,9 +73,13 @@ embedded in `what`/`verdict` prose (must resolve).
   WHAT WAS TRUE was that each re-invented the SHAPE -- compare committed
   evidence against freshly recomputed truth. Sharing a shape is not sharing a
   subject, and consolidation that goes by resemblance is how coverage
-  disappears quietly. The duplication worth ending is the PATTERN, and the
-  place to end it is a shared helper the next one is written against, not a
-  retirement of four checks that each look at something else.
+  disappears quietly.
+  DECIDED 2026-09-25 (Michael), and this paragraph is the record so nobody
+  re-opens it: KEEP ALL FOUR. The parity audit proved they cover genuinely
+  different subjects, and there is NO shared-helper refactor -- the
+  re-invention is a cost worth paying against the alternative of a fifth
+  abstraction that every future checker has to be bent to fit. This tool is
+  the fifth CHECK, not the one that replaces four.
 """
 import io
 import json
