@@ -1059,6 +1059,96 @@ def overdue_records(data, session=None):
     return out
 
 
+# ── STALE BY CODE, NOT BY CLOCK (item 102 part 4, 2026-09-25) ───────────────
+# OVERDUE_HOURS asks "has anybody got to this yet". It cannot ask the other
+# question, and the other question is the one that decides whether the review
+# is still WORTH anything: HAS THE CODE MOVED UNDER IT.
+#
+# An obligation opened an hour ago against a file three sessions have since
+# rewritten is not fresh in any useful sense -- the reviewer would read a diff
+# that no longer describes the tree, sign it, and the ledger would carry a
+# verdict about code that is gone. That is not hypothetical here: this platform
+# runs four build clones on one branch, and `docs/CRITICALITY-TIERS.md` alone
+# took eleven commits in two days. The clock says an hour; the tree says the
+# subject changed.
+#
+# WHAT IS COMPARED IS THE RECORD'S OWN FILES, NOT HEAD ITSELF. `HEAD != the
+# recorded sha` is true within minutes of every push and would mark the whole
+# queue stale, which is a signal nobody reads -- the same failure the overdue
+# banner was nearly reduced to. So the test is whether any path in the record's
+# `files` differs between the sha it was opened at and HEAD. That is the exact
+# set the reviewer was pointed at.
+#
+# FOUR STATES, NOT TWO, and the two that are not FRESH/STALE are the reason
+# this is written out rather than folded into a boolean:
+#   UNSTAMPED       -- opened before this field existed, or naming no files.
+#                      NOT fresh. Every record already in the ledger on the day
+#                      this landed is in this state, and printing them as clean
+#                      would be a fleet-wide false all-clear on arrival.
+#   COULD-NOT-TELL  -- the sha does not resolve in this clone (rebased away,
+#                      or never fetched), or git failed. PR 1.11: could-not-run
+#                      is a third answer and is never folded into passed.
+#
+# AND IT IS RELATIVE TO THIS CLONE'S HEAD, which is said out loud in the output
+# rather than assumed: a clone that has not fetched sees less movement than one
+# that has, so FRESH here means "nothing I can see has moved it", never "nothing
+# has".
+def head_sha():
+    return git('rev-parse', 'HEAD').strip()
+
+
+def code_staleness(rec, head=None):
+    """-> (state, detail). state in FRESH | STALE | UNSTAMPED | COULD-NOT-TELL."""
+    sha = rec.get('opened_at_sha')
+    if not sha:
+        return ('UNSTAMPED', 'opened before the sha stamp existed, so whether '
+                             'the code moved under it cannot be computed -- '
+                             'which is not the same answer as fresh')
+    files = sorted(set(f for f in (rec.get('files') or []) if f))
+    if not files:
+        return ('UNSTAMPED', 'the record names no files, so there is no subject '
+                             'to compare a sha against')
+    try:
+        if head is None:
+            head = head_sha()
+        # Resolve FIRST and separately: `git diff` against an unknown sha fails
+        # with the same exit code as a dozen other things, and "the sha is gone"
+        # is a different report from "git broke".
+        try:
+            git('rev-parse', '--verify', '--quiet', sha + '^{commit}')
+        except CouldNotTell:
+            return ('COULD-NOT-TELL',
+                    'the recorded sha %s does not resolve in this clone -- '
+                    'rebased away without a reseat, or never fetched. NOT fresh.'
+                    % sha[:12])
+        if sha.strip() == head.strip():
+            return ('FRESH', 'HEAD is still the commit it was opened at')
+        moved = [ln.strip() for ln
+                 in git('diff', '--name-only', sha + '..' + head, '--',
+                        *files).split('\n') if ln.strip()]
+    except CouldNotTell as e:
+        return ('COULD-NOT-TELL', str(e))
+    if moved:
+        return ('STALE', 'moved since %s: %s' % (sha[:12], ', '.join(moved)))
+    return ('FRESH', 'none of its %d file(s) changed since %s' % (len(files),
+                                                                  sha[:12]))
+
+
+def stale_records(data, session=None):
+    """[(record, state, detail)] for every open record that is not FRESH."""
+    try:
+        head = head_sha()
+    except CouldNotTell as e:
+        head = None
+        _ = e
+    out = []
+    for r in open_records(data, session):
+        state, detail = code_staleness(r, head)
+        if state != 'FRESH':
+            out.append((r, state, detail))
+    return out
+
+
 def self_signed(data):
     """A record whose reviewer is its own author. The one claim the rule exists
     to refuse, and the only part of a review a machine can check."""
@@ -1297,9 +1387,20 @@ def _open_record(why, hits, rule_hits):
     data = load_reviews()
     author = session_name()
     owner, owner_note = assign_owner(author, data)
+    # ── THE SHA THE OBLIGATION IS ABOUT (item 102 part 4) ──────────────────
+    # Stamped at open, never later: it is the commit the reviewer's diff is
+    # relative to, and code_staleness() has nothing to compare without it.
+    # None rather than a guess when git cannot answer -- an UNSTAMPED record
+    # reports as could-not-compute, which is honest, where a wrong sha would
+    # report a confident FRESH or a confident STALE.
+    try:
+        opened_sha = head_sha()
+    except CouldNotTell:
+        opened_sha = None
     rec = {
         'author_session': author,
         'opened_at': time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime()),
+        'opened_at_sha': opened_sha,
         'resources': sorted(hits),
         # ── ALWAYS PRESENT, EVEN WHEN EMPTY (2026-09-24) ───────────────────
         # A field that appears only when non-empty is a field every reader has
@@ -1431,6 +1532,7 @@ def cmd_list():
         print('No open Tier A review obligations.')
         return 0
     late = dict((id(r), a) for r, a in overdue_records(data))
+    stale = dict((id(r), (s, d)) for r, s, d in stale_records(data))
     print('%d open Tier A review obligation(s):' % len(rows))
     for r in rows:
         age = late.get(id(r))
@@ -1461,7 +1563,32 @@ def cmd_list():
                   % (r.get('owner_note')
                      or 'opened before ownership was stamped; whoever reviews it '
                         'should say so in the live status registry first.'))
+        # UNSTAMPED is counted in the summary, not printed per record. On the
+        # day this landed EVERY record was unstamped, and sixteen identical
+        # lines saying "cannot be computed" is how a real STALE line stops
+        # being seen. STALE and COULD-NOT-TELL are per record, because those
+        # two name a specific thing a reader has to act on.
+        if id(r) in stale and stale[id(r)][0] != 'UNSTAMPED':
+            st, detail = stale[id(r)]
+            print('           %-16s %s' % ('** %s **' % st, detail[:150]))
         print('           %s' % (r.get('what') or '')[:110])
+    moved = [k for k, (s, _) in stale.items() if s == 'STALE']
+    unknown = [k for k, (s, _) in stale.items() if s != 'STALE']
+    if moved:
+        print('')
+        print('%d of them are STALE BY CODE: a file the obligation is about has'
+              % len(moved))
+        print('changed since the commit it was opened at, so the diff a reviewer')
+        print('would read is no longer the diff that was recorded. That is a')
+        print('separate question from the %dh clock and can be true within the'
+              % OVERDUE_HOURS)
+        print('hour. Relative to THIS clone\'s HEAD -- fetch before trusting a FRESH.')
+    if unknown:
+        print('')
+        print('%d could not be compared at all (UNSTAMPED or COULD-NOT-TELL).'
+              % len(unknown))
+        print('That is NOT a clean bill: it is the absence of an answer, and')
+        print('every record opened before the sha stamp existed is in it.')
     if late:
         print('')
         print('%d of them are past the %dh deadline. An obligation nobody closes'
@@ -1469,6 +1596,7 @@ def cmd_list():
         print('is a queue people stop reading, which is the state this register was')
         print('built to leave. Discharge them, or run --auto-discharge to close the')
         print('ones a defect-register record already covers.')
+    if late or moved:
         return 1
     return 0
 

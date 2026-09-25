@@ -27,6 +27,7 @@ where four sessions share a branch is a probe that loses somebody's work.
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -1275,6 +1276,144 @@ check('KNOWN AND NOT FIXED: two concurrent --open calls still lose one record, '
       len(_names12) == 1,
       'if this ever finds both, somebody added locking and this arm should '
       'become a positive one: ' + repr(_names12))
+
+# ── SECTION 7: STALE BY CODE, NOT BY CLOCK (item 102 part 4, 2026-09-25) ────
+# DRIVEN AGAINST A REAL GIT REPOSITORY, not a stub. The whole check is two git
+# invocations and a path comparison; a fake `git` would test the arrangement of
+# this probe and nothing about the tool.
+#
+# THE ARM THAT MATTERS IS THE NEGATIVE ONE. On the day this shipped every
+# record in the real ledger was UNSTAMPED, so a code_staleness() that returned
+# UNSTAMPED unconditionally -- or that could never reach STALE at all -- would
+# have looked identical in production. So STALE is driven with a real commit
+# that really moves the record's own file, and FRESH is driven beside it with a
+# commit that moves a DIFFERENT file, which is the discrimination the whole
+# design rests on.
+print()
+print('SECTION 7 -- staleness by code: HEAD moved, and did it move THIS record')
+_tmp7 = tempfile.mkdtemp(prefix='tier-a-stale-probe-')
+_real_repo7 = g.REPO
+
+
+def _g7(*a):
+    return subprocess.run(['git'] + list(a), cwd=_tmp7, capture_output=True,
+                          encoding='utf-8', errors='replace')
+
+
+def _w7(name, text):
+    io.open(os.path.join(_tmp7, name), 'w', encoding='utf-8',
+            newline='\n').write(text)
+
+
+try:
+    _g7('init', '-q', '-b', 'main')
+    _g7('config', 'user.email', 'probe@example.invalid')
+    _g7('config', 'user.name', 'probe')
+    _w7('watched.js', 'one\n')
+    _w7('other.js', 'one\n')
+    _g7('add', '-A')
+    _g7('commit', '-q', '-m', 'base')
+    _sha_base = _g7('rev-parse', 'HEAD').stdout.strip()
+    _w7('other.js', 'one\ntwo\n')          # an UNRELATED file moves first
+    _g7('add', '-A')
+    _g7('commit', '-q', '-m', 'move the other file')
+    _sha_mid = _g7('rev-parse', 'HEAD').stdout.strip()
+    _w7('watched.js', 'one\ntwo\n')        # now the record's OWN file moves
+    _g7('add', '-A')
+    _g7('commit', '-q', '-m', 'move the watched file')
+    _sha_head = _g7('rev-parse', 'HEAD').stdout.strip()
+
+    g.REPO = _tmp7
+
+    def _srec(sha, files=('watched.js',)):
+        return {'author_session': 'somebody-else', 'status': 'open',
+                'opened_at': '2026-09-25T00:00:00Z', 'opened_at_sha': sha,
+                'resources': ['sc_claims'], 'files': list(files),
+                'what': 'a change'}
+
+    _st, _d = g.code_staleness(_srec(_sha_base))
+    check('a record whose OWN file moved since its sha is STALE, and the moved '
+          'path is NAMED',
+          _st == 'STALE' and 'watched.js' in _d, (_st, _d))
+
+    # HEAD is one commit past this sha, and that commit touched watched.js --
+    # this record is about other.js, which nothing has touched since. If the
+    # test were "HEAD != the recorded sha" this would come back STALE and the
+    # whole queue would be stale within minutes of every push.
+    _st, _d = g.code_staleness(_srec(_sha_mid, files=('other.js',)))
+    check('NEGATIVE CONTROL: HEAD moved past the record\'s sha but only an '
+          'UNRELATED file changed -- FRESH, because the test is the record\'s '
+          'own files and not HEAD equality',
+          _st == 'FRESH', (_st, _d))
+
+    _st, _d = g.code_staleness(_srec(_sha_head))
+    check('a record stamped at the current HEAD is FRESH',
+          _st == 'FRESH', (_st, _d))
+
+    _r7 = _srec(_sha_base)
+    del _r7['opened_at_sha']
+    _st, _d = g.code_staleness(_r7)
+    check('a record with NO sha is UNSTAMPED -- never FRESH, which is the '
+          'state every record already in the ledger was in on day one',
+          _st == 'UNSTAMPED', (_st, _d))
+
+    _st, _d = g.code_staleness(_srec(_sha_base, files=()))
+    check('a record naming no files is UNSTAMPED, not FRESH -- nothing to '
+          'compare is the absence of an answer',
+          _st == 'UNSTAMPED', (_st, _d))
+
+    _st, _d = g.code_staleness(_srec('0123456789abcdef0123456789abcdef01234567'))
+    check('a sha that does not RESOLVE is COULD-NOT-TELL -- rebased away is '
+          'neither fresh nor stale (PR 1.11)',
+          _st == 'COULD-NOT-TELL' and 'NOT fresh' in _d, (_st, _d))
+
+    check('the four states are the only four, and FRESH is not the default '
+          'any of the failure paths falls back to',
+          all(g.code_staleness(r)[0] in ('FRESH', 'STALE', 'UNSTAMPED',
+                                         'COULD-NOT-TELL')
+              for r in (_srec(_sha_base), _srec('zzzz'), _r7)),
+          [g.code_staleness(r)[0] for r in
+           (_srec(_sha_base), _srec('zzzz'), _r7)])
+
+    # stale_records() is what --list reads, and it must not drop the two
+    # non-answer states -- a queue that only surfaces STALE would report the
+    # whole unstamped ledger as clean.
+    _data7 = {'records': [_srec(_sha_base), _srec(_sha_mid, files=('other.js',)),
+                          _r7]}
+    _rows7 = g.stale_records(_data7)
+    check('stale_records() returns the STALE one AND the UNSTAMPED one and '
+          'omits only the FRESH one',
+          sorted(s for _, s, _ in _rows7) == ['STALE', 'UNSTAMPED'],
+          [(s, d[:60]) for _, s, d in _rows7])
+
+    # ── THE FIELD IS ACTUALLY WRITTEN, which nothing above proves ──────────
+    # Every arm so far hands code_staleness() a record this probe built. If
+    # _open_record() never wrote `opened_at_sha`, all of them would still pass
+    # and the feature would be dead in production -- discipline 8's shape.
+    # DRIVEN, not grepped: an earlier version of this arm asserted on the
+    # source with string literals blanked, which is exactly where the key name
+    # lives, so it could never match.
+    _revp7 = os.path.join(_tmp7, 'reviews.json')
+    io.open(_revp7, 'w', encoding='utf-8').write(json.dumps({'records': []}))
+    _real_rev7 = g.REVIEWS
+    try:
+        g.REVIEWS = _revp7
+        g._open_record('a probe-opened obligation',
+                       {'sc_claims': ['watched.js']}, {})
+        _written7 = json.load(io.open(_revp7, encoding='utf-8'))['records'][-1]
+    finally:
+        g.REVIEWS = _real_rev7
+    check('_open_record() WRITES opened_at_sha, and it is THIS repo\'s HEAD -- '
+          'the arms above would all pass against a feature that records nothing',
+          _written7.get('opened_at_sha') == _sha_head,
+          (_written7.get('opened_at_sha'), _sha_head))
+    check('...and a record it just opened reads back FRESH, which closes the '
+          'loop between the writer and the reader',
+          g.code_staleness(dict(_written7, files=['watched.js']))[0] == 'FRESH',
+          g.code_staleness(dict(_written7, files=['watched.js'])))
+finally:
+    g.REPO = _real_repo7
+    shutil.rmtree(_tmp7, ignore_errors=True)
 
 print()
 if fails:
