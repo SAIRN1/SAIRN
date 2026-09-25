@@ -156,6 +156,17 @@ out its own 107 for the same reason. **Two sessions hit the same false positive
 and both threw it out** — which is the independence property
 `docs/2026-09-13-cross-domain-disciplines.md` asks for, arrived at by accident.
 
+**SCOPED 2026-09-25 (Cody): `docs/2026-09-25-item99-graduated-approval-proposal.md`.**
+It asks the question underneath this one -- whether the most consequential
+change gets a different APPROVAL or the same one with more review -- and the
+measured answer is the same one: the gate above requires an obligation to be
+RECORDED, not discharged, so the code is on `origin/main` while the promise to
+review it is outstanding. That document proposes a narrow `irreversible` class
+(~1% of commits, measured) where consent PRECEDES landing, and it establishes
+that property (b) is now the blocker rather than a nicety: 131 of 143 discharges
+show the reviewer ran something, but that number is a regex over prose and
+cannot carry a gate.
+
 **Property (b) is still open.** The gate records THAT an obligation exists, not
 what KIND of review discharges it — "I read it" and "I ran it" are still
 indistinguishable in the record. That is the half §2 shows this platform already
