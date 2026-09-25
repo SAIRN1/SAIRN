@@ -182,12 +182,87 @@ def check_cell(cell_id, text, path_cache, sha_memo):
     return out
 
 
+# ── A FUNCTION THAT NO LONGER EXISTS AT ALL (2026-09-25) ────────────────────
+# A LINE can drift; a NAME can die, and the two need different answers. The
+# sdn_timeentries cell cited `saveTimeEntry()` -- which had been RENAMED to
+# `saveTime()` -- so a line-number repoint would have papered over a cell
+# citing a function that was gone. This asks the question independently of
+# line numbers: does the named function exist ANYWHERE in the files this cell
+# cites?
+#
+# TWO NARROWINGS, BOTH MEASURED RATHER THAN GUESSED. The unnarrowed version
+# reported 131 and nearly every one was correct prose:
+#   * a name that is a REGISTERED RESOURCE anywhere in the register is a
+#     cross-reference -- `sb_train`'s cell cites `rf_certifications` as its
+#     precedent, and nobody expects that in sairnbiz.html;
+#   * a name must LOOK like a function -- written `name()` in the cell, or
+#     camelCase. A bare field name belonging to another row is prose too.
+# After both, the sweep reports ONE candidate, and that one is a genuine
+# cross-reference (`sbThreeWayMatch` lives in sairnbiz.html and is cited by
+# bld_deliveries as the SAIRNbiz precedent) -- so the real count is zero, and
+# it is zero as a STANDING check rather than as a one-off sweep.
+CELL_FILE = re.compile(r'`([A-Za-z0-9_./-]+\.(?:html|js|py|sql))(?::\d+)?`')
+CELL_CALL = re.compile(r'`([A-Za-z_$][A-Za-z0-9_$.]{2,60})\(\)`')
+CELL_CAMEL = re.compile(r'`([a-z$_][A-Za-z0-9_$]*[A-Z][A-Za-z0-9_$]*)`')
+
+
+def _exists_anywhere(name, _memo={}):
+    """Is this identifier present anywhere in the tracked sources at all?
+
+    THE EXCLUSION IS BY EXISTENCE, NOT BY NAME, and that is deliberate. The
+    one survivor of both narrowings was `sbThreeWayMatch` -- real, living in
+    sairnbiz.html, cited by bld_deliveries as the SAIRNbiz precedent it is
+    being compared against. Excluding it by name would have been a suppression
+    list; excluding it by EXISTENCE means a genuinely dead function -- one
+    that exists nowhere at all -- still reports, which is the case this check
+    was built for.
+    """
+    if name not in _memo:
+        r = subprocess.run(['git', 'grep', '-l', '-w', '--', name,
+                            '--', '*.html', '*.js', '*.py'], cwd=REPO,
+                           capture_output=True, text=True, encoding='utf-8',
+                           errors='replace')
+        _memo[name] = bool((r.stdout or '').strip())
+    return _memo[name]
+
+
+def check_dead_functions(cell_id, evidence, path_cache, known_resources):
+    files = list(dict.fromkeys(CELL_FILE.findall(evidence)))
+    readable = {}
+    for f in files:
+        lines = _lines_of(path_cache, f)
+        if lines is not None:
+            readable[f] = '\n'.join(lines)
+    if not readable:
+        return []
+    out = []
+    for ident in dict.fromkeys(CELL_CALL.findall(evidence)
+                               + CELL_CAMEL.findall(evidence)):
+        base = ident.split('.')[-1]
+        if base in known_resources:
+            continue
+        # A cross-app precedent cited by name -- see _exists_anywhere.
+        if _exists_anywhere(base):
+            continue
+        if re.fullmatch(r'[0-9a-f]{6,}', base):
+            continue
+        if not any(base in src for src in readable.values()):
+            out.append(('DRIFTED',
+                        '%s: names `%s()` which exists in NONE of the files it '
+                        'cites (%s) -- a RENAME or a deletion, not a line '
+                        'drift, and a repoint would hide it'
+                        % (cell_id, base, ', '.join(sorted(readable)))))
+    return out
+
+
 def check_tiers(path, path_cache, sha_memo):
     if not os.path.isfile(path):
         raise CouldNotTell('%s does not exist -- nothing was checked'
                            % os.path.relpath(path, REPO))
+    src = io.open(path, encoding='utf-8', errors='replace').read()
+    known = set(re.findall(r'^\| `([a-z0-9_]+)` \|', src, re.M))
     results = []
-    for line in io.open(path, encoding='utf-8', errors='replace').read().split('\n'):
+    for line in src.split('\n'):
         m = re.match(r'^\| `([a-z0-9_]+)` \|', line)
         if not m:
             continue
@@ -195,8 +270,10 @@ def check_tiers(path, path_cache, sha_memo):
         if len(cells) < 7:
             continue
         evidence = cells[-2]  # the Evidence column
-        results.extend(check_cell('tiers/' + m.group(1), evidence,
-                                  path_cache, sha_memo))
+        cell_id = 'tiers/' + m.group(1)
+        results.extend(check_cell(cell_id, evidence, path_cache, sha_memo))
+        results.extend(check_dead_functions(cell_id, evidence, path_cache,
+                                            known))
     return results
 
 
