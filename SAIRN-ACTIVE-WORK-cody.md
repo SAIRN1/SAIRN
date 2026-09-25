@@ -5604,3 +5604,94 @@ the rule is a control fitted to the behaviour it found.
 working as designed**, and it needs a new anchor cross-referenced against
 `mutation_anchor_probe`'s own tracked bad anchors, which is a separate piece of
 work rather than a line change.
+
+## 2026-09-25 — the H1 retier queue confirmed landed, and SAIRNscape's two Tier A rows stop answering on a licence key
+
+### First, the queue I was sent at was already done, and saying so is the work
+
+The recap listed seven retiers plus two app fixes as "confirm actual state,
+then continue with whichever of these are not really done." **All ten were
+already on disk**, read out of `docs/CRITICALITY-TIERS.md` and
+`docs/defect-density-register.json` rather than taken from the recap:
+`sd_approvals` A/A, `law_picases` A/A, `law_clerequirements` A/B, `sc_pctc`
+A/B, `sb_perf` A-conf with its role gate, `alf_signals` A-conf,
+`alf_activities` A-conf, `sb_vends` confirmed B/B, plus the `rf_buildings`
+absent-as-null upsert fix and its register row. **The register update the
+recap flagged as unconfirmed was present** (`a5d120f1`, now `6d80e387`).
+
+What was NOT done was landing them. The branch was 8 ahead and 2 behind, and
+the push failed twice for two different reasons worth recording:
+
+- **A conflict in `docs/tier-a-reviews.json` on BOTH rebases**, and both times
+  the resolution was the same shape: two sessions appended an obligation at the
+  same array position, so `git` presented them as alternatives when they are
+  both real. Resolved by keeping both objects, not by picking.
+- **The push gate refused the range** with *"TIER A CODE CHANGED AND ONLY PART
+  OF IT IS RECORDED"*. The H1 batch obligation names four resources;
+  `72c69220` also touches `api/_resources/sairncode.js`, which serves six
+  Tier A `sc_*` rows. **The gate is right and the distinction is the point** —
+  an obligation covers the resources it NAMES, not the ones a later commit in
+  the same push happens to touch. Opened a second obligation scoped to that
+  commit alone.
+
+**And one citation was re-anchored twice**, which is the cost of rebasing a
+record that cites its own sha: the H1 obligation's `what` cited `a23c6344`,
+then `093d08d6`, and is now `b2764261`. A citation a reviewer cannot resolve
+is exactly the drift `tools/register_freshness_check.py` exists for.
+
+### Then the open item: SAIRNscape's two Tier A resources
+
+All twelve SAIRNscape resources dispatched on the licence hash with **no
+session check of any kind**, and the licence key is shipped to the browser —
+so the key was the whole authorisation. Two are Tier A on integrity:
+`invoices` (money) and `scp_quotes` (the priced quote every invoice descends
+from). Same shape as `law_trusttx`, `SF_RESOURCES` and `SDN_RESOURCES`;
+SAIRNscape was swept with none of the three.
+
+**The name is the part that makes this fix failable in silence.** SAIRNscape
+claimed the bare name `invoices` before the `scp_` convention existed — the
+storage table is `scp_invoices`, the RESOURCE the dispatch tests for is
+`invoices`. A gate written against the table name gates nothing and **every
+refusal arm anywhere still passes**. The suite carries an arm whose only job
+is that distinction, and mutating the entry to `scp_invoices` takes it to
+16/18 — so the trap is driven, not merely described.
+
+**No client change was needed, and I measured that rather than asserting it**,
+because "no diff to review" is when a claim most needs checking:
+`scpData()` attaches `X-SD-Auth` on every call whenever a token exists with no
+per-call flag to forget (the thing that had to be repaired in
+`sairndesign.html`, where 18 of 19 call sites never passed it); every call
+site for both resources goes through that one helper; and both login paths
+store the token before `scpApplyLoggedIn` → `scpInit` → `scpSyncFromServer`.
+Three arms assert all three against the shipped page.
+
+**Driven to fail in three directions before it was believed:** removing the
+`SD_SESSION_GATED` entries → 9/18, removing the `SD_GATE_APP` pins → 11/18,
+renaming to the table name → 16/18.
+
+Three existing suites moved with it. `api/sd-data-invoices-amount.test.js` was
+writing `invoices` with no session and now 403s before the amount guard is
+reached — **a 403 and a 400 INVALID_AMOUNT are both "refused" and only one is
+what that file exists to test** — so it signs a real session against the hash
+the handler DERIVES from the bearer key rather than a typed constant.
+
+### A measurement gap found while closing it, recorded and NOT fixed
+
+`tests/app_session_isolation.js` counts a resource as gated only when it
+answers **401**, and `SD_SESSION_GATED` answers **403**. So SAIRNscape still
+measures posture `NONE` with two resources gated, and **sairndesign's row has
+read "1 of 18" since September while nine of its resources sit in that
+table**. The column that exists to notice an ungated app cannot see the
+commonest gate on the platform.
+
+Left open deliberately. Widening the comparison to 401-or-403 would silently
+re-measure fourteen other rows inside a commit about SAIRNscape, and which
+codes count as a gate is the premise the whole column rests on.
+
+### Not done
+
+The other ten SAIRNscape resources stay licence-only — the same Tier A
+stopping rule the `sdn` and `sf` gates used. Whether a crew member may read
+the schedule, the customer list or the progress photos is a product decision
+nobody has made; `scp_vendors` is driven in the new suite so the day somebody
+makes it, the widening is visible rather than silent.
