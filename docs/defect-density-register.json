@@ -14466,7 +14466,7 @@
       "recurrence_open": "TEN endpoints still write a role in setup with no demotion guard -- alf, bld, dnt, law, leg, mech, rf, sc, sdn, sen -- and each is one self-demotion from the same unrecoverable state. They are grandfathered in the new wiring arm, which means 'predates the check', not 'fine'. Several hold regulated records (alf MAR, dnt charges, law trust). Fixing them is ten endpoints and ten customer-facing refusal sentences and was not this change."
     },
     {
-      "commit": "b618ed3367da",
+      "commit": "e6a4ad6b60fc",
       "date": "2026-09-25",
       "subject": "fix(register-freshness): the dead-function check was BLIND ON ITS OWN SUBJECT for an hour",
       "files": [
