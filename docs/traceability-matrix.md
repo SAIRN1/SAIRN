@@ -320,6 +320,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Item 28 folded in as a GENERATOR &mdash; and what it emits REFUSES until its rule is written** | **BUILT 2026-09-14 (Fourth)** &mdash; `tools/new_checker.py`, 16/16 arms in `tests/run_new_checker_probe.py` | `tests/run_new_checker_probe.py` |
 | **R5: the purpose question one level down &mdash; was the FUNCTION invoked, not just the route** | **BUILT 2026-09-14 (Fourth)** &mdash; extends `tools/sairn_reachability_check.py`, 16/16 arms in `tests/run_reachability_r5_probe.py` | `tests/run_reachability_r5_probe.py` |
 | **There is now something to run the day a restore happens by hand &mdash; and there is no other restore tooling at all** | **BUILT 2026-09-14 (Fourth)** &mdash; `tools/restore_coherence_check.js`, 26/26 arms in `tests/run_restore_coherence_probe.js` | `tests/run_restore_coherence_probe.js` |
+| **Item 65b: the file NOTHING WROTE &mdash; `restore_coherence_check.js` took `--baseline` for eleven days and no tool on this platform produced it** | **WRITER BUILT 2026-09-25 (Hank)** &mdash; `tools/row_count_baseline.js`, 25 arms in `tests/run_row_count_baseline_probe.js`, sabotage-verified. **THE CAPTURE IS NOT TAKEN** | `tests/run_row_count_baseline_probe.js` |
 | **INDEPENDENT REVIEW of Fourth's item 35 and item 54: one confirmed defect in the checkpoint pager, watchdog clean** | **REVIEWED AND FIXED 2026-09-14 (CC)**, recorded in the defect register with `detection_method: independent-review` and rule 1.1. Held by two new arms plus a CONTROL in `api/audit-checkpoint.test.js`  | `api/audit-checkpoint.test.js` |
 | **Item 52: the two checker-quality signals fused &mdash; by MINIMUM, and the corrector proves its own safety before it reports anything** | **BUILT 2026-09-14 (CC)** &mdash; `tools/checker_confidence.py`, held by `tests/run_checker_confidence_probe.py` (30 arms). Report only, not registered | `tests/run_checker_confidence_probe.py` |
 | **Item 59: defect causation is close to UNIFORM, and the apparent concentration is a coverage artefact** | **MEASURED 2026-09-14 (CC)** &mdash; `tools/defect_dispersion.py`, held by `tests/run_defect_dispersion_probe.py` (29 arms). **Report only, no threshold, nothing gates** | `tests/run_defect_dispersion_probe.py` |
@@ -653,7 +654,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 | source | citations |
 |---|---|
-| `index` | 311 |
+| `index` | 312 |
 | `declared` | 270 |
 | `declared+index` | 49 |
 | `GUARD_TESTS+index` | 6 |

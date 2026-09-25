@@ -38,12 +38,11 @@ The mechanical layer already exists and it is not small:
   throwaway Postgres, and runs 65a against the restored copy. It is blocked on
   Michael: `sql/backup_reader_role.sql` run as `postgres`, plus 10 GitHub
   secrets.
-- **65b is NOT built, and it is the gap that matters here.**
-  `restore_coherence_check.js` already accepts `--baseline
-  db/row_count_baseline.json` — **and nothing on this platform writes that
-  file.** The reader half exists; the writer half does not. Checked: the path
-  does not exist and the only mention of it in the repo is the tool's own usage
-  line.
+- **65b's WRITER is now built** — `tools/row_count_baseline.js`, 2026-09-25,
+  written because this rubric found the gap: the reader half had existed since
+  2026-09-14 and nothing wrote the file. **The CAPTURE is still not taken**, and
+  it cannot be from this clone: it needs production credentials, and the tool
+  refuses without them rather than emitting an empty baseline.
 
 So a second tool is not what is missing. What is missing is **the part no tool
 does**: deciding whether what came back looks like a business. Writing a fresh
@@ -51,8 +50,9 @@ checker now would be the shape this platform has shipped five times and named �
 **a tool able to judge with nothing to judge**, which passes clean on its first
 run and is believed.
 
-**If any of this rubric is ever automated, automate section 1 by building 65b**,
-not by adding a seventh checker.
+**If any of this rubric is ever automated further, automate it by CAPTURING
+65b**, not by adding a seventh checker. Section 1 is the only section a tool
+can answer that no tool currently answers, and the tool for it now exists.
 
 ---
 
@@ -74,14 +74,14 @@ Write which section, and why.
 **Ask:** for each restored table, is the row count within the range a person who
 knows this business would expect?
 
-**And the honest answer today is COULD NOT TELL, for every table.**
-65b — "a recorded row-count baseline per table, taken on a cadence from
-production" — **does not exist**, and the absence is sharper than it sounds:
-`tools/restore_coherence_check.js` already takes `--baseline
-db/row_count_baseline.json` and **nothing writes that file**. Without it there
-is nothing to compare against, and comparing a restore only against itself is
-the check that cannot fail. Do not substitute a guess. Record COULD NOT TELL
-and name 65b — it is sized **S** with nothing blocking it.
+**And the honest answer today is still COULD NOT TELL, for every table —
+but for a different reason than when this was written.** The writer exists now
+(`tools/row_count_baseline.js`); **the capture has not been taken**, because it
+must come from PRODUCTION and needs credentials this clone does not hold. Until
+`db/row_count_baseline.json` exists there is nothing to compare against, and
+comparing a restore only against itself is the check that cannot fail. Do not
+substitute a guess. Record COULD NOT TELL and say which half is missing — the
+tool, or the capture.
 
 **The two exceptions, which are genuinely answerable now:**
 
@@ -257,7 +257,9 @@ restore. Record it here rather than passing the restore.
 - `.github/workflows/nightly-backup.yml` (65c, BUILT, **NEVER RUN**) — blocked
   on Michael: `sql/backup_reader_role.sql` as `postgres`, plus 10 GitHub
   secrets.
-- **65b, the row-count baseline — NOT BUILT, and the one thing worth building.**
-  It turns section 1 from COULD NOT TELL into an answer, it is sized **S** with
-  nothing blocking it, and the checker already has the `--baseline` flag waiting
-  for the file.
+- `tools/row_count_baseline.js` (65b writer, **BUILT 2026-09-25**, 25 arms,
+  sabotage-verified) — turns section 1 from COULD NOT TELL into an answer the
+  day somebody runs it against production. **The capture itself is the open
+  item now, and it is Michael's:** `SAIRN_BASELINE_URL`/`SAIRN_BASELINE_KEY`,
+  deliberately not the checker's variable names, because a baseline taken from
+  the copy you are checking is the check that cannot fail.
