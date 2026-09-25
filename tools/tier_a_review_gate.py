@@ -1108,6 +1108,16 @@ def code_staleness(rec, head=None):
     if not files:
         return ('UNSTAMPED', 'the record names no files, so there is no subject '
                              'to compare a sha against')
+    # ── A RECONSTRUCTED BASELINE IS SAID OUT LOUD ON EVERY LINE THAT USES IT.
+    # Computed HERE, above every return that has a sha, because the first
+    # version computed it at the bottom and the `sha == HEAD` early return
+    # skipped it -- so the one record whose baseline was most obviously
+    # reconstructed printed a bare FRESH. A backfilled record and a stamped
+    # one must never read the same: the first errs EARLY by construction (see
+    # backfill_shas) and can therefore over-report STALE, which a reader has
+    # to be able to discount. Caught by the probe arm, not by review.
+    how = ' [baseline BACKFILLED from the timestamp, not stamped at open]' \
+        if rec.get('opened_at_sha_backfilled') else ''
     try:
         if head is None:
             head = head_sha()
@@ -1119,19 +1129,103 @@ def code_staleness(rec, head=None):
         except CouldNotTell:
             return ('COULD-NOT-TELL',
                     'the recorded sha %s does not resolve in this clone -- '
-                    'rebased away without a reseat, or never fetched. NOT fresh.'
-                    % sha[:12])
+                    'rebased away without a reseat, or never fetched. NOT '
+                    'fresh.%s' % (sha[:12], how))
         if sha.strip() == head.strip():
-            return ('FRESH', 'HEAD is still the commit it was opened at')
+            return ('FRESH',
+                    'HEAD is still the commit it was opened at%s' % how)
         moved = [ln.strip() for ln
                  in git('diff', '--name-only', sha + '..' + head, '--',
                         *files).split('\n') if ln.strip()]
     except CouldNotTell as e:
-        return ('COULD-NOT-TELL', str(e))
+        return ('COULD-NOT-TELL', '%s%s' % (e, how))
     if moved:
-        return ('STALE', 'moved since %s: %s' % (sha[:12], ', '.join(moved)))
-    return ('FRESH', 'none of its %d file(s) changed since %s' % (len(files),
-                                                                  sha[:12]))
+        return ('STALE', 'moved since %s: %s%s'
+                % (sha[:12], ', '.join(moved), how))
+    return ('FRESH', 'none of its %d file(s) changed since %s%s'
+            % (len(files), sha[:12], how))
+
+
+# ── BACKFILLING THE STAMP, AND WHY IT IS NOT THE SAME THING (2026-09-25) ────
+# The field landed on a ledger that already had 15 open records, and every one
+# of them reports UNSTAMPED -- correct, and useless. A record whose staleness
+# cannot be computed is exactly the one nobody is tracking, which is the state
+# this check was built to leave.
+#
+# THE BASELINE IS RECONSTRUCTED, NOT RECOVERED, and the difference is written
+# INTO THE RECORD rather than left for a reader to infer. `opened_at` says when
+# the obligation was written; `git rev-list -1 --before=<that> origin/main`
+# says which commit was the tip of the shared branch at that moment. That is a
+# very good guess and it is still a guess, so the record carries
+# `opened_at_sha_backfilled: true` and every reader prints it. A backfilled
+# record and a stamped one must not be indistinguishable -- that is the whole
+# defect shape this file keeps recording.
+#
+# THE ERROR HAS A KNOWN DIRECTION, WHICH IS WHY IT IS SAFE TO DO AT ALL. A
+# session opens an obligation from ITS OWN HEAD, which may carry unpushed
+# commits, so the real baseline can be AHEAD of origin/main's tip at that
+# instant. The reconstruction therefore errs EARLY, and an early baseline makes
+# MORE files look moved -- it can over-report STALE and can never under-report
+# it. A check that errs toward "look again" is the right direction for this one.
+#
+# IT NEVER OVERWRITES AN EXISTING STAMP, it is DRY RUN unless --write is given,
+# and a timestamp that resolves to no commit is left alone rather than filled
+# with something. The tool that READS this field is the tool that writes it, so
+# the writer is deliberately the most conservative thing that is still useful.
+def backfill_shas(write=False):
+    try:
+        data = load_reviews()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL: %s\n' % e)
+        return 2
+    rows = [r for r in (data.get('records') or [])
+            if r.get('status') == 'open' and not r.get('opened_at_sha')]
+    already = sum(1 for r in (data.get('records') or [])
+                  if r.get('status') == 'open' and r.get('opened_at_sha'))
+    print('%d open record(s) already stamped; %d with no sha'
+          % (already, len(rows)))
+    if not rows:
+        print('Nothing to backfill.')
+        return 0
+    filled, skipped = [], []
+    for r in rows:
+        when = r.get('opened_at') or ''
+        if not re.match(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$', when):
+            skipped.append((r, 'opened_at %r is not a readable timestamp' % when))
+            continue
+        try:
+            sha = git('rev-list', '-1', '--before=' + when, 'origin/main').strip()
+        except CouldNotTell as e:
+            skipped.append((r, str(e)))
+            continue
+        if not sha:
+            skipped.append((r, 'no commit on origin/main at or before %s -- '
+                               'left unstamped rather than filled with a guess'
+                            % when))
+            continue
+        filled.append((r, sha))
+    for r, sha in filled:
+        print('  %-8s %s  ->  %s  (%s)'
+              % (r.get('author_session'), r.get('opened_at'), sha[:12],
+                 ', '.join((r.get('resources') or [])[:3]) or 'no resources'))
+    for r, why in skipped:
+        print('  %-8s %s  SKIPPED -- %s'
+              % (r.get('author_session'), r.get('opened_at'), why[:110]))
+    if not write:
+        print('')
+        print('DRY RUN -- nothing was written. Add --write to stamp them.')
+        print('Each sha is RECONSTRUCTED from the timestamp, not recovered, and')
+        print('every stamped record will carry opened_at_sha_backfilled: true so')
+        print('a reader can never mistake one for a stamp taken at open time.')
+        return 0
+    for r, sha in filled:
+        r['opened_at_sha'] = sha
+        r['opened_at_sha_backfilled'] = True
+    save_reviews(data)
+    print('')
+    print('STAMPED %d record(s), %d left alone. Commit docs/tier-a-reviews.json.'
+          % (len(filled), len(skipped)))
+    return 0
 
 
 def stale_records(data, session=None):
@@ -2206,6 +2300,8 @@ def main(argv):
         sys.stderr.write('--discharge <author-session> [opened_at] <verdict '
                          'sentence>   [--takeover]\n')
         return 1
+    if '--backfill-shas' in argv:
+        return backfill_shas('--write' in argv)
     if '--rules' in argv:
         return cmd_rules()
     if '--validate' in argv:

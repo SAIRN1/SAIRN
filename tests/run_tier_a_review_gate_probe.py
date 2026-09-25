@@ -1415,6 +1415,109 @@ finally:
     g.REPO = _real_repo7
     shutil.rmtree(_tmp7, ignore_errors=True)
 
+# ── SECTION 8: THE BACKFILL, WHICH WRITES THE FIELD THE READER TRUSTS ───────
+# The tool that READS opened_at_sha is the tool that writes it, so the writer
+# gets the harder probe. Three properties matter more than the happy path: it
+# is DRY RUN by default, it never OVERWRITES a real stamp, and a timestamp it
+# cannot resolve is SKIPPED rather than filled with something -- because a
+# wrong baseline produces a confident FRESH, which is the one output this
+# whole feature exists to prevent.
+print()
+print('SECTION 8 -- backfill: a reconstructed baseline, and it says so')
+_tmp8 = tempfile.mkdtemp(prefix='tier-a-backfill-probe-')
+_real_repo8, _real_rev8 = g.REPO, g.REVIEWS
+
+
+def _g8(*a):
+    return subprocess.run(['git'] + list(a), cwd=_tmp8, capture_output=True,
+                          encoding='utf-8', errors='replace')
+
+
+try:
+    _g8('init', '-q', '-b', 'main')
+    _g8('config', 'user.email', 'probe@example.invalid')
+    _g8('config', 'user.name', 'probe')
+    io.open(os.path.join(_tmp8, 'app.js'), 'w', encoding='utf-8',
+            newline='\n').write('one\n')
+    _g8('add', '-A')
+    # A FIXED commit date, so the arms below are about the derivation and not
+    # about what time the probe happened to run.
+    _env = dict(os.environ, GIT_AUTHOR_DATE='2026-05-01T00:00:00+0000',
+                GIT_COMMITTER_DATE='2026-05-01T00:00:00+0000')
+    subprocess.run(['git', 'commit', '-q', '-m', 'base'], cwd=_tmp8, env=_env,
+                   capture_output=True)
+    _sha8 = _g8('rev-parse', 'HEAD').stdout.strip()
+    _g8('update-ref', 'refs/remotes/origin/main', _sha8)
+    g.REPO = _tmp8
+
+    def _brec(opened, sha=None, extra=None):
+        r = {'author_session': 'somebody-else', 'status': 'open',
+             'opened_at': opened, 'resources': ['sc_claims'],
+             'files': ['app.js'], 'what': 'a change'}
+        if sha:
+            r['opened_at_sha'] = sha
+        if extra:
+            r.update(extra)
+        return r
+
+    def _bstage(records):
+        p = os.path.join(_tmp8, 'rev-%d.json' % len(os.listdir(_tmp8)))
+        io.open(p, 'w', encoding='utf-8').write(json.dumps({'records': records}))
+        g.REVIEWS = p
+        return p
+
+    # 1. DRY RUN WRITES NOTHING.
+    _p8 = _bstage([_brec('2026-06-01T00:00:00Z')])
+    _before8 = io.open(_p8, encoding='utf-8').read()
+    g.backfill_shas(False)
+    check('the default is a DRY RUN and the ledger is byte-identical after it',
+          io.open(_p8, encoding='utf-8').read() == _before8)
+
+    # 2. --write stamps, and STAMPS ITS OWN PROVENANCE.
+    g.backfill_shas(True)
+    _got8 = json.load(io.open(_p8, encoding='utf-8'))['records'][0]
+    check('--write stamps the commit that was origin/main at the recorded time',
+          _got8.get('opened_at_sha') == _sha8, _got8.get('opened_at_sha'))
+    check('...and marks it BACKFILLED, so a reconstructed baseline can never '
+          'be mistaken for one stamped at open time',
+          _got8.get('opened_at_sha_backfilled') is True, _got8)
+    _st8, _d8 = g.code_staleness(_got8)
+    check('...and every staleness line built from it SAYS so',
+          'BACKFILLED' in _d8, (_st8, _d8))
+
+    # 3. IT NEVER OVERWRITES A REAL STAMP.
+    _p8b = _bstage([_brec('2026-06-01T00:00:00Z', sha='deadbeefdeadbeef')])
+    g.backfill_shas(True)
+    check('a record that ALREADY has a sha is left completely alone -- the '
+          'backfill can only ever fill a hole, never move a baseline',
+          json.load(io.open(_p8b, encoding='utf-8'))['records'][0]['opened_at_sha']
+          == 'deadbeefdeadbeef')
+
+    # 4. WHAT IT CANNOT RESOLVE, IT SKIPS -- a wrong baseline is worse than none.
+    _p8c = _bstage([_brec('2026-01-01T00:00:00Z'),      # before any commit
+                    _brec('not-a-timestamp'),
+                    _brec('')])
+    g.backfill_shas(True)
+    _after8 = json.load(io.open(_p8c, encoding='utf-8'))['records']
+    check('a timestamp BEFORE any commit, an unreadable one, and an empty one '
+          'are all SKIPPED -- left UNSTAMPED rather than filled with a guess',
+          not any('opened_at_sha' in r for r in _after8),
+          [r.get('opened_at_sha') for r in _after8])
+    check('...and they still read as UNSTAMPED afterwards, never FRESH',
+          all(g.code_staleness(r)[0] == 'UNSTAMPED' for r in _after8),
+          [g.code_staleness(r)[0] for r in _after8])
+
+    # 5. CLOSED records are not the backfill's business.
+    _p8d = _bstage([_brec('2026-06-01T00:00:00Z', extra={'status': 'reviewed'})])
+    g.backfill_shas(True)
+    check('a CLOSED record is not stamped -- staleness is a question about '
+          'work somebody still has to do',
+          'opened_at_sha' not in
+          json.load(io.open(_p8d, encoding='utf-8'))['records'][0])
+finally:
+    g.REPO, g.REVIEWS = _real_repo8, _real_rev8
+    shutil.rmtree(_tmp8, ignore_errors=True)
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))

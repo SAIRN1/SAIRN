@@ -2657,7 +2657,9 @@
       "owner_assigned_at": "2026-09-23T20:57:04Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "6d5b4ef51eba8c56930228e9f231294d21362e59",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "cc",
@@ -2702,7 +2704,9 @@
       "owner_assigned_at": "2026-09-23T20:55:16Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "02baccab5caf781e6d1ebc8c804f1746e4b9c2ac",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -2728,7 +2732,9 @@
       "owner_assigned_at": "2026-09-23T23:16:12Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "3e7e69b6a6f5f0bbf7b4ec221f8edcd5edd38eb0",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -2838,7 +2844,9 @@
       "owner_assigned_at": "2026-09-24T12:58:06Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "62ebec34cb2da4323f95342ea90677f668589df8",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "fourth",
@@ -2990,7 +2998,9 @@
       "owner_assigned_at": "2026-09-24T18:46:55Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "3bc22569ae4e000483aa8929d5da491ead4d64fb",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -3063,7 +3073,9 @@
       "owner_assigned_at": "2026-09-24T19:45:38Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "c50524b32d2d9a7dd22cd5b780d6cd9efaae94fc",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -3083,7 +3095,9 @@
       "owner_assigned_at": "2026-09-24T21:12:02Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "5f07b8ec6124a6fb98915a029860b28f14c65fb4",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "cody",
@@ -3168,7 +3182,9 @@
       "owner_assigned_at": "2026-09-24T22:33:20Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "6c23e353a7b635078b4549761e4c5c726f196f24",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "fourth",
@@ -3189,7 +3205,9 @@
       "owner_assigned_at": "2026-09-24T22:35:41Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "34366192186fc06f206bf86b4b5e950b977e4254",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -3207,7 +3225,9 @@
       "owner_assigned_at": "2026-09-24T22:49:01Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "f977ccffdaab9229c6102ecff508f2a19b273f38",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "cc",
@@ -3235,7 +3255,9 @@
       "owner_assigned_at": "2026-09-24T23:40:40Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "399c8ee60eab5dca7f24c01f850391c6a2f17a14",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "cody",
@@ -3328,7 +3350,9 @@
       "owner_assigned_at": "2026-09-25T13:13:43Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "074d97b9ffa662542a37a8014d680591ec52c7d4",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "hank",
@@ -3348,7 +3372,9 @@
       "owner_assigned_at": "2026-09-25T13:39:30Z",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "opened_at_sha": "62331ee50c1acb7948f5ac157dbf6aaa0cc7afbc",
+      "opened_at_sha_backfilled": true
     },
     {
       "author_session": "cc",
