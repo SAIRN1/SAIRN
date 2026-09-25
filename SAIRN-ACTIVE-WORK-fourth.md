@@ -607,3 +607,39 @@ STANDING, for whoever is next: the seam check reports 18 could-not-tells
 around roleSet() (unchanged at baseline). The liveness probe still cannot run
 on Linux, so cloud pushes touching CODE still hit check 9 — named in that
 commit as a decision nobody has made.
+
+## 2026-09-25 — six-item queue, and two briefs that were wrong about their own premise
+
+Discharged first: cc's 2026-09-23T18:31:42Z (OVERDUE 42h, the oldest assigned
+to me — four minutes older than hank's). All five attack points DRIVEN. No
+finding against the work; THREE corrections against the obligation text.
+
+1. **check 9 / liveness probe** — probe exits 3 SKIPPED off-Windows (gated on
+   `hasattr(ctypes,'WinDLL')`, the backend's own question, not sys.platform);
+   check 9 drops THAT test for THAT run by exit code. The floor-count fix was
+   REFUSED in writing: it would mask a genuine Windows-side failure of the same
+   probe identically. Controls driven both ways.
+2. **sv_comms** — the flagger's could-not-tell resolved as a FALSE POSITIVE of
+   its name signal. Row is `{type, recipients:COUNT, sent, openRate, campaign}`
+   — no name, no message content. B correct, now on two reads.
+3. **Intelligence Network** — the brief's claim is FALSE on both halves:
+   `db/schema_network.sql` does not exist (it is `sql/network_schema.sql`) and
+   sairnbiz has ZERO references. Found the real defect underneath: the READ
+   half could never fire (`#userInput` absent in every spelling), so the GET
+   fetched on every page load and nothing could use it. Fixed.
+4. **Wave 3** — nav resolution clean on 145 controls; the RENDER half was NOT
+   run, and the reason was MEASURED (hidden tab, 50ms timer taking 517ms — the
+   exact condition that produced 67 false findings on 2026-09-23). Two of three
+   documented credentials are DEAD; SAIRNvet has no self-serve way back in.
+5. **code-scrubber** — FOUR of the five named classes were already there and
+   accurate; item 18 is more current than the brief. Added item 26 (expired
+   anchors/fixtures) and re-measured item 17: 24-of-40 unguarded → 0 of 83.
+6. **Item 47 FAI** — `sairn-trade-vertical-expert` DOES NOT EXIST in either
+   skill store; said so instead of inventing its knowledge. Grounded in real
+   FAI practice: the worksheet is a BALLOONED FORM now (one numbered row per
+   claim, verdict column, accountability arithmetic), because a bare list makes
+   an unconsidered claim and a dismissed one look identical.
+
+**TWO OF SIX BRIEFS WERE WRONG ABOUT THEIR OWN PREMISE** (3 and 6), and a third
+was 80% already-done (5). Verifying before starting is now earning more than
+the work itself.
