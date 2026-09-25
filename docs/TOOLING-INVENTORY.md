@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**224 files in `tools/`.** By what actually invokes them:
+**225 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 32 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 43 | nothing runs these at all |
+| **UNWIRED** | 44 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 156 |
 | GENERATOR | 19 |
 | LIBRARY | 24 |
-| LIVE | 20 |
+| LIVE | 21 |
 | REPORTER | 1 |
 | TOOL | 1 |
 
@@ -81,7 +81,7 @@ The 23, by name, so this is actionable rather than a statistic:
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
-**Separately, 6 tool(s) make a LIVE network or database request.** Those are
+**Separately, 7 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -352,7 +352,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (43)
+## UNWIRED (44)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -400,6 +400,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_self_state.py` | CHECKER | the three things a session cannot see about ITSELF in a written summary: a CLAIM it made with no worklog entry in the same window (it told four other sessions it was on something and left no record it was), a REVIEW OBLIGATION IT OWES past the register's own 24h deadline, and a STALE blocked_on anywhere in the status registry -- a row whose state is not blocked and which still names a blocker, which happened to fourth on 2026-09-17 and to cc on 2026-09-18 naming a claim that had been released. Derived from git, the claim commit history, docs/tier-a-reviews.json, the session's own worklog DIFF and the live status registry -- never from a summary. REFUSES rather than reporting zero when a source cannot be read. A claim of only stop-words is reported UNCHECKABLE, a third state, because accusing somebody of not logging work on the strength of the tool's own inability to match is worse than silence. IT DOES NOT ATTRIBUTE COMMITS: every clone commits as one git identity, so only commits touching a session's own claim file or worklog are attributable and everything else is UNATTRIBUTED. CARRIES THE BUNDLE the weekly reconciliation reads: --bundle captures EVERY provisioned clone in ONE run, because these clones push to one branch and four readings taken minutes apart are four readings of different repositories. Each row is labelled by HOW it was derived -- SELF (run inside that clone, the only authoritative form), OUTSIDE (--clone <path>, whose identity marker must match --session or it refuses; real, and blind to anything not on disk), or NOT DERIVED, which is what --session X now returns from somebody else's clone instead of silently reporting the git state of whichever clone the caller was standing in. That silent substitution was real and measured: four clones at four different HEADs with one of them dirty, all reported as the caller's own. Clones are counted from disk through nhi_register.sibling_clones, and one with no identity marker is NAMED and not read further, so the auditor clone is excluded by the marker rule rather than by a hardcoded name | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
+| `scp_session_gate_live_probe.py` | LIVE | a SAIRNscape Tier A resource -- `invoices` (the money) or `scp_quotes` (the priced quote it descends from) -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the SHARED gate's own 403 FORBIDDEN rather than merely a non-200 (a dead licence also refuses), reads an ungated SAIRNscape resource alongside so four refusals are a SPLIT rather than a lockout, reads the X-SD-Auth attachment back off the DEPLOYED page because a server gate with no client header is an outage, and reports an absent licence row, a bot challenge or a lagging deployment as UNVERIFIED rather than as a pass. It also catches the way a borrowed probe lies: it is adapted from leg_session_gate_live_probe.py, whose bespoke gate answers 401 NO_SESSION where this shared one answers 403 -- a byte-copy would have reported a working gate as FAILED, so the expected status and code are named constants rather than inlined | &mdash; |
 | `staged_conflict_marker_check.py` | CHECKER | a COMMIT about to make a conflict marker durable -- any of git's three seven-character markers at the start of a line in a STAGED blob, whatever staged it; wired into prepare-commit-msg rather than pre-commit because `git rebase --continue`, which produced all four markers that reached origin/main, never fires pre-commit at all; a lone ======= markdown underline is not a finding | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
@@ -432,7 +433,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      224   git ls-files tools/
+  tools on disk                      225   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
