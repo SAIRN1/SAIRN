@@ -2653,6 +2653,29 @@
         "sairnbiz.html",
         "tests/sairnbiz_vendor_ytd_derivation.js"
       ]
+    },
+    {
+      "id": "cc-1790347466",
+      "session": "cc",
+      "subject": "cc-fence-and-tools",
+      "task": "fence prompt sites probe selector spof skills sweep -- discharge hank sdn session gate review, fence unfenced prompt-interpolation sites, scoped-on-push probe selector, diagnose 6 red probes, 2 blob conversions, item 91 SPOF retirement, skills staleness sweep FILES: docs/tier-a-reviews.json sairnbuild.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js api/_lib/prompt-fence.js",
+      "claimed_at": "2026-09-25T14:44:26Z",
+      "claimed_at_epoch": 1790347466.3134542,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/prompt-fence.js",
+        "api/sd-data.js",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/tier-a-reviews.json",
+        "sairnbuild.html",
+        "sairndesign.html",
+        "sairngrounds.html",
+        "sairnscape.html",
+        "sairnsenior.html",
+        "tools/probe_selector.py",
+        "tools/spof_retirement.py"
+      ]
     }
   ],
   "refusals": [
@@ -2684,6 +2707,58 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-25T14:40:25Z",
+      "my_subject": "cc-queue6",
+      "my_task": "discharge cc's most overdue review (hank 2026-09-23T23:16:12Z SAIRNdesign session gate, live auth change), then fence the 15 unfenced prompt-interpolation sites, build the scoped-on-push probe selector, diagnose the 6 red probes, 2 more blob conversions, item 91 SPOF retirement schedule, skills/tools staleness sweep FILES: docs/tier-a-reviews.json sairnbuild.html sairncode.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "discharge cc sairncode tier-a 7-to-23 gate review; render clickthrough re-run sairnbiz stonedesk sairnvet; sairnvet demo credentials and 409 bootstrap; competitive-gap doc re-verification plumbing electrical hvac roofing dental senior mechanical stonedesk; sairnroofing gap doc; veterans 45B tips; sync_write_result_check transports",
+      "other_claimed_at": "2026-09-25T14:33:21Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncode",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-25T14:40:56Z",
+      "my_subject": "cc-queue6",
+      "my_task": "discharge cc's most overdue review (hank 2026-09-23T23:16:12Z SAIRNdesign session gate, live auth change), then fence the 15 unfenced prompt-interpolation sites, build the scoped-on-push probe selector, diagnose the 6 red probes, 2 more blob conversions, item 91 SPOF retirement schedule, skills/tools staleness sweep FILES: docs/tier-a-reviews.json sairnbuild.html sairncode.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "discharge cc sairncode tier-a 7-to-23 gate review; render clickthrough re-run sairnbiz stonedesk sairnvet; sairnvet demo credentials and 409 bootstrap; competitive-gap doc re-verification plumbing electrical hvac roofing dental senior mechanical stonedesk; sairnroofing gap doc; veterans 45B tips; sync_write_result_check transports",
+      "other_claimed_at": "2026-09-25T14:33:21Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncode",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-25T14:41:40Z",
+      "my_subject": "cc-fence-and-tools",
+      "my_task": "discharge cc's most overdue review (hank 2026-09-23T23:16:12Z SAIRNdesign session gate), fence the unfenced prompt-interpolation sites, build the scoped-on-push probe selector, diagnose 6 red probes, 2 blob conversions, item 91 SPOF retirement, skills/tools staleness sweep. SAIRNCODE/SAIRNVET/STONEDESK/SAIRNBIZ FENCING DEFERRED -- fourth is live in those files this hour FILES: docs/tier-a-reviews.json sairnbuild.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js api/_lib/prompt-fence.js",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "discharge cc sairncode tier-a 7-to-23 gate review; render clickthrough re-run sairnbiz stonedesk sairnvet; sairnvet demo credentials and 409 bootstrap; competitive-gap doc re-verification plumbing electrical hvac roofing dental senior mechanical stonedesk; sairnroofing gap doc; veterans 45B tips; sync_write_result_check transports",
+      "other_claimed_at": "2026-09-25T14:33:21Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnbiz, sairncode, sairnvet, stonedesk",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-25T14:42:05Z",
+      "my_subject": "cc-fence-and-tools",
+      "my_task": "fence prompt sites probe selector spof skills sweep -- discharge hank 2026-09-23T23:16:12Z sdn session gate, fence unfenced prompt-interpolation sites, scoped-on-push probe selector, diagnose 6 red probes, 2 blob conversions, item 91 SPOF retirement, skills staleness sweep. sairncode/sairnvet/stonedesk/sairnbiz DEFERRED, fourth is live in those FILES: docs/tier-a-reviews.json sairnbuild.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js api/_lib/prompt-fence.js",
+      "other_session": "fourth",
+      "other_subject": "fourth",
+      "other_task": "discharge cc sairncode tier-a 7-to-23 gate review; render clickthrough re-run sairnbiz stonedesk sairnvet; sairnvet demo credentials and 409 bootstrap; competitive-gap doc re-verification plumbing electrical hvac roofing dental senior mechanical stonedesk; sairnroofing gap doc; veterans 45B tips; sync_write_result_check transports",
+      "other_claimed_at": "2026-09-25T14:33:21Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairnbiz, sairncode, sairnvet, stonedesk",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
