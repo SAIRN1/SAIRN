@@ -14522,7 +14522,7 @@
       "injection_phase": "unknown",
       "phase_confidence": "inferred",
       "found_by_tool": null,
-      "found_by_session": "cody",
+      "found_by_session": null,
       "injection": {
         "unknown_reason": "There is no injection commit: the SAIRNscape resource branches were written without a session check from their first version, and api/scp-auth.js arrived later. The gap arose from the composition, not from a commit that removed a gate."
       },
@@ -14531,11 +14531,22 @@
       "contributing_factors": [
         {
           "factor": "THE CLASS ROWS EXISTED FOR THREE OTHER APPS AND THIS ONE HAD NONE. sdn, sf and sc each carried a licence-key-alone row in the open-work index; SAIRNscape carried nothing, so a reader sweeping that class by index row would have concluded it was clean. The absence was the finding, and it was only written down on 2026-09-24.",
-          "action": "The index row is now a FIXED row naming the gate and the suite, and the two register cells carry the gate as evidence."
+          "action": "The index row is now a FIXED row naming the gate and the suite, and the two register cells carry the gate as evidence.",
+          "kind": "detection",
+          "action_status": "done"
         },
         {
           "factor": "THE POSTURE SUITE MEASURES 401 ONLY, AND SD_SESSION_GATED ANSWERS 403. tests/app_session_isolation.js counts a resource as gated only when it answers 401, so SAIRNscape still measures posture NONE with two resources gated -- and sairndesign's row has read '1 of 18' since September while nine of its resources sit in that table. The column that exists to notice an ungated app cannot see the commonest gate on the platform.",
-          "action": "Recorded in that file and in the index row rather than fixed here. Widening the comparison to 401-or-403 would silently re-measure fourteen other rows inside a commit about SAIRNscape, and which codes count as a gate is the premise the whole column rests on."
+          "action": "FIXED 8971743b, later the same day, rather than left as a disclosure. tests/app_session_isolation.js now counts a resource as gated on either session refusal -- 401 NO_SESSION or 403 FORBIDDEN -- and ASSERTS THE CODE rather than the status alone, so a future role gate or tenancy refusal answering 403 cannot inflate the column the other way. Measured before changing it: across 17 apps every 401 carried NO_SESSION and all 40 403s carried FORBIDDEN naming a required session. The fix moved four rows, three of which had been wrong longer than SAIRNscape: sairnlaw SOME->ALL (phase 2 finished 2026-09-22 and the column could not see it for three days), sairnfreedom NONE->SOME with fifteen gated resources and an `auth: false` that was wrong independently, shared NONE->SOME where the row's own prose explained five gated resources away as \"not plain read/write resources\", and sairnscape NONE->SOME. sairndesign kept the letter SOME while its count was corrected from \"1 of 18\" to 10 of 18.",
+          "kind": "detection",
+          "action_status": "done"
+        },
+        {
+          "kind": "latent-condition",
+          "factor": "THE GATE COULD NOT HAVE BEEN ARMED FOR PART OF THE EXPOSURE WINDOW. The SAIRNscape resource branches were written before api/scp-auth.js, ROLES_BY_APP.sairnscape, AUTH_TABLE_BY_APP's scp_employee_auth entry, a real sign-in and the unconditional X-SD-Auth header existed. Until all five were in place, adding these resources to SD_SESSION_GATED would have answered 403 to every legitimate caller -- the failure SAIRNfreedom's gate comment records as the reason it was 'ARMED LAST, AND DELIBERATELY'. So the window is not uniformly a window of neglect: the first part of it was a window in which the repair was unavailable.",
+          "action_status": "not-actionable",
+          "action": null,
+          "note": "No action addresses this: the condition has already passed. All five preconditions existed well before 2026-09-25, which is what made the fix a two-line table edit with no client change. It is recorded so the exposure window is not read as five months of somebody ignoring a known gap, and so the next app in this position is recognised as blocked-on-preconditions rather than unattended."
         }
       ],
       "recurrence_open": "The 401-only posture measurement is open and is the more consequential half: until it is settled, that column under-reports every app whose gate is the shared table, and it is the sweep a reader would use to find the next SAIRNscape. Separately, the other ten SAIRNscape resources remain licence-only by the Tier A stopping rule -- whether a crew member may read the schedule or the vendor list is a product decision nobody has made, and scp_vendors is driven in the new suite so the day somebody makes it the widening is visible."
