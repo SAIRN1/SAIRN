@@ -228,6 +228,60 @@ ok('CONTROL: a genuinely unrecorded commit does NOT name --reseat',
 ok('...and is still told how to record it',
    '--add --commit' in _fresh, _fresh[-300:])
 
+
+# ── A NEW BRANCH IS MEASURED FROM WHERE IT DIVERGED, NOT FROM THE ROOT ──────
+# 2026-09-25. git sends an all-zero REMOTE sha for a branch that does not
+# exist on the remote yet. outgoing_range() returned the bare LOCAL sha,
+# which to `git log` means EVERYTHING REACHABLE -- so every unrecorded
+# closure ever made on origin/main was reported as something the new branch
+# was adding, and NO NEW BRANCH COULD BE PUSHED FROM ANY CLONE AT ALL. Found
+# the day the register-freshness proposer needed to publish ten regfresh/*
+# branches, because a propose-then-human-merge workflow is nothing but new
+# branches.
+ZERO = '0' * 40
+_head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=REPO,
+                       capture_output=True, text=True).stdout.strip()
+_base = subprocess.run(['git', 'merge-base', 'origin/main', 'HEAD'], cwd=REPO,
+                       capture_output=True, text=True).stdout.strip()
+
+_rng, _prob = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n' % (_head, ZERO))
+ok('a NEW branch resolves to a RANGE, never a bare tip -- a bare tip means '
+   'all of history to git log',
+   _prob == '' and (_rng is None or '..' in str(_rng)), (_rng, _prob))
+if _rng is not None:
+    ok('...and its base is the merge-base with origin/main, so the range is '
+       'what this push ADDS',
+       _rng == '%s..%s' % (_base, _head), (_rng, _base, _head))
+
+_rng2, _prob2 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
+                                 % (_head, 'a' * 40))
+ok('CONTROL: an EXISTING remote branch is still rsha..lsha, unchanged',
+   _rng2 == '%s..%s' % ('a' * 40, _head), _rng2)
+
+_rng3, _prob3 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
+                                 % (ZERO, 'b' * 40))
+ok('CONTROL: a DELETE (all-zero LOCAL sha) is still nothing to check',
+   _rng3 is None and _prob3 == '', (_rng3, _prob3))
+
+_rng4, _prob4 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
+                                 % (_base, ZERO))
+ok('a new branch pointing AT the merge-base adds nothing and is not measured '
+   'as if it did', _rng4 is None and _prob4 == '', (_rng4, _prob4))
+
+# THE PAIRED REFUSAL: an unresolvable base is could-not-tell, never a range
+# from the root -- the direction the original defect fell in.
+_saved_mb = G._merge_base
+try:
+    G._merge_base = lambda a, b: None
+    _rng5, _prob5 = G.outgoing_range('refs/heads/x %s refs/heads/x %s\n'
+                                     % (_head, ZERO))
+    ok('an UNRESOLVABLE base is could-not-tell WITH a reason, not a range '
+       'from the root', _rng5 is None and 'could not be resolved' in _prob5,
+       (_rng5, _prob5))
+finally:
+    G._merge_base = _saved_mb
+ok('the probe restored the real merge-base resolver', G._merge_base is _saved_mb)
+
 print('\n' + '=' * 66)
 print('%d passed, %d failed' % (PASSES[0], len(FAILS)))
 for f in FAILS:

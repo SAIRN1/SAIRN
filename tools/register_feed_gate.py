@@ -317,8 +317,32 @@ def judge_subject_reuse(rows, index):
     return out
 
 
+def _merge_base(a, b):
+    r = subprocess.run(['git', 'merge-base', a, b], cwd=REPO,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace')
+    out = (r.stdout or '').strip()
+    return out if r.returncode == 0 and out else None
+
+
 def outgoing_range(stdin_text):
-    """The range a pre-push hook is being asked about. (rng, problem)."""
+    """The range a pre-push hook is being asked about. (rng, problem).
+
+    A BRAND-NEW BRANCH USED TO BE MEASURED AS ALL OF HISTORY (fixed
+    2026-09-25). git sends an all-zero REMOTE sha when the branch does not
+    exist on the remote yet, and this returned the bare local sha -- which to
+    `git log` means "everything reachable from the tip", so every unrecorded
+    closure ever made on origin/main was reported as something THIS push was
+    adding. The practical effect was absolute: no new branch could be pushed
+    from a clone at all, and it surfaced the day the register-freshness
+    PROPOSER needed to publish ten `regfresh/*` branches, because a
+    propose-then-human-merge workflow is nothing but new branches.
+    WHAT THIS PUSH ADDS is the range since the point it diverged from the
+    published trunk, so the base is merge-base(origin/main, tip). If that
+    cannot be resolved -- no origin/main, an unrelated history -- the answer
+    is COULD NOT TELL, not "measure everything": an unbounded range on an
+    absent base is how a gate becomes unpassable while looking strict.
+    """
     ZERO = '0' * 40
     lines = [l for l in (stdin_text or '').split('\n') if l.strip()]
     if not lines:
@@ -330,7 +354,18 @@ def outgoing_range(stdin_text):
         _lref, lsha, _rref, rsha = parts[:4]
         if lsha == ZERO:
             continue
-        return (lsha if rsha == ZERO else '%s..%s' % (rsha, lsha)), ''
+        if rsha != ZERO:
+            return '%s..%s' % (rsha, lsha), ''
+        base = _merge_base('origin/main', lsha)
+        if not base:
+            return None, ('this is a NEW branch and its base could not be '
+                          'resolved against origin/main, so the range this '
+                          'push ADDS is unknown. Measuring from the root '
+                          'instead would report every unrecorded closure in '
+                          'the repository as yours')
+        if base == lsha:
+            return None, ''   # nothing ahead of the trunk; nothing to check
+        return '%s..%s' % (base, lsha), ''
     return None, ''          # deletes only; nothing to check
 
 
