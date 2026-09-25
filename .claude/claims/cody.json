@@ -1725,8 +1725,8 @@
       "task": "two-axis criticality tier format implementation CRITICALITY-TIERS.md and criticality_tier_check.py validation",
       "claimed_at": "2026-09-22T11:32:54Z",
       "claimed_at_epoch": 1790076774.3257012,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-25T23:57:32Z",
       "files": null
     },
     {
@@ -2338,8 +2338,8 @@
       "task": "run_all_tests harness pinned worktree and full output capture; defect register malformed record vocabulary; app_session_isolation 403 gate assertion; methodology item 99 graduated consent proposal FILES: tools/run_all_tests.py docs/defect-density-register.json tests/app_session_isolation.js docs/2026-09-13-cross-domain-disciplines.md",
       "claimed_at": "2026-09-25T16:34:57Z",
       "claimed_at_epoch": 1790354097.472901,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-25T23:57:32Z",
       "files": [
         "docs/2026-09-13-cross-domain-disciplines.md",
         "docs/defect-density-register.json",
