@@ -14322,6 +14322,49 @@
       "citation_note": "PR 1.11's subject is a check that could not run being folded into a pass. Both halves here are the mirror image: a control that DID run and was reported as absent, and a count whose prescribed re-derivation reproduced its own error. Same family -- a measurement that cannot be trusted to say what it measured -- read in the other direction, and cited rather than filed not-citable because the underlying principle is the same one.",
       "phase_note": "Neither was introduced in a phase. Both are omissions present from the first version of their subject.",
       "factors_unknown_reason": "Not yet worked through independently. The commit names them: a detector whose vocabulary is a list that only grows when somebody notices a miss, and a re-derivation instruction that is inside the thing it derives."
+    },
+    {
+      "commit": "11ac1fd38ae0",
+      "date": "2026-09-25",
+      "subject": "fix(sairnscape): the two Tier A rows stop answering on the licence key alone",
+      "files": [
+        "api/sd-data.js",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data-invoices-amount.test.js",
+        "tests/app_session_isolation.js",
+        "docs/CRITICALITY-TIERS.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md"
+      ],
+      "lines_added": 472,
+      "lines_removed": 9,
+      "app": "SAIRNSCAPE",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "All twelve SAIRNscape resources in api/sd-data.js dispatched on the licence hash alone with NO session check of any kind, and the licence key is shipped to the browser and readable by anyone who can open sairnscape.html -- so the key WAS the authorisation. Two of the twelve are Tier A on integrity: `invoices` (SAIRNscape's money row; its write branch already refuses a non-numeric amount because a string one reached a fold and printed -99450 on a tax report) and `scp_quotes` (the priced quote every invoice descends from). Identical shape to law_trusttx (gated 2026-09-16), SF_RESOURCES and SDN_RESOURCES; SAIRNscape was swept with none of the three. Fixed by adding both to SD_SESSION_GATED for read AND write with SD_GATE_APP entries pinning each to 'sairnscape' -- 403 FORBIDDEN without a session, plus the shared active-credential re-check, so a deactivated employee is refused on a token that still verifies. THE NAME IS THE PART THAT MAKES THIS FIX FAILABLE IN SILENCE: SAIRNscape claimed the bare name `invoices` before the scp_ convention existed, so the storage table is scp_invoices and the RESOURCE the dispatch tests for is `invoices`. A gate written against the table name gates nothing at all and every refusal arm anywhere still passes -- the new suite carries an arm whose only job is that distinction. NO CLIENT CHANGE WAS NEEDED AND THAT WAS MEASURED RATHER THAN ASSUMED, which is the half that has broken apps three times here: scpData() attaches X-SD-Auth on every call whenever a token exists (sairnscape.html:2107) with no per-call withSession flag to forget -- the thing that had to be repaired in sairndesign.html, where 18 of 19 call sites never passed it -- every call site for both resources goes through that one helper, and both login paths store the token before scpApplyLoggedIn -> scpInit -> scpSyncFromServer. Arms assert all three against the shipped page rather than against the commit message. DRIVEN TO FAIL BEFORE IT WAS BELIEVED: removing the SD_SESSION_GATED entries takes the new suite to 9/18, removing the SD_GATE_APP pins to 11/18, and renaming the entry to the storage-table name to 16/18.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": "cody",
+      "injection": {
+        "unknown_reason": "There is no injection commit: the SAIRNscape resource branches were written without a session check from their first version, and api/scp-auth.js arrived later. The gap arose from the composition, not from a commit that removed a gate."
+      },
+      "citation_note": "No process rule covers 'a Tier A resource authorised by a browser-readable licence key'. The nearest is the standing convention that the gate's stopping rule is the TIER rather than a name list, which is convention rather than a numbered rule -- filed not-citable rather than stretched onto PR 1.11, whose subject is a check that could not run being folded into a pass.",
+      "phase_note": "Present from the first version of each branch. The preconditions for closing it (scp-auth, ROLES_BY_APP, AUTH_TABLE_BY_APP, a real sign-in, the unconditional client header) all landed later, so for part of the window arming the gate would have refused every real call.",
+      "contributing_factors": [
+        {
+          "factor": "THE CLASS ROWS EXISTED FOR THREE OTHER APPS AND THIS ONE HAD NONE. sdn, sf and sc each carried a licence-key-alone row in the open-work index; SAIRNscape carried nothing, so a reader sweeping that class by index row would have concluded it was clean. The absence was the finding, and it was only written down on 2026-09-24.",
+          "action": "The index row is now a FIXED row naming the gate and the suite, and the two register cells carry the gate as evidence."
+        },
+        {
+          "factor": "THE POSTURE SUITE MEASURES 401 ONLY, AND SD_SESSION_GATED ANSWERS 403. tests/app_session_isolation.js counts a resource as gated only when it answers 401, so SAIRNscape still measures posture NONE with two resources gated -- and sairndesign's row has read '1 of 18' since September while nine of its resources sit in that table. The column that exists to notice an ungated app cannot see the commonest gate on the platform.",
+          "action": "Recorded in that file and in the index row rather than fixed here. Widening the comparison to 401-or-403 would silently re-measure fourteen other rows inside a commit about SAIRNscape, and which codes count as a gate is the premise the whole column rests on."
+        }
+      ],
+      "recurrence_open": "The 401-only posture measurement is open and is the more consequential half: until it is settled, that column under-reports every app whose gate is the shared table, and it is the sweep a reader would use to find the next SAIRNscape. Separately, the other ten SAIRNscape resources remain licence-only by the Tier A stopping rule -- whether a crew member may read the schedule or the vendor list is a product decision nobody has made, and scp_vendors is driven in the new suite so the day somebody makes it the widening is visible."
     }
   ],
   "started": "2026-09-09",
