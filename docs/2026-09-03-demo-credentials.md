@@ -42,7 +42,7 @@ credential that cannot provision anything.
 | StoneDesk | `SD-AUDIT-2026` | `sairn-demo-owner` | `31840627` | owner | `/api/sd-auth` |
 | StoneDesk (partner demo) | `SD-PARTNER-2026` | `sairn-demo-owner` | `52719084` | owner | `/api/sd-auth` |
 | SAIRNbiz | `SB-TEST-2026` | `sairn-demo-owner` | `84350271` | owner | `/api/sb-auth` |
-| SAIRNbiz (demo) | `SB-PINNACLE-2026` | `sairn-demo-owner` | `60417293` | owner | `/api/sb-auth` |
+| SAIRNbiz (demo) | `SB-PINNACLE-2026` | `sairn-demo-owner` | ~~`60417293`~~ **DEAD 2026-09-25** | owner | `/api/sb-auth` |
 | SAIRNgrounds | `GRD-DEMO-2026` | `sairn-demo-owner` | `27593016` | owner | `/api/grd-auth` |
 | SAIRNscape | `SCP-DEMO-2026` | `sairn-demo-owner` | `73018452` | owner | `/api/scp-auth` |
 | SAIRNcare | `ALF-TEST-2026` | `sairn-demo-owner` | `19546830` | owner | `/api/alf-auth` |
@@ -56,7 +56,7 @@ credential that cannot provision anything.
 | SAIRNroofing | `RF-AUDIT-2026` | `sairn-demo-owner` | `17462059` | owner | `/api/rf-auth` |
 | SAIRNbuild | `BLD-PINNACLE-2026` | `sairn-demo-owner` | `35810946` | owner | `/api/bld-auth` |
 | SAIRNcode | `SC-PINNACLE-2026` | `sairn-demo-owner` | `72694103` | **admin** | `/api/sc-auth` |
-| SAIRNvet | `SV-PINNACLE-2026` | `sairn-demo-owner` | `38471260` | owner | `/api/sv-auth` |
+| SAIRNvet | `SV-PINNACLE-2026` | `sairn-demo-owner` | ~~`38471260`~~ **DEAD 2026-09-25** | owner | `/api/sv-auth` |
 
 **The SAIRNvet row was added 2026-09-23 and did NOT come from the SQL file
 above.** Every other row was seeded; this one was minted through the app's own
@@ -200,3 +200,32 @@ costs nothing.
 given to a real customer or loaded with real data, its row in the SQL must be
 deleted and its PIN rotated. Nothing enforces that automatically, which is why
 it is written here rather than assumed.
+
+
+---
+
+## TWO ROWS ABOVE ARE DEAD — DRIVEN 2026-09-25, NOT ASSUMED
+
+Re-verified against the live endpoints during the Wave 3 re-run
+(`docs/2026-09-25-wave3-clickthrough-rerun.md` §3). **A credential document
+nobody re-drives is the expired-fixture class, and this one had expired twice.**
+
+| Row | Result driven today |
+|---|---|
+| StoneDesk `SD-AUDIT-2026` / `31840627` | **200, role `owner`** — works |
+| SAIRNbiz `SB-TEST-2026` / `84350271` | **200, token issued** — works |
+| SAIRNbiz (demo) `SB-PINNACLE-2026` / `60417293` | **401 INVALID_CREDENTIALS** |
+| SAIRNvet `SV-PINNACLE-2026` / `38471260` | **401 INVALID_CREDENTIALS** |
+
+**WHAT CANNOT BE DETERMINED FROM OUTSIDE, stated rather than guessed:** the
+auth endpoints answer 401 `INVALID_CREDENTIALS` identically for a wrong PIN, a
+deliberate wrong PIN and an entirely unknown employee id — driven as two
+explicit controls. That is correct design (no user enumeration) and it means
+nobody can tell from here whether these PINs changed or the accounts were
+removed.
+
+**SAIRNvet has no self-serve way back in.** `action: bootstrap` answers
+**409 ALREADY_PROVISIONED**, exactly as this document says it would, so the
+route used on 2026-09-23 to mint the first Owner is closed. Recovering
+SAIRNvet access needs either the real PIN or a `setup` call from an
+already-authenticated Owner — neither of which exists in this document.
