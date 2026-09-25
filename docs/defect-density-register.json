@@ -13718,6 +13718,34 @@
       "factors_unknown_reason": "Named in the obligation opened against this commit and not yet worked through by an independent session: the 'PT' name collision with the preventive modifier, and the fact that a panel listing what it checks gives no signal about what it does not."
     },
     {
+      "commit": "b0b9445f0194",
+      "date": "2026-09-24",
+      "subject": "fix(write-audit): the fifth false-positive class -- a call inside a comment is not a call",
+      "files": [
+        "tests/run_sync_write_result_probe.py",
+        "tools/sync_write_result_check.py"
+      ],
+      "lines_added": 99,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "tools/sync_write_result_check.py scanned transport calls written inside `//` comments as if they were real call sites. Three on the live codebase -- sairndental.html:5264, sairndesign.html:2394, sairngrounds.html:1683 -- and every one is a comment EXPLAINING a write, two of them explaining a write that had been deliberately REMOVED. They were reported as COULD NOT TELL, which is the right answer to the wrong question: there is nothing to tell because there is no call. IT COST IN THREE DIRECTIONS AND THE THIRD IS THE WORST. The write COUNT is the denominator of every figure the tool prints, and it was over by three. Three could-not-tells sat permanently unresolvable, and a third-state column that can never reach zero is one people stop reading. And a comment quoting a call it removed would be reported forever, so the honest act of writing down what you took out made the tool noisier -- a checker that penalises good documentation is one people route around. THIS IS THE FIFTH FALSE-POSITIVE CLASS found in this checker; four were already fixed (await read as a consumer, a delayed multi-line .then(), an array element inside Promise.all, and a bracket opened on an earlier line). AND THIS CODEBASE HAD ALREADY PAID FOR THIS EXACT CLASS: tools/sairn_dead_button_audit.py records 58 phantom findings on StoneDesk from scanning comments, and its fix was a real state machine rather than a regex. The lesson was written down and had not reached here.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Present from the tool's first version. No commit introduced it; the three comments it trips on were written independently, two of them AFTER the tool, by sessions documenting a write they had removed."
+      },
+      "citation_note": "The applicable rule is a repo CONVENTION rather than a numbered process rule: tools/sairn_dead_button_audit.py's header records that scanning comments cost 58 phantom findings on StoneDesk and that the fix is a real state machine, not a regex. It is not a section in SAIRN-PROCESS-RULES.md, so not-citable is the honest field value -- and the fact that a lesson this expensive lives only in one tool's header is part of why it did not reach a sibling tool solving the same problem.",
+      "phase_note": "Not introduced in a phase. The scanner never stripped comments, and the population it trips on grows every time somebody documents a removal honestly.",
+      "factors_unknown_reason": "Not yet worked through independently. The commit names the shape: a documented lesson living in one tool's header, never generalised, not reaching a sibling tool with the same problem."
+    },
+    {
       "commit": "b2764261a088",
       "date": "2026-09-24",
       "subject": "retier(h1-batch): seven rows read individually -- five promoted, one confirmed against a premise that died the day before, one register self-disagreement closed -- plus the two app defects the reads carried",
@@ -13814,34 +13842,6 @@
         }
       ],
       "recurrence_open": "The gate covers sb_perf only; whether other SB_RESOURCES members (sb_hire's candidate records, sb_emps' HR data if present) need the same narrowing is per-row work the confidentiality axis will reach. Client-side, the Performance panel is not role-hidden -- a staff user still sees the panel and its local-only data; server refusal is the boundary, and whether the UI should also hide it is a product call nobody has made."
-    },
-    {
-      "commit": "b0b9445f0194",
-      "date": "2026-09-24",
-      "subject": "fix(write-audit): the fifth false-positive class -- a call inside a comment is not a call",
-      "files": [
-        "tests/run_sync_write_result_probe.py",
-        "tools/sync_write_result_check.py"
-      ],
-      "lines_added": 99,
-      "lines_removed": 1,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "tools/sync_write_result_check.py scanned transport calls written inside `//` comments as if they were real call sites. Three on the live codebase -- sairndental.html:5264, sairndesign.html:2394, sairngrounds.html:1683 -- and every one is a comment EXPLAINING a write, two of them explaining a write that had been deliberately REMOVED. They were reported as COULD NOT TELL, which is the right answer to the wrong question: there is nothing to tell because there is no call. IT COST IN THREE DIRECTIONS AND THE THIRD IS THE WORST. The write COUNT is the denominator of every figure the tool prints, and it was over by three. Three could-not-tells sat permanently unresolvable, and a third-state column that can never reach zero is one people stop reading. And a comment quoting a call it removed would be reported forever, so the honest act of writing down what you took out made the tool noisier -- a checker that penalises good documentation is one people route around. THIS IS THE FIFTH FALSE-POSITIVE CLASS found in this checker; four were already fixed (await read as a consumer, a delayed multi-line .then(), an array element inside Promise.all, and a bracket opened on an earlier line). AND THIS CODEBASE HAD ALREADY PAID FOR THIS EXACT CLASS: tools/sairn_dead_button_audit.py records 58 phantom findings on StoneDesk from scanning comments, and its fix was a real state machine rather than a regex. The lesson was written down and had not reached here.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Present from the tool's first version. No commit introduced it; the three comments it trips on were written independently, two of them AFTER the tool, by sessions documenting a write they had removed."
-      },
-      "citation_note": "The applicable rule is a repo CONVENTION rather than a numbered process rule: tools/sairn_dead_button_audit.py's header records that scanning comments cost 58 phantom findings on StoneDesk and that the fix is a real state machine, not a regex. It is not a section in SAIRN-PROCESS-RULES.md, so not-citable is the honest field value -- and the fact that a lesson this expensive lives only in one tool's header is part of why it did not reach a sibling tool solving the same problem.",
-      "phase_note": "Not introduced in a phase. The scanner never stripped comments, and the population it trips on grows every time somebody documents a removal honestly.",
-      "factors_unknown_reason": "Not yet worked through independently. The commit names the shape: a documented lesson living in one tool's header, never generalised, not reaching a sibling tool with the same problem."
     },
     {
       "commit": "b3ae64ad07eb",
@@ -14365,6 +14365,54 @@
         }
       ],
       "recurrence_open": "The 401-only posture measurement is open and is the more consequential half: until it is settled, that column under-reports every app whose gate is the shared table, and it is the sweep a reader would use to find the next SAIRNscape. Separately, the other ten SAIRNscape resources remain licence-only by the Tier A stopping rule -- whether a crew member may read the schedule or the vendor list is a product decision nobody has made, and scp_vendors is driven in the new suite so the day somebody makes it the widening is visible."
+    },
+    {
+      "commit": "09b3ebb82015",
+      "date": "2026-09-25",
+      "subject": "fix(register-feed-gate): a NEW branch was measured as ALL of history, so no clone could push one",
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ],
+      "lines_added": 91,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/register_feed_gate.py's outgoing_range() returned the bare LOCAL sha when git supplied an all-zero REMOTE sha -- the signal that the branch being pushed does not exist on the remote yet. To `git log` a bare sha means every commit reachable from that tip, so a brand-new branch was measured as ALL OF HISTORY and every unrecorded defect closure ever made on origin/main was reported as something that push was adding. The effect is absolute rather than cosmetic: no new branch could be pushed from any clone by any session. It surfaced on 2026-09-25 when the register-freshness proposer needed to publish ten regfresh/* branches; the decision that auto-fix must open a PR rather than write a register was unimplementable against the gate, which looked strict while being unpassable.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "outgoing_range() has carried this shape since the gate was written; no commit introduced it as a change, and naming one would be a guess."
+      },
+      "citation_note": "The nearest standing rule is PR 1.11 (could-not-run is a third state and is never folded into passed), and this is its mirror: an absent BOUND folded into an unbounded RANGE rather than into a refusal. Cited as family, recorded not-citable because 1.11's text is about a check that could not run, not about one that ran over the wrong domain.",
+      "phase_note": "The all-zero remote sha was handled -- the branch exists and is commented -- but translated into the wrong bound. This is an implementation slip inside a correct design, not a missing case.",
+      "contributing_factors": [
+        {
+          "factor": "The all-zero remote sha was handled as 'no base' and translated into 'no lower bound' rather than into 'resolve the base another way'. An absent bound and an unbounded range are different things, and the code conflated them.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A new branch is measured from merge-base(origin/main, tip). An unresolvable base returns COULD NOT TELL with its reason, never a range from the root -- the exact direction the defect fell in."
+        },
+        {
+          "factor": "Every test and every real use exercised pushes to an EXISTING remote branch (main), where rsha is a real sha and the range is correct. The one input shape that was wrong was the one nobody had.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Six arms added driving the new-branch shape directly, including three controls against over-correction (existing branch unchanged, delete unchanged, a branch at the merge-base adds nothing) and a paired refusal driving the unresolvable-base path by substituting the resolver."
+        },
+        {
+          "factor": "A gate nobody can pass reads identically to a gate nobody has tripped. Nothing measured whether any check was PASSABLE on inputs it had never seen, so the defect could only be found by somebody needing the blocked operation.",
+          "kind": "process",
+          "action_status": "declined",
+          "note": "Not built here. A passability audit over every gate's input shapes is a real tool with its own criteria questions and belongs in its own change; folding it into this fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
+        }
+      ],
+      "recurrence_open": "The fix closes the new-branch range for this gate. It closes nothing about the class: no tool on this platform asks whether a gate is PASSABLE on input shapes it has never received, and the other pre-push checks share the same stdin parsing without sharing this function. A gate that cannot be passed is indistinguishable from one that has never been tripped, and only somebody needing the blocked operation will ever find the difference."
     }
   ],
   "started": "2026-09-09",
