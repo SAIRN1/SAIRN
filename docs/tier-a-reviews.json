@@ -3275,6 +3275,34 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-25T12:20:10Z",
+      "resources": [
+        "invoices",
+        "law_trusttx",
+        "quotes",
+        "scp_quotes",
+        "sdn_invoices",
+        "sdn_timeentries",
+        "sf_youth_participants"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data-invoices-amount.test.js",
+        "api/sd-data-scp-session-gate.test.js",
+        "api/sd-data-session-gate.test.js",
+        "api/sd-data.js",
+        "tests/app_session_isolation.js"
+      ],
+      "what": "SAIRNscape's two Tier A resources (invoices, scp_quotes) gated on a verified sairnscape session (11ac1fd3): SD_SESSION_GATED entries for read AND write plus SD_GATE_APP pins, a new suite api/sd-data-scp-session-gate.test.js (18 arms), and three existing suites updated to match. ATTACK, hardest first: (1) THE SCOPE STOPS AT TIER A AND THAT IS A JUDGEMENT I MADE, not a measurement -- the other ten SAIRNscape resources stay licence-key-alone, including scp_progress_photos (crew photos of a customer's property) and scp_customers. I followed the sdn/sf precedent and called the rest a product decision nobody has made. Decide whether that precedent actually carries here or whether one of the ten belongs inside this gate today. (2) THE CLIENT PRECONDITION IS THE HALF THAT BREAKS APPS AND I CHANGED NO CLIENT CODE. I claim scpData() attaches X-SD-Auth unconditionally, that every call site for both resources routes through it, and that both login paths store the token before the first server read. Re-derive all three against sairnscape.html rather than against my arms -- in particular find any path that reaches a read WITHOUT scpApplyLoggedIn (the 'online' event listener survives a logout, and scpFlushAndReport runs from it), and decide whether a post-logout flush now failing 403 is correct behaviour or a silent queue that never drains. (3) THE NAME. The resource is the bare string invoices; the storage table is scp_invoices. I added an arm asserting the gate does not carry the table name, but confirm there is no OTHER app or endpoint that posts a resource literally named invoices to api/sd-data.js and is now pinned to expectedApp sairnscape and refused -- I enumerated by grep over api/ and the html files and found only SAIRNscape's branch plus UI nav ids, which is exactly the kind of enumeration that misses a caller in a test fixture or a cron. (4) api/sd-data-invoices-amount.test.js NOW SIGNS ITS OWN SESSION and stubs _employee_auth to active:true. That makes eight arms depend on a fixture I wrote; confirm the amount guard is still what refuses, not the gate -- a 400 INVALID_AMOUNT and a 403 are both \"refused\" and only one of them is the thing that file exists to test. (5) I MOVED A COUNT PIN in api/sd-data-session-gate.test.js from 66 to 70 rather than treating the mismatch as a finding. Re-derive the pair count from the table directly; that arm's own comment records it going stale twice and being left red on origin/main for two days.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-25T12:20:10Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
