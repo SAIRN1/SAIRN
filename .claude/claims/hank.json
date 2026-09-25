@@ -2930,6 +2930,20 @@
       "status": "released",
       "released_at": "2026-09-24T21:12:03Z",
       "files": null
+    },
+    {
+      "id": "hank-1790339413",
+      "session": "hank",
+      "subject": "tooling",
+      "task": "register-feed-newbranch a new-branch push is measured as ALL history FILES: tools/register_feed_gate.py tests/run_register_feed_gate_probe.py",
+      "claimed_at": "2026-09-25T12:30:13Z",
+      "claimed_at_epoch": 1790339413.037921,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "tests/run_register_feed_gate_probe.py",
+        "tools/register_feed_gate.py"
+      ]
     }
   ],
   "refusals": [
