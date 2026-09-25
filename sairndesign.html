@@ -3971,9 +3971,34 @@ async function sdnHydrateAll(){
   // "which ids does this device already hold" while that is still the honest
   // question to ask.
   sdnSyncedBootstrap(SDN_SYNC_RESOURCES);
-  // sdn_clients is the one resource whose server-side read is gated by
-  // session (api/sd-data.js's sdn_clients branch) -- every other resource
-  // here stays unauthenticated, unchanged.
+  // ── TEN OF THESE EIGHTEEN READS NOW REQUIRE A SESSION (corrected 2026-09-25)
+  // This said "sdn_clients is the one resource whose server-side read is gated
+  // by session -- every other resource here stays unauthenticated, unchanged."
+  // That was true when it was written and stopped being true on 2026-09-23,
+  // when five sdn_ resources joined SD_SESSION_GATED, and again on 2026-09-24
+  // when the four promoted B->A after that joined them. NINE of the names below
+  // are now in that table (contracts, discounts, invoices, pos, referrals,
+  // projects, proposals, specitems, timeentries) and sdn_clients keeps its own
+  // bespoke per-employee gate, so TEN of eighteen refuse a read with no token.
+  //
+  // THE CORRECTION IS WORTH MORE THAN THE COUNT. This comment sits directly
+  // above the line that issues the reads, so it is what a reader consults when
+  // deciding whether this function is safe to call before a session exists --
+  // and it answered "yes, all but one" while the true answer had become "no,
+  // more than half". A stale comment beside live code is not neutral; it is an
+  // argument against the check somebody was about to make.
+  //
+  // CALLING THIS BEFORE A SESSION IS STILL SAFE, verified rather than assumed:
+  // both entry paths set sdnSession first -- sdnEnterApp() assigns it at :1461
+  // before sdnHydrateAll() at :1471, and sdnRestoreSession() reaches the same
+  // function. A read that did arrive without a token is refused 403 rather
+  // than served, and sdnServerWinsMerge treats the resulting null as "leave
+  // local data alone", which is the correct direction.
+  //
+  // The `withSession` argument below is INERT and is kept rather than removed:
+  // sdnData() sets X-SD-Auth on the stored token alone and has since
+  // 2026-09-23. Deleting it is a 30-site cosmetic diff. Do not read it as a
+  // statement about which resources are gated -- it no longer is one.
   var results=await Promise.all(SDN_SYNC_RESOURCES.map(function(key){return sdnData('read',key,null,key==='sdn_clients');}));
   var anyMerged=false;
   for(var i=0;i<SDN_SYNC_RESOURCES.length;i++){
