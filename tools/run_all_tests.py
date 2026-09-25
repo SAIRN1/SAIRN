@@ -69,6 +69,7 @@ Run:  python tools/run_all_tests.py [--quiet]
       python tools/run_all_tests.py --hook   (reads a hook payload on stdin)
 """
 import hashlib
+import io
 import json
 import os
 import re
@@ -546,9 +547,176 @@ def _tree():
     return [l for l in (r.stdout or '').splitlines() if l.strip()]
 
 
+# ── TWO FLAGS ADDED 2026-09-25, BOTH PAID FOR BY ONE RUN ────────────────────
+# A 2h11m run of this file produced nothing usable, for two independent
+# reasons. Both are structural and both are fixed here rather than by asking
+# people to remember something.
+#
+# (1) THE OUTPUT WAS TRUNCATED. It was launched as `... | tail -45`. The footer
+#     said `59 FAILING TEST FILE(S)` and forty-two names survived; SEVENTEEN
+#     were gone, and a truncated list is indistinguishable from a complete one.
+#     The comment at the bottom of this file already records the sibling of
+#     this -- a pipe swallowing the exit code -- and its fix was to put the
+#     verdict where a pipe carries it. That fix cannot help a `tail` that drops
+#     the middle. `--out PATH` writes the WHOLE run to a file as well as to
+#     stdout, so piping the terminal copy costs nothing.
+#
+# (2) THE RUN WAS NOT ATTRIBUTABLE TO ANY TREE STATE, and this is the worse
+#     one because nothing about the output says so. `discover()` snapshots the
+#     FILE LIST once, but `_run()` executes `node <rel>` / `python <rel>` at
+#     the moment it reaches each file -- so the CONTENTS are read live. Over
+#     those two hours the tree took three commits, a rebase across twenty-four
+#     upstream commits and a `git checkout`. Different tests saw different
+#     trees. The result is not a stale snapshot, it is a smear, and no failure
+#     in it can be attributed to a commit.
+#
+#     `--pinned` builds a throwaway detached worktree at a fixed commit and
+#     re-runs there. Nothing anyone does in the clone during the run can reach
+#     it. On a five-clone branch that moves hourly this is the only way a
+#     two-hour run means anything.
+#
+# WHAT --pinned DOES NOT TEST, SAID OUT LOUD BECAUSE IT IS THE WHOLE TRADE:
+# a commit is not a working tree. Uncommitted changes are NOT in the worktree
+# and are therefore NOT tested, and a green pinned run says nothing about them.
+# So a dirty tree makes `--pinned` REFUSE with exit 2 rather than quietly test
+# something else -- "could not run" is a third state (PR 1.11). Override with
+# `--pinned-ignore-dirty` when the uncommitted files genuinely are not under
+# test; the refusal names them either way.
+PINNED_COULD_NOT_RUN = 2
+
+
+def _git(*args):
+    return subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
+                          text=True, encoding='utf-8', errors='replace')
+
+
+def pinned_main(argv):
+    """Run the suite in a throwaway worktree pinned to one commit.
+
+    Returns the suite's own exit code, or PINNED_COULD_NOT_RUN if the worktree
+    could not be made. IT NEVER FALLS BACK TO THE LIVE CHECKOUT: a pinned run
+    that silently became an unpinned one would be the exact defect this flag
+    exists to prevent, wearing the flag as evidence that it did not happen.
+    """
+    rev = 'HEAD'
+    if '--rev' in argv:
+        i = argv.index('--rev')
+        if i + 1 >= len(argv):
+            sys.stderr.write('--rev needs a commit-ish\n')
+            return PINNED_COULD_NOT_RUN
+        rev = argv[i + 1]
+
+    resolved = _git('rev-parse', '--verify', rev + '^{commit}')
+    if resolved.returncode != 0:
+        sys.stderr.write('COULD NOT RUN: %r does not resolve to a commit in this '
+                         'clone.\n%s\n' % (rev, resolved.stderr.strip()))
+        return PINNED_COULD_NOT_RUN
+    sha = resolved.stdout.strip()
+
+    dirty = _tree()
+    if dirty and '--pinned-ignore-dirty' not in argv:
+        sys.stderr.write(
+            'COULD NOT RUN: --pinned tests a COMMIT, and this clone has %d '
+            'uncommitted path(s) that would therefore NOT be tested:\n' % len(dirty))
+        for l in dirty:
+            sys.stderr.write('    %s\n' % l)
+        sys.stderr.write(
+            'A green pinned run would say nothing about any of them, and would '
+            'look exactly like\none that did. Commit them, stash them, or pass '
+            '--pinned-ignore-dirty if they are\ngenuinely not under test.\n')
+        return PINNED_COULD_NOT_RUN
+
+    wt = tempfile.mkdtemp(prefix='sairn-suite-pinned-')
+    # mkdtemp CREATES the directory and `git worktree add` refuses a non-empty
+    # one, so the path is handed over empty rather than pre-made.
+    os.rmdir(wt)
+    add = _git('worktree', 'add', '--detach', wt, sha)
+    if add.returncode != 0:
+        sys.stderr.write('COULD NOT RUN: could not create a worktree at %s.\n%s\n'
+                         % (sha[:12], add.stderr.strip()))
+        return PINNED_COULD_NOT_RUN
+    try:
+        print('PINNED: running in a throwaway worktree at %s' % sha[:12])
+        print('    %s' % wt)
+        print('    Nothing done in %s during this run can reach it.' % REPO)
+        if dirty:
+            print('    %d uncommitted path(s) in the clone are NOT in this '
+                  'worktree and are NOT tested.' % len(dirty))
+        print('')
+        sys.stdout.flush()
+        inner = [sys.executable, os.path.join(wt, 'tools', 'run_all_tests.py')]
+        inner += [a for a in argv
+                  if a not in ('--pinned', '--pinned-ignore-dirty', '--rev', rev)]
+        r = subprocess.run(inner, cwd=wt)
+        return r.returncode
+    finally:
+        rm = _git('worktree', 'remove', '--force', wt)
+        if rm.returncode != 0:
+            # Reported, never swallowed: a worktree left behind is disk and a
+            # stale entry in `git worktree list` that the next person has to
+            # explain. Naming it is cheaper than a silent leak.
+            sys.stderr.write('NOTE: the pinned worktree was left behind at %s\n'
+                             '      (git worktree remove --force %s)\n%s\n'
+                             % (wt, wt, rm.stderr.strip()))
+
+
+class _Tee(object):
+    """Write to the terminal and to a file at once.
+
+    NOT `tee(1)`: this exists so the FILE copy is complete even when the
+    terminal copy is piped through something lossy, which is exactly how the
+    2026-09-25 run lost seventeen of its fifty-nine failure names.
+    """
+
+    def __init__(self, stream, fh):
+        self._stream, self._fh = stream, fh
+
+    def write(self, s):
+        self._stream.write(s)
+        self._fh.write(s)
+        return len(s)
+
+    def flush(self):
+        self._stream.flush()
+        self._fh.flush()
+
+    def isatty(self):
+        return False
+
+
 def main(argv):
     if '--hook' in argv:
         return hook_main()
+
+    # --out wraps everything below, INCLUDING the pinned re-exec's own output,
+    # so one file holds the whole run.
+    if '--out' in argv:
+        i = argv.index('--out')
+        if i + 1 >= len(argv):
+            sys.stderr.write('--out needs a path\n')
+            return PINNED_COULD_NOT_RUN
+        path = argv[i + 1]
+        rest = argv[:i] + argv[i + 2:]
+        try:
+            fh = io.open(path, 'w', encoding='utf-8', errors='replace', newline='\n')
+        except OSError as e:
+            # REFUSE rather than run without the file. Running anyway would
+            # produce the truncatable-only output this flag exists to replace,
+            # while the caller believes a complete copy is being kept.
+            sys.stderr.write('COULD NOT RUN: --out %r could not be opened: %s\n'
+                             % (path, e))
+            return PINNED_COULD_NOT_RUN
+        old_out, old_err = sys.stdout, sys.stderr
+        sys.stdout, sys.stderr = _Tee(old_out, fh), _Tee(old_err, fh)
+        try:
+            return main(rest)
+        finally:
+            sys.stdout, sys.stderr = old_out, old_err
+            fh.close()
+            old_out.write('FULL OUTPUT WRITTEN TO %s\n' % path)
+
+    if '--pinned' in argv:
+        return pinned_main(argv)
     # EXIT 3, the same "could not run is not a pass" code the probes use.
     if not acquire_lock():
         print('SKIPPED: another run of this suite already holds the lock for this')
