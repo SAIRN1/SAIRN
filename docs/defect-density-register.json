@@ -14464,6 +14464,57 @@
         }
       ],
       "recurrence_open": "TEN endpoints still write a role in setup with no demotion guard -- alf, bld, dnt, law, leg, mech, rf, sc, sdn, sen -- and each is one self-demotion from the same unrecoverable state. They are grandfathered in the new wiring arm, which means 'predates the check', not 'fine'. Several hold regulated records (alf MAR, dnt charges, law trust). Fixing them is ten endpoints and ten customer-facing refusal sentences and was not this change."
+    },
+    {
+      "commit": "b618ed3367da",
+      "date": "2026-09-25",
+      "subject": "fix(register-freshness): the dead-function check was BLIND ON ITS OWN SUBJECT for an hour",
+      "files": [
+        "tests/run_register_freshness_probe.py",
+        "tools/register_freshness_check.py"
+      ],
+      "lines_added": 64,
+      "lines_removed": 1,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "register_freshness_check._exists_anywhere() grepped tools/ as well as app sources, so the checker's own docstring naming saveTimeEntry() proved that dead function still existed -- the dead-function arm was blind on the exact case it was built for, for an hour",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "3f902fa6070e",
+        "date": "2026-09-25",
+        "subject": "feat(register-freshness): a DEAD FUNCTION is a different finding from a drifted line -- swept platform-wide, and the sweep is now standing",
+        "lag_days": 0
+      },
+      "contributing_factors": [
+        {
+          "factor": "_exists_anywhere() grepped every tracked .html/.js/.py, which includes tools/ -- so the checker's own docstring, which names saveTimeEntry() as the defect it was built to catch, was evidence that saveTimeEntry() still existed",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Scope the search to app and API sources only (*.html, api/*.js, api/_lib/*.js, api/_resources/*.js); a register cell never cites a tool as the home of an app function"
+        },
+        {
+          "factor": "the self-reference trap is a KNOWN recurring shape on this platform -- the --self-check regex and the never-merges fixture arm are the two prior instances -- and it was not checked for when a new grep-over-the-repo exclusion was written",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "tests/run_register_freshness_probe.py gains THE SELF-REFERENCE GUARD arm, asserting the exclusion does not search tools/ or tests/, so the shape now fails a probe rather than being remembered"
+        },
+        {
+          "factor": "the arm was landed with a live sweep whose result (one candidate, a legitimate cross-reference) LOOKED like a clean answer, and a blind check and a clean subject are indistinguishable from the output alone",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the probe drives PLANTED names -- a dead one that must report and a live one that must stay silent -- so the arm cannot pass by reporting nothing"
+        }
+      ],
+      "recurrence_open": "The probe now guards THIS tool's exclusion. Nothing guards the shape platform-wide: any future checker that excludes by grepping the whole repo can be kept alive by its own prose, and no standing check asks that question of a new tool."
     }
   ],
   "started": "2026-09-09",
