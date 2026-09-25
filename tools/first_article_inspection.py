@@ -810,20 +810,67 @@ def main(argv):
     print('    python tools/first_article_inspection.py --subject <path>')
     if '--subject' in argv and results:
         r = results[0]
+        # ── BALLOONED, THE WAY A REAL FAI REPORT IS (item 47, 2026-09-25) ──
+        # The trade practice this item borrows its name from does not hand an
+        # inspector two lists. AS9102's Form 3 is ONE NUMBERED ROW PER
+        # CHARACTERISTIC: every dimension on the drawing gets a balloon number,
+        # and the report carries that number, the requirement, the measured
+        # result and the METHOD used to measure it. The discipline that buys is
+        # called DESIGN CHARACTERISTIC ACCOUNTABILITY -- every ballooned
+        # characteristic must appear on the form, so an unmeasured one is a
+        # VISIBLE EMPTY ROW rather than an absence nobody can see.
+        #
+        # THE UNMATCHED LISTS WERE RIGHT AND INCOMPLETE. Refusing to pair a
+        # claim to an arm stays (word-overlap scoring returned 38% here with
+        # five false positives out of five, and the FAI document says the two
+        # lists "must not be" matched automatically). What was missing is the
+        # FORM: a claim with nothing beside it looked the same as a claim
+        # somebody had considered and dismissed. A numbered row with an empty
+        # verdict column looks like neither.
+        #
+        # THE NUMBERS ARE STABLE WITHIN A RUN AND NOT ACROSS RUNS, said here
+        # so nobody cites "C-4" in a review a week later: they are positional,
+        # and an edited header renumbers everything below it. They exist to
+        # make the WORKSHEET completable in one sitting, not to be an id.
         print('')
-        print('  CLAIMS IN ITS OWN HEADER (%d):' % len(r['claims']))
-        for c in r['claims']:
-            print('    - %s' % c[:150].encode('ascii', 'replace').decode('ascii'))
+        print('  FAI WORKSHEET -- one numbered row per claim, AS9102 Form 3')
+        print('  shape. An empty verdict is a row somebody still owes, which')
+        print('  is the whole reason the claims are ballooned rather than')
+        print('  listed: an unconsidered claim and a dismissed one look')
+        print('  identical in a bare list.')
+        print('')
+        print('  %-5s %-96s %s' % ('BALL', 'CLAIM (the drawing dimension)', 'VERDICT'))
+        print('  %-5s %-96s %s' % ('-' * 4, '-' * 96, '-' * 7))
+        for i, c in enumerate(r['claims'], 1):
+            txt = c[:96].encode('ascii', 'replace').decode('ascii')
+            print('  C-%-3d %-96s %s' % (i, txt, '[      ]'))
         print('')
         if r['arms'] is None:
             print('  ARMS IN ITS SUITE: COULD NOT TELL -- the suite exists and '
                   'its dialect was not recognised.')
+            print('  EVERY ROW ABOVE IS THEREFORE UNFILLABLE from this run.')
             return 1
-        print('  ARMS IN ITS SUITE (%d):' % len(r['arms']))
-        for a in r['arms']:
-            print('    * %s' % a[:150].encode('ascii', 'replace').decode('ascii'))
+        print('  ARMS AVAILABLE TO FILL THEM (%d) -- the measurements taken:' % len(r['arms']))
+        for j, a in enumerate(r['arms'], 1):
+            print('    A-%-3d %s' % (j, a[:140].encode('ascii', 'replace').decode('ascii')))
         print('')
-        print('  MAP THEM BY HAND. That is the inspection.')
+        # ── ACCOUNTABILITY, THE ONE ARITHMETIC FAI DOES ALLOW ──────────────
+        # Not a score and not a match. A real form cannot be signed with rows
+        # outstanding, and the count of outstanding rows is a fact about the
+        # FORM rather than about the artefact -- which is why it is safe to
+        # print where a matching percentage would not be.
+        print('  ACCOUNTABILITY: %d ballooned claim(s), %d arm(s) available, '
+              '%d row(s) outstanding.' % (len(r['claims']), len(r['arms']), len(r['claims'])))
+        if len(r['arms']) < len(r['claims']):
+            print('  AND THERE ARE FEWER ARMS THAN CLAIMS, so at least %d row(s)'
+                  % (len(r['claims']) - len(r['arms'])))
+            print('  CANNOT be filled even if every arm maps to a different')
+            print('  claim. That is arithmetic, not a mapping -- the one thing')
+            print('  this tool can say about coverage without scoring it.')
+        print('')
+        print('  MAP THEM BY HAND AND FILL THE VERDICT COLUMN. That is the')
+        print('  inspection. A claim with no arm is a finding; a claim you')
+        print('  considered and dismissed is a filled row that says so.')
     return 1 if unverified else 0
 
 
