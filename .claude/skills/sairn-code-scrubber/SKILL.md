@@ -75,7 +75,7 @@ A test that passes for the wrong reason does not merely fail to catch a bug -- i
 **AND THE STANDING PRACTICE THAT CAUGHT ALL FIVE:** before trusting a new suite, break the behaviour it exists to protect -- one deliberate edit per claim -- and confirm the suite goes red and names the right thing. Restore the file and verify it is byte-identical afterwards. A suite that has never been seen to fail is a suite whose behaviour nobody knows.
 
 ## 17. A sabotage control that silently no-ops when its anchor moves
-A negative control proves a checker can FIRE by planting a defect and asserting the checker goes red. Almost all of them do it with `src.replace(anchor, ...)` — and **`str.replace` returns the string unchanged when the anchor is not found**. Rename the thing the anchor points at and the control runs the checker against an UNMODIFIED file, forever, saying nothing. **MEASURED 2026-09-13: 24 of 40 probes that patch a real source file never verify the patch landed** — read the live figure from `python tools/sabotage_control_check.py`, never from a document, because it moved three times in one evening.
+A negative control proves a checker can FIRE by planting a defect and asserting the checker goes red. Almost all of them do it with `src.replace(anchor, ...)` — and **`str.replace` returns the string unchanged when the anchor is not found**. Rename the thing the anchor points at and the control runs the checker against an UNMODIFIED file, forever, saying nothing. **MEASURED 2026-09-13: 24 of 40 probes that patch a real source file never verify the patch landed.** Re-measured 2026-09-25: **83 probes patch a real source file and all 83 verify it applied -- 0 unguarded.** That is the class closed by construction, not by vigilance, and the two figures are both kept because the DELTA is the argument. **Read the live figure from `python tools/sabotage_control_check.py`, never from a document** -- it moved three times in one evening, and a number quoted here is the very defect item 26 is about.
 
 The loud outcome is an arm failing against a tool that works, which is how it was noticed. **THE QUIET ONE IS WHY IT MATTERS: an arm written as "expect no findings" keeps PASSING on a file nobody touched, and reports green forever.**
 
@@ -376,3 +376,55 @@ message or a summary; any `word in text` over a name list; anything computing
 shared words, bigrams or Jaccard similarity between two free-text descriptions;
 and any gate whose trigger list contains names that are also ordinary English
 (`quotes`, `client`, `notes`, `account`, `message`).
+
+## 26. A fixture or anchor that expires on legitimate growth
+**This is the most common defect shape currently being found on this platform
+-- ahead of silent failure -- and it is the one every entry above can become.**
+
+A check pins itself to a number or a literal that is CORRECT the day it is
+written and that the platform is expected to outgrow: an exact count
+(`assert pairs == 23`, `names.length === 41`), a negative control naming the
+one resource not yet in some set, a sabotage anchor quoting a line of the
+subject verbatim. The platform grows the way it is supposed to, the pin stops
+describing it, and the arm goes red or -- worse -- goes vacuous.
+
+**BOTH OUTCOMES ARE BAD AND THE QUIET ONE IS WORSE.**
+- **Loud:** the arm goes red on a green tree. It gets read as noise, and the
+  next real finding from the same file is read as noise too. Two suites sat red
+  on `origin/main` for a day and two days respectively in September 2026, each
+  correct, each ignored.
+- **Quiet:** the arm still passes while testing nothing. A sabotage anchor that
+  no longer matches mutates nothing and the suite "refuses" a defect that was
+  never planted (item 17). A negative control naming the only excluded resource
+  passes trivially once that resource is legitimately included -- and if it was
+  the ONLY name in the list, it now iterates an empty list and asserts over no
+  data.
+
+**FIVE FOUND IN A SINGLE PASS, 2026-09-24**, which is what promoted this from
+an instance to a class: an `=== 41` on a resource map that legitimately became
+42; a sabotage anchor on a role map that had moved inside a helper; two
+review-gate sabotage anchors on pre-refactor spellings; and a negative control
+asserting `sc_dme` was Tier B after it was correctly re-tiered A.
+
+**THE RULE: pin the PROPERTY, not the number.** Ask what the arm is really
+protecting and assert that instead.
+
+| Instead of | Assert |
+|---|---|
+| `count === 41` | `count >= 41` -- "the gate never SHRANK"; a shrink is resources leaving it |
+| "X is the one not in the set" | set equality against a named APPROVED list -- fails on an unapproved addition AND a silent removal |
+| an exact pair count with no reason | keep the count as a deliberate tripwire, and make the commit that changes it WRITE THE REASON; a tripwire is fine, an unexplained one is not |
+| a verbatim source line as a sabotage anchor | assert the anchor was FOUND before mutating (item 17), and locate the region by SEARCH on a stable opener rather than by line number |
+| "this resource is Tier B" | pick a row whose tier is STRUCTURAL (configuration, a price list) rather than one somebody may legitimately promote -- and check its current tier before using it |
+
+**AND WHEN YOU DO KEEP A NUMBER, SAY WHERE THE TRUTH LIVES.** The count belongs
+in ONE place -- the table, the registry, the model -- with everything else
+deriving from it. `docs/` and skill files must not restate it: this repository
+has had the same figure wrong in three places at once.
+
+**THE DETECTION THAT ACTUALLY WORKS is not a checker, it is a habit: run the
+suites that guard the thing you are about to change, BEFORE you change it.**
+Three of the five above were found that way and none was found by reading. A
+red arm discovered while you are already in the file is a two-minute fix; the
+same arm discovered by somebody else in a week is a day of archaeology and a
+suite nobody trusts.
