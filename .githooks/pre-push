@@ -62,6 +62,24 @@ fi
 # date forgive it.
 printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/register_feed_gate.py" --pre-push || exit 1
 
+# ── THE COPY-EXACTLY GATE (methodology item 43 / Ariane 5) ─────────────────
+# docs/2026-09-13-cross-domain-disciplines.md item 7 has said since 2026-09-13
+# that propagating a proven pattern requires an explicit re-qualification
+# against the TARGET's scale, input range and criticality tier -- and until
+# 2026-09-26 nothing enforced it. This is the enforcement.
+#
+# CALIBRATED BEFORE IT WAS WIRED IN, because a gate nobody can satisfy gets
+# overridden and then it is decoration with a process around it.
+# `--measure 120` over real history flags 1 commit in 120 (0.8%), and that one
+# is a TRUE POSITIVE: b015ea78, where sfFence/sfRule was copied byte-identical
+# from sairnbuild.html into sairncode.html and sairnvet.html, with a commit
+# message reading "byte-identical copies, not variants" -- which is precisely
+# the diff-proves-the-code-matches reasoning item 7 says is not enough.
+#
+# Its own blind lock runs FIRST on every invocation and refuses to judge a real
+# range at all if the criteria cannot classify their own fixtures.
+printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/copy_exactly_gate.py" --pre-push || exit 1
+
 # NOT `| exec ...`: inside a pipeline that replaces the SUBSHELL, not this
 # script, and the hook's exit status is what git acts on. Plain pipeline, then
 # exit with its status.

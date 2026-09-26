@@ -844,6 +844,25 @@ PURPOSES = {
         'nothing to gate even if the gate had run. Files must now be committed '
         'and clean and HEAD must descend from the remote tip, which makes '
         '`remote..HEAD` a real range. Held by tests/run_gh_push_gate_probe.py'),
+    'copy_exactly_gate.py': ('PUSH-GATE',
+        'a proven pattern copied into a new place with NO recorded answer on '
+        'scale, input range or criticality tier -- methodology item 43, the '
+        'Ariane 5 Flight 501 lesson, which had been written down since '
+        '2026-09-13 and enforced by nothing. It catches the case where the '
+        'code is CORRECT: a faithful copy whose assumptions do not hold in '
+        'the target, which no diff, no test and no review of the bytes can '
+        'see. It does NOT judge whether a copy is safe and says so -- safety '
+        'is the answer to the three questions and the answers are judgements; '
+        'it refuses a propagation with no answer RECORDED. CALIBRATED BEFORE '
+        'BEING WIRED IN: --measure over 120 real commits flags 1 (0.8%%), and '
+        'that one is a true positive -- the sfFence/sfRule copy into two apps '
+        'whose own commit message said "byte-identical copies, not variants", '
+        'which is the reasoning item 7 exists to refuse. Its blind lock runs '
+        'first on every invocation and refuses to judge a real range if the '
+        'criteria cannot classify their own fixtures. Held by '
+        'tests/run_copy_exactly_gate_probe.py -- NOT '
+        'run_copy_exactly_probe.py, which probes the OTHER half, copy_exactly_check.py; the two names are one word apart and the first draft of this work overwrote the wrong one -- 13 arms, including a CONTROL that a '
+        'complete record is accepted and an arm that a failing lock exits 2'),
     'gh_token.py': ('LIBRARY',
         'a credential lookup that has been dead for weeks while saying nothing. '
         'gh_push.py and gh_verify.py each carried their OWN copy of "read '
