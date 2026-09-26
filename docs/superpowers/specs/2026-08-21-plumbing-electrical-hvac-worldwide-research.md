@@ -13,6 +13,22 @@ Research pass, 2026-08-21. No code written, no repository files touched beyond t
 > `40 CFR 84.106` is
 > modelled as a second, independent rule in `api/_lib/mech-assets.js` as of
 > 2026-09-17, reported beside 40 CFR 82.157 and never summed with it.
+>
+> **RE-TRIAGED AGAIN 2026-09-26 — [`docs/2026-09-26-trades-08-21-triage.md`](../../2026-09-26-trades-08-21-triage.md),
+> and it found something this report's STRUCTURE cannot hold.** Refrigerant
+> regulation in the product is now **three** rules and the third is a **US STATE**
+> one — CARB, 17 CCR 95380, threshold 50 lb and GWP floor 150, against the AIM
+> Act's 15 lb and 53. §4 below organises regulatory divergence **per country** and
+> §6 states the HVAC need as *"EPA 608 (US) / F-Gas (EU)"*; both assume the
+> regulatory unit is the nation, and a sub-national fork with its own threshold
+> **and** its own GWP floor has no row in either. **§4 wants re-scoping from "per
+> country" to "per jurisdiction that can legislate a threshold."** The triage also
+> corrects §8's dominant-pain row — data portability is now **partially built**
+> (one export dataset, `mech_credentials`, beside three still-disclosed
+> not-live buttons) — and records three marker counts that moved without their
+> rows moving.
+
+
 
 Scope note up front: search access is US-search-engine-mediated (results skew English/US even for non-English queries), and several claims below come from vendor marketing copy or SEO-content sites rather than primary sources — flagged inline where that's the case. Pricing and feature claims should be treated as directionally accurate, not contract-grade.
 
