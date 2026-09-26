@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**227 files in `tools/`.** By what actually invokes them:
+**228 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 34 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 35 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 44 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 157 |
 | GENERATOR | 19 |
 | LIBRARY | 24 |
-| LIVE | 21 |
+| LIVE | 22 |
 | REPORTER | 2 |
 | TOOL | 1 |
 
@@ -82,7 +82,7 @@ The 24, by name, so this is actionable rather than a statistic:
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
-**Separately, 7 tool(s) make a LIVE network or database request.** Those are
+**Separately, 8 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -311,7 +311,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (34)
+## SUITE-ONLY (35)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -338,6 +338,7 @@ fixtures. Nothing points them at the real codebase.
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `register_freshness_propose.py` | TOOL | a drifted register citation that CAN be repaired mechanically -- and offers the repair as a branch a human merges, never a write. Proposes ONLY a line-number repoint whose identifier has exactly ONE definition-like line today; several definitions, none at all, a dead sha or a dead path are refused WITH the reason, because those need a read rather than a repoint. Each batch re-runs the checker and is withdrawn unless it clears its own findings and nobody else's. Never merges, never force-pushes, never writes main | `run_register_freshness_propose_probe.py` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
+| `row_count_baseline.js` | LIVE | a restore that lost every row in a table and compared EQUAL -- it writes the per-table baseline restore_coherence_check.js has taken --baseline for since 2026-09-14 and nothing produced, and a table it could not count is OMITTED rather than written as 0, because a 0 is what makes a wiped table pass | `run_row_count_baseline_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py`, `run_all_tests_pinned_probe.py`, `run_concurrency_retry_probe.py`, `run_suite_lock_probe.py` |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
 | `sabotage.py` | LIBRARY | the negative-control recombination: plant a defect so that FAILING to plant it is LOUD. Four approaches already existed here and each was right about a different failure -- PRESENCE catches a rename, UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the write not landing, and LINE-NUMBER ablation avoids ambiguous anchors entirely. This applies the first three to both planting strategies, and raises CouldNotSabotage as an EXCEPTION rather than returning None so a caller cannot reproduce the silent no-op. It does NOT migrate the remaining unguarded controls -- a mechanical rewrite of somebody else's control is how a working one breaks. Companion to sabotage_control_check.py, which MEASURES the class | `run_first_article_inspection_probe.py`, `run_guard_ablation_probe.py`, `run_selftest_independence_probe.py` |
@@ -436,11 +437,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      227   git ls-files tools/
+  tools on disk                      228   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            163   tests/**/*.py, *.js
+  tools invoked by tests/            164   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
