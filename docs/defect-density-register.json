@@ -15244,7 +15244,7 @@
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     },
     {
-      "commit": "956d287e72d6",
+      "commit": "1f9936429432",
       "date": "2026-09-26",
       "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
       "files": [
