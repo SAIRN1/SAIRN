@@ -33791,7 +33791,13 @@ document.addEventListener('DOMContentLoaded', function() {
   updateKPIs();
 })();
 </script>
-</div><div id="vm-result" style="margin-top:16px;display:none"></div>
+</div>
+<!-- `vm-result` WAS HERE AND IS GONE (2026-09-26). A display:none div stranded
+     after this panel, whose only reader was the orphaned vmAnalyze() -- see the
+     @REGISTER tombstone for module=vein-matching-ai. It was the one surviving
+     host element of a panel that was never built; vm-prev1, vm-prev2,
+     vm-loading, vm-mat, vm-use and vm-bundle never existed at all. Removed with
+     the function that read it so neither is left pointing at the other. -->
 
 <!-- PANEL: VISUALIZE ON YOUR KITCHEN (2026-08-04) -->
 <!-- Photo upload -> Claude vision finds the countertop -> rep/client picks a real in-stock slab
@@ -41751,53 +41757,49 @@ async function sintAIAdvisor(){
 // ================================================================
 
 // ================================================================
-// 12. VEIN MATCHING AI
+// 12. VEIN MATCHING AI — orphaned duplicate removed (canonical is
+// @REGISTER module=vein-matching-ai removed=2026-09-26 canonical=sdVeinAnalyze,sdVeinPrint,sdVeinExport,sdVeinDelete,sdVeinPhotoRemove canonical_key=sd_veinmatch deleted=vmPreview,vmAnalyze
+// panel-veinmatch / sdVeinAnalyze+sdVeinPrint+sdVeinExport above; this block
+// never had a host panel, vm-prev1/vm-prev2/vm-loading/vm-mat/vm-use/vm-bundle
+// never existed, and vmPreview/vmAnalyze had zero callers. Its ONE surviving
+// host element was a display:none `vm-result` div stranded after
+// panel-veinmatch; that went with it, so neither is left pointing at the other.
+//
+// NO ORPHAN STORAGE KEY, which makes this the cleanest of the eleven entries
+// here: unlike care-guide-ai's sd_cg_history it persisted nothing at all, so
+// there was never even a second key to collide. Pure dead weight.
+//
+// ── AND IT WAS DELETED RATHER THAN WIRED, WHICH WAS THE REAL DECISION ──────
+// It genuinely did two-photo vein matching, which is what panel-veinmatch
+// gained on 2026-09-26 — so "wire it up" looked like the cheap option. It is
+// not, because of one line:
+//
+//     var scoreMatch=txt.match(/(\d+)\s*\/\s*10|score[:\s]+(\d+)/i);
+//     var score=scoreMatch?(parseInt(scoreMatch[1]||scoreMatch[2])||5):5;
+//
+// A 1-10 score PARSED OUT OF THE MODEL'S PROSE, **defaulting to 5 when the
+// regex misses** — and then rendered as a 60px filled circle headed "Vein Match
+// Score" with a verdict sentence beside it ("Good match — will work"). A model
+// that answered in any other shape produced a confident amber 5 that came from
+// nothing, indistinguishable on screen from a real one. The `||5` inside the
+// parse makes it worse: parseInt('0') is falsy, so a genuine score of 0 also
+// became 5.
+//
+// panel-veinmatch's own Match Quality / Waste Reduction / Material Savings
+// KPIs were set to '--' for exactly this reason by an earlier audit. Wiring
+// this module in would have put the defect back one control over, in the same
+// panel, three weeks later. The two-photo capability was rebuilt instead, with
+// the prompt explicitly forbidding a numeric match score
+// (tests/stonedesk_veinmatch_photos.js arm 2e holds that).
+//
+// It also hardcoded media_type:'image/jpeg' for both images while its input
+// would have accepted any image — the silent-mislabel defect the replacement
+// avoids and eight other call sites in this file still carry.
+//
+// THE CLASS, named so the sweep can find its siblings: a value parsed out of
+// LLM-generated prose with a silent fallback when the pattern does not match.
+// See docs/2026-09-26-prose-value-default-sweep.md.
 // ================================================================
-var vmB64_1='',vmB64_2='';
-function vmPreview(input,prevId){
-  var f=input.files[0];if(!f)return;
-  var r=new FileReader();r.onload=function(e){
-    var img=document.getElementById(prevId);if(img){img.src=e.target.result;img.style.display='block';}
-    if(prevId==='vm-prev1')vmB64_1=e.target.result.split(',')[1];
-    else vmB64_2=e.target.result.split(',')[1];
-  };r.readAsDataURL(f);
-}
-async function vmAnalyze(){
-  if(!vmB64_1||!vmB64_2){showToast('Upload both slab photos first');return;}
-  var loading=document.getElementById('vm-loading');var result=document.getElementById('vm-result');
-  if(loading)loading.style.display='block';if(result)result.style.display='none';
-  var mat=(document.getElementById('vm-mat')||{}).value||'stone';
-  var use=(document.getElementById('vm-use')||{}).value||'adjacent countertops';
-  var bundle=((document.getElementById('vm-bundle')||{}).value||'').trim();
-  try{
-    var r=await fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'stonedesk',is_demo:true,max_tokens:1000,
-      system:'You are an expert stone fabricator with 20 years of vein matching experience. Analyze the two slab photos and give a detailed, actionable assessment.',
-      messages:[{role:'user',content:[
-        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:vmB64_1}},
-        {type:'image',source:{type:'base64',media_type:'image/jpeg',data:vmB64_2}},
-        {type:'text',text:'Material: '+mat+'. Use: '+use+'.'+(bundle?' Bundle: '+bundle+'.':'')+'\n\nProvide:\n1. VEIN MATCH SCORE (1-10)\n2. GRAIN DIRECTION compatibility\n3. BUNDLE ASSESSMENT — same bundle?\n4. ORIENTATION RECOMMENDATION for each slab\n5. BOOKMATCHING POTENTIAL\n6. GO/NO-GO for '+use+'\n7. ONE SENTENCE for the customer'}
-      ]}]})});
-    var d=await r.json();var txt=(d.content&&d.content[0])?d.content[0].text:'';
-    if(loading)loading.style.display='none';
-    var scoreMatch=txt.match(/(\d+)\s*\/\s*10|score[:\s]+(\d+)/i);
-    var score=scoreMatch?(parseInt(scoreMatch[1]||scoreMatch[2])||5):5;
-    var sc=score>=8?'#16a34a':score>=6?'#ca8a04':'#dc2626';
-    var borderC=score>=8?'#bbf7d0':score>=6?'#fef3c7':'#fecaca';
-    if(result){
-      result.innerHTML='<div style="background:var(--card);border:1.5px solid '+borderC+';border-radius:14px;padding:20px">'+
-        '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'+
-          '<div style="width:60px;height:60px;border-radius:50%;background:'+sc+';display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:#fff;flex-shrink:0">'+score+'</div>'+
-          '<div><div style="font-size:16px;font-weight:800">Vein Match Score</div><div style="font-size:12px;color:var(--muted)">'+(score>=8?'Excellent — proceed with confidence':score>=6?'Good match — will work':'Poor match — reconsider')+'</div></div>'+
-        '</div>'+
-        '<div style="font-size:13px;line-height:1.9">'+sdMarkdown(txt)+'</div>'+
-      '</div>';
-      result.style.display='block';
-    }
-  }catch(e){
-    if(loading)loading.style.display='none';
-    if(result){result.innerHTML='<div style="color:#dc2626;padding:12px">Analysis failed. Check connection.</div>';result.style.display='block';}
-  }
-}
 
 // ================================================================
 // 13. SEAM PLACEMENT AI

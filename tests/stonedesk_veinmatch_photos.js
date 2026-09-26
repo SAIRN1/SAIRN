@@ -308,8 +308,9 @@ async function main() {
       + 'not built, so anything dimensional read off these is fabricated');
     assert.ok(/do not give a numeric match score/i.test(txt),
       'the prompt does not forbid a numeric match score. The orphaned vmAnalyze() '
-      + 'in this same file regexes a score out of prose and DEFAULTS TO 5 when the '
-      + 'regex misses; this panel must not reintroduce that');
+      + 'that USED to sit at ~:41750 regexed a score out of prose and defaulted to '
+      + '5 when the regex missed -- deleted 2026-09-26, see the @REGISTER tombstone '
+      + 'for module=vein-matching-ai. This panel must not reintroduce it');
   });
 
   section('3. every refusal is named, and the cap holds under real asynchrony');
