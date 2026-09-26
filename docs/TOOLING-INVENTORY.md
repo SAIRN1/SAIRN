@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**236 files in `tools/`.** By what actually invokes them:
+**237 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 40 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 41 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 47 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -41,7 +41,7 @@ By what they are, independent of wiring:
 | LIVE | 24 |
 | PUSH-GATE | 1 |
 | REPORTER | 2 |
-| TOOL | 1 |
+| TOOL | 2 |
 
 **69 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -316,7 +316,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (40)
+## SUITE-ONLY (41)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -345,6 +345,7 @@ fixtures. Nothing points them at the real codebase.
 | `primitive_obsession_check.py` | CHECKER | a NEW occurrence of three shapes where a raw primitive crosses a boundary unparsed, each already paid for here: a measured value defended into a default (Number(x)||0 -- empty, unreadable and a legitimate zero collapse into one number, the sairndental silent-$0 shape), a config read where Number('') is 0 (a cleared env var becomes a switched-off feature that looks configured), and a locale date string stored or compared as data (toLocaleDateString does not sort and differs per viewer). 233 existing keys grandfathered; refuses (exit 2) when its own fixture lock fails OR when a whole baselined shape finds zero matches, because a detector that went blind must never look like progress. Disjoint from truthy_sum_check by construction: that one requires coercion ABSENT, these require it present or absent-but-locale | `run_primitive_obsession_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `register_freshness_propose.py` | TOOL | a drifted register citation that CAN be repaired mechanically -- and offers the repair as a branch a human merges, never a write. Proposes ONLY a line-number repoint whose identifier has exactly ONE definition-like line today; several definitions, none at all, a dead sha or a dead path are refused WITH the reason, because those need a read rather than a repoint. Each batch re-runs the checker and is withdrawn unless it clears its own findings and nobody else's. Never merges, never force-pushes, never writes main | `run_register_freshness_propose_probe.py` |
+| `review_ledger_reseat.py` | TOOL | a sha citation in docs/tier-a-reviews.json that a rebase stranded, and a citation with NO RECORDED SUBJECT -- which is the one nothing can repair later, because the subject is the only half a rebase preserves and it can only be read while the commit is still alive. Twelve had accumulated before this existed, each arriving as a COULD-NOT-TELL on somebody's review. NOT a second caller of defect_register.py --reseat: a review record embeds its shas in the PROSE a reviewer wrote, and a sha literal's role depends on the sentence it is in. THREE ROLES, all three in the real ledger: a citation (re-seat it), a reviewer's finding ABOUT a dead pointer ("this record cites a49edd00 and no such commit exists" -- re-seating it makes the sentence deny what its author verified), and a hex run that is not a commit at all. The same literal is BOTH roles in one record, twice, so the role is declared per FIELD in `cites` and `frozen_shas`. It re-seats only what a subject match proves, refuses an ambiguous subject rather than picking, refuses with nothing written when no ref can be read, and reports a dead `opened_at_sha` as OUT OF SCOPE with the reason -- that field is the author's HEAD at open, not the commit the change landed in, so a message match would put a different fact in it | `run_review_ledger_reseat_probe.py` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `row_count_baseline.js` | LIVE | a restore that lost every row in a table and compared EQUAL -- it writes the per-table baseline restore_coherence_check.js has taken --baseline for since 2026-09-14 and nothing produced, and a table it could not count is OMITTED rather than written as 0, because a 0 is what makes a wiped table pass | `run_row_count_baseline_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py`, `run_all_tests_pinned_probe.py`, `run_concurrency_retry_probe.py`, `run_suite_lock_probe.py` |
@@ -450,11 +451,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      236   git ls-files tools/
+  tools on disk                      237   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            169   tests/**/*.py, *.js
+  tools invoked by tests/            170   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

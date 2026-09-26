@@ -779,6 +779,26 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'review_ledger_reseat.py': ('TOOL',
+        'a sha citation in docs/tier-a-reviews.json that a rebase stranded, and '
+        'a citation with NO RECORDED SUBJECT -- which is the one nothing can '
+        'repair later, because the subject is the only half a rebase preserves '
+        'and it can only be read while the commit is still alive. Twelve had '
+        'accumulated before this existed, each arriving as a COULD-NOT-TELL on '
+        'somebody\'s review. NOT a second caller of defect_register.py '
+        '--reseat: a review record embeds its shas in the PROSE a reviewer '
+        'wrote, and a sha literal\'s role depends on the sentence it is in. '
+        'THREE ROLES, all three in the real ledger: a citation (re-seat it), a '
+        'reviewer\'s finding ABOUT a dead pointer ("this record cites a49edd00 '
+        'and no such commit exists" -- re-seating it makes the sentence deny '
+        'what its author verified), and a hex run that is not a commit at all. '
+        'The same literal is BOTH roles in one record, twice, so the role is '
+        'declared per FIELD in `cites` and `frozen_shas`. It re-seats only what '
+        'a subject match proves, refuses an ambiguous subject rather than '
+        'picking, refuses with nothing written when no ref can be read, and '
+        'reports a dead `opened_at_sha` as OUT OF SCOPE with the reason -- that '
+        'field is the author\'s HEAD at open, not the commit the change landed '
+        'in, so a message match would put a different fact in it'),
     'register_freshness_propose.py': ('TOOL',
         'a drifted register citation that CAN be repaired mechanically -- '
         'and offers the repair as a branch a human merges, never a write. '
