@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**229 files in `tools/`.** By what actually invokes them:
+**230 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 35 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 45 | nothing runs these at all |
+| **UNWIRED** | 46 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 157 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
-| LIVE | 22 |
+| LIVE | 23 |
 | REPORTER | 2 |
 | TOOL | 1 |
 
@@ -82,7 +82,7 @@ The 24, by name, so this is actionable rather than a statistic:
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
-**Separately, 8 tool(s) make a LIVE network or database request.** Those are
+**Separately, 9 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -356,7 +356,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (45)
+## UNWIRED (46)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -395,6 +395,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
+| `plugin_upgrade_check.py` | LIVE | a plugin reported as BEHIND when it was just upgraded, and one reported CURRENT that never was -- it compares VERSIONS read off the installed plugin.json and the marketplace pin, and never reads gitCommitSha, which `claude plugin update` leaves pointing at the old commit | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
 | `probe_selector.py` | REPORTER | which of the 64 sabotage probes a given push actually needs -- the scoped alternative to a 30.6-minute pre-push wall measured on 2026-09-25. The subject is DERIVED from each probe's own MUTATIONS file slots and stage= tuple, read with ast because importing a probe RUNS it, so no new declaration exists to go stale. A probe whose subject cannot be read is REPORTED and exits 1 -- never silently skipped (the silent-pass shape the corpus exists to catch) and never silently included (which makes undeterminable cost the whole 30 minutes). Its acceptance test is executable, --self-check, and the arm that matters is that a docs-only push selects NOTHING: running the corpus to be safe is how the wall gets in through the back door | &mdash; |
 | `purpose_expired_measure.py` | GENERATOR | nothing. It is a recorded REFUSAL with a reproducible measurement behind it. Three "purpose expired" detectors were designed as the Ariane 5 sharpening of the reachability checker -- the question frequency can never answer, since Flight 501 ran correct software whose PRECONDITION had expired -- and all three were measured before anything was built and all three refused: a never-true guard (0 instances, an empty population cannot be validated), a role comparison outside the app vocabulary (14 hits, 14 false positives, every one a chat-message role or an employee job title), and a handler branch on an ungranted action (70 of 100, premise wrong -- the registry governs one dispatcher, not every handler). It exists so the next session does not spend the same afternoon reaching the same three refusals. What discriminates rare-but-legitimate from purposeless today is activity_cadence.json, a human declaration, and R4's coverage gate is why it cannot discriminate yet -- a DATA problem, not a design one | &mdash; |
@@ -438,7 +439,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      229   git ls-files tools/
+  tools on disk                      230   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
