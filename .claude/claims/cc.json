@@ -2767,6 +2767,23 @@
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
+    },
+    {
+      "id": "cc-1790449229",
+      "session": "cc",
+      "subject": "cc-queue12",
+      "task": "SAIRNvet formulary sourcing pass continued (281 unsourced rows); Task 19 data-overwrite real fix scoping/build; SAIRNbiz 1099 threshold 600 -> 2000 for 2026; SAIRNsenior clock-in server-side check (VERIFY the code-search finding first); SAIRNsenior visit time correction with reason code (VERIFY first); citation-drift checker auto-run after any citation-bearing doc edit. api/sd-data.js is fourth's (fourth-q9b) -- will scope around it and say so. SUBJECT NAMED PER PR 4.3 FILES: sairnvet.html sairnbiz.html sairnsenior.html tools/citation_drift_hook.py docs/2026-09-26-task19-overwrite-scoping.md",
+      "claimed_at": "2026-09-26T19:00:29Z",
+      "claimed_at_epoch": 1790449229.8872828,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-26-task19-overwrite-scoping.md",
+        "sairnbiz.html",
+        "sairnsenior.html",
+        "sairnvet.html",
+        "tools/citation_drift_hook.py"
+      ]
     }
   ],
   "refusals": [
