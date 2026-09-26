@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**230 files in `tools/`.** By what actually invokes them:
+**231 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 35 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 36 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 46 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 157 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
-| LIVE | 23 |
+| LIVE | 24 |
 | REPORTER | 2 |
 | TOOL | 1 |
 
@@ -82,7 +82,7 @@ The 24, by name, so this is actionable rather than a statistic:
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
-**Separately, 9 tool(s) make a LIVE network or database request.** Those are
+**Separately, 10 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -311,7 +311,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (35)
+## SUITE-ONLY (36)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -332,6 +332,7 @@ fixtures. Nothing points them at the real codebase.
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py`, `run_jscomments_probe.py`, `run_retry_policy_probe.py`, `run_temporary_state_probe.py` |
 | `known_red_check.py` | CHECKER | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform | `run_known_red_probe.py` |
 | `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | `run_selftest_independence_probe.py` |
+| `load_compliance_seed.py` | LIVE | a SAIRNcare compliance seed that is committed and INERT -- it loads the rules to a licence and proves it by driving the engine on IDENTICAL inputs before and after, failing when the answer did not move, because a loader exit code is not evidence | `run_compliance_loader_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `nhi_register.py` | GENERATOR | every NON-HUMAN IDENTITY with a named OWNER and a real SCOPE, because an env-var scan structurally cannot answer that -- a GitHub PAT, a Postgres LOGIN role and four clones credentialed by the Windows credential manager are not `process.env` reads. REFUSES when a credential secrets_inventory calls a CREDENTIAL belongs to no identity, or when sql/ creates a role with no entry. Its first run found ELEVEN credentials with no recorded owner. Complements docs/SECRETS-INVENTORY.md rather than replacing it: that one answers what a variable unlocks, this one answers who owns it | `run_first_article_inspection_probe.py`, `run_selftest_independence_probe.py` |
 | `primitive_obsession_check.py` | CHECKER | a NEW occurrence of three shapes where a raw primitive crosses a boundary unparsed, each already paid for here: a measured value defended into a default (Number(x)||0 -- empty, unreadable and a legitimate zero collapse into one number, the sairndental silent-$0 shape), a config read where Number('') is 0 (a cleared env var becomes a switched-off feature that looks configured), and a locale date string stored or compared as data (toLocaleDateString does not sort and differs per viewer). 233 existing keys grandfathered; refuses (exit 2) when its own fixture lock fails OR when a whole baselined shape finds zero matches, because a detector that went blind must never look like progress. Disjoint from truthy_sum_check by construction: that one requires coercion ABSENT, these require it present or absent-but-locale | `run_primitive_obsession_probe.py` |
@@ -439,11 +440,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      230   git ls-files tools/
+  tools on disk                      231   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            164   tests/**/*.py, *.js
+  tools invoked by tests/            165   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
