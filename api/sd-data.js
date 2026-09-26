@@ -4873,9 +4873,16 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const clientData = Object.assign({}, payload);
-      delete clientData.id;
-      delete clientData.assigned_employee_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:4843, not inferred from this branch): the read is
+      // `Object.assign({ id: r.client_id, assigned_employee_id: ... }, r.data)`
+      // -- the blob is spread LAST, so any `id` or `assigned_employee_id` left
+      // inside data SHADOWS the mapped column. Both are stripped, which is what
+      // the hand-rolled deletes already did; no `created_at` here because this
+      // read maps no such column. The echo two lines below has the same
+      // spread-last shape, so a payload `license_hash` was riding into the
+      // RESPONSE as well until this call started stripping scope keys.
+      const clientData = storedBlob(payload, ['id', 'assigned_employee_id']);
       const r = await fetch(rest('sdn_clients?on_conflict=license_hash,client_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -5405,9 +5412,14 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const clientData = Object.assign({}, payload);
-      delete clientData.id;
-      delete clientData.assigned_employee_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:5369, this branch's own, not sdn_clients' -- the
+      // two look identical and that is exactly when a copied column list goes
+      // wrong): `Object.assign({ id: r.client_id, assigned_employee_id: ... },
+      // r.data)`, blob spread LAST, so both mapped columns shadow. Stripped.
+      // No `created_at`: this read maps none. The echo below has the same
+      // spread-last shape, so the scope-key strip reaches the response too.
+      const clientData = storedBlob(payload, ['id', 'assigned_employee_id']);
       const r = await fetch(rest('sen_clients?on_conflict=license_hash,client_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -5486,8 +5498,20 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: resource + ' payload.id is required' } }); return; }
-      const body = Object.assign({}, payload);
-      delete body.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:5496, eleven lines up in this same branch):
+      // `Object.assign({ id: x[idCol] }, x.data)` -- blob spread LAST, so only
+      // `id` can shadow, and `id` is the whole column list.
+      //
+      // `idCol` IS DELIBERATELY NOT IN THE LIST, and that is the judgement this
+      // branch needed rather than a copy of the one above it. idCol varies by
+      // resource (source_id / referral_id / rule_id / record_id / applicant_id)
+      // and the read maps it TO `id` rather than returning it under its own
+      // name, so a payload `referral_id` surviving inside data shadows nothing
+      // -- it comes back as an ordinary field, which is what it is. Stripping
+      // it would silently delete a client's own data on any record that
+      // legitimately carries that key.
+      const body = storedBlob(payload, ['id']);
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -5673,8 +5697,15 @@ module.exports = async (req, res) => {
       }
       // write
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_claims payload.id is required' } }); return; }
-      const claimData = Object.assign({}, payload);
-      delete claimData.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:5694, this branch's own read arm): the select is
+      // `claim_id,data` and the map is `Object.assign({ id: r.claim_id },
+      // r.data)` -- blob spread LAST, so `id` is the only key that can shadow
+      // and it is the whole column list. `claim_id` stays OUT of the list for
+      // the same reason as the referral branch above: the read maps it to `id`
+      // rather than returning it under its own name, so a payload `claim_id`
+      // shadows nothing and stripping it would delete real data.
+      const claimData = storedBlob(payload, ['id']);
       const r = await fetch(rest('sen_claims?on_conflict=license_hash,claim_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6602,13 +6633,24 @@ module.exports = async (req, res) => {
       }
 
       const jobClass = payload.job_class === 'commercial' ? 'commercial' : 'residential';
-      const jobData = Object.assign({}, payload);
-      delete jobData.id;
-      delete jobData.job_class;
-      delete jobData.assigned_employee_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:6494): the select is
+      // `job_id,job_class,assigned_employee_id,location_id,data` and the map
+      // spreads `r.data` LAST over all four, so all four shadow if they survive
+      // into the blob. Those FOUR are the column list -- and no more.
+      //
+      // THE OTHER TWO DELETES ARE NOT COLUMN KEYS AND ARE KEPT OUT OF THE LIST
+      // ON PURPOSE, because this branch's hand-rolled version ran six deletes
+      // and only four of them were about shadowing. `estimate` and
+      // `measurement_correction` are ordinary blob fields whose PAYLOAD copy is
+      // deliberately discarded so the client cannot set a price or a correction
+      // the server did not compute -- a trust decision, not a column mapping.
+      // Folding them into the column list would have made the next reader
+      // believe rf_jobs has columns it does not have, which is the kind of
+      // wrong a mechanical conversion produces and a read does not.
+      const jobData = storedBlob(payload, ['id', 'job_class', 'assigned_employee_id', 'location_id']);
       delete jobData.measurement_correction;
       delete jobData.estimate;
-      delete jobData.location_id;
       jobData.measurement = measurement;
       jobData.estimate = estimate;
       // ── Phase 4a: location attribution ──────────────────────────────────────────────────
@@ -7017,7 +7059,23 @@ module.exports = async (req, res) => {
         return;
       }
       // APPEND-ONLY: evidence, not editable data. Plain insert.
-      const dataBlob = Object.assign({}, payload); delete dataBlob.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:7043) AND IT IS THE OPPOSITE SHAPE TO EVERY OTHER
+      // BRANCH CONVERTED TODAY, which is the whole reason this one gets read
+      // rather than swept: `Object.assign({}, x.data || {}, { photo_id,
+      // claim_id, captured_by, created_at })` spreads the COLUMNS LAST, so the
+      // columns win and nothing inside the blob can shadow them. A payload
+      // `captured_by` -- the one field here that must come from the session and
+      // never from the client -- therefore could NOT have overridden the real
+      // value even before this change.
+      //
+      // So the column list stays exactly `['id']`, unchanged from the
+      // hand-rolled delete, and what this conversion actually buys is the
+      // universal scope-key strip and nothing else. Stated rather than
+      // implied: adding photo_id/claim_id/captured_by/created_at here would
+      // delete real payload data to defend against a shadow this read cannot
+      // have.
+      const dataBlob = storedBlob(payload, ['id']);
       const r = await fetch(rest('rf_claim_photos'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
