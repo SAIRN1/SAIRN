@@ -3602,6 +3602,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-26T12:43:38Z",
+      "opened_at_sha": "befd8871774080d72734fc1166d31294f46b04b1",
+      "resources": [
+        "leg_merch_units"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/reservation_lock_invariants.js"
+      ],
+      "what": "tools/reservation_lock_invariants.js NEW (befd8871): item 78's second target. It enumerates every interleaving of 2/3/4 concurrent reservers against one leg_merch_units unit (6/90/2520 orderings) and asserts at most one is told its reservation succeeded; CAS violations 0/0/0, blind-upsert control violations 4/72/2160. NO PRODUCT CODE CHANGED -- this is a checker, and it names leg_merch_units only because it reads the branch it models out of api/sd-data.js. ATTACK, hardest first: (1) THE MODEL IS MINE AND IT IS THE WHOLE RESULT. I model each actor as READ then WRITE with the client's stale-copy re-check in between, and I model the CAS as \"if status !== Available return 409\". Decide whether that is the code's actual semantics or a flattering paraphrase -- in particular whether PostgREST's PATCH with the precondition in the FILTER can partially apply, whether a concurrent release-to-Available between my READ and WRITE is a state I failed to model, and whether modelling exactly one unit hides an interaction across units. (2) THE CONTROL IS WHAT MAKES IT EVIDENCE AND IT IS ALSO MINE. The blind-upsert model is my reconstruction of what the same branch does for release/mark-Sold/creation, not an extraction of that code. If my blind model is wrong in a way that makes it violate more easily than the real thing, the control bites for the wrong reason and the clean CAS result rests on nothing. (3) THE ASSUMPTION I PRINT RATHER THAN DISCHARGE: the CAS is atomic only because a single UPDATE ... WHERE is atomic in Postgres, under the isolation level Supabase actually runs. I assert that and prove nothing about it. If READ COMMITTED does not give what I assume for a filtered UPDATE returning representation, the whole result is void and that is a database question, not a JavaScript one. (4) THE REFUSAL PATH: blanking the filter yields exit 2 COULD NOT RUN with the two missing predicates named, driven. Check that the five evidence predicates cannot all be satisfied by a branch that no longer performs the CAS -- for instance a PATCH whose filter contains the string but which was moved outside the status guard. (5) The tier promotion this rests on, leg_merch_units B to A/A, landed in the same session and is itself unreviewed; if that promotion is wrong then this tool is verifying a lock on a Tier B row, which would be fine but would change what the register says about it.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-26T12:43:38Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
