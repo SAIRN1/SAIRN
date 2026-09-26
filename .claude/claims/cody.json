@@ -2385,8 +2385,8 @@
       "task": "ablation validation in sandbox worktree; pinned-run triage; SOC2 readiness doc; item 78 FPV scoping; leg_ dual-axis register sweep. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-26-soc2-readiness.md docs/2026-09-26-ablation-gated-resource-header.md docs/2026-09-26-pinned-run-triage.md docs/CRITICALITY-TIERS.md docs/2026-09-26-item78-fpv-role-gate-scoping.md",
       "claimed_at": "2026-09-26T11:52:50Z",
       "claimed_at_epoch": 1790423570.6896021,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T12:44:56Z",
       "files": [
         "docs/2026-09-26-ablation-gated-resource-header.md",
         "docs/2026-09-26-item78-fpv-role-gate-scoping.md",
