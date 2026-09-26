@@ -840,6 +840,23 @@ PURPOSES = {
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
+    'mech_panels_live_check.py': ('LIVE',
+        'a SAIRNmechanical panel that looks wired and does not reach its table, '
+        'and -- with --static, needing no licence -- a dropdown offering a value '
+        'the endpoint REFUSES. That second one is the reason it exists rather '
+        'than being a one-off run: nothing else compares the Equipment panel\'s '
+        'asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a '
+        'disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that '
+        'offered the value. It asserts the ROUND TRIP rather than the columns: '
+        'column metadata proves the DDL, and only a write-then-read proves the '
+        'app preserves the three-state NULLs both tables are designed around '
+        '(an unweighed charge must not come back 0, an unstated gwp_over_150 must '
+        'not come back false, an unrecorded expiry must not read as current). '
+        'Neither table grants DELETE by design, so the verification row is '
+        'RETIRED or SUPERSEDED rather than removed and the run says so -- and the '
+        'ids carry a per-run timestamp so a re-run cannot collide with the last '
+        'one. --static is a COULD-NOT-TELL about the panels and prints that '
+        'rather than a pass'),
     'review_ledger_reseat.py': ('TOOL',
         'a sha citation in docs/tier-a-reviews.json that a rebase stranded, and '
         'a citation with NO RECORDED SUBJECT -- which is the one nothing can '

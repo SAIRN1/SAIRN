@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**238 files in `tools/`.** By what actually invokes them:
+**239 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 42 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 47 | nothing runs these at all |
+| **UNWIRED** | 48 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -38,7 +38,7 @@ By what they are, independent of wiring:
 | CHECKER | 162 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
-| LIVE | 24 |
+| LIVE | 25 |
 | PUSH-GATE | 1 |
 | REPORTER | 2 |
 | TOOL | 2 |
@@ -88,7 +88,7 @@ The 29, by name, so this is actionable rather than a statistic:
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 | `wait_for.py` | UNWIRED | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported |
 
-**Separately, 10 tool(s) make a LIVE network or database request.** Those are
+**Separately, 11 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -369,7 +369,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (47)
+## UNWIRED (48)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -405,6 +405,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `law_billing_code_trim_live_probe.py` | LIVE | a SAIRNlaw time entry whose UTBMS billing_code is STORED with padding the validator already removed -- read back from the DATABASE rather than from the write's echo, because a server that normalised only its reply would pass a response-only check; the sharp arm sends a code that is over MAX_BILLING_CODE_CHARS by padding alone, which the gate judges trimmed and would have refused had it been asked about the thing being written. Reports an unprovisioned table, a dead PIN or a bot challenge as UNVERIFIED rather than as a pass, and DISCLOSES the one row it writes and cannot delete -- SAIRNlaw declares no delete verb | &mdash; |
 | `leg_session_gate_live_probe.py` | LIVE | a SAIRNlegacy leg_ resource -- the death record and the chain-of-custody log for human remains -- answering a caller who holds the licence key and NO employee session, on the DEPLOYED function rather than the handler in this clone; it asserts the gate's own NO_SESSION code rather than merely a non-200 (a dead licence also refuses), reads an ungated resource alongside so four refusals are a SPLIT rather than a lockout, and reports an absent licence row or a bot challenge as UNVERIFIED rather than as a pass | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
+| `mech_panels_live_check.py` | LIVE | a SAIRNmechanical panel that looks wired and does not reach its table, and -- with --static, needing no licence -- a dropdown offering a value the endpoint REFUSES. That second one is the reason it exists rather than being a one-off run: nothing else compares the Equipment panel's asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that offered the value. It asserts the ROUND TRIP rather than the columns: column metadata proves the DDL, and only a write-then-read proves the app preserves the three-state NULLs both tables are designed around (an unweighed charge must not come back 0, an unstated gwp_over_150 must not come back false, an unrecorded expiry must not read as current). Neither table grants DELETE by design, so the verification row is RETIRED or SUPERSEDED rather than removed and the run says so -- and the ids carry a per-run timestamp so a re-run cannot collide with the last one. --static is a COULD-NOT-TELL about the panels and prints that rather than a pass | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `plugin_upgrade_check.py` | LIVE | a plugin reported as BEHIND when it was just upgraded, and one reported CURRENT that never was -- it compares VERSIONS read off the installed plugin.json and the marketplace pin, and never reads gitCommitSha, which `claude plugin update` leaves pointing at the old commit | &mdash; |
@@ -453,7 +454,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      238   git ls-files tools/
+  tools on disk                      239   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
