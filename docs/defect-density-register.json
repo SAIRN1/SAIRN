@@ -14964,61 +14964,6 @@
       ]
     },
     {
-      "commit": "9d6358d19160",
-      "date": "2026-09-26",
-      "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
-      "files": [
-        "tools/sairn_push_gate_hook.py"
-      ],
-      "lines_added": 43,
-      "lines_removed": 23,
-      "app": "tooling",
-      "layer": "tooling",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
-      "rules": [
-        "2.3"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "Two commits, not one: the first registration on 2026-09-23 and the second on 2026-09-25. Neither was wrong when written and neither author could see the other's entry, so pinning the defect to either sha would name a correct edit as the injection. The defect is the pair existing."
-      },
-      "citation_note": "PR 2.3 -- a fact with a tense needs a read, and A NUMBER NEEDS A SINGLE SOURCE. That second clause is the fit: one seam had two registrations and therefore two descriptions, and the generated traceability matrix counted it twice (GUARD_TESTS entries 11, not 10). A reader consulting either the registry or the matrix got a number and an account that depended on which copy they reached. Severity low because nothing was mis-gated: the suite ran, it ran twice, and it passed both times.",
-      "phase_note": "None of the four fits and saying so is better than picking one. This is not requirement, design, coding or config -- the list structure is fine and both entries are well-argued prose. What failed is COORDINATION: two sessions edited one shared registry two days apart with nothing comparing their additions. The nearest honest label would be a fifth, process, which this vocabulary deliberately does not carry.",
-      "contributing_factors": [
-        {
-          "factor": "GUARD_TESTS is a list keyed on nothing, so registering the same file twice is legal, silent, and costs a second execution plus a second description. Nothing in the structure makes a duplicate visible to the person adding the second entry.",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "The consuming loop now de-duplicates by filename and writes a NOTICE naming the duplicated files. Deliberately not an assert: a module-level raise here reaches the shell hook as a non-zero exit and would block every push, which inverts this gate's documented fail-open-on-internal-error standard."
-        },
-        {
-          "factor": "Two sessions added an entry for the same file two days apart, neither able to see the other's work in progress. The registry is exactly the kind of shared list the claim system exists to serialise, and a registry entry is small enough that nobody claims a file to add one.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "Claiming tools/sairn_push_gate_hook.py for a three-line registry addition would cost more coordination than the duplicate did, and would not have helped here anyway: the two entries were added on different days, so a claim held during one would have lapsed before the other. The loop-level de-duplication is the durable fix because it does not depend on anybody coordinating."
-        },
-        {
-          "factor": "A duplicated entry is not visibly wrong. Each entry reads as a correct, well-argued registration on its own, and the registry is long enough that a reader scrolling to one never reaches the other -- so the failure is a SPLIT ACCOUNT rather than a contradiction, which nothing flags.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Merged into one entry carrying both accounts, rather than deleting the earlier. The earlier one held the sentence the later did not -- the mechanism worked and the requirement to read it did not exist -- and deleting it would have lost the reason the registry exists."
-        },
-        {
-          "factor": "Nothing measured the registry against itself. The generated traceability matrix reproduces GUARD_TESTS row for row and printed the duplicate as two rows and a count of 11, which is the document an auditor reads -- and it agreed with the defect rather than exposing it.",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "The de-duplication NOTICE fires on the push path where it will be read. docs/traceability-matrix.md regenerated: the duplicate row is gone and the count reads 10. Found by hank, by reading the file, which is the channel that actually worked."
-        }
-      ],
-      "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
-    },
-    {
       "commit": "944a5faadae5",
       "date": "2026-09-26",
       "subject": "fix(blob): item 94 was reported COMPLETE by a grep that could not match the sites it left -- 11 converted, 64 still raw, and now measured",
@@ -15083,6 +15028,119 @@
         }
       ],
       "recurrence_open": "11 SPREAD sites are converted and the ratchet pins the rest, so the number cannot silently rise. 64 RAW sites (data: payload straight into the store) are NOT converted -- a sweep across ~20 sairngrounds branches plus stonedesk and mech, each needing its own read consulted for the column list, and it is named rather than started here. The ratchet makes a future 'complete' claim checkable; it does not make it true."
+    },
+    {
+      "commit": "9d6358d19160",
+      "date": "2026-09-26",
+      "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
+      "files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 43,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Two commits, not one: the first registration on 2026-09-23 and the second on 2026-09-25. Neither was wrong when written and neither author could see the other's entry, so pinning the defect to either sha would name a correct edit as the injection. The defect is the pair existing."
+      },
+      "citation_note": "PR 2.3 -- a fact with a tense needs a read, and A NUMBER NEEDS A SINGLE SOURCE. That second clause is the fit: one seam had two registrations and therefore two descriptions, and the generated traceability matrix counted it twice (GUARD_TESTS entries 11, not 10). A reader consulting either the registry or the matrix got a number and an account that depended on which copy they reached. Severity low because nothing was mis-gated: the suite ran, it ran twice, and it passed both times.",
+      "phase_note": "None of the four fits and saying so is better than picking one. This is not requirement, design, coding or config -- the list structure is fine and both entries are well-argued prose. What failed is COORDINATION: two sessions edited one shared registry two days apart with nothing comparing their additions. The nearest honest label would be a fifth, process, which this vocabulary deliberately does not carry.",
+      "contributing_factors": [
+        {
+          "factor": "GUARD_TESTS is a list keyed on nothing, so registering the same file twice is legal, silent, and costs a second execution plus a second description. Nothing in the structure makes a duplicate visible to the person adding the second entry.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The consuming loop now de-duplicates by filename and writes a NOTICE naming the duplicated files. Deliberately not an assert: a module-level raise here reaches the shell hook as a non-zero exit and would block every push, which inverts this gate's documented fail-open-on-internal-error standard."
+        },
+        {
+          "factor": "Two sessions added an entry for the same file two days apart, neither able to see the other's work in progress. The registry is exactly the kind of shared list the claim system exists to serialise, and a registry entry is small enough that nobody claims a file to add one.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Claiming tools/sairn_push_gate_hook.py for a three-line registry addition would cost more coordination than the duplicate did, and would not have helped here anyway: the two entries were added on different days, so a claim held during one would have lapsed before the other. The loop-level de-duplication is the durable fix because it does not depend on anybody coordinating."
+        },
+        {
+          "factor": "A duplicated entry is not visibly wrong. Each entry reads as a correct, well-argued registration on its own, and the registry is long enough that a reader scrolling to one never reaches the other -- so the failure is a SPLIT ACCOUNT rather than a contradiction, which nothing flags.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Merged into one entry carrying both accounts, rather than deleting the earlier. The earlier one held the sentence the later did not -- the mechanism worked and the requirement to read it did not exist -- and deleting it would have lost the reason the registry exists."
+        },
+        {
+          "factor": "Nothing measured the registry against itself. The generated traceability matrix reproduces GUARD_TESTS row for row and printed the duplicate as two rows and a count of 11, which is the document an auditor reads -- and it agreed with the defect rather than exposing it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The de-duplication NOTICE fires on the push path where it will be read. docs/traceability-matrix.md regenerated: the duplicate row is gone and the count reads 10. Found by hank, by reading the file, which is the channel that actually worked."
+        }
+      ],
+      "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
+    },
+    {
+      "commit": "a71f7d692bbd",
+      "date": "2026-09-26",
+      "subject": "fix(sairncare): every employee could list every family contact's phone number, and a family's MAR silently stopped at 500 rows",
+      "files": [
+        "api/sd-data-family-contacts.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 258,
+      "lines_removed": 10,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js alf_family_contacts action read checked verifySessionToken and NO role, so any authenticated sairncare employee of any role -- med_aide, activities, anyone issued a PIN -- could list every family contact on the licence with phone, email, notes and the full medication-consent trail for every resident, while the WRITE half of the same branch has always required management and its refusal message calls this a disclosure decision. Separately the family MAR read was limit=500 with nothing said, and familyMarView computes an adherence PERCENTAGE over the rows it is handed, so a resident past 500 administrations -- under a year at routine dosing -- gave a family member a number and a history presented as complete but computed from part of the record",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "c0ae9a0a5354",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the family record, and MAR access gated to administration STATUS only",
+        "lag_days": 0
+      },
+      "phase_note": "Two defects, both introduced when the branch was written. The role gate is an omission on the read half of a branch whose write half carries the rule in words, and the 500-row cap is a literal in the query. Neither is a design or requirement error -- the requirement is stated in the file's own refusal message.",
+      "contributing_factors": [
+        {
+          "factor": "the read and the write of the same resource were gated independently, and only the write asked. The write's own refusal message calls this data a disclosure decision -- management only -- so the requirement was understood and written down on one side of the branch and simply never applied on the other",
+          "kind": "process",
+          "action_status": "done",
+          "action": "the read now checks ALF_FAMILY_READ_ROLES, and the membership is copied from ALF_CRED_READ_ROLES rather than invented, so there is no fourth role set to drift"
+        },
+        {
+          "factor": "eighteen green arms in api/sd-data-family-contacts.test.js all ran as role 'owner'. The role was a parameter the harness defaulted and no arm ever varied, so a completely absent gate was indistinguishable from a correct one",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "five role arms added -- med_aide and activities refused, nursing/owner/billing allowed -- and the refusal is asserted to happen BEFORE any contact row is fetched"
+        },
+        {
+          "factor": "the MAR read carried limit=500 and familyMarView computes an adherence percentage over whatever rows it is handed, so a truncated read produced a clinical figure presented as complete. Nothing in the payload or the response said a cap had been reached",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "paged ascending (append-only makes offset paging stable in that direction only) with a 10000 ceiling that returns 413 and NO partial view, and a non-array page returning 502 rather than an early break"
+        },
+        {
+          "factor": "the test stub returned the same array for every alf_mar call, so it could not have distinguished a paged read from a capped one even if an arm had tried -- every page would have looked full of the same rows",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the stub honours limit and offset; slicing is a no-op for the 18 pre-existing arms whose fixtures are 0-2 rows, and both fixes were then confirmed by separate ablations failing 3 and 5 arms respectively"
+        }
+      ],
+      "recurrence_open": "The gate is closed for this resource and the MAR read is paged. Nothing checks that the read and write halves of a resource branch are gated consistently -- that asymmetry is invisible to node --check and to every suite that does not vary the session role, and the same shape could exist on any other resource in this 14,900-line file. A check comparing role gates across the read/write/extra-action arms of each resource is the obvious control and is NOT built here. The sairncare.html 403 message still says 'sign in' for what is now a role refusal; blocked on another session's claim, not fixed."
     },
     {
       "commit": "b015ea783653",
