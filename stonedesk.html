@@ -33496,7 +33496,36 @@ document.addEventListener('DOMContentLoaded', function() {
       <input id="vein-sqft" type="number" placeholder="Total sq ft" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
     </div>
     <textarea id="vein-desc" rows="3" placeholder="Describe vein pattern, prominent features, client preferences..." style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box;resize:vertical"></textarea>
-    <button class="q-btn primary" style="width:100%" onclick="sdVeinAnalyze()">🔬 Analyze Vein Match</button>
+
+    <!-- REAL SLAB PHOTOS (2026-09-26, step 1 of 2). Until now this panel had NO
+         image input of any kind -- `type="file"` appeared zero times between
+         its own <div> and the next panel's -- and sdVeinAnalyze() sent six text
+         and number fields to /api/claude asking for "vein matching guidance".
+         The 2026-09-02 worldwide competitive-gap audit's GAP 4 says Vein Match
+         "works from photos" and competes against a higher-fidelity input it
+         cannot accept; the first half of that sentence was not true, which
+         docs/2026-09-26-gap-triage-four-verticals.md §4 corrected.
+         STEP 1 IS ACCEPTING AN IMAGE AT ALL. Step 2 -- accepting a CALIBRATED
+         one, i.e. a slab-scanner feed with known scale and colour reference --
+         is separate work and is NOT started here, so nothing below claims a
+         measurement. The photos are evidence for a human-read recommendation,
+         not input to a computation.
+         THE PHOTOS ARE NEVER PERSISTED. They are held in a closure for the
+         duration of the analysis and the saved row records only HOW MANY were
+         read. A 3MB photo is ~4MB of base64 and this panel's storage is
+         localStorage via st(); writing the image would fill the quota and take
+         every other sd_* collection down with it. -->
+    <div style="font-weight:700;margin:14px 0 6px;color:var(--text);font-size:13px">Slab photos <span style="font-weight:400;color:var(--muted)">&mdash; optional, up to 4</span></div>
+    <div class="photo-zone" id="vein-photo-zone" style="padding:18px" onclick="document.getElementById('vein-photo-input').click()">
+      <div style="font-size:26px;margin-bottom:6px">🪨</div>
+      <div style="font-size:13px;font-weight:600;color:var(--text)">Tap to add photos of the actual slabs</div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px">JPG, PNG, WebP or GIF &mdash; 8MB each. Stand them upright, same lighting.</div>
+    </div>
+    <input type="file" id="vein-photo-input" accept="image/jpeg,image/png,image/webp,image/gif" multiple style="display:none">
+    <div class="photo-grid" id="vein-photo-strip"></div>
+    <div id="vein-photo-status" style="font-size:12px;color:var(--muted);margin-top:8px"></div>
+
+    <button class="q-btn primary" style="width:100%;margin-top:10px" onclick="sdVeinAnalyze()">🔬 Analyze Vein Match</button>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:200px;margin-bottom:12px">
@@ -33561,7 +33590,12 @@ document.addEventListener('DOMContentLoaded', function() {
       return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
         +'<div style="flex:1;min-width:0">'
           +'<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(x.proj||'Project')+'</div>'
-          +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.stone||'')+' &bull; '+escHtml(x.style||'')+' &bull; '+escHtml(x.date||'')+'</div>'
+          +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.stone||'')+' &bull; '+escHtml(x.style||'')+' &bull; '+escHtml(x.date||'')
+            // Shown only when it is a real number. A row from before photos
+            // existed has no `photos` key, and printing "0 photos" against it
+            // would assert a measurement nobody took.
+            +((x&&typeof x.photos==='number')?' &bull; '+(x.photos?escHtml(String(x.photos))+' photo'+(x.photos===1?'':'s')+' read':'no photos'):'')
+          +'</div>'
         +'</div>'
         +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
         +'onclick="sdVeinDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button>'
@@ -33578,6 +33612,85 @@ document.addEventListener('DOMContentLoaded', function() {
     updateKPIs();
     showToast('Analysis deleted.');
   };
+  // ── SLAB PHOTOS (2026-09-26) ──────────────────────────────────────────
+  // In a closure, never in storage. See the comment above the photo zone for
+  // why writing them to localStorage would take the other sd_* collections
+  // down with it.
+  var VEIN_PHOTO_MAX=4;
+  var VEIN_PHOTO_BYTES=8*1024*1024;
+  // DECLARED, not derived from the file name. The Anthropic image block needs a
+  // media_type the bytes actually are, and every other image call in this file
+  // hardcodes 'image/jpeg' -- which is wrong the moment somebody uploads the
+  // PNG their phone produced, and wrong SILENTLY, because the request is still
+  // well-formed. An unlisted type is refused here by name rather than relabelled.
+  var VEIN_PHOTO_TYPES={'image/jpeg':1,'image/png':1,'image/webp':1,'image/gif':1};
+  var _veinPhotos=[];   // [{name, mime, b64, url}]
+
+  function veinRenderPhotos(){
+    var strip=document.getElementById('vein-photo-strip');
+    var status=document.getElementById('vein-photo-status');
+    if(strip){
+      strip.innerHTML=_veinPhotos.map(function(p,i){
+        return '<div class="photo-thumb"><img src="'+escHtml(p.url)+'" alt="'+escHtml('Slab photo '+(i+1)+': '+p.name)+'">'
+          +'<button class="photo-thumb-del" title="Remove this photo" onclick="sdVeinPhotoRemove('+i+')">&times;</button></div>';
+      }).join('');
+    }
+    if(status){
+      // SAYS WHICH INPUT THE NEXT ANALYSIS WILL ACTUALLY RUN ON. A panel that
+      // reads photos when they are there and text when they are not must not
+      // leave the operator guessing which happened.
+      status.textContent=_veinPhotos.length
+        ? _veinPhotos.length+' photo'+(_veinPhotos.length===1?'':'s')+' attached — the analysis will look at '
+          +(_veinPhotos.length===1?'it':'them')+' as well as the fields above.'
+        : 'No photos attached — the analysis will run on the written description only.';
+    }
+  }
+  window.sdVeinPhotoRemove=function(i){
+    if(i<0||i>=_veinPhotos.length) return;
+    _veinPhotos.splice(i,1);
+    veinRenderPhotos();
+  };
+  (function(){
+    var input=document.getElementById('vein-photo-input');
+    if(!input) return;
+    input.addEventListener('change',function(){
+      var files=Array.prototype.slice.call(this.files||[]);
+      // EVERY REFUSAL IS NAMED AND COUNTED. A file silently dropped for being
+      // too big, the wrong type, or over the cap is a photo the operator
+      // believes was read.
+      //
+      // THE CAP IS COUNTED AGAINST A LOCAL RUNNING TOTAL, NOT _veinPhotos.length.
+      // FileReader is asynchronous, so nothing pushes to _veinPhotos before this
+      // loop finishes -- checking its length here would read 0 for every file in
+      // a six-file selection and admit all six. `room` is decremented as each
+      // file is ACCEPTED for reading, which is the only count that is correct at
+      // this point in time.
+      var tooBig=[],badType=[],overCap=0;
+      var room=VEIN_PHOTO_MAX-_veinPhotos.length;
+      files.forEach(function(f){
+        if(!VEIN_PHOTO_TYPES[f.type]){ badType.push(f.name||'a file'); return; }
+        if(f.size>VEIN_PHOTO_BYTES){ tooBig.push(f.name||'a file'); return; }
+        if(room<=0){ overCap++; return; }
+        room--;
+        var reader=new FileReader();
+        reader.onload=function(e){
+          var url=String(e.target.result||'');
+          var b64=url.split(',')[1]||'';
+          if(!b64){ showToast('Could not read '+(f.name||'that photo')+' — nothing was attached.'); return; }
+          _veinPhotos.push({name:f.name||'photo',mime:f.type,b64:b64,url:url});
+          veinRenderPhotos();
+        };
+        reader.onerror=function(){ showToast('Could not read '+(f.name||'that photo')+' — nothing was attached.'); };
+        reader.readAsDataURL(f);
+      });
+      if(badType.length) showToast('Not attached (unsupported image type): '+badType.join(', ')+'. JPG, PNG, WebP or GIF only.');
+      if(tooBig.length) showToast('Not attached (over 8MB): '+tooBig.join(', '));
+      if(overCap) showToast(overCap+' photo'+(overCap===1?'':'s')+' not attached — the limit is '+VEIN_PHOTO_MAX+'.');
+      this.value='';   // so re-picking the same file fires change again
+    });
+    veinRenderPhotos();
+  })();
+
   window.sdVeinAnalyze=function(){
     var proj=document.getElementById('vein-proj').value.trim()||'Project';
     var stone=document.getElementById('vein-stone').value;
@@ -33586,30 +33699,70 @@ document.addEventListener('DOMContentLoaded', function() {
     var sqft=document.getElementById('vein-sqft').value||'80';
     var desc=document.getElementById('vein-desc').value||'prominent diagonal veins';
     var out=document.getElementById('vein-out');
-    out.innerHTML='<div style="color:var(--muted)">🔬 Analyzing vein pattern...</div>';
-    fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:'Provide vein matching guidance for '+style+' layout using '+slabs+' slabs of '+stone+' for '+sqft+' sq ft. Description: '+desc+'. Include slab orientation, cut sequence, seam placement, and waste optimization tips.'}]})
-    }).then(function(r){return r.json();}).then(function(r){
-      var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
-      out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+    // READ ONCE, HERE. The operator can remove a photo while the request is in
+    // flight; the row must record what was actually sent, not what is on screen
+    // when the answer lands.
+    var photos=_veinPhotos.slice();
+    out.innerHTML='<div style="color:var(--muted)">🔬 Analyzing '+(photos.length?'the slab photos':'vein pattern')+'...</div>';
+    var ask='Provide vein matching guidance for '+style+' layout using '+slabs+' slabs of '+stone+' for '+sqft+' sq ft. Description: '+desc+'. Include slab orientation, cut sequence, seam placement, and waste optimization tips.';
+    var content;
+    if(photos.length){
+      // WHAT THE PROMPT MAY AND MAY NOT ASK FOR. These are hand-held shop
+      // photos with no scale reference and no colour target, so anything
+      // dimensional or colorimetric read off them would be a measurement the
+      // input cannot support -- the calibrated-input half is step 2 and is not
+      // built. The model is told that in the prompt rather than being left to
+      // infer it, and is told to say when a photo cannot answer something.
+      ask=photos.length+' photo'+(photos.length===1?'':'s')+' of the ACTUAL slabs '+(photos.length===1?'is':'are')+' attached, in order. '
+        +'They are hand-held shop photographs: there is NO scale reference and NO colour target in them, so do NOT state dimensions, '
+        +'vein widths, percentages, or colour values as if measured, and do not give a numeric match score. '
+        +'Say plainly when the photos do not show enough to answer something.\n\n'+ask
+        +'\n\nWork from what is visible in the photos: vein direction and continuity across the slabs, whether they read as the same bundle, '
+        +'and which orientation and cut sequence the visible pattern favours for a '+style+' layout.';
+      content=photos.map(function(p){
+        return {type:'image',source:{type:'base64',media_type:p.mime,data:p.b64}};
+      });
+      content.push({type:'text',text:ask});
+    } else {
+      content=ask;
+    }
+    // photosRead, NOT photosAttached, and the difference is the point. The
+    // catch branch below calls this with 0 because on that path the photos were
+    // never looked at -- a row reading photos:2 beside a canned fallback would
+    // be a log claiming an analysis that did not happen. Never the bytes, only
+    // the count.
+    function record(photosRead){
       var d=veinEnsureIds();
-      d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
+      d.push({proj:proj,stone:stone,style:style,date:sdLocalToday(),photos:photosRead});
       // Set on the way in, so an analysis run today is syncable and
       // deletable immediately rather than waiting for a later pass.
       sdEnsureRowIds(d,'VM',['date','proj','stone']);
       save(d);updateKPIs();
+    }
+    // RETURNS THE PROMISE. The onclick handlers ignore it, but without a return
+    // there is no way to await the write -- an acceptance test asserting on the
+    // saved row reads storage before the chain has run and passes because there
+    // is nothing there to contradict it, which is how a green arm checks the
+    // wrong thing. tests/stonedesk_veinmatch_photos.js awaits this.
+    return fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,messages:[{role:'user',content:content}]})
+    }).then(function(r){return r.json();}).then(function(r){
+      var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
+      out.innerHTML=(photos.length?'<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Read '+photos.length+' slab photo'+(photos.length===1?'':'s')+'. Not a measurement — no scale or colour reference was in them.</div>':'')
+        +escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
+      record(photos.length);
     }).catch(function(){
-      out.innerHTML='<strong>'+style+' Layout — '+stone+'</strong><br><br>'
+      // THE FALLBACK MUST NOT INHERIT THE PHOTOS' CREDIT. This canned advice is
+      // generic and always was; with photos attached an operator would
+      // reasonably read it as derived from their slabs. So it says, first, that
+      // the photos were not looked at.
+      out.innerHTML=(photos.length?'<div style="background:rgba(220,38,38,0.06);border:1.5px solid #dc2626;border-radius:8px;padding:10px;font-size:12px;color:#dc2626;font-weight:600;margin-bottom:10px">The analysis did not run and YOUR '+photos.length+' PHOTO'+(photos.length===1?'':'S')+' '+(photos.length===1?'WAS':'WERE')+' NOT LOOKED AT. What follows is general '+escHtml(style)+' guidance, not an assessment of these slabs. The photos are still attached — try again.</div>':'')
+        +'<strong>'+style+' Layout — '+stone+'</strong><br><br>'
         +'<strong>Orientation:</strong> Orient slabs so primary vein flows from front-bottom to back-top. For bookmatch, flip right slab horizontally along vertical axis.<br><br>'
         +'<strong>Cut Sequence:</strong> Template the left piece first, mirror template for right. Ensure bundle match — use adjacent slabs from same lot.<br><br>'
         +'<strong>Seam Placement:</strong> Center seam at island midpoint, aligned with dominant vein direction.<br><br>'
         +'<strong>Waste Optimization:</strong> Reserve offcuts for waterfall legs if applicable. Expected waste: 12-18%.';
-      var d=veinEnsureIds();
-      d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
-      // Set on the way in, so an analysis run today is syncable and
-      // deletable immediately rather than waiting for a later pass.
-      sdEnsureRowIds(d,'VM',['date','proj','stone']);
-      save(d);updateKPIs();
+      record(0);
     });
   };
   window.sdVeinPrint=function(){
@@ -33622,8 +33775,15 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   window.sdVeinExport=function(){
     var d=load();
-    var rows=[['Project','Stone','Style','Date']];
-    d.forEach(function(x){rows.push([x.proj||'',x.stone||'',x.style||'',x.date||'']);});
+    // Photos Read is in the file because it is in the row. A stored field no
+    // export carries is the retrievability gap this platform keeps finding --
+    // and here it is the field that distinguishes a photo-backed recommendation
+    // from a description-only one. Rows written before 2026-09-26 have no
+    // `photos` key at all, so they export as blank rather than as 0: absent and
+    // zero are different answers and only one of them was measured.
+    var rows=[['Project','Stone','Style','Date','Photos Read']];
+    d.forEach(function(x){rows.push([x.proj||'',x.stone||'',x.style||'',x.date||'',
+      (x&&x.photos!==undefined&&x.photos!==null)?String(x.photos):'']);});
     var csv=rows.map(function(r){return r.map(function(c){return sdCsvCell(c);}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='vein-match-log-'+sdShopSlug()+'-'+sdLocalToday()+'.csv';a.click();
