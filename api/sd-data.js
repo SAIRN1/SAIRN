@@ -10762,8 +10762,39 @@ module.exports = async (req, res) => {
         + 'mar_consent,consent_granted_at,consent_granted_by,consent_revoked_at,'
         + 'active,revoked_at,notes,recorded_by,created_at,updated_at';
       const famP = payload || {};
+      // ── WHO MAY READ A FAMILY CONTACT (2026-09-26) ───────────────────────
+      // THE READ BELOW HAD NO ROLE GATE AT ALL. `verifySessionToken` alone, so
+      // ANY authenticated sairncare employee of ANY role -- med_aide,
+      // activities, anybody the facility has issued a PIN to -- could list
+      // EVERY family contact on the licence and read `phone`, `email`, `notes`
+      // and the whole consent trail for every resident. The WRITE path eleven
+      // lines down has required ALF_MANAGEMENT_ROLES since it was written, and
+      // its own refusal message says why: "granting them sight of medication
+      // status, is a disclosure decision - management only". The file already
+      // knew what this data was; only one half of it asked.
+      //
+      // MEMBERSHIP IS COPIED FROM ALF_CRED_READ_ROLES ON PURPOSE, not invented.
+      // That set -- owner, billing, nursing -- guards alf_staff_credentials,
+      // the closest analogue in this app: personal details about a named
+      // individual who is not the resident. Nursing is IN because reaching a
+      // resident's family is care work, not administration. med_aide and
+      // activities are OUT, which is the gap this closes.
+      //
+      // A NARROWER READ FOR A CARE ROLE IS NOT BUILT HERE AND THAT IS
+      // DELIBERATE. If a med_aide genuinely needs a single resident's emergency
+      // number, the right answer is a resident-scoped projection that omits the
+      // consent trail -- a design decision with an owner, not something to
+      // infer from the fact that the gate used to be missing.
+      const ALF_FAMILY_READ_ROLES = roleSet({ owner: true, billing: true, nursing: true });
 
       if (action === 'read') {
+        if (!ALF_FAMILY_READ_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message:
+            'Family contact details -- phone, email and the medication-consent '
+            + 'trail -- are not available to your role. Recording and reading '
+            + 'them is a disclosure decision.' } });
+          return;
+        }
         let q = 'alf_family_contacts?license_hash=eq.' + enc(licHash)
           + '&select=' + famCols + '&order=created_at.desc';
         if (famP.resident_id) q += '&resident_id=eq.' + enc(String(famP.resident_id));
@@ -10816,16 +10847,65 @@ module.exports = async (req, res) => {
           res.status(403).json({ error: pre.error });
           return;
         }
-        const mr = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash)
-          + '&resident_id=eq.' + enc(String(contact.resident_id))
-          + '&entry_type=eq.administration&select=entry_id,resident_id,entry_type,data'
-          + '&order=created_at.desc&limit=500'), { headers });
-        if (mr.status === 404 || mr.status === 400) {
-          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The MAR is not set up - run sql/sairncare_mar_schema.sql' } });
-          return;
+        // ── THIS READ WAS `limit=500` AND SAID NOTHING (2026-09-26) ────────
+        // A resident's 501st administration entry made this view WRONG with no
+        // signal anywhere: `familyMarView` computes an adherence figure over
+        // whatever rows it is handed, so a family member saw a percentage and a
+        // history presented as complete, over a silently truncated MAR. At
+        // routine dosing a resident passes 500 administrations in well under a
+        // year, so this was not a theoretical ceiling. It is the worst shape of
+        // truncation on this platform -- a clinical number computed from a
+        // partial set and labelled as the whole.
+        //
+        // PAGED ASCENDING, WHICH IS THE PART THAT MAKES OFFSET PAGING CORRECT
+        // HERE. alf_mar is append-only, so in `created_at.asc` a concurrent
+        // insert lands AFTER the last page and can only be missed; in
+        // `created_at.desc` it lands at offset 0 and shifts every later window,
+        // silently duplicating one row and skipping another. The output order is
+        // unaffected because familyMarView sorts the rows itself (date+time,
+        // descending) rather than trusting the fetch -- checked, not assumed.
+        //
+        // AND IT REFUSES RATHER THAN TRUNCATE AT THE CEILING. A hard cap still
+        // has to exist so one resident cannot hold a function open for ever, but
+        // reaching it returns an ERROR, not a short list: "could not tell" is a
+        // third state and is never folded into an answer, least of all one a
+        // family member reads as their relative's medication history.
+        const FAM_MAR_PAGE = 500;
+        const FAM_MAR_MAX = 10000;
+        let mrows = [];
+        let mr = null;
+        for (;;) {
+          mr = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash)
+            + '&resident_id=eq.' + enc(String(contact.resident_id))
+            + '&entry_type=eq.administration&select=entry_id,resident_id,entry_type,data'
+            + '&order=created_at.asc&limit=' + FAM_MAR_PAGE
+            + '&offset=' + mrows.length), { headers });
+          if (mr.status === 404 || mr.status === 400) {
+            res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The MAR is not set up - run sql/sairncare_mar_schema.sql' } });
+            return;
+          }
+          const page = await mr.json();
+          if (!mr.ok) return upstream(res, page);
+          // A page that is not an array is NOT an empty page. Treating it as one
+          // would end the loop and serve whatever had accumulated, which is the
+          // silent truncation this whole block replaces.
+          if (!Array.isArray(page)) {
+            res.status(502).json({ error: { code: 'MAR_PAGE_UNREADABLE', message:
+              'The medication record could not be read in full, so nothing is '
+              + 'shown. A partial history is not served as a complete one.' } });
+            return;
+          }
+          mrows = mrows.concat(page);
+          if (page.length < FAM_MAR_PAGE) break;
+          if (mrows.length >= FAM_MAR_MAX) {
+            res.status(413).json({ error: { code: 'MAR_TOO_LARGE', message:
+              'This resident has more than ' + FAM_MAR_MAX + ' recorded '
+              + 'administrations, which is more than this view can assemble in '
+              + 'one request. Nothing is shown rather than a partial history '
+              + 'with an adherence figure computed from part of it.' } });
+            return;
+          }
         }
-        const mrows = await mr.json();
-        if (!mr.ok) return upstream(res, mrows);
         const view = famLib.familyMarView({
           contact: contact, entries: mrows || [], resident_id: contact.resident_id });
         if (!view.ok) { res.status(403).json({ error: view.error }); return; }

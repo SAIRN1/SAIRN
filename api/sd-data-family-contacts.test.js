@@ -85,7 +85,22 @@ function loadHandler(opts) {
       }
       if (u.indexOf('alf_mar') !== -1) {
         const st = opts.marStatus || 200;
-        return { ok: st === 200, status: st, json: async () => (opts.mar || [ADMIN_ROW]) };
+        if (opts.marNonArray) {
+          return { ok: true, status: 200, json: async () => ({ message: 'not an array' }) };
+        }
+        // ── THE STUB HONOURS limit/offset, AND IT HAS TO (2026-09-26) ──────
+        // The handler pages this read now. A stub that returned the same array
+        // for every call would loop for ever on any fixture of a full page, and
+        // -- worse -- would make a pagination arm pass while proving nothing,
+        // because every page would look full of the same rows. Slicing is a
+        // no-op for every pre-existing arm, whose fixtures are 0-2 rows.
+        const rows = opts.mar || [ADMIN_ROW];
+        const lm = /[?&]limit=(\d+)/.exec(u);
+        const om = /[?&]offset=(\d+)/.exec(u);
+        const off = om ? Number(om[1]) : 0;
+        const lim = lm ? Number(lm[1]) : rows.length;
+        return { ok: st === 200, status: st,
+                 json: async () => rows.slice(off, off + lim) };
       }
       return { ok: true, status: 200, json: async () => [] };
     }
@@ -272,6 +287,159 @@ async function main() {
       assert.ok(reg.resources.indexOf('alf_family_contacts') !== -1);
       assert.ok((reg.extraActions.alf_family_contacts || []).indexOf('family_mar') !== -1,
         'family_mar is implemented and undeclared -- the dispatcher would answer 400');
+    });
+
+  // ══ WHO MAY READ A CONTACT AT ALL (2026-09-26) ═══════════════════════════
+  // The read had NO role gate -- verifySessionToken alone -- so any employee of
+  // any role could list every family contact on the licence with phone, email,
+  // notes and the whole consent trail. Eighteen arms above passed the entire
+  // time, because every one of them ran as `owner`. The role was a parameter the
+  // suite never varied, which is how a missing gate stays invisible.
+
+  await test('ROLE GATE: a med_aide is REFUSED the contact list, and the refusal '
+    + 'happens before any contact row is fetched', async () => {
+      const { handler, calls } = loadHandler({ role: 'med_aide' });
+      const res = mockRes();
+      await handler(mockReq('read', {}), res);
+      assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'FORBIDDEN');
+      assert.strictEqual(
+        calls.filter(c => c.url.indexOf('alf_family_contacts') !== -1).length, 0,
+        'contact rows were fetched for a role that may not see them');
+    });
+
+  await test('...and an activities role too -- the two roles the old gate\'s '
+    + 'absence exposed this data to', async () => {
+      const { handler } = loadHandler({ role: 'activities' });
+      const res = mockRes();
+      await handler(mockReq('read', {}), res);
+      assert.strictEqual(res.statusCode, 403, JSON.stringify(res.body));
+    });
+
+  await test('...and the refusal NAMES what is withheld rather than saying "no" '
+    + '-- a 403 the app renders as "sign in" is a wrong explanation', async () => {
+      const { handler } = loadHandler({ role: 'med_aide' });
+      const res = mockRes();
+      await handler(mockReq('read', {}), res);
+      const m = res.body.error.message;
+      assert.ok(/phone/.test(m) && /consent/.test(m) && /role/.test(m), m);
+    });
+
+  await test('ROLE GATE CONTROL: nursing IS allowed -- reaching a resident\'s '
+    + 'family is care work, so this is not a refusal of everybody', async () => {
+      const { handler } = loadHandler({ role: 'nursing' });
+      const res = mockRes();
+      await handler(mockReq('read', {}), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+      assert.strictEqual(res.body.data.length, 1);
+    });
+
+  await test('ROLE GATE CONTROL: owner and billing are allowed, so the 18 arms '
+    + 'above are still exercising a reachable path', async () => {
+      for (const role of ['owner', 'billing']) {
+        const { handler } = loadHandler({ role: role });
+        const res = mockRes();
+        await handler(mockReq('read', {}), res);
+        assert.strictEqual(res.statusCode, 200, role + ': ' + JSON.stringify(res.body));
+      }
+    });
+
+  // ══ THE SILENT 500-ROW CAP (2026-09-26) ══════════════════════════════════
+  // `limit=500` with nothing said. familyMarView computes an ADHERENCE
+  // PERCENTAGE over whatever rows it is handed, so a resident past 500
+  // administrations gave a family member a number and a history presented as
+  // complete, computed from part of the record.
+
+  function admin(i) {
+    return { entry_id: 'ADM' + i, resident_id: 'RES-1', entry_type: 'administration',
+             data: { id: 'ADM' + i, medication_id: 'MED-9', date: '2026-09-25',
+                     time: '08:00', status: 'given', administered_by: 'emp-7' } };
+  }
+  const many = (n) => Array.from({ length: n }, (_, i) => admin(i));
+
+  await test('PAGINATION: 1200 administrations are read in FULL across three '
+    + 'pages, not truncated at 500', async () => {
+      const { handler, calls } = loadHandler({ mar: many(1200) });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body).slice(0, 300));
+      assert.strictEqual(res.body.family_mar.events.length, 1200,
+        'the view was built from a truncated MAR');
+      const marCalls = calls.filter(c => c.url.indexOf('alf_mar') !== -1);
+      assert.strictEqual(marCalls.length, 3, marCalls.map(c => c.url).join('\n'));
+      assert.ok(/[?&]offset=0\b/.test(marCalls[0].url), marCalls[0].url);
+      assert.ok(/[?&]offset=500\b/.test(marCalls[1].url), marCalls[1].url);
+      assert.ok(/[?&]offset=1000\b/.test(marCalls[2].url), marCalls[2].url);
+    });
+
+  await test('...and the pages are ordered ASCENDING, which is what makes offset '
+    + 'paging stable on an append-only trail', async () => {
+      // In created_at.desc a concurrent insert lands at offset 0 and shifts every
+      // later window -- one row duplicated, one skipped, silently. Asserted on
+      // the QUERY because the defect is in the query, and the output order is
+      // unaffected either way: familyMarView sorts the rows itself.
+      const { handler, calls } = loadHandler({ mar: many(600) });
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), mockRes());
+      for (const c of calls.filter(c => c.url.indexOf('alf_mar') !== -1)) {
+        assert.ok(c.url.indexOf('order=created_at.asc') !== -1, c.url);
+        assert.ok(c.url.indexOf('created_at.desc') === -1, c.url);
+      }
+    });
+
+  await test('...and a full FINAL page still triggers one more read, so exactly '
+    + '500 rows is not mistaken for "there might be more"', async () => {
+      const { handler, calls } = loadHandler({ mar: many(500) });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.body.family_mar.events.length, 500);
+      assert.strictEqual(
+        calls.filter(c => c.url.indexOf('alf_mar') !== -1).length, 2,
+        'a full page must be followed by a probe for the next one');
+    });
+
+  await test('...and a SHORT first page reads once -- the loop does not cost a '
+    + 'second request on every ordinary resident', async () => {
+      const { handler, calls } = loadHandler({ mar: many(3) });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.body.family_mar.events.length, 3);
+      assert.strictEqual(
+        calls.filter(c => c.url.indexOf('alf_mar') !== -1).length, 1);
+    });
+
+  await test('CEILING: past the hard cap it REFUSES rather than serving a partial '
+    + 'history with an adherence figure computed from part of it', async () => {
+      const { handler } = loadHandler({ mar: many(10500) });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.statusCode, 413, JSON.stringify(res.body).slice(0, 300));
+      assert.strictEqual(res.body.error.code, 'MAR_TOO_LARGE');
+      assert.ok(!res.body.family_mar, 'a partial view was served alongside the error');
+    });
+
+  await test('...and an UNREADABLE page is 502, not an early break that serves '
+    + 'what had accumulated', async () => {
+      const { handler } = loadHandler({ marNonArray: true });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.statusCode, 502, JSON.stringify(res.body).slice(0, 300));
+      assert.strictEqual(res.body.error.code, 'MAR_PAGE_UNREADABLE');
+      assert.ok(!res.body.family_mar);
+    });
+
+  await test('CONSENT STILL COMES FIRST: no consent means ZERO pages are read, '
+    + 'not one page then a refusal', async () => {
+      // The pagination loop is new code between the consent check and the rows.
+      // This re-asserts the original property against it.
+      const { handler, calls } = loadHandler({
+        mar: many(1200),
+        contacts: [Object.assign({}, CONTACT_CONSENTED, { mar_consent: false })] });
+      const res = mockRes();
+      await handler(mockReq('family_mar', { contact_id: 'FC1' }), res);
+      assert.strictEqual(res.body.error.code, 'NO_MAR_CONSENT');
+      assert.strictEqual(
+        calls.filter(c => c.url.indexOf('alf_mar') !== -1).length, 0,
+        'the paging loop ran for a contact with no consent');
     });
 
   console.log('\n' + (process.exitCode
