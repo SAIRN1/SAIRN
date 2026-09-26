@@ -3286,12 +3286,34 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      // A failed pre-read falls through to the write rather than refusing:
-      // the guard exists to stop a RESURRECTION, and refusing every write
-      // whenever the read blinks would turn a liveness hiccup into a data
-      // outage. The window this leaves (delete and write racing) is the same
-      // one the upsert always had, and closing it needs a database-side
-      // predicate, not a second read.
+      // ── WHAT "A FAILED PRE-READ" ACTUALLY DOES, CORRECTED 2026-09-26 ────
+      // This passage used to read: "A failed pre-read falls through to the
+      // write rather than refusing... refusing every write whenever the read
+      // blinks would turn a liveness hiccup into a data outage." Cody's review
+      // of the guard found that sentence describes behaviour THIS CODE DOES
+      // NOT HAVE, and the correction matters because the old wording is
+      // reassuring in the wrong direction -- it tells a reader that a network
+      // failure lets the write through, which would be the resurrection this
+      // guard exists to stop.
+      //
+      // THE TRANSPORT HALF ALREADY FAILS CLOSED, and not by anything written
+      // here. A `fetch` that THROWS -- connection refused, DNS, timeout, the
+      // "liveness hiccup" the old sentence was about -- propagates out of this
+      // branch to the handler's outermost catch, which answers 502 "Upstream
+      // connection error" and RETURNS. The write below is never reached. There
+      // is no fall-through on that path and there never was.
+      //
+      // WHAT DOES FALL THROUGH IS NARROWER, and it is the honest version:
+      //   * `rcur.ok` false -- PostgREST answered, with a 4xx or 5xx. The
+      //     request completed; the answer was a refusal.
+      //   * the body does not parse -- `.catch(() => null)` above.
+      //   * the row is absent, or its `data` is null.
+      // In each of those the guard proceeds to the upsert, because "the store
+      // answered and said nothing about a deletion" is not evidence of one.
+      //
+      // The race this leaves (a delete landing between the read and the write)
+      // is the same one the upsert always had, and closing it needs a
+      // database-side predicate rather than a second read.
       // storedBlob: column keys per branch, scope keys never stored.
       // COLUMN LIST VERIFIED AGAINST THE READ (:2939): it selects
       // customer_id,data and spreads {id: customer_id} + data, so `id` is the

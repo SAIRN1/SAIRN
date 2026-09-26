@@ -39,6 +39,54 @@ const SC_SOFT = require('./_resources/sairncode').tierASoftDeleteOnly;
 
 const TOMBSTONE_RESOURCES = ['sd_customers', 'sd_quote_requests'];
 
+// ── THE CORRECTED COMMENT IS NOW A CLAIM, SO IT GETS AN ARM (2026-09-26) ───
+// The resurrection guard's comment used to say a failed pre-read "falls
+// through to the write rather than refusing". Cody's review found that
+// describes behaviour the code does not have: the pre-read is a BARE
+// `await fetch(...)`, so a transport failure propagates to the handler's
+// outermost catch, which answers 502 and returns. The write is never reached.
+//
+// The comment is corrected -- and a corrected comment making a SAFETY CLAIM is
+// the class this platform records as bug 22, documentation asserting a
+// property nothing checks. So the structural fact the claim rests on is
+// asserted here: the pre-read must NOT be wrapped in its own try/catch. The
+// day somebody wraps it, the transport failure stops propagating, the write
+// becomes reachable on a blind read, and this arm fires instead of the comment
+// quietly becoming false again.
+test('the resurrection pre-read is a BARE await fetch, so a transport failure '
+   + 'reaches the outer catch and the write is never made', () => {
+  const i = SRC.indexOf('A WRITE CANNOT RESURRECT A DELETED CUSTOMER');
+  assert.ok(i !== -1, 'the resurrection guard comment is gone -- find out why '
+    + 'before editing this arm');
+  // The guard's own region: from its banner to the upsert it protects.
+  const region = SRC.slice(i, SRC.indexOf('storedBlob: column keys per branch', i));
+  assert.ok(/const rcur = await fetch\(/.test(region),
+    'the pre-read is no longer a bare `const rcur = await fetch(` -- if it was '
+    + 'renamed, re-verify the fails-closed claim before editing this arm');
+  // A try opened between the banner and the pre-read would swallow the throw.
+  const head = region.slice(0, region.indexOf('const rcur = await fetch('));
+  assert.ok(!/\btry\s*\{/.test(head),
+    'a try block was opened around the resurrection pre-read. A transport '
+    + 'failure would now be caught locally instead of reaching the outer '
+    + 'catch, so the write becomes reachable on a read that never answered -- '
+    + 'the resurrection this guard exists to stop. The comment above it says '
+    + 'the transport half fails closed; that is no longer true.');
+});
+
+test('...and the NARROW fall-through it does have is still the narrow one', () => {
+  const i = SRC.indexOf('A WRITE CANNOT RESURRECT A DELETED CUSTOMER');
+  const region = SRC.slice(i, SRC.indexOf('storedBlob: column keys per branch', i));
+  // `if (rcur.ok)` is what makes a non-ok ANSWER fall through while a THROW
+  // does not. Losing it in either direction changes the guard's meaning.
+  assert.ok(/if \(rcur\.ok\)/.test(region),
+    'the `if (rcur.ok)` gate is gone. The corrected comment distinguishes a '
+    + 'transport failure (fails closed, 502) from a completed request that '
+    + 'answered with a refusal (falls through); without this gate there is no '
+    + 'such distinction to describe.');
+  assert.ok(/409/.test(region) && /'DELETED'/.test(region),
+    'the 409 DELETED refusal is gone from the guard region');
+});
+
 test('every soft-delete branch accepts the tombstones action', () => {
   for (const r of TOMBSTONE_RESOURCES) {
     const guard = new RegExp(
