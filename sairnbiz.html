@@ -965,7 +965,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">YTD Spend</div><div class="kval" id="vn-spend">$0</div><div class="kt">All vendors</div></div>
     <div class="kpi"><div class="klbl">Top Vendor</div><div class="kval" id="vn-top">--</div><div class="kt">By spend</div></div>
     <div class="kpi"><div class="klbl">W-9 on File</div><div class="kval" id="vn-w9">0</div><div class="kt">Tax compliance</div></div>
-    <div class="kpi"><div class="klbl">1099 Required</div><div class="kval" id="vn-1099">0</div><div class="kt">$600+ paid</div></div>
+    <div class="kpi"><div class="klbl">1099 Required</div><div class="kval" id="vn-1099">0</div><div class="kt" id="vn-1099-sub">--</div></div>
   </div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Category</th><th>Contact</th><th>Phone</th><th>YTD Spend</th><th>Terms</th><th>W-9</th><th>Status</th></tr></thead>
@@ -3753,6 +3753,41 @@ function rAR(){
 // back to the bill date for rows marked Paid at creation (which get no
 // paidDate). Vendors are matched by trimmed, case-folded name -- the same
 // name-string join sbThreeWayMatch already uses between these two stores.
+// ── THE 1099 THRESHOLD IS $2,000 FROM 2026, AND IT IS YEAR-KEYED ──────────
+// CORRECTED 2026-09-26. This app compared YTD spend against a hardcoded 600.
+// That figure had stood since 1954 and stopped being right for payments made
+// after 31 December 2025.
+//
+//   IRS, Instructions for Forms 1099-MISC and 1099-NEC (Rev. December 2026),
+//   verbatim: "For tax years beginning after 2025, the minimum threshold
+//   amount for reporting certain payments required to be reported on certain
+//   information returns and/or perform backup withholding on those payments
+//   increased to $2,000 and may be adjusted for inflation beginning in
+//   calendar year 2027." P.L. 119-21. Retrieved 2026-09-26.
+//
+// KEYED ON THE YEAR RATHER THAN SWAPPED FOR A NEW CONSTANT, for two reasons
+// and the second is the one a constant gets wrong later:
+//
+//   1. sbVendorPaidYTD() counts THIS calendar year, so a licence opened on
+//      2025 data must still be measured against 600. One constant is wrong
+//      for one of the two years whichever value it holds.
+//   2. THE 2027 FIGURE IS NOT KNOWN. Indexing starts in calendar year 2027,
+//      so 2000 becomes silently stale the moment the year rolls over -- the
+//      same way 600 did, quietly, for seventy-one years. A hardcoded 2000
+//      would repeat the defect being fixed, one indexation later.
+//
+// So 2027 and beyond returns the 2026 base WITH `certain:false`, and the
+// screen says the figure has not been updated rather than presenting it as
+// current. A could-not-tell is a third state here as everywhere else.
+function sb1099Threshold(year){
+  var y=Number(year)||0;
+  if(y<=2025)return {amount:600,certain:true,
+    note:'IRS threshold for payments made before 2026.'};
+  if(y===2026)return {amount:2000,certain:true,
+    note:'IRS threshold for payments made in 2026 (P.L. 119-21; Instructions for Forms 1099-MISC and 1099-NEC, Rev. December 2026).'};
+  return {amount:2000,certain:false,
+    note:'The threshold is indexed for inflation from calendar year 2027 and the published figure for '+y+' has NOT been entered in this app. $2,000 is the 2026 base shown as a floor, not as this year\'s number -- check the current IRS instructions before filing.'};
+}
 function sbVendorPaidYTD(){
   var year=String(new Date().getFullYear());
   var by={};
@@ -3770,8 +3805,9 @@ function sbVendorPaidYTD(){
 // `paidDate` is stamped by sbPayBill and a row marked Paid AT CREATION never
 // gets one, so the year falls back to the BILL date. For a legacy row created
 // as Paid against a prior-year bill date, the payment may well have happened
-// this year -- and it is excluded, which UNDER-counts toward the IRS $600
-// 1099 threshold. Under-counting is the direction that silently files
+// this year -- and it is excluded, which UNDER-counts toward the IRS 1099
+// threshold (see sb1099Threshold: $600 before 2026, $2,000 from 2026).
+// Under-counting is the direction that silently files
 // nothing, which is the exact harm the derivation was built to fix.
 //
 // IT IS NOT FIXED BY COUNTING IT, because the data does not say when it was
@@ -3801,9 +3837,9 @@ function rVends(){
   var paid=sbVendorPaidYTD();
   var spendOf=function(x){return paid[String(x.name||'').trim().toLowerCase()]||0;};
   var sp=v.reduce(function(s,x){return s+spendOf(x);},0);
-  var w9=v.filter(function(x){return x.w9==='Yes';}).length;var req=v.filter(function(x){return spendOf(x)>=600;}).length;
+  var w9=v.filter(function(x){return x.w9==='Yes';}).length;var thr=sb1099Threshold(new Date().getFullYear());var req=v.filter(function(x){return spendOf(x)>=thr.amount;}).length;
   var top=v.slice().sort(function(a,b){return spendOf(b)-spendOf(a);})[0];
-  $('vn-total').textContent=v.length;$('vn-spend').textContent=fmt(sp);$('vn-top').textContent=(top&&spendOf(top)>0)?top.name:'--';$('vn-w9').textContent=w9;$('vn-1099').textContent=req;
+  $('vn-total').textContent=v.length;$('vn-spend').textContent=fmt(sp);$('vn-top').textContent=(top&&spendOf(top)>0)?top.name:'--';$('vn-w9').textContent=w9;$('vn-1099').textContent=req;var sub=$('vn-1099-sub');if(sub){sub.textContent=fmt(thr.amount)+'+ paid'+(thr.certain?'':' (base -- see note)');sub.title=thr.note;sub.style.color=thr.certain?'':'#92400e';}
   var html=v.map(function(x){return'<tr><td><strong>'+H(x.name)+'</strong></td><td>'+H(x.cat)+'</td><td>'+H(x.contact)+'</td><td>'+H(x.phone)+'</td><td>'+fmt(spendOf(x))+'</td><td>'+H(x.terms)+'</td><td><span class="badge '+(x.w9==='Yes'?'bg':'br')+'">'+H(x.w9)+'</span></td><td><span class="badge bg">Active</span></td></tr>';}).join('');
   // A bill paid this year to a vendor with NO row on this list is invisible
   // to every figure above, including the 1099 count -- which is exactly the
@@ -3820,17 +3856,17 @@ function rVends(){
   // paidDate, so its year is the BILL's -- and one dated last year is left
   // out of YTD even though the cheque may have been written this year. The
   // only vendors named are those where the undated amount could carry them
-  // over the $600 threshold, so the note stays a signal rather than becoming
+  // over the year's threshold, so the note stays a signal rather than becoming
   // furniture nobody reads.
   var und=sbVendorPaidUndatedPriorYear();
   var atRisk=[],riskSum=0;
   v.forEach(function(x){
     var k=String(x.name||'').trim().toLowerCase();
     var u=und[k]||0;
-    if(u>0&&spendOf(x)<600&&(spendOf(x)+u)>=600){atRisk.push(x.name+' ('+fmt(u)+' undated)');riskSum+=u;}
+    if(u>0&&spendOf(x)<thr.amount&&(spendOf(x)+u)>=thr.amount){atRisk.push(x.name+' ('+fmt(u)+' undated)');riskSum+=u;}
   });
   if(atRisk.length){
-    html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>1099 COULD NOT BE DECIDED for '+atRisk.length+' vendor(s).</strong> '+fmt(riskSum)+' of payments are marked Paid with no payment date against a prior-year bill, so this app cannot tell which year they were paid in. Counted in NEITHER total. Each of these is under $600 YTD but would cross it if the undated amount was paid this year -- check the cheque dates before filing: '+H(atRisk.join('; '))+'</td></tr>';
+    html+='<tr><td colspan="8" style="color:#92400e;font-size:12px;"><strong>1099 COULD NOT BE DECIDED for '+atRisk.length+' vendor(s).</strong> '+fmt(riskSum)+' of payments are marked Paid with no payment date against a prior-year bill, so this app cannot tell which year they were paid in. Counted in NEITHER total. Each of these is under the '+fmt(thr.amount)+' threshold YTD but would cross it if the undated amount was paid this year -- check the cheque dates before filing: '+H(atRisk.join('; '))+'</td></tr>';
   }
   $('vntbody').innerHTML=html;
 }
