@@ -14857,6 +14857,122 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
+      "commit": "b015ea783653",
+      "date": "2026-09-26",
+      "subject": "fix(prompt-fence): three real unfenced sites the scanner reported CLEAN, and the mirror test two apps have been citing for a day never existed",
+      "files": [
+        "sairncode.html",
+        "sairnvet.html",
+        "tests/prompt_fence_mirror.js",
+        "tools/adversarial_prompt_corpus.py"
+      ],
+      "lines_added": 370,
+      "lines_removed": 6,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html requestAISuggestion(): a staff-typed case note (#pc-note, an <input type=text>) was interpolated directly into the SYSTEM prompt of the photo peer-consult -- 'Case note: '+(note||'none provided')+'. Give a SHORT ranked list of possible differentials or considerations ... flag anything that looks urgent'. Untrusted free text sitting inside the instruction block of a CLINICAL DECISION SUPPORT call, with no delimiter, no labelling, and nothing telling the model that part of its own instructions came from a user. The output is shown to staff as differentials and urgency flags and is persisted into the peer-consult record (sv_peerconsults) as aiResponse, so a successful steer is both acted on and stored. FIXED by routing the note through the platform's sfFence/sfRule pair (the byte-identical client mirror of api/_lib/prompt-fence.js), which labels it as DATA and mechanically defangs both fence markers so the text cannot close the fence it sits in. NOTHING IS FILTERED -- the note still reaches the model in full; a fence is a mitigation, not a proof, and whether the model honours the instruction is a question only a model call answers. `species` was deliberately left unfenced: #pc-species is a <select>, so its value is one of the app's own options and fencing app-owned text would put a fence in every prompt. FOUND BY HAND, and that is the point: tools/adversarial_prompt_corpus.py reported 0 unfenced sites platform-wide at the time, because its untrusted-field list held `notes` and the whole-word boundary correctly rejects `note`.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable to a commit. The peer-consult photo-consult feature has interpolated the case note into its system prompt since it was written; the prompt-fence module did not exist until 2026-09-25, so there was no moment at which correct code became incorrect. The defect is the ABSENCE of a practice, which the platform adopted in two apps and not in this one."
+      },
+      "citation_note": "PR 1.2 is cited for the DETECTION half, which is the reusable lesson: the scanner could not tell the prompt's own prose from the identifier carrying foreign text, so widening its word list was unsafe until string literals were stripped. The product half -- untrusted text entering a system prompt undelimited -- has no numbered section of its own; the standing statement for it is api/_lib/prompt-fence.js's own header and docs/2026-09-13-ai-red-teaming-scoping.md.",
+      "phase_note": "Design, not coding: the concatenation did exactly what it was written to do. The defect is that no boundary between instruction and data was ever drawn for this call, which is a decision made before the line was typed.",
+      "contributing_factors": [
+        {
+          "factor": "Untrusted free text was concatenated into a system prompt with no delimiter and no labelling. The model had no way to tell the app's instructions from the user's text, because nothing in the prompt drew the line.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Routed through the sfFence/sfRule pair -- the byte-identical client mirror of api/_lib/prompt-fence.js. It delimits the text, states inside the prompt that the delimited region is DATA and must not be followed as instructions, and mechanically neutralises both fence markers so the payload cannot close the fence it sits in. The last part is the only half that is mechanical rather than persuasive."
+        },
+        {
+          "factor": "The platform-wide scanner reported 0 unfenced sites, so there was no signal to act on. Its untrusted-field list held `notes` and the whole-word boundary correctly rejects `note`; `desc` was absent because `description` had been removed as too broad. A one-character gap between a hint and a real field name.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "`note` and `desc` added to UNTRUSTED_WORDS, but ONLY AFTER string literals were stripped from the expression before hint matching (PR 1.2: a hint is a variable name and never lives in a literal, but the prompt's own prose does). Without that ordering, every prompt containing the sentence 'note the following' would have become a finding. Five new blind-lock fixtures, both directions, including `note` in prose only and notebookTitle/descriptor/description as must-not-fire."
+        },
+        {
+          "factor": "The fence was adopted in two apps three weeks after the module was written, and the other apps were never swept by hand -- the tool's clean run was taken as coverage of the whole platform rather than as coverage of what its criteria could see.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The per-app untrusted-field list the scanner's own header already calls the real fix. Still not written: sairncode's code1/code2 are free-text inputs reaching a system prompt and no generic word list can name them, so that site is fenced in the app while the scanner still cannot see it as carrying untrusted text at all."
+        },
+        {
+          "factor": "Two shipped app files claimed, in a comment, that tests/prompt_fence_mirror.js asserted the client and server fences could not drift. That file had never been committed -- git log over all refs was empty for it. A comment naming a check is evidence of a decision, not of a check.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Built it: 64 arms across the four apps that carry the fence -- byte-equality between client copies, plus BEHAVIOURAL equality against the server module by executing each client copy on 12 fixtures including a payload carrying the closing marker alone. Two controls prove the comparison can fail, and a vacuity arm refuses to pass when fewer than two copies are found."
+        }
+      ],
+      "recurrence_open": "The fence is a MITIGATION and not a proof, and the half that would settle it is deliberately deferred: no model call anywhere on this platform has been driven against the injection corpus, so whether a fenced prompt actually resists a determined payload is unmeasured (docs/2026-09-13-ai-red-teaming-scoping.md). Separately, the per-app untrusted-field list is still unwritten, so sairncode's code1/code2 are fenced in the app while the scanner cannot see that site at all -- which means the same one-character blindness could hide the next site in an app nobody reads by hand."
+    },
+    {
+      "commit": "b015ea783653",
+      "date": "2026-09-26",
+      "subject": "fix(prompt-fence): three real unfenced sites the scanner reported CLEAN, and the mirror test two apps have been citing for a day never existed",
+      "files": [
+        "sairncode.html",
+        "sairnvet.html",
+        "tests/prompt_fence_mirror.js",
+        "tools/adversarial_prompt_corpus.py"
+      ],
+      "lines_added": 370,
+      "lines_removed": 6,
+      "app": "sairncode",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "sairncode.html, TWO sites, both free-text inputs interpolated into a SYSTEM prompt raw. (1) The 2026 code-lookup prompt took #code-lookup-desc -- an <input type=text> whose placeholder invites a sentence (\"established patient office visit, moderate complexity\") -- and the described procedure reached the model inside the instruction block of a prompt whose whole job is to refuse fabrication (\"never invent a plausible-sounding code number ... set no_match:true\"). (2) The NCCI claim-scrub prompt embedded #scrub-code1 and #scrub-code2 MID-SENTENCE: 'whether CPT/HCPCS/ICD-10 codes \"' + code1 + '\" and \"' + code2 + '\" have a known ... edit conflict'. Both outputs drive billing decisions -- a steered answer is a coding recommendation a biller acts on. FIXED by routing all three fields through sfFence/sfRule, the byte-identical client mirror of api/_lib/prompt-fence.js. The claim-scrub sentence was rewritten to refer to the codes at the end of the prompt rather than embed them, because a fence in the middle of a sentence is not a fence -- the block has to be a block. Nothing is filtered; all three still reach the model, labelled as data, with both fence markers mechanically defanged. THE SCANNER STILL CANNOT SEE THE CLAIM-SCRUB SITE AT ALL: code1/code2 are app-specific names no generic word list can carry, which is the per-app field list that remains unwritten. `desc` was added to the word list; the code fields were found only by reading.",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable. Both prompts have interpolated their input fields since they were written; api/_lib/prompt-fence.js did not exist until 2026-09-25, so no commit turned correct code into incorrect code. The defect is the absence of a practice."
+      },
+      "citation_note": "Same citation and same reason as the sairnvet record on this commit: PR 1.2 names the DETECTION half -- the scanner could not tell the prompt's prose from the identifier carrying foreign text, so its word list could not be widened until string literals were stripped. Filed separately from sairnvet because the per-app defect rate divides by lines counted per app, and one record spanning two apps would put a numerator under the wrong denominator.",
+      "phase_note": "Design: both concatenations did what they were written to do. No boundary between instruction and data was drawn for either call. The claim-scrub site is the sharper case -- the codes were embedded MID-SENTENCE, so there was no place a fence could go without rewriting the sentence, which is a structural choice made when the prompt was composed.",
+      "contributing_factors": [
+        {
+          "factor": "Untrusted free text was concatenated into a system prompt with no delimiter and no labelling. The model had no way to tell the app's instructions from the user's text, because nothing in the prompt drew the line.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Routed through the sfFence/sfRule pair -- the byte-identical client mirror of api/_lib/prompt-fence.js. It delimits the text, states inside the prompt that the delimited region is DATA and must not be followed as instructions, and mechanically neutralises both fence markers so the payload cannot close the fence it sits in. The last part is the only half that is mechanical rather than persuasive."
+        },
+        {
+          "factor": "The platform-wide scanner reported 0 unfenced sites, so there was no signal to act on. Its untrusted-field list held `notes` and the whole-word boundary correctly rejects `note`; `desc` was absent because `description` had been removed as too broad. A one-character gap between a hint and a real field name.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "`note` and `desc` added to UNTRUSTED_WORDS, but ONLY AFTER string literals were stripped from the expression before hint matching (PR 1.2: a hint is a variable name and never lives in a literal, but the prompt's own prose does). Without that ordering, every prompt containing the sentence 'note the following' would have become a finding. Five new blind-lock fixtures, both directions, including `note` in prose only and notebookTitle/descriptor/description as must-not-fire."
+        },
+        {
+          "factor": "The fence was adopted in two apps three weeks after the module was written, and the other apps were never swept by hand -- the tool's clean run was taken as coverage of the whole platform rather than as coverage of what its criteria could see.",
+          "kind": "process",
+          "action_status": "planned",
+          "action": "The per-app untrusted-field list the scanner's own header already calls the real fix. Still not written: sairncode's code1/code2 are free-text inputs reaching a system prompt and no generic word list can name them, so that site is fenced in the app while the scanner still cannot see it as carrying untrusted text at all."
+        },
+        {
+          "factor": "Two shipped app files claimed, in a comment, that tests/prompt_fence_mirror.js asserted the client and server fences could not drift. That file had never been committed -- git log over all refs was empty for it. A comment naming a check is evidence of a decision, not of a check.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Built it: 64 arms across the four apps that carry the fence -- byte-equality between client copies, plus BEHAVIOURAL equality against the server module by executing each client copy on 12 fixtures including a payload carrying the closing marker alone. Two controls prove the comparison can fail, and a vacuity arm refuses to pass when fewer than two copies are found."
+        }
+      ],
+      "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
+    },
+    {
       "commit": "fa0f2b90d3b8",
       "date": "2026-09-26",
       "subject": "fix(push-gate): the exemption was pinned to a REFSPEC, not a sha -- found by using it",
