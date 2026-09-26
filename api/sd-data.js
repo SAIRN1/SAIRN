@@ -10700,7 +10700,14 @@ module.exports = async (req, res) => {
         // CONSENT IS CHECKED BEFORE THE MAR IS READ, not after. A refused
         // contact must not cause clinical rows to be fetched at all -- the
         // cheapest way to guarantee nothing leaks is for nothing to be loaded.
-        const pre = famLib.familyMarView({ contact: contact, entries: [] });
+        // resident_id IS FORWARDED ON THE PROBE TOO, and the seam check is why.
+        // This call exists only to ask "may this contact see anything", so the
+        // resident looked redundant -- but a call site that omits a field the
+        // engine reads is exactly the shape tools/sairn_seam_check.py exists
+        // for, and it refused this push until both sites were complete. The
+        // resident IS known here: it comes off the stored contact row.
+        const pre = famLib.familyMarView({ contact: contact, entries: [],
+                                           resident_id: contact.resident_id });
         if (!pre.ok) {
           res.status(403).json({ error: pre.error });
           return;
