@@ -14908,7 +14908,7 @@
       ]
     },
     {
-      "commit": "343e9e658006",
+      "commit": "f764f90eb99e",
       "date": "2026-09-26",
       "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
       "files": [
@@ -15140,7 +15140,7 @@
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
     },
     {
-      "commit": "bd1b5f781212",
+      "commit": "c0b7249ccd01",
       "date": "2026-09-26",
       "subject": "fix(sairncare): WV rules are LIVE -- and the loader's verification had never run",
       "files": [
