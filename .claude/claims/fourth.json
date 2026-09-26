@@ -2433,8 +2433,8 @@
       "task": "item 26 phase 2 tiering recheck -- correlate accumulated independent-review and defect-register data against current tiers and PROPOSE recheck candidates, never re-tier. SUBJECT NAMED PER PR 4.3 FILES: tools/tiering_recheck.py tests/run_tiering_recheck_probe.py",
       "claimed_at": "2026-09-26T13:20:36Z",
       "claimed_at_epoch": 1790428836.2372022,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T13:50:31Z",
       "files": [
         "tests/run_tiering_recheck_probe.py",
         "tools/tiering_recheck.py"
