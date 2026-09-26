@@ -229,7 +229,35 @@ const UNITS = [
     survivor: ['caption', 'photo-survives'],
     mustSurvive: ['claim_id'],
     rows: [{ license_hash: HASH_A, claim_id: 'CLM-1',
-             assigned_employee_id: 'emp-1', data: {} }] }
+             assigned_employee_id: 'emp-1', data: {} }] },
+
+  // ── THE TWO THAT WERE NOT CONVERSIONS BUT FIXES (2026-09-26) ───────────
+  // Both reads spread the blob LAST over FIVE mapped columns and both write
+  // paths stripped THREE, so a payload could put `decided_by` / `recorded_by`
+  // into `data` and OVERRIDE the column the server set from the session --
+  // choosing who is recorded as having made the decision, on APPEND-ONLY
+  // records whose whole point is that they cannot be edited afterwards.
+  // `created_at` shadowed the same way on both.
+  //
+  // `survivor` is a field that must come through; `mustNotShadow` is the
+  // server-set column the payload tried to forge. The [columns] arm already
+  // asserts the strip; mustNotShadow is named separately so a reader of a
+  // failure sees WHICH guarantee broke.
+  { label: 'alf_claim_routes', app: 'sairncare', role: 'owner',
+    resource: 'alf_claim_routes',
+    columns: ['id', 'resident_id', 'service_month', 'decided_by', 'created_at'],
+    payload: { id: 'RT-1', resident_id: 'R-1', service_month: '2026-09',
+               decided_by: 'FORGED-BY-CALLER', created_at: '1999-01-01T00:00:00Z',
+               program: 'routes-survives' },
+    survivor: ['program', 'routes-survives'], rows: [] },
+
+  { label: 'alf_staff_credentials', app: 'sairncare', role: 'owner',
+    resource: 'alf_staff_credentials',
+    columns: ['id', 'staff_id', 'record_type', 'recorded_by', 'created_at'],
+    payload: { id: 'CR-1', staff_id: 'S-1', record_type: 'credential',
+               recorded_by: 'FORGED-BY-CALLER', created_at: '1999-01-01T00:00:00Z',
+               licence_no: 'cred-survives' },
+    survivor: ['licence_no', 'cred-survives'], rows: [] }
 ];
 
 // ── THE REQUIREMENT IS STATED HERE, NOT READ FROM THE SUBJECT ─────────────

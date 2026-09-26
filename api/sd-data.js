@@ -8720,8 +8720,15 @@ module.exports = async (req, res) => {
           return;
         }
         const totals = roofingBilling.computeTotals(payload.line_items, payload.tax_rate, payload.tax);
-        const blob = Object.assign({}, payload);
-        ['id', 'job_id', 'location_id', 'claim_id', 'status', 'issue_date', 'due_date', 'payments', 'invoice_number', 'invoice_seq'].forEach((k) => { delete blob[k]; });
+        // storedBlob: column keys per branch, scope keys never stored.
+        // READ PATH CHECKED (:8642): `Object.assign({}, x.data || {}, {...})`
+        // spreads the COLUMNS LAST, so nothing in the blob can shadow one.
+        // The ten keys stay exactly as they were -- what this buys here is the
+        // universal scope-key strip. tax_rate/tax and line_items/subtotal/total
+        // below are NOT column keys: they are recomputed server-side and the
+        // payload's copies are discarded on purpose, which is a trust decision
+        // and stays where it is rather than joining a list called columns.
+        const blob = storedBlob(payload, ['id', 'job_id', 'location_id', 'claim_id', 'status', 'issue_date', 'due_date', 'payments', 'invoice_number', 'invoice_seq']);
         blob.line_items = totals.line_items;
         blob.subtotal = totals.subtotal;
         blob.total = totals.total;
@@ -8933,8 +8940,10 @@ module.exports = async (req, res) => {
       if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a programme' } }); return; }
       const problems = roofingPrograms.validateProgram(payload);
       if (problems.length) { res.status(400).json({ error: { message: 'rf_company_programs: ' + problems.join('; ') } }); return; }
-      const blob = Object.assign({}, payload);
-      ['id', 'manufacturer', 'program_name', 'status', 'obtained_on', 'expires_on', 'has_expiry', 'requirements'].forEach((k) => { delete blob[k]; });
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:8919): `Object.assign({}, x.data || {}, {...})` --
+      // columns spread LAST, so the blob cannot shadow them. Same eight keys.
+      const blob = storedBlob(payload, ['id', 'manufacturer', 'program_name', 'status', 'obtained_on', 'expires_on', 'has_expiry', 'requirements']);
       const r = await fetch(rest('rf_company_programs?on_conflict=license_hash,program_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -9200,7 +9209,10 @@ module.exports = async (req, res) => {
       if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can add or edit a location' } }); return; }
       const problems = roofingLocations.validateLocation(payload);
       if (problems.length) { res.status(400).json({ error: { message: 'rf_locations: ' + problems.join('; ') } }); return; }
-      const blob = Object.assign({}, payload); delete blob.id; delete blob.name; delete blob.active; delete blob.entity_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:9194): columns spread LAST over the blob, so no
+      // shadow is possible; the four keys are unchanged.
+      const blob = storedBlob(payload, ['id', 'name', 'active', 'entity_id']);
       const locRow = {
         license_hash: licHash, app_id: 'sairnroofing', location_id: String(payload.id),
         name: String(payload.name), active: payload.active !== false,
@@ -9276,8 +9288,12 @@ module.exports = async (req, res) => {
       const jRows = await jr.json();
       const job = Array.isArray(jRows) && jRows[0];
       if (!job) { res.status(404).json({ error: { code: 'NO_JOB', message: 'No such job — create the job before scheduling a day on it' } }); return; }
-      const blob = Object.assign({}, payload);
-      ['id', 'job_id', 'location_id', 'scheduled_date', 'status', 'crew'].forEach((k) => { delete blob[k]; });
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:9252): `Object.assign({}, x.data || {}, {...})` --
+      // columns last. `created_by` is a column this list does NOT carry and
+      // deliberately so: the read maps it, nothing in the write puts it in the
+      // blob, and adding it would strip a field no caller sends.
+      const blob = storedBlob(payload, ['id', 'job_id', 'location_id', 'scheduled_date', 'status', 'crew']);
       const r = await fetch(rest('rf_schedule?on_conflict=license_hash,schedule_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -9550,8 +9566,14 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const dataBlob = Object.assign({}, payload);
-      delete dataBlob.id; delete dataBlob.claim_id; delete dataBlob.event_type; delete dataBlob.supersedes;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:9527): the read builds the blob first and then
+      // `Object.assign(blob, { agreement_id, claim_id, event_type, supersedes,
+      // recorded_by, created_at })` -- COLUMNS LAST, so nothing in data can
+      // shadow. `recorded_by` and `created_at` are therefore NOT in this list:
+      // they cannot shadow here, unlike the two ALF branches below where the
+      // same two fields could and did.
+      const dataBlob = storedBlob(payload, ['id', 'claim_id', 'event_type', 'supersedes']);
       const r = await fetch(rest('rf_claim_agreements'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
@@ -9642,8 +9664,12 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_staff payload.id is required' } }); return; }
-      const staffData = Object.assign({}, payload);
-      delete staffData.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:9633): `Object.assign({ id: r.staff_id }, r.data)`
+      // -- BLOB LAST, so `id` is the one key that can shadow and it is the
+      // whole column list. `staff_id` is not in it: the read maps that column
+      // TO `id` rather than returning it under its own name.
+      const staffData = storedBlob(payload, ['id']);
       const r = await fetch(rest('alf_staff?on_conflict=license_hash,staff_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -10066,8 +10092,11 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'alf_billing payload.id and payload.resident_id are required' } });
         return;
       }
-      const billingData = Object.assign({}, payload);
-      delete billingData.id; delete billingData.resident_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:9919): `Object.assign({ id: r.entry_id,
+      // resident_id: r.resident_id }, r.data)` -- BLOB LAST over exactly two
+      // mapped columns, and both are stripped.
+      const billingData = storedBlob(payload, ['id', 'resident_id']);
       const r = await fetch(rest('alf_billing?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -10201,8 +10230,10 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'alf_activities payload.id is required' } }); return; }
-      const activityData = Object.assign({}, payload);
-      delete activityData.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:10192): `Object.assign({ id: r.entry_id }, r.data)`
+      // -- BLOB LAST over one mapped column.
+      const activityData = storedBlob(payload, ['id']);
       const r = await fetch(rest('alf_activities?on_conflict=license_hash,entry_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -10359,8 +10390,14 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This signal has already been recorded and cannot be overwritten. A CORRECTION is a NEW signal, not an edit -- record it again and both stay in the log, the later one being what is believed now, because somebody may already have acted on the first. If you are unsure whether it saved, check the log before recording -- a retry and a correction look identical to this endpoint.' } });
         return;
       }
-      const signalData = Object.assign({}, payload);
-      delete signalData.id; delete signalData.resident_id; delete signalData.signal_type;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // READ PATH CHECKED (:10334): `Object.assign({ id, resident_id,
+      // signal_type, recorded_at }, r.data)` -- BLOB LAST over FOUR mapped
+      // columns, and the hand-rolled version already stripped all four. This
+      // branch is the one that got it right, and it is worth saying so: the
+      // two ALF branches below have the same read shape and stripped three of
+      // five.
+      const signalData = storedBlob(payload, ['id', 'resident_id', 'signal_type', 'recorded_at']);
       const recordedAt = payload.recorded_at || nowISO();
       delete signalData.recorded_at;
       const r = await fetch(rest('alf_signals'), {
@@ -10602,8 +10639,27 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This routing decision has already been recorded and cannot be overwritten. A CORRECTED determination is a NEW decision, not an edit -- record it again and the trail will show both, with the later one as what is believed now. If you are retrying because you are not sure the first one saved, check the trail before recording: a retry and a correction look identical to this endpoint.' } });
         return;
       }
-      const routeData = Object.assign({}, payload);
-      delete routeData.id; delete routeData.resident_id; delete routeData.service_month;
+      // ── storedBlob, AND THIS ONE IS A FIX, NOT A CONVERSION ────────────────
+      // READ PATH CHECKED (:10555) and it does NOT match the old strip list:
+      //   Object.assign({ id, resident_id, service_month, decided_by, created_at }, x.data)
+      // The blob is spread LAST over FIVE mapped columns and the hand-rolled
+      // version stripped THREE. So a payload carrying `decided_by` was stored
+      // in `data` and OVERRODE the column the server set from
+      // `session.employee_id` on the way back out -- the caller choosing who
+      // is recorded as having made a payer-routing determination, on an
+      // APPEND-ONLY record whose whole point is that it cannot be edited
+      // afterwards. `created_at` shadowed the same way.
+      //
+      // The write's own echo four lines below has the identical spread-last
+      // shape, so the forged value came straight back in the 200 as well.
+      // Both are closed by the strip, in one place.
+      //
+      // THE PLATFORM ALREADY KNEW THIS SHAPE: alf_op_audits carries a comment
+      // saying its read spreads columns last precisely so a client-supplied
+      // `passed` cannot override the server's computation, and the 2026-09-24
+      // ALF review fixed the `created_at` half on alf_mar and alf_incidents.
+      // These two branches were not swept then.
+      const routeData = storedBlob(payload, ['id', 'resident_id', 'service_month', 'decided_by', 'created_at']);
       const r = await fetch(rest('alf_claim_routes'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
@@ -10953,8 +11009,21 @@ module.exports = async (req, res) => {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This credential record has already been recorded and cannot be overwritten. A RENEWAL OR CORRECTION is a NEW record, not an edit -- record it again and both stay on file, the later one being current. That is deliberate: a completed-training assertion that could be quietly edited later is not evidence of anything. If you are unsure whether it saved, check the file before recording -- a retry and a correction look identical to this endpoint.' } });
         return;
       }
-      const credData = Object.assign({}, payload);
-      delete credData.id; delete credData.staff_id; delete credData.record_type;
+      // ── storedBlob, AND THIS ONE IS A FIX TOO -- SAME SHAPE, WORSE RECORD ──
+      // READ PATH CHECKED (:10922):
+      //   Object.assign({ id, staff_id, record_type, recorded_by, created_at }, x.data)
+      // Blob spread LAST over FIVE mapped columns; the hand-rolled version
+      // stripped THREE. A payload `recorded_by` overrode the column the server
+      // set from `session.employee_id`.
+      //
+      // WHAT THAT MEANT HERE: this table is APPEND-ONLY on purpose, and the
+      // branch's own 409 message says why -- "a completed-training assertion
+      // that could be quietly edited later is not evidence of anything". The
+      // record could not be edited, and its ATTRIBUTION could be chosen by the
+      // caller at write time. A credential attestation naming the wrong
+      // recorder is the failure the append-only rule exists to prevent,
+      // reached by the one field nobody was stripping.
+      const credData = storedBlob(payload, ['id', 'staff_id', 'record_type', 'recorded_by', 'created_at']);
       const r = await fetch(rest('alf_staff_credentials'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
@@ -11061,8 +11130,20 @@ module.exports = async (req, res) => {
           reviewed_by: session.employee_id, reviewed_at: nowISO()
         };
       } else {
-        const opData = Object.assign({}, payload);
-        delete opData.id; delete opData.record_type; delete opData.reviewed;
+        // storedBlob: column keys per branch, scope keys never stored.
+        // READ PATH CHECKED (:11009) and it is the OPPOSITE order to the two
+        // branches above: `Object.assign({}, x.data, {...})` puts the columns
+        // LAST, deliberately, and the comment there says why -- a
+        // client-supplied `passed` inside the blob must not override the value
+        // the server computed. So nothing here can shadow, and the list stays
+        // the two keys it was. `observed_on`, `recorded_by`, `reviewed_by`,
+        // `reviewed_at` and `created_at` are mapped columns that are NOT in the
+        // list: they cannot shadow given that order, and stripping them would
+        // remove fields from `data` for no reason. `reviewed` and `passed`
+        // stay as hand deletes below because they are trust discards, not
+        // column mappings.
+        const opData = storedBlob(payload, ['id', 'record_type']);
+        delete opData.reviewed;
         // `passed` lives in its own column and is server-determined for anything with a real
         // measurement. Stripping it from the blob too means there is no second copy that
         // could ever disagree with the column -- defence in depth alongside the read-path fix.
