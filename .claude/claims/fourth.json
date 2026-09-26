@@ -2447,8 +2447,8 @@
       "task": "queue9 items 2,3,4,6,7,8,9: render-half clampMs50 rerun, localStorage licence token expiry, sd-data pre-gate BUILT NOT APPLIED (cc holds the file), tiering_recheck RECHECK label split, Tier B/C review-coverage scoping writeup, SAIRNlaw positioning rewrite, plus CONTROLS for items 1 and 5 whose live edits are BLOCKED on cc-queue10 api/sd-data.js. SUBJECT NAMED PER PR 4.3 FILES: tools/tiering_recheck.py tests/run_tiering_recheck_probe.py sairnlaw.html docs/ api/_lib/",
       "claimed_at": "2026-09-26T13:59:33Z",
       "claimed_at_epoch": 1790431173.09985,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T17:44:08Z",
       "files": [
         "sairnlaw.html",
         "tests/run_tiering_recheck_probe.py",
