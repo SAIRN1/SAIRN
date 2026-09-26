@@ -14973,60 +14973,59 @@
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
     },
     {
-      "commit": "f3484b3c5889",
+      "commit": "b919f6eb03a9",
       "date": "2026-09-26",
-      "subject": "fix(sairnvet): 284 dosing rows displayed a green \"Verified\" tick and NOTHING in the app had ever verified them",
+      "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
       "files": [
-        "docs/2026-09-26-sairnvet-exotic-dosing-source-audit.md",
-        "sairnvet.html",
-        "tests/sairnvet_dose_audit_reader.js",
-        "tests/sairnvet_formulary_source_honesty.js"
+        "tools/sairn_push_gate_hook.py"
       ],
-      "lines_added": 514,
-      "lines_removed": 21,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "sairnvet.html told a clinician that a dose had been VERIFIED when nothing in the app had ever verified anything. The Drug Database screen rendered `var status = d.needsReview ? 'Needs Review' : 'CHECK Verified'`, so every row whose needsReview flag was false displayed a green tick reading Verified next to a mg/kg figure. `needsReview:false` is the ABSENCE OF A FLAG, not the presence of a verification: there was no reference field on any row of VET_DRUGS, no citation anywhere in the file, and therefore nothing that could have been checked. MEASURED: 485 rows, 284 of them displaying the Verified tick, including 20 controlled substances, and 0 rows carrying any source field because the schema had none. THE SAME UNEARNED CLAIM APPEARED IN NINE OTHER PLACES and the worst of them is not a badge: the system prompt of the AI Dosing Calculator read \"you may ONLY use the verified database record and calculation provided below as your source of truth for the numeric dose\", which puts the word in the model's mouth and therefore in front of the vet, in prose the vet is more likely to believe than a chip. The others were the dashboard panel description (\"grounded in verified data across every species\"), the Ask-AI card, a dashboard KPI sublabel, the formulary panel description, the grounding context string passed to the model (\"Verified database record: ...\"), the gap notice (\"not in our verified database\"), the green calculation box (\"CHECK Verified calculation:\"), the dose audit log value ('verified_calculated'), and a local variable named verifiedCalc. FIXED: a `reference` field added to VET_DRUGS and populated on three rows from sources retrieved and quoted rather than recalled -- Mickelson MA, Mans C, Colopy SA, Vet Clin North Am Exot Anim Pract 2016;19(1):33-53, PMID 26611923, for chlorhexidine 0.05% and povidone-iodine in exotic pets, and the FDA-approved Suprelorin F label via DailyMed for deslorelin 4.7 mg in ferrets. The badge is three-state now because two could not express the truth: Needs Review (201 rows), Referenced (3), and No source recorded (281, deliberately not green). The AI grounding path stops saying verified everywhere, the system prompt now instructs the model to tell the user plainly when a figure is unsourced, and the grounding context branches on the row's reference so a cited row and an uncited one no longer look identical to the model. \"Verified calculation\" became \"Calculated in-app from the stored range\", because the multiplication is something the app genuinely performed while the range it multiplied may have no source -- the old wording transferred the confidence of the arithmetic onto its input. ONE DOSE STRING WAS EDITED, and only because the citation demanded it: povidone-iodine stored \"Dilute 1:10 for lavage\", and a ratio is not a dose without its starting strength -- 1:10 is 1% only from the usual 10% stock, which the string never said. Rewritten to \"Dilute to 1% for lavage (1:10 from 10% stock)\". WHAT COULD NOT BE SOURCED IS FLAGGED RATHER THAN ASSUMED CORRECT: sevoflurane \"2-4% maintenance\" on the bird and exotic small-mammal/reptile rows could not be sourced from Merck/MSD avian and reptile clinical procedures or from PubMed Central, where minimum anaesthetic concentration is reported per species rather than as one range, so those two rows now read No source recorded.",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
+      "lines_added": 43,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "unknown",
       "phase_confidence": "inferred",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Not pinnable. The badge has read needsReview ? review : verified since the formulary screen was written, and the field it reads has always meant what it means. Nothing turned correct code incorrect; the defect is that the honest third state was never available to express."
+        "unknown_reason": "Two commits, not one: the first registration on 2026-09-23 and the second on 2026-09-25. Neither was wrong when written and neither author could see the other's entry, so pinning the defect to either sha would name a correct edit as the injection. The defect is the pair existing."
       },
-      "citation_note": "not-citable, with the nearest sections named so the comparison is not re-derived. No numbered section covers 'the app asserts a verification it never performed to a user'. PR 1.1 is the closest principle -- a check that cannot fail is indistinguishable from one that is not running -- and this is that one step further out: there was no check at all, only a word claiming one. But 1.1's subject is checks and the probes that hold them, and this defect is a CLAIM IN THE INTERFACE, which the platform handles under Guardian's fabrication rule (a number with no function behind it) rather than under a numbered process rule. This is that rule applied to a WORD rather than a number.",
-      "phase_note": "Design: the ternary did exactly what it says. The defect is that the data model had two states and the truth had three, so the code could not have been honest without a schema change -- a decision made before the rendering line was typed.",
+      "citation_note": "PR 2.3 -- a fact with a tense needs a read, and A NUMBER NEEDS A SINGLE SOURCE. That second clause is the fit: one seam had two registrations and therefore two descriptions, and the generated traceability matrix counted it twice (GUARD_TESTS entries 11, not 10). A reader consulting either the registry or the matrix got a number and an account that depended on which copy they reached. Severity low because nothing was mis-gated: the suite ran, it ran twice, and it passed both times.",
+      "phase_note": "None of the four fits and saying so is better than picking one. This is not requirement, design, coding or config -- the list structure is fine and both entries are well-argued prose. What failed is COORDINATION: two sessions edited one shared registry two days apart with nothing comparing their additions. The nearest honest label would be a fifth, process, which this vocabulary deliberately does not carry.",
       "contributing_factors": [
         {
-          "factor": "A boolean meaning 'nobody flagged this' was rendered as a word meaning 'somebody checked this'. The two-state badge had no way to express the third and by far the largest state -- unflagged and unchecked -- so the honest answer was not available to the code even in principle.",
+          "factor": "GUARD_TESTS is a list keyed on nothing, so registering the same file twice is legal, silent, and costs a second execution plus a second description. Nothing in the structure makes a duplicate visible to the person adding the second entry.",
           "kind": "technical",
           "action_status": "done",
-          "action": "Three states: Needs Review, Referenced (a reference string exists and is shown), and No source recorded -- the last deliberately not green. A reference field was added to VET_DRUGS so the middle state can be earned rather than assumed."
+          "action": "The consuming loop now de-duplicates by filename and writes a NOTICE naming the duplicated files. Deliberately not an assert: a module-level raise here reaches the shell hook as a non-zero exit and would block every push, which inverts this gate's documented fail-open-on-internal-error standard."
         },
         {
-          "factor": "The claim was in ten places and only one of them was a badge. The system prompt of the AI Dosing Calculator asserted the record was verified, which makes the model repeat it in prose -- more persuasive to a clinician than the chip, and invisible to anyone reviewing the UI.",
+          "factor": "Two sessions added an entry for the same file two days apart, neither able to see the other's work in progress. The registry is exactly the kind of shared list the claim system exists to serialise, and a registry entry is small enough that nobody claims a file to add one.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Claiming tools/sairn_push_gate_hook.py for a three-line registry addition would cost more coordination than the duplicate did, and would not have helped here anyway: the two entries were added on different days, so a claim held during one would have lapsed before the other. The loop-level de-duplication is the durable fix because it does not depend on anybody coordinating."
+        },
+        {
+          "factor": "A duplicated entry is not visibly wrong. Each entry reads as a correct, well-argued registration on its own, and the registry is long enough that a reader scrolling to one never reaches the other -- so the failure is a SPLIT ACCOUNT rather than a contradiction, which nothing flags.",
           "kind": "latent-condition",
           "action_status": "done",
-          "action": "All ten rewritten, and the prompt now instructs the model to say plainly when a figure is unsourced. The grounding context branches on the row's reference so the model can distinguish a cited row from an uncited one; previously both arrived identically."
+          "action": "Merged into one entry carrying both accounts, rather than deleting the earlier. The earlier one held the sentence the later did not -- the mechanism worked and the requirement to read it did not exist -- and deleting it would have lost the reason the registry exists."
         },
         {
-          "factor": "No schema field existed for a source, so there was nowhere to put one even if somebody had looked a dose up. The absence of the field is what made the unearned tick the only available answer, and it is why no amount of care by whoever curated the table could have produced an honest screen.",
-          "kind": "process",
-          "action_status": "done",
-          "action": "The field exists now and three rows carry it. The remaining 482 are recorded as unsourced in docs/2026-09-26-sairnvet-exotic-dosing-source-audit.md rather than left to be rediscovered -- re-sourcing them is a veterinary review, not a code change."
-        },
-        {
-          "factor": "Nothing asserted that the app's confidence language matched its evidence. The wording is the only thing holding the honesty, and wording regrows: restoring the green tick is a one-character change to a ternary that would read as a UI tidy-up in review.",
+          "factor": "Nothing measured the registry against itself. The generated traceability matrix reproduces GUARD_TESTS row for row and printed the duplicate as two rows and a count of 11, which is the document an auditor reads -- and it agreed with the defect rather than exposing it.",
           "kind": "detection",
           "action_status": "done",
-          "action": "tests/sairnvet_formulary_source_honesty.js, 14 arms over the badge, the AI grounding path, the prose and the shape of the citations. Driven red six ways, each mutation applied alone. The sixth caught nothing on the first attempt -- it grepped for an identifier that appears twice in the region rather than asserting the ternary branched on it, a presence check where a dependency check was meant -- and that is recorded in the file rather than quietly fixed."
+          "action": "The de-duplication NOTICE fires on the push path where it will be read. docs/traceability-matrix.md regenerated: the duplicate row is gone and the count reads 10. Found by hank, by reading the file, which is the channel that actually worked."
         }
       ],
-      "recurrence_open": "482 OF 485 ROWS REMAIN UNSOURCED and that is now disclosed rather than fixed. Re-sourcing them is a veterinary review against a current formulary -- Carpenter's Exotic Animal Formulary for the exotic rows, which is a book nothing in this pass had access to and which the app's own Amoxicillin/exotic flag already names as the right pointer. Separately, the human-readable \"dose\" string still carries a numeric range on roughly fifty exotic rows whose doseMin/doseMax are null: the machine fields are honest and the clinician reads the string, so 'no numeric dose' in the data model is not 'no number on the screen'. No check asserts those two agree. And the new arms are STATIC -- they assert the app's wording, not the model's output, so a model that starts describing an unsourced figure as verified despite the prompt would not be caught by anything here."
+      "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
     },
     {
       "commit": "be352a7d021a",
@@ -15190,6 +15189,62 @@
         }
       ],
       "recurrence_open": "NOTHING CHECKS THE INVARIANT ITSELF. The per-branch arms assert the current column lists; no check asserts that a storedBlob call site's list covers the columns its own read spreads the blob over, so the next read extended with a new mapped column reopens this exactly as it opened the first time. That static arm is named in the contributing factors and is NOT built. Separately, this record covers the two branches found; the same read-vs-strip comparison has not been run over the branches that were ALREADY converted before today, so their lists rest on the reading done at conversion time rather than on a check."
+    },
+    {
+      "commit": "f3484b3c5889",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): 284 dosing rows displayed a green \"Verified\" tick and NOTHING in the app had ever verified them",
+      "files": [
+        "docs/2026-09-26-sairnvet-exotic-dosing-source-audit.md",
+        "sairnvet.html",
+        "tests/sairnvet_dose_audit_reader.js",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 514,
+      "lines_removed": 21,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "sairnvet.html told a clinician that a dose had been VERIFIED when nothing in the app had ever verified anything. The Drug Database screen rendered `var status = d.needsReview ? 'Needs Review' : 'CHECK Verified'`, so every row whose needsReview flag was false displayed a green tick reading Verified next to a mg/kg figure. `needsReview:false` is the ABSENCE OF A FLAG, not the presence of a verification: there was no reference field on any row of VET_DRUGS, no citation anywhere in the file, and therefore nothing that could have been checked. MEASURED: 485 rows, 284 of them displaying the Verified tick, including 20 controlled substances, and 0 rows carrying any source field because the schema had none. THE SAME UNEARNED CLAIM APPEARED IN NINE OTHER PLACES and the worst of them is not a badge: the system prompt of the AI Dosing Calculator read \"you may ONLY use the verified database record and calculation provided below as your source of truth for the numeric dose\", which puts the word in the model's mouth and therefore in front of the vet, in prose the vet is more likely to believe than a chip. The others were the dashboard panel description (\"grounded in verified data across every species\"), the Ask-AI card, a dashboard KPI sublabel, the formulary panel description, the grounding context string passed to the model (\"Verified database record: ...\"), the gap notice (\"not in our verified database\"), the green calculation box (\"CHECK Verified calculation:\"), the dose audit log value ('verified_calculated'), and a local variable named verifiedCalc. FIXED: a `reference` field added to VET_DRUGS and populated on three rows from sources retrieved and quoted rather than recalled -- Mickelson MA, Mans C, Colopy SA, Vet Clin North Am Exot Anim Pract 2016;19(1):33-53, PMID 26611923, for chlorhexidine 0.05% and povidone-iodine in exotic pets, and the FDA-approved Suprelorin F label via DailyMed for deslorelin 4.7 mg in ferrets. The badge is three-state now because two could not express the truth: Needs Review (201 rows), Referenced (3), and No source recorded (281, deliberately not green). The AI grounding path stops saying verified everywhere, the system prompt now instructs the model to tell the user plainly when a figure is unsourced, and the grounding context branches on the row's reference so a cited row and an uncited one no longer look identical to the model. \"Verified calculation\" became \"Calculated in-app from the stored range\", because the multiplication is something the app genuinely performed while the range it multiplied may have no source -- the old wording transferred the confidence of the arithmetic onto its input. ONE DOSE STRING WAS EDITED, and only because the citation demanded it: povidone-iodine stored \"Dilute 1:10 for lavage\", and a ratio is not a dose without its starting strength -- 1:10 is 1% only from the usual 10% stock, which the string never said. Rewritten to \"Dilute to 1% for lavage (1:10 from 10% stock)\". WHAT COULD NOT BE SOURCED IS FLAGGED RATHER THAN ASSUMED CORRECT: sevoflurane \"2-4% maintenance\" on the bird and exotic small-mammal/reptile rows could not be sourced from Merck/MSD avian and reptile clinical procedures or from PubMed Central, where minimum anaesthetic concentration is reported per species rather than as one range, so those two rows now read No source recorded.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable. The badge has read needsReview ? review : verified since the formulary screen was written, and the field it reads has always meant what it means. Nothing turned correct code incorrect; the defect is that the honest third state was never available to express."
+      },
+      "citation_note": "not-citable, with the nearest sections named so the comparison is not re-derived. No numbered section covers 'the app asserts a verification it never performed to a user'. PR 1.1 is the closest principle -- a check that cannot fail is indistinguishable from one that is not running -- and this is that one step further out: there was no check at all, only a word claiming one. But 1.1's subject is checks and the probes that hold them, and this defect is a CLAIM IN THE INTERFACE, which the platform handles under Guardian's fabrication rule (a number with no function behind it) rather than under a numbered process rule. This is that rule applied to a WORD rather than a number.",
+      "phase_note": "Design: the ternary did exactly what it says. The defect is that the data model had two states and the truth had three, so the code could not have been honest without a schema change -- a decision made before the rendering line was typed.",
+      "contributing_factors": [
+        {
+          "factor": "A boolean meaning 'nobody flagged this' was rendered as a word meaning 'somebody checked this'. The two-state badge had no way to express the third and by far the largest state -- unflagged and unchecked -- so the honest answer was not available to the code even in principle.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Three states: Needs Review, Referenced (a reference string exists and is shown), and No source recorded -- the last deliberately not green. A reference field was added to VET_DRUGS so the middle state can be earned rather than assumed."
+        },
+        {
+          "factor": "The claim was in ten places and only one of them was a badge. The system prompt of the AI Dosing Calculator asserted the record was verified, which makes the model repeat it in prose -- more persuasive to a clinician than the chip, and invisible to anyone reviewing the UI.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "All ten rewritten, and the prompt now instructs the model to say plainly when a figure is unsourced. The grounding context branches on the row's reference so the model can distinguish a cited row from an uncited one; previously both arrived identically."
+        },
+        {
+          "factor": "No schema field existed for a source, so there was nowhere to put one even if somebody had looked a dose up. The absence of the field is what made the unearned tick the only available answer, and it is why no amount of care by whoever curated the table could have produced an honest screen.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The field exists now and three rows carry it. The remaining 482 are recorded as unsourced in docs/2026-09-26-sairnvet-exotic-dosing-source-audit.md rather than left to be rediscovered -- re-sourcing them is a veterinary review, not a code change."
+        },
+        {
+          "factor": "Nothing asserted that the app's confidence language matched its evidence. The wording is the only thing holding the honesty, and wording regrows: restoring the green tick is a one-character change to a ternary that would read as a UI tidy-up in review.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/sairnvet_formulary_source_honesty.js, 14 arms over the badge, the AI grounding path, the prose and the shape of the citations. Driven red six ways, each mutation applied alone. The sixth caught nothing on the first attempt -- it grepped for an identifier that appears twice in the region rather than asserting the ternary branched on it, a presence check where a dependency check was meant -- and that is recorded in the file rather than quietly fixed."
+        }
+      ],
+      "recurrence_open": "482 OF 485 ROWS REMAIN UNSOURCED and that is now disclosed rather than fixed. Re-sourcing them is a veterinary review against a current formulary -- Carpenter's Exotic Animal Formulary for the exotic rows, which is a book nothing in this pass had access to and which the app's own Amoxicillin/exotic flag already names as the right pointer. Separately, the human-readable \"dose\" string still carries a numeric range on roughly fifty exotic rows whose doseMin/doseMax are null: the machine fields are honest and the clinician reads the string, so 'no numeric dose' in the data model is not 'no number on the screen'. No check asserts those two agree. And the new arms are STATIC -- they assert the app's wording, not the model's output, so a model that starts describing an unsourced figure as verified despite the prompt would not be caught by anything here."
     },
     {
       "commit": "fa0f2b90d3b8",
