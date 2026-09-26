@@ -3002,6 +3002,17 @@
       "status": "released",
       "released_at": "2026-09-26T12:38:14Z",
       "files": null
+    },
+    {
+      "id": "hank-1790427527",
+      "session": "hank",
+      "subject": "hank",
+      "task": "merge tier drift PRs 19-27, review ledger reseat field, load WV compliance rules live, fix slabSyncOne and sdLineageSyncOne discarded writes, output queued SQL, write_batch functional core refactor",
+      "claimed_at": "2026-09-26T12:58:47Z",
+      "claimed_at_epoch": 1790427527.8921022,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
