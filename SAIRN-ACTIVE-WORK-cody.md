@@ -5695,3 +5695,259 @@ stopping rule the `sdn` and `sf` gates used. Whether a crew member may read
 the schedule, the customer list or the progress photos is a product decision
 nobody has made; `scp_vendors` is driven in the new suite so the day somebody
 makes it, the widening is visible rather than silent.
+
+---
+
+## 2026-09-26 (Cody) -- cody-q11, eight items, all eight closed
+
+Claim `cody-q11`, released on writing this. Every commit pushed and each
+generated document re-checked at the new HEAD after every rebase. Item 5 was
+already done by an earlier session and was **not** redone -- confirmed, not
+assumed: the correction marker is in
+`docs/superpowers/specs/2026-09-02-stonedesk-worldwide-competitive-gap-audit.md`.
+
+**A LEXICAL CLAIM BLOCK, DECLARED PER PR 4.3 RATHER THAN REWORDED.**
+`sairn_claim.py` blocked on `cc-queue11` over the shared tokens
+`sairncode`/`rules`/`scoping`. Read cc's actual files -- `docs/CRITICALITY-TIERS.md`,
+`tools/sairn_push_gate_hook.py`, `api/_lib/compliance-rules.js`,
+`docs/2026-09-26-sairncare-compliance-join-scoping.md` -- verified disjoint from
+mine, and wrote the claim with the note recording why. The task string was not
+changed to slip past the matcher.
+
+### 1. PR 2.5 -- a rebase conflict in a derived document is re-derived
+
+`e1943b32`. The habit existed and was written down nowhere: `d431fdd1` did it
+right once and `git log --grep=rebase` shows a long line of
+`chore(generated): regenerate after rebase` commits doing it from memory.
+
+Three things the section adds that the habit does not. **Why** a text merge is
+specifically wrong -- a generated document is a function of repo state, the two
+sides are that function at two different states, and a resolved hunk is it at *no
+state at all*, with headline counts from one side and rows from the other and
+nothing looking damaged. **The cost is already paid**, on the register with no
+generator: `docs/tier-a-reviews.json`, 2026-09-23, a hand-resolved conflict kept
+both records and took the wrong side for one record's status fields, so the
+discharge commit said the review happened and the register said it was open.
+**And the push gate does not reliably catch it** -- check 12 blocks when the base
+was clean and NOTICEs-and-allows when the document was already dirty at the base,
+which a rebase window is exactly when.
+
+Plus the case no resolution habit reaches: `6ad42dc0`, where a CLEAN rebase left
+two generated docs stale because the other clone added tools without touching my
+copy. **I then hit that case myself in this session** and it is why every push
+below carries a post-rebase `--check` run.
+
+### 2. PR 1.13 -- the waiter sweep, and two questions instead of one
+
+`56887cd5`. Nothing committed on the tooling side carries the fragility
+`tools/wait_for.py` fixed, and the method is in the section because a negative
+with no method behind it is worth nothing: five axes, and each candidate is clean
+for its **own** reason rather than one rule nine times.
+
+**The generalisation the sweep produced:** if the subject died right now, (a)
+would this loop ever stop, and (b) would it SAY anything? `wait_for.py`'s
+fourteen-hour incident was (a). The one real find fails only (b).
+
+**The find is in the app layer**: ten bounded-and-silent waiters in
+`stonedesk.html`, each `setInterval(...,200)` for a global with a
+`setTimeout(clearInterval,10000)` beside it and **nothing on the give-up branch**.
+Eight wait on `window.addMsg`, which is never defined -- every
+`window.addMsg =` sits inside an `install*Hook()` that returns early unless
+`window.addMsg` is already a function, so the chain has no head. `:23534` waits
+on `window.sendMessage`, which IS defined at `:13272`, so it never fires.
+`:23486` waits on a DOM element. **Same silence, three different live behaviours,
+which is why each was read rather than counted.**
+
+**NOT FIXED, and this needs Michael.** `stonedesk.html:22686` already records the
+state, *proven in the browser*: "window.addMsg is not a function on the live page,
+so installMarkdownHook() bails." That comment is the cost of the silence stated
+exactly -- somebody had to open a console to learn what one line on the give-up
+branch would have printed on every page load. But the same comment records that
+one of these hooks paints near-white text on a white bubble, so switching nine
+unreviewed interceptors on is a product decision, not a waiter repair.
+
+**And `wait_for.py` is UNWIRED with NO PROBE** -- `git grep` finds it only in its
+own source, the generated inventory, and the generator's PURPOSES map. A fix that
+lives only in the file that fixed it cannot reach a session typing an inline loop
+from memory, which is how the fourteen-hour loop was armed. Recorded as
+unexercised too, rather than recommended as if it had been driven.
+
+### 3. The 2026-09-26 corrections land on the ORIGINAL 08-26 and 08-27 audits
+
+`9021f048`. The corrections existed -- in the 09-17 re-derivations and in
+`docs/2026-09-26-gap-triage-four-verticals.md` -- and the two documents a reader
+actually opens carried none of them. That is the 08-26 audit's own 0.1 failure
+one layer out: the correction is written, in a file nobody is pointed at.
+
+The 08-26 banner's sharpest sentence -- *"exactly one, SAIRNdental B2, is
+genuinely still open"* -- is wrong in both directions: B2 is closed, and the
+banner never covered the rows that ARE open. For 08-27 the correction that matters
+is **G3 is CLOSED IN OUR OWN PRODUCT**: the 09-17 pass's headline was that
+SAIRNmechanical had reproduced the market gap it documented, and
+`mechData('eligibility')` now ships at `:2474` with `eligibility` 1 -> 15.
+
+**EVERY COUNT RE-MEASURED RATHER THAN COPIED, and that is the only reason the
+mechanical block is right.** `COI` moved 0 -> 4 and `permit` 0 -> 4 since 09-17 and
+**neither is its gap row moving** -- COI is a company-insurance panel that says
+"not what a technician holds", the opposite object from G2; permit is a doc-type
+list plus a disclaimer that output is NOT "permit-ready", the opposite of G8.
+Copying the 09-17 table forward and trusting the deltas would have closed two
+absent rows.
+
+### 4. SAIRNcode scoped against the cloud wide-lens audit
+
+`8e112b7b`, `docs/2026-09-26-sairncode-cloud-audit-scoping.md`. The dispatch
+blocker was resolved rather than confirmed: the research is on
+`origin/claude/wizardly-ride-wtun13` (PR #18, open, unmerged), 9 files, 7,732
+insertions. Eight docs plus a handoff, not seven. PR #18's red check is
+GitHub-side -- the Copilot scanning agent errors "model not supported" before
+analysing anything and has failed its last 8 runs across three PRs.
+
+**Three rows the cloud docs carry as open are closed**, and the cause is
+structural: cloud correctly declined to re-derive the internal 09-23 baseline, so
+every verdict three days old travelled in unchecked. GP modifier closed
+2026-09-23, the same day it was found. A2's eligibility edge closed 2026-09-24.
+**And A1's exception queue was never missing** -- `scRouteCodedItems()` at `:7393`
+has split two tables since 2026-08-20. The audit searched for the word
+`autonomous` (genuinely 0) and read that zero as the mechanism's absence.
+
+So A1's real gap is one half: **nothing leaves this app to a payer without a
+human, by construction.**
+
+**The finding neither document makes, because neither had the other:** cloud's 3
+says whether a platform needs its own CPT licence to store and redisplay a
+customer's UPLOADED code set is unresolved anywhere in published guidance, and our
+own 2026-08-20 scope recommends exactly that shape for CDT. The three code sets
+are not equally exposed -- ICD-10 is built and public-domain, CPT via the
+practice's own developer credential is the safe shape and is unbuilt
+(`ALLOWED_SERVICES` is still `{stedi:true}`), and **the CDT upload path must not
+be built until counsel answers.**
+
+### 5. The 08-21 trades research re-triaged
+
+`20976294`, `docs/2026-09-26-trades-08-21-triage.md`. Already re-derived on
+09-17, so this asks only what moved in nine days. Six commits touched the app or
+its libraries and **one does not fit the research's structure at all**:
+refrigerant regulation is now three rules and the third is a **US STATE** one --
+CARB, 17 CCR 95380, 50 lb and GWP floor 150, against the AIM Act's 15 lb and 53.
+Section 4 of that research organises divergence **per country** and section 6
+names the need as "EPA 608 (US) / F-Gas (EU)". A sub-national fork whose threshold
+agrees with one federal rule and whose floor agrees with neither has no row in
+either section. **Section 4 wants re-scoping from "per country" to "per
+jurisdiction that can legislate a threshold."**
+
+The generalisable half is the code's asymmetry, not the California fact: because
+CARB's floor is *above* the AIM Act's, a contractor stating the refrigerant is not
+above 53 settles 150 too, and the converse does not hold. **A three-limb rule set
+is not three independent booleans.**
+
+Section 8's dominant-pain row also moved: `MECH_EXPORTS` now holds one dataset,
+`mech_credentials`, independently confirmed EXPORTABLE by
+`tools/export_coverage_check.py`, beside three buttons still honestly calling
+`mechNotLive('CSV export')`. Its reasoning is the reusable part -- it exports the
+**records, not the board**, because `latestByKey()` is right for "is this current"
+and wrong for a file.
+
+### 6. Vein Match accepts a real slab photo
+
+`e5736a4b` + `0a202343` (generated docs). GAP 4 said Vein Match "works from
+photos"; `type="file"` appeared **zero** times between `panel-veinmatch`'s own div
+and the next panel's. Step 1 of the two steps the gap triage identified. Step 2,
+a calibrated image, is not started and nothing claims one.
+
+Four decisions are the actual work, each held by an arm:
+
+* **media_type is the FILE's type, not a constant.** The other eight image call
+  sites hardcode `'image/jpeg'` while accepting `image/*`; a PNG sent as JPEG is a
+  well-formed request, so the defect is silent. **NOT fixed at those eight sites**
+  -- separate change, flagged not bundled.
+* **The cap counts a local `room`, not `_veinPhotos.length`.** FileReader is
+  async, so a length check reads 0 for every file in a five-file selection and
+  admits all five. The suite's fake FileReader is **deferred on purpose** so a
+  revert goes red.
+* **The bytes never reach storage.** The row records how many were read.
+* **`photos` is photos READ, not attached.** On the catch path the row records 0
+  and the output opens in red saying the photos were NOT looked at, because the
+  canned fallback is generic and always was.
+
+`sdVeinAnalyze()` now **returns its promise**, and the first suite run proved why:
+four arms passed against zero saved rows because storage was read before the chain
+ran. 22 arms green, driven in a `vm` against the real module. **Four sabotages on
+mutated copies, four caught by the intended arm.** `checkblocks.py` 131/131 both
+before and after. Live-verified on the deployed URL via `tools/sairn_http.py`:
+`vein-photo-input`, `VEIN_PHOTO_TYPES`, `sdVeinPhotoRemove`, the accept list, the
+not-a-measurement line and `Photos Read` all PRESENT.
+
+**AN ORPHAN FOUND AND DELIBERATELY NOT WIRED.** `vmAnalyze()` at ~`:41605` and
+`vmPreview()` already do two-photo vein matching. Zero callers; `vm-prev1`,
+`vm-prev2`, `vm-loading`, `vm-mat`, `vm-use`, `vm-bundle` do not exist as
+elements; only the `display:none` `vm-result` div survives, stranded right after
+this panel. Same shape as the Care Guide duplicate deleted at ~`:41583`. **Not
+wired:** it regexes a score out of prose and **defaults to 5 when the regex
+misses**, which would put a fabricated "Vein Match Score" into the one panel whose
+three fabricated KPIs were already zeroed to `'--'`. Deleting another session's
+module is Michael's call.
+
+**The suite is NOT registered in `GUARD_TESTS`** -- that list lives in
+`tools/sairn_push_gate_hook.py`, which `cc-queue11` holds and is actively fixing.
+Registering it would be a write conflict. Run it directly:
+`node tests/stonedesk_veinmatch_photos.js`.
+
+### 7. The Tier 2 clearinghouse engagement scoped
+
+`53708880`, `docs/2026-09-26-tier2-clearinghouse-engagement-scoping.md`.
+**Probably not an engagement.** Dental A1 is the 270/271 SAIRNcode already runs
+live through the practice's own Stedi account -- a port, not a relationship -- and
+the incumbent's documented support (read from Stedi's docs here on 2026-08-20)
+covers every remaining row. Two boundaries the four-row framing would swallow:
+SAIRNsenior A1's transmission half needs an **EVV state aggregator**, which is not
+a clearinghouse; and 278 prior auth is a different vendor.
+
+The real work is not the connection. **No X12 claim or remittance code exists
+anywhere** -- the two apparent `837`/`835` hits in `sairncode.html` are CPT 90837
+and a hex colour. An 837 needs three things a 270/271 does not: a claim builder
+(per-app; 837P and 837D are different documents), a **277CA reader**, and an 835
+parser. The 277CA is the silent-failure half -- a claim the clearinghouse accepts
+and the payer rejects is indistinguishable from a paid one if nothing reads the
+acknowledgment. **Sequence: dental A1 port -> 835 -> 837 behind 277CA. Never 837
+first.**
+
+**THE BLOCKER, VERIFIED LIVE: `SD_ENCRYPTION_KEY` IS NOT SET.**
+`api/_lib/auth.js`'s Stage B split says plainly *"UNTIL SD_ENCRYPTION_KEY IS SET
+THIS DEPLOY CHANGES NOTHING"*, and listing the `sairn` project's env var KEYS (no
+values decrypted) shows `SD_AUTH_SECRET` present and `SD_ENCRYPTION_KEY` absent
+from every target. Today's state is the pre-fix state: one string is both the
+session-signing key and the AES key for every secret at rest, unrotatable because
+changing it makes every ciphertext undecryptable with nothing erroring at deploy
+time. **Adding two more apps' claim-capable credentials under that is going the
+wrong way, and one variable fixes it.**
+
+**No vendor comparison was run and no alternative is named**, deliberately -- the
+cloud lane that would do it properly exhausted its 200-call search budget, and
+naming unverified clearinghouses is the fabrication this platform keeps catching.
+Five selection criteria given instead, one of them non-negotiable: a per-practice
+credential, because `sc-credentials.js`'s header records the BAA reasoning that
+SAIRN never holds a clearinghouse account on a customer's behalf.
+
+### Raised, not acted on -- each needs somebody else's decision
+
+1. **`vmAnalyze()`/`vmPreview()` orphan** -- delete (Care Guide precedent) or
+   wire (would ship a fabricated score). Michael.
+2. **`tests/stonedesk_veinmatch_photos.js` unregistered in `GUARD_TESTS`** --
+   blocked on `cc-queue11` holding that file.
+3. **`media_type:'image/jpeg'` hardcoded at eight sites in `stonedesk.html`** --
+   silent the moment a PNG is uploaded. Orthogonal to this dispatch.
+4. **`SD_ENCRYPTION_KEY` not set** -- one Vercel variable, code already waiting.
+5. **`SAIRN_INTERNAL_KEY`'s env var has what looks like its own secret value in
+   its plaintext `comment` field** -- returned by the API to anyone who can list
+   env vars. Value not reproduced anywhere. Found while checking (4); rotating a
+   platform key is not a side effect anybody should take.
+6. **`tools/wait_for.py` has no probe** -- the replacement for the fragile loop
+   has never been made to fail on purpose.
+7. **The CDT upload path must not be built** until counsel answers the CPT
+   licensing question.
+8. **My own expired-but-unreleased claim `hover-three-fixes`** (118h old at
+   session start) still reads open in the record, so another session sees a
+   phantom. Not released here because I did not verify its work is done, and
+   releasing a claim on unverified work is the same defect in the other
+   direction.
