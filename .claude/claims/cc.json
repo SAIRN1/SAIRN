@@ -2687,6 +2687,26 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "cc-1790381555",
+      "session": "cc",
+      "subject": "cc-sqlout-blob-fence",
+      "task": "emit demo credential SQL in chunks, decide gh_push gh_verify token source or removal, blob conversions verified individually, prompt fencing where unheld, item 100 pre-signed remedy scoping. Index rows DEFERRED to avoid a live collision FILES: docs/tier-a-reviews.json tools/gh_push.py tools/gh_verify.py api/sd-data.js sairncode.html sairnvet.html stonedesk.html docs/2026-09-26-presigned-remedy-scoping.md",
+      "claimed_at": "2026-09-26T00:12:35Z",
+      "claimed_at_epoch": 1790381555.6086893,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/sd-data.js",
+        "docs/2026-09-26-presigned-remedy-scoping.md",
+        "docs/tier-a-reviews.json",
+        "sairncode.html",
+        "sairnvet.html",
+        "stonedesk.html",
+        "tools/gh_push.py",
+        "tools/gh_verify.py"
+      ]
     }
   ],
   "refusals": [
