@@ -2402,8 +2402,8 @@
       "task": "declared pinning-incompatible exclusion set in run_all_tests --pinned, so a pinned run reports excluded-not-run instead of a false failure FILES: tools/run_all_tests.py tests/run_all_tests_pinned_probe.py",
       "claimed_at": "2026-09-26T12:54:02Z",
       "claimed_at_epoch": 1790427242.6898386,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T13:43:11Z",
       "files": [
         "tests/run_all_tests_pinned_probe.py",
         "tools/run_all_tests.py"
