@@ -2988,8 +2988,8 @@
       "task": "plugin upgrade audit method version-not-sha, WV compliance rules loader, graduated seed-gate exemption item 101, fire-and-forget write audit pass task 19, CARB and COI schema syntax verification and pending list",
       "claimed_at": "2026-09-26T01:04:24Z",
       "claimed_at_epoch": 1790384664.3026996,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T12:38:14Z",
       "files": null
     },
     {
@@ -2999,8 +2999,8 @@
       "task": "tombstone guard comment correction, saveSD3Data batch write and slab lineage discarded writes, register drift 18 citations, stonedesk sales-lead-privacy verify, sairncare family portal MAR consent record",
       "claimed_at": "2026-09-26T11:26:46Z",
       "claimed_at_epoch": 1790422006.0751402,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T12:38:14Z",
       "files": null
     }
   ],
