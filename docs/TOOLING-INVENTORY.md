@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**235 files in `tools/`.** By what actually invokes them:
+**236 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 40 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 46 | nothing runs these at all |
+| **UNWIRED** | 47 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 160 |
+| CHECKER | 161 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 24 |
@@ -48,13 +48,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 27 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 10 wired nowhere at all, and 17
+**The number to act on: 28 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 11 wired nowhere at all, and 17
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 27, by name, so this is actionable rather than a statistic:
+The 28, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -85,6 +85,7 @@ The 27, by name, so this is actionable rather than a statistic:
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
 | `tiering_recheck.py` | SUITE-ONLY | which tier assignments the platform's own review history has earned the right to DOUBT. Methodology item 26 phase 2, and it was gated on Batch 3 for a reason that was not technical: a re-check driven by review history correlates nothing until there IS review history, and a tool built early would have reported confidence it had not earned. It asks EVIDENCE OF SURPRISE, never "is this tier right" -- a tier is a judgement about consequence and this tool has no access to consequence. IT PROPOSES AND MAY NEVER APPLY (cross-domain disciplines item 11) and must not be given the ability: a tier promotion is not even a cell edit, because SC_TIER_A_SOFT_DELETE_ONLY and the write gates DERIVE from the Tier A list, so an A withdraws a resource's `delete` verb and moves its client remove path. ITS FIRST CRITERION WAS TOO WIDE AND ITS OWN OUTPUT SAID SO: app signal alone returned 95 candidates, every B row in any app with a severe find, all of them reviews=0 -- furniture. The claim needs the reviews to have LOOKED AT THE ROW, so unreviewed rows get their own review-SCHEDULING bucket rather than being folded in to look thorough. THE HEADLINE IS THE BLIND SPOT, printed before the empty list it explains: the review gate opens an obligation when TIER A code changes, so a row left at B is never reviewed and no review can surprise anybody about it -- UNDER-tiering is the direction this mechanism cannot see and the direction that leaves a real record under-protected. THE LINK IS PER APP, NOT PER RESOURCE, because defect records carry `app` and `files` and not resource names, so one defect raises the signal for every resource in the app; the two signals are printed apart and NEVER summed, since a single score here would be the fabricated-metric shape this platform polices hardest. It reads OWNER_BY_RESOURCE by RUNNING api/_resources rather than regexing it, and a row anchor that no longer matches is exit 2 COULD NOT TELL -- not a clean run over zero rows. AND IT OVERSTATED ITS OWN CORPUS 4.7x BEFORE ANYONE ELSE READ IT: the header printed the SUM of the per-resource review counts and called it "review record(s)", so 167 records naming 789 record-resource pairs announced 789 reviews -- wrong in the one direction that makes the tool look better founded than it is. Both numbers are carried and both are labelled; neither wears the other's name. Control: tests/run_tiering_recheck_probe.py, eight sections both directions -- a reviewed B row in a surprising app IS a candidate and the SAME row unreviewed is not, severity and detection_method must both match, EARNING and UNEXAMINED stay distinct, one record naming three resources reports 1 and not 3 (with the real-register counts computed in the probe rather than hardcoded, plus an arm asserting the two numbers still DIFFER so the check cannot quietly stop testing), every missing source is exit 2, and a final arm asserts it wrote NOTHING to any real register by bytes AND mtime so a write-then-restore fails too. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
+| `wait_for.py` | UNWIRED | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported |
 
 **Separately, 10 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
@@ -365,7 +366,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (46)
+## UNWIRED (47)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -419,6 +420,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `staged_conflict_marker_check.py` | CHECKER | a COMMIT about to make a conflict marker durable -- any of git's three seven-character markers at the start of a line in a STAGED blob, whatever staged it; wired into prepare-commit-msg rather than pre-commit because `git rebase --continue`, which produced all four markers that reached origin/main, never fires pre-commit at all; a lone ======= markdown underline is not a finding | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
+| `wait_for.py` | CHECKER | a watcher that outlives its subject -- it catches the case where the thing being waited on DIES and the wait continues for ever. Measured cost: on 2026-09-25 an inline `until grep` loop polled for FOURTEEN HOURS after the process producing its sentinel was killed, because the loop's only terminal state was the happy path. Exits 3 WATCHED PID GONE -- explicitly NOT 0 -- when the pid exits without the condition being met, 4 on timeout, 2 on bad arguments, and re-checks the condition once after seeing the pid gone so a subject's final write is not discarded as a failure. An unreadable process table is UNKNOWN rather than dead, counted and reported | &mdash; |
 
 ---
 
@@ -448,7 +450,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      235   git ls-files tools/
+  tools on disk                      236   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
