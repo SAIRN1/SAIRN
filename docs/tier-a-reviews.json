@@ -3842,6 +3842,30 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-26T17:36:42Z",
+      "opened_at_sha": "0c53d58363a9ae29a368733fc769a67b21a4f457",
+      "resources": [
+        "alf_compliance_rules",
+        "sc_claims",
+        "sc_coded_items",
+        "sc_compliance"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/load_compliance_seed.py",
+        "tools/sc_tier_a_write_gate_live_probe.py"
+      ],
+      "what": "queue11 (hank): (1) stonedesk.html -- slabSyncOne and sdLineageSyncOne now TEST their write result, answer a boolean and name the record in the failure log (fire-and-forget findings 4 and 5); and sdData returns the ENVELOPE for write_batch and marks the written ids synced, because the batching fix landed earlier today read j.data on a response that has no data key -- so it warned on every SUCCESSFUL save, never reached its own refused branch, and silently stopped feeding the server-wins carve-out. (2) tools/sc_tier_a_write_gate_live_probe.py -- two defects taken out of the probe itself (fixed ZZ-GATE-* row ids collided with the tombstone-resurrection guard on rerun; cleanup chased sc_coded_items on a false 404-reads-as-200 assumption). (3) tools/load_compliance_seed.py -- its verification had NEVER run: payload.check where the endpoint requires payload.requirement_type, so every probe answered 400 before AND after and two identical 400s compare equal. WV rules now live-verified on ALF-TEST-2026. (4) tools/review_ledger_reseat.py NEW plus 10 reseated citations in docs/tier-a-reviews.json. ATTACK HARDEST: (a) the write_batch envelope carve-out in sdData is a transport special case keyed on ONE action name -- decide whether returning j for write_batch and j.data for everything else is the right seam, or whether the endpoint should have wrapped its answer in data and the client left alone; api/sd-data.js is cc's claim so I did not touch it and the asymmetry is now permanent until somebody does. (b) slabSyncOne returns a boolean derived from sdData being non-null, and that is only sound because the slabs write branch answers data: rows[0].data || payload -- if any future resource answers data:null on success the same shape reports a landed write as lost. (c) the 10 reseated review citations were matched BY MESSAGE against what each review's prose says the commit did; eight of the ten were my judgement, not a recorded mapping, and a wrong match is a review pointing confidently at the wrong commit -- which is worse than the dead sha it replaced. (d) the 4 frozen_shas declarations assert that a sentence is ABOUT a pointer rather than citing one; if I read one of those sentences wrong, a real dead citation is now permanently suppressed.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-26T17:36:42Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
