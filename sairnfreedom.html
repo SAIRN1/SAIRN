@@ -3627,6 +3627,45 @@ function operatorEligibility(o){
      been a fabricated check. It exists now, so the roster is matched on name
      as well -- the manual flag is kept because a person can be paid by the
      lodge without appearing on the canteen roster. */
+  /* ── PRECONDITION, NOT A DEFECT: `s.paid` IS BINARY AND (D)(1) IS NOT ─────
+     Recorded 2026-09-26. NOTHING IS WRONG WITH THIS GATE TODAY, and that is
+     exactly why this note is here rather than a change: the condition that
+     breaks it is one nobody has created yet, and it will be created by a
+     decision made somewhere else.
+
+     `paid` comes from a TWO-WAY picker -- "Paid staff" / "Volunteer, unpaid"
+     (:1042, written at :3839) -- and the match below fires only on `s.paid`.
+     That is sound while those are the only two states a canteen worker can be
+     in. THE DAY A TIP IS RECORDED ANYWHERE IN THIS APP, THEY ARE NOT.
+
+     (D)(1), quoted in full a few lines above, names the word itself: "No
+     commission, wage, salary, reward, TIP, donation, gratuity or other form of
+     compensation may be paid to a bingo game operator." So a canteen worker
+     entered as "Volunteer, unpaid" who takes tips is COMPENSATED under the
+     statute this function enforces -- and `s.paid` is false, `payrollMatch`
+     stays null, and this gate raises nothing about them. The federal reading
+     agrees from the other direction: the IRS volunteer-labour page quoted in
+     docs/2026-09-17-sairnfreedom-tips-tax-treatment.md SS1 says in terms that
+     "Compensation may include tips".
+
+     THE FIX WHEN IT IS NEEDED IS A THIRD STATE, not a second flag: paid /
+     unpaid / unpaid-but-tipped, with the third treated as compensated HERE.
+     Two independent booleans would let a record say unpaid and tipped at once
+     and leave this line reading the wrong one.
+
+     DELIBERATELY NOT BUILT NOW, and the reason is in that same document rather
+     than preference. SS7.3: a field that invites a post to chase the SS45B
+     credit pushes the exempt-function decision the wrong way round. SS10.4:
+     SS45B(b)(2)'s "customary" test is unsettled and carries a second hurdle
+     that cuts against this post's own exempt-function position. Adding a tip
+     field before that is settled would build on a posture the research says
+     is not settled.
+
+     WHY IT MATTERS MORE THAN THE TAX QUESTION IT CAME FROM: SS513(a)(1) is a
+     tax bill on canteen income and a post can decide that risk is acceptable.
+     (D)(1) is an Ohio criminal gaming provision reaching the operator and the
+     post's licence, and a post cannot decide that. Full write-up: SS11 of
+     docs/2026-09-17-sairnfreedom-tips-tax-treatment.md. */
   var payrollMatch=null;
   getStaff().forEach(function(s){
     if(s.paid && sfD1Name(s.name)===sfD1Name(o.name) && sfD1Name(o.name)) payrollMatch=s;
