@@ -3458,6 +3458,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-26T00:13:53Z",
+      "opened_at_sha": "7be498714a9c8bb2acc5f087ac5adcfb156be7b0",
+      "resources": [
+        "mech_credentials",
+        "mech_site_assets"
+      ],
+      "rules": [],
+      "files": [
+        "api/_resources/sairnmechanical.js",
+        "api/sd-data.js"
+      ],
+      "what": "SAIRNmechanical, two features in one range, and they touch different things.\n\n(1) A THIRD REFRIGERANT RULE, AND IT IS A STATE ONE. CARB's Refrigerant Management Program (17 CCR 95380 et seq.) joins 40 CFR 82.157 and 40 CFR 84.106 on the asset board. api/_lib/mech-assets.js gains carbScope() and two columns reach api/sd-data.js's mech_site_assets branch: site_state and gwp_over_150, both nullable with no default, both in the SELECT list, site_state two-letters-or-refused and gwp_over_150 a tri-state refused rather than coerced. Module 46 -> 62 arms, endpoint 29 -> 36.\n\n(2) BUSINESS INSURANCE / COI, A NEW RESOURCE. api/_lib/mech-insurance.js (30 arms), api/sd-data-mech-insurance.test.js (21 arms), sql/mech_insurance_schema.sql (NOT RUN), a mech_insurance_policies branch in api/sd-data.js, a new Insurance & COI panel, and 'readiness' declared in extraActions.\n\nATTACK, HARDEST FIRST.\n\n(1) THE ONE I AM LEAST SURE OF IS THE CARB CITATION AND ITS TWO NUMBERS, and it is a compliance claim in a product. I assert three things from memory and no source in this repo carries them: that the programme sits at 17 CCR 95380 et seq.; that it reaches a system containing MORE THAN 50 lb where 82.157 reaches 50 OR MORE (the app now answers differently at exactly 50.0 lb, and an arm pins that disagreement); and that its high-GWP floor is 150 where the AIM Act's is 53. If any of those three is wrong the board is confidently wrong in a compliance column. The file refuses to encode inspection frequency, registration deadlines, reporting cadence and size tiering, and says so in the payload -- but it does NOT refuse the threshold or the citation. Decide whether an unsourced threshold belongs in the product at all, or whether this limb should report SCOPE UNKNOWN until somebody puts a source behind the number, the way roofing-warranties.js refuses GAF tiers.\n\n(2) THE DEDUCTION. carbScope() answers not_applicable when hfc_gwp_over_53 is false, on the reasoning that at or below 53 is necessarily below 150. That is sound arithmetic ONLY IF both fields mean GWP on the same basis -- same assessment report, same time horizon. GWP figures are revised and AR4/AR5/AR6 differ. If the two rules key to different vintages the deduction is unsound and it fires silently, because there is no third field recording which basis the contractor used. Decide whether to keep the deduction or ask the question twice.\n\n(3) THE INSURANCE ENGINE'S 'best policy' RULE, WHICH IS MINE ALONE. Among policies of one kind, coverageReadiness() compares the one expiring LAST. An arm proves the answer does not depend on input order. But a contractor who records a renewal with a typo'd far-future expiry would have that row silently win over the real one, and the board would show cover that does not exist. There is no guard against an implausible expiry. Decide whether a far-future date should be refused at the endpoint the way a malformed one already is.\n\n(4) THE ENDPOINT SHARES A FILE WITH EVERY OTHER RESOURCE. The mech_insurance_policies branch adds a require('./_lib/mech-insurance') inside the handler rather than at module top, matching the surrounding style, and declares INS_DATE_RE locally because DATE_RE already exists three times in this file under different scopes. Confirm the local declaration cannot shadow or be shadowed by one of those, and that the branch cannot be reached for any resource but its own -- the resource equality test is the only guard.\n\n(5) WRITE IS MANAGEMENT ONLY via mechAuth.MANAGEMENT_ROLES, copied from the mech_credentials branch two hundred lines down. Confirm that map is the right one for this app -- CLAUDE.md records that SAIRNcode's provisioning role is admin where most apps' is owner, and a role map that is merely PRESENT passes forever while checking the wrong thing.\n\nWHAT IS NOT CLAIMED: sql/mech_insurance_schema.sql has NOT been run, so the insurance endpoint answers provisioned:false against the live database today. The CARB columns need their ALTER too -- sql/mech_site_assets_schema.sql is idempotent and carries it, and until it is re-run every asset reads unknown_jurisdiction.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-26T00:13:53Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
