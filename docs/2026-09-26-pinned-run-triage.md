@@ -41,6 +41,37 @@ This is the load-bearing finding. `--pinned` does not merely test an older tree;
 **Not an artefact of pinning — an artefact of pinning to a commit that predates
 a fix.** Exactly what `--pinned` is supposed to do, behaving correctly.
 
+> **RESOLVED 2026-09-26, LATER THE SAME DAY, AND §2.2 BELOW WAS WRONG.**
+> Fixed in `50e05934`. Only **ONE** of these is pinning-incompatible; the other
+> seven are not, and the cause is a single missing file.
+>
+> They die on `sairn_session_identity.NoIdentity: THIS CLONE IS NOT PROVISIONED
+> — <git-dir>/sairn-session does not exist`, because **a git worktree has its own
+> git dir** and the per-clone identity marker lives in `.git/`. Copying the
+> clone's marker in makes them pass: measured `rc=1` before and `rc=0` after on
+> `run_coding_rule_channel_probe.py` and `run_review_gate_validate_probe.py`, and
+> then on `run_registry_claim_probe.py`, `run_released_visibility_probe.py` and
+> `refspec_and_override_probe.py` in a provisioned worktree. `--pinned` now
+> provisions before running and refuses (exit 2) if the clone itself has no
+> identity to copy.
+>
+> **`stale_row_sweep_control.py` is neither** — it times out past 280s in the
+> clone AND in a worktree. Load-sensitive, not location-sensitive.
+>
+> **THE DECLARED SET IS ONE ENTRY:** `run_selftest_independence_probe.py`, via
+> `tools/nhi_register.py --selftest`, which **enumerates sibling clones beside
+> the repository directory**. A worktree in a temp dir has none, so the
+> enumeration finds zero and the probe correctly refuses. Clone `rc=0`, worktree
+> `rc=2`.
+>
+> **HAD I ACTED ON §2.2 AS WRITTEN, SIX FILES WOULD HAVE STOPPED BEING TESTED
+> UNDER `--pinned` FOREVER, for a defect that takes one file copy to fix.** The
+> hypothesis was plausible, specific, and wrong, and the thing that caught it was
+> re-running in a worktree at HEAD rather than at the pinned commit — which
+> separated "old code" from "wrong environment". §2.2 is left below exactly as it
+> stood, because the reasoning is the reasoning and editing it silently would
+> hide that a triage conclusion needed its own control too.
+
 ### 2.2 PINNING-INCOMPATIBLE — 8 files, and this is a real limitation of the tool
 
 The other eight were **not** changed after the pin (0 commits each), so a stale
