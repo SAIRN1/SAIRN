@@ -2408,6 +2408,20 @@
         "tests/run_all_tests_pinned_probe.py",
         "tools/run_all_tests.py"
       ]
+    },
+    {
+      "id": "cody-1790431620",
+      "session": "cody",
+      "subject": "cody-q10",
+      "task": "waiter PID-liveness helper; stonedesk 8th competitive gap; roofing/dental/senior + mechanical gap triage scope; veterans tips state verify FILES: tools/wait_for.py docs/2026-09-26-gap-triage-roofing-dental-senior-mechanical.md",
+      "claimed_at": "2026-09-26T14:07:00Z",
+      "claimed_at_epoch": 1790431620.4002602,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-26-gap-triage-roofing-dental-senior-mechanical.md",
+        "tools/wait_for.py"
+      ]
     }
   ],
   "refusals": [
