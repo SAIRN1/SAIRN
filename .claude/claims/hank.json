@@ -2980,6 +2980,17 @@
       "status": "released",
       "released_at": "2026-09-26T00:54:06Z",
       "files": null
+    },
+    {
+      "id": "hank-1790384664",
+      "session": "hank",
+      "subject": "hank",
+      "task": "plugin upgrade audit method version-not-sha, WV compliance rules loader, graduated seed-gate exemption item 101, fire-and-forget write audit pass task 19, CARB and COI schema syntax verification and pending list",
+      "claimed_at": "2026-09-26T01:04:24Z",
+      "claimed_at_epoch": 1790384664.3026996,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
@@ -3007,6 +3018,19 @@
       "shared_files": null,
       "source": "status-registry",
       "why": "shared phrase: \"criticality tiers\"",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-26T01:03:26Z",
+      "my_subject": "hank",
+      "my_task": "tombstone guard comment fix, saveSD3Data batch write, plugin audit method version-not-sha, WV compliance loader, graduated seed-gate override item 101, register drift 18 cites, fire-and-forget write audit task 19, CARB COI SQL verify, stonedesk sales-lead-privacy verify, sairncare family portal MAR consent",
+      "other_session": "cody",
+      "other_subject": "platform",
+      "other_task": "sairnroofing patent freshness xactware eagleview; sairncare controlled-substance register scoping; item 98 ablation of gated_resource_direct_fetch_header FILES: docs/2026-09-26-sairnroofing-patent-freshness.md docs/2026-09-26-sairncare-controlled-substance-scoping.md docs/2026-09-26-ablation-gated-resource-header.md",
+      "other_claimed_at": "2026-09-26T00:45:45Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: sairncare",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
