@@ -2377,6 +2377,23 @@
         "docs/2026-09-26-sairncare-controlled-substance-scoping.md",
         "docs/2026-09-26-sairnroofing-patent-freshness.md"
       ]
+    },
+    {
+      "id": "cody-1790423570",
+      "session": "cody",
+      "subject": "cody-queue9",
+      "task": "ablation validation in sandbox worktree; pinned-run triage; SOC2 readiness doc; item 78 FPV scoping; leg_ dual-axis register sweep. SUBJECT NAMED PER PR 4.3 FILES: docs/2026-09-26-soc2-readiness.md docs/2026-09-26-ablation-gated-resource-header.md docs/2026-09-26-pinned-run-triage.md docs/CRITICALITY-TIERS.md docs/2026-09-26-item78-fpv-role-gate-scoping.md",
+      "claimed_at": "2026-09-26T11:52:50Z",
+      "claimed_at_epoch": 1790423570.6896021,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-26-ablation-gated-resource-header.md",
+        "docs/2026-09-26-item78-fpv-role-gate-scoping.md",
+        "docs/2026-09-26-pinned-run-triage.md",
+        "docs/2026-09-26-soc2-readiness.md",
+        "docs/CRITICALITY-TIERS.md"
+      ]
     }
   ],
   "refusals": [
@@ -2393,6 +2410,19 @@
       ],
       "source": "status-registry",
       "why": "same declared FILES",
+      "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
+    },
+    {
+      "refused_at": "2026-09-26T11:52:03Z",
+      "my_subject": "cody-queue9",
+      "my_task": "ablation validation in sandbox worktree; 56-failure pinned-run triage; SOC2 readiness doc; item 78 FPV role-gate scoping; leg_ dual-axis sweep. SUBJECT NAMED PER PR 4.3. NOT touching stonedesk.html in this clone -- the ablation mutates only its own detached worktree, hank holds stonedesk FILES: docs/2026-09-26-soc2-readiness.md docs/2026-09-26-ablation-gated-resource-header.md docs/2026-09-26-pinned-run-triage.md docs/CRITICALITY-TIERS.md docs/2026-09-26-item78-fpv-role-gate-scoping.md",
+      "other_session": "hank",
+      "other_subject": "hank",
+      "other_task": "tombstone guard comment correction, saveSD3Data batch write and slab lineage discarded writes, register drift 18 citations, stonedesk sales-lead-privacy verify, sairncare family portal MAR consent record",
+      "other_claimed_at": "2026-09-26T11:26:46Z",
+      "shared_files": null,
+      "source": "status-registry",
+      "why": "same app: stonedesk",
       "note": "That claim was NOT on origin/main when this refusal was made. The registry row is machine-local and is not in git, which is why this row exists."
     }
   ]
