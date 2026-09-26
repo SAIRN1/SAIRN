@@ -2430,8 +2430,8 @@
       "task": "process-rules doc: codify TOOLING-INVENTORY rebase-regenerate rule; polling-waiter migration sweep across tools/; correct the 08-26 roofing+dental+senior and 08-27 sairnmechanical audit originals; triage 08-21 plumbing-electrical-hvac spec; StoneDesk Vein Match real-image acceptance; scope cloud wide-lens SAIRNcode audit + Tier-2 clearinghouse engagement. LEXICAL-BLOCK NOTE PER PR 4.3: cc-queue11 blocked on the shared token 'sairncode'/'rules'/'scoping'; verified disjoint -- cc holds docs/CRITICALITY-TIERS.md, tools/sairn_push_gate_hook.py, api/_lib/compliance-rules.js, docs/2026-09-26-sairncare-compliance-join-scoping.md, none of which I touch. Proceeding without rewording. SUBJECT NAMED PER PR 4.3 FILES: docs/SAIRN-PROCESS-RULES.md tools/wait_for.py stonedesk.html docs/superpowers/specs/2026-08-26-competitive-gap-audit-roofing-dental-senior.md docs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md",
       "claimed_at": "2026-09-26T17:49:38Z",
       "claimed_at_epoch": 1790444978.006688,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T19:25:48Z",
       "files": [
         "docs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md",
         "docs/SAIRN-PROCESS-RULES.md",
