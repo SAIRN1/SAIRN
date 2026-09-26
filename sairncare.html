@@ -291,6 +291,55 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Name</th><th>Room</th><th>Care Level</th><th>Payer</th><th>Assigned To</th><th>Actions</th></tr></thead>
     <tbody id="rtbody"></tbody></table></div>
   </div></div>
+
+  <!-- FAMILY / RESPONSIBLE PARTY (2026-09-26). Measured before it was built:
+       this app had NO family record of any kind. sairncare_clients_schema.sql's
+       own comment lists emergency_contact among the data fields and the UI
+       never wrote or read it.
+
+       IT LIVES INSIDE THE RESIDENTS PANEL, NOT ITS OWN NAV ITEM, and that is
+       deliberate: recording family is something you do TO A RESIDENT, and a
+       separate screen would invite a manage-all-contacts view nobody needs.
+
+       MICHAEL'S DECISION, 2026-09-26: medication access for family is
+       READ-ONLY and CONSENT-GATED, off until granted, and shows administration
+       STATUS only -- given/missed, scheduled time, adherence. Never the
+       editable MAR, never PRN reasoning, never controlled-substance counts.
+       HIPAA minimum-necessary and the category pattern (PointClickCare
+       Connected Care Center, AlayaCare) arrive at the same shape from opposite
+       directions. api/_lib/alf-family-mar.js names every stripped field with
+       its reason; this panel does not decide any of it. -->
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;font-size:13px;margin-bottom:6px">Family / responsible party</div>
+    <div class="kt" style="margin-bottom:10px">
+      Consent to see <strong>medication administration status</strong> is granted per contact and is <strong>OFF until you grant it</strong>.
+      A consented contact sees <strong>given / missed, the scheduled time and an adherence figure</strong> &mdash; never medication names, never PRN reasoning, never controlled-substance counts, and nothing they can edit.
+    </div>
+    <div class="fg">
+      <div><label>Resident</label><select id="fc-resident"></select></div>
+      <div><label>Name</label><input id="fc-name" placeholder="Jane Doe"></div>
+      <div><label>Relationship</label><input id="fc-rel" placeholder="daughter, POA&hellip;"></div>
+      <div><label>Email</label><input id="fc-email" type="email"></div>
+      <div><label>Phone</label><input id="fc-phone"></div>
+      <!-- THREE OPTIONS WOULD BE WRONG HERE. Consent is a decision somebody
+           made, not a tri-state: the absence of a decision IS "not granted",
+           which the schema stores as NOT NULL DEFAULT false. -->
+      <div><label>Medication status consent</label>
+        <select id="fc-consent">
+          <option value="false">NOT granted</option>
+          <option value="true">Granted</option>
+        </select></div>
+      <div><label>Contact id</label><input id="fc-id" placeholder="blank = new"></div>
+    </div>
+    <button class="btn bp bs" onclick="alfFamilySave()">+ Record contact</button>
+    <div id="fc-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+    <div id="fc-note" class="kt" style="margin-top:8px"></div>
+    <div class="tw" style="margin-top:10px"><table>
+      <thead><tr><th>Resident</th><th>Name</th><th>Relationship</th><th>Contact</th><th>Medication status</th><th>Preview</th></tr></thead>
+      <tbody id="fctbody"><tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted)">Loading&hellip;</td></tr></tbody>
+    </table></div>
+    <div id="fc-preview" style="font-size:12px;margin-top:10px"></div>
+  </div></div>
 </div>
 <div class="modal" id="residentmodal">
   <div class="mbox">
@@ -1869,7 +1918,7 @@ function nav(id){
   if(p)p.classList.add('on');if(b)b.classList.add('on');
   if(id==='security')rSecurity();
   if(id==='dashboard')rDash();
-  if(id==='residents')rResidents();
+  if(id==='residents'){rResidents();if(typeof alfFamilyRefresh==='function'){try{alfFamilyRefresh();}catch(e){}}}
   if(id==='careplans')rCareplans();
   if(id==='mar')rMarPanel();
   if(id==='staff')rStaff();
@@ -2202,6 +2251,136 @@ async function alfReassignResident(id,newEmployeeId){
   toast(syncResult?(r.name+' reassigned to '+alfEmployeeName(newEmployeeId)):'Reassignment saved on this device only -- server sync failed, try again with a connection');
 }
 var carelevelBadge={al1:'bg',al2:'bw',al3:'br',independent_living:'bg',memory_care:'br',skilled_nursing:'br'};
+// ── FAMILY / RESPONSIBLE PARTY + CONSENT-GATED MAR STATUS (2026-09-26) ─────
+// The projection lives in api/_lib/alf-family-mar.js and the consent gate in
+// the endpoint. THIS FILE RENDERS AND NEVER DECIDES: it does not re-derive
+// what a family member may see, because a second copy of that rule is a second
+// place for it to be wrong -- and the wrong direction discloses a resident's
+// medication record to a third party.
+var ALF_FAM = [];
+
+function alfFamilyRows(){ return Array.isArray(ALF_FAM) ? ALF_FAM : []; }
+
+function alfFamilyRender(){
+  var tb=$('fctbody'); if(!tb) return;
+  var rows=alfFamilyRows();
+  if(!rows.length){
+    tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:16px;color:var(--muted)">No family contacts recorded. Nothing is inferred &mdash; this stays empty until one is entered.</td></tr>';
+    return;
+  }
+  tb.innerHTML=rows.map(function(c){
+    var res=residents().find(function(r){return r.id===c.resident_id;});
+    // THREE RENDERINGS, NOT TWO. "Revoked" is not "not granted": one is a
+    // decision that was made and withdrawn, the other was never made, and a
+    // facility asked after the fact needs to be able to tell them apart.
+    var badge = c.active===false
+      ? '<span class="badge bx">contact deactivated</span>'
+      : (c.mar_consent===true
+          ? '<span class="badge bg">granted</span>'
+          : (c.consent_revoked_at
+              ? '<span class="badge br">REVOKED</span>'
+              : '<span class="badge bx">not granted</span>'));
+    var when = c.mar_consent===true && c.consent_granted_at
+      ? '<div class="kt">'+H(String(c.consent_granted_at).slice(0,10))+' by '+H(c.consent_granted_by||'?')+'</div>' : '';
+    return '<tr>'
+      +'<td>'+H(res?res.name:c.resident_id)+'</td>'
+      +'<td><strong>'+H(c.name)+'</strong></td>'
+      +'<td>'+H(c.relationship||'—')+'</td>'
+      +'<td>'+H(c.email||c.phone||'—')+'</td>'
+      +'<td>'+badge+when+'</td>'
+      +'<td>'+(c.mar_consent===true && c.active!==false
+          ? '<button class="btn bo bs" onclick="alfFamilyPreview(\''+H(c.contact_id)+'\')">See what they see</button>'
+          : '<span class="kt">nothing to show</span>')+'</td>'
+      +'</tr>';
+  }).join('');
+}
+
+function alfFamilyRefresh(){
+  var note=$('fc-note');
+  var sel=$('fc-resident');
+  if(sel){
+    sel.innerHTML=residents().map(function(r){return '<option value="'+H(r.id)+'">'+H(r.name)+'</option>';}).join('');
+  }
+  return alfData('read','alf_family_contacts',{},true).then(function(res){
+    if(res.status===401||res.status===403){
+      if(note) note.textContent='Sign in to see family contacts — the server declined without an employee session. This is not an empty list.';
+      ALF_FAM=[]; alfFamilyRender(); return;
+    }
+    if(!res.body||!res.body.ok){
+      if(note) note.textContent='Could not load family contacts. Nothing is shown rather than a partial list.';
+      ALF_FAM=[]; alfFamilyRender(); return;
+    }
+    if(res.body.provisioned===false){
+      if(note) note.textContent='Family contacts are not set up yet — run sql/sairncare_family_contacts_schema.sql. Nothing is recorded, and nothing is guessed.';
+      ALF_FAM=[]; alfFamilyRender(); return;
+    }
+    ALF_FAM=res.body.data||[];
+    if(note){
+      var granted=ALF_FAM.filter(function(c){return c.mar_consent===true&&c.active!==false;}).length;
+      note.textContent=ALF_FAM.length+' contact(s), '+granted+' with medication-status consent.';
+    }
+    alfFamilyRender();
+  });
+}
+
+window.alfFamilySave=function(){
+  var g=function(id){var el=$(id);return el?String(el.value||'').trim():'';};
+  var err=$('fc-err'); if(err) err.textContent='';
+  if(!alfIsManagement()){ if(err) err.textContent='Recording a family contact, and granting them sight of medication status, is a management action.'; return; }
+  if(!g('fc-resident')){ if(err) err.textContent='Choose a resident.'; return; }
+  if(!g('fc-name')){ if(err) err.textContent='A name is required.'; return; }
+  // SENT AS A REAL BOOLEAN. The endpoint REFUSES a string rather than coercing
+  // it, because 'false' is truthy in JavaScript and this is the one flag where
+  // a coercion discloses a resident's medication administration.
+  var payload={
+    contact_id: g('fc-id') || ('FC-'+Date.now()),
+    resident_id: g('fc-resident'),
+    name: g('fc-name'),
+    relationship: g('fc-rel')||null,
+    email: g('fc-email')||null,
+    phone: g('fc-phone')||null,
+    mar_consent: g('fc-consent')==='true'
+  };
+  alfData('write','alf_family_contacts',payload,true).then(function(res){
+    if(res.body&&res.body.ok){
+      ['fc-id','fc-name','fc-rel','fc-email','fc-phone'].forEach(function(id){var el=$(id);if(el)el.value='';});
+      var c=$('fc-consent'); if(c) c.value='false';
+      alfFamilyRefresh();
+      toast(payload.mar_consent?'Contact recorded — medication status consent GRANTED':'Contact recorded — no medication access');
+      return;
+    }
+    var msg=(res.body&&res.body.error&&res.body.error.message)||('Could not save (HTTP '+res.status+').');
+    if(err) err.textContent=msg;
+  });
+};
+
+// "See what they see" -- the SERVER's answer, not a local reconstruction.
+window.alfFamilyPreview=function(contactId){
+  var out=$('fc-preview'); if(!out) return;
+  out.textContent='Loading…';
+  alfData('family_mar','alf_family_contacts',{contact_id:contactId},true).then(function(res){
+    if(!res.body||!res.body.ok||!res.body.family_mar){
+      out.textContent=(res.body&&res.body.error&&res.body.error.message)
+        ||'Could not load. No preview is shown rather than a guess.';
+      return;
+    }
+    var v=res.body.family_mar;
+    var a=v.adherence||{};
+    var head='<strong>What this contact sees</strong> — '
+      +(a.percent_given===null||a.percent_given===undefined
+          ? 'no adherence figure: nothing recorded in this window'
+          : H(String(a.percent_given))+'% of recorded doses given')
+      +' ('+H(String(a.scored_events||0))+' scored event(s), '+H(String(a.held_excluded||0))+' held and excluded)';
+    var list=(v.events||[]).slice(0,10).map(function(e){
+      return '<li>'+H(e.date||'')+' '+H(e.time||'')+' — <strong>'+H(e.status)+'</strong></li>';
+    }).join('');
+    out.innerHTML=head
+      +(list?'<ul style="margin:6px 0 0 18px">'+list+'</ul>':'<div class="kt">No administration events recorded.</div>')
+      +'<div class="kt" style="margin-top:6px">'+H(a.limits||'')+'</div>'
+      +'<div class="kt" style="margin-top:4px"><strong>Not shown to them:</strong> '+H(v.not_included||'')+'</div>';
+  });
+};
+
 function rResidents(){
   var rs=residents();
   var isMgmt=alfIsManagement();

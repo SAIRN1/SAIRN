@@ -10623,6 +10623,164 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNCARE: FAMILY / RESPONSIBLE-PARTY CONTACTS (2026-09-26) ────────
+    // sql/sairncare_family_contacts_schema.sql and api/_lib/alf-family-mar.js.
+    //
+    // Measured before building: SAIRNcare had NO family record of any kind.
+    // The clients schema's own comment lists `emergency_contact` among the
+    // `data` fields and the UI never writes or reads it.
+    //
+    // MICHAEL'S DECISION, 2026-09-26: family MAR access is READ-ONLY and
+    // CONSENT-GATED, off until explicitly granted, and what it exposes is
+    // medication administration STATUS only -- given/missed, scheduled time,
+    // adherence. Not the full editable MAR, not PRN clinical reasoning, not
+    // controlled-substance counts. HIPAA's minimum-necessary standard and the
+    // category's competitive pattern (PointClickCare Connected Care Center,
+    // AlayaCare) agree on that shape from opposite directions.
+    //
+    // WRITE IS MANAGEMENT ONLY, and the reason is narrower than "it is
+    // sensitive": granting consent is a DISCLOSURE DECISION about a resident's
+    // clinical record to a third party. A caregiver recording a daughter's
+    // phone number and a caregiver granting that daughter sight of medication
+    // administration are not the same act, and this endpoint does not let the
+    // second happen by filling in a form.
+    //
+    // `family_mar` IS ITS OWN ACTION rather than a flag on read, for the same
+    // reason mech_credentials has `eligibility`: it answers a question
+    // (may THIS contact see it, and what) rather than returning a row, and a
+    // read that quietly answered it would put the consent decision inside a
+    // list endpoint where nobody looks for it.
+    if (resource === 'alf_family_contacts' &&
+        (action === 'read' || action === 'write' || action === 'family_mar')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairncare');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const famCols = 'contact_id,resident_id,name,relationship,email,phone,'
+        + 'mar_consent,consent_granted_at,consent_granted_by,consent_revoked_at,'
+        + 'active,revoked_at,notes,recorded_by,created_at,updated_at';
+      const famP = payload || {};
+
+      if (action === 'read') {
+        let q = 'alf_family_contacts?license_hash=eq.' + enc(licHash)
+          + '&select=' + famCols + '&order=created_at.desc';
+        if (famP.resident_id) q += '&resident_id=eq.' + enc(String(famP.resident_id));
+        const fr = await fetch(rest(q), { headers });
+        if (fr.status === 404 || fr.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const frows = await fr.json();
+        if (!fr.ok) return upstream(res, frows);
+        res.status(200).json({ ok: true, provisioned: true, data: frows || [] });
+        return;
+      }
+
+      if (action === 'family_mar') {
+        // Answers what ONE contact may see. The contact is looked up by id and
+        // its resident_id is taken FROM THE STORED ROW, never from the caller
+        // -- the same property sen-portal.js's view action has, and for the
+        // same reason: a resident_id parameter is a parameter somebody edits.
+        if (!famP.contact_id) {
+          res.status(400).json({ error: { code: 'NO_CONTACT_ID', message: 'contact_id is required' } });
+          return;
+        }
+        const cr = await fetch(rest('alf_family_contacts?license_hash=eq.' + enc(licHash)
+          + '&contact_id=eq.' + enc(String(famP.contact_id)) + '&select=' + famCols), { headers });
+        if (cr.status === 404 || cr.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql' } });
+          return;
+        }
+        const crows = await cr.json();
+        if (!cr.ok) return upstream(res, crows);
+        const contact = Array.isArray(crows) && crows[0];
+        if (!contact) {
+          res.status(404).json({ error: { code: 'NO_SUCH_CONTACT', message: 'no such family contact on this licence' } });
+          return;
+        }
+        const famLib = require('./_lib/alf-family-mar');
+        // CONSENT IS CHECKED BEFORE THE MAR IS READ, not after. A refused
+        // contact must not cause clinical rows to be fetched at all -- the
+        // cheapest way to guarantee nothing leaks is for nothing to be loaded.
+        const pre = famLib.familyMarView({ contact: contact, entries: [] });
+        if (!pre.ok) {
+          res.status(403).json({ error: pre.error });
+          return;
+        }
+        const mr = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash)
+          + '&resident_id=eq.' + enc(String(contact.resident_id))
+          + '&entry_type=eq.administration&select=entry_id,resident_id,entry_type,data'
+          + '&order=created_at.desc&limit=500'), { headers });
+        if (mr.status === 404 || mr.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The MAR is not set up - run sql/sairncare_mar_schema.sql' } });
+          return;
+        }
+        const mrows = await mr.json();
+        if (!mr.ok) return upstream(res, mrows);
+        const view = famLib.familyMarView({
+          contact: contact, entries: mrows || [], resident_id: contact.resident_id });
+        if (!view.ok) { res.status(403).json({ error: view.error }); return; }
+        res.status(200).json({ ok: true, provisioned: true, family_mar: view });
+        return;
+      }
+
+      // ── WRITE ────────────────────────────────────────────────────────────
+      if (!ALF_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Recording a family contact, and granting them sight of medication status, is a disclosure decision - management only.' } });
+        return;
+      }
+      if (!famP.contact_id || !famP.resident_id || !famP.name) {
+        res.status(400).json({ error: { code: 'MISSING_FIELDS', message: 'contact_id, resident_id and name are required' } });
+        return;
+      }
+      // CONSENT IS A STRICT BOOLEAN AND DEFAULTS TO FALSE. A non-boolean is
+      // REFUSED rather than coerced: the string 'false' is truthy in
+      // JavaScript, and on this one flag a coercion discloses a resident's
+      // medication administration to a third party.
+      let famConsent = false;
+      if (typeof famP.mar_consent === 'boolean') {
+        famConsent = famP.mar_consent;
+      } else if (famP.mar_consent !== null && famP.mar_consent !== undefined
+                 && String(famP.mar_consent).trim() !== '') {
+        res.status(400).json({ error: { code: 'BAD_CONSENT_FLAG', message: 'mar_consent must be true or false. It is refused rather than coerced, because a string "false" is truthy in JavaScript and this flag decides whether a third party sees a resident\'s medication administration.' } });
+        return;
+      }
+      let famActive = true;
+      if (typeof famP.active === 'boolean') famActive = famP.active;
+      const famNow = nowISO();
+      const famRow = {
+        license_hash: licHash, app_id: 'sairncare',
+        contact_id: String(famP.contact_id), resident_id: String(famP.resident_id),
+        name: String(famP.name), relationship: famP.relationship == null ? null : String(famP.relationship),
+        email: famP.email == null ? null : String(famP.email),
+        phone: famP.phone == null ? null : String(famP.phone),
+        mar_consent: famConsent,
+        // GRANTED BY THE VERIFIED SESSION, NEVER THE BODY. Who authorised a
+        // disclosure is not something the caller gets to state.
+        consent_granted_at: famConsent ? famNow : null,
+        consent_granted_by: famConsent ? (session.employee_id || null) : null,
+        consent_revoked_at: famConsent ? null : famNow,
+        active: famActive,
+        revoked_at: famActive ? null : famNow,
+        notes: famP.notes == null ? null : String(famP.notes),
+        recorded_by: session.employee_id || null,
+        updated_at: famNow
+      };
+      const fw = await fetch(rest('alf_family_contacts?on_conflict=license_hash,contact_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(famRow)
+      });
+      if (fw.status === 404 || fw.status === 400) {
+        const fe = await fw.json().catch(function () { return null; });
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Family contacts are not set up - run sql/sairncare_family_contacts_schema.sql', detail: fe } });
+        return;
+      }
+      const fwrows = await fw.json();
+      if (!fw.ok) return upstream(res, fwrows);
+      res.status(200).json({ ok: true, provisioned: true,
+                             data: (Array.isArray(fwrows) && fwrows[0]) || null });
+      return;
+    }
+
     // ── SAIRNCARE: alf_compliance_rules + alf_staff_credentials (2026-08-22, Phase 2) ───────
     // Compliance-rules engine (staffing ratios, training hours, licensure model) plus the
     // staff credentialing store the training checks read from. Evaluation logic is PURE and

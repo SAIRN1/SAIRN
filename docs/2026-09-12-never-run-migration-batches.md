@@ -194,3 +194,31 @@ say in their own text what a defaulted column would do in each direction, which
 is the thing to check: a `site_state` with a default asserts a jurisdiction
 nobody recorded, and a `gwp_over_150` or an insurance limit defaulted to
 anything reads as coverage nobody has evidence of.
+
+---
+
+## Added 2026-09-26 (Hank) — SAIRNcare family contacts, also independent of the capture
+
+| File | What it provisions | State |
+|---|---|---|
+| `sql/sairncare_family_contacts_schema.sql` | **New table.** `alf_family_contacts` — the family / responsible-party record, and the per-contact `mar_consent` flag | **NOT RUN.** Until it is, the endpoint answers `provisioned:false` and the Residents panel says so rather than showing an empty list |
+
+**CHECKED:** `sairn_sql_preflight` 0 findings; parens balanced; no `drop`,
+`truncate` or `delete`; idempotent (`create table if not exists` plus an
+`add column if not exists` block); grant exactly `select, insert, update` to
+`service_role` with **no delete**, because who had access to a resident's
+medication status and when is a record a facility may have to produce; and
+every column named in its own VERIFY block is declared in the file.
+
+**THE VERIFY BLOCK IS THE ACCEPTANCE TEST HERE MORE THAN USUALLY.** Two of its
+queries exist to catch a specific wrong outcome rather than a typo:
+
+- `mar_consent` must come back **NO / false**. If `is_nullable` says YES,
+  *"nobody has decided"* and *"decided no"* have become the same value, and the
+  first reader that forgets `= true` discloses medication information.
+- The `alffam_consent_has_a_date` constraint must exist. Its absence means a row
+  can claim consent with no timestamp on it — a disclosure nobody can audit.
+
+**NOT CHECKED:** the same limit as the SAIRNmechanical files above — no `psql`,
+no parser, so this is structurally sound by inspection and **not** *accepted by
+the server*.

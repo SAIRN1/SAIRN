@@ -82,6 +82,12 @@ module.exports = {
   // different reviewers (dietary/housekeeping record it, management signs it
   // off) and different retention. See sql/sairncare_op_audit_schema.sql.
     'alf_op_audits',
+  // Family / responsible-party contacts (2026-09-26) -- see
+  // sql/sairncare_family_contacts_schema.sql and api/_lib/alf-family-mar.js.
+  // Measured before building: this app had NO family record of any kind, and a
+  // family portal cannot exist without one. Consent to see medication
+  // administration status is granted PER CONTACT and is NOT NULL DEFAULT false.
+    'alf_family_contacts',
   ],
   // Compute-only verbs, one resource each: 'route' on alf_payer_rules,
   // 'evaluate' on alf_compliance_rules, 'derive_charges' on alf_billing. All
@@ -105,6 +111,16 @@ module.exports = {
   // adding a handler branch is NOT enough ... found exactly that way here").
   // Verb and resource now live on the same line as each other.
   extraActions: {
+    // 'family_mar' answers what ONE family contact may see of the MAR:
+    // administration STATUS only, and only when that contact's consent flag
+    // is explicitly true. It is its own verb rather than a flag on read
+    // because it answers a QUESTION rather than returning a row -- and a read
+    // that quietly answered it would put a disclosure decision inside a list
+    // endpoint where nobody looks for it. It refuses without consent and
+    // never returns medication names, PRN reasoning or controlled counts.
+    // Declared here because the dispatcher's allowlist runs BEFORE the
+    // resource branch: an undeclared verb answers 400 and is unreachable.
+    alf_family_contacts: ['family_mar'],
     alf_payer_rules: ['route'],
     alf_compliance_rules: ['evaluate'],
     alf_billing: ['derive_charges'],
