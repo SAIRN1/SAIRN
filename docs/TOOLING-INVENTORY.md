@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**233 files in `tools/`.** By what actually invokes them:
+**234 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 38 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 39 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 46 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 159 |
+| CHECKER | 160 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 24 |
@@ -47,13 +47,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 26 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 10 wired nowhere at all, and 16
+**The number to act on: 27 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 10 wired nowhere at all, and 17
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 26, by name, so this is actionable rather than a statistic:
+The 27, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -82,6 +82,7 @@ The 26, by name, so this is actionable rather than a statistic:
 | `staged_conflict_marker_check.py` | UNWIRED | a COMMIT about to make a conflict marker durable -- any of git's three seven-character markers at the start of a line in a STAGED blob, whatever staged it; wired into prepare-commit-msg rather than pre-commit because `git rebase --continue`, which produced all four markers that reached origin/main, never fires pre-commit at all; a lone ======= markdown underline is not a finding |
 | `stale_row_sweep.py` | SUITE-ONLY | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file |
 | `sync_write_result_check.py` | SUITE-ONLY | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. |
+| `tiering_recheck.py` | SUITE-ONLY | which tier assignments the platform's own review history has earned the right to DOUBT. Methodology item 26 phase 2, and it was gated on Batch 3 for a reason that was not technical: a re-check driven by review history correlates nothing until there IS review history, and a tool built early would have reported confidence it had not earned. It asks EVIDENCE OF SURPRISE, never "is this tier right" -- a tier is a judgement about consequence and this tool has no access to consequence. IT PROPOSES AND MAY NEVER APPLY (cross-domain disciplines item 11) and must not be given the ability: a tier promotion is not even a cell edit, because SC_TIER_A_SOFT_DELETE_ONLY and the write gates DERIVE from the Tier A list, so an A withdraws a resource's `delete` verb and moves its client remove path. ITS FIRST CRITERION WAS TOO WIDE AND ITS OWN OUTPUT SAID SO: app signal alone returned 95 candidates, every B row in any app with a severe find, all of them reviews=0 -- furniture. The claim needs the reviews to have LOOKED AT THE ROW, so unreviewed rows get their own review-SCHEDULING bucket rather than being folded in to look thorough. THE HEADLINE IS THE BLIND SPOT, printed before the empty list it explains: the review gate opens an obligation when TIER A code changes, so a row left at B is never reviewed and no review can surprise anybody about it -- UNDER-tiering is the direction this mechanism cannot see and the direction that leaves a real record under-protected. THE LINK IS PER APP, NOT PER RESOURCE, because defect records carry `app` and `files` and not resource names, so one defect raises the signal for every resource in the app; the two signals are printed apart and NEVER summed, since a single score here would be the fabricated-metric shape this platform polices hardest. It reads OWNER_BY_RESOURCE by RUNNING api/_resources rather than regexing it, and a row anchor that no longer matches is exit 2 COULD NOT TELL -- not a clean run over zero rows. AND IT OVERSTATED ITS OWN CORPUS 4.7x BEFORE ANYONE ELSE READ IT: the header printed the SUM of the per-resource review counts and called it "review record(s)", so 167 records naming 789 record-resource pairs announced 789 reviews -- wrong in the one direction that makes the tool look better founded than it is. Both numbers are carried and both are labelled; neither wears the other's name. Control: tests/run_tiering_recheck_probe.py, eight sections both directions -- a reviewed B row in a surprising app IS a candidate and the SAME row unreviewed is not, severity and detection_method must both match, EARNING and UNEXAMINED stay distinct, one record naming three resources reports 1 and not 3 (with the real-register counts computed in the probe rather than hardcoded, plus an arm asserting the two numbers still DIFFER so the check cannot quietly stop testing), every missing source is exit 2, and a final arm asserts it wrote NOTHING to any real register by bytes AND mtime so a write-then-restore fails too. |
 | `verification_plan_staleness_check.py` | SUITE-ONLY | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. |
 
 **Separately, 10 tool(s) make a LIVE network or database request.** Those are
@@ -313,7 +314,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (38)
+## SUITE-ONLY (39)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -357,6 +358,7 @@ fixtures. Nothing points them at the real codebase.
 | `source_manifest.py` | GENERATOR | the sha256 of every source file vercel.json copies into the deploy output, at one commit, as a signed-able manifest.json. IT IS NOT SLSA BUILD PROVENANCE FOR THE PRODUCT and its own first line says so -- Vercel deploys from the push and no workflow touches the deployed bytes, so this attests what a commit was SUPPOSED to deploy, never that Vercel deployed it. Run by .github/workflows/source-manifest.yml on push; refuses with exit 2 if vercel.json's buildCommand is not the exact string it models, because a manifest of a file set that no longer deploys would still look clean | `source_manifest_probe.py` |
 | `stale_row_sweep.py` | CHECKER | an OPEN row in docs/SAIRN-OPEN-WORK-INDEX.md whose findings were fixed by somebody else and never closed -- the row that reads as work and is not. Catches it by comparing the date the row states in its own STATUS cell against commits that touched the artifacts the row NAMES: backticked paths, and backticked code symbols searched with git log -G inside the app file named by the App cell of the row. The symbol anchoris not decoration -- the case this was built from, a SAIRNvet row eight days stale and fixed by two other sessions, names no file path at all and a path-only version missed it entirely. It CANNOT close a row and does not try: whether a finding still reproduces is a question about behaviour. A hit is a ranked re-read request. Rows it cannot date or anchor are reported as COULD-NOT-RUN, never counted as quiet, and a row anchored only on a high-churn file like api/sd-data.js is listed apart rather than ranked, because that movement is a property of the file | `stale_row_sweep_control.py` |
 | `sync_write_result_check.py` | CHECKER | a SERVER WRITE whose result nobody reads. Every app transport returns something falsy when the push did not land, so the failure is already computed and correct -- this finds the call sites that never look. A fire-and-forget write is indistinguishable from one that succeeded: the local copy is saved, the panel re-rendered, and the toast says the record is safe. It was, on one device. NOT discarded_verdict_check.py, which finds a REFUSAL computed and ignored -- opposite direction and a different fix, because a discarded refusal lets something through while a discarded write loses data and says it did not. It CANNOT see whether the caller of a RETURNED write reads it, nor whether a bound result is ever tested, and both limits are printed with every run rather than left for a reader to assume the number is complete. Control: tests/run_sync_write_result_probe.py, whose NEGATIVE arms are the ones that were failing -- the tool reported 242, then 12, then 3, then 3 false positives before it was clean, every time from reading a LINE where the codebase had written a CONSTRUCT. | `run_sync_write_result_probe.py` |
+| `tiering_recheck.py` | CHECKER | which tier assignments the platform's own review history has earned the right to DOUBT. Methodology item 26 phase 2, and it was gated on Batch 3 for a reason that was not technical: a re-check driven by review history correlates nothing until there IS review history, and a tool built early would have reported confidence it had not earned. It asks EVIDENCE OF SURPRISE, never "is this tier right" -- a tier is a judgement about consequence and this tool has no access to consequence. IT PROPOSES AND MAY NEVER APPLY (cross-domain disciplines item 11) and must not be given the ability: a tier promotion is not even a cell edit, because SC_TIER_A_SOFT_DELETE_ONLY and the write gates DERIVE from the Tier A list, so an A withdraws a resource's `delete` verb and moves its client remove path. ITS FIRST CRITERION WAS TOO WIDE AND ITS OWN OUTPUT SAID SO: app signal alone returned 95 candidates, every B row in any app with a severe find, all of them reviews=0 -- furniture. The claim needs the reviews to have LOOKED AT THE ROW, so unreviewed rows get their own review-SCHEDULING bucket rather than being folded in to look thorough. THE HEADLINE IS THE BLIND SPOT, printed before the empty list it explains: the review gate opens an obligation when TIER A code changes, so a row left at B is never reviewed and no review can surprise anybody about it -- UNDER-tiering is the direction this mechanism cannot see and the direction that leaves a real record under-protected. THE LINK IS PER APP, NOT PER RESOURCE, because defect records carry `app` and `files` and not resource names, so one defect raises the signal for every resource in the app; the two signals are printed apart and NEVER summed, since a single score here would be the fabricated-metric shape this platform polices hardest. It reads OWNER_BY_RESOURCE by RUNNING api/_resources rather than regexing it, and a row anchor that no longer matches is exit 2 COULD NOT TELL -- not a clean run over zero rows. AND IT OVERSTATED ITS OWN CORPUS 4.7x BEFORE ANYONE ELSE READ IT: the header printed the SUM of the per-resource review counts and called it "review record(s)", so 167 records naming 789 record-resource pairs announced 789 reviews -- wrong in the one direction that makes the tool look better founded than it is. Both numbers are carried and both are labelled; neither wears the other's name. Control: tests/run_tiering_recheck_probe.py, eight sections both directions -- a reviewed B row in a surprising app IS a candidate and the SAME row unreviewed is not, severity and detection_method must both match, EARNING and UNEXAMINED stay distinct, one record naming three resources reports 1 and not 3 (with the real-register counts computed in the probe rather than hardcoded, plus an arm asserting the two numbers still DIFFER so the check cannot quietly stop testing), every missing source is exit 2, and a final arm asserts it wrote NOTHING to any real register by bytes AND mtime so a write-then-restore fails too. | `run_tiering_recheck_probe.py` |
 | `verification_plan_staleness_check.py` | CHECKER | a verification-methodology plan that DISAGREES with the repo: an item marked unclaimed whose commit has already landed, one marked in flight with no live claim of that name, and one marked DONE that nothing in the history matches -- the direction that flatters. Derives the answer from git log, the claim files and the agent self-logs, in that order of authority, and never lets a self-log contradict a commit. It CANNOT catch an item the plan does not mark with a `<!-- verify: -->` comment, and reports those as UNVERIFIABLE in their own column rather than as clean -- an unmarked item is where drift hides. Exits 2 COULD NOT TELL when the plan is absent, which is its state today. | `run_verification_plan_staleness_probe.py` |
 
 ---
@@ -444,11 +446,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      233   git ls-files tools/
+  tools on disk                      234   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            167   tests/**/*.py, *.js
+  tools invoked by tests/            168   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
