@@ -14857,58 +14857,6 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
-      "commit": "be352a7d021a",
-      "date": "2026-09-26",
-      "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
-      "files": [
-        "api/_resources/stonedesk.js",
-        "api/sd-data-customers-batch.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md",
-        "stonedesk.html"
-      ],
-      "lines_added": 450,
-      "lines_removed": 18,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
-      "rules": [
-        "1.10"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the per-record loop predates the git history this register indexes; what is datable is the 2026-09-24 guard that doubled its cost, and that is a contributing factor rather than the injection"
-      },
-      "contributing_factors": [
-        {
-          "factor": "saveSD3Data() pushed a LIST by looping it and calling a single-record write, from 16 call sites -- the per-record shape was chosen when the write was one round trip and was never revisited",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a write_batch action on sd_customers: one pre-read with customer_id=in.(...) and one upsert, so the trip count is fixed rather than 2N"
-        },
-        {
-          "factor": "the resurrection guard (2026-09-24) added a pre-read to every sd_customers write and DOUBLED an already per-record cost -- the guard was reviewed as a correctness change and nobody asked what it did to a caller that wrote in a loop",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the batch branch carries the same guard once for the whole list; an arm asserts 5 and 200 records cost the same two trips, so a future change that reintroduces a loop fails"
-        },
-        {
-          "factor": "nothing measured round trips. The write-result checker found the DISCARDED result at this site and said nothing about the call count, and no tool on this platform counts requests per user action",
-          "kind": "detection",
-          "action_status": "declined",
-          "note": "Not built here. The arm added with this fix counts trips for THIS endpoint only. A general per-user-action request-count check is a real tool with its own criteria questions -- what counts as one action, what a reasonable ceiling is per screen -- and folding it into a batching fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
-        }
-      ],
-      "recurrence_open": "Fixed for sd_customers. Nothing checks whether any OTHER client path writes a list by looping a single-record endpoint -- sync_write_result_check.py finds discarded RESULTS, not per-record call counts, and the two are different questions."
-    },
-    {
       "commit": "b015ea783653",
       "date": "2026-09-26",
       "subject": "fix(prompt-fence): three real unfenced sites the scanner reported CLEAN, and the mirror test two apps have been citing for a day never existed",
@@ -15023,6 +14971,115 @@
         }
       ],
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
+    },
+    {
+      "commit": "be352a7d021a",
+      "date": "2026-09-26",
+      "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
+      "files": [
+        "api/_resources/stonedesk.js",
+        "api/sd-data-customers-batch.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 450,
+      "lines_removed": 18,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the per-record loop predates the git history this register indexes; what is datable is the 2026-09-24 guard that doubled its cost, and that is a contributing factor rather than the injection"
+      },
+      "contributing_factors": [
+        {
+          "factor": "saveSD3Data() pushed a LIST by looping it and calling a single-record write, from 16 call sites -- the per-record shape was chosen when the write was one round trip and was never revisited",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a write_batch action on sd_customers: one pre-read with customer_id=in.(...) and one upsert, so the trip count is fixed rather than 2N"
+        },
+        {
+          "factor": "the resurrection guard (2026-09-24) added a pre-read to every sd_customers write and DOUBLED an already per-record cost -- the guard was reviewed as a correctness change and nobody asked what it did to a caller that wrote in a loop",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the batch branch carries the same guard once for the whole list; an arm asserts 5 and 200 records cost the same two trips, so a future change that reintroduces a loop fails"
+        },
+        {
+          "factor": "nothing measured round trips. The write-result checker found the DISCARDED result at this site and said nothing about the call count, and no tool on this platform counts requests per user action",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Not built here. The arm added with this fix counts trips for THIS endpoint only. A general per-user-action request-count check is a real tool with its own criteria questions -- what counts as one action, what a reasonable ceiling is per screen -- and folding it into a batching fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
+        }
+      ],
+      "recurrence_open": "Fixed for sd_customers. Nothing checks whether any OTHER client path writes a list by looping a single-record endpoint -- sync_write_result_check.py finds discarded RESULTS, not per-record call counts, and the two are different questions."
+    },
+    {
+      "commit": "ead626ae90af",
+      "date": "2026-09-26",
+      "subject": "fix(gh_push): the REST push now runs the REAL hook -- and the hook was never decorative, because nothing else ran the gate at all",
+      "files": [
+        "tests/run_gh_push_gate_probe.py",
+        "tools/gh_push.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 371,
+      "lines_removed": 6,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tools/gh_push.py pushes to origin/main through the GitHub REST API, so git is never invoked and .githooks/pre-push never fires. TWO HOLES, and the second is worse than the first. (1) NO GATE RAN AT ALL on that path: the seed gate, the Tier A independent-review gate, the generated-document check, the tool-inventory check, the conflict-marker check, the redaction and pre-auth-oracle checks -- all fourteen checks in tools/sairn_push_gate_hook.py, plus tools/register_feed_gate.py and tools/hover_auditor_scope_gate.py -- had no effect whatsoever. Audited 2026-09-26 and the premise that something else covered them is FALSE: gh_push.py imports os, sys, json, base64, urllib and gh_token and invokes nothing, so the git hook was never decorative and removing it would have disabled the gate for every ordinary git push. (2) A REST PUSH SENDS WORKING-TREE BYTES, so gh_push.py could publish content that existed in NO local commit, on no branch, in no reflog -- which means even a gate that had run would have had nothing to judge, and a later bisect or review could never see what was shipped. FIXED by INVOKING the hook rather than copying its checks: gh_push.py now runs .githooks/pre-push with exactly the stdin git would have supplied (local ref, local sha, remote ref, remote sha), after a pre-flight that requires every file to be tracked, committed and CLEAN and requires HEAD to descend from the remote tip -- which is what makes remote..HEAD a real range. Copying the checks would have been item 94 on the largest gate on the platform, and a fourth gate added to the hook later would silently not apply to this path. The soundness argument for gating remote..HEAD when the push sends less is written into the code: the pushed tree is the remote's with the named files overwritten by their working-tree bytes, those bytes ARE HEAD's bytes because clean is required, so the push publishes a SUBSET of the range -- over-blocking, never under-blocking. It fails CLOSED (missing hook, no sh on PATH, remote tip absent from the clone) which diverges from the hook's documented fail-open standard on purpose: the hook is the path used for every push and must not be rippable, this is a hand-run bypass where a could-not-tell costs one retry. Held by tests/run_gh_push_gate_probe.py, 9 arms against real throwaway repositories, including a CONTROL that a clean state is allowed and an arm that main() actually CALLS the gate before any GitHub write.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable to a commit. gh_push.py has pushed through the REST API since it was written, and .githooks/pre-push did not exist until 2026-09-01 -- so there was no moment at which correct code became incorrect. The defect was created by the gate landing on one path and not the other, which is an absence rather than an edit."
+      },
+      "citation_note": "PR 1.11 is the closest standing section and the fit is exact on the half that matters: a check that depends on another tool must fail CLOSED when that tool is absent, and could-not-run is a third state never folded into passed. The REST path was the strongest form of that -- the gate was not merely absent for one check, it was absent for every check, and the tool reported a successful push. The new code fails closed on a missing hook, a missing sh, and an unfetched remote tip, which is 1.11 applied rather than cited. PR 1.1 also fits the reachability half (a check that cannot fire is indistinguishable from one that is not running) but 1.1's subject is checks and their probes; 1.11 is about the dependency and the third state, which is what this was.",
+      "phase_note": "Design: every line of gh_push.py did what it was written to do. The defect is that the platform's push control was bound to the git invocation and one push path does not use git -- a structural choice about where the control lives, made when the hook was written.",
+      "contributing_factors": [
+        {
+          "factor": "The gate was reachable only through a git hook, and the whole purpose of this tool is to not use git. A control bound to one invocation mechanism does not apply to a path that deliberately avoids that mechanism -- and nothing anywhere recorded that the second path existed.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "gh_push.py now INVOKES .githooks/pre-push itself, with exactly the stdin git would have supplied. The hook stays the single enumeration of which gates run, so a fourth gate added there applies to both paths without anyone remembering."
+        },
+        {
+          "factor": "A REST push sends WORKING-TREE bytes, so the content published need never have existed in a local commit. The gate reasons about commits, so there was nothing for it to judge even in principle -- the two halves of the defect compounded rather than merely coexisting.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Every file must be tracked, committed and clean, and HEAD must descend from the remote tip, before the gate is handed remote..HEAD. A dirty or untracked file is refused BY NAME rather than silently published."
+        },
+        {
+          "factor": "This is the same shape as the 2026-09-01 incident the shell hook was written for: tools/sairn_claim.py pushed with a Python subprocess, so the PreToolUse regex on Bash command text never matched and every claim skipped all three checks. The lesson taken then was to bind the gate to the GIT OPERATION instead of the command text -- which fixed every path that uses git, and left untouched the one path that does not.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "Recorded in the tool inventory entry and in this record, because the generalisable statement is the one that was missed: the question is not 'which invocation does the gate cover' but 'enumerate every way content can reach origin, and check each'. Two ways exist in this repo; both are now gated."
+        },
+        {
+          "factor": "Nothing measured it. gh_push.py is not wired into any hook, gate or suite, so nothing exercised it and nothing asserted that a gate ran -- the same reachability condition that hid the dead GITHUB_TOKEN lookup in this exact file for seven weeks.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/run_gh_push_gate_probe.py, 9 arms, every one against a real throwaway git repository. A9 asserts main() CALLS the gate and does so before any GitHub write -- the arm that would have caught the original defect, since the gate function can be perfect and never invoked. A1 is a CONTROL that a clean state is ALLOWED, without which every refusal arm is satisfied by a function that refuses unconditionally."
+        }
+      ],
+      "recurrence_open": "THE ENUMERATION OF WAYS CONTENT CAN REACH ORIGIN IS STILL HAND-MAINTAINED AND NOTHING CHECKS IT. Two paths are known and both are now gated; nothing asserts there is no third. A future tool that talks to the GitHub API, a GitHub Action with write permission, or a web-UI edit would each be ungated and nothing would report it. Separately, .githooks/pre-push is installed PER CLONE by tools/install_git_hooks.py and .git/ is not versioned, so a fresh clone has no hook at all -- gh_push.py now refuses in that state, but an ordinary git push does not, and that gap is older and wider than this fix."
     },
     {
       "commit": "fa0f2b90d3b8",
