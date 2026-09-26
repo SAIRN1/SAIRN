@@ -10,18 +10,28 @@ REFUSED, by name, rather than loaded.
 
 The second is the verification contract. The push gate's own refusal says "a
 loader's exit code is not evidence", and this loader answers that by driving
-the engine on IDENTICAL inputs before and after and requiring the answer to
-have moved. If `answer_changed` ever returned True for two identical replies,
-the loader would report success for a load that did nothing -- which is the
-2026-08-27 defect the gate exists for, reproduced by the tool written to close
-it.
+the engine on IDENTICAL inputs before and after. If `answer_changed` ever
+returned True for two identical replies, the loader would report success for a
+load that did nothing -- which is the 2026-08-27 defect the gate exists for,
+reproduced by the tool written to close it.
 
-NOTHING HERE TOUCHES THE NETWORK. select_rules, rule_payload, _probe_date and
-answer_changed are pure; the credential refusal is driven as a subprocess.
+AND SECTION 4 USED TO PASS WHILE THAT VERIFICATION HAD NEVER RUN (2026-09-26).
+It tested the loader's pure helpers against themselves and never tested the
+probe's PAYLOAD against what the endpoint requires, so a probe sending `check`
+instead of `requirement_type` earned a 400 on every run -- before and after --
+and two identical 400s compare equal. The loader reported UNCHANGED every time
+it has ever run, including the run where all three West Virginia rules loaded
+correctly. Section 4 now reads the endpoint's required-field list OUT OF
+api/sd-data.js, which is the only arm that could have caught it.
+
+NOTHING HERE TOUCHES THE NETWORK. select_rules, rule_payload,
+verification_probe, answer_changed and probe_verdict are pure; the credential
+refusal is driven as a subprocess.
 """
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -107,10 +117,26 @@ check('a null facility_class survives as null -- it means "every class in this '
                       'effective_from': '2026-01-01'})['facility_class'] is None)
 
 # ── 4. THE VERIFICATION CONTRACT ────────────────────────────────────────────
-print('\n4. a loader\'s exit code is not evidence -- the ANSWER has to move')
+# ── REWRITTEN 2026-09-26, AND THE OLD SECTION 4 IS THE LESSON ───────────────
+# This section used to pass while the verification it tests HAD NEVER RUN. It
+# checked `answer_changed` (pure, and correct) and that the probe's `action` was
+# 'evaluate' -- and never once checked the probe's PAYLOAD against what the
+# endpoint requires. The probe sent `check` where api/sd-data.js requires
+# `requirement_type`, so every probe answered 400 both before and after; two
+# identical 400s compare equal, and the loader reported
+# "*** UNCHANGED -- nothing this app can use was loaded ***" on every run it has
+# ever done, including the one where all three WV rules landed correctly.
+#
+# A probe that verifies a tool against ITSELF rather than against the interface
+# it has to satisfy is the shape here: every arm was green, the tool's own header
+# promised "the only evidence that counts", and the evidence was a string
+# comparison between two copies of the same refusal. The fix is the arm below
+# that reads the required-field list OUT OF api/sd-data.js.
+print('\n4. a loader\'s exit code is not evidence -- and the PROBE has to reach '
+      'the engine at all')
 
-check('THE SECOND ARM THAT MATTERS: two identical replies are NOT a change, so '
-      'a load that did nothing cannot report success',
+check('two identical replies are NOT a change, so a load that did nothing '
+      'cannot report a move',
       L.answer_changed({'ok': False, 'error': {'code': 'NO_RULE_FOR_STATE'}},
                        {'ok': False, 'error': {'code': 'NO_RULE_FOR_STATE'}}) is False)
 check('a refusal becoming a real answer IS a change',
@@ -120,14 +146,86 @@ check('key ORDER is not a change -- the comparison sorts, so a reserialised '
       'identical reply does not read as a successful load',
       L.answer_changed({'a': 1, 'b': 2}, {'b': 2, 'a': 1}) is False)
 
+WV_STAFF = [r for r in SEED['rules']
+            if r['state'] == 'WV' and r['requirement_type'] == 'staffing'][0]
+MI_LIC = [r for r in SEED['rules']
+          if r['state'] == 'MI' and r['requirement_type'] == 'licensure'][0]
+
 check('the probe is READ-ONLY -- it evaluates, and this endpoint has no delete, '
       'which is what a write-probe cost load_deadline_seed.py',
-      L.verification_probe('WV', SEED)['action'] == 'evaluate',
-      L.verification_probe('WV', SEED))
-check('the probe date is DERIVED from the seed, not hardcoded -- a stale '
-      'constant would report NO_RULE_FOR_STATE as a load failure',
-      L._probe_date('WV', SEED) == max(r['effective_from'] for r in SEED['rules']
-                                       if r['state'] == 'WV'))
+      L.verification_probe(WV_STAFF)['action'] == 'evaluate',
+      L.verification_probe(WV_STAFF))
+
+# THE ARM THE OLD SECTION 4 DID NOT HAVE, and the only one that could have
+# caught the defect: the required-field list is READ OUT OF THE ENDPOINT. A
+# hand-typed copy here would have gone stale in exactly the same direction as
+# the probe it is checking.
+API = io.open(os.path.join(REPO, 'api', 'sd-data.js'), encoding='utf-8').read()
+EVAL_BRANCH = API[API.index("if (resource === 'alf_compliance_rules' && action === 'evaluate')"):][:1400]
+required = sorted(set(re.findall(r'!payload\.(\w+)', EVAL_BRANCH)))
+check('the endpoint\'s evaluate branch names its required payload fields, and '
+      'this arm read them rather than re-typing them',
+      required == ['requirement_type', 'state'], required)
+probe_payload = L.verification_probe(WV_STAFF)['payload']
+check('THE ARM THAT MATTERS NOW: the probe payload carries EVERY field the '
+      'endpoint requires -- the missing one earned a 400 on every run and made '
+      'the whole verification a comparison of two identical refusals',
+      all(probe_payload.get(f) for f in required), (probe_payload, required))
+check('...and it does NOT send the obsolete `check` key the endpoint ignores',
+      'check' not in probe_payload, probe_payload)
+
+check('facility_class is sent when the rule carries one -- the engine refuses to '
+      'apply one class\'s figures to another and answers NO_RULE_FOR_CLASS',
+      probe_payload.get('facility_class') == WV_STAFF['facility_class'],
+      probe_payload)
+check('...and OMITTED when the rule carries none, because null would not mean '
+      '"every class in this state" to the engine',
+      'facility_class' not in L.verification_probe(MI_LIC)['payload'],
+      L.verification_probe(MI_LIC)['payload'])
+check('the probe date is the RULE\'s own effective_from, not a constant -- a '
+      'hardcoded date would report a rule not yet in force as a load failure',
+      probe_payload['on_date'] == WV_STAFF['effective_from'], probe_payload)
+
+# ── 4b. THREE STATES, NEVER TWO. Locked against synthetic fixtures in BOTH
+# directions before the tool is trusted on real data, per
+# docs/2026-09-13-cross-domain-disciplines.md item 1.
+print('\n4b. the verdict has three states, and an idempotent re-run is a PASS')
+
+REFUSAL = {'ok': False, 'error': {'code': 'NO_RULE_FOR_STATE'}}
+SERVED = {'ok': True, 'rule_id': WV_STAFF['rule_id'], 'evaluated': False,
+          'missing': ['shift']}
+
+check('a refusal becoming this rule is LOADED',
+      L.probe_verdict(WV_STAFF, REFUSAL, SERVED)[0] == 'loaded',
+      L.probe_verdict(WV_STAFF, REFUSAL, SERVED))
+check('THE ARM THE OLD CRITERION GOT BACKWARDS: unchanged AND the engine serves '
+      'this rule is ALREADY IN FORCE -- a pass. The endpoint upserts, so a '
+      're-run is idempotent BY DESIGN and the old "must have CHANGED" test '
+      'called that a failure',
+      L.probe_verdict(WV_STAFF, SERVED, SERVED)[0] == 'in_force',
+      L.probe_verdict(WV_STAFF, SERVED, SERVED))
+check('still refusing afterwards is NOT IN FORCE, and the detail carries the '
+      'engine\'s own code rather than a paraphrase',
+      L.probe_verdict(WV_STAFF, REFUSAL, REFUSAL) ==
+      ('not_in_force', 'NO_RULE_FOR_STATE'),
+      L.probe_verdict(WV_STAFF, REFUSAL, REFUSAL))
+check('NO_RULE_FOR_CLASS is NOT IN FORCE too -- the rule is stored and the '
+      'engine cannot reach it, which is the exact state WV was in while the '
+      'probe sent no facility_class',
+      L.probe_verdict(WV_STAFF, REFUSAL,
+                      {'ok': False, 'error': {'code': 'NO_RULE_FOR_CLASS'}})[0]
+      == 'not_in_force')
+check('ok:true for a DIFFERENT rule_id is NOT IN FORCE -- ok alone would pass a '
+      'load that silently did nothing while another rule answered the query',
+      L.probe_verdict(WV_STAFF, REFUSAL,
+                      {'ok': True, 'rule_id': 'PA-STAFFING-ALR-2010'})[0]
+      == 'not_in_force')
+check('evaluated:false is NOT a failure -- the probe supplies no census, so the '
+      'engine describes the rule and names what it would still need',
+      L.probe_verdict(WV_STAFF, REFUSAL, SERVED)[0] == 'loaded')
+check('a non-dict answer (a challenge page, a None) is NOT IN FORCE rather '
+      'than a crash',
+      L.probe_verdict(WV_STAFF, REFUSAL, None)[0] == 'not_in_force')
 
 # ── 5. IT FAILS CLOSED WITHOUT CREDENTIALS ──────────────────────────────────
 print('\n5. no credentials is COULD NOT RUN, and it loads nothing')

@@ -24,16 +24,41 @@ federal answer deadlines three days late for a day.
 
 ── A LOADER'S EXIT CODE IS NOT EVIDENCE, AND THIS ONE DOES NOT OFFER ONE ───
 That sentence is in the push gate's refusal text, and it is the design here
-rather than a warning printed beside it. `--verify` drives the ENGINE through
-the live endpoint on identical inputs BEFORE and AFTER the load and requires
-the answer to have CHANGED:
+rather than a warning printed beside it. The verification is UNCONDITIONAL --
+there is no flag to skip it, and no flag to ask for it. It drives the ENGINE
+through the live endpoint, once per rule, BEFORE and AFTER the load, and asks
+whether the engine now returns THAT rule:
 
-    before   evaluate staffing, state=WV  ->  NO_RULE_FOR_STATE
-    after    evaluate staffing, state=WV  ->  a real requirement
+    before   evaluate staffing WV/assisted_living_residence  ->  NO_RULE_FOR_STATE
+    after    evaluate staffing WV/assisted_living_residence  ->  WV-STAFFING-ALR-2026
 
-A load that returns 200 for every row and leaves that answer unchanged has not
-loaded anything this app can use, and this tool reports that as a FAILURE
-rather than as a successful run. Nothing else it prints means the rules work.
+A load that returns 200 for every row and leaves the engine unable to reach
+those rules has not loaded anything this app can use, and this tool reports that
+as a FAILURE rather than as a successful run. Nothing else it prints means the
+rules work.
+
+── AND THE FIRST VERSION OF THAT VERIFICATION NEVER RAN (fixed 2026-09-26) ──
+It sent `payload.check` where the endpoint requires `payload.requirement_type`,
+so every probe answered **400 "evaluate requires state and requirement_type"** --
+before AND after. Two identical 400s compare equal, so the tool reported
+`*** UNCHANGED -- nothing this app can use was loaded ***` on every run it has
+ever done, including the one where all three West Virginia rules landed
+correctly. The header above promised the ONLY evidence that counts, and it was a
+string comparison between two copies of the same refusal.
+
+Three things were wrong and all three are fixed:
+
+  1. `check` -> `requirement_type`, the key the endpoint actually reads.
+  2. NO `facility_class`, so even a well-formed probe answered
+     `NO_RULE_FOR_CLASS` -- "WV regulates classes that carry different figures,
+     so another class's rule is not applied in its place". The class now comes
+     from the RULE BEING VERIFIED, never a hardcoded list.
+  3. "the answer must have CHANGED" conflated *nothing loaded* with *already
+     loaded*. The endpoint upserts, so re-running is idempotent BY DESIGN and
+     the second run's answer is identical to the first's -- which the old
+     criterion called a failure. Three states, never two: LOADED (it moved),
+     ALREADY IN FORCE (it did not move and the engine returns the rule), and
+     NOT IN FORCE (the engine cannot reach it) -- and only the third fails.
 
 ── WHAT IT WILL NOT DO ─────────────────────────────────────────────────────
 * NEVER PROBE A DEPLOYMENT WITH A WRITE. load_deadline_seed.py's header records
@@ -129,34 +154,66 @@ def rule_payload(r):
     }
 
 
-def verification_probe(state, seed):
-    """The identical input driven before and after. Staffing, because it is the
-    one requirement type every seeded state carries."""
+def verification_probe(rule):
+    """The identical input driven before and after, ONE PROBE PER RULE.
+
+    Per rule rather than per state, because a state-level probe cannot tell
+    "this state answers something" from "this rule is reachable" -- PA carries
+    six rules across two facility classes, and a probe that only asked for
+    `staffing` in PA would report a pass while a `training/pch` rule sat
+    unreachable.
+
+    EVERY FIELD COMES FROM THE RULE. `requirement_type` is the key the endpoint
+    requires (the first version sent `check` and earned a 400 every time);
+    `facility_class` is omitted only when the rule itself carries none, because
+    the engine refuses to apply one class's figures to another; and `on_date` is
+    the rule's own `effective_from`, so a date nobody has to maintain.
+    """
+    payload = {'requirement_type': rule['requirement_type'],
+               'state': rule['state'],
+               'on_date': rule.get('effective_from') or '2026-01-01'}
+    if rule.get('facility_class'):
+        payload['facility_class'] = rule['facility_class']
     return {'action': 'evaluate', 'resource': 'alf_compliance_rules',
-            'payload': {'check': 'staffing', 'state': state,
-                        'on_date': _probe_date(state, seed)}}
-
-
-def _probe_date(state, seed):
-    """A date every rule for this state is in force on. Derived from the seed's
-    own effective_from values -- a hardcoded date would go stale silently, and
-    this tool would then report NO_RULE_FOR_STATE as a load failure."""
-    dates = [r.get('effective_from') for r in (seed.get('rules') or [])
-             if str(r.get('state') or '').upper() == str(state).upper()
-             and r.get('effective_from')]
-    return max(dates) if dates else '2026-01-01'
+            'payload': payload}
 
 
 def answer_changed(before, after):
-    """Did the engine's answer on identical input actually move?
+    """Did the engine's answer on identical input move? INFORMATION, not the
+    pass criterion -- see probe_verdict. Kept because "it moved" is the thing a
+    reader wants to see on a first load, and because the distinction between
+    moved and already-in-force is the one the old criterion collapsed."""
+    return json.dumps(before, sort_keys=True) != json.dumps(after, sort_keys=True)
 
-    A load is proven by the ANSWER changing, not by 200s. `before` refusing
-    with NO_RULE_FOR_STATE and `after` returning a requirement is the shape
-    that proves it; anything else is reported rather than interpreted.
+
+def probe_verdict(rule, before, after):
+    """-> (verdict, detail). Three states, never two.
+
+      'loaded'    the engine now returns THIS rule, and the answer moved.
+      'in_force'  the engine returns THIS rule and the answer did not move --
+                  an idempotent re-run, which is what the endpoint's upsert is
+                  for. A PASS, and the old "must have CHANGED" test called it a
+                  failure.
+      'not_in_force'  the engine cannot reach this rule. The only failure, and
+                  the detail carries the engine's own refusal code rather than a
+                  paraphrase of it.
+
+    The evidence is `ok: true` AND a matching `rule_id`. `ok: true` alone is not
+    enough: the engine answers ok for a DIFFERENT rule covering the same query,
+    which is a load that silently did nothing. `evaluated: false` is fine and
+    expected -- this probe supplies no census, so the engine describes the rule
+    and names what it would still need.
     """
-    b = json.dumps(before, sort_keys=True)
-    a = json.dumps(after, sort_keys=True)
-    return b != a
+    a = after if isinstance(after, dict) else {}
+    if a.get('ok') is not True:
+        err = (a.get('error') or {})
+        return 'not_in_force', (err.get('code') or 'no ok:true in the answer')
+    got = a.get('rule_id')
+    if got != rule['rule_id']:
+        return 'not_in_force', ('the engine answered with %r, not %r -- this '
+                                'rule is not the one serving its own query'
+                                % (got, rule['rule_id']))
+    return ('loaded' if answer_changed(before, after) else 'in_force'), got
 
 
 def main(argv):
@@ -212,10 +269,10 @@ def main(argv):
     role = ((body or {}).get('role') or '').lower()
     print('\nsigned in as %s (%s)' % (args.employee, role or 'role unknown'))
 
-    # ── BEFORE. Read-only, every time, for every state being loaded. ────────
+    # ── BEFORE. Read-only, every time, ONE PROBE PER RULE. ──────────────────
     before = {}
-    for s in states:
-        _, before[s] = post(DATA_API, verification_probe(s, seed), args.key, token)
+    for r in to_load:
+        _, before[r['rule_id']] = post(DATA_API, verification_probe(r), args.key, token)
 
     ok, failed = 0, []
     for r in to_load:
@@ -230,23 +287,30 @@ def main(argv):
             print('  FAILED  %-28s %s %s' % (r['rule_id'], st, json.dumps(resp)[:160]))
 
     # ── AFTER, ON IDENTICAL INPUT. This is the only evidence that counts. ───
-    print('\nVERIFYING BY A CHANGED RESULT ON IDENTICAL INPUTS -- not by the '
-          'exit code above:')
-    unchanged = []
-    for s in states:
-        _, after = post(DATA_API, verification_probe(s, seed), args.key, token)
-        moved = answer_changed(before[s], after)
-        print('  %-4s %s' % (s, 'ANSWER CHANGED' if moved else
-                             '*** UNCHANGED -- nothing this app can use was loaded ***'))
-        if not moved:
-            unchanged.append(s)
+    print('\nVERIFYING BY DRIVING THE ENGINE, once per rule, on the inputs that '
+          'rule covers -- not by the exit code above:')
+    unreachable, moved_n, already_n = [], 0, 0
+    for r in to_load:
+        _, after = post(DATA_API, verification_probe(r), args.key, token)
+        verdict, detail = probe_verdict(r, before[r['rule_id']], after)
+        if verdict == 'loaded':
+            moved_n += 1
+            print('  LOADED         %-28s the engine now answers with it' % r['rule_id'])
+        elif verdict == 'in_force':
+            already_n += 1
+            print('  ALREADY IN FORCE %-26s unchanged, and the engine answers '
+                  'with it -- an idempotent re-run, not a failure' % r['rule_id'])
+        else:
+            unreachable.append((r['rule_id'], detail))
+            print('  *** NOT IN FORCE %-24s %s' % (r['rule_id'], detail))
 
-    print('\nloaded %d of %d, %d failed, %d state(s) whose answer did not move'
-          % (ok, len(to_load), len(failed), len(unchanged)))
+    print('\nloaded %d of %d, %d failed to write, %d newly in force, %d already '
+          'in force, %d the engine CANNOT REACH'
+          % (ok, len(to_load), len(failed), moved_n, already_n, len(unreachable)))
     print('NOT A MIGRATION: the endpoint upserts on (license_hash, rule_id), so '
           're-running is safe and a rule REMOVED from the seed is NOT removed '
           'from this licence.')
-    if failed or unchanged:
+    if failed or unreachable:
         return EXIT_REFUSED
     return EXIT_OK
 
