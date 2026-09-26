@@ -76,6 +76,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import textwrap
 import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -423,7 +424,14 @@ def _hook_body():
     # the whole mechanism.
     js, py, unrun = discover()
     shrunk = (len(js) + len(py)) < MIN_TEST_FILES
-    failures, skipped, retried = _run(js, py, quiet=True)
+    # FOUR VALUES, AND THE SECOND COPY IS WHY THIS LINE IS COMMENTED. _run()
+    # grew `not_run` for the pinning exclusion set; this function is the copy
+    # that runs UNATTENDED after every push, and tests/run_all_tests_floor_probe.py
+    # exists because the shrinking-suite floor was added to _main_body() and NOT
+    # here. Unpacking three from a four-tuple would have raised inside the hook,
+    # where nobody reads the output. The hook never pins, so it passes no
+    # exclusion set and not_run is always empty -- but it must still unpack it.
+    failures, skipped, retried, _hook_not_run = _run(js, py, quiet=True)
     # `retried` breaks the silence too. A file that needed a second attempt
     # is news; staying quiet about it is how the retry becomes a place to
     # hide, which is the one way this mechanism could make things worse.
@@ -507,11 +515,20 @@ def _test_env():
     return env
 
 
-def _run(js, py, quiet):
-    failures, skipped, retried = [], [], []
+def _run(js, py, quiet, excluded=None):
+    failures, skipped, retried, not_run = [], [], [], []
     env = _test_env()
+    excluded = excluded or {}
     for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
         for rel in files:
+            # EXCLUDED IS ITS OWN ANSWER, never a pass and never a failure. It is
+            # collected and printed by name with its reason; folding it into
+            # either column is how a gate stops covering something in silence.
+            if rel in excluded:
+                not_run.append((kind, rel, excluded[rel]))
+                if not quiet:
+                    print('  --   %-5s %s   EXCLUDED, NOT RUN' % (kind, rel))
+                continue
             r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env)
             out = (r.stdout or r.stderr or '').strip().splitlines()
             if r.returncode == 3:
@@ -538,7 +555,7 @@ def _run(js, py, quiet):
                 failures.append((kind, rel, out[-1] if out else '(no output)'))
             elif not quiet:
                 print('  ok   %-5s %s' % (kind, rel))
-    return failures, skipped, retried
+    return failures, skipped, retried, not_run
 
 
 def _tree():
@@ -582,12 +599,83 @@ def _tree():
 # something else -- "could not run" is a third state (PR 1.11). Override with
 # `--pinned-ignore-dirty` when the uncommitted files genuinely are not under
 # test; the refusal names them either way.
+# ── TESTS A PINNED RUN CANNOT VALIDLY EXECUTE, DECLARED (2026-09-26) ────────
+# MEASURED, AND THE FIRST HYPOTHESIS WAS WRONG IN A WAY WORTH RECORDING.
+#
+# The first --pinned full-suite run reported 56 failures. Diffing them against
+# the same 56 run in the live clone showed NINE that fail only under --pinned,
+# and the conclusion drawn was "these tests read the repository's LIVE state,
+# which a detached worktree cannot reproduce, so they must be excluded."
+#
+# THAT WAS WRONG FOR MOST OF THEM, and excluding them would have permanently
+# stopped testing six files under --pinned for a defect that takes ONE FILE COPY
+# to fix. Driven instead: they die on
+#
+#     sairn_session_identity.NoIdentity: THIS CLONE IS NOT PROVISIONED.
+#     <git-dir>/sairn-session does not exist
+#
+# because a git worktree has its OWN git dir, and the per-clone identity marker
+# lives in `.git/`. Copying the clone's marker into the worktree's git dir makes
+# them pass -- verified on run_coding_rule_channel_probe.py and
+# run_review_gate_validate_probe.py, both rc=1 before and rc=0 after.
+#
+# So the fix is to PROVISION, not to exclude, and provision_worktree_identity()
+# below does it. This set is only for what remains after that.
+#
+# ── ADDING TO THIS SET IS A CLAIM, and the reason is mandatory ───────────────
+# Same convention as CONCURRENCY_SENSITIVE above. An entry says: this test's
+# SUBJECT is a property of where the clone sits or what is beside it, so a
+# worktree cannot produce a valid answer -- not "this test is inconvenient".
+# The run REPORTS every exclusion by name with its reason and counts them
+# separately; an excluded test is never folded into a pass.
+PINNING_INCOMPATIBLE = {
+    'tests/run_selftest_independence_probe.py':
+        'drives tools/nhi_register.py --selftest, which ENUMERATES SIBLING '
+        'CLONES beside the repository directory. A worktree in a temp dir has '
+        'no siblings, so the enumeration finds zero and the probe correctly '
+        'refuses -- its own message says "this clone should have found ITSELF at '
+        'minimum, so the enumeration is broken rather than the answer being '
+        'zero". That refusal is right and the worktree is what makes it fire. '
+        'Verified: clone rc=0, worktree rc=2 on the same commit.',
+}
 PINNED_COULD_NOT_RUN = 2
 
 
 def _git(*args):
     return subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
                           text=True, encoding='utf-8', errors='replace')
+
+
+def provision_worktree_identity(wt):
+    """Copy the clone's per-clone session marker into the worktree's git dir.
+
+    Returns (ok, message). FAILS CLOSED: if the CLONE itself is unprovisioned
+    there is nothing to copy and the caller must refuse, because a pinned run
+    that silently leaves the worktree unprovisioned is the false-failure defect
+    this exists to remove.
+    """
+    src_dir = _git('rev-parse', '--absolute-git-dir')
+    if src_dir.returncode != 0:
+        return False, 'could not resolve the clone git dir: ' + src_dir.stderr.strip()
+    src = os.path.join(src_dir.stdout.strip(), 'sairn-session')
+    if not os.path.isfile(src):
+        return False, ('this CLONE has no .git/sairn-session, so there is no '
+                       'identity to copy into the worktree. Provision the clone '
+                       'first: python tools/sairn_session_identity.py --provision <name>')
+    dst_dir = subprocess.run(['git', 'rev-parse', '--absolute-git-dir'], cwd=wt,
+                             capture_output=True, text=True, encoding='utf-8',
+                             errors='replace')
+    if dst_dir.returncode != 0:
+        return False, 'could not resolve the worktree git dir: ' + dst_dir.stderr.strip()
+    dst = os.path.join(dst_dir.stdout.strip(), 'sairn-session')
+    try:
+        with io.open(src, encoding='utf-8') as fh:
+            name = fh.read()
+        with io.open(dst, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(name)
+    except OSError as e:
+        return False, 'could not write %s: %s' % (dst, e)
+    return True, 'session identity %r copied to the worktree git dir' % name.strip()
 
 
 def pinned_main(argv):
@@ -636,7 +724,18 @@ def pinned_main(argv):
                          % (sha[:12], add.stderr.strip()))
         return PINNED_COULD_NOT_RUN
     try:
+        # PROVISION BEFORE RUNNING, or a whole class of test fails for a
+        # reason that has nothing to do with what it tests. See the block above
+        # PINNING_INCOMPATIBLE for the measurement.
+        pok, pmsg = provision_worktree_identity(wt)
+        if not pok:
+            sys.stderr.write('COULD NOT RUN: the worktree could not be given a '
+                             'session identity, and without one every probe that '
+                             'resolves one fails for the wrong reason.'
+                             + chr(10) + '  ' + pmsg + chr(10))
+            return PINNED_COULD_NOT_RUN
         print('PINNED: running in a throwaway worktree at %s' % sha[:12])
+        print('    %s' % pmsg)
         print('    %s' % wt)
         print('    Nothing done in %s during this run can reach it.' % REPO)
         if dirty:
@@ -666,7 +765,9 @@ def pinned_main(argv):
         # Relaying line by line rather than capturing and printing at the end
         # keeps the terminal live for a two-hour run; a `communicate()` would
         # show nothing until it finished.
-        proc = subprocess.Popen(inner, cwd=wt, stdout=subprocess.PIPE,
+        child_env = dict(os.environ)
+        child_env['SAIRN_PINNED_RUN'] = '1'
+        proc = subprocess.Popen(inner, cwd=wt, env=child_env, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, text=True,
                                 encoding='utf-8', errors='replace', bufsize=1)
         for line in proc.stdout:
@@ -751,12 +852,17 @@ def main(argv):
         print('restores that. Nothing was verified. Wait for the other run.')
         return 3
     try:
-        return _main_body('--quiet' in argv)
+        # THE EXCLUSION SET APPLIES ONLY TO A PINNED RUN, and that asymmetry
+        # is the point: these tests are correct and they pass in a clone. An
+        # ordinary run must keep running them, or the exclusion would quietly
+        # become permanent.
+        excluded = PINNING_INCOMPATIBLE if os.environ.get('SAIRN_PINNED_RUN') == '1' else None
+        return _main_body('--quiet' in argv, excluded)
     finally:
         release_lock()
 
 
-def _main_body(quiet):
+def _main_body(quiet, excluded=None):
     before = _tree()
     js, py, unrun = discover()
     # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.
@@ -765,7 +871,7 @@ def _main_body(quiet):
     # stay. They used to exit 1 for that, which read as "check 4 is broken"
     # when nothing about check 4 had been examined. A precondition is not a
     # failure, and it is not a pass either.
-    failures, skipped, retried = _run(js, py, quiet)
+    failures, skipped, retried, not_run = _run(js, py, quiet, excluded)
 
     # ── RESIDUE IS REPORTED, BECAUSE A CASCADE LOOKS LIKE A BUG (2026-09-08)
     # Several probes mutate a tracked file and restore it in a finally. If one
@@ -830,6 +936,20 @@ def _main_body(quiet):
         print('    wearing this section as cover -- read it rather than '
               're-running until it is green.')
 
+    # PRINTED ON EVERY RUN THAT HAS ONE, and ABOVE the failures, because an
+    # exclusion is a statement about what was NOT measured and a reader who
+    # sees only the failure list has been told the suite covered more than it
+    # did. Each line carries the written reason from PINNING_INCOMPATIBLE.
+    if not_run:
+        print('')
+        print('EXCLUDED, NOT RUN (%d) -- pinning-incompatible, NOT a pass and '
+              'NOT a failure:' % len(not_run))
+        for kind, rel, why in not_run:
+            print('    %s' % rel)
+            for line in textwrap.wrap(why, 74):
+                print('        %s' % line)
+        print('    These would FAIL under --pinned for a reason that is not about')
+        print('    what they test. They still run on an ordinary (unpinned) run.')
     if failures:
         print('')
         print('FAILURES (%d):' % len(failures))

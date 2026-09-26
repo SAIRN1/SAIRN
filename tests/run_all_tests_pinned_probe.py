@@ -224,6 +224,53 @@ except OSError:
     pass
 
 print('')
+print('6. THE PINNING EXCLUSION SET -- declared, reported, and NOT permanent')
+# WHY THIS ARM EXISTS. The first --pinned full-suite run reported nine failures
+# that pass in the clone, and the conclusion drawn was "they read live repo
+# state, exclude them". That was WRONG for most of them: they die on
+# sairn_session_identity.NoIdentity because a worktree has its own git dir and
+# the per-clone marker lives in .git/. Excluding them would have stopped testing
+# six files under --pinned for a defect that takes one file copy to fix.
+#
+# So there are two things to pin here, and the second is the one that rots: the
+# exclusion must apply ONLY to a pinned run, or it quietly becomes permanent.
+import run_all_tests as R2                                         # noqa: E402
+
+check('the shipped exclusion set is non-empty and every entry has a REASON',
+      bool(R2.PINNING_INCOMPATIBLE)
+      and all(isinstance(v, str) and len(v) > 80
+              for v in R2.PINNING_INCOMPATIBLE.values()),
+      repr({k: len(v) for k, v in R2.PINNING_INCOMPATIBLE.items()}))
+
+# EXCLUDED IS A THIRD ANSWER. Driven both ways against the real _run().
+_one = sorted(R2.PINNING_INCOMPATIBLE)[0]
+_f, _s, _r, _nr = R2._run([], [_one], quiet=True, excluded=R2.PINNING_INCOMPATIBLE)
+check('a pinned run reports it EXCLUDED, not run -- not a pass and not a failure',
+      len(_nr) == 1 and len(_f) == 0 and _nr[0][1] == _one,
+      'not_run=%r failures=%r' % (_nr, _f))
+
+_f2, _s2, _r2, _nr2 = R2._run([], [_one], quiet=True, excluded=None)
+check('...and an ORDINARY run still executes it, so the exclusion cannot '
+      'become permanent',
+      len(_nr2) == 0, 'not_run=%r -- an unpinned run must not exclude' % (_nr2,))
+
+# THE PROVISIONING HALF, which is the actual fix rather than the exclusion.
+check('provision_worktree_identity exists and FAILS CLOSED with a message',
+      callable(getattr(R2, 'provision_worktree_identity', None)),
+      'the helper is gone -- without it the excluded set has to grow to six')
+
+# AND THE SECOND COPY. _hook_body() also calls _run(); the floor probe exists
+# because a change was once made to _main_body only. A three-value unpack there
+# would raise inside the unattended hook where nobody reads the output.
+_src = io.open(os.path.join(REPO, 'tools', 'run_all_tests.py'),
+               encoding='utf-8').read()
+check('BOTH _run callers unpack four values -- the hook copy included',
+      _src.count('= _run(') == 2 and _src.count('retried, _hook_not_run = _run(') == 1
+      and _src.count('retried, not_run = _run(') == 1,
+      'callers: ' + repr([l.strip() for l in _src.split(chr(10))
+                          if '= _run(' in l]))
+
+print('')
 if bad:
     print('%d ARM(S) FAILED' % len(bad))
     for b in bad:
