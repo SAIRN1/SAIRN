@@ -128,6 +128,23 @@ def main():
               refused and 'UNCOMMITTED' in err,
               'refused=%r exit=%r err=%s' % (refused, code, err))
 
+    # ── A3b STAGED BUT NOT COMMITTED -- the sharpest form of the second hole ─
+    #    The index is not a commit. Bytes staged and not committed exist in no
+    #    reachable object, so a REST push would publish content that no reviewer
+    #    and no future bisect could ever see -- and `git status --porcelain`
+    #    reports it as `M ` with the M in the INDEX column, which a check
+    #    written against the worktree column alone would miss.
+    with tempfile.TemporaryDirectory() as td:
+        head = make_repo(td)
+        io.open(os.path.join(td, 'app.html'), 'w', encoding='utf-8',
+                newline='').write('<html>STAGED ONLY, NEVER COMMITTED</html>' + chr(10))
+        git(td, 'add', 'app.html')
+        refused, code, err = refuses(td, ['app.html'], head)
+        check('A3b a STAGED but uncommitted change is refused -- the index is '
+              'not a commit',
+              refused and 'UNCOMMITTED' in err,
+              'refused=%r exit=%r err=%s' % (refused, code, err))
+
     # ── A4 a file git has never seen ─────────────────────────────────────────
     with tempfile.TemporaryDirectory() as td:
         head = make_repo(td)
