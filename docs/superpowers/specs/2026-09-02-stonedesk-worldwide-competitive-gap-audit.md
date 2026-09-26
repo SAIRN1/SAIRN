@@ -177,6 +177,31 @@ is a yard-floor problem that a screen cannot solve.
 
 ### GAP 4 — No slab-scanner integration, and this undercuts Vein Match.
 
+> **CORRECTED 2026-09-26 (Cody) -- THIS ROW IS WRONG ABOUT StoneDesk'S OWN SIDE,
+> and the error would mislead a builder.** Full measurement:
+> `docs/2026-09-26-gap-triage-four-verticals.md` §4.
+>
+> The paragraph below says *"Vein Match works from photos"*. **IT DOES NOT.** The
+> Vein Match panel (`stonedesk.html:33420`) has `type="file"` **0 times** and
+> `accept="image` / `capture=` **0 times**. `sdVeinAnalyze()` at `:33536` reads
+> six TEXT and NUMBER fields -- project name, stone dropdown, layout style, slab
+> count, sq ft, free-text description -- POSTs a prose prompt to `/api/claude`
+> asking for *"vein matching guidance"*, renders the answer, and saves
+> `{proj, stone, style, date}`. It accepts **no slab imagery of any kind**.
+>
+> **SO CLOSING THIS GAP IS TWO STEPS, NOT ONE:** accept an image at all, then
+> accept a *calibrated* one. Only the first is un-gated. A session starting from
+> the sentence below would add scanner support to a panel with no image pipeline.
+>
+> **AND ONE HALF IS ALREADY FIXED, recorded so it is not re-found:** the three
+> quantitative KPIs on this panel -- Match Quality %, Waste Reduction %, Material
+> Savings $ -- read `'--'` at `:33501-33503` rather than numbers derived from a
+> text description. Only `vein-jobs`, a real count, carries a figure.
+>
+> **This is the 8th gap and it remains OPEN.** Seven are closed: GAP 5 found
+> built 09-15, GAP 7 closed 09-03, GAPs 1/2/3 and the remnant half of 8 closed
+> 09-02, GAP 6 is a standing decision rather than a work item.
+
 `slabsmith` appears **zero times** in the file (the AI prompt mentions "Slabsmith
 and Horace integration" as *knowledge*, not as a code path). No SideShot, Iride
 or Mapascan interface.

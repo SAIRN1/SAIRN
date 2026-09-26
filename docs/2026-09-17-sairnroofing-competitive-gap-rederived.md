@@ -121,6 +121,18 @@ absent would miss that the product tells the user the truth about them.
 
 ---
 
+> **CORRECTED 2026-09-26 (Cody): A5 IS CLOSED AND THIS SECTION IS NINE DAYS OUT
+> OF DATE.** See `docs/2026-09-26-gap-triage-four-verticals.md` §2.1. Measured in
+> `sairnroofing.html`: `QuickBooks` 0 -> **4**, `chart of accounts` 0 -> **4**,
+> `Xero` 0 -> **1**, and it is not prose -- `rfGlExport()` at `:1652` behind a
+> "Build journal" button at `:874`, a chart-of-accounts panel at `:850`, and
+> `gl_export` three times in `api/sd-data.js`. The on-screen disclosure this
+> section says is absent is at `:846`: *"This is not a QuickBooks connection."*
+> **So A5 now has the same buildable-half-built / vendor-half-refused shape this
+> document credits B6 with, and roofing has no un-gated row left.** The text below
+> is left as it stood, because a status document that edits its own history is
+> worse than one that is late.
+
 ## 3. What is genuinely still open
 
 **One row: A5, accounting integration.** Zero markers, no partial, no

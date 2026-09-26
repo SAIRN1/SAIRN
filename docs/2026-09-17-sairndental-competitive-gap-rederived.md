@@ -174,6 +174,15 @@ found this.
 
 ---
 
+> **CORRECTED 2026-09-26 (Cody): B2's remaining half is CLOSED.** See
+> `docs/2026-09-26-gap-triage-four-verticals.md` §2.2. This document says B2
+> *"needs a decision, not an estimate"* and that *"what must not persist is the
+> current state"*. The decision was made and the panel was built:
+> `panel-rollup` at `sairndental.html:1136`, with `rRollup()`, an owner-only
+> path, and a comment recording that the server is the real gate --
+> *"api/sd-data.js refuses dnt_rollup from any role outside
+> DNT_MANAGEMENT_ROLES regardless of what this div does."*
+
 ## 2. What is genuinely open after this pass
 
 | Item | Why it is open |
