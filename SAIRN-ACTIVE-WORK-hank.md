@@ -2191,3 +2191,126 @@ this one drifted in the first place.
 
 **STILL OPEN:** the migration (Michael only), and **24 ungated `sf_` resources**
 — a decision nobody has made, not a decision that they are fine.
+
+---
+
+## 2026-09-26 (queue11) — three fixes whose own fixes were broken, and the review ledger gets the reseat it has been asking for in its own prose
+
+Landed `ecd05320`, pushed and **LIVE-VERIFIED** against
+`https://sairn.vercel.app/stonedesk.html` (200, 7 probes, 0 fail) with
+`tools/sairn_http.py` rather than bare curl.
+
+**THE PATTERN ACROSS ALL THREE ITEMS, and it is the only thing here worth
+carrying forward: every one was a FIX THAT HAD ALREADY LANDED, reporting
+success, while doing nothing or doing the opposite.** Not one was found by
+reading the code that was wrong. Each was found by driving the thing the fix
+claimed to have made observable.
+
+**1. `stonedesk.html` — the batching fix read the wrong half of its own answer.**
+`sdData()` returned `j.data` for `write_batch`, and that response has **no
+`data` key at all** — its answer IS the envelope. So the client saw `undefined`
+on every SUCCESSFUL batch and three things broke at once, all silent: it warned
+*"the customer list did not reach the server"* on every save that DID reach it;
+its `refused` branch was unreachable, so a customer deleted on another device
+was never dropped locally — the resurrection `customer_delete_does_not_resurrect`
+exists to prevent, arriving by a second route; and `sdMarkSynced` is scoped to
+`action === 'write'`, so `sd_customers` ids stopped entering the synced map,
+which is the server-wins carve-out's **only** input. That third one failed in
+the SAFE direction, which is exactly why nothing showed.
+
+**AND `pcToggleSlab` HAD BEEN TESTING A GHOST SINCE THE PUBLIC CATALOG SHIPPED.**
+It reads `ok === false` to warn *"the catalog on the web has NOT changed"*.
+`slabSyncOne` returned `undefined` on every path, so that warning could never
+fire and a failed publish said *"Slab published to the catalog"*. Not a missing
+warning — one that reads as present and cannot happen. That is worse than the
+discarded write the audit sent me to fix, and the audit had not seen it.
+
+**TWO SUITES WERE RED ON `main` WITH NOTHING SAYING SO**, both confirmed
+pre-existing by stashing every change and re-running. `sd_write_faults` pinned
+the old `write` call; that assertion sits FIRST in its arm, so it
+**short-circuited before the assertion below it** — which had also started
+failing, because the same edit had deleted the *"must not wait on a network
+round trip"* sentence that arm exists to protect. **A stale pin hid a live one,
+and one failure count looked like one problem.** In
+`customer_delete_does_not_resurrect`, the sandbox dependency list never gained
+the 2026-09-21 server-wins helpers, so the section-1 MUTANT — the arm that
+proves the suite can see a resurrection at all — could not run; and its `st`
+stub was write-only, so `sdServerWinsMerge` read an empty local list and
+answered `null`, **disarming the mutant rather than failing it**. The third arm's
+negative half had been passing **vacuously**: `!written.includes('C-1')` is
+trivially true of a list nothing enters.
+
+**2. `tools/load_compliance_seed.py` — the verification had NEVER run.** Its own
+header promises *"a loader's exit code is not evidence"* and offers a
+before/after engine probe as the only evidence that counts. The probe sent
+`payload.check` where the endpoint requires `payload.requirement_type`, so
+**every** probe answered 400 — before AND after — and two identical 400s compare
+equal. It printed *"UNCHANGED — nothing this app can use was loaded"* and exited
+1 on every run it has ever made, **including the run in this session where all
+three West Virginia rules loaded correctly**. The existing probe was green
+throughout because it tested the loader's pure helpers against THEMSELVES and
+never tested the payload against the interface it has to satisfy. Section 4 now
+reads the required-field list **out of `api/sd-data.js`**.
+
+Two more behind it: no `facility_class` (the engine answers `NO_RULE_FOR_CLASS`
+rather than substituting another class's figures), and *"the answer must have
+CHANGED"* conflating **nothing-loaded** with **already-loaded** — the endpoint
+upserts, so an idempotent re-run is identical by design and the old criterion
+called that a failure. Three states now, never two. **WV is live:** 19 of 19
+seeded rules in force and reachable, confirmed by a read-only sweep.
+
+**3. `tools/review_ledger_reseat.py` — NEW, and the ledger had been asking for
+it in its own prose.** Hank's 2026-09-26 review of cody's obligation:
+*"The commit is 47220a5d, found by message. Your clone rebased and the record
+was never reseated — the same reseat the defect register does automatically and
+the review ledger does not."* Ten citations reseated, four literals frozen,
+review-citation drift 12 → 0.
+
+**IT IS NOT A SECOND CALLER OF `defect_register.py --reseat`, and item 7 of the
+cross-domain disciplines is why.** Three differences, each changing the answer:
+a register record has ONE field where a review record has paragraphs; the
+register reseats by SUBJECT and a review record carried no subject to look up;
+and — the one with no analogue at all — **a sha literal's role depends on the
+sentence it is in.** A citation must be reseated. A reviewer's finding ABOUT a
+dead pointer (*"this record cites a49edd00 and no such commit exists"*) must
+NOT be, because rewriting the literal makes the sentence deny what its author
+verified. And `1234abcd` is not a commit reference at all. **THE SAME LITERAL IS
+BOTH ROLES IN ONE RECORD, TWICE.** A blind prose replace — which is what "reseat
+the prose" sounds like, and what I would have written — would have repaired two
+citations and corrupted two reviews in the same pass. Verified by diff: exactly
+10 prose fields changed, all three frozen verdicts **byte-identical**.
+
+**AND THE RESEAT PROVED ITSELF ON THE WAY OUT.** The push needed three rebases
+onto a branch four other sessions were pushing to. After them, all 10 reseated
+citations report `live` and `--reseat` finds nothing to do.
+
+**WHAT I DID NOT DO, AND WHO HAS IT.**
+
+* **`write_batch` functional core / imperative shell (item 92 continued) — NOT
+  STARTED, blocked.** `api/sd-data.js` is inside `fourth-q9b`, and fourth's
+  live item is the *12 remaining blob builders* in that file. The write_batch
+  branch's body is `data: storedBlob(c, ['id'])` — the collision is not
+  same-file, it is **same-lines**. Same call as
+  `docs/2026-09-26-session-gate-recheck-coverage.md` made for the 132-gate
+  pre-gate, for the same reason.
+* **150 UNDECLARED live prose citations** in the ledger. `--adopt` closes them
+  in one command and is the thing that makes the capability cover existing
+  records — NOT run, because it rewrites every record in a contended file and
+  the ask was the twelve. The subject can only be read while the sha is alive,
+  so this has a clock on it.
+* **4 dead `opened_at_sha` stamps**, reported OUT OF SCOPE by the tool with the
+  reason: that field is the AUTHOR'S HEAD at open, not the commit the change
+  landed in, so a message match would put a **different fact** in it. Their
+  repair is `tier_a_review_gate.py`'s timestamp reconstruction, and that file is
+  in cc's claim.
+* **`run_criticality_tier_probe` is RED on `main` (4 arms)** since `c0ae9a0a`
+  and `72ba2261` — `alf_family_contacts` and `mech_insurance_policies` are
+  registered with **no tier row**. Confirmed pre-existing by stashing. That is a
+  two-axis tiering JUDGEMENT with an individually-read evidence cell, and
+  folding it into a reseat commit would have hidden it.
+* **`tests/stonedesk_server_backup.js` is RED on `main` (22/1)** on a
+  `soft_delete` family pin that 25 `sc_*` resources widened. SAIRNcode's
+  decision to record, not StoneDesk's to widen past.
+* **`tests/sairncode_gates.js` registered twice in `GUARD_TESTS`** — flagged to
+  cc, and cc has since landed `bbb09250` and `e560d97d` for it. Closed by
+  handoff, not by me.
