@@ -14857,7 +14857,7 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
-      "commit": "b70156e4c7b2",
+      "commit": "d70ff3a06834",
       "date": "2026-09-26",
       "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
       "files": [
