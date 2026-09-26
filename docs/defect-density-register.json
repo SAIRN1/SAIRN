@@ -14932,11 +14932,10 @@
         "1.11"
       ],
       "citation_confidence": "clean",
-      "injection_phase": "requirements",
-      "phase_confidence": "clean",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
       "recurrence_open": "The gate is closed for bridge.js and all 41 handlers were enumerated, so no second instance of THIS omission exists today. Nothing mechanically prevents the 42nd handler from repeating it -- there is no check that a validateLicenseKey caller reads `active`, and the omission is invisible to node --check and to every existing suite except one written for that endpoint. A static check over api/*.js is the obvious control and is NOT built here.",
       "found_by_tool": null,
-      "found_by_session": "fourth",
       "injection": {
         "commit": "af92c8f3",
         "date": "2026-09-17",
@@ -14946,7 +14945,7 @@
       "contributing_factors": [
         {
           "factor": "the gate was written as part of closing a DIFFERENT hole -- the unauthenticated, body-keyed write -- and 'require a licence' was treated as the requirement, so `valid` satisfied it. `active` is a second question the requirement never asked",
-          "kind": "requirements",
+          "kind": "process",
           "action_status": "done",
           "action": "the check is added above the session gate, and its comment states that valid and active are different facts and only the second can be withdrawn"
         },
@@ -14959,7 +14958,7 @@
         {
           "factor": "there is no mechanical check that a validateLicenseKey caller reads `active` -- the omission is one absent line, invisible to node --check and to every suite not written for that specific endpoint, and it was found only by enumerating all 41 callers by hand while answering an unrelated question about licence expiry",
           "kind": "detection",
-          "action_status": "open",
+          "action_status": "planned",
           "action": "a static check over api/*.js asserting every validateLicenseKey caller also reads .active would have caught this the day it shipped; named in recurrence_open and NOT built here"
         }
       ]
@@ -15018,6 +15017,72 @@
         }
       ],
       "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
+    },
+    {
+      "commit": "aa10d71c0e4a",
+      "date": "2026-09-26",
+      "subject": "fix(blob): item 94 was reported COMPLETE by a grep that could not match the sites it left -- 11 converted, 64 still raw, and now measured",
+      "files": [
+        "api/sd-data.js",
+        "api/sd-sub-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/blob-conversion-coverage.json",
+        "docs/traceability-matrix.md",
+        "tests/roofing_claim_gate_single_source.js",
+        "tests/run_blob_conversion_coverage_probe.py",
+        "tools/blob_conversion_coverage.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 867,
+      "lines_removed": 52,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "item 94's per-branch blob migration was declared COMPLETE with the proof: grep -c 'Object.assign({}, payload)' 12 -> 0. The dot is a WILDCARD in a grep pattern, so that pattern requires some character then a close-paren immediately after 'payload' -- and every remaining site is 'Object.assign({}, payload, {...})', a COMMA. The pattern could not match the sites left behind, so it was guaranteed to report 0 the moment the sites it COULD match were converted. Re-measured by shape: 77 unconverted stored-blob writes against 24 converted, so the migration was reported complete at under a quarter done. Every unconverted site lets a posted license_hash ride into the stored blob and be echoed back on read as a field the row's real tenant column contradicts, and api/sd-sub-data.js's progress-photo write additionally carried caller-supplied copies of four SERVER-SET qc_ columns on a record whose whole purpose is that a client cannot self-approve",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "unknown",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "f0c0cb7ac160",
+        "date": "2026-09-26",
+        "subject": "fix(sd-data): the last twelve blob builders -- and TWO of them were not conversions, they were a live attribution forgery on append-only regulated records",
+        "lag_days": 0
+      },
+      "phase_note": "The schema's phases (requirement/design/coding/config) describe where a PRODUCT defect enters. This is a VERIFICATION defect: the code being proved was correct as far as it went, and what was wrong was the proof -- a grep whose pattern could not match the population it claimed to measure. Filing it as 'coding' would blame the migration rather than its evidence, which is the opposite of the finding. Recorded unknown WITH this note rather than mislabelled.",
+      "contributing_factors": [
+        {
+          "factor": "the completion proof was a grep whose pattern was copied from the code shape being REPLACED, so it matched exactly the sites about to disappear and nothing else. A before/after count on that pattern can only ever go to 0",
+          "kind": "process",
+          "action_status": "done",
+          "action": "tools/blob_conversion_coverage.py classifies every `data:` property beside a license_hash by SHAPE (CONVERTED/RAW/SPREAD/NESTED/BUILT) rather than by punctuation, and is a ratchet pinned to docs/blob-conversion-coverage.json so the total cannot silently rise"
+        },
+        {
+          "factor": "the number was quoted in a commit message, which nothing checks. Two measurements in the same message (16 -> 28 conversions, 12 -> 0 remainder) agreed with each other and were both true, which made the pair read as corroboration when only the first was measuring the population",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the remainder is now a pinned file a gate can read, not a sentence in a message"
+        },
+        {
+          "factor": "the checker built to catch this committed the SAME defect three times before shipping -- a comma-truncating capture reported SPREAD 0, a file-wide name set scored the unconverted rf_claims write as converted because `dataBlob` is bound twice, and the fix for that inherited a stale verdict for a name rebound to a non-payload expression and OVERCOUNTED",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "all three are reproduced as fixtures in tests/run_blob_conversion_coverage_probe.py sections 1, 2, 3 and 3b, and each is documented at the line that caused it rather than only in the probe"
+        },
+        {
+          "factor": "tests/roofing_claim_gate_single_source.js guarded the assigned_employee_id strip with a LITERAL string anchor and a magic 4200-character window, so the conversion made two arms go red with messages about the authorised column and the ordering -- neither of which had changed",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "re-anchored on the property with both spellings accepted, a negative control proving neither anchor matches a blob that keeps the field, and the magic window replaced by the branch's real bounds with a length assertion so a moved marker is a could-not-tell rather than a pass over nothing"
+        }
+      ],
+      "recurrence_open": "11 SPREAD sites are converted and the ratchet pins the rest, so the number cannot silently rise. 64 RAW sites (data: payload straight into the store) are NOT converted -- a sweep across ~20 sairngrounds branches plus stonedesk and mech, each needing its own read consulted for the column list, and it is named rather than started here. The ratchet makes a future 'complete' claim checkable; it does not make it true."
     },
     {
       "commit": "b015ea783653",
