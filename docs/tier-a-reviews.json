@@ -3579,6 +3579,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-26T12:36:06Z",
+      "opened_at_sha": "82aaa2fd628d0de86c29524a805bec2173ee6cb3",
+      "resources": [
+        "alf_mar",
+        "mech_credentials"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/alf-family-mar.js",
+        "api/sd-data-family-contacts.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "alf_mar READ BY A NEW, EXTERNAL-FACING CONSUMER. This is the SAIRNcare family / responsible-party record (`alf_family_contacts`, new table) plus a `family_mar` action that hands a THIRD PARTY a projection of the medication administration record. Review it as a DISCLOSURE PATH, because that is what it is -- nothing about the MAR's own data changed, and the finding if there is one will be about what leaves.\n\nMichael's decision, 2026-09-26: read-only, consent-gated, administration STATUS only -- given/missed, scheduled time, adherence. Not the editable MAR, not PRN reasoning, not controlled-substance counts. Design basis stated in the commit: HIPAA minimum-necessary plus the category pattern (PointClickCare Connected Care Center, AlayaCare).\n\nEngine `api/_lib/alf-family-mar.js` (22 arms), endpoint branch in `api/sd-data.js` (18 arms), `sql/sairncare_family_contacts_schema.sql` NOT RUN, and a staff-side card in sairncare.html's Residents panel.\n\nATTACK, HARDEST FIRST.\n\n(1) THE ALLOW-LIST IS THE ONLY THING BETWEEN A RELATIVE AND THE CLINICAL RECORD, AND I WROTE BOTH IT AND ITS TEST. `familyRow()` keeps date, time and status and drops everything else, and the arm that proves it drives a record carrying every field sairncare.html writes today plus one invented field. THAT ARM CAN ONLY EVER TEST THE FIELDS I THOUGHT OF. Read `openMarAdminModal`/its save path in sairncare.html yourself and confirm the record really has no other field -- and specifically check whether anything else on the platform WRITES an `administration` entry with a different shape, because the endpoint filters on entry_type and trusts the shape.\n\n(2) THE QUERY FILTERS entry_type=eq.administration AND THE PROJECTION FILTERS AGAIN. That is deliberate defence in depth, but it means a MISLABELLED row -- a count written with entry_type 'administration' by any path, now or later -- passes both. The schema's check constraint restricts the VOCABULARY, not the correspondence between the label and the content. Decide whether that is acceptable or whether the projection should also refuse a row carrying controlled-substance fields regardless of its label.\n\n(3) THE 500-ROW LIMIT ON THE MAR READ IS MINE AND IT IS SILENT. `&limit=500` with `order=created_at.desc`, so a resident with more than 500 administration records gets the most recent 500 and the adherence figure is computed over that window without saying so. The adherence payload carries a `limits` sentence about unrecorded doses; it says NOTHING about truncation. That is the silent-truncation shape this platform has recorded repeatedly, and I did not catch it until writing this. Decide whether it should paginate, refuse, or disclose.\n\n(4) CONSENT IS CHECKED BEFORE THE MAR IS FETCHED, which I claim as the safety property -- but the CONTACT row is fetched first and returned to nobody. Confirm there is no path where the contact row itself (which carries the family member's email and phone) reaches a caller who should not have it: read is session-gated and management-only for write, but READ is any authenticated employee, so every caregiver can list every family contact's phone number. Decide whether that read should be narrowed to assigned residents the way alf_clients is.\n\n(5) `alf_family_contacts` IS NOT IN ALF_SCOPED_CACHES because the UI holds it in a module variable rather than localStorage. Confirm that is true of every path I added -- `ALF_FAM` is a global and `alfPurgeScopedCaches()` does not clear it, so a role change on the same login leaves the previous user's family list in memory until the next refresh. The tests do not cover this because the probe reads localStorage keys.\n\n(6) THE SCHEMA IS NOT RUN, so nothing above has executed against a real table. The `alffam_consent_has_a_date` check constraint and the NOT NULL DEFAULT false on `mar_consent` are asserted in the file and verified by nothing. Its own VERIFY block is the acceptance test and it has not been run either.",
+      "status": "open",
+      "reviewer_owner": "fourth",
+      "owner_assigned_at": "2026-09-26T12:36:06Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
