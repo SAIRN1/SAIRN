@@ -2661,8 +2661,8 @@
       "task": "fence prompt sites probe selector spof skills sweep -- discharge hank sdn session gate review, fence unfenced prompt-interpolation sites, scoped-on-push probe selector, diagnose 6 red probes, 2 blob conversions, item 91 SPOF retirement, skills staleness sweep FILES: docs/tier-a-reviews.json sairnbuild.html sairndesign.html sairngrounds.html sairnscape.html sairnsenior.html tools/probe_selector.py tools/spof_retirement.py docs/SAIRN-OPEN-WORK-INDEX.md api/sd-data.js api/_lib/prompt-fence.js",
       "claimed_at": "2026-09-25T14:44:26Z",
       "claimed_at_epoch": 1790347466.3134542,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T00:05:56Z",
       "files": [
         "api/_lib/prompt-fence.js",
         "api/sd-data.js",
