@@ -342,6 +342,100 @@ does. **A stub returning `new Promise(() => {})` never rejects, so the arm
 hangs instead of passing.** Any fake standing in for a cancellable call must
 reject on `signal`'s abort event.
 
+### 1.13 A waiter whose only terminal state is success cannot report the answer that matters
+
+**The rule: before arming any wait — a loop, an interval, a poll — ask two
+questions, not one. If the thing I am waiting on died right now, (a) would this
+loop ever stop, and (b) would it SAY anything?** A waiter that fails either is
+unusable, and they fail independently: the unbounded kind never stops, the
+bounded kind stops and says nothing. Both leave the caller unable to tell *still
+working* from *dead*, which are the only two answers a wait exists to
+distinguish. This is §1.12's *"a hang is not a red, it is a silence"* one layer
+out — that rule is about a test arm, this one is about the watcher.
+
+**THE UNBOUNDED KIND, MEASURED. 2026-09-25**, armed inline:
+
+    until [ "$(tail -c 200 <file> | grep -c 'ASSERTIONS PASS|ARM(S) FAILED')" -gt 0 ]
+    do sleep 15; done
+
+Three minutes in, the process writing that file was deliberately killed. The
+sentinel could then never appear. **The loop polled every fifteen seconds for
+FOURTEEN HOURS** and was still going when somebody asked what was running. It
+held no lock and cost no CPU worth naming; what it cost was a process list
+nobody could read and a status report that had to open by explaining itself.
+**The bug is not the sleep — it is that the exit condition mentioned only
+success.**
+
+**THE FIX EXISTS AS A TOOL: `tools/wait_for.py`.** Every exit is named and
+*gone* is never folded into *done* — `0` CONDITION MET, **`3` WATCHED PID GONE
+(explicitly not 0)**, `4` TIMEOUT, `2` COULD NOT RUN. Two details in it are the
+ones worth copying if you ever write another: it **re-checks the condition once
+after seeing the pid gone**, so a subject's final write is not thrown away as a
+failure; and an **unreadable process table is UNKNOWN, not dead**, counted and
+reported rather than guessed.
+
+**AND THE TOOL IS UNWIRED, WHICH IS THE ONLY REASON THIS SECTION EXISTS RATHER
+THAN JUST ITS DOCSTRING.** Verified 2026-09-26: `git grep` finds `wait_for` in
+its own source, the generated inventory, and the generator's `PURPOSES` map —
+**no caller, and no probe.** A fix that lives only inside the file that fixed it
+cannot reach a session typing `until … sleep 15` from memory, which is exactly
+how the fourteen-hour loop was armed. *It has never been driven, either* — so
+point sessions at it **and** treat it as unexercised until something makes it
+fail on purpose.
+
+**THE SWEEP FOR OTHER WAITERS, 2026-09-26 — and the method is recorded because a
+negative result with no method behind it is worth nothing.** Five axes:
+`time.sleep` in `tools/` and `tests/`; `until`/`while` + `sleep` in every tracked
+shell, YAML and workflow file; `setInterval` / `setTimeout` polling in `api/`,
+`tools/`, `tests/`, `agent/`; the GitHub workflows; and the app files.
+
+**Nothing committed on the tooling side carries the defect,** and each is a
+distinct reason rather than one rule applied nine times:
+
+- `tools/deploy_verify_notify.py` waits once and checks once, and names all
+  three states — a bot-mitigation challenge exits **2**, *"I could not look",*
+  never 0;
+- `tools/condition_coverage.py` re-reads once after 0.25s and its exhaustion
+  path is the loudest in the repo: it takes the file back with `git checkout --`
+  and reports *how* it was restored;
+- `.github/workflows/nightly-backup.yml` polls PostgREST 30 × 2s and then runs
+  the bare `curl -fsS` **again outside the loop**, so an expired wait fails the
+  step instead of falling through;
+- `.github/workflows/cron-liveness.yml` retries a push five times and emits a
+  `::warning` naming what did not happen;
+- `api/agent/poll.js` is a bounded 8s long-poll that answers `{command: null}` —
+  a distinct answer, not a silence;
+- `agent/sairn-agent.js`'s `for(;;)` is a **daemon**, where running forever is
+  the contract rather than the bug;
+- every `time.sleep` in `tests/` belongs to a fixture that *creates* a sleeping
+  subject — the opposite role.
+
+**ONE REAL FIND, AND IT IS IN THE APP LAYER: ten bounded-and-silent waiters in
+`stonedesk.html`** (`:21184`, `:21373`, `:21740`, `:21908`, `:22256`, `:22849`,
+`:23372`, `:23486`, `:23534`, `:24066`). Each is `setInterval(…, 200)` looking
+for a global, with a `setTimeout(clearInterval, 10000)` beside it. They pass
+question (a) — they stop — and **fail question (b) completely: the give-up branch
+does nothing at all.** **Eight of the ten wait on `window.addMsg`, which is never
+defined in the file**: every `window.addMsg = …` assignment sits *inside* an
+`install*Hook()` that returns early unless `window.addMsg` is already a
+function, so the chain has no head. Those eight poll for ten seconds and give up,
+silently, on every page load. The other two are the reason to check rather than
+assume: `:23534` waits on `window.sendMessage`, which **is** defined — a
+top-level `async function sendMessage()` at `:13272` — so its `if` branch is
+taken and that waiter never fires at all; `:23486` waits 30s on a DOM element
+rather than a global. **Same silent give-up in all ten; three different live
+behaviours.**
+
+**THAT STATE IS ALREADY KNOWN AND RECORDED** at `stonedesk.html:22686` — *"window.addMsg
+is not a function on the live page, so installMarkdownHook() bails"* — and the
+comment says it was **proven in the browser, not inferred**, by evaluating the
+renderer in the console of the deployed page. **That is the cost of the silence,
+stated exactly:** a session had to open a browser to learn a fact that one line
+on the give-up branch would have put in the console on any page load, for free.
+**Do not "fix" these by wiring the hooks up** — the same comment records that one
+of them paints near-white text on a white bubble, and switching on nine
+unreviewed interceptors is a product decision, not a waiter repair.
+
 ## Part 2 — Editing standing documents
 
 ### 2.1 Never edit an index row by splitting on `|`
