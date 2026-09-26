@@ -2407,6 +2407,24 @@
         "api/_lib/deadline-engine.js",
         "sql/law_jurisdiction_seed.sql"
       ]
+    },
+    {
+      "id": "fourth-1790423196",
+      "session": "fourth",
+      "subject": "fourth-queue8",
+      "task": "licence token expiry revocation enforcement; clickthrough render re-run under throttling; AI-proposes-human-approves code enforcement sweep; incident response plan NIST SP 800-61; PRA event tree structure; resilience patterns skill; sairnlaw privacy P1-P8 scoping. SUBJECT NAMED PER PR 4.3 -- 'platform' is a namespace collision with cody's two claims and these files are disjoint from all three sessions FILES: docs/2026-09-26-licence-session-enforcement-audit.md docs/2026-09-26-ai-approval-enforcement-sweep.md docs/2026-09-26-incident-response-plan.md docs/2026-09-26-pra-event-tree-structure.md docs/2026-09-26-sairnlaw-privacy-scoping.md .claude/skills/sairn-resilience-patterns/SKILL.md",
+      "claimed_at": "2026-09-26T11:46:36Z",
+      "claimed_at_epoch": 1790423196.2146578,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        ".claude/skills/sairn-resilience-patterns/SKILL.md",
+        "docs/2026-09-26-ai-approval-enforcement-sweep.md",
+        "docs/2026-09-26-incident-response-plan.md",
+        "docs/2026-09-26-licence-session-enforcement-audit.md",
+        "docs/2026-09-26-pra-event-tree-structure.md",
+        "docs/2026-09-26-sairnlaw-privacy-scoping.md"
+      ]
     }
   ],
   "refusals": [
