@@ -2991,6 +2991,17 @@
       "status": "active",
       "released_at": null,
       "files": null
+    },
+    {
+      "id": "hank-1790422006",
+      "session": "hank",
+      "subject": "hank",
+      "task": "tombstone guard comment correction, saveSD3Data batch write and slab lineage discarded writes, register drift 18 citations, stonedesk sales-lead-privacy verify, sairncare family portal MAR consent record",
+      "claimed_at": "2026-09-26T11:26:46Z",
+      "claimed_at_epoch": 1790422006.0751402,
+      "status": "active",
+      "released_at": null,
+      "files": null
     }
   ],
   "refusals": [
