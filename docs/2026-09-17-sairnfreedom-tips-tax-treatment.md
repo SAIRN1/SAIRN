@@ -571,3 +571,74 @@ second.
 
 **NOT TAX ADVICE.** Statutory structure, so a professional can be asked a narrow
 question instead of an open one.
+
+---
+
+## 11. THE WORD "TIP" IS IN AN OHIO CRIMINAL STATUTE THIS APP ALREADY ENFORCES — and nothing above says so (2026-09-26, Cody)
+
+**§45B was closed on 2026-09-23 (§7) and the register items on the same day
+(§10). This section adds nothing to that and does not reopen it.** It records a
+SECOND legal rule that the word "tip" triggers, which every section above
+misses, and which the app has been enforcing in code for weeks.
+
+**Sections 1-10 analyse a tip as compensation under ONE body of law** — federal
+§513(a)(1), where compensation destroys the volunteer-labour exclusion and puts
+canteen income into UBIT. That analysis is right and is not disturbed here.
+
+**`sairnfreedom.html` enforces a DIFFERENT rule, on the same word.** ORC
+**2915.09(D)(1)**, quoted verbatim at `:3623`:
+
+> *"No commission, wage, salary, reward, **tip**, donation, gratuity or other
+> form of compensation may be paid to a bingo game operator."*
+
+`operatorEligibility()` refuses an operator who is compensated, and the app
+already chases the interaction from both directions: it matches the **canteen
+payroll roster by name** (`:3632` — the comment above it says *"(D)(1)
+INTERACTS WITH CANTEEN STAFFING, and Phase 2 closed this loop"*), and since
+2026-09-23 it also matches **gaming-account payees by name** as the direct
+route.
+
+### 11.1 Why this is not a duplicate of §1
+
+Different statute, different population, different consequence, different
+remedy:
+
+| | §513(a)(1) / Pub. 3386 (§1 above) | ORC 2915.09(D)(1) (this section) |
+|---|---|---|
+| who | canteen workers | **bingo game operators** |
+| what goes wrong | the volunteer-labour exclusion fails, canteen income becomes UBIT | the operator is **ineligible**; the payment is prohibited outright |
+| severity | a tax bill | an Ohio **criminal** gaming provision and the post's gaming licence |
+| can you pay the tax and move on | yes | **no** |
+
+**A post can decide the UBIT risk is acceptable. It cannot decide that about
+(D)(1).**
+
+### 11.2 The concrete consequence, and it is a blind spot in a SHIPPED gate
+
+Staff records are `{id, name, dob, paid}`, and `paid` comes from a **binary**
+picker — *"Paid staff"* vs *"Volunteer, unpaid"* (`:1042`, written at `:3839`).
+The (D)(1) canteen match fires only `if(s.paid && ...)`.
+
+**So a canteen worker recorded as "Volunteer, unpaid" who receives TIPS is
+invisible to that gate.** They are compensated under §1's own reading — the IRS
+page it quotes says *"Compensation may include tips"* — and compensated under
+(D)(1), which names tips in the statute. But `paid === false`, `payrollMatch`
+stays null, and operator eligibility raises nothing.
+
+**That is not a defect today, because nothing in this app records tips.** It is
+a named PRECONDITION: **the day a tip is recorded anywhere in SAIRNfreedom, the
+binary `paid` flag stops being sufficient for (D)(1)** and the gate must learn a
+third state. Recording that here, where the tipping decision will be read, is
+the point — a gate that silently stops covering its case is this platform's
+most-recorded failure shape.
+
+### 11.3 What this does NOT do
+
+- **It does not propose building tip fields.** §7.3's warning stands: a field
+  that invites a post to chase the credit pushes the decision the wrong way
+  round, and §10.4 leaves §45B(b)(2) unsettled with a second hurdle against the
+  exempt-function position.
+- **It does not change any conclusion above**, or the §9 counsel question.
+- **It is not legal advice**, and the (D)(1) reading is the app's own quoted
+  statutory text, not a new source retrieval — no ORC text was fetched for this
+  section.
