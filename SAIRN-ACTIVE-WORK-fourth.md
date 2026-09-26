@@ -643,3 +643,80 @@ finding against the work; THREE corrections against the obligation text.
 **TWO OF SIX BRIEFS WERE WRONG ABOUT THEIR OWN PREMISE** (3 and 6), and a third
 was 80% already-done (5). Verifying before starting is now earning more than
 the work itself.
+
+---
+
+## 2026-09-26 (queue 6, eleven items) — three were already done, two are BLOCKED by another session's claim, and the tool that dispatched item 11 was wrong about its own number
+
+**LANDED:**
+
+1. **cc's 2026-09-23T20:55:16Z Tier A obligation discharged** (42h overdue,
+   `035c1f72`). Verdict in `docs/tier-a-reviews.json`. The fix (SAIRNcode's
+   7→23 Tier A gate) is correct; **the live probe built to verify it was left
+   broken by that same commit**, in the direction where it would have accused
+   the fix of being over-broad. Two arms guaranteed to fail on correct code,
+   both driven in-process. Plus the `WRITE_GATED` role table whose values
+   nothing read and one of which was false. `tests/sairncode_gates.js` added to
+   `GUARD_TESTS` — measured at **0.40s**, which is what removed cc's stated
+   objection. Three defect records. My own review obligation opened, owner hank.
+2. **`api/sv-auth.js`'s bootstrap 409 named a remedy that cannot work**
+   (`0f57c0db`). The 409 itself is right and untouched; `action:setup` needs an
+   Owner session a zero-active-Owner licence cannot get. Message names both
+   remedies now without revealing which case the caller is in. Sixteen sibling
+   endpoints carry the same sentence and are filed, not swept.
+3. **The four 2026-09-17 gap-status docs re-verified** (`docs/2026-09-25-gap-status-docs-reverified.md`).
+   Three were wrong about their own headline within 30–70 minutes. `esign × 55`
+   in the StoneDesk doc is fifty-five occurrences of the word **"design"**.
+4. **`tools/sync_write_result_check.py`** — blind to **seven** transports and
+   **58** write sites, not the four and 51 the row said; coverage 294 → 346.
+   `stonedesk-hr.html` scored zero as a whole file. Exit code now distinguishes
+   could-not-tell from clean. Twelve new control arms, all driven both ways.
+
+**ALREADY DONE BEFORE THIS QUEUE WAS WRITTEN — verified, not assumed:**
+
+* **Item 3, SAIRNvet's dead demo credentials.** Root-caused and documented on
+  2026-09-25 in `docs/2026-09-03-demo-credentials.md`: the working set is
+  StoneDesk `SD-AUDIT-2026` and SAIRNbiz `SB-TEST-2026`; **SAIRNvet is recorded
+  as NONE** and is recoverable only by Michael's direct database write. Nothing
+  to guess and nothing left to find from inside the repo.
+* **Item 10, SAIRNveterans §45B.** Answered 2026-09-23 in §7 of
+  `docs/2026-09-17-sairnfreedom-tips-tax-treatment.md` (Fourth) and §10 (Cody).
+  The only residual is the NEEDS-OUTSIDE-COUNSEL question, already filed as an
+  open-work row in ask-shape, and it leaves the build conclusion unchanged.
+
+**BLOCKED, FLAGGED RATHER THAN PUSHED PAST:**
+
+* **The four StoneDesk write-result fixes** that item 11 exposed are on the local
+  branch **`fourth/stonedesk-write-results`** (`53cc408e`), verified (131 script
+  blocks 0 failed; the file goes to 0 DISCARDED, 0 unreadable). **cc holds an
+  active claim naming `stonedesk.html`** and `sairn_claim.py check` returns
+  BLOCKED on `same app: stonedesk`. Cherry-pick when it clears. **One of the four
+  is a live false claim, not just a lost write:** `pcToggleSlab()` toasted "Slab
+  published to the catalog" unconditionally because `slabSyncOne()` returned
+  `undefined` on every path while a caller branched on `ok===false`.
+* **The open-work row** for item 11 and the **defect record** for those four —
+  cody holds `platform`, which names both
+  `docs/SAIRN-OPEN-WORK-INDEX.md` and `docs/defect-density-register.json`.
+* **Item 9, SAIRNroofing's dedicated gap audit** — cody holds `sairnroofing`
+  (patent freshness / Xactware / EagleView), which is the same subject.
+* **Item 2, the render half of the click-through re-run.** Not a tooling
+  blocker any more — `0fe57998` replaced the fixed timer with a MutationObserver
+  and a hidden tab is now usable. It needs a **signed-in app**, and signing in
+  means typing a licence key and a PIN into a production login form, which this
+  session will not do. SAIRNvet additionally has **no working credential at
+  all** (item 3), so its third of the run is blocked on Michael's DB write
+  regardless. **Unblocked in thirty seconds by a human:** sign in to StoneDesk
+  (`SD-AUDIT-2026`) and SAIRNbiz (`SB-TEST-2026`) and hand over the tab.
+
+**ONE FINDING LEFT DELIBERATELY UNFIXED AND SAID SO:**
+`sairngrounds.html:2899` `grdData('write','grd_rounds',round)` is the platform's
+last DISCARDED write. Its site carries a written deliberate-bare-call decision
+(the user must not be toasted; `grdData`'s catch already logs every path), so
+whether it belongs in `BENIGN_RESOURCES` is sairngrounds' call, not mine.
+
+**THE PATTERN ACROSS THIS QUEUE, and it is the same one as last time.** Eleven
+items: three were already finished, two of the "real bugs" were deliberate
+designs with the defect one layer away from where the item pointed, and one
+named a figure (four transports, 51 sites, 294→339) that was wrong in the
+direction of under-counting (seven, 58, 294→346). Re-deriving the item's own
+premise before starting it is still earning more than the work.
