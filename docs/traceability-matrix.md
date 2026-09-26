@@ -625,6 +625,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise was wrong, which is stated before anything was built** | **BUILT 2026-09-15 (Hank)** &mdash; `9bc2dd2b`. `tests/stonedesk_inside_corner_radius.js` 14 arms + `tests/stonedesk_fixture_catalog.js` 15 arms | `tests/stonedesk_fixture_catalog.js`, `tests/stonedesk_inside_corner_radius.js` |
 | **`tests/stonedesk_server_backup.js` is RED on origin/main right now, and the arm that is red is the one written to stop exactly this** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED, item 97 is CC&rsquo;s active claim** | `tests/stonedesk_server_backup.js` |
 | **The competitive-gap STATUS doc is stale in exactly the way it was written to prevent &mdash; #5 is BUILT, and there is no un-gated item left in it** | **RE-VERIFIED 2026-09-14 (Cody)** &mdash; correction appended to `docs/2026-09-02-competitive-gap-status-rederived.md` | `api/sd-data-approvals.test.js` |
+| **Sales-lead privacy: VERIFIED BUILT, not rebuilt &mdash; it was item 1 of the platform rule and nothing had confirmed it either way** | **VERIFIED 2026-09-26 (Hank).** NO CODE CHANGED | `tests/crm_seed_not_a_pipeline.js`, `tests/phi_cache_scoped_to_user.js` |
 | **The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a join key on both other legs, and a silent wrong due date found on the way** | **BUILT 2026-09-14 (CC)** &mdash; `stonedesk.html` + `tools/three_way_match_check.py`; held by `tests/stonedesk_po_sequence_and_join.js` (26 assertions) and `tests/run_three_way_match_probe.py` (29 ar | `tests/run_three_way_match_probe.py`, `tests/stonedesk_po_sequence_and_join.js` |
 | 🚨 **EVERY QUOTE BUILDER DELETE UNDID ITSELF ON THE NEXT SAVED QUOTE &mdash; and the user watched the delete succeed** | **CLOSED 2026-09-16 (CC)** &mdash; found and fixed 2026-09-14 while tracing the `sd_drawings` collision row, and **re-verified rather than re-read on 2026-09-16**: `node tests/quote_builder_delete_doe | `tests/quote_builder_delete_does_not_resurrect.js` |
 | **The security status panel ASSERTED what it should have measured &mdash; second instance of the Layer 12 shape, found by auditing all 30 layers for it** | **CLOSED 2026-09-10 (CC)** &mdash; `3f3d429d`, live-verified on `sairn.vercel.app/stonedesk` | `tests/sd_security_status_is_measured.js` |
@@ -804,7 +805,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 751   tests/**, api/** (both walked)
-  open-work rows citing a test       365   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       366   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 11   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
