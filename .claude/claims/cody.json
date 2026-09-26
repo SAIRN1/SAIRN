@@ -2362,6 +2362,21 @@
         "docs/defect-density-register.json",
         "tools/tier_a_review_gate.py"
       ]
+    },
+    {
+      "id": "cody-1790383545",
+      "session": "cody",
+      "subject": "platform",
+      "task": "sairnroofing patent freshness xactware eagleview; sairncare controlled-substance register scoping; item 98 ablation of gated_resource_direct_fetch_header FILES: docs/2026-09-26-sairnroofing-patent-freshness.md docs/2026-09-26-sairncare-controlled-substance-scoping.md docs/2026-09-26-ablation-gated-resource-header.md",
+      "claimed_at": "2026-09-26T00:45:45Z",
+      "claimed_at_epoch": 1790383545.3347108,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-26-ablation-gated-resource-header.md",
+        "docs/2026-09-26-sairncare-controlled-substance-scoping.md",
+        "docs/2026-09-26-sairnroofing-patent-freshness.md"
+      ]
     }
   ],
   "refusals": [
