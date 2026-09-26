@@ -43,7 +43,20 @@ function extract(startAnchor, endAnchor, label) {
   const j = HTML.indexOf(endAnchor, i);
   return HTML.slice(i, j + endAnchor.length);
 }
-const SRC = extract('function operatorEligibility(o){', '\n}', 'operatorEligibility');
+// -- sfD1Name IS EXTRACTED WITH IT, AND THAT WAS THE WHOLE BUG (fixed 2026-09-26)
+// operatorEligibility() calls sfD1Name() to normalise a name before comparing
+// it. This file extracted the function under test and NOT its helper, so every
+// run died on `ReferenceError: sfD1Name is not defined` inside the FIRST
+// evaluate() -- before the control arm, before any finding, before the summary.
+//
+// IT DID NOT REPORT A FAILURE. It threw out of the module and node printed a
+// stack, so a reader saw a crash rather than a verdict, and this probe has
+// been ASSERTING NOTHING since it was written. The sibling suite
+// tests/sf_operator_payee_match.js got this right and says why in its own
+// comment: a stub here that collapsed whitespace would test the stub. So the
+// helper is extracted the same way, from the same page, never re-implemented.
+const NORM_SRC = extract('function sfD1Name(v){', '\n', 'sfD1Name');
+const SRC = NORM_SRC + extract('function operatorEligibility(o){', '\n}', 'operatorEligibility');
 
 function evaluate(operator, opts) {
   opts = opts || {};
@@ -76,6 +89,56 @@ const payeeReason = (r) => r.reasons.filter(x =>
   x.cite === CITE && /gaming account/i.test(x.text));
 
 console.log('REVIEW -- ORC 2915.09(D)(1) direct route (cody, 74d9f0b3)\n');
+
+// -- PREFLIGHT: CAN THIS HARNESS RUN THE FUNCTION AT ALL? ------------------
+// The missing-helper bug this file was repaired from was invisible for one
+// reason: nothing asked this question before the arms started. An extraction
+// that loses a dependency throws out of the module, node prints a stack, and a
+// stack trace is not a verdict -- a reader cannot tell it from a crash in the
+// subject. So the harness is driven ONCE, first, and a failure is reported as
+// COULD NOT DRIVE with the cause named: a third answer, not a finding.
+//
+// DRIVEN, NOT ASSUMED: blanking NORM_SRC reproduces the original
+// ReferenceError and this block reports it instead of the stack.
+//
+// Deliberately not an assert -- this file is REPORT ONLY and exits 0 whatever
+// it finds. What it must never do again is exit having checked nothing while
+// looking like it checked something.
+try {
+  const pre = evaluate(OP, { staff: [{ name: 'Zed Other', paid: true }],
+                             expenses: [{ payee: 'Zed Other', amount: 1 }] });
+  if (!pre || !Array.isArray(pre.reasons)) {
+    finding('P0', 'COULD NOT DRIVE -- operatorEligibility returned '
+      + JSON.stringify(pre) + ' rather than a {reasons:[]} shape. No arm below '
+      + 'means anything.');
+  } else {
+    ok('preflight: the extracted function runs both (D)(1) routes and returns a '
+       + 'reasons array');
+  }
+} catch (e) {
+  finding('P0', 'COULD NOT DRIVE -- the extracted function threw on a clean '
+    + 'operator: ' + e.name + ': ' + e.message + '. That is almost always a '
+    + 'dependency the extraction did not bring with it -- sfD1Name was exactly '
+    + 'that, from 2026-09-23 until 2026-09-26. Every arm below is '
+    + 'unattributable.');
+}
+// AND IT STOPS, WHICH IS THE OTHER HALF. Reporting COULD NOT DRIVE and then
+// running on means every arm below throws the same error, the module dies, and
+// node prints the stack trace this preflight exists to replace -- so the
+// verdict is reported AND buried. Measured: with the helper dropped, the
+// preflight fires and the run still exits 1 on a stack unless it returns here.
+//
+// EXIT 0 IS NOT "PASSED". This file is report-only and its header says so; the
+// P0 finding is what carries the verdict, and a reader who sees it has been
+// told plainly that nothing else was checked.
+if (findings.some(f => f[0] === 'P0')) {
+  console.log('');
+  console.log('='.repeat(74));
+  console.log('STOPPING. A P0 means the harness could not drive the subject, so no');
+  console.log('arm below would be attributable. Nothing was verified -- this is NOT');
+  console.log('a pass, and it is not a finding about the app either.');
+  process.exit(0);
+}
 
 // ── C: the control, first ──────────────────────────────────────────────────
 section('C   the control -- the check fires at all, and is silent on the ordinary case');
@@ -257,7 +320,23 @@ if (findings.length) {
 } else {
   console.log('No findings.');
 }
-for (const l of [
+// -- THE SUMMARY IS DERIVED NOW, AND IT HAD TO BE (2026-09-26) -------------
+// This block was a HARDCODED narrative: it opened "THREE FINDINGS" and
+// enumerated P2, P4 and P5/P6 as live. P2 and P4 are CONDITIONAL arms and both
+// conditions have since been fixed in the app -- sfD1Name() now collapses
+// internal whitespace, and the suite fixture no longer pre-collapses its own
+// input -- so the arms correctly go silent while the summary kept announcing
+// them.
+//
+// That is worse than the crash this file was just repaired from. A probe that
+// cannot run is obviously broken; a probe that runs and CONTRADICTS ITS OWN
+// ARMS is believed. Same family as every hand-written count on this platform
+// that disagreed with its own detail.
+//
+// So the enumerated half is now built from `findings`. The narrative half --
+// the verdict and the judgement-call paragraph -- is a review CONCLUSION about
+// a change, not a measurement, and stays written down.
+const PRESS_ON = [
   'VERDICT: PASSES. The check is real, it fires, it is silent on the ordinary',
   'case, and it does not disturb what was already there.',
   '',
@@ -265,24 +344,27 @@ for (const l of [
   'substring -- IS RIGHT, and for the reason given in the source: a substring',
   'rule flags the commonest legitimate payee a post has and teaches the panel',
   'to be ignored.',
-  '',
-  'THREE FINDINGS, NONE OF THEM THAT CALL:',
-  '  P2  `Pat  Doe` with an internal double space evades the check. trim()',
-  '      strips ends, not internal runs. One character fixes it, and the',
-  '      pre-existing canteen match has the same gap -- this change inherited',
-  '      it rather than introducing it.',
-  '  P4  the suite arm labelled "whitespace-insensitive" pre-collapses the',
-  '      whitespace in its own fixture, so it asserts that "Pat Doe" matches',
-  '      "Pat Doe". It would pass on a function with no whitespace handling at',
-  '      all -- which is the function that shipped. It is how P2 stayed',
-  '      invisible.',
-  '  P5/P6  "A PROMPT, NOT A VERDICT" is true of sfAddExpense and false of the',
-  '      operator: a payee match sets eligible=false, prints the person in the',
-  '      "N of M are barred" box under a statutory citation, and increments a',
-  '      (D)(1) count in the aggregate the DISTRICT receives -- with no way to',
-  '      acknowledge it, unlike the canteen checkbox beside it. Consistent with',
-  '      the existing design, so not a regression; the comment should say which',
-  '      of the two it is a prompt about.',
+  ''
+];
+for (const l of PRESS_ON) console.log(l);
+if (findings.length) {
+  console.log(findings.length + ' FINDING(S), NONE OF THEM THAT CALL'
+    + ' -- listed from the arms that actually raised them:');
+  findings.forEach(f => console.log('  ' + f[0] + '  ' + f[1]));
+} else {
+  console.log('NO FINDINGS RAISED BY ANY ARM. That is a real answer and not an');
+  console.log('empty one: the control above proved the harness drives the real');
+  console.log('function, so silence here means the arms looked and found nothing.');
+}
+// CLOSED SINCE THIS REVIEW WAS WRITTEN, kept because a finding that quietly
+// disappears is indistinguishable from one that was never raised:
+//   P2 -- `Pat  Doe` with an internal double space evaded the check. CLOSED:
+//         sfD1Name() collapses internal runs, verified by driving both the
+//         payee route and the canteen-roster route.
+//   P4 -- the suite's "whitespace-insensitive" arm pre-collapsed its own
+//         fixture, so it asserted that "Pat Doe" matches "Pat Doe". CLOSED
+//         with P2, and the app carries the account at sairnfreedom.html:3611.
+for (const l of [
   '',
   'AND THE DIRECTION OF THE RESIDUAL IS THE thing to carry forward: every',
   'error this check can make is a MISS. An under-reporting statutory check',
