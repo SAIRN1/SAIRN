@@ -174,6 +174,122 @@ check('...and a real trailing comment after a string-bearing call is still '
       'stripped without losing the call',
       count(out, 'WRITES_CONSUMED') == 1, out[-300:])
 
+# ── THE FOUR ARMS ADDED 2026-09-25, ONE PER FIX ────────────────────────────
+# The tool was blind to seven transports and 58 write sites; its exit code
+# reported SUCCESS on a run that classified nothing; a call at the start of a
+# block scored UNREADABLE; and the BENIGN exemption matched a substring of the
+# whole call. Each fix gets an arm and each arm is driven in BOTH directions,
+# because an arm that only proves the new behaviour cannot tell a fix from a
+# blanket.
+
+# 1. A TRANSPORT NOBODY ADDED IS A THIRD STATE, NOT A CLEAN FILE. This is the
+# arm that would have caught the original defect: `zzData` is in neither list, so
+# its write site is not scanned at all, and a report over a population it cannot
+# see must not exit 0.
+rc, out = run_on("function f(){\n"
+                 "  zzData('write','x',rec);\n"
+                 "}")
+check('a transport in NEITHER list is reported by name, with its write count',
+      'TRANSPORT NOT IN THE LIST' in out and 'zzData' in out, out[-400:])
+check('...and a run that could not see a write site does NOT exit 0',
+      rc == 2, 'exit=%s' % rc)
+# CONTROL: a KNOWN transport must not be reported as unknown, or the arm above
+# would pass on a tool that flagged everything.
+rc, out = run_on("function f(){\n"
+                 "  var ok = await sdnData('write','x',rec);\n"
+                 "  if (!ok) toast('no');\n"
+                 "}")
+check('CONTROL: a KNOWN transport is not reported as unknown, and that run exits 0',
+      'TRANSPORT NOT IN THE LIST' not in out and rc == 0, 'exit=%s %s' % (rc, out[-300:]))
+# CONTROL: and a name in NOT_A_TRANSPORT is silent rather than a third state --
+# `sdDataFailed` is stonedesk.html's console reporter and takes 'write' as its
+# first argument, which is how that list came to exist.
+rc, out = run_on("function f(){\n"
+                 "  sdDataFailed('write','x','why');\n"
+                 "}")
+check('CONTROL: a name declared NOT_A_TRANSPORT is neither scanned nor reported',
+      'TRANSPORT NOT IN THE LIST' not in out and rc == 0, 'exit=%s %s' % (rc, out[-300:]))
+
+# 2. "N UNREADABLE, NO DISCARDS" MUST NOT EXIT 0. The whole top of the tool
+# argues a could-not-tell is never folded into a pass; the exit code folded it.
+rc, out = run_on("function f(){\n"
+                 "  foo(bar) sdnData('write','x',rec)\n"
+                 "}")
+check('an unreadable line with NO discards exits 2, not 0 -- the could-not-tell '
+      'is not folded into a pass at the process level',
+      rc == 2 and count(out, 'WRITES_UNREADABLE') >= 1 and count(out, 'WRITES_DISCARDED') == 0,
+      'exit=%s %s' % (rc, out[-300:]))
+# CONTROL: a real FINDING still outranks a could-not-tell. A confirmed discarded
+# write is worse news than an unread line and must not be downgraded by one
+# arriving beside it.
+rc, out = run_on("function f(){\n"
+                 "  foo(bar) sdnData('write','x',rec)\n"
+                 "  sdnData('write','y',rec2);\n"
+                 "}")
+check('CONTROL: a DISCARDED write alongside an unreadable line still exits 1, '
+      'not 2 -- a finding outranks a third state',
+      rc == 1 and count(out, 'WRITES_DISCARDED') == 1, 'exit=%s %s' % (rc, out[-300:]))
+
+# 3. A CALL AT THE START OF A BLOCK IS A BARE STATEMENT. `if (c) { try { x(); }
+# catch(e) {} }` scored UNREADABLE, and a permanent could-not-tell on a real
+# discarded write is the weakest answer this tool can give.
+rc, out = run_on("function f(){\n"
+                 "  if (c && c.id) { try { sdnData('write','x',c); } catch (e) {} }\n"
+                 "}")
+check('a write at the start of a block is DISCARDED, not UNREADABLE',
+      count(out, 'WRITES_DISCARDED') == 1 and count(out, 'WRITES_UNREADABLE') == 0,
+      out[-400:])
+# CONTROL: and a BOUND write inside the same nesting is still READ, or the arm
+# above would pass on a tool that called every nested call discarded.
+rc, out = run_on("function f(){\n"
+                 "  if (c && c.id) { try { var ok = await sdnData('write','x',c); "
+                 "if (!ok) toast('no'); } catch (e) {} }\n"
+                 "}")
+check('CONTROL: a BOUND write at the same nesting is still READ',
+      count(out, 'WRITES_CONSUMED') == 1 and count(out, 'WRITES_DISCARDED') == 0,
+      out[-400:])
+
+# 4. THE BENIGN EXEMPTION IS THE RESOURCE ARGUMENT, NOT A SUBSTRING. A benign
+# name appearing anywhere in the call -- in the payload, in a field value --
+# silenced a real discarded write on a DIFFERENT resource.
+rc, out = run_on("function f(){\n"
+                 "  sdnData('write','sd_customers',{tag:'shared_knowledge'});\n"
+                 "}")
+check('a benign NAME inside the payload does not exempt a write on another '
+      'resource -- the exemption reads the second ARGUMENT',
+      count(out, 'WRITES_DISCARDED') == 1 and count(out, 'WRITES_BENIGN_SINK') == 0,
+      out[-400:])
+# CONTROL: the real benign sink is still exempt, or the arm above would pass on a
+# tool whose exemption had stopped working entirely.
+rc, out = run_on("function f(){\n"
+                 "  sdnData('write','shared_knowledge',{words:w});\n"
+                 "}")
+check('CONTROL: the genuine benign sink is still exempt and still printed',
+      count(out, 'WRITES_BENIGN_SINK') == 1 and count(out, 'WRITES_DISCARDED') == 0
+      and 'benign sink' in out, out[-400:])
+
+# 5. continues_open_construct MUST NOT FAIL OPEN ON A STRING-INTERNAL `//`.
+# It used `split('//')[0]`, so a previous line carrying a URL truncated to
+# something ending in `:` -- one of OPENS -- and the bare call below was scored
+# READ. A false PASS in the function whose job is preventing false findings.
+rc, out = run_on("function f(){\n"
+                 "  var u = 'http://a/b';\n"
+                 "  sdnData('write','x',rec);\n"
+                 "}")
+check('a string-internal // on the PREVIOUS line does not make a bare write '
+      'look like a continuation -- it is still DISCARDED',
+      count(out, 'WRITES_DISCARDED') == 1, out[-400:])
+# CONTROL: a genuine open construct on the previous line is still honoured --
+# SAIRNgrounds' Promise.all([ ... ]) is the real case this exists for.
+rc, out = run_on("function f(){\n"
+                 "  var results = await Promise.all([\n"
+                 "    sdnData('write','x',a)\n"
+                 "  ]);\n"
+                 "  if (!results[0]) toast('no');\n"
+                 "}")
+check('CONTROL: a genuine bracket opened on the previous line is still READ',
+      count(out, 'WRITES_DISCARDED') == 0, out[-400:])
+
 # ── A FILE IT CANNOT READ IS NOT A CLEAN FILE ──────────────────────────────
 r = subprocess.run([sys.executable, TOOL, 'no-such-file-anywhere.html'],
                    capture_output=True, text=True, encoding='utf-8', errors='replace')

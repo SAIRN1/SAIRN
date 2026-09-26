@@ -52,11 +52,65 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# The per-app transports. Derived from a grep of every app HTML rather than
-# remembered -- a transport missing from this list is a whole app scoring zero,
-# which is the silent-pass shape this tool is about.
+# The per-app transports.
+#
+# ── THE COMMENT HERE SAID "DERIVED FROM A GREP" AND THE LIST WAS NOT DERIVED,
+# ── AND IT WENT STALE BY SEVEN NAMES AND 58 WRITE SITES (fixed 2026-09-25) ──
+# It read: *"Derived from a grep of every app HTML rather than remembered -- a
+# transport missing from this list is a whole app scoring zero, which is the
+# silent-pass shape this tool is about."* That sentence describes how the list
+# was FIRST WRITTEN, not a mechanism, and there was no mechanism. Measured:
+#
+#   scpData        22 writes   sairnscape.html
+#   sdData         17 writes   stonedesk.html          <- the platform's largest app
+#   bldData         9 writes   sairnbuild.html
+#   subxCall        4 writes   stonedesk.html          (api/sd-sub-data)
+#   mechData        3 writes   sairnmechanical.html
+#   hrCall          2 writes   stonedesk-hr.html       <- THE WHOLE FILE scored zero
+#   sbBackupFetch   1 write    sairnbiz.html
+#
+# 58 write sites invisible against a denominator of 294 -- so every figure this
+# tool printed was computed over 83% of the population while reading as complete,
+# and `stonedesk-hr.html` was the exact failure the old comment names: a file
+# with no known transport produces no rows, and a file with no rows is skipped by
+# `if not n: continue`, so it never appeared in the output at all. An app absent
+# from a report is indistinguishable from an app with nothing to report.
+#
+# TWO OF THE SEVEN CARRIED REAL DISCARDED WRITES. See the run output.
+#
+# IT IS A LIST PLUS A CONTROL, NOT A DERIVATION (and that is deliberate). A fully
+# derived list would silently absorb any local helper that happens to take
+# `'write'` as its first argument, moving the denominator with nothing saying so
+# -- the same class one step along. So the list stays explicit and reviewable,
+# and `unknown_transports()` below runs on EVERY invocation: a `foo('write', ...)`
+# callee that is in neither list is reported as a third state and makes the exit
+# code non-zero. A new transport can no longer arrive unnoticed, and a
+# non-transport cannot enter without somebody naming it.
 TRANSPORTS = ('sdnData', 'grdData', 'svData', 'scData', 'senData', 'alfData',
-              'rfDataRaw', 'sbData', 'dntData', 'sfData', 'legData')
+              'rfDataRaw', 'sbData', 'dntData', 'sfData', 'legData',
+              # Added 2026-09-25. Every one confirmed to be a real per-app server
+              # transport by reading its body: each POSTs to an /api/ endpoint and
+              # each returns something falsy when the write did not land, which is
+              # the property this tool's whole verdict rests on.
+              'scpData', 'sdData', 'bldData', 'mechData', 'subxCall', 'hrCall',
+              'sbBackupFetch')
+
+# Callees that take a literal 'write' and are NOT server transports.
+# AN ENTRY HERE NEEDS A SENTENCE, because excluding a real transport is how a
+# whole app scores zero -- which is the defect this dict exists to stop being
+# repeatable, not a convenience.
+NOT_A_TRANSPORT = {
+    # A CONSOLE LOGGER, not a transport. `sdDataFailed(action, resource, why)` is
+    # stonedesk.html's own reporter for a write that did NOT reach the server, so
+    # its first argument is the literal 'write' and it matches. It sends nothing.
+    # Caught by unknown_transports() on the FIRST run after that control was
+    # added -- against code written minutes earlier in the same session, which is
+    # the control doing exactly what it is for on the smallest possible sample.
+    'sdDataFailed': 'the console reporter for a failed write, not a transport',
+}
+
+# Any `name('write'` callee, so a transport nobody added can be reported.
+ANY_WRITE_CALLEE = re.compile(r"\b([A-Za-z_$][\w$]*)\s*\(\s*'write'")
 
 CALL = re.compile(
     r"(?P<prefix>[^\n]*?)(?P<call>(?:" + '|'.join(TRANSPORTS) + r")\s*\(\s*'write'[^\n]*)")
@@ -97,8 +151,17 @@ OPENS = ('[', '(', ',', '&&', '||', '?', ':')
 
 
 def continues_open_construct(lines, i):
+    # ── THE NAIVE SPLIT WAS THE ONE THAT FAILED OPEN (fixed 2026-09-25) ──────
+    # This read `lines[j].split('//')[0]`, which is the exact thing the
+    # strip_line_comment docstring further down says not to do -- and HERE the
+    # consequence is the worse direction. A previous line carrying a `//` inside
+    # a STRING, e.g. `var u = 'http://x';`, truncates to `var u = 'http:` which
+    # ends in `:` -- one of OPENS -- so this returned True and the call below was
+    # scored READ. A false PASS, on the function whose whole job is to stop false
+    # findings. Routed through the quote-aware stripper, which is in this same
+    # file and was written for precisely this.
     for j in range(i - 1, max(-1, i - 4), -1):
-        t = lines[j].split('//')[0].rstrip()
+        t = strip_line_comment(lines[j]).rstrip()
         if not t:
             continue
         return any(t.endswith(o) for o in OPENS)
@@ -113,6 +176,31 @@ def classify(prefix, call, lines=None, i=None):
     # reporting a third state, it is broken. Kept as a comment because the
     # number is what exposed it, not the code.
     p = re.sub(r'\bawait\s*$', '', prefix.rstrip()).rstrip()
+    # ── A BLOCK OPENER IS NOT A CONSUMER EITHER (2026-09-25) ────────────────
+    # `if (c && c.id) { try { sdData('write','sd_customers',c); } catch (e) {} }`
+    # scored UNREADABLE, and a permanent could-not-tell on a real discarded write
+    # is the weakest of the three answers this tool can give. The prefix ends in
+    # `{`, so the call is the FIRST STATEMENT OF A BLOCK -- which is exactly a
+    # bare statement, one nesting level in.
+    #
+    # `{` CAN ALSO OPEN AN OBJECT LITERAL, and that case is already handled
+    # without needing to distinguish it: `{ foo: sdData(...) }` puts a `:` at the
+    # end of the prefix and BOUND matches it first. A `{` IMMEDIATELY before a
+    # call, with nothing between, can only be a block.
+    #
+    # STATEMENT POSITION IS THE TEST, NOT AN EMPTY PREFIX. The first attempt at
+    # this fix tried to STRIP the prefix down to nothing and could not: stripping
+    # the `{` off `if (c && c.id) { try {` leaves `try`, then `if (c && c.id)`,
+    # and each strip needs another rule. What actually matters is one character.
+    # A call whose prefix's last non-space character is `{`, `;` or `}` is at the
+    # start of a statement -- a block was just opened, a statement just ended, or
+    # a block just closed -- and there is nothing there to receive a result. It is
+    # the same fact as an empty prefix, one nesting level in.
+    #
+    # `await` is re-stripped after that character, because `try{ await x(...)`
+    # carries two constructs on one prefix.
+    if re.match(r'^[{;}]$', p[-1:]):
+        p = ''
     if re.search(r'\breturn$', p):
         return 'RETURNED'
     if BOUND.search(p):
@@ -127,6 +215,30 @@ def classify(prefix, call, lines=None, i=None):
     if '.then(' in call or '.catch(' in call:
         return 'READ'
     return 'UNREADABLE'
+
+
+# ── THE BENIGN TEST MATCHED A SUBSTRING OF THE WHOLE CALL (fixed 2026-09-25) ──
+# It was `any(("'" + b + "'") in call for b in BENIGN_RESOURCES)`, so a benign
+# resource NAME appearing anywhere inside the call text -- in the payload, in a
+# nested string, in a field value -- silenced a real discarded write on a
+# DIFFERENT resource. `sdData('write','sd_customers',{tag:'shared_knowledge'})`
+# would have been filed as fire-and-forget-on-purpose.
+#
+# Zero live instances today, which is why this is a residue rather than a defect
+# record. It is fixed because the whole point of the BENIGN list is that it is a
+# NARROW, named exemption, and an exemption that can be triggered by an unrelated
+# string is not narrow -- it is the widest possible match wearing a short list.
+RESOURCE_ARG = re.compile(r"\(\s*'write'\s*,\s*'([^']*)'")
+
+
+def resource_arg(call):
+    """The resource the call actually names -- its SECOND argument, not any
+    string inside it. Returns '' when the second argument is not a literal
+    (a variable, a template, a concatenation), which can never equal a name in
+    BENIGN_RESOURCES, so an unparseable resource stays a finding rather than
+    becoming an exemption."""
+    m = RESOURCE_ARG.search(call)
+    return m.group(1) if m else ''
 
 
 TOAST = re.compile(r"\b(?:toast|showToast)\s*\(")
@@ -225,6 +337,29 @@ def strip_line_comment(line):
     return line
 
 
+def unknown_transports(path):
+    """Callees taking a literal 'write' that are in NEITHER list.
+
+    THIS IS THE CONTROL ON THE LIST ABOVE, and it is what makes the list safe to
+    keep by hand. Comments are stripped the same way the scanner strips them, so
+    a comment quoting a removed call cannot invent a transport -- the fifth
+    false-positive class recorded further down this file, arriving here for free
+    rather than a sixth time.
+    """
+    src = io.open(path, encoding='utf-8', errors='replace').read()
+    seen = {}
+    for raw in src.split('\n'):
+        ln = strip_line_comment(raw)
+        if "'write'" not in ln:
+            continue
+        for m in ANY_WRITE_CALLEE.finditer(ln):
+            name = m.group(1)
+            if name in TRANSPORTS or name in NOT_A_TRANSPORT:
+                continue
+            seen[name] = seen.get(name, 0) + 1
+    return seen
+
+
 def scan(path):
     src = io.open(path, encoding='utf-8', errors='replace').read()
     lines = src.split('\n')
@@ -245,7 +380,7 @@ def scan(path):
         if verdict in ('READ', 'RETURNED'):
             out[verdict] += 1
         elif verdict == 'DISCARDED':
-            if any(("'" + b + "'") in m.group('call') for b in BENIGN_RESOURCES):
+            if resource_arg(m.group('call')) in BENIGN_RESOURCES:
                 out['BENIGN'].append((i + 1, ln.strip()[:100]))
             else:
                 out['DISCARDED'].append((i + 1, ln.strip()[:100], nearest_claim(lines, i)))
@@ -259,12 +394,15 @@ def main(argv):
     if not targets:
         targets = sorted(f for f in os.listdir(REPO) if f.endswith('.html'))
     total_d = total_u = total_ok = total_b = 0
+    unknown = {}
     for t in targets:
         path = t if os.path.isabs(t) else os.path.join(REPO, t)
         if not os.path.isfile(path):
             print('COULD NOT RUN: %s does not exist. Naming a file that is not '
                   'there is not a clean scan.' % t)
             return 2
+        for name, cnt in unknown_transports(path).items():
+            unknown.setdefault(name, {})[os.path.basename(path)] = cnt
         r = scan(path)
         n = (r['READ'] + r['RETURNED'] + len(r['DISCARDED']) + len(r['UNREADABLE'])
              + len(r['BENIGN']))
@@ -294,12 +432,51 @@ def main(argv):
     print('WRITES_UNREADABLE:%d' % total_u)
     print('WRITES_BENIGN_SINK:%d   (%s -- fire-and-forget on purpose, counted not hidden)'
           % (total_b, ', '.join(BENIGN_RESOURCES)))
+    if unknown:
+        print()
+        print('TRANSPORT NOT IN THE LIST -- %d callee(s). THESE WRITE SITES WERE NOT'
+              % len(unknown))
+        print('SCANNED AT ALL, so every figure above is over a SMALLER population than')
+        print('the codebase has. This is the defect that made the list stale by seven')
+        print('names and 58 write sites until 2026-09-25; it is a third state now.')
+        for name in sorted(unknown, key=lambda k: -sum(unknown[k].values())):
+            print('   %-16s %3d write(s)   %s'
+                  % (name, sum(unknown[name].values()),
+                     ', '.join('%s:%d' % kv for kv in sorted(unknown[name].items()))))
+        print('   Add a real transport to TRANSPORTS, or name it in NOT_A_TRANSPORT')
+        print('   with a sentence. Do not leave it here.')
+
     print()
     print('A RETURNED write is NOT a pass for the feature -- it moves the decision to')
     print('the caller, and this tool does not follow callers. A READ write is not a')
     print('pass either: binding a result and never testing it scores READ here and is')
     print('the next shape along. Neither is folded into a claim this cannot support.')
-    return 1 if total_d else 0
+    # ── "N UNREADABLE, NO DISCARDS" USED TO EXIT 0 (fixed 2026-09-25) ────────
+    # The line was `return 1 if total_d else 0`, so a run that could not classify
+    # a single write site -- or could not classify forty -- reported SUCCESS as
+    # long as none of the ones it COULD read were discarded. The whole top of
+    # this file argues that a could-not-tell is a third state and is never folded
+    # into a pass; the exit code, which is the only thing a gate or a CI step
+    # reads, folded it into a pass. A caller checking `$? -eq 0` was told this
+    # file was clean on evidence it had just printed as unreadable.
+    #
+    # THREE CODES NOW, and the order matters: a FINDING outranks a
+    # could-not-tell, because a confirmed discarded write is worse news than an
+    # unread line and must not be downgraded by one arriving beside it.
+    #   1  at least one DISCARDED write        -- a finding
+    #   2  no findings, but something was not read: an UNREADABLE line or a
+    #      transport this tool does not know about -- COULD NOT TELL
+    #   0  every write site classified, and none discarded
+    if total_d:
+        return 1
+    if total_u or unknown:
+        print()
+        print('EXIT 2 -- COULD NOT TELL, NOT A PASS: %d unreadable line(s) and %d '
+              'unknown transport(s).' % (total_u, len(unknown)))
+        print('No DISCARDED write was found among the sites that could be read. That is')
+        print('not the same as none existing, and this exit code is the difference.')
+        return 2
+    return 0
 
 
 if __name__ == '__main__':
