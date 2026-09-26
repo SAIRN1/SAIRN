@@ -3554,6 +3554,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-26T11:44:25Z",
+      "opened_at_sha": "99ecd95a6dca92b9b25377c2a7c647ac850ea824",
+      "resources": [
+        "exec_context",
+        "law_clecredits",
+        "rf_settings",
+        "sf_members",
+        "sf_operators"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tests/run_criticality_tier_probe.py",
+        "tools/criticality_tier_check.py"
+      ],
+      "what": "Made while discharging cody's 2026-09-24T12:58:06Z obligation. `_insert_one` in tools/criticality_tier_check.py now takes the FIRST occurrence of each resource name in a rollup cell instead of every occurrence, plus nine arms in tests/run_criticality_tier_probe.py driving the fixer's placement on a SECOND cell.\n\nEVERY RESOURCE NAME THE GATE MATCHED IS COMMENT TEXT OR A FIXTURE STRING, NOT CODE SERVING A RESOURCE. `exec_context`, `law_clecredits`, `rf_settings`, `sf_operators` and `sf_members` appear in my diff only inside the explanatory comment naming the four register cells that carry a duplicated name, and inside a probe assertion string. Nothing here reads, writes or gates any of them. This is the comment-quote matcher class docs/SAIRN-OPEN-WORK-INDEX.md already carries a row for; RECORDED RATHER THAN OVERRIDDEN, on that row's own reasoning that an override normalises talking past the check.\n\nWHAT THE DEFECT WAS. Four of seventeen rollup cells name a resource twice -- once in the alphabetical list and again in the prose after it. `plain[-1]` was therefore the prose mention, so the append path (a name sorting after every list member) targeted a position inside a sentence. `_TAIL_OK` refused three of the four because a word follows; sairnfreedom's duplicate is followed by a COMMA, which it accepts, and a probe name was inserted into the middle of a claim about a different resource. Zero live instances -- no appended name has ever been written by that path.\n\nATTACK THESE FIVE:\n\n(1) I CHOSE DEDUP OVER REFUSAL AND THE OTHER CHOICE IS DEFENSIBLE. A cell that mentions a name twice is ambiguous, and the conservative reading is to REFUSE it and make a human place the name. I went the other way because three of the four cells already refuse for the WRONG reason -- `_TAIL_OK` catching prose by accident, not the duplicate by design -- so a refusal would have been right by coincidence in three cases and wrong in the fourth. Decide whether ambiguity here should refuse. It is cody's tool and cody's call; swapping it is a few lines.\n\n(2) THE FIX DEPENDS ON A NEW UNSTATED PROPERTY OF THE REGISTER'S PROSE -- that when a name appears twice in a cell, the FIRST occurrence is the list one. True in all four cells today, checked. It is an assumption about somebody's writing, exactly like the \"annotated run then plain run\" convention cody correctly flagged as inferred from one cell. Nothing enforces it. If a cell ever mentions a resource in a preamble BEFORE the list, the fix inverts and places worse than the bug did.\n\n(3) THE ARMS DRIVE `_insert_one` AND NOT `--fix-rollup-list`. That is deliberate -- the function is pure, so placement is readable, where the whole-tool arms can only see an exit code, which is why this defect survived arms 11-14. The cost is that nothing new exercises the write path, the refusal path or the self-check on the second cell. Decide whether one whole-tool arm on sairnfreedom is worth the worktree cost.\n\n(4) MY FIRST MEASUREMENT OF THIS WAS WRONG IN THE ACCUSING DIRECTION and the corrected method is what the arms now encode. Scanning the whole LINE rather than filtering by `reg[app]` reported 10 of 17 cells unsorted and tokens escaping into the notes column; the real figures are 4 and none. Check that the arms filter the way the code does and not the way my first attempt did -- if they inherited the wrong scope, they are asserting something false about a correct tool.\n\n(5) THE CONTROLS IN THIS FILE ARE RED AT HEAD AND I DID NOT MAKE THEM GREEN. Four arms fail on `NO TIER sairnmechanical/mech_insurance_policies` -- registered by 72ba2261, never tiered. I tried to attribute it by inserting a minimal row in a throwaway worktree and PROBLEMS went 1 to 3, because tiering a resource must also move the rollup count and the headline sentence. Confirm my nine arms are legible against that red rather than hidden by it, and decide whether an arm asserting \"the shipped register PASSES\" should go red on a routine register-before-tier transient at all.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-26T11:44:25Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
