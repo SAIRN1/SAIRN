@@ -444,6 +444,76 @@ push is rejected with *"could not be read"* on an outgoing range whose base you
 do not recognise, or the gate names commits with somebody else's subject, stop
 and read `git reflog` before retrying. Retrying compounds it.
 
+---
+
+### 2.5 A rebase conflict in a DERIVED document is resolved by re-deriving it, never by merging text
+
+**The rule, in one line: when a rebase or merge conflicts on
+`docs/TOOLING-INVENTORY.md` — or any other generated document — discard both
+sides and re-run the generator. Never resolve the hunk, never take `--ours` or
+`--theirs`.**
+
+    git checkout --ours docs/TOOLING-INVENTORY.md   # or --theirs; either is fine,
+    python tools/tooling_inventory.py               # this is what decides the content
+    git add docs/TOOLING-INVENTORY.md
+
+The side you pick before regenerating does not matter, which is the tell that
+the conflict was never a content disagreement. **Do not name the documents this
+applies to here** — the list that moves is `_gen_docs` in
+`tools/sairn_push_gate_hook.py`, and each entry pairs the document with the
+generator to re-run (§2.3). All three were clean at `2ce6bd88` when this
+section was written, verified by running each `--check`.
+
+**WHY A TEXT MERGE IS WRONG HERE AND NOT MERELY UNTIDY.** A generated document
+is a function of repository state. The two sides of the conflict are that
+function evaluated at two different states — mine before the other clone's
+commits, theirs before mine. A resolved hunk is that function evaluated at *no
+state at all*: the headline counts come from one side and the table rows from
+the other, and the arithmetic no longer holds. The document does not look
+damaged. Nothing in it is misspelled, no row is malformed, and the counts are
+plausible because each was true somewhere. §1.8 says a stale inventory is
+*visibly* wrong; a hand-merged one is the case where that stops being true,
+because it is stale in one column and current in the next.
+
+**IT HAS BEEN DONE RIGHT ONCE AND WRITTEN DOWN NOWHERE.** `d431fdd1`,
+2026-09-16: *"regenerate TOOLING-INVENTORY.md after the rebase — it is
+generated, so the conflict was resolved by re-running the generator, not by
+merging text."* Correct, and a one-off. `git log --grep=rebase` shows a long
+line of `chore(generated): regenerate after rebase onto origin/main` commits
+doing the same thing by habit — habit is what this section replaces.
+
+**AND THE COST IS PAID, ON THE FILE THAT IS APPENDED RATHER THAN GENERATED.**
+2026-09-23, `docs/tier-a-reviews.json`: a rebase conflict from two sessions
+adding records concurrently was hand-resolved, kept both records — and **took
+the wrong side for one record's status fields.** The discharge commit said the
+review had happened and the register said it was still open. Nothing mechanical
+caught it; it was found by re-reading the open list before starting unrelated
+work. **So the rule has a second half for a file with no generator:** re-read
+both sides and rebuild each record whole (§2.1), then verify the specific field
+the conflict touched against the commit that changed it. A conflict resolved
+"keeping both" is only half the job, because the fields inside a kept record
+are still a choice somebody made blind.
+
+**DO NOT RELY ON THE PUSH GATE TO CATCH THIS.** Check 12 in
+`tools/sairn_push_gate_hook.py` asks *did this push break a generated
+document*, by running the generator's `--check` at the tip **and at the base**.
+When the base was clean it blocks correctly. When the document was **already**
+dirty at the base it prints a `NOTICE` and **allows** — deliberately, so nobody
+is refused for another session's stale document (§4.2's spirit). A rebase
+window is precisely when the base is another clone's tip, so *already dirty at
+base* is a live state and not a hypothetical, and a hand-merged document
+arriving in that window is allowed with a notice printed among many.
+
+**A REBASE ALSO GOES STALE WITH NO CONFLICT AT ALL, which is the case no
+resolution habit reaches.** `6ad42dc0`: MASTER-PLAN and TOOLING-INVENTORY both
+*"went stale in the cross-session rebase window, found by running their own
+`--check` at HEAD."* Git had nothing to conflict on — the other clone added
+tools without touching my copy of the document, so the merge was clean and the
+derived counts were wrong the moment it completed. **Therefore: after any
+rebase that pulled in another clone's commits, run each generator's `--check`
+at the new HEAD before pushing.** Not because a conflict appeared, but because
+one did not.
+
 ## Part 3 — Push protocol, in full
 
 The two-line version is in `CLAUDE.md`. This is what each step actually means.
