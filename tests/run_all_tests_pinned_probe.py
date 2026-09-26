@@ -142,6 +142,7 @@ def spy(cmd, **kw):
             ['git', 'rev-parse', 'HEAD'], cwd=kw.get('cwd'),
             capture_output=True, text=True).stdout.strip()
         landed['has_tests'] = os.path.isdir(os.path.join(kw.get('cwd'), 'tests'))
+        landed['cmd'] = list(cmd)
         kw.pop('cwd', None)
         return real_popen4([sys.executable, '-c', 'pass'], **kw)
     return real_popen4(cmd, **kw)
@@ -156,6 +157,10 @@ finally:
 # AND THE ARM THAT WOULD HAVE CAUGHT THE MISS: with the spy aimed at the wrong
 # function `landed` is empty, and the checks below would compare None to None
 # in a way that can read as a pass. Assert the interception happened FIRST.
+check('the inner command is spawned UNBUFFERED, or the line-by-line relay '
+      'is a slower communicate() and --out sits empty for the whole run',
+      bool(landed.get('cmd')) and '-u' in landed['cmd'],
+      repr(landed.get('cmd')))
 check('the spy actually intercepted the inner invocation',
       bool(landed), 'landed is empty -- the spy is aimed at the wrong function '
       'and this arm just ran the real suite')

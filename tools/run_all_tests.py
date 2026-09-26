@@ -644,7 +644,14 @@ def pinned_main(argv):
                   'worktree and are NOT tested.' % len(dirty))
         print('')
         sys.stdout.flush()
-        inner = [sys.executable, os.path.join(wt, 'tools', 'run_all_tests.py')]
+        # `-u` IS LOAD-BEARING AND WAS MISSING. The relay below reads the
+        # child's stdout line by line, and its comment says that is so a
+        # two-hour run stays live on the terminal. It did not: a child whose
+        # stdout is a PIPE block-buffers, so --out sat at four lines for
+        # forty-five minutes of a real run while the suite was working fine.
+        # Unbuffered output is what makes the line-by-line relay mean anything;
+        # without it the relay is a slower communicate().
+        inner = [sys.executable, '-u', os.path.join(wt, 'tools', 'run_all_tests.py')]
         inner += [a for a in argv
                   if a not in ('--pinned', '--pinned-ignore-dirty', '--rev', rev)]
         # ── THE CHILD'S OUTPUT IS RELAYED THROUGH sys.stdout, NOT INHERITED ──
