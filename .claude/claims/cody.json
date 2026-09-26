@@ -2439,6 +2439,23 @@
         "stonedesk.html",
         "tools/wait_for.py"
       ]
+    },
+    {
+      "id": "cody-1790451291",
+      "session": "cody",
+      "subject": "cody-q12",
+      "task": "delete the vmAnalyze/vmPreview orphan module in stonedesk.html per the Care Guide precedent; resolve defect_register.py --check red on 1f993642 (3 out-of-vocabulary values, 2 judgment calls); add the missing sub-national dimension to the 08-21 trades research rule tracking; register the 22-arm Vein Match suite in GUARD_TESTS now that no claim names sairn_push_gate_hook.py; methodology sweep for regex-extracted-value-with-silent-default over LLM prose. LEXICAL-BLOCK NOTE PER PR 4.3: hank blocked me on 'same app: stonedesk', and hank's OWN claim text says 'stonedesk.html is cody-q11's and is READ ONLY here' -- their named stonedesk file is tests/stonedesk_server_backup.js, which I do not touch. Proceeding without rewording. SEPARATE CLASS FROM HANK'S SWEEP: hank has the unreachable-failure-path / wrong-field-always-same-answer class in tools/unreachable_failure_path_scan.py (not yet on disk); mine is a value PARSED from model prose with a silent fallback, which is a different defect and will cross-reference rather than duplicate. SUBJECT NAMED PER PR 4.3 FILES: stonedesk.html docs/superpowers/specs/2026-08-21-plumbing-electrical-hvac-worldwide-research.md docs/defect-density-register.json tools/sairn_push_gate_hook.py tools/prose_value_default_scan.py",
+      "claimed_at": "2026-09-26T19:34:51Z",
+      "claimed_at_epoch": 1790451291.155625,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/defect-density-register.json",
+        "docs/superpowers/specs/2026-08-21-plumbing-electrical-hvac-worldwide-research.md",
+        "stonedesk.html",
+        "tools/prose_value_default_scan.py",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
