@@ -138,3 +138,59 @@ who has not entered any data yet — no error, no warning, and every write
 answering 503 into a console nobody is reading. That is why these sat for ten
 days without anyone noticing, and why the detection had to come from comparing
 `sql/` against a live capture rather than from the app.
+
+---
+
+## Added 2026-09-26 (Hank) — SAIRNmechanical, two files, INDEPENDENT of the 2026-09-11 capture
+
+**These two are not part of the table above and do not depend on its
+re-capture.** They were written on 2026-09-25 and 2026-09-26 for features that
+landed end-to-end in the same session, so their never-run status is a fact about
+this week rather than a verdict derived from a stale snapshot.
+
+| File | What it provisions | State |
+|---|---|---|
+| `sql/mech_site_assets_schema.sql` | **Re-run.** It already exists live; the file gained an idempotent `ALTER` adding `site_state` and `gwp_over_150` for the CARB limb (17 CCR 95380) | **NOT RUN.** Until it is, `carbScope()` answers `unknown_jurisdiction` for every asset — correct, and useless |
+| `sql/mech_insurance_schema.sql` | **New table.** `mech_insurance_policies`, the business's own COI position | **NOT RUN.** Until it is, the endpoint answers `provisioned:false` and the panel says so rather than showing an empty board |
+
+### What was checked here, and what was NOT
+
+**CHECKED, mechanically, on both files:**
+
+- `tools/sairn_sql_preflight.py` reports **0 findings** on each.
+- Parens balanced, every statement terminated, no `drop`, no `truncate`, no
+  `delete`.
+- Idempotent throughout: 1 `create table if not exists`, 3 and 5
+  `add column if not exists`, 3 `create index if not exists` apiece. **Both are
+  safe to re-run**, which is what makes the `mech_site_assets` row above a
+  re-run rather than a migration.
+- Grants are exactly `select, insert, update` to `service_role` on each. **No
+  `delete`** — a lapsed policy is part of the coverage history somebody may have
+  to answer for, and an asset is a description rather than a disposable row.
+- **Every column named in each file's own VERIFY block is declared in that
+  file.** This is the one that would rot silently: a verify query naming a
+  column that was renamed checks fewer rows and still prints a clean-looking
+  result.
+
+**NOT CHECKED, and it is not a formality:**
+
+- **The SQL was never parsed by Postgres.** There is no `psql`, no `pglast` and
+  no `sqlparse` in this clone, so "syntactically sound" here means *structurally
+  sound by inspection*, not *accepted by the server*. The preflight itself exits
+  **2**, printing its own reason: with no `--live` snapshot it compares against
+  the repo's `CREATE TABLE` statements rather than the database, so *"a schema
+  file written but never run looks PRESENT"*. That is a COULD-NOT-TELL and it is
+  not being folded into a pass.
+- Whether `mech_site_assets` in production already has the two CARB columns from
+  some earlier hand-run. The `ALTER` is idempotent either way, so this is
+  unknown rather than risky.
+
+### Why a session cannot run them
+
+Same reason as every row above: the Supabase SQL editor as the owner role. **The
+verify blocks at the foot of each file are the acceptance test** — run them and
+read the rows, rather than trusting that the editor reported success. Both files
+say in their own text what a defaulted column would do in each direction, which
+is the thing to check: a `site_state` with a default asserts a jurisdiction
+nobody recorded, and a `gwp_over_150` or an insurance limit defaulted to
+anything reads as coverage nobody has evidence of.
