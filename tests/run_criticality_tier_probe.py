@@ -535,6 +535,116 @@ _n, _e = C.resource_names(os.path.join(REPO, 'tools', 'criticality_tier_check.py
 check('a file with no resources array is an ERROR, not an app with no resources',
       _n is None and _e, 'returned %r / %r' % (_n, _e))
 
+# ══ THE FIXER'S PLACEMENT, ON A SECOND CELL AND ON A DIFFERENT CELL SHAPE ══
+# Added 2026-09-25, reviewing the change that brought `--fix-rollup-list` in.
+# That review request said two things this section answers:
+#
+#   "(2) PLACEMENT AMONG PLAIN NAMES ONLY ... is a rule I inferred from ONE
+#        app's cell ... If some app's cell is ordered differently, the fixer
+#        will insert somewhere a reader would not expect, and the check will
+#        still pass -- the failure is cosmetic and silent."
+#   "(3) THE FIXER IS EXERCISED ONLY ON STONEDESK. Arms 11-14 all mutate the
+#        StoneDesk cell ... A second app's cell would be a structurally
+#        different fixture rather than another copy of the same one."
+#
+# Both were right, and the failure was one step worse than "cosmetic":
+# FOUR OF SEVENTEEN CELLS NAME A RESOURCE TWICE -- once in the alphabetical
+# list and again in the prose after it. `plain[-1]` was therefore the PROSE
+# mention, so an appended name landed inside that sentence. `_TAIL_OK` refused
+# three of the four because a word follows; sairnfreedom's is followed by a
+# COMMA, which it accepts. Fixed by taking the FIRST occurrence of each name
+# only. These arms hold that fix on the cell that actually broke.
+#
+# DRIVEN AGAINST `_insert_one` DIRECTLY, which is pure -- it returns a new
+# string and writes nothing -- so no worktree and no register write is needed
+# and the PLACEMENT is visible rather than inferred from an exit code. The arms
+# above run the whole tool and cannot see where a name landed, which is exactly
+# why this defect survived them.
+_reg = C.apps_with_registries()
+_lines = io.open(os.path.join(REPO, REL_DOC), encoding='utf-8', newline='').read().split('\n')
+_idx = C._rollup_line_indices(_lines)
+_APP = 'sairnfreedom'
+check('fixture: the %s rollup row is locatable and its registry parses' % _APP,
+      _APP in _idx and _APP in _reg and not isinstance(_reg[_APP], C.SHAPE_ERROR),
+      'idx=%s reg=%s' % (_APP in _idx, _APP in _reg))
+if _APP in _idx and _APP in _reg and not isinstance(_reg[_APP], C.SHAPE_ERROR):
+    _fl = _lines[_idx[_APP]]
+    _fnames = set(_reg[_APP])
+
+    # THE PRECONDITION. Without a duplicated name in this cell the arms below
+    # pass vacuously on a tool that never had the fix -- the shape of hole this
+    # probe's own arm-12 comment records picking `val` out of an annotation.
+    _all = [b.group(1) for b in C.BACKTICKED.finditer(_fl) if b.group(1) in _fnames]
+    _dups = sorted({n for n in _all if _all.count(n) > 1})
+    check('fixture: %s names at least one resource TWICE in its rollup cell, '
+          'which is the condition these arms are about (%s)' % (_APP, _dups or 'NONE'),
+          bool(_dups), 'no duplicate -- these arms would prove nothing here')
+
+    # (a) THE FIX. A name sorting after every list member is appended at the END
+    # OF THE LIST, immediately after the last ALPHABETICAL member.
+    _probe = 'zzz_probe_sorts_last'
+    _new, _why = C._insert_one(_fl, _probe, _fnames | {_probe})
+    check('a name sorting after every list member is APPENDED rather than refused',
+          _why is None, str(_why)[:160])
+    if _why is None:
+        _k = _new.find('`%s`' % _probe)
+        _before = _new[:_k]
+        _last_listed = None
+        for b in C.BACKTICKED.finditer(_before):
+            if b.group(1) in _fnames:
+                _last_listed = b.group(1)
+        _plain_sorted = sorted(n for n in set(_all))
+        check('...directly after the LAST name in the alphabetical list (`%s`), '
+              'not after a prose mention of an earlier one'
+              % (_plain_sorted[-1] if _plain_sorted else '?'),
+              _last_listed == (_plain_sorted[-1] if _plain_sorted else None),
+              'landed after `%s`; the list ends at `%s`'
+              % (_last_listed, _plain_sorted[-1] if _plain_sorted else '?'))
+        check('...and it did not land inside a bold annotation',
+              _new.count('**', 0, _k) % 2 == 0,
+              'odd ** parity before the insert means it is inside a bold run')
+
+        # (c) THE NEGATIVE, AND IT IS THE ARM THAT MATTERS. Re-derive the token
+        # list the OLD rule produced -- every occurrence, not the first -- and
+        # confirm it picks a DIFFERENT last name. Without this the arm above
+        # cannot tell the fix from a cell that never needed one.
+        _old_plain = [(b.start(), b.group(1)) for b in C.BACKTICKED.finditer(_fl)
+                      if b.group(1) in _fnames
+                      and _fl.count('**', 0, b.start()) % 2 == 0]
+        check('CONTROL: the PRE-FIX rule would have appended after `%s` instead '
+              '-- a prose mention, not the end of the list'
+              % (_old_plain[-1][1] if _old_plain else '?'),
+              bool(_old_plain) and _old_plain[-1][1] != _last_listed,
+              'old rule and new rule agree here, so this cell does not '
+              'discriminate and the fix is untested by these arms')
+
+    # (b) A MID-LIST INSERT IS UNAFFECTED, or the fix above would be a
+    # regression dressed as a repair.
+    _mid = 'sf_mz_probe'
+    _new2, _why2 = C._insert_one(_fl, _mid, _fnames | {_mid})
+    check('CONTROL: an ordinary mid-list insert still lands alphabetically',
+          _why2 is None and ('`sf_members`, `%s`' % _mid) in _new2,
+          str(_why2)[:120] if _why2 else 'placed wrong')
+
+    # (4) TWO NAMES MISSING FROM ONE CELL. The review request names this as the
+    # one case it knew was uncovered: "nothing asserts the behaviour when TWO
+    # names are missing from the same cell, and the insert loop re-derives its
+    # tokens per name specifically to make that case work." Driven the way
+    # fix_rollup_lists drives it -- _insert_one called again on its own output.
+    _p1, _p2 = 'sf_aa_probe', 'sf_zz_probe'
+    _n1, _w1 = C._insert_one(_fl, _p1, _fnames | {_p1, _p2})
+    _n2, _w2 = (C._insert_one(_n1, _p2, _fnames | {_p1, _p2})
+                if _w1 is None else (None, _w1))
+    check('TWO names inserted into one cell in sequence both land, and neither '
+          'displaces the other',
+          _w1 is None and _w2 is None
+          and ('`%s`' % _p1) in (_n2 or '') and ('`%s`' % _p2) in (_n2 or ''),
+          'first=%s second=%s' % (str(_w1)[:60], str(_w2)[:60]))
+    if _w1 is None and _w2 is None:
+        check('...and the cell still holds every name it held before',
+              all(('`%s`' % n) in _n2 for n in set(_all)),
+              'the second insert dropped a name the first one had')
+
 print('\n%s  run_criticality_tier_probe: %d failed'
       % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)

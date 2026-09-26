@@ -487,10 +487,40 @@ def _insert_one(line, name, names):
     span would silently widen an annotation to cover a resource it was never
     written about, which is a worse defect than the missing name.
     """
-    toks = []
+    # ── A NAME MENTIONED TWICE IS IN THE LIST ONCE (added 2026-09-25, found
+    # ── reviewing this change) ──────────────────────────────────────────────
+    # FIRST OCCURRENCE ONLY. These cells name a resource in the alphabetical
+    # list AND SOMETIMES AGAIN in the prose that follows it -- *"&mdash; the
+    # sharpest is `sf_operators`, which carried a named volunteer..."*. Without
+    # this, `plain[-1]` is the PROSE mention rather than the end of the list,
+    # and the append path below lands a new name inside that sentence.
+    #
+    # MEASURED RATHER THAN ARGUED, on the real register at the time: four of
+    # seventeen cells mention a name twice -- stonedesk (`exec_context`),
+    # sairnlaw (`law_clecredits`), sairnroofing (`rf_settings`), sairnfreedom
+    # (`sf_operators`) -- and taking the first occurrence only makes ALL
+    # SEVENTEEN plain runs monotonic, where four were not.
+    #
+    # `_TAIL_OK` CAUGHT THREE OF THE FOUR AND NOT THE FOURTH, which is why this
+    # is a fix and not a tidy-up. Three of those prose mentions are followed by
+    # a word, so the append refused. sairnfreedom's is followed by a COMMA,
+    # which `_TAIL_OK` accepts -- so a name sorting after every plain name was
+    # inserted into the middle of that sentence, turning "the sharpest is
+    # `sf_operators`, which carried..." into "...is `sf_operators`,
+    # `zzz_sorts_last`, which carried...". Driven, not reasoned: _insert_one is
+    # pure, so it was called with a probe name and the placement read off.
+    #
+    # AND THE SELF-CHECK WOULD HAVE BLESSED IT. cmd_fix_rollup_lists re-parses
+    # from disk and asks whether the cell names the resource. It would -- the
+    # name is in the cell. So the fixer's own verification confirms the bad
+    # placement as success, which is the "cosmetic and silent" failure this
+    # change's own review request predicted, one step worse than predicted
+    # because it lands inside a claim about a DIFFERENT resource.
+    toks, _seen = [], set()
     for m in BACKTICKED.finditer(line):
-        if m.group(1) not in names:
+        if m.group(1) not in names or m.group(1) in _seen:
             continue
+        _seen.add(m.group(1))
         # Inside a bold run iff an odd number of `**` markers precede it.
         bold = line.count('**', 0, m.start()) % 2 == 1
         toks.append((m.start(), m.end(), m.group(1), bold))
