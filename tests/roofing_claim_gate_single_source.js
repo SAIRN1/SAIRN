@@ -291,16 +291,46 @@ test('a non-string role is refused rather than coerced', () => {
 // ---------------------------------------------------------------------------
 section('the rf_claims write does not store the caller\'s own assignee');
 
+// ── THE WINDOW WAS A MAGIC 4200 CHARACTERS AND IT BROKE ON A COMMENT ───────
+// Both arms below sliced `src.slice(i, i + 4200)`. Adding eight lines of
+// comment to the branch pushed the POST past 4200, so two arms went red with
+// messages about the authorised column and the ordering -- neither of which had
+// changed. A fixed-length window is a check whose subject silently leaves it:
+// it fails on a comment and, worse, would PASS on a property that moved just
+// inside the boundary. The block now ends where the branch ends.
+function claimWriteBlock(i) {
+  const rest = src.slice(i + 10);
+  const next = rest.indexOf("if (resource === '");
+  const block = next > 0 ? src.slice(i, i + 10 + next) : src.slice(i);
+  // A zero-length or absurdly short block means the branch marker moved and
+  // these arms are about to pass over nothing. That is a could-not-tell, not a
+  // pass, and it is the failure mode the magic number was already courting.
+  assert.ok(block.length > 1500,
+    'the rf_claims write block came out ' + block.length + ' chars -- the branch '
+    + 'marker moved and these arms would be asserting over almost nothing');
+  return block;
+}
+
 test('the write branch strips assigned_employee_id from the stored blob', () => {
   // The blob was `Object.assign({}, payload, norm.money)` with only
   // money_summary and id removed, so the CALLER's assigned_employee_id was
   // persisted inside data alongside the authorised column. Inert only because
   // the read branch's Object.assign happens to overlay the real column last --
   // an ordering, not a guarantee. Asserted on the WRITE for that reason.
+  // ── THE MECHANISM MOVED 2026-09-26 AND THIS ARM CAUGHT IT, which is the
+  // arm working rather than the arm being wrong. The hand-written
+  // `delete dataBlob.assigned_employee_id;` became a COLUMN KEY passed to
+  // storedBlob() (api/_lib/blob.js), so the literal string anchor stopped
+  // matching while the property it guarded still held. Re-anchored on the
+  // PROPERTY -- "assigned_employee_id is removed from the blob by the write" --
+  // and BOTH spellings are accepted, because pinning only the new one would
+  // make this arm go red again on the next refactor for the same non-reason.
   const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
   assert.ok(i > 0, 'could not find the rf_claims write branch');
-  const block = src.slice(i, i + 4200).replace(/\/\/[^\n]*/g, '');
-  assert.match(block, /delete dataBlob\.assigned_employee_id;/,
+  const block = claimWriteBlock(i).replace(/\/\/[^\n]*/g, '');
+  const stripped = /delete dataBlob\.assigned_employee_id;/.test(block)
+    || /storedBlob\(payload,\s*\[[^\]]*'assigned_employee_id'[^\]]*\]\s*\)/.test(block);
+  assert.ok(stripped,
     'the rf_claims write is storing the caller\'s assigned_employee_id in the blob again');
   // and the authorised column is still written from `assignee`, not the payload
   assert.match(block, /assigned_employee_id: assignee/,
@@ -309,11 +339,32 @@ test('the write branch strips assigned_employee_id from the stored blob', () => 
 
 test('the strip happens BEFORE the row is sent, not after', () => {
   const i = src.indexOf("resource === 'rf_claims' && action === 'write'");
-  const block = src.slice(i, i + 4200);
-  const del = block.indexOf('delete dataBlob.assigned_employee_id;');
+  const block = claimWriteBlock(i);
+  // Same re-anchoring. storedBlob strips AT CONSTRUCTION, so for that spelling
+  // the ordering question is whether the blob is BUILT before the POST -- which
+  // is the same question, asked of the construction site instead of a delete.
+  const del = Math.max(block.indexOf('delete dataBlob.assigned_employee_id;'),
+                       block.indexOf('storedBlob(payload,'));
   const post = block.indexOf("rest('rf_claims?on_conflict=license_hash,claim_id')");
   assert.ok(del > 0 && post > 0 && del < post,
-    'the delete is not ahead of the POST that stores the blob');
+    'the strip is not ahead of the POST that stores the blob');
+});
+
+test('CONTROL -- neither arm above passes on a blob that keeps the field', () => {
+  // Without this the re-anchoring is unfalsifiable: a regex that accepts two
+  // spellings is one edit away from accepting anything. Both negatives are
+  // shapes a future refactor could plausibly produce.
+  const keepsIt = "const dataBlob = Object.assign({}, payload, norm.money);\n"
+    + "delete dataBlob.money_summary;\n"
+    + "rest('rf_claims?on_conflict=license_hash,claim_id')";
+  assert.ok(!/delete dataBlob\.assigned_employee_id;/.test(keepsIt),
+    'the old anchor matches a blob that keeps the field');
+  assert.ok(!/storedBlob\(payload,\s*\[[^\]]*'assigned_employee_id'[^\]]*\]\s*\)/
+    .test(keepsIt), 'the new anchor matches a blob that keeps the field');
+  const wrongKeys = "const dataBlob = storedBlob(payload, ['id', 'job_id']);";
+  assert.ok(!/storedBlob\(payload,\s*\[[^\]]*'assigned_employee_id'[^\]]*\]\s*\)/
+    .test(wrongKeys),
+    'the new anchor matches a storedBlob call that does NOT list the field');
 });
 
 console.log('\n' + (fail === 0

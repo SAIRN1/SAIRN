@@ -1,0 +1,11 @@
+{
+  "unconverted": 64,
+  "converted": 33,
+  "by_kind": {
+    "BUILT": 159,
+    "RAW": 64,
+    "CONVERTED": 33,
+    "NESTED": 2
+  },
+  "note": "A RATCHET, not a target. unconverted must never rise. Lower it by converting a site and re-pinning with --repin, never to make a run pass."
+}

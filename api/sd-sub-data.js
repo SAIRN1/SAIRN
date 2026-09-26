@@ -34,6 +34,10 @@
 
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest, roleSet } = require('./_lib/auth');
+// storedBlob: the ONE place that knows the scope keys no stored blob may carry.
+// See api/_lib/blob.js -- COLUMN keys stay per-branch here because which payload
+// fields are real columns is a fact about each table.
+const { storedBlob } = require('./_lib/blob');
 
 const RESOURCES = { roster: true, jobs: true, progress_photos: true };
 const WRITE_ALLOWED_ROLES = roleSet({ owner: true, admin: true });
@@ -363,9 +367,14 @@ module.exports = async (req, res) => {
         // panel can say so out loud.
       }
 
-      const jobData = Object.assign({}, payload);
-      delete jobData.sub_id; // sub_id is its own column, not duplicated inside `data`
-      delete jobData.id;     // id is server-assigned/DB-assigned, never client-supplied
+      // storedBlob: the two hand-written deletes become the column list, and the
+      // scope keys are stripped as well -- which nothing here was doing.
+      // COLUMN LIST VERIFIED AGAINST THE READ (:382 and :399): both rebuild the
+      // row as `Object.assign({ id: row.id, sub_id: row.sub_id }, row.data)`, so
+      // `id` and `sub_id` are the real columns and the blob is spread LAST over
+      // them -- a payload copy of either would have OVERRIDDEN the real value on
+      // the way back out, which is the sharper half of why they were deleted.
+      const jobData = storedBlob(payload, ['sub_id', 'id']);
       jobData.updatedAt = nowISO();
 
       if (payload.id) {
@@ -454,16 +463,19 @@ module.exports = async (req, res) => {
       // self-approve its own photo. That's the actual "not self-
       // certification" enforcement point, not just UI copy.
       const isFinal = payload.is_final === true;
-      const recordData = Object.assign({}, payload);
-      delete recordData.job_id;
-      delete recordData.id;
-      delete recordData.captured_by_type;
-      delete recordData.captured_by_id;
-      delete recordData.is_final;
-      delete recordData.qc_status;
-      delete recordData.qc_reviewer_id;
-      delete recordData.qc_notes;
-      delete recordData.qc_reviewed_at;
+      // storedBlob: the NINE hand-written deletes become the column list, plus
+      // the scope keys nothing here stripped. This is the branch that makes the
+      // case for blob.js most plainly -- nine fields, every one of them a real
+      // column on sd_progress_photos, each named once in a list a reader has to
+      // trust is complete. COLUMN LIST VERIFIED AGAINST THE READ: the row comes
+      // back through flattenProgressPhoto(), which overlays the columns onto the
+      // blob, and the four qc_* fields in particular are SERVER-SET on review --
+      // a payload copy inside the blob is a caller-supplied qc verdict sitting
+      // on a record whose whole point is that a client cannot self-approve.
+      const recordData = storedBlob(payload, [
+        'job_id', 'id', 'captured_by_type', 'captured_by_id', 'is_final',
+        'qc_status', 'qc_reviewer_id', 'qc_notes', 'qc_reviewed_at'
+      ]);
       const r = await fetch(rest('sd_progress_photos'), {
         method: 'POST',
         headers: Object.assign({}, sbHeaders, { Prefer: 'return=representation' }),

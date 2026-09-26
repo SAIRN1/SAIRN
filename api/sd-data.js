@@ -2821,7 +2821,19 @@ module.exports = async (req, res) => {
                                  note: 'no server-side reservation existed for that slab' });
           return;
         }
-        const merged = Object.assign({}, payload, {
+        // storedBlob WITH AN EMPTY COLUMN LIST, AND THE EMPTINESS IS THE
+        // DECISION. COLUMN LIST VERIFIED AGAINST THE READ (:2571): the slabs read
+        // selects `data` ALONE and returns `x.data` whole, so `id` LIVES INSIDE
+        // THE BLOB on purpose -- stripping it would make every slab unidentifiable
+        // to the client. `slab_id` is taken from the separate `slabId` variable,
+        // not from this object, so nothing here feeds a column. What the call
+        // still buys is the scope-key strip, which is the whole defect on this
+        // branch: a posted license_hash rode into the blob and came back out.
+        //
+        // `reservedFor_expected` and `holdMinutes` remain hand-deleted below:
+        // they are REQUEST-ONLY control fields, not columns and not scope keys,
+        // and blob.js deliberately holds only the universal truth.
+        const merged = Object.assign(storedBlob(payload, []), {
           status: 'reserved', reservedFor: who, reservedUntil: reservedUntil
         });
         delete merged.reservedFor_expected;
@@ -6023,8 +6035,12 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'INVALID_BRANCH', message: 'sen_branches: state must be a 2-letter code (e.g. OH). It is what a per-state EVV or training rule is matched on.' } });
         return;
       }
-      const brBody = Object.assign({}, payload, { state: brState });
-      delete brBody.id;
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6006) -- it selects
+      // branch_id,data and reconstructs `Object.assign({ id: x.branch_id }, x.data)`,
+      // so `id` is the only real column and the blob is spread LAST over it.
+      // This replaces `delete brBody.id` and adds the scope-key strip the hand
+      // written delete never did.
+      const brBody = Object.assign(storedBlob(payload, ['id']), { state: brState });
       const r = await fetch(rest('sen_branches?on_conflict=license_hash,branch_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6079,8 +6095,10 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'INVALID_CONTRACT', message: 'sen_payer_contracts: ' + pcProblems.join('; ') } });
         return;
       }
-      const pcBody = Object.assign({}, payload, { state: pcState, rate_per_hour: Number(payload.rate_per_hour) });
-      delete pcBody.id;
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6060) -- selects
+      // contract_id,data and reconstructs `Object.assign({ id: x.contract_id }, x.data)`.
+      const pcBody = Object.assign(storedBlob(payload, ['id']),
+        { state: pcState, rate_per_hour: Number(payload.rate_per_hour) });
       const r = await fetch(rest('sen_payer_contracts?on_conflict=license_hash,contract_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6151,12 +6169,13 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'INVALID_AUTHORIZATION', message: 'sen_authorizations: ' + azProblems.join('; ') } });
         return;
       }
-      const azBody = Object.assign({}, payload, {
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6124) -- selects
+      // auth_id,data and reconstructs `Object.assign({ id: x.auth_id }, x.data)`.
+      const azBody = Object.assign(storedBlob(payload, ['id']), {
         units_authorized: Number(payload.units_authorized),
         minutes_per_unit: Number(payload.minutes_per_unit),
         auth_number: String(payload.auth_number).trim()
       });
-      delete azBody.id;
       // Stripped rather than ignored. A client that posts one would otherwise
       // have it stored on the row and read back by the next device, where it
       // reads exactly like a figure the server computed -- and it is the one
@@ -6223,12 +6242,15 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'INVALID_PAY_RATE', message: 'sen_pay_rates: ' + prProblems.join('; ') } });
         return;
       }
-      const prBody = Object.assign({}, payload, {
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6203) -- selects
+      // rate_id,data and reconstructs `Object.assign({ id: x.rate_id }, x.data)`.
+      // `employee_id` is NOT a column on this table (unlike rf_certifications)
+      // and is re-applied below, so it stays in the blob deliberately.
+      const prBody = Object.assign(storedBlob(payload, ['id']), {
         employee_id: String(payload.employee_id).trim(),
         rate_per_hour: Number(payload.rate_per_hour),
         burden_pct: prBurden
       });
-      delete prBody.id;
       const r = await fetch(rest('sen_pay_rates?on_conflict=license_hash,rate_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -6294,13 +6316,15 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'INVALID_AGREEMENT', message: 'sen_franchise_agreements: ' + frProblems.join('; ') } });
         return;
       }
-      const frBody = Object.assign({}, payload, {
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6269) -- selects
+      // agreement_id,data and reconstructs `Object.assign({ id: x.agreement_id }, x.data)`.
+      // `branch_id` is a blob field here, not a column, and is re-applied below.
+      const frBody = Object.assign(storedBlob(payload, ['id']), {
         branch_id: String(payload.branch_id).trim(),
         royalty_pct: frRoyalty,
         ad_fund_pct: frAdFund,
         royalty_base: String(payload.royalty_base)
       });
-      delete frBody.id;
       // Stripped rather than ignored, same reason as sen_authorizations'
       // units_used: stored, it would be read back by the next device looking
       // exactly like a figure the server computed, and it is the one number
@@ -6987,7 +7011,16 @@ module.exports = async (req, res) => {
         body: JSON.stringify({
           license_hash: licHash, app_id: 'sairnroofing', entry_id: String(payload.id),
           employee_id: String(payload.employee_id), record_type: payload.record_type,
-          data: Object.assign({}, payload, { recorded_by: session.employee_id })
+          // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:6947) -- it selects
+          // entry_id,employee_id,record_type,data,recorded_at and reconstructs
+          // `Object.assign({}, x.data, { entry_id, employee_id, record_type,
+          // recorded_at })`, so THREE of the payload's fields are real columns
+          // here. The read spreads the blob FIRST so the real columns already win,
+          // but a payload copy still shipped inside the row and any other reader
+          // -- an export, a report, a new panel -- would serve the caller's value.
+          data: Object.assign(
+            storedBlob(payload, ['id', 'employee_id', 'record_type']),
+            { recorded_by: session.employee_id })
         })
       });
       if (r.status === 404) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Certification tracking is not set up yet — run sql/sairnroofing_certifications_schema.sql in Supabase first.' } }); return; }
@@ -7108,9 +7141,19 @@ module.exports = async (req, res) => {
       // The stored data blob: everything the caller sent, with the money fields
       // REPLACED by their normalized separate values (never a collapsed total),
       // and a derived money_summary explicitly NOT persisted.
-      const dataBlob = Object.assign({}, payload, norm.money);
+      // storedBlob: COLUMN LIST VERIFIED AGAINST THE READ (:7069) -- it selects
+      // claim_id,job_id,assigned_employee_id,status,data. `id` and
+      // `assigned_employee_id` were already deleted by hand below and are now
+      // passed as column keys; `job_id` and `status` are added, because they are
+      // real columns too and the hand-written list had missed both -- which is
+      // the information leakage blob.js exists to end rather than repeat.
+      // `money_summary` stays a separate delete: it is a DERIVED field that is
+      // deliberately never persisted, not a column, so it does not belong in a
+      // list whose meaning is "this is a real column".
+      const dataBlob = Object.assign(
+        storedBlob(payload, ['id', 'job_id', 'assigned_employee_id', 'status']),
+        norm.money);
       delete dataBlob.money_summary;
-      delete dataBlob.id;
       // assigned_employee_id IS A REAL COLUMN AND MUST NOT ALSO LIVE IN THE BLOB
       // (2026-09-24). `assignee` above is the authorised value -- a narrow role
       // cannot change it. But the caller's own assigned_employee_id was being
@@ -7124,7 +7167,12 @@ module.exports = async (req, res) => {
       // without that overlay -- an export, a report, a new panel -- would serve
       // the caller's value as if it were the stored one. Stripped here so the
       // guarantee belongs to the WRITE, not to the order of keys in one reader.
-      delete dataBlob.assigned_employee_id;
+      //
+      // THE DELETE THAT WAS HERE IS GONE BECAUSE storedBlob NOW CARRIES IT
+      // (2026-09-26), in the column-key list above -- not because the reasoning
+      // stopped being true. It is kept in full because it is the argument for
+      // the column key, and a column key with no argument is the next thing
+      // somebody removes as noise.
       const r = await fetch(rest('rf_claims?on_conflict=license_hash,claim_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
