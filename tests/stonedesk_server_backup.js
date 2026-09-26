@@ -345,12 +345,63 @@ test("the verb is 'soft_delete', not 'delete'", () => {
   // Written down by name rather than absorbed into a widened count, for the
   // reason the comment above already gives -- the next family to take this
   // verb has to appear here too.
+  //
+  // ── AND AGAIN, THIRD TIME, WITH SEVENTEEN (re-pinned 2026-09-26, Hank) ─────
+  // 8 -> 25. Both widenings are recorded decisions in another app and this arm
+  // went red on both, which is the third consecutive time it has gone red on a
+  // CORRECT change. Written down here rather than absorbed, as before:
+  //
+  //   SIXTEEN, `5c781b99`, 2026-09-23 -- sc_anesthesia, sc_anesthesia_base_units,
+  //     sc_auth, sc_auth_requests, sc_coded_items, sc_dme, sc_drg,
+  //     sc_eligibility, sc_fraud, sc_hcc, sc_prebill, sc_providers, sc_query,
+  //     sc_rac, sc_settings, sc_telehealth. These were re-tiered A between
+  //     2026-09-15 and 2026-09-23 and BOTH SAIRNcode gates derive from one
+  //     array that did not move with them, so for eight days every one was
+  //     writable on the licence key alone AND hard-deletable. That commit is a
+  //     security fix, not tidying: sc_hcc is a named patient joined to a
+  //     diagnosis grouping and its dollar value, sc_eligibility a named patient
+  //     joined to payer and plan, and sc_providers carries the QP status that
+  //     picks between two CMS conversion factors.
+  //   ONE, `72c69220`, 2026-09-24 -- sc_pctc, whose promotion the push gate
+  //     refused until all four pieces moved together.
+  //
+  // WHAT THIS ARM HAS NOW COST, SAID OUT LOUD RATHER THAN QUIETLY RE-PINNED:
+  // three red runs on three correct changes, and on at least two of them the
+  // red SAT ON `main` until somebody stumbled into this file for an unrelated
+  // reason. That is the arm working and the reading not happening, which its own
+  // 2026-09-16 note already names. The alternative -- deriving the sc_* half
+  // from api/_resources/sairncode.js's `tierASoftDeleteOnly`, which
+  // tests/sairncode_gates.js already pins to docs/CRITICALITY-TIERS.md in BOTH
+  // directions -- would end the churn and would stop this arm noticing an sc_*
+  // addition at all, leaving only "a NEW APP took the verb" as its claim.
+  // DELIBERATELY NOT DONE HERE. That is a decision about how much this suite
+  // asserts, it belongs to whoever owns the assertion, and making it as a side
+  // effect of clearing a red is how a guard gets loosened by whoever was
+  // inconvenienced by it. Recorded so the next re-pin is a choice.
   assert.deepStrictEqual(elsewhere.sort(),
-    ['dnt_supplies', 'sc_ar', 'sc_claims', 'sc_compliance',
-     'sc_credential_scope', 'sc_denial', 'sc_denial_events', 'sc_revenue'],
+    ['dnt_supplies', 'sc_anesthesia', 'sc_anesthesia_base_units', 'sc_ar',
+     'sc_auth', 'sc_auth_requests', 'sc_claims', 'sc_coded_items',
+     'sc_compliance', 'sc_credential_scope', 'sc_denial', 'sc_denial_events',
+     'sc_dme', 'sc_drg', 'sc_eligibility', 'sc_fraud', 'sc_hcc', 'sc_pctc',
+     'sc_prebill', 'sc_providers', 'sc_query', 'sc_rac', 'sc_revenue',
+     'sc_settings', 'sc_telehealth'],
     'a family outside StoneDesk gained or lost soft_delete: ' + JSON.stringify(elsewhere)
     + '. That is a real decision about who may delete -- record it here rather than '
     + 'widening a count past it.');
+  // AND THE SC_* HALF IS CROSS-CHECKED AGAINST ITS OWN APP'S ARRAY, in the one
+  // direction that is not circular. The list above is hand-written on purpose
+  // (see the paragraph above), so this does not replace it -- it catches the
+  // case where the hand-written list and SAIRNcode's own derived array disagree,
+  // which is a disagreement between two apps' records of one decision and is
+  // exactly what went unnoticed for eight days.
+  const scHere = elsewhere.filter((k) => k.indexOf('sc_') === 0).sort();
+  const scOwn = (require('../api/_resources/sairncode.js').tierASoftDeleteOnly || [])
+    .slice().sort();
+  assert.deepStrictEqual(scHere, scOwn,
+    'the sc_* names pinned here disagree with api/_resources/sairncode.js\'s own '
+    + 'tierASoftDeleteOnly array. One of the two records of a single decision has '
+    + 'moved without the other -- here: ' + JSON.stringify(scHere)
+    + ', there: ' + JSON.stringify(scOwn));
   // Same scope correction: handlerMap() is StoneDesk's SD_LOCAL_RESOURCES, so
   // this can only speak for StoneDesk's grants. dnt_supplies is backed by
   // SAIRNdental's own map and is checked by SAIRNdental's own suite.
