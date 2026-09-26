@@ -316,6 +316,28 @@ def check_reviews(path, path_cache, sha_memo):
                                 % (rid, f)))
             else:
                 results.append(('OK', '%s: %s' % (rid, f)))
+        # ── A FROZEN LITERAL IS NOT DRIFT, AND THE RECORD SAYS WHICH (2026-09-26)
+        # Two shapes in this ledger produce a hex run that will NEVER resolve and
+        # must never be re-seated, and reporting them as drift is a permanent
+        # false positive a reader learns to scroll past:
+        #
+        #   * a reviewer's finding ABOUT a dead pointer -- "This record cites
+        #     a49edd00 and no such commit exists in the repo. The change is
+        #     5c781b99" -- where rewriting the literal makes the sentence deny
+        #     what its author verified; and
+        #   * a literal that is not a commit reference at all: `1234abcd`, quoted
+        #     as an illustrative example inside a finding narrative, reported here
+        #     as citation drift since the day that review landed.
+        #
+        # The record declares them in `frozen_shas`, authored by a person --
+        # deciding that a sentence is ABOUT a pointer rather than citing one is a
+        # reading of prose and no regex can make it. Counted as OK-BY-DECLARATION
+        # rather than dropped: a suppression nothing reports is the next thing
+        # that goes stale. Written and enforced by tools/review_ledger_reseat.py.
+        frozen = set()
+        for e in r.get('frozen_shas') or []:
+            if e.get('literal'):
+                frozen.add(e['literal'])
         prose = (r.get('what') or '') + ' ' + (r.get('verdict') or '')
         for sha in set(SHA.findall(prose)):
             # skip things that are obviously not shas (all digits = a count)
@@ -323,10 +345,18 @@ def check_reviews(path, path_cache, sha_memo):
                 continue
             if _sha_resolves(sha, sha_memo):
                 results.append(('OK', '%s: sha %s resolves' % (rid, sha)))
+            elif sha in frozen:
+                results.append(('FROZEN', '%s: %s is declared in frozen_shas -- '
+                                'a literal this prose is ABOUT, not a pointer to '
+                                'follow' % (rid, sha)))
             else:
                 results.append(('DRIFTED', '%s: cites sha %s which does not '
                                 'resolve -- rebased away without a reseat, or '
-                                'mistyped' % (rid, sha)))
+                                'mistyped. If the prose is ABOUT this dead '
+                                'pointer, declare it in frozen_shas; if it is a '
+                                'citation, `python tools/review_ledger_reseat.py'
+                                ' --reseat` repairs it once a subject is '
+                                'recorded' % (rid, sha)))
     return results
 
 
@@ -424,19 +454,31 @@ def main(argv):
 
     drifted = [d for s, d in results if s == 'DRIFTED']
     unver = [d for s, d in results if s == 'UNVERIFIABLE']
+    # ── A FOURTH STATE, AND IT IS LISTED RATHER THAN ADDED TO `ok` (2026-09-26)
+    # A literal a record declares in `frozen_shas` is a deliberate non-pointer --
+    # see check_reviews. Folding it into "citations verified OK" would make a
+    # SUPPRESSION indistinguishable from a VERIFICATION, which is the shape this
+    # whole tool exists to refuse: every declaration is printed, so a stale
+    # frozen_shas entry is something a reader can see rather than something the
+    # count absorbed.
+    frozen = [d for s, d in results if s == 'FROZEN']
     okc = sum(1 for s, _ in results if s == 'OK')
 
     if '--json' in argv:
         print(json.dumps({'ok': okc, 'drifted': drifted,
-                          'unverifiable': unver,
+                          'unverifiable': unver, 'frozen': frozen,
                           'could_not_tell': could_not}, indent=2))
     else:
         print('REGISTER FRESHNESS -- committed evidence vs freshly-recomputed truth')
         print('  citations verified OK   %4d' % okc)
         print('  UNVERIFIABLE            %4d   <- counted, never folded into pass' % len(unver))
         print('  DRIFTED                 %4d' % len(drifted))
+        print('  FROZEN                  %4d   <- declared non-pointers, listed '
+              'not absorbed' % len(frozen))
         for d in drifted:
             print('  DRIFTED  %s' % d)
+        for d in frozen:
+            print('  FROZEN  %s' % d)
         for d in unver[:15]:
             print('  UNVERIFIABLE  %s' % d)
         if len(unver) > 15:

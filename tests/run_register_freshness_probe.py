@@ -107,6 +107,33 @@ check('a prose sha that does not resolve is exit 1 (this fixture tree is not '
       'a git repo, so ANY sha fails -- which is the point being driven)',
       rc == 1 and 'deadbeef99' in out, 'rc=%s' % rc)
 
+# ── frozen_shas: A LITERAL THE PROSE IS ABOUT IS NOT DRIFT (2026-09-26) ─────
+# Two real records in the live ledger contain a hex run that will never resolve
+# and must never be re-seated: a reviewer's finding ABOUT a dead pointer ("this
+# record cites a49edd00 and no such commit exists"), and `1234abcd`, quoted as an
+# illustrative example and reported as citation drift ever since. Both directions
+# are driven, because a suppression that cannot be shown to SUPPRESS is a
+# suppression nobody can tell from the checker having stopped looking.
+rc, out = run_in(make_tree(8, tiers_row=ROW_OK, reviews={'records': [
+    {'author_session': 'x', 'opened_at': 'T1', 'files': ['app.js'],
+     'what': '', 'verdict': 'it cites deadbeef99 and no such commit exists',
+     'frozen_shas': [{'literal': 'deadbeef99', 'in': ['verdict'],
+                      'why': 'the finding is ABOUT this pointer'}]}]}))
+check('a dead literal DECLARED in frozen_shas is exit 0 -- not drift, because '
+      'rewriting it would make the reviewer\'s finding deny what they verified',
+      rc == 0, 'rc=%s\n%s' % (rc, out[-400:]))
+check('...and it is COUNTED rather than dropped, so the suppression is visible',
+      'frozen_shas' in out, out[-400:])
+
+rc, out = run_in(make_tree(9, tiers_row=ROW_OK, reviews={'records': [
+    {'author_session': 'x', 'opened_at': 'T1', 'files': ['app.js'],
+     'what': '', 'verdict': 'it cites deadbeef99 and no such commit exists',
+     'frozen_shas': [{'literal': 'cafef00d99', 'in': ['verdict'],
+                      'why': 'a DIFFERENT literal'}]}]}))
+check('MUTANT: a frozen_shas entry for a DIFFERENT literal suppresses nothing -- '
+      'the declaration is matched, not merely present',
+      rc == 1 and 'deadbeef99' in out, 'rc=%s' % rc)
+
 
 # ── THE DEAD-FUNCTION ARM, AND THE HOUR IT WAS BLIND (2026-09-25) ───────────
 # check_dead_functions() reports a cell naming a function that exists in NONE
