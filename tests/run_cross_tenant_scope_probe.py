@@ -459,16 +459,24 @@ def main():
     src = io.open(os.path.join(REPO, 'api/sd-data-cross-tenant-dispatchers.test.js'),
                   encoding='utf-8').read()
     units = _re.search(r'const UNITS = \[(.*?)\n\];', src, _re.S)
-    # COMMENT LINES ARE STRIPPED BEFORE THE MEMBER REGEX RUNS (2026-09-24).
+    # ── COMMENTS ARE STRIPPED BEFORE THE MEMBER REGEX RUNS, BY THE GRADER'S
+    #    OWN FUNCTION (2026-09-24, CORRECTED 2026-09-26) ───────────────────────
     # A comment inside the UNITS block quoting SD_SESSION_GATED's
     # `['read', 'write']` matched the member pattern and this arm reported a
-    # driven resource named "read" -- a comment counted as code, the same
-    # class fixed in first_article_inspection the same day. Line-level
-    # stripping is sufficient here because the block is this suite's own
-    # table, written in a known style; a full parser would be borrowed
-    # authority for a file this probe already trusts the shape of.
-    units_code = '\n'.join(l for l in units.group(1).split('\n')
-                           if not l.strip().startswith('//'))
+    # driven resource named "read" -- a comment counted as code, the same class
+    # fixed in first_article_inspection the same day.
+    #
+    # THE FIRST FIX WAS LINE-LEVEL AND LOCAL, AND BOTH HALVES OF THAT WERE
+    # WRONG. It tested `line.strip().startswith('//')`, so a TRAILING `//`
+    # comment and a `/* */` block comment both still matched -- driven, and both
+    # produce a SILENT FALSE PASS: move a real member of UNITS into either shape
+    # and the suite loses its two arms (417 -> 415) while this arm stays green on
+    # 188 == 188 and the declaration header keeps claiming the resource. And it
+    # was local, so tools/cross_tenant_isolation_scope.py's driven_resources()
+    # -- the shared grader every suite's coverage number comes from -- kept the
+    # bug and was still returning the phantom `read` two days later.
+    # The strip is ONE decision and now lives in ONE place.
+    units_code = S.strip_comments(units.group(1))
     driven = set(_re.findall(r"\['([a-z0-9_]+)',\s*'[a-z0-9_]+'", units_code))
     declared, _n = S.declared_coverage(src)
     extra = sorted(declared - driven)
@@ -482,6 +490,69 @@ def main():
         print('        declared but NOT driven: %s' % (extra or '-'))
         print('        driven but NOT declared: %s' % (missing or '-'))
         FAILED.append('declaration-vs-driven')
+
+    # ── THE TWO DERIVATIONS OF "DRIVEN" MUST AGREE (2026-09-26) ──────────────
+    # There are two, deliberately: the arm above is scoped to `const UNITS` and
+    # requires a full ['name', 'id_col'] PAIR; the grader's driven_resources()
+    # reads EVERY table in the file and accepts a bracket followed by one string.
+    # Two methods is the right shape -- one of them is what the platform's
+    # coverage number is computed from, the other is stricter and narrower, and a
+    # structurally different second derivation is what makes agreement mean
+    # something.
+    #
+    # WHAT WAS MISSING WAS ANYTHING COMPARING THEM. The comment-stripping fix
+    # went into one copy and not the other, and for two days the grader returned
+    # 189 names for this file where this arm returned 188 -- the extra being a
+    # phantom read from a comment, credited as driven by the number the plan is
+    # sized from. Nothing was looking, because each derivation was self-
+    # consistent. This arm is the thing that looks.
+    graded = S.driven_resources(src)
+    only_graded = sorted((graded or set()) - driven)
+    only_armed = sorted(driven - (graded or set()))
+    oka = graded is not None and not only_graded and not only_armed
+    print('  %-4s %-58s %s'
+          % ('ok' if oka else 'FAIL',
+             'both derivations of DRIVEN agree on this suite',
+             '%d grader, %d table arm' % (len(graded or []), len(driven))))
+    if not oka:
+        print('        grader only   : %s' % (only_graded or '-'))
+        print('        table arm only: %s' % (only_armed or '-'))
+        FAILED.append('driven-derivations-disagree')
+
+    # ── THE STRIP ITSELF, LOCKED IN BOTH DIRECTIONS ──────────────────────────
+    # Fixtures, because the three shapes below are cheap to state and the real
+    # file carries only one of them today -- so a regression in the other two
+    # would land with nothing to catch it. Both directions on purpose: a strip
+    # that removes too much is as wrong as one that removes too little, and the
+    # first draft of this fix deleted comments outright, which let `\s*` bridge
+    # the hole and turned a flat array's first string into a phantom row.
+    _strip_cases = [
+        # (label, fragment, expected names)
+        ("a line-leading // comment carrying the member shape",
+         "\n  // ['phantom', 'phantom_id']\n  ['real', 'real_id'],\n", {'real'}),
+        ("a TRAILING // comment carrying the member shape",
+         "\n  ['real', 'real_id'], // ['phantom', 'phantom_id']\n", {'real'}),
+        ("a /* */ BLOCK comment carrying the member shape",
+         "\n  /* ['phantom', 'phantom_id'] */\n  ['real', 'real_id'],\n", {'real'}),
+        ("a block comment spanning LINES",
+         "\n  /* was:\n     ['phantom', 'phantom_id'] */\n  ['real', 'real_id'],\n",
+         {'real'}),
+        # THE OTHER DIRECTION, and it is the one the first draft broke.
+        ("a comment between the bracket and a flat array's first string",
+         "\n  // 2026-09-21\n  'notarow', 'alsonot',\n", set()),
+        ("a comment between `members: [` and a REAL pair -- pair survives",
+         "\n  members: [\n    // why\n    ['real', 'real_id']]\n", {'real'}),
+        ("NO comment at all -- the strip must not touch a plain table",
+         "\n  ['one', 'one_id'], ['two', 'two_id'],\n", {'one', 'two'}),
+    ]
+    for label, frag, want in _strip_cases:
+        got = set(S._ROW_NAME.findall(S.strip_comments(frag)))
+        okc = got == want
+        print('  %-4s %-58s %s' % ('ok' if okc else 'FAIL', label,
+                                   ','.join(sorted(got)) or '(none)'))
+        if not okc:
+            print('        wanted %s' % (sorted(want) or '(none)'))
+            FAILED.append('strip-comments:' + label)
 
     # ── THE EXCLUSION LIST ITSELF, WHICH NOTHING WAS GUARDING ────────────
     # SELF_EXCLUDED is the fix for a real false GENUINE: the grader was

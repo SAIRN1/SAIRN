@@ -55,7 +55,7 @@
 //   sd_exec_msgs,
 //   sv_boarding, sv_clients, sv_farmcalls, sv_invoicing, sv_multisite,
 //   sv_petinsurance, sdn_projects, sdn_proposals, sdn_specitems,
-//   sdn_timeentries
+//   sdn_timeentries, sf_vehicle_service
 //
 // rf_settings, sub_assignments and rf_jobs are DELIBERATELY ABSENT from that
 // list and are covered in api/sd-data-roofing-projected-isolation.test.js.
@@ -750,7 +750,19 @@ const UNITS = [
     // WEAK -> covered. api/sf-session-gate.test.js reads the query but has
     // only ONE tenant in it, which is the shape the grader calls "looks like
     // one": it passes a handler whose filter is present and wrong.
-    ['sf_members', 'member_id']] },
+    ['sf_members', 'member_id'],
+    // ── ONE MORE, 2026-09-26, AND IT WAS MISFILED RATHER THAN DEFERRED ──────
+    // 68abb616 left eight Tier A rows in the NONE bucket and recorded them as
+    // "grd_/msb_/sen_/sf_ rows with bespoke branches, not generic-loop members
+    // -- different work, not claimed here". Seven of the eight are exactly
+    // that. `sf_vehicle_service` is not: the scope tool locates its serving
+    // code at api/sd-data.js[SF_RESOURCES]:11138, the same generic pair the
+    // 22 rows above go through, so it costs one line here and always did.
+    // Found discharging the review of that commit. Verified against
+    // sql/sairnfreedom_data_schema.sql:596 rather than from the map alone --
+    // `vehicle_service_id` with `unique (license_hash, vehicle_service_id)`,
+    // which is the conflict target the [W] arm's upsert needs to exist.
+    ['sf_vehicle_service', 'vehicle_service_id']] },
   { map: 'SB_RESOURCES', app: 'sairnbiz', role: 'owner', members: [
     ['sb_bud', 'bud_id'], ['sb_exps', 'exp_id'], ['sb_invs', 'inv_id'],
     ['sb_incidents', 'incident_id'], ['sb_payruns', 'payrun_id'],

@@ -620,6 +620,64 @@ _TABLE = re.compile(
 # { map: ..., members: [['dnt_ar', 'ar_id'], ...] } -- both yield the name.
 _ROW_NAME = re.compile(r"\[\s*'([a-z][a-z0-9_]*)'")
 
+# ── A COMMENT INSIDE A TABLE IS NOT A ROW, AND THIS WAS FIXED IN ONE OF THE
+#    TWO PLACES THAT DERIVE THE DRIVEN SET (2026-09-26) ────────────────────────
+# e443fc67 stripped comment lines before the member regex in
+# tests/run_cross_tenant_scope_probe.py's inline dispatcher arm, because a
+# comment quoting SD_SESSION_GATED's `['read', 'write']` was being read as a
+# driven resource named "read". THIS function -- the shared grader every suite's
+# coverage number comes from -- was the other copy of the same decision and did
+# not get the fix. Measured at the time of this change: it still returned 189
+# names for api/sd-data-cross-tenant-dispatchers.test.js where the fixed inline
+# arm returned 188, the extra being that same phantom "read".
+#
+# THE CONSEQUENCE WAS A FAIL-OPEN, NOT A COSMETIC MISCOUNT. The consumer below
+# does `undriven = declared - driven` and then `declared = declared & driven`, so
+# a name that appears only inside a comment in a table is credited as DRIVEN: it
+# is neither reported in UNDECLARED nor intersected out, and the resource keeps
+# GENUINE on a claim no arm exercises. Driven both ways before this change: move
+# a real member of UNITS into a block comment, or into a trailing `//` comment,
+# and the dispatcher suite loses its two arms (417 -> 415) while the probe stays
+# green and the declaration header keeps claiming it.
+#
+# BOTH COMMENT SYNTAXES, AND `//` ANYWHERE ON THE LINE. The earlier fix tested
+# `line.strip().startswith('//')`, which is why the trailing-comment shape still
+# got through the copy that HAD been fixed.
+#
+# AN OVER-STRIP IS THE FAIL-CLOSED DIRECTION AND IS ACCEPTED DELIBERATELY. A
+# genuine `//` inside a string literal (a URL) would drop the rest of that line,
+# under-counting `driven` -- which makes a real resource look UNDRIVEN, so it is
+# reported in UNDECLARED and its credit reduced. That is the safe way to be
+# wrong here; crediting a comment is not.
+#
+# ── THE COMMENT IS REPLACED BY A MARKER, NOT BY NOTHING, AND THE FIRST DRAFT
+#    OF THIS FIX GOT THAT WRONG ─────────────────────────────────────────────────
+# `_ROW_NAME` is `\[\s*'name'`, so deleting a comment outright LETS `\s*` BRIDGE
+# THE GAP IT LEFT and the first string of a flat array becomes a "row". Measured
+# on the first draft: api/sd-data-sf-session-gate.test.js GAINED `sf_accounts`,
+# because `const APPROVED = [` / `// 2026-09-21` / `'sf_accounts',` collapsed into
+# a match. That name is real, which is what makes it the dangerous kind of wrong:
+# it lands in `driven`, shrinks `declared - driven`, and hands out credit the
+# same way the comment bug did -- one fail-open traded for another of the same
+# class. `\x00` is not whitespace and not a quote, so `\s*` cannot cross it; a
+# comment sitting between `members: [` and a real `['name', 'id']` pair costs
+# nothing, because that pair carries its own bracket.
+#
+# MEASURED ACROSS THE WHOLE SCANNED CORPUS (1195 files) WITH THE MARKER IN
+# PLACE: three files change, every one a REMOVAL, and no file gains a name --
+# the phantom `read` here, the phantom `bootstrap` in
+# api/_lib/employee-lifecycle-wiring.test.js, and nothing else.
+_COMMENTS = re.compile(r'/\*.*?\*/|//[^\n]*', re.S)
+
+
+def strip_comments(fragment):
+    """JS comments out of a table body, both syntaxes, before rows are read.
+
+    Comments become `\\x00` rather than '' so that `_ROW_NAME`'s `\\s*` cannot
+    close over the hole and read a flat array's first string as a row.
+    """
+    return _COMMENTS.sub('\x00', fragment)
+
 
 def driven_resources(body):
     """Resource names the file's own table(s) carry, or None when it has none.
@@ -630,7 +688,7 @@ def driven_resources(body):
     found = set()
     tables = 0
     for m in _TABLE.finditer(body):
-        rows = _ROW_NAME.findall(m.group(1))
+        rows = _ROW_NAME.findall(strip_comments(m.group(1)))
         if rows:
             tables += 1
             found.update(rows)
