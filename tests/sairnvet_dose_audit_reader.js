@@ -161,8 +161,13 @@ const SERVED = (rows) => ({ data: rows, provisioned: true });
 
 banner = await readWith(SERVED([ENTRY({ type: 'dose_calc' }), ENTRY({ type: 'controlled_log', id: 'au2' })]));
 ok('a server read says so and gives the count', /server record/i.test(banner) && /2 entries/.test(banner), banner);
+// CASE-INSENSITIVE, like the sibling arm one line up. This read
+// `/this device holds 1/` while the banner says "This device holds 1." -- the
+// sentence was re-cased at some point and the anchor was not, so the arm has
+// been red on a CORRECT banner. Fixed 2026-09-26 while making this file run
+// again; the banner itself is right and is not touched.
 ok('...and names what this device holds, so the two can be compared',
-   /this device holds 1/.test(banner), banner);
+   /this device holds 1/i.test(banner), banner);
 
 banner = await readWith(null);
 ok('A FAILED SERVER READ FALLS BACK TO LOCAL AND SAYS THE READ FAILED',
@@ -212,9 +217,23 @@ ok('while a FAILED read never claims the trail is empty (ASSERTED ON THE TBODY, 
 // this drives the real svData against a fake fetch and checks the contract in
 // BOTH modes.
 console.log('C0. svData carries the provisioned flag, and only when asked');
+// `svTok` ADDED TO THIS SANDBOX 2026-09-26, AND ITS ABSENCE IS THE FINDING.
+// svData() gained `var svTokNow = svTok();` on 2026-09-21 when SAIRNvet's
+// server session gate landed, and this context never supplied it -- so every
+// run since threw `ReferenceError: svTok is not defined` INSIDE the arm, took
+// the whole file down, and the C0/C1 arms below it have asserted nothing for
+// five days. The mutation control next door has been correctly reporting
+// "the same suite PASSES on an unmutated copy" as a FAILURE that whole time,
+// which is the control working exactly as designed and nobody reading it.
+//
+// A LIFTED FUNCTION'S SANDBOX IS A SECOND DECLARATION OF ITS DEPENDENCIES, and
+// nothing keeps the two in step: the app grew a call, the sandbox did not, and
+// the failure is a crash rather than a wrong answer only by luck.
+let tokNow = '';
 const tctx = vm.createContext({
   SV_DATA_API: '/api/sd-data',
   svLoad: () => 'LIC-1',
+  svTok: () => tokNow,
   svFetchTimeoutSignal: () => undefined,
   fetch: null, JSON, Object, String, Array, Promise, console
 });
@@ -232,6 +251,29 @@ serve({ ok: true, data: [{ id: 'au1' }], provisioned: true });
 env = await tctx.svData('read', 'sv_audit_log', {}, true);
 ok('a provisioned read carries provisioned:true and the rows',
    env && env.provisioned === true && env.data.length === 1, JSON.stringify(env));
+
+// ── C0b. THE HEADER THE SANDBOX GAP WAS HIDING ────────────────────────────
+// Having had to add svTok to make this file run at all, assert what it is FOR.
+// The server gate in api/sd-data.js refuses every SV_RESOURCES read and write
+// without X-SD-Auth, so a transport that stops attaching it does not degrade --
+// it 401s the entire app, silently, from the client's point of view.
+let seenHeaders = null;
+tctx.fetch = (url, opts) => { seenHeaders = opts.headers; return Promise.resolve({
+  ok: true, status: 200, json: () => Promise.resolve({ ok: true, data: [], provisioned: true }) }); };
+
+tokNow = 'tok-abc';
+await tctx.svData('read', 'sv_audit_log', {}, true);
+ok('a held session attaches X-SD-Auth', seenHeaders && seenHeaders['X-SD-Auth'] === 'tok-abc',
+   JSON.stringify(seenHeaders));
+ok('...and the licence bearer is still sent alongside it',
+   seenHeaders && seenHeaders.Authorization === 'Bearer LIC-1', JSON.stringify(seenHeaders));
+
+seenHeaders = null;
+tokNow = '';
+await tctx.svData('read', 'sv_audit_log', {}, true);
+ok('NO session attaches NO X-SD-Auth -- absent, never an empty string, which '
+   + 'the server would read as a present-and-invalid token',
+   seenHeaders && !('X-SD-Auth' in seenHeaders), JSON.stringify(seenHeaders));
 // THE OTHER FORTY-ONE CALLERS ARE UNCHANGED, and that is asserted rather than
 // assumed -- the whole reason `wantEnvelope` is a fourth parameter instead of
 // a changed return type.
