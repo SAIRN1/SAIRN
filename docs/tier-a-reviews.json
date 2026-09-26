@@ -3667,6 +3667,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-26T17:39:03Z",
+      "opened_at_sha": "11f5f4181e42df5a73b325f9474f4c19c9bd8ca7",
+      "resources": [
+        "invoices"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/bridge-push-auth.test.js",
+        "api/bridge.js"
+      ],
+      "what": "api/bridge.js push gate now checks lic.active, not only lic.valid: a REVOKED licence was still writing expense invoices to bridge_data (payee, amount, memo, GL account). The gate sits ABOVE the session check deliberately, because a session token minted before the revocation stays cryptographically valid for its whole TTL -- REVIEW THAT ORDERING SPECIFICALLY, it is the part a reader would most plausibly move. Tier A resource served: invoices. Three arms added to api/bridge-push-auth.test.js (valid+inactive refused; refused even with a genuine pre-revocation session; active-TRUE control still writes) and the gate was ABLATED to confirm exactly 2 arms fail without it. Also worth a second read: license_keys has NO expiry column at all, so status is the entire revocation mechanism -- if that is wrong, this fix is aimed at the wrong control.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-26T17:39:03Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
