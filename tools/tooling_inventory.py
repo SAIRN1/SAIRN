@@ -782,7 +782,21 @@ PURPOSES = {
         'APART, the shape that IS live: claims never released, which is not a '
         'duplicate and needs the opposite fix. It refuses to decide that two '
         'DIFFERENT task strings are the same work -- exact means exact'),
-    'gh_push.py': ('LIBRARY', 'a push whose arrival on the remote is queried back'),
+    'gh_push.py': ('LIBRARY',
+        'a push that reaches origin/main having passed NO gate, and content that '
+        'existed in no commit. It pushes through the GitHub REST API, so git is '
+        'never invoked and .githooks/pre-push never fires -- the seed gate, the '
+        'Tier A review gate, the generated-document check and every other check '
+        'in sairn_push_gate_hook.py had no effect on this path at all. Audited '
+        '2026-09-26: nothing ran before the REST call, so the git hook was never '
+        'decorative and removing it would have disabled the gate for the main '
+        'path. It now INVOKES the hook rather than copying its fourteen checks, '
+        'because a second copy of the enumeration is item 94 on the largest gate '
+        'on the platform. AND IT CATCHES THE HOLE UNDERNEATH: a REST push sends '
+        'WORKING-TREE bytes, so it could publish content in no local commit -- '
+        'nothing to gate even if the gate had run. Files must now be committed '
+        'and clean and HEAD must descend from the remote tip, which makes '
+        '`remote..HEAD` a real range. Held by tests/run_gh_push_gate_probe.py'),
     'gh_token.py': ('LIBRARY',
         'a credential lookup that has been dead for weeks while saying nothing. '
         'gh_push.py and gh_verify.py each carried their OWN copy of "read '
