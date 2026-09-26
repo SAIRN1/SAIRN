@@ -1,0 +1,8 @@
+{
+  "_what": "Pinned session-gate re-check coverage. Written by tools/session_recheck_coverage.py --baseline. A ratchet: the check fails when any number below gets WORSE. Closing a gate and re-running --baseline is how it improves.",
+  "files_partial": 1,
+  "files_with_neither": 11,
+  "gates_in_files_with_neither_mechanism": 12,
+  "gates_total": 222,
+  "gates_uncovered_inside_partial_files": 131
+}
