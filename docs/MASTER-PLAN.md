@@ -58,7 +58,11 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 **THIS DOCUMENT USED TO PRINT TWO DIFFERENT VALUES FOR THAT SECOND NUMBER, IN ONE RUN.** The prose above counted citations to files that are on disk; the closing-error leg at the bottom counted citations outright, and on 2026-09-18 they read **512** and **518**. Four of the six were real test files under `api/` subdirectories that `all_tests()` listed two hardcoded directories instead of walking, and two were citations to files that are not there. Both halves are fixed at the source: `all_tests()` now walks `api/` the same way it always walked `tests/`, and `traced()` drops a citation naming a file that does not exist. The two figures are now one population and cannot diverge again without a code change.
 
-**No dead citations: every cited test file is on disk.**
+**DEAD CITATIONS — 1 row(s) promise a test file this repo does NOT hold.** Dropped from the traced count and printed here, because a dead citation is not a rounding error: it is a row asserting coverage that does not exist, and silently dropping it would turn one finding into a slightly better number.
+
+- `api/sairncash/portal.test.js` — cited by index
+
+**These are NOT counted as a refusal, deliberately.** A hard refusal here would stop this document generating, and the push gate requires it to be current — so one stale filename would freeze every unrelated push on the platform. That is the same trade the push gate itself names when it explains why a refusal blocks immediately rather than waiting. Reported loudly, fixed by hand.
 
 ### What these three columns cannot see
 

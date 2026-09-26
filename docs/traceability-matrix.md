@@ -412,6 +412,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~`dnt_settings_obj` has FOUR writers under two backing variables — the same shape StoneDesk had, unchecked~~ | **CLOSED 2026-09-04 (CC)** — the collision is benign and now ACKNOWLEDGED with the trace; the real defect found in the same read was NOT the collision, and is fixed | `tests/sairndental_settings_patch.js` |
 | ~~`piac.html`, 138 KB untracked at the repo root since 2026-08-28, is a saved copy of an INDIANA DEPARTMENT OF HEALTH 404 PAGE~~ &mdash; **deleted 2026-09-18** | **CLOSED 2026-09-18 (Fourth). Michael authorised the deletion; the file is gone from `SAIRN-fourth` and existed nowhere else.** Original status follows unchanged &mdash; Open &mdash; **identified 2026 | `api/sd-data-exec-context.test.js`, `tests/rootpages.js` |
 | ~~**No app can deactivate a departing employee through its own UI — `set_active` has ZERO client callers platform-wide**~~ | **CLOSED 2026-09-03 (Fourth) — 9/9 endpoints, 8/9 screens.** ⚠️ **THE NUMBERS IN THIS ROW WERE ALREADY STALE WHEN IT WAS CLOSED, AND THAT IS THE REUSABLE LESSON:** it said client UI in ZERO apps and t | `api/_lib/employee-lifecycle-wiring.test.js` |
+| **&#9989; The prompt-fence comment-strip went into ONE of the TWO places that derive the DRIVEN set &mdash; and the shared grader was still crediting a comment two days later** | **FIXED 2026-09-26 (cc)**, `e683f59b`. `tools/cross_tenant_isolation_scope.py` gains `strip_comments()`; `tests/run_cross_tenant_scope_probe.py`'s inline arm calls it instead of keeping its own copy;  | `api/sd-data-cross-tenant-dispatchers.test.js`, `api/sd-data-sf-session-gate.test.js`, `tests/run_cross_tenant_scope_probe.py` |
+| **&#128993; Item 94's blob migration: SIX more branches converted individually, and the &ldquo;16 remaining&rdquo; figure is now 12 &mdash; re-measure, do not quote** | **SIX CONVERTED 2026-09-26 (cc)**, `9ff4b87f`, each column list derived from THAT BRANCH'S OWN READ. New `api/sd-data-stored-blob-scope-keys.test.js`, 31 arms, driven red four ways | `api/sd-data-stored-blob-scope-keys.test.js` |
+| **&#128993; The prompt-injection scanner's untrusted-field list is GENERIC and misses app-specific field names &mdash; three real unfenced sites were found BY HAND in two apps it reported clean** | **THREE SITES FENCED 2026-09-26 (cc)**, `a42a18d2`; two defect-register records; `note` and `desc` added to the criteria behind a literal-strip; `tests/prompt_fence_mirror.js` BUILT (it had been cited | `tests/prompt_fence_mirror.js`, `tests/sairnvet_dose_audit_reader.js` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
 ### sairnbiz
@@ -458,6 +461,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Gate 4 on the paywall &mdash; and my own stated reason for one of its guards was wrong** | **BUILT 2026-09-15 (Hank)** &mdash; `88ae704f`. `tests/sairncash_entitlement_fault_probe.py`, 5 arms + 2 controls. Suite 14 &rarr; 15 | `tests/sairncash_entitlement_fault_probe.py` |
 | **A LIVE BYPASS: one devtools line opened the paid product, against a function whose own comment says it closes exactly that** | **FIXED 2026-09-15 (Hank)** &mdash; `fd9f0a2c`. `tests/sairncash_entitlement_gate.js` 14 arms, NEW. Measured both ways: **13/1 at origin/main, 14/0 now** | `tests/sairncash_entitlement_gate.js` |
 | **Gate 4 on the app that takes money &mdash; and the webhook HTTP handler had never been invoked by anything** | **BUILT 2026-09-15 (Hank)** &mdash; `497bbf24`, corrected by `3afe8fbd`. `tests/sairncash_fault_probe.py`, 8 mutation arms + 3 controls. **The `fault` column stays 0 and is RIGHT to** &mdash; see next | `tests/sairncash_fault_probe.py` |
+| **&#128993; Item 100 second half: the billing-portal token design &mdash; and a SINGLE-USE token is ruled OUT on customer-harm grounds, which is the opposite of the reflex** | **SCOPED 2026-09-26 (cc)**, `8c97a136`, `docs/2026-09-26-presigned-remedy-scoping.md`. Nothing built, nothing contacted | `api/sairncash/portal.test.js` |
 
 ### sairncode
 
@@ -651,13 +655,13 @@ For context and not as the headline: 646 of 748 traced, 86.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 646 citations come from
+### Where the 647 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 313 |
-| `declared` | 274 |
-| `declared+index` | 49 |
+| `index` | 314 |
+| `declared` | 272 |
+| `declared+index` | 51 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -779,9 +783,11 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 ### Citations pointing at a file that does not exist
 
-None. Every cited test file exists.
+**1.** A row names a test as its proof and the file is not there, so the requirement is UNPROVED however the row reads. Some of these are prose placeholders rather than real citations -- this cannot tell the difference, so it reports both and says so.
 
-**This is a real zero, not an empty filter.** The input is `dead_citations()`, which is computed from the RAW citations before `traced()` drops anything -- so a dead citation can still reach this section. Until 2026-09-18 the filter read from `traced()` itself, and once that function started dropping them this section would have printed None forever.
+- `api/sairncash/portal.test.js` — cited by index
+
+**Not counted in the traced figure since 2026-09-18.** Two of these were, and that is how the closing-error leg and the prose in `docs/MASTER-PLAN.md` came to read 518 and 512 in the same run. A row promising a suite the repo does not hold is a finding; letting it count was a better number.
 
 ### What this matrix cannot tell you
 
@@ -796,7 +802,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 748   tests/**, api/** (both walked)
-  open-work rows citing a test       361   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       365   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 11   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED
