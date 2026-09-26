@@ -61,6 +61,15 @@ function grabLine(sig) {
   assert.ok(s > 0, 'not found in stonedesk.html: ' + sig);
   return html.slice(s, html.indexOf('\n', s));
 }
+// For a multi-line declaration that is not a function body, so grabAt's `};`
+// terminator does not apply -- SD_SYNCED is an array literal over six lines.
+function grabUntil(sig, end) {
+  const s = html.indexOf(sig);
+  assert.ok(s > 0, 'not found in stonedesk.html: ' + sig);
+  const e = html.indexOf(end, s);
+  assert.ok(e > s, 'not terminated by ' + end + ': ' + sig);
+  return html.slice(s, e + end.length);
+}
 
 // The real transport, including the status map custDelete's three-way decision
 // reads. Taken from the file rather than re-declared, for the reason this week
@@ -76,7 +85,31 @@ const LAYER = [
   'async function sdData(action, resource, payload) {'
 ].map(s => grabAt(s, '')).join('\n\n') + '\n\n'
   + grabLine('function sdLastStatus(resource) {') + '\n'
-  + 'var SD_FETCH_TIMEOUT_MS = 15000;\n';
+  + 'var SD_FETCH_TIMEOUT_MS = 15000;\n'
+  // ── THE SERVER-WINS LAYER, ADDED 2026-09-26 BECAUSE THIS FILE WAS RED ─────
+  // sdHydrateCustomers() gained `sdSyncedBootstrap(...)` and `sdServerWinsMerge`
+  // on 2026-09-21. This LAYER did not, so two arms -- including the section 1
+  // MUTANT, the one that proves the suite can see a resurrection at all -- have
+  // been failing with `sdSyncedBootstrap is not defined` ever since, on a
+  // CORRECT file. That is the SIXTH time this repo has recorded a suite failing
+  // because its own hand-listed dependency list went stale, and the reason the
+  // arm below exists rather than a longer list alone.
+  + '\n' + [
+    grabUntil('var SD_SYNCED=[', '];'),
+    grabLine("var SD_BOOTSTRAP_KEY='sd_synced_bootstrap';"),
+    grabLine('var sdBootstrappedNow=false;'),
+    grabLine('var sdSyncSuppressed=false;'),
+    grabLine("var SD_SYNCED_KEY='sd_synced_ids';"),
+    grabLine('function sdHydrateLoad(key){return sdLoad(key,[]);}'),
+    grabLine('function sdHydrateStore(key,value){return sdWhileSuppressed(function(){return st(key,value);});}')
+  ].join('\n') + '\n\n' + [
+    'function sdWhileSuppressed(fn){',
+    'function sdLoad(k,def){',
+    'function sdSyncedRead(){',
+    'function sdMarkSynced(resource,id){',
+    'function sdSyncedBootstrap(resources){',
+    'function sdServerWinsMerge(key,serverRows){'
+  ].map(s => grabAt(s, '')).join('\n\n') + '\n';
 
 const UNIT = [
   grabAt('function saveSD3Data() {', ''),
@@ -99,11 +132,24 @@ const PRE_FIX = [
 function build(opts) {
   opts = opts || {};
   const calls = { fetch: [], notes: [], confirms: [], closed: 0, stored: {} };
+  // ── A REAL STORE, ADDED 2026-09-26 WITH THE SERVER-WINS LAYER ─────────────
+  // `st` used to record into `calls.stored` and answer true without keeping the
+  // bytes. That was enough while the layer was the transport alone. It is not
+  // enough now: sdServerWinsMerge() reads the list back through sdLoad(), so a
+  // write-only `st` makes every merge see an EMPTY local list and answer null --
+  // which silently disarms the resurrection the section 1 mutant has to show.
+  // A stub that makes the arm pass for the wrong reason is worse than no arm.
+  const raw = Object.assign({}, opts.stored || {});
   const ctx = {
     console,
     sdCustomers: (opts.customers || []).map(c => Object.assign({}, c)),
     sdPhotos: [],
-    st: (k, v) => { calls.stored[k] = v; return true; },
+    localStorage: {
+      getItem: k => (Object.prototype.hasOwnProperty.call(raw, k) ? raw[k] : null),
+      setItem: (k, v) => { raw[k] = String(v); },
+      removeItem: k => { delete raw[k]; }
+    },
+    st: (k, v) => { calls.stored[k] = v; raw[k] = JSON.stringify(v); return true; },
     renderCustomers: () => {},
     runAlertScan: () => {},
     custCloseDetail: () => { calls.closed++; },
@@ -260,12 +306,25 @@ const OK_DELETE = { status: 200, json: { ok: true, data: { _deleted_at: 'now' } 
     assert.strictEqual(b.ctx.sdCustomers.length, 0, 'an unlicensed install could not delete');
   });
 
+  // ── RE-PINNED FOR write_batch, 2026-09-26 ────────────────────────────────
+  // This arm read `f.body.action === 'write'` and `payload.id`, which is the
+  // per-record loop saveSD3Data() stopped doing earlier the same day. It went
+  // red on a CORRECT file, asserting `written.includes('C-2')` against an empty
+  // list -- and the useful half of the arm, that the DELETED id is not pushed
+  // back up, was passing vacuously for exactly as long: `!written.includes` is
+  // trivially true of a list nothing ever enters. A stale pin does not simply
+  // stop working; the negative half keeps reporting a pass it is not testing.
   await test('a delete never writes the deleted record back through saveSD3Data', async () => {
     const b = build({ customers: [CUST, { id: 'C-2', name: 'B. Customer' }],
                       route: routes(OK_DELETE, []) });
     await b.ctx.custDelete('C-1');
-    const written = b.calls.fetch.filter(f => f.body.action === 'write')
-      .map(f => f.body.payload && f.body.payload.id);
+    const batches = b.calls.fetch.filter(f => f.body.action === 'write_batch');
+    assert.strictEqual(batches.length, 1,
+      'the customer list is no longer pushed as ONE write_batch -- found '
+      + batches.length + ' batch calls');
+    const written = (batches[0].body.payload.records || []).map(r => r && r.id);
+    assert.ok(written.length, 'the batch carried no records, so the negative '
+      + 'assertion below would pass vacuously');
     assert.ok(!written.includes('C-1'), 'saveSD3Data pushed the deleted customer back up');
     assert.ok(written.includes('C-2'), 'the surviving customer was not written through');
   });

@@ -271,16 +271,45 @@ test('recordSharedTopics reads no result and raises no toast', () => {
     + 'deliberate, say why at the site');
 });
 
-test('saveSD3Data stays fire-and-forget AND still says why at the site', () => {
-  // The reason is load-bearing: it is called from render paths that must not
-  // wait on a network round trip. An arm that only checked the shape would let
-  // the reason be deleted and the next reader would "fix" it.
+test('saveSD3Data stays UN-AWAITED AND still says why at the site', () => {
+  // ── RE-PINNED 2026-09-26, AND THE STALENESS IS THE LESSON ────────────────
+  // This arm used to assert `sdData('write', 'sd_customers'` and the batching
+  // change replaced that with `write_batch`. The arm went red on a CORRECT
+  // file -- and because that assertion sits FIRST, it short-circuited before
+  // reaching the one below, which had ALSO started failing: the same edit
+  // deleted the "must not wait on a network round trip" sentence this arm
+  // exists to protect. A stale pin hid a live one, and the file's own failure
+  // count (17/1) looked like one problem rather than two.
+  //
+  // The name changed with it. "fire-and-forget" is no longer true and pinning a
+  // property the code deliberately stopped having is the same defect one level
+  // up: it is NOT awaited, and its result IS consumed.
   const body = grabRaw('function saveSD3Data(');
-  assert.ok(/sdData\(\s*'write'\s*,\s*'sd_customers'/.test(body));
+  assert.ok(/sdData\(\s*'write_batch'\s*,\s*'sd_customers'/.test(body),
+    'saveSD3Data no longer sends the customer list as ONE write_batch. If it '
+    + 'went back to a per-record loop, the resurrection pre-read makes that two '
+    + 'PostgREST trips per customer on a render path.');
+  // NOT AWAITED, but the result IS read -- the distinction the batching change
+  // was for. An arm that only checked "no await" would pass on the fire-and-
+  // forget loop this replaced.
+  assert.ok(!/await\s+sdData\(/.test(body),
+    'saveSD3Data now awaits its push -- sixteen call sites, several of them '
+    + 'render paths, would block on a network round trip');
+  assert.ok(/\.then\(/.test(body),
+    'saveSD3Data no longer reads the batch result, so a customer list that '
+    + 'never reached the server leaves no trace again');
   // The SPECIFIC reason, not an alternation another phrase can satisfy. Deleting
   // the render-path sentence survived the first version because the words
   // "Fire-and-forget" appear elsewhere in the same body.
-  assert.ok(/must not wait on a network round trip/.test(body),
+  //
+  // MATCHED ON THE UNWRAPPED PROSE (2026-09-26). The first version tested the
+  // raw body, so the pin held only while the sentence happened to fit on one
+  // comment line -- re-flowing the paragraph broke it without changing a word,
+  // and that is item 8's shape exactly: a check that stops testing anything and
+  // says nothing. Comment continuations are collapsed to spaces first, so the
+  // arm pins the SENTENCE rather than its line breaks.
+  const prose = body.replace(/\r?\n\s*\/\/\s?/g, ' ');
+  assert.ok(/must not wait on a network round trip/.test(prose),
     'the reason for not awaiting is no longer stated at the site -- the next '
     + 'reader will file this as a defect and "fix" a render path into a blocking '
     + 'one');

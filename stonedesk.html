@@ -24964,11 +24964,22 @@ function saveSD3Data() {
   //
   // `write_batch` sends the list once: one pre-read for every id, one upsert.
   //
-  // STILL NOT AWAITED -- that requirement has not changed -- but it is no
-  // longer FIRE AND FORGET, and that distinction is the point.
-  // tools/sync_write_result_check.py scored the old loop DISCARDED: a customer
-  // row that never reached the server left no trace anywhere. One call has one
-  // outcome, so the failure path can be recorded without the caller waiting.
+  // STILL NOT AWAITED, AND THE REASON IS RESTORED HERE IN THE PRESENT TENSE
+  // (2026-09-26): this function is called from render paths that must not wait
+  // on a network round trip. The batching edit above demoted that sentence to a
+  // past-tense aside -- "the comment that USED TO sit here said..." -- and
+  // tests/faults/sd_write_faults.js pins those exact words for a stated reason:
+  // without them the next reader files the un-awaited call as a defect and
+  // "fixes" sixteen render paths into blocking ones. The arm did not catch the
+  // deletion because the assertion ABOVE it had gone stale first (it pinned
+  // `write`, which this no longer calls) and short-circuited the arm -- a stale
+  // pin hiding a live one, which is why both were re-pinned together.
+  //
+  // NOT AWAITED is not the same as FIRE AND FORGET, and that distinction is the
+  // point. tools/sync_write_result_check.py scored the old loop DISCARDED: a
+  // customer row that never reached the server left no trace anywhere. One call
+  // has one outcome, so the failure path can be recorded without the caller
+  // waiting.
   //
   // A REFUSED RECORD IS DROPPED LOCALLY. The server answers `refused` for ids
   // it holds as deleted, which is the same instruction the `tombstones` action
@@ -29909,7 +29920,41 @@ async function sdData(action, resource, payload) {
     if (action === 'write' && payload && payload.id !== undefined && payload.id !== null) {
       try { sdMarkSynced(resource, payload.id); } catch (_e) {}
     }
-    return j.data;
+    // ── AND THE BATCH FORM, WHICH THAT LINE DID NOT COVER (2026-09-26) ──────
+    // `write_batch` landed earlier today and the carve-out above is scoped to
+    // `write`, so every id saveSD3Data() pushes stopped entering the map. It
+    // failed in the SAFE direction and is still wrong: an ABSENT id reads as
+    // "never pushed", which makes hydration decline to overwrite, so the
+    // server-wins rule simply stopped applying to customers with nothing said.
+    //
+    // ONLY THE IDS THE SERVER SAYS IT WROTE. A `refused` id was NOT written;
+    // marking it would tell hydration to overwrite a local record the server
+    // never received, which is the opposite of what the map is for.
+    if (action === 'write_batch' && payload && Array.isArray(payload.records)) {
+      const refusedIds = {};
+      (Array.isArray(j.refused) ? j.refused : []).forEach(function (x) {
+        if (x && x.id !== undefined && x.id !== null) refusedIds[String(x.id)] = true;
+      });
+      payload.records.forEach(function (rec) {
+        if (!rec || rec.id === undefined || rec.id === null) return;
+        if (refusedIds[String(rec.id)]) return;
+        try { sdMarkSynced(resource, rec.id); } catch (_e) {}
+      });
+    }
+    // ── WHICH HALF OF THE ANSWER THE CALLER GETS (2026-09-26) ──────────────
+    // Every other action puts its payload under `data`, so `j.data` is right
+    // for them. `write_batch` has no `data` key at all -- its answer IS the
+    // envelope, `{ok, written, refused, skipped_without_id}` -- so returning
+    // `j.data` handed back `undefined`, and saveSD3Data()'s `if (!r || r.ok
+    // !== true)` read that as a failure. The fix that stopped a per-customer
+    // write storm therefore reported EVERY successful save as a lost one, and
+    // never reached its own `refused` branch, which is the branch that drops a
+    // customer deleted on another device.
+    //
+    // NARROW ON PURPOSE: one named action, not a general "fall back to the
+    // envelope when data is missing" rule. That rule would change what a
+    // genuinely empty read means, which is a much larger claim than this bug.
+    return (action === 'write_batch') ? j : j.data;
   } catch (e) {
     // A network throw left the previous state in place, so a read that failed
     // after one that succeeded looked like a success that returned nothing.
@@ -38886,13 +38931,51 @@ async function sdReleaseSlab(slab, forWho){
   return sdSlabHoldCall('release', slab, forWho);
 }
 
+// ── IT ANSWERS WHETHER THE SLAB REACHED THE SERVER (2026-09-26) ────────────
+// Finding 4 of docs/2026-09-26-fire-and-forget-write-audit.md, and the sharpest
+// of the five: this body was `try{ await sdData('write','slabs',slab); }catch(e){}`
+// with NO decision recorded at the site. `slabs` is session-gated -- it carries
+// `read`, `write`, `reserve` and `release` in SD_SESSION_GATED -- so a tokenless
+// or refused call answers 403 and the old body swallowed it whole. A hold,
+// release or status change that never reached the server left the yard's record
+// and the server's record disagreeing, with nothing said, on the reserve/release
+// path a salesperson acts on.
+//
+// AND THE CALLER THAT ALREADY TESTED THE ANSWER WAS TESTING A GHOST.
+// pcToggleSlab() has read `ok === false` since the public catalog shipped, to
+// show "Saved on this device only -- the catalog on the web has NOT changed".
+// This function returned `undefined` on every path, so that warning could never
+// fire: a publish that failed said "Slab published to the catalog". That is the
+// worse half of the finding -- not a missing warning but a warning that reads as
+// present and cannot happen.
+//
+// TRUE means the server accepted it. `sdData()` answers null on EVERY failure
+// (401/403, any 4xx/5xx, a 200 carrying ok:false, a throw) and the slabs write
+// branch answers `data: rows[0].data || payload`, so a landed write is always a
+// non-null object -- the two are distinguishable, which is what makes a boolean
+// honest here rather than a guess.
 async function slabSyncOne(slab){
-  if(typeof sdData!=='function') return;
-  var lic=slabLicKey(); if(!lic) return;
+  if(typeof sdData!=='function') return false;
+  // No licence is not a failure to report -- there is nothing to sync to. It is
+  // still FALSE rather than undefined, because "it did not reach the server" is
+  // the true answer and pcToggleSlab's warning is the right thing to show.
+  var lic=slabLicKey(); if(!lic) return false;
   try{
     // Endpoint upserts by slab.id within this license and stamps app_id server-side.
-    await sdData('write','slabs',slab);
-  }catch(e){}
+    var saved=await sdData('write','slabs',slab);
+    if(saved!==null && saved!==undefined) return true;
+    // NAMED AT THIS SITE, not left to the transport. sdData() already warns, but
+    // it names the RESOURCE ('slabs') and six of this function's seven callers
+    // ignore the return value -- so without this the log cannot tell you WHICH
+    // slab the yard and the server now disagree about.
+    try{console.warn('StoneDesk: slab "'+(slab&&slab.id)+'" was NOT saved to the '
+      +'server, so the yard copy and the server copy now disagree.');}catch(e){}
+    return false;
+  }catch(e){
+    try{console.warn('StoneDesk: slab "'+(slab&&slab.id)+'" was NOT saved to the '
+      +'server, so the yard copy and the server copy now disagree.',e);}catch(_e){}
+    return false;
+  }
 }
 
 function slabSqft(lengthIn, widthIn){
@@ -38976,10 +39059,36 @@ async function sdLineageSync(){
   }
   if(typeof sdSlabsRender==='function') sdSlabsRender();
 }
+// ── A DROPPED HISTORY ROW IS THE ONE THAT HIDES ITSELF (2026-09-26) ────────
+// Finding 5 of docs/2026-09-26-fire-and-forget-write-audit.md. This body was
+// `try{ await sdData('write', resource, rec); }catch(e){}`. Lineage is the
+// slab's movement history -- the thing this section's own comment calls
+// "reconstructable without inferring it from the slab's current state" -- and a
+// dropped lineage write breaks exactly that property SILENTLY: the current state
+// still looks right, and the record that would have contradicted it is simply
+// absent. There is nothing later to notice from.
+//
+// All three lineage writes answer `data: wrows[0].data || payload`, so a landed
+// write is a non-null object and sdData()'s null-on-any-failure is
+// distinguishable from it.
 async function sdLineageSyncOne(resource, rec){
-  if(typeof sdData!=='function') return;
-  if(typeof sdLicenseKey==='function' && !sdLicenseKey()) return;
-  try{ await sdData('write', resource, rec); }catch(e){}
+  if(typeof sdData!=='function') return false;
+  if(typeof sdLicenseKey==='function' && !sdLicenseKey()) return false;
+  try{
+    var saved=await sdData('write', resource, rec);
+    if(saved!==null && saved!==undefined) return true;
+    // The 503 path is the live one, not a hypothetical: the endpoint answers
+    // NOT_PROVISIONED until sql/sd_slab_lineage_schema.sql has been run, and
+    // the old body made that indistinguishable from a working sync.
+    try{console.warn('StoneDesk: lineage row "'+(rec&&rec.id)+'" did NOT reach '
+      +resource+'. The slab state still looks right and the history that would '
+      +'contradict it is missing.');}catch(e){}
+    return false;
+  }catch(e){
+    try{console.warn('StoneDesk: lineage row "'+(rec&&rec.id)+'" did NOT reach '
+      +resource+'.',e);}catch(_e){}
+    return false;
+  }
 }
 
 // ── History: append-only in practice. Every event names what changed, so a
