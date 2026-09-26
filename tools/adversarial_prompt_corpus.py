@@ -178,7 +178,22 @@ UNTRUSTED_PREFIXES = (
     'ocr', 'extractedtext', 'extracted_text', 'phototext', 'scantext',
     'freetext', 'free_text', 'usertext', 'customernote', 'customer_note',
 )
-UNTRUSTED_WORDS = ('complaint', 'notes', 'transcript')
+# `note` and `desc` ADDED 2026-09-26, after three real unfenced sites were
+# found BY HAND in two apps this tool was reporting clean:
+#   sairnvet.html   a staff-typed case `note` in a CLINICAL DECISION SUPPORT
+#                   system prompt -- missed because the list held `notes` and
+#                   the whole-word boundary correctly rejects `note`
+#   sairncode.html  a user-typed `desc` (procedure/diagnosis description) in a
+#                   billing code-lookup prompt
+# ONE CHARACTER BETWEEN A HINT AND A REAL FIELD NAME WAS ALL IT TOOK, and the
+# tool reported 0 findings with a straight face. Both are safe to add only
+# because string literals are stripped first (see _code_only below).
+#
+# STILL MISSED, STATED RATHER THAN IMPLIED CLEAN: sairncode's `code1` and
+# `code2` are free-text inputs reaching a system prompt and NO generic word
+# list can name them. That is the per-app field list this file's own header
+# already calls the real fix, and it is still not written.
+UNTRUSTED_WORDS = ('complaint', 'notes', 'note', 'transcript', 'desc')
 
 # A DELIMITER is any of the conventional forms for fencing untrusted text.
 # Presence is NOT proof of safety (the delimiter-escape family above exists for
@@ -201,10 +216,33 @@ DELIMITER_HINTS = (
 SYSTEM_SITE = re.compile(r'system\s*:\s*([A-Za-z_$][\w$]*)\s*[,}]')
 
 
+# ── STRING LITERALS ARE REMOVED BEFORE THE HINTS RUN (2026-09-26) ──────────
+# PR 1.2, applied to this tool: grep cannot tell code from text that
+# DESCRIBES code. A hint is the name of a VARIABLE carrying foreign text, and
+# a variable name never lives inside a string literal -- but the PROSE of the
+# prompt does, and prompts talk about their own subject matter.
+# `'Case note: '+note` carries the word twice and only the second one means
+# anything; `'Note the following'` carries it once and means nothing at all.
+#
+# THIS IS WHAT MADE THE WORD LIST SAFE TO WIDEN, and the order matters: `note`
+# and `desc` could not be added while prose counted, because every prompt
+# containing the sentence "note the following" would have become a finding.
+# With literals gone the hints are identifier-only and the widening costs
+# nothing. Two fixtures below pin both halves.
+_STRINGS = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|`(?:\\.|[^`\\])*`", re.S)
+
+
+def _code_only(expr):
+    """`expr` with every string literal blanked, so hints match identifiers."""
+    return _STRINGS.sub(' ', expr)
+
+
 def _hints_in(expr):
     """Untrusted-field hints in ONE expression. Word-bounded for whole words,
-    prefix-matched for identifier prefixes -- see the two tuples above."""
-    low = expr.lower()
+    prefix-matched for identifier prefixes -- see the two tuples above.
+
+    Matched against the CODE half only: see _code_only above."""
+    low = _code_only(expr).lower()
     return ({h for h in UNTRUSTED_PREFIXES
              if re.search(r'(?<![a-z0-9_])' + re.escape(h), low)}
             | {h for h in UNTRUSTED_WORDS
@@ -333,6 +371,42 @@ FIXTURES = [
      "var sys='Summarise: '+complaint;\n"
      "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
      {'interp': 1, 'at_risk': 1, 'delimited': 0}),
+
+    # ── ADDED 2026-09-26 WITH `note`, `desc` AND THE LITERAL STRIP ──────────
+    # The first three are the real shapes this tool was reporting clean; the
+    # last two are the near-misses that make the widening safe rather than
+    # lucky, and the second of them keeps a PAST decision honest.
+    ('a SINGULAR user-typed `note` un-fenced -- the sairnvet shape',
+     "var sys='Reviewing a photo. Species: '+species+'. '+note;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 1, 'delimited': 0}),
+
+    ('a user-typed `desc` un-fenced -- the sairncode shape',
+     "var sys='Look up a code for this. '+desc;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 1, 'delimited': 0}),
+
+    ('the sairnvet shape FENCED with sfFence -- not a finding, reported apart',
+     "var sys='Reviewing a photo.'+sfRule()+sfFence('CASE NOTE',note);\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 0, 'delimited': 1}),
+
+    # NEAR MISS 1: the word is in the prompt PROSE and nowhere else. Before
+    # string literals were stripped this WAS a finding, which is exactly why
+    # `note` could not be added to the word list until it was not.
+    ('the word `note` in the prompt PROSE only -- must NOT be a finding',
+     "var sys='Please note the following house rules. '+APP_RULES;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 0, 'delimited': 0}),
+
+    # NEAR MISS 2: the word-boundary half. `notebookTitle` and `descriptor`
+    # must not match, and `description` must STILL not match -- it was removed
+    # from the criteria on purpose in 2026-09-25 and this fixture is what stops
+    # that decision being silently reversed by a future widening.
+    ('`notebookTitle` / `descriptor` / `description` must NOT match',
+     "var sys='Summarise. '+notebookTitle+descriptor+description;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 0, 'delimited': 0}),
 ]
 
 
