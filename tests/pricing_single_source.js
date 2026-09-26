@@ -252,5 +252,65 @@ test('a stored agreement prints its OWN label and price, not a lookup', () => {
             'the printed rate box no longer reads ag.price');
 });
 
+// ---------------------------------------------------------------------------
+section('a COMPETITOR price in a live system prompt is a dated reading, not a fact');
+// ── ADDED 2026-09-26, AND THE GAP THIS CLOSES IS ONE SIDE OF A COMPARISON ──
+// Every arm above guards SAIRN'S OWN prices, and they did their job: the
+// 2026-09-04 correction fixed a price book that disagreed with the agreement
+// generator, and nothing can re-offer a retired tier. NONE of them looked at the
+// COMPETITOR figure in the same file.
+//
+// It said "using Moraware at $200-400/mo", entered on 2026-06-10 undated and
+// unsourced, and the positioning paragraph reasoned from it -- "at a $299 floor
+// StoneDesk no longer undercuts Moraware's band from below". This repo's own
+// 2026-09-02 competitive-gap audit contradicts it in STRUCTURE: Moraware prices
+// PER USER, so a three-seat Systemize + Inventory shop is $510/mo, already above
+// the top of the quoted band. Correcting one side of a comparison and not the
+// other is how a positioning claim goes wrong quietly, and a system prompt is
+// the worst place for it because the model states it to the CEO as current.
+//
+// WHAT IS PINNED IS THE DISCLOSURE, NOT THE NUMBER. This file cannot check a
+// vendor's price page either, so asserting a particular competitor figure would
+// just move the staleness here. What it asserts is that any competitor price in
+// that prompt carries a retrieval DATE and an instruction to verify.
+const COMPETITORS = ['Moraware', 'ActionFlow', 'Stone Profits', 'ezyVet', 'IDEXX',
+                     'Covetrus', 'AVImark', 'Vetspire', 'Digitail'];
+const named = COMPETITORS.filter((c) => exec.indexOf(c) !== -1);
+test('at least one competitor is named in exec-context, or this section proves '
+   + 'nothing', () => {
+  assert.ok(named.length > 0,
+    'no competitor appears in exec-context.js at all -- if that is now true the '
+    + 'arms below are vacuous and should be retired rather than left green');
+});
+// A price figure anywhere in the same STRING as a competitor's name.
+const PRICE = /\$\s?\d[\d,]*(?:\.\d\d)?(?:\s*-\s*\d[\d,]*)?\s*(?:\/|per\s)?\s*(?:user\s*\/\s*)?(?:mo|month)/i;
+const promptStrings = exec.split('\n')
+  .filter((l) => !l.trim().startsWith('//'))
+  .filter((l) => COMPETITORS.some((c) => l.indexOf(c) !== -1))
+  .filter((l) => PRICE.test(l));
+test('every prompt line carrying a competitor price also carries a RETRIEVAL '
+   + 'DATE (' + promptStrings.length + ' such line(s))', () => {
+  const undated = promptStrings.filter((l) => !/20\d\d-\d\d-\d\d/.test(l));
+  assert.strictEqual(undated.length, 0,
+    'undated competitor price in a live system prompt: ' + undated.join(' | ').slice(0, 220));
+});
+test('...and tells the model to VERIFY rather than state it as current', () => {
+  const unqualified = promptStrings.filter(
+    (l) => !/verif/i.test(l) || !/never state a competitor price as current/i.test(l));
+  assert.strictEqual(unqualified.length, 0,
+    'a competitor price with no verify-before-quoting instruction: '
+    + unqualified.join(' | ').slice(0, 220));
+});
+// CONTROL: the regex really does find a price beside a competitor's name, or the
+// two arms above pass by matching nothing. Driven on a synthetic line rather
+// than on the file, so it cannot be satisfied by the file being correct.
+test('CONTROL: the detector fires on an undated competitor price', () => {
+  const planted = "    'Revenue: shops on Moraware at $200-400/mo today.',";
+  assert.ok(COMPETITORS.some((c) => planted.indexOf(c) !== -1) && PRICE.test(planted),
+    'the detector would not have seen the exact line this arm was written about');
+  assert.ok(!/20\d\d-\d\d-\d\d/.test(planted),
+    'the planted line must be undated for this control to mean anything');
+});
+
 console.log('\n' + pass + ' passed, ' + fail + ' failed');
 if (fail) process.exitCode = 1;

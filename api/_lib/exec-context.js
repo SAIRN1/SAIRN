@@ -82,11 +82,36 @@ const EXEC_CONTEXT = {
     // a customer actually signed. Both are now the confirmed tiers.
     //
     // NOTE THE POSITIONING CHANGE, because the CEO advisor will be asked about it:
-    // the entry tier is GONE. At a $299 floor StoneDesk no longer undercuts
-    // Moraware's $200-400/mo band from below -- it starts inside it and its top
-    // tier sits above it. Any advice that assumed a $199 land-and-expand entry
-    // point is stale.
-    'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk pricing is Business $299/mo, Professional $599/mo, Enterprise $799/mo, with custom pricing for larger shops. There is NO entry-level tier below Business -- do not quote one.',
+    // the entry tier is GONE. Any advice that assumed a $199 land-and-expand
+    // entry point is stale.
+    //
+    // ── AND THE COMPETITOR FIGURE THE POSITIONING RESTED ON WAS STALE AND
+    // ── STRUCTURALLY WRONG (corrected 2026-09-26) ───────────────────────────
+    // This line said "using Moraware at $200-400/mo", and the paragraph above
+    // reasoned from it: "at a $299 floor StoneDesk no longer undercuts
+    // Moraware's $200-400/mo band from below -- it starts inside it".
+    //
+    // THAT BAND ENTERED THIS FILE ON 2026-06-10 (dc38de42), UNDATED AND
+    // UNSOURCED, and this repo's own StoneDesk worldwide competitive-gap audit
+    // of 2026-09-02 contradicts it in STRUCTURE, not just in amount: Moraware
+    // prices PER USER, not per shop -- CounterGo $100/user/mo, Systemize
+    // $120/user/mo with a 3-user minimum (+$50/user past 5), Inventory
+    // $50/user/mo and only alongside Systemize.
+    //
+    // So a three-seat shop on Systemize + Inventory is 3 x $120 + 3 x $50 =
+    // $510/mo, ALREADY ABOVE the top of the band this file quoted. The
+    // "StoneDesk starts inside Moraware's band" conclusion was derived from a
+    // figure the platform had already superseded, and the 2026-09-04 pricing
+    // correction two paragraphs up fixed SAIRN'S OWN prices while leaving the
+    // competitor number it argues against untouched. Correcting one side of a
+    // comparison is how a positioning claim goes wrong quietly.
+    //
+    // THE MODEL IS TOLD THE DATE AND TOLD TO VERIFY, rather than given a
+    // replacement band to state as current. This file cannot check a vendor's
+    // price page, and a precise-looking per-user figure quoted as today's truth
+    // is the same defect one number over -- the audit it comes from grades
+    // itself and this sentence inherits that grade rather than laundering it.
+    'Revenue: StoneDesk targets 2,600+ stone fabrication shops. COMPETITOR PRICING IS A DATED READING, NOT A CURRENT FACT: as of the 2026-09-02 internal competitive-gap audit, Moraware prices PER USER -- CounterGo $100/user/mo, Systemize $120/user/mo with a 3-user minimum, Inventory $50/user/mo requiring Systemize -- so a small shop can sit well above $400/mo. Say it is a 2026-09-02 reading and recommend verifying against Moraware directly before quoting it to anyone; never state a competitor price as current. StoneDesk pricing is Business $299/mo, Professional $599/mo, Enterprise $799/mo, with custom pricing for larger shops. There is NO entry-level tier below Business -- do not quote one.',
     'Your CEO expertise covers: strategic vision and annual planning, sales pipeline management and GTM strategy, investor relations and fundraising (Pre-seed $500K-$2M, Seed $1-5M), competitive positioning vs Moraware and generic SaaS, team culture and hiring decisions, partnership development, press and PR, market expansion, product-market fit analysis.',
     'Stone industry context: 2,600+ shops, avg shop wastes $316/hr in rework, CA SB 20 silica compliance deadline July 1 2026, engineered stone 93% crystalline silica hazard creates urgent compliance need.',
     'Key metrics you track: MRR/ARR, churn rate, LTV:CAC ratio (target >3:1), CAC payback (target <18 months), NRR (target >110%), magic number (target >0.75), burn rate, runway (keep 18+ months).',
