@@ -3039,7 +3039,24 @@ async function saveInvoice(){
   var lic=sdnLicenseKey();
   if(!lic){toast('Saved on this device only -- server sync failed, try again with a connection',6000);return;}
   try{
-    var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    // ── THIS PATH BYPASSES sdnData AND SO BYPASSED ITS X-SD-Auth HEADER ────
+    // (2026-09-25.) `sdn_invoices` was session-gated on 2026-09-23 (9db14368)
+    // for READ and WRITE. sdnData() sends X-SD-Auth unconditionally, but this
+    // site is a deliberate DIRECT fetch -- it needs the real 409
+    // DUPLICATE_INVOICE status that sdnData collapses to null -- and it built
+    // its own headers without the token. So every invoice created after that
+    // gate landed got 403 FORBIDDEN and the user was told "Saved on this
+    // device only -- server sync failed, try again with a connection": a
+    // WRONG REASON for a real data loss, on a money record.
+    //
+    // FOUND BY REVIEWING THE GATE, NOT BY THE GATE'S OWN SUITE, and the reason
+    // is worth keeping: the measurement that justified the change counted
+    // `sdnData(` call sites, and a direct fetch is invisible to that count by
+    // construction. Any future resource gate has to sweep for direct fetches
+    // as well as transport calls.
+    var sdnDirectHeaders={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+    if(sdnSession&&sdnSession.token)sdnDirectHeaders['X-SD-Auth']=sdnSession.token;
+    var r=await fetch(DATA_API,{method:'POST',headers:sdnDirectHeaders,
       body:JSON.stringify({action:'write',resource:'sdn_invoices',app_id:APP_ID,payload:rec})});
     var d=await r.json().catch(function(){return null;});
     if(r.status===409&&d&&d.error&&d.error.code==='DUPLICATE_INVOICE'){

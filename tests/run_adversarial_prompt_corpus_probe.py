@@ -70,8 +70,16 @@ def main():
 
     print('\nTHE REAL SWEEP IS NOT VACUOUS')
     code, out = run([])
-    arm('4. the sweep runs and reports findings on the real tree (exit 1)',
-        code == 1, out[-300:])
+    # UPDATED 2026-09-25: the five traced sites are now FENCED, so a clean
+    # sweep (exit 0, zero unfenced) is the CORRECT verdict -- the old "reports
+    # findings" expectation would have demanded the defect stay unfixed, which
+    # is a control holding a platform to its own worst state. What must hold is
+    # that the sweep RAN and CLASSIFIED; arm 10 is what proves those sites are
+    # still being seen rather than silently lost.
+    arm('4. the sweep runs and classifies: zero unfenced, 5 reported as fenced',
+        code == 0 and 'NO DELIMITER: 0 site(s)' in out
+        and 'NOT AS CLEAN: 5 site(s)' in out,
+        'exit ' + str(code) + chr(10) + out[-300:])
     arm('5. ...and the counts are real: literal + interpolated > 90 sites',
         bool(re.search(r'PROMPT SITES: (\d+) literal', out))
         and sum(int(x) for x in re.findall(
@@ -137,13 +145,17 @@ def main():
     # at-risk, never disappear. (Zero are fenced today, so this proves the
     # BRANCH exists rather than moving a number -- said plainly because a
     # mutation that cannot change today's output is weak evidence.)
-    sabotage('10. emptying the delimiter list cannot make a site vanish -- '
-             'every site stays in exactly one bucket',
-             "DELIMITER_HINTS = (\n    '\"\"\"',",
-             "DELIMITER_HINTS = (\n    'zzz_no_such_fence',",
-             lambda c, o: 'FENCED, REPORTED SEPARATELY AND NOT AS CLEAN: 0'
-             in o and 'NO DELIMITER: 15 site(s)' in o)
-
+    # M3. Emptying the FENCE-CALL hints must move every fenced site into the
+    # at-risk bucket -- NEVER make one disappear. This is the arm that proves
+    # the five sites are still being traced now that they are fenced: without
+    # it, a criteria change that stopped seeing them entirely would look
+    # identical to a clean platform.
+    sabotage('10. emptying the fence-call hints moves all 5 fenced sites to '
+             'at-risk -- none vanishes, so a clean sweep is not blindness',
+             "    'sffence(', 'fencedblock(', 'promptwithuntrusted(',",
+             "    'zzz_no_such_fence',",
+             lambda c, o: c == 1 and 'NO DELIMITER: 5 site(s)' in o
+             and 'NOT AS CLEAN: 0 site(s)' in o)
     print('\nRESTORATION')
     now = io.open(TOOL, 'rb').read()
     arm('11. the tool is byte-identical again', now == snap)

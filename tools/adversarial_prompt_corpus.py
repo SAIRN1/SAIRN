@@ -187,9 +187,87 @@ UNTRUSTED_WORDS = ('complaint', 'notes', 'transcript')
 DELIMITER_HINTS = (
     '"""', '<document>', '<untrusted', 'BEGIN UNTRUSTED', '---BEGIN',
     '```', '<<<', 'do not follow instructions', 'treat the text below as data',
+    # ── AND A CALL TO THE CANONICAL FENCE COUNTS AS A FENCE (2026-09-25) ────
+    # The markers live INSIDE api/_lib/prompt-fence.js and its mirrored client
+    # helper, so a call site that routes text through them contains no `<<<` of
+    # its own. Without these three names the tool reported the sites it had
+    # just watched being fixed as still unfenced -- a checker that cannot see
+    # the fix is a checker that gets ignored. Matching the CALL rather than the
+    # marker is also the stronger signal: it means the text went through the
+    # one implementation, not through somebody's hand-rolled brackets.
+    'sffence(', 'fencedblock(', 'promptwithuntrusted(',
 )
 
 SYSTEM_SITE = re.compile(r'system\s*:\s*([A-Za-z_$][\w$]*)\s*[,}]')
+
+
+def _hints_in(expr):
+    """Untrusted-field hints in ONE expression. Word-bounded for whole words,
+    prefix-matched for identifier prefixes -- see the two tuples above."""
+    low = expr.lower()
+    return ({h for h in UNTRUSTED_PREFIXES
+             if re.search(r'(?<![a-z0-9_])' + re.escape(h), low)}
+            | {h for h in UNTRUSTED_WORDS
+               if re.search(r'(?<![a-z0-9_])' + re.escape(h) + r'(?![a-z0-9])', low)})
+
+
+_IDENT = re.compile(r'(?<![.\w$])([A-Za-z_$][\w$]{2,})(?![\w$(])')
+_KW = frozenset(('var', 'let', 'const', 'function', 'return', 'true', 'false',
+                 'null', 'undefined', 'this', 'new', 'typeof', 'await', 'async'))
+
+
+def _assignments(window, var):
+    return re.findall(
+        r'(?:var\s+|let\s+|const\s+)?' + re.escape(var) + r'\s*(?:\+)?=\s*([^;]{0,4000});',
+        window, re.S)
+
+
+# ── THE PROMPT VARIABLE IS TRACED, NOT WINDOWED (rewritten 2026-09-25) ─────
+# The first version read the 60 lines above the call and asked whether a hint
+# word appeared anywhere in them. MEASURED WRONG IN BOTH DIRECTIONS on the
+# first real sweep, which is why this is a rewrite rather than a tweak:
+#
+#   OVER-REPORTED: it called 15 sites at risk. Reading each by hand, only
+#   THREE had untrusted text actually reaching the prompt. The other twelve had
+#   `notes` somewhere in the window -- a DOM id (`cg-notes`), an innerHTML
+#   render, an unrelated local -- and nothing flowing into `system:`.
+#
+#   UNDER-CREDITED: once those three were FENCED, the window filter dropped the
+#   `sfFence(...)` call (it sits in the `facts` assembly, which contains
+#   neither the prompt variable's name nor the word `system`), so the tool
+#   still reported them unfenced. A checker that cannot see the fix is a
+#   checker that will be ignored.
+#
+# So the prompt variable is now followed through its own assignments, up to
+# MAX_HOPS, and both questions -- is untrusted text in there, is a fence in
+# there -- are asked of the SAME traced expressions. `job.notes -> facts ->
+# sys` is two hops and is the real shape in this tree.
+#
+# THE DEPTH IS A STATED LIMIT, not a claim of completeness: a four-hop
+# assembly is invisible here and would be reported clean. Two is what the
+# corpus of real prompts needs today; the number is printed on every run so a
+# reader can see what it was, and raising it is one constant.
+MAX_HOPS = 3
+
+
+def _trace(window, var):
+    """(untrusted hints, fence hints) reachable from `var` within MAX_HOPS."""
+    seen, frontier = set(), [var]
+    unt, fence = set(), set()
+    for _hop in range(MAX_HOPS):
+        nxt = []
+        for v in frontier:
+            if v in seen:
+                continue
+            seen.add(v)
+            for expr in _assignments(window, v):
+                unt |= _hints_in(expr)
+                low = expr.lower()
+                fence |= {d for d in DELIMITER_HINTS if d.lower() in low}
+                nxt += [x for x in _IDENT.findall(expr)
+                        if x not in seen and x.lower() not in _KW]
+        frontier = nxt
+    return unt, fence
 
 
 def scan(path):
@@ -202,29 +280,29 @@ def scan(path):
             out['literal'] += 1
             continue
         out['interp'] += 1
-        mv = SYSTEM_SITE.match('system:' + arg) or SYSTEM_SITE.search('system:' + arg)
-        var = mv.group(1) if mv else None
+        # THE VARIABLE NAME COMES FROM THE ARG ITSELF. `SYSTEM_SITE` wants a
+        # trailing `,` or `}` and the arg regex above already consumed up to the
+        # comma, so it matched NOTHING on `system:sys` -- every traced site fell
+        # to the inline branch and was reported clean. Latent while the old
+        # window path ignored `var`; exposed the moment tracing depended on it,
+        # and caught by the blind lock rather than by a real sweep.
+        bare = re.match(r'^\s*([A-Za-z_$][\w$]*)\s*$', arg)
+        var = bare.group(1) if bare else None
         lineno = src[:m.start()].count('\n') + 1
-        # The variable's assembly: the 60 lines above the call site, which is
-        # where every app in this tree builds its prompt.
-        window = '\n'.join(lines[max(0, lineno - 61):lineno])
+        window = '\n'.join(lines[max(0, lineno - 141):lineno])
         if var:
-            window = '\n'.join(
-                [l for l in window.split('\n') if var in l or 'system' in l] or [window])
-        low = window.lower()
-        # WORD-BOUNDED, not substring: `notes` must not match `notesTotal`,
-        # and the removed `message` hint above is what that costs when it is
-        # forgotten.
-        untrusted = sorted(
-            {h for h in UNTRUSTED_PREFIXES
-             if re.search(r'(?<![a-z0-9_])' + re.escape(h), low)}
-            | {h for h in UNTRUSTED_WORDS
-               if re.search(r'(?<![a-z0-9_])' + re.escape(h) + r'(?![a-z0-9])', low)})
-        if not untrusted:
+            untrusted_s, fence_s = _trace(window, var)
+        else:
+            # An INLINE expression has no variable to follow. Asked of the
+            # expression itself rather than skipped: a site this cannot trace
+            # is not a site this may assume is clean.
+            untrusted_s, fence_s = _hints_in(arg), {
+                d for d in DELIMITER_HINTS if d.lower() in arg.lower()}
+        if not untrusted_s:
             continue
-        delim = sorted({d for d in DELIMITER_HINTS if d.lower() in low})
-        rec = (lineno, var or '(expression)', ','.join(untrusted), ','.join(delim))
-        (out['delimited'] if delim else out['at_risk']).append(rec)
+        rec = (lineno, var or '(inline expression)',
+               ','.join(sorted(untrusted_s)), ','.join(sorted(fence_s)))
+        (out['delimited'] if fence_s else out['at_risk']).append(rec)
     return out
 
 
