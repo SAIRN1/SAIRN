@@ -2762,8 +2762,8 @@
       "task": "repair the 5 drifted cites my own CRITICALITY-TIERS correction introduced -- bare :N cites after an api/reference-fingerprint.js cite are attributed to the wrong file FILES: docs/CRITICALITY-TIERS.md",
       "claimed_at": "2026-09-26T18:51:59Z",
       "claimed_at_epoch": 1790448719.808799,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T18:54:37Z",
       "files": [
         "docs/CRITICALITY-TIERS.md"
       ]
