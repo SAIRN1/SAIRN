@@ -382,21 +382,124 @@ function evaluateTraining(rules, opts) {
     label: d.label, requirements: reqs, authority: d.authority || null
   };
 
-  // Optional per-staff evaluation.
+  // ── OPTIONAL PER-STAFF EVALUATION, AND IT USED TO FABRICATE A PASS ────────
+  // DRIVEN 2026-09-26, not reasoned about. Asking this branch for a West
+  // Virginia finding on a staff member with ZERO recorded hours returned:
+  //
+  //   { required_annual_hours: 0, recorded_annual_hours: 0, shortfall_hours: 0,
+  //     meets: TRUE, applicable_requirements: [null, null] }
+  //
+  // In a state that mandates 8 hours a year for an administrator and 2 hours a
+  // year of dementia training for ALL staff. The `[null, null]` is the tell:
+  // WV's rows are `{audience, hours_per_year, topic}` and this code reads
+  // `r.who` and `r.annual_hours`, so every requirement contributed
+  // `Number(undefined) || 0`. A DIFFERENT VOCABULARY READ AS AN EMPTY ONE, and
+  // an empty requirement set is indistinguishable from a satisfied one once it
+  // has been summed.
+  //
+  // It has never fired: nothing in sairncare.html passes `opts.staff` --
+  // cqShowTraining() sends {state, facility_class, requirement_type} and
+  // nothing else -- so this whole branch is dormant. That is the only reason
+  // the fabricated pass has not reached a screen, and it is not a reason to
+  // leave it: the open request that surfaced this is to BUILD the caller.
+  //
+  // TWO REFUSALS NOW, BOTH FAIL-CLOSED, matching this module's own standard --
+  // "neither is ever silently substituted ... a substitution would produce a
+  // confident wrong answer rather than an honest gap".
   if (Array.isArray(opts.staff)) {
-    out.staff_findings = opts.staff.map((s) => {
-      const applicable = reqs.filter((r) => !s.applies_to || s.applies_to.indexOf(r.who) !== -1);
-      const target = applicable.reduce((sum, r) => sum + (Number(r.annual_hours) || 0), 0);
+    // (1) AN UNRECOGNISED REQUIREMENT VOCABULARY IS REFUSED, NEVER SUMMED.
+    // A row is recognised if it carries EITHER key this branch reads. An
+    // initial-only row (`who` + `initial_hours`, no `annual_hours`) is
+    // recognised and correctly contributes zero to an ANNUAL total -- that is
+    // a real Ohio row and must keep working. What is refused is a row carrying
+    // NEITHER, which means this code cannot see it at all.
+    const unreadable = reqs.filter(function (r) {
+      return !r || (r.who === undefined && r.annual_hours === undefined);
+    });
+    if (unreadable.length) {
+      return refuse('REQUIREMENTS_NOT_JOINABLE',
+        'This state\'s training requirements are not in a shape the per-staff '
+        + 'check can read, so no staff finding is produced. ' + unreadable.length
+        + ' of ' + reqs.length + ' requirement(s) in rule ' + rule.rule_id
+        + ' (' + rule.state + ') carry neither `who` nor `annual_hours`. '
+        + 'Summing them would report every staff member as meeting a '
+        + 'requirement this code never read.',
+        { state: rule.state, rule_id: rule.rule_id,
+          unreadable_requirement_keys: unreadable.map(function (r) {
+            return Object.keys(r || {}).sort();
+          }) });
+    }
+    // (2) A REQUIREMENT SET WITH STACKING SEMANTICS CANNOT BE SUMMED, AND IT
+    //     IS WRONG IN BOTH DIRECTIONS.
+    // Two machine-readable fields on the real seeded rows say that plain
+    // addition is not the arithmetic:
+    //
+    //   additive: true                  Pennsylvania. A secured-dementia-unit
+    //                                   requirement ON TOP OF the general
+    //                                   annual hours. Summing both into one
+    //                                   target and comparing one recorded
+    //                                   total says a staff member with 18
+    //                                   general hours and no dementia hours
+    //                                   meets a 12-plus-6 rule. They do not.
+    //                                   UNDER-requires -> a false PASS.
+    //
+    //   counts_toward_general_annual:   Ohio. Two cognitive-impairment
+    //     true                          requirements whose 4 and 8 hours COUNT
+    //                                   TOWARD the general 8 rather than
+    //                                   adding to it. Summing all four rows
+    //                                   gives 29 where the code requires less.
+    //                                   OVER-requires -> a false FAIL.
+    //
+    // The second is the merciful direction and is still a wrong number on a
+    // compliance board, which is how a screen teaches people to ignore it.
+    // Neither can be fixed by better addition: both need each RECORDED hour to
+    // carry which requirement it was for, and an alf_staff_credentials row
+    // carries `category` (dementia/general/orientation) rather than a
+    // requirement id. Until that exists the honest answer is a null verdict
+    // with the reason, not a boolean in either direction.
+    const stacked = function (r) {
+      return !!r && (r.additive === true || r.counts_toward_general_annual === true
+                     || typeof r.stacking === 'string');
+    };
+    const additive = reqs.filter(stacked);
+    out.staff_findings = opts.staff.map(function (s) {
+      const applicable = reqs.filter(function (r) {
+        return !s.applies_to || s.applies_to.indexOf(r.who) !== -1;
+      });
+      const target = applicable.reduce(function (sum, r) {
+        return sum + (Number(r.annual_hours) || 0);
+      }, 0);
       const recorded = Number(s.annual_hours_recorded || 0);
+      const pooled = applicable.some(stacked);
       return {
         staff_id: s.staff_id, name: s.name || '',
         required_annual_hours: target,
         recorded_annual_hours: recorded,
         shortfall_hours: Math.max(0, target - recorded),
-        meets: recorded >= target,
-        applicable_requirements: applicable.map((r) => r.who)
+        // NULL, NOT FALSE, and not true. A separate pool means this comparison
+        // cannot answer the question either way.
+        meets: pooled ? null : (recorded >= target),
+        meets_unknown_reason: pooled
+          ? ('At least one applicable requirement carries STACKING SEMANTICS '
+             + '-- either ADDITIVE (a separate pool on top of the general '
+             + 'annual total, so summing UNDER-requires) or '
+             + 'COUNTS_TOWARD_GENERAL_ANNUAL (already inside it, so summing '
+             + 'OVER-requires). One recorded hours figure cannot be '
+             + 'apportioned across requirements, so whether this person '
+             + 'complies is not answerable from it in either direction. Read '
+             + 'the requirements below directly, or record hours per '
+             + 'requirement.')
+          : null,
+        applicable_requirements: applicable.map(function (r) { return r.who; })
       };
     });
+    if (additive.length) {
+      out.staff_findings_caveat =
+        'This rule carries ' + additive.length + ' requirement(s) with stacking '
+        + 'semantics (additive, or counting toward the general annual), so '
+        + 'per-staff verdicts are reported as unknown rather than guessed. '
+        + 'Summing would be wrong in a different direction for each.';
+    }
   }
   return out;
 }
