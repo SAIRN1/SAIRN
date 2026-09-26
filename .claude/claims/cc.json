@@ -2728,8 +2728,8 @@
       "task": "discharge cc's 23h-overdue review (hank 2026-09-25T13:13:43Z sen_branches/dnt_cred_rules tier promotions); gh_push REST bypass audit and fold missing checks into the push-gate script; 12 remaining blob conversions; SAIRNvet exotic-patients fabrication hardening; SAIRNvet exotic dosing external references; item 43 Ariane copy-exactly enforced check. SOC2 doc and roofing patent freshness are cody's live claim -- NOT taken. SUBJECT NAMED PER PR 4.3 FILES: docs/tier-a-reviews.json tools/gh_push.py tools/sairn_push_gate_hook.py api/sd-data.js sairnvet.html tools/copy_exactly_gate.py",
       "claimed_at": "2026-09-26T12:09:16Z",
       "claimed_at_epoch": 1790424556.1899393,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T14:13:34Z",
       "files": [
         "api/sd-data.js",
         "docs/tier-a-reviews.json",
