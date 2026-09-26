@@ -113,7 +113,57 @@ see it, which is the entire point of the discipline.
 
 ---
 
-## 4. What this does not claim
+## 4. The retrospective sweep — 600 commits, and the phrase is not the signal
+
+The obvious follow-on: how many OTHER commits made the same "byte-identical,
+not variants" claim and were also unexamined propagations? Swept two ways, both
+run rather than reasoned about.
+
+**Pass 1 — grep every commit message for a sameness claim.** Eight phrase
+families over the last 600 commits (`byte-identical`, `not variants`,
+`identical copy`, `copied verbatim/exactly`, `mirrors api/_lib`, `same code
+across`, `propagat*`, `copy-exactly`):
+
+| | count |
+|---|---|
+| commits scanned | 600 |
+| messages making a sameness or propagation claim | **38** |
+
+**Pass 2 — run item 43's own detection on each of those 38.** A claim is not a
+propagation and a propagation is not a claim; the cell that matters is both.
+
+| | count |
+|---|---|
+| claim **and** a real detected propagation, **no re-qualification recorded** | **1** |
+| claim, no propagation the gate can see | 37 |
+
+**The one is `b015ea78` — the sfFence copy, already re-qualified in §3.** There
+is no second instance in 600 commits.
+
+**THE 37 ARE NOT NEAR MISSES, THEY ARE A DIFFERENT SUBJECT, and that is the
+methodological finding.** On this platform "byte-identical" is overwhelmingly
+used to mean *these two artefacts agree* — a live probe against a deployment, a
+tier cell against the app, a skill file against its mirror — and almost never *I
+copied this block into a new file*. Spot-checked three: `313b3663` (a live-verify
+probe, touches no second copy of anything), `777a1350` (two cells in
+`CRITICALITY-TIERS.md`, a doc), `7b38baf8` (a `SKILL.md`). **Grepping for the
+phrase would have produced 38 candidates of which 37 are noise; the mechanical
+detection is what separates them.** That is the case for the gate existing rather
+than a convention plus a habit of reading commit messages.
+
+### What the sweep could not see
+
+- **Below the floor.** The gate requires ≥ 8 significant lines. A propagated
+  five-line guard is invisible to it and would be invisible to this sweep.
+- **Beyond recognition.** A block reworked past comment and whitespace changes
+  no longer matches, so a propagation somebody tidied is not counted.
+- **34 of the 37 were not individually opened.** Three were read; the rest rest
+  on the gate reporting no detected propagation, which is a weaker statement
+  than a human having looked.
+
+---
+
+## 5. What this does not claim
 
 - **A recorded answer is not a correct answer.** The gate checks that three
   questions were answered in a real sentence; it cannot check the sentences.
