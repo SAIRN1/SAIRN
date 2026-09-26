@@ -139,6 +139,7 @@ told the reader to do exactly that. Pretooluse mode now reads the assignment
 out of the command text, ignoring quoted mentions so that a commit message
 quoting the string cannot disable the gate.
 """
+import io
 import json
 import os
 import re
@@ -639,6 +640,152 @@ OVERRIDE_HINT = ("Override by putting SAIRN_SEED_GATE=off at the FRONT of the pu
 OVERRIDE_RE = re.compile(
     r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_SEED_GATE\s*=\s*(['"]?)off\1(?=\s|$|[;&|])""",
     re.IGNORECASE)
+
+
+# ── ITEM 101: THE OVERRIDE IS GRADUATED NOW, NOT BINARY (2026-09-25) ────────
+# Methodology item 101 is graduated mechanical commitment -- soft capture,
+# settling, hard capture -- taken from NASA docking, where two vehicles never
+# go straight to a rigid joint: latches make CONTACT first, dampers let the
+# residual motion die, and only then do the hooks pull the interfaces together.
+# The pattern exists because a hard joint made while the parts are still
+# oscillating transmits the oscillation into the structure.
+#
+# SAIRN_SEED_GATE=off was the rigid joint. It is one flag, it is read before a
+# single check runs, and it disables EVERY check in this hook -- the seed gate,
+# the Tier A review gate, the generated-document check, the tool-inventory
+# check, all fourteen. The bypass log records it as `check: ALL`, `blanket:
+# true`, which is honest and is also the whole problem.
+#
+# IT BIT THE SESSION THAT WROTE THIS. On 2026-09-25 hank needed the SEED check
+# skipped -- three WV compliance rules that cannot be loaded until they are in
+# the repo, because the loader reads them from the repo. The blanket flag was
+# the only route, so it went out, and every other check went with it. They then
+# had to be re-run BY HAND afterwards to find out whether any of them would
+# have denied. That is the oscillation being transmitted into the structure:
+# one intended exemption, thirteen unintended ones, and a manual reconstruction
+# to discover what was skipped.
+#
+#   SOFT CAPTURE    SAIRN_GATE_EXEMPT=seed names ONE check. Every other check
+#                   still RUNS and can still DENY. The first push carrying it
+#                   is REFUSED -- contact, not commitment -- and a pending
+#                   exemption is written, pinned to the exact tip sha.
+#   SETTLING        The pending exemption lives 15 minutes and is bound to that
+#                   sha. Amend, rebase or add a commit and it no longer
+#                   applies: the push must stop moving before it is let through.
+#                   The refusal is where the operator reads what will be
+#                   skipped and what was verified.
+#   HARD CAPTURE    The second push -- same sha, same named check, inside the
+#                   window -- skips ONLY that check, consumes the exemption,
+#                   and is logged as SCOPED rather than blanket. Single use.
+#
+# FAIL-SAFE RUNS THE OTHER WAY FROM THE REST OF THIS HOOK, deliberately. This
+# file fails OPEN everywhere else, because a gate that crashes closed gets
+# disabled and then protects nothing. The exemption store fails CLOSED: if it
+# cannot be read or written, the exemption does NOT apply and the check denies
+# as normal. A broken store must produce MORE checking, never less.
+#
+# THE BLANKET FORM STILL WORKS and is deliberately not removed -- removing the
+# only escape hatch mid-incident is its own failure mode. What changed is that
+# it is no longer the only one, and its refusal text now names the scoped form
+# first.
+EXEMPT_RE = re.compile(
+    r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_GATE_EXEMPT\s*=\s*(['"]?)([a-z-]+)\1(?=\s|$|[;&|])""",
+    re.IGNORECASE)
+
+# Only the seed check is exemptable today, and that is the point rather than a
+# limitation: a named list is a decision per check, where a wildcard would be
+# the blanket flag again wearing a better name.
+EXEMPTABLE = {'seed': 'seed-gate'}
+EXEMPT_TTL_SECONDS = 15 * 60
+EXEMPT_DIR = os.path.join(os.path.expanduser('~'), 'SAIRN-SESSION-LOCKS',
+                          'gate-exemptions')
+
+
+def exempt_requested(cmd):
+    """Which single check this push asks to skip, or None.
+
+    Read out of the command TEXT for the same reason override_in_command is --
+    in PreToolUse mode this hook inherits Claude Code's environment, not the
+    environment of the command it is inspecting -- and out of os.environ as
+    well, which is the reachable half in prepush mode. Quoted mentions do not
+    count, identically to the override: this file and this repo's commit
+    messages both quote the variable name in prose.
+    """
+    env = (os.environ.get('SAIRN_GATE_EXEMPT') or '').strip().lower()
+    if env in EXEMPTABLE:
+        return env
+    for m in EXEMPT_RE.finditer(cmd or ''):
+        head = (cmd or '')[:m.start()].replace('\\"', '').replace("\\'", '')
+        if head.count('"') % 2 == 0 and head.count("'") % 2 == 0:
+            name = m.group(2).lower()
+            if name in EXEMPTABLE:
+                return name
+    return None
+
+
+def _exempt_path(check):
+    try:
+        import bypass_log
+        who = bypass_log.session_name()
+    except Exception:                                   # noqa: BLE001
+        who = 'unknown'
+    return os.path.join(EXEMPT_DIR, '%s-%s.json' % (who, check))
+
+
+def graduated_exempt(check, tip):
+    """-> True to SKIP this check (hard capture), False to deny as normal.
+
+    Writing the pending record is the soft-capture half and happens on the
+    False path, so the caller denies and the operator sees why.
+    """
+    path = _exempt_path(check)
+    now = time.time()
+    # HARD CAPTURE: an unconsumed pending exemption for THIS sha, inside the
+    # window. Consumed by deletion before the push proceeds, so a crash after
+    # this point cannot leave a reusable one behind.
+    try:
+        with io.open(path, encoding='utf-8') as fh:
+            rec = json.load(fh)
+        if (rec.get('check') == check and rec.get('tip') == tip
+                and (now - float(rec.get('at') or 0)) <= EXEMPT_TTL_SECONDS):
+            os.remove(path)
+            return True
+    except Exception:                                   # noqa: BLE001
+        # Unreadable, absent, or malformed -- all of them mean NO exemption.
+        # Fail closed: see the block above EXEMPT_RE.
+        pass
+    # SOFT CAPTURE: record the intent, pinned to this exact tip.
+    try:
+        os.makedirs(EXEMPT_DIR, exist_ok=True)
+        with io.open(path, 'w', encoding='utf-8', newline='\n') as fh:
+            fh.write(json.dumps({'check': check, 'tip': tip, 'at': now},
+                                indent=2) + '\n')
+    except Exception:                                   # noqa: BLE001
+        # A store that cannot be written means the exemption can never be
+        # granted, which is the safe direction and is said in the message.
+        pass
+    return False
+
+
+def soft_capture_notice(check, tip):
+    return "\n".join([
+        "",
+        "SOFT CAPTURE -- this push asked to skip the %s check, and the request is "
+        "recorded but NOT yet granted." % check,
+        "",
+        "Every other check in this hook RAN and none of them denied. Only %s did."
+        % check,
+        "",
+        "Push again, unchanged, within 15 minutes and %s alone will be skipped --"
+        % check,
+        "every other check still runs, and the bypass log records it as SCOPED",
+        "rather than blanket. The exemption is pinned to %s: amend, rebase or add" % tip[:12],
+        "a commit and it no longer applies, because the thing being let through",
+        "must stop moving first.",
+        "",
+        "This replaces reaching for SAIRN_SEED_GATE=off, which skips all fourteen",
+        "checks and leaves you re-running them by hand to find out what it hid.",
+    ])
 
 
 # ── ITEM 86: EVERY OVERRIDE IS RECORDED, IN ITS OWN LOG ─────────────────────
@@ -2405,12 +2552,39 @@ def main():
                        " not contain; check the range before trusting the list above.")
         if seed_dir and seed_note:
             lines += ["", seed_note]
-        lines += [
-            "",
-            "If the drift is deliberate and unrelated to this push, " + OVERRIDE_HINT[0].lower() + OVERRIDE_HINT[1:],
-            "An override nobody mentions is how this gets hollowed out.",
-        ]
-        deny("\n".join(lines))
+        # -- ITEM 101: GRADUATED, NOT BINARY. See the block above EXEMPT_RE.
+        # This is the LAST deny in main(): every other check has already run
+        # and passed by the time control reaches here, so skipping this one is
+        # genuinely skipping ONE check rather than short-circuiting the hook.
+        # That is why `seed` is the check the scoped form exists for first.
+        _want = exempt_requested(cmd if MODE != 'prepush' else '')
+        if _want == 'seed':
+            if graduated_exempt('seed', tip):
+                _record_bypass('seed-gate',
+                               'SAIRN_GATE_EXEMPT=seed -- the SCOPED form, granted on the '
+                               'confirming push. Every other check in this hook ran and '
+                               'passed; only the seed-load check was skipped.',
+                               command=(cmd if MODE != 'prepush' else None), tip=tip)
+                # Fall through to the untold / guard_note reporting below, which
+                # exits 0. Nothing after this point in main() can deny.
+                drifted = []
+            else:
+                lines.append(soft_capture_notice('seed', tip))
+                deny("\n".join(lines))
+        else:
+            lines += [
+                "",
+                "SCOPED, GRADUATED EXEMPTION -- prefer this. Put SAIRN_GATE_EXEMPT=seed at the",
+                "FRONT of the push command. The first push is still refused and records the",
+                "request; push again UNCHANGED within 15 minutes and ONLY this check is",
+                "skipped, with every other one still running. It is pinned to the tip sha, so",
+                "amending or rebasing cancels it.",
+                "",
+                "BLANKET, STILL AVAILABLE AND STILL LOUD -- " + OVERRIDE_HINT[0].lower() + OVERRIDE_HINT[1:],
+                "That one disables ALL FOURTEEN checks rather than this one. An override",
+                "nobody mentions is how this gets hollowed out.",
+            ]
+            deny("\n".join(lines))
 
     if untold and MODE == 'prepush':
         # Same "could not tell is not a pass" rule, said where a pre-push caller
