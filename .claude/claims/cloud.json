@@ -1,0 +1,18 @@
+{
+  "session": "cloud",
+  "claims": [
+    {
+      "id": "cloud-1790448150",
+      "session": "cloud",
+      "subject": "sairncash",
+      "task": "SAIRNcash external competitive-gap audit, five lenses (competitive, regulatory, accuracy/liability, bank-sync/reconciliation, practitioner voice), docs only, isolated cloud-research lane, lands on PR SAIRN1/SAIRN#18 branch claude/wizardly-ride-wtun13, not main. LEXICAL-BLOCK NOTE PER PR 4.3: `check` blocked on cody-q11 via the shared phrase 'audit gap' (also audit/cloud/competitive/research). Verified disjoint: cody-q11 holds docs/SAIRN-PROCESS-RULES.md, tools/wait_for.py, stonedesk.html, the 08-26 roofing+dental+senior and 08-27 sairnmechanical audits; its only cloud item is scoping a SAIRNcode audit, not SAIRNcash. No shared file. Written directly with this note rather than reworded past the matcher. SUBJECT NAMED PER PR 4.3 FILES: docs/cloud-research/sairncash-external-competitive-gap-audit-2026-09-26.md",
+      "claimed_at": "2026-09-26T18:42:30Z",
+      "claimed_at_epoch": 1790448150.1546006,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/cloud-research/sairncash-external-competitive-gap-audit-2026-09-26.md"
+      ]
+    }
+  ]
+}
