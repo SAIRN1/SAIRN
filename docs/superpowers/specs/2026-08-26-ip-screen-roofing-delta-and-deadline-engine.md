@@ -1,6 +1,6 @@
 # IP quick screen — SAIRNroofing Phase 4-5 delta, and SAIRNlaw's deadline engine
 
-**2026-08-26.** Public-source patent screen. **This is not a clearance and
+**2026-08-26.** Public-source patent screen. **FRESHNESS RE-CHECK 2026-09-26 (Cody): `docs/2026-09-26-sairnroofing-patent-freshness.md`.** The roofing half moved -- an EagleView patent this screen never tracked (US 9,135,737, to 2029) had its 2024 PTAB invalidation vacated by the USPTO Director on 2026-09-24. Xactware US 9,501,700 is re-confirmed active to 2032 and the design-around is unaffected. The deadline-engine half is a different subject and is untouched. **This is not a clearance and
 cannot become one.** No opinion here is a legal opinion; a real patent
 attorney is required before launch, unchanged by this document — the same
 standing caveat `2026-08-24-sairnroofing-v1-scope.md` §1.4 already carries.

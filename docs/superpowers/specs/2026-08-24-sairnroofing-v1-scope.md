@@ -66,6 +66,22 @@ The aggressive enforcer, but weakening. Won $125M→$375M vs Xactware/Verisk. Su
 Roofr (D. Del. 21-1852); PTAB then held **9,183,538** and **10,648,800** obvious
 and invalid (July 2024), affirmed on appeal.
 
+> **RE-CHECKED 2026-09-26 (Cody) -- "BUT WEAKENING" IS NO LONGER SAFE TO RELY ON.
+> See `docs/2026-09-26-sairnroofing-patent-freshness.md`.** Three things moved.
+> (1) A patent this section does not name -- **US 9,135,737**, EagleView, running
+> to **2029-05-15** -- had its 2024 PTAB invalidation **VACATED by USPTO Director
+> Squires on 2026-09-24**, with the claims treated as patentable again.
+> (2) Both patents named above read **Active** on the public record today, which
+> does NOT prove the claims survived -- that field lags a cancellation
+> certificate and does not move at all while an appeal is pending -- but it does
+> mean the sentence above is uncorroborated. (3) SS1.1 was re-verified and is
+> CORRECT: 9,501,700 is active to 2032-07-16 and the design-around in SS1.3 is
+> untouched by any of this.
+>
+> **The conclusion to retire is "weakening", not to reverse it.** Claim-level
+> validity needs PTAB and Federal Circuit dockets read by counsel; the freshness
+> doc's SS7 names the three patents and the proceedings.
+
 ### 1.3 The design-around v1 is built to
 
 **Option 1 + 2 combined: single inference producing a quantities schedule,
