@@ -1254,6 +1254,94 @@ def self_signed(data):
     return bad
 
 
+# ── THE IRREVERSIBLE CLASS (item 99, 2026-09-25) ────────────────────────────
+# THE GAP THIS CLOSES IS MEASURED, NOT ARGUED. Everything above matches on
+# RESOURCE NAMES appearing on changed lines, which cannot see a change to the
+# machinery every resource depends on. Driven against dadfedf4 -- "all 48 role
+# membership sets get a null prototype", a change to api/_lib/auth.js, the file
+# 82 API files require -- this gate answers:
+#
+#     "No file in this change names a Tier A resource on a changed line ...
+#      Nothing to record."   exit 0
+#
+# A platform-wide change to role membership, landing with no obligation, because
+# no resource name happened to appear in the hunk.
+#
+# ── WHY A SEPARATE CLASS AND NOT "JUST ADD MORE NAMES" ──────────────────────
+# Tier A is 261 resources; a pre-landing requirement on all of them would refuse
+# essentially every push, and this file's own history says what happens then --
+# a gate red on arrival gets switched off, and the rule ends up worse than when
+# it was merely unenforceable. The criterion here is NOT the tier. It is
+# whether a later commit undoes the effect: a revert does not un-execute SQL,
+# does not recall a minted token, does not un-rely a firm on a reconciliation.
+# Scoped and measured in
+# docs/2026-09-25-item99-graduated-approval-proposal.md -- the candidate class
+# is about 1% of commits (30 of 2894 in fourteen days).
+#
+# ── IT STARTS EMPTY, AND THAT IS THE DESIGN ─────────────────────────────────
+# With no members this changes NOTHING: every existing push behaves exactly as
+# it did. Nothing historical is retroactively non-compliant, which is the
+# objection item 99's own section 5 raised against its `Reviewed-By:` proposal
+# and the reason that proposal was never built.
+#
+# ── ADDING A MEMBER IS A CLAIM ──────────────────────────────────────────────
+# Same convention run_all_tests.py's CONCURRENCY_SENSITIVE uses. Each entry
+# says, in a written reason, WHY a revert does not undo this file's effect. Do
+# not add a path because it looks important.
+#
+#   ('path',    'api/_lib/auth.js',  'why a revert does not undo it')
+#   ('sqlgrant', None,               'any sql/ file whose diff adds a grant or
+#                                     revoke -- the statement has already run')
+#
+# WHAT THIS REQUIRES IS A RECORDED OBLIGATION, NOT A DISCHARGED ONE. Requiring
+# the review itself before landing is a different and larger decision -- it
+# makes a push wait a median 8.2h and a p90 of 55.3h on a four-session platform
+# -- and it is Michael's to make. That proposal is written up in the document
+# above and deliberately NOT implemented here.
+IRREVERSIBLE_CLASS = ()
+
+_SQL_GRANT_RE = re.compile(r'^[+].*\b(grant|revoke)\b', re.I | re.M)
+
+
+def touched_irreversible(diff_text, members=None):
+    """{label: [paths]} for every irreversible-class member this diff changes.
+
+    FAILS CLOSED BY CONSTRUCTION: an entry whose `kind` this function does not
+    recognise raises CouldNotTell rather than being skipped. A member silently
+    ignored is a member that protects nothing while appearing in the list --
+    the exact shape PR 1.11 is about, and the one a class like this fails by.
+    """
+    members = IRREVERSIBLE_CLASS if members is None else members
+    if not members:
+        return {}
+    per_file = {}
+    cur = None
+    for line in diff_text.splitlines():
+        if line.startswith('diff --git '):
+            parts = line.split(' b/')
+            cur = parts[-1].strip() if len(parts) > 1 else None
+            if cur:
+                per_file.setdefault(cur, [])
+        elif cur is not None:
+            per_file[cur].append(line)
+    out = {}
+    for entry in members:
+        kind, key, reason = entry[0], entry[1], entry[2]
+        if kind == 'path':
+            if key in per_file:
+                out.setdefault(key, []).append(key)
+        elif kind == 'sqlgrant':
+            for path, body in per_file.items():
+                if path.startswith('sql/') and _SQL_GRANT_RE.search(chr(10).join(body)):
+                    out.setdefault('sql/ grant|revoke', []).append(path)
+        else:
+            raise CouldNotTell(
+                'irreversible-class entry %r has kind %r, which this gate does '
+                'not know how to evaluate. A member it cannot check is a member '
+                'that protects nothing.' % (key or reason, kind))
+    return out
+
+
 def check(diff_text, verbose=True):
     """Returns (exit_code, lines)."""
     lines = []
@@ -1295,7 +1383,16 @@ def check(diff_text, verbose=True):
     # either true one. It is still worth a human seeing, so it is said out loud
     # and never gates.
     ctx_only = context_only_tier_a(diff_text, resources)
-    if not hits and not rule_hits:
+    # THE IRREVERSIBLE CLASS, matched on PATH rather than on a resource name --
+    # see the block above touched_irreversible for the measured gap this closes.
+    # Raised, not swallowed: an unevaluatable member is a COULD NOT TELL for the
+    # whole run, never a quiet skip.
+    try:
+        irr_hits = touched_irreversible(diff_text)
+    except CouldNotTell as e:
+        return 2, ['COULD NOT TELL -- this is NOT a pass:',
+                   '  ' + str(e)]
+    if not hits and not rule_hits and not irr_hits:
         if verbose:
             lines.append('No file in this change names a Tier A resource on a '
                          'changed line, and no changed line falls inside a '
@@ -1338,20 +1435,26 @@ def check(diff_text, verbose=True):
     mine = open_records(data, session)
     covered = set()
     covered_rules = set()
+    covered_irr = set()
     for r in mine:
         covered |= set(r.get('resources') or [])
         covered_rules |= set(r.get('rules') or [])
+        covered_irr |= set(r.get('irreversible') or [])
     uncovered = sorted(set(hits) - covered)
     # PER RULE, FOR THE SAME REASON COVERAGE IS PER RESOURCE. An obligation
     # naming the KX threshold does not cover a change to the SWO element list
     # that happened to ride along in the same push.
     uncovered_rules = sorted(set(rule_hits) - covered_rules)
-    if not uncovered and not uncovered_rules:
+    uncovered_irr = sorted(set(irr_hits) - covered_irr)
+    if not uncovered and not uncovered_rules and not uncovered_irr:
         if verbose:
             if hits:
                 lines.append('Tier A code changed: %s' % ', '.join(sorted(hits)))
             if rule_hits:
                 lines.append('Coding rules changed: %s' % ', '.join(sorted(rule_hits)))
+            if irr_hits:
+                lines.append('Irreversible-class files changed: %s'
+                             % ', '.join(sorted(irr_hits)))
             lines.append('EVERY resource and rule it touches has an OPEN obligation '
                          '(%s). Recording it is this session\'s job; discharging '
                          'it is somebody else\'s.' % session)
@@ -1395,6 +1498,24 @@ def check(diff_text, verbose=True):
     for name in uncovered_rules:
         lines.append('  %-22s %s  [coding rule]'
                      % (name, ', '.join(sorted(set(rule_hits[name])))[:96]))
+    for name in uncovered_irr:
+        lines.append('  %-22s %s  [IRREVERSIBLE]'
+                     % (name, ', '.join(sorted(set(irr_hits[name])))[:92]))
+    if uncovered_irr:
+        lines.append('')
+        lines.append('AN IRREVERSIBLE-CLASS FILE CHANGED WITH NO RECORDED OBLIGATION.')
+        lines.append('')
+        lines.append('This class is matched on PATH, not on a resource name, because')
+        lines.append('the name-based half above CANNOT SEE a change to the machinery')
+        lines.append('every resource depends on. Measured: dadfedf4 changed all 48')
+        lines.append('role membership sets in api/_lib/auth.js -- required by 82 API')
+        lines.append('files -- and this gate answered "Nothing to record", exit 0.')
+        lines.append('')
+        lines.append('MEMBERSHIP MEANS A REVERT DOES NOT UNDO THE EFFECT: a statement')
+        lines.append('that has already run, a token already minted, a figure a')
+        lines.append('customer already relied on. It is NOT a second name for Tier A,')
+        lines.append('and the list is deliberately tiny.')
+        lines.append('')
     lines.append('')
     lines.append('The standing rule is that a Tier A change is reviewed by a session')
     lines.append('OTHER than the one that wrote it -- the author shares the blind spot')
@@ -1477,7 +1598,7 @@ def body_from_file_or(argv, fallback):
 # Factored out when --resources landed, so the explicit-naming path and
 # the diff-attribution path write the SAME record through the SAME code.
 # Two spellings of a ledger write is how the two drift.
-def _open_record(why, hits, rule_hits):
+def _open_record(why, hits, rule_hits, irr_hits=None):
     data = load_reviews()
     author = session_name()
     owner, owner_note = assign_owner(author, data)
@@ -1502,8 +1623,11 @@ def _open_record(why, hits, rule_hits):
         # places is one missing `or []` away from a silent miss. Written on
         # every record so the shape is one shape.
         'rules': sorted(rule_hits),
+        # Same always-present rule as `rules` above, for the same reason.
+        'irreversible': sorted(irr_hits or {}),
         'files': sorted(set(list(f for fs in hits.values() for f in fs)
-                            + list(f for fs in rule_hits.values() for f in fs))),
+                            + list(f for fs in rule_hits.values() for f in fs)
+                            + list(f for fs in (irr_hits or {}).values() for f in fs))),
         'what': why,
         'status': 'open',
         # ── THE OWNER IS STAMPED NOW, NOT WHEN SOMEBODY CLAIMS IT ──────────
@@ -1520,7 +1644,8 @@ def _open_record(why, hits, rule_hits):
         rec['owner_note'] = owner_note
     data['records'].append(rec)
     save_reviews(data)
-    subjects = rec['resources'] + ['%s [rule]' % r for r in rec['rules']]
+    subjects = (rec['resources'] + ['%s [rule]' % r for r in rec['rules']]
+                + ['%s [IRREVERSIBLE]' % r for r in rec['irreversible']])
     print('RECORDED -- %s owes an independent review on: %s'
           % (rec['author_session'], ', '.join(subjects)))
     if owner:
@@ -1600,7 +1725,14 @@ def cmd_open(why, rng=None, named=None):
             text += '\n' + range_diff(base, 'HEAD')
     hits = touched_tier_a(text, resources)
     rule_hits = touched_rules(text, rules)
-    if not hits and not rule_hits:
+    try:
+        irr_hits = touched_irreversible(text)
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL -- the irreversible class could not be '
+                         'evaluated, so this record would be incomplete:'
+                         + chr(10) + '  %s' % e + chr(10))
+        return 2
+    if not hits and not rule_hits and not irr_hits:
         sys.stderr.write('Nothing in this change names a Tier A resource, and no '
                          'changed line falls inside a registered coding rule, so '
                          'there is no obligation to record. If you believe there '
@@ -1612,7 +1744,7 @@ def cmd_open(why, rng=None, named=None):
                          'Seven shipped rules sat in exactly that position until '
                          '2026-09-24.\n')
         return 1
-    return _open_record(why, hits, rule_hits)
+    return _open_record(why, hits, rule_hits, irr_hits)
 
 
 def cmd_list():
