@@ -14855,6 +14855,58 @@
         }
       ],
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
+    },
+    {
+      "commit": "99c382ab4203",
+      "date": "2026-09-26",
+      "subject": "fix(push-gate): the exemption was pinned to a REFSPEC, not a sha -- found by using it",
+      "files": [
+        "docs/tier-a-reviews.json",
+        "tests/run_graduated_exemption_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 83,
+      "lines_removed": 2,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "the graduated push-gate exemption pinned its pending grant to the REFSPEC pushed_tip() returns in PreToolUse mode -- the literal string 'main' -- rather than to a resolved sha, so the settling phase was inert: the pin would have survived an amend, a rebase and any number of new commits, and the confirming push could have been a completely different change while the log recorded it as scoped and pinned",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "777526eefb90",
+        "date": "2026-09-25",
+        "subject": "feat(push-gate): item 101 -- the override is graduated now, not a single blanket flag",
+        "lag_days": 1
+      },
+      "contributing_factors": [
+        {
+          "factor": "pushed_tip() returns a REFSPEC in PreToolUse mode -- the literal string parsed out of the command text -- and the new pin stored it verbatim instead of resolving it",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "_pin() resolves the tip through `git rev-parse <tip>^{commit}` in both the grant path and the soft-capture message, and an unresolvable tip returns UNRESOLVABLE and grants nothing"
+        },
+        {
+          "factor": "all 24 shipped arms passed a FABRICATED sha ('a'*40) straight through, which is the one input the production path never sends -- so the arm that proves settling works was testing a code path the real caller cannot reach",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "the probe uses real commits (HEAD and HEAD~1), which makes the settling arm a real amend and makes a fabricated sha correctly resolve to UNRESOLVABLE; three arms added for the refspec case specifically"
+        },
+        {
+          "factor": "the feature was shipped without being USED once against the real hook -- the defect announced itself in the first soft-capture message it ever printed, in the words 'pinned to main'",
+          "kind": "process",
+          "action_status": "done",
+          "action": "it was found by running it, and the same session fixed it; the arm that now exists asserts the stored pin equals the resolved sha rather than the name"
+        }
+      ],
+      "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
     }
   ],
   "started": "2026-09-09",
