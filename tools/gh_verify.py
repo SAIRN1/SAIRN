@@ -1,16 +1,21 @@
-import sys, json, base64, hashlib, urllib.request
+import os, sys, json, base64, hashlib, urllib.request
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gh_token import github_token  # noqa: E402
 
 OWNER = "SAIRN1"
 REPO = "SAIRN"
 BRANCH = "main"
 FILE_PATH = "stonedesk.html"
 
+# THE SECOND COPY OF A DEAD LOOKUP. This read the same 0-byte
+# C:\Users\marsh\Documents\SAIRN\.env.local as tools/gh_push.py did, so both
+# tools broke together on 2026-08-08 and neither could be fixed without finding
+# the other. One decision, one place: tools/gh_token.py. See that file's header.
 def get_token():
-    with open(r"C:\Users\marsh\Documents\SAIRN\.env.local", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("GITHUB_TOKEN="):
-                return line.split("=", 1)[1].strip().strip('"')
-    raise RuntimeError("GITHUB_TOKEN not found in .env.local")
+    token, source = github_token()
+    print("token source:", source)
+    return token
 
 def api(path, token):
     req = urllib.request.Request(f"https://api.github.com{path}")

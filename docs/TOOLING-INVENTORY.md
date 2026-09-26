@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**228 files in `tools/`.** By what actually invokes them:
+**229 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 35 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 44 | nothing runs these at all |
+| **UNWIRED** | 45 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | ADVISORY | 3 |
 | CHECKER | 157 |
 | GENERATOR | 19 |
-| LIBRARY | 24 |
+| LIBRARY | 25 |
 | LIVE | 22 |
 | REPORTER | 2 |
 | TOOL | 1 |
@@ -356,7 +356,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (44)
+## UNWIRED (45)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -387,6 +387,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_va_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
+| `gh_token.py` | LIBRARY | a credential lookup that has been dead for weeks while saying nothing. gh_push.py and gh_verify.py each carried their OWN copy of "read GITHUB_TOKEN out of Documents\SAIRN\.env.local", and that file has been 0 bytes since 2026-08-08 -- so both raised on every invocation for seven weeks, unnoticed, because neither tool is wired into any hook, gate or suite and the failure surfaces only when somebody reaches for one. The catch is the DUPLICATION as much as the path: one decision in two copies goes stale in both at once and neither can be fixed without finding the other. It also catches the error message that made this seven weeks rather than five minutes -- "GITHUB_TOKEN not found in .env.local" named the one source that could not have had it, so TokenUnavailable now names EVERY source tried with why each declined. Never prints the token, not even a prefix: a prefix is enough to confirm a guess | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `law_billing_code_trim_live_probe.py` | LIVE | a SAIRNlaw time entry whose UTBMS billing_code is STORED with padding the validator already removed -- read back from the DATABASE rather than from the write's echo, because a server that normalised only its reply would pass a response-only check; the sharp arm sends a code that is over MAX_BILLING_CODE_CHARS by padding alone, which the gate judges trimmed and would have refused had it been asked about the thing being written. Reports an unprovisioned table, a dead PIN or a bot challenge as UNVERIFIED rather than as a pass, and DISCLOSES the one row it writes and cannot delete -- SAIRNlaw declares no delete verb | &mdash; |
@@ -437,7 +438,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      228   git ls-files tools/
+  tools on disk                      229   git ls-files tools/
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY

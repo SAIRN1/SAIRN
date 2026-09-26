@@ -752,6 +752,21 @@ PURPOSES = {
         'duplicate and needs the opposite fix. It refuses to decide that two '
         'DIFFERENT task strings are the same work -- exact means exact'),
     'gh_push.py': ('LIBRARY', 'a push whose arrival on the remote is queried back'),
+    'gh_token.py': ('LIBRARY',
+        'a credential lookup that has been dead for weeks while saying nothing. '
+        'gh_push.py and gh_verify.py each carried their OWN copy of "read '
+        'GITHUB_TOKEN out of Documents\\SAIRN\\.env.local", and that file has '
+        'been 0 bytes since 2026-08-08 -- so both raised on every invocation '
+        'for seven weeks, unnoticed, because neither tool is wired into any '
+        'hook, gate or suite and the failure surfaces only when somebody '
+        'reaches for one. The catch is the DUPLICATION as much as the path: one '
+        'decision in two copies goes stale in both at once and neither can be '
+        'fixed without finding the other. It also catches the error message '
+        'that made this seven weeks rather than five minutes -- '
+        '"GITHUB_TOKEN not found in .env.local" named the one source that '
+        'could not have had it, so TokenUnavailable now names EVERY source '
+        'tried with why each declined. Never prints the token, not even a '
+        'prefix: a prefix is enough to confirm a guess'),
     'gh_verify.py': ('LIBRARY', 'whether a commit is really on the remote'),
     'load_deadline_seed.py': ('LIVE', 'loads a deadline seed into a live licence'),
     'sairn_dom_snapshot.js': ('LIBRARY', 'a rendered-DOM snapshot, run in the browser'),

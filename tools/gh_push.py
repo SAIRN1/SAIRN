@@ -1,4 +1,7 @@
-import sys, json, base64, subprocess, urllib.request, urllib.error
+import os, sys, json, base64, urllib.request, urllib.error
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from gh_token import github_token  # noqa: E402
 
 OWNER = "SAIRN1"
 REPO = "SAIRN"
@@ -6,14 +9,23 @@ BRANCH = "main"
 FILE_PATH = "stonedesk.html"
 EXTRA_FILES = []  # additional repo-relative paths to include in the same commit
 
+# ── THE TOKEN LOOKUP LIVED HERE AND WAS DEAD FOR SEVEN WEEKS ─────────────────
+# This function read GITHUB_TOKEN out of C:\Users\marsh\Documents\SAIRN\.env.local
+# and that file has been 0 bytes since 2026-08-08, so every invocation since has
+# raised `GITHUB_TOKEN not found in .env.local` -- a message that sent readers to
+# the one place that could not have had it. tools/gh_verify.py carried a
+# byte-identical copy of the same dead lookup, which is why fixing one would
+# never have fixed the other. The decision now lives in tools/gh_token.py, once:
+# env var, then the git credential manager (what actually holds a working token
+# on this machine), then .env.local last so a file somebody re-populates still
+# works without shadowing a live credential.
+#
+# `github_token()` returns (token, source_label) and raises TokenUnavailable
+# NAMING EVERY SOURCE TRIED. It never prints the token, not even a prefix.
 def get_token():
-    winpath = r"C:\Users\marsh\AppData\Roaming\xdg.data\com.vercel.cli\auth.json"
-    # not the right token source; token comes from .env.local GITHUB_TOKEN
-    with open(r"C:\Users\marsh\Documents\SAIRN\.env.local", encoding="utf-8") as f:
-        for line in f:
-            if line.startswith("GITHUB_TOKEN="):
-                return line.split("=", 1)[1].strip().strip('"')
-    raise RuntimeError("GITHUB_TOKEN not found in .env.local")
+    token, source = github_token()
+    print("token source:", source)
+    return token
 
 def api(method, path, token, body=None):
     url = f"https://api.github.com{path}"
