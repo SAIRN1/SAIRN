@@ -52,6 +52,12 @@ and why:
     gate -- and the section-4 loop below demanded 403 on that very call for two
     days while its own control arm twelve lines later demanded 200.
 
+TWO DEFECTS IN THIS FILE WERE FOUND BY RUNNING IT, 2026-09-26, and both are
+fixed above/below rather than described: fixed row ids made it single-use once
+the tombstone-resurrection guard landed (see the RUN_ID block), and the cleanup
+chased a row that section 4 never wrote when the role PINs were absent -- a
+SKIPPED section manufacturing a FAILED arm.
+
 UNLIKE the roofing probe, this one CAN clean up, BUT NOT WITH ONE VERB. 24 of the
 28 sc_* resources are Tier A and grant `soft_delete` instead of a destroying
 `delete`; only the four that are not still take `delete`. The verb is DERIVED per
@@ -77,6 +83,7 @@ Run:  SC_LICENSE=... SC_EMP=... SC_PIN=... python tools/sc_tier_a_write_gate_liv
 
 import json
 import os
+import time
 import subprocess
 import sys
 
@@ -197,13 +204,43 @@ AUDITOR_ID = 'zz-gate-auditor'
 CODER_PIN = os.environ.get('SC_CODER_PIN', '')
 AUDITOR_PIN = os.environ.get('SC_AUDITOR_PIN', '')
 
-CLAIM_ROW = 'ZZ-GATE-CLAIM'
-COMP_ROW = 'ZZ-GATE-COMP'
-CODED_ROW = 'ZZ-GATE-CODED'
+# ── A FRESH ID PER RUN, AND THE REASON IS A REAL DEFECT (2026-09-26) ───────
+# These were fixed strings, and that made this probe SINGLE-USE. Found by
+# running it -- which is the check this file's own press-on asked for and which
+# nobody had paid until today.
+#
+# The sequence: section 6 cleans up by SOFT-DELETING its rows, because 24 of 28
+# sc_ resources grant soft_delete instead of a destroying delete. The
+# tombstone-resurrection guard added on 2026-09-24 then refuses any write to a
+# soft-deleted id -- 409 DELETED, deliberately, so a stale client cannot
+# un-delete a record. So the FIRST run passes and every run after it fails
+# every ALLOW arm:
+#
+#     admin write sc_claims                 -> 409 DELETED
+#     coder write sc_coded_items (control)  -> 409 DELETED
+#     auditor write sc_compliance           -> 409 DELETED
+#
+# AND IT REPORTS THOSE AS "the LIVE endpoint disagrees with the design", which
+# is exactly the wrong conclusion: the gate is fine, the probe's own cleanup
+# poisoned its own fixtures. Two correct mechanisms, each right on its own,
+# producing a tool that cries wolf on every run after the first.
+#
+# A RUN ID FIXES IT AND CHANGES NOTHING ELSE. Ids stay ZZ-GATE-* so a reader
+# still sees at a glance what they are; they simply never collide with a
+# tombstone from a previous run. The cost is that each run leaves one more
+# soft-deleted ZZ-GATE-* row per resource, which is visible, labelled, and
+# strictly better than a probe whose ALLOW half cannot run twice.
+RUN_ID = time.strftime('%Y%m%d%H%M%S', time.gmtime())
+
+CLAIM_ROW = 'ZZ-GATE-CLAIM-' + RUN_ID
+COMP_ROW = 'ZZ-GATE-COMP-' + RUN_ID
+CODED_ROW = 'ZZ-GATE-CODED-' + RUN_ID
 # The 5b CONTROL's own row, on whichever sc_ resource still hard-deletes. It is
 # written and destroyed inside that arm -- the destroy IS the control -- so it
-# never joins the cleanup list.
-HARD_ROW = 'ZZ-GATE-HARD'
+# never joins the cleanup list. It carries the run id too: a run that dies
+# between the write and the delete leaves it behind, and a fixed id would then
+# poison the NEXT run's control the same way.
+HARD_ROW = 'ZZ-GATE-HARD-' + RUN_ID
 
 fails = []
 notes = []
@@ -322,7 +359,7 @@ def main():
           'resources' % len(SIX))
     for res in SIX:
         st, body = post(DATA, {'action': 'write', 'resource': res, 'app_id': 'sairncode',
-                               'payload': {'id': 'ZZ-GATE-NOSESSION'}}, key=LICENSE)
+                               'payload': {'id': 'ZZ-GATE-NOSESSION-' + RUN_ID}}, key=LICENSE)
         c = (body or {}).get('error', {}).get('code', '') if isinstance(body, dict) else ''
         check('%-22s no session -> %s %s' % (res, st, c),
               st == 401 and c == 'NO_SESSION', json.dumps(body)[:160])
@@ -349,12 +386,24 @@ def main():
     check('admin write sc_claims -> %s' % st, st == 200, json.dumps(body)[:200])
 
     # EVERY ROW THIS PROBE CREATES, AND THE CLEANUP READS THIS RATHER THAN A
-    # SECOND LIST. The three fixed rows are unconditional -- a delete of an
-    # absent id answers 200, so a skipped section costs nothing -- and the
-    # override-driven ALLOW arms append theirs, because which resource they
-    # write is not known until api/sd-data.js has been read.
-    made = [('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW),
-            ('sc_coded_items', CODED_ROW)]
+    # SECOND LIST.
+    #
+    # ── "A DELETE OF AN ABSENT ID ANSWERS 200" WAS FALSE (fixed 2026-09-26) ──
+    # That sentence sat here and justified listing sc_coded_items
+    # unconditionally. The endpoint answers 404 NOT_FOUND, and the live run of
+    # 2026-09-26 proved it: with SC_CODER_PIN unset, section 4 was SKIPPED, the
+    # row was never written, and cleanup reported
+    #
+    #     FAIL soft_delete ZZ-GATE-CODED from sc_coded_items -> 404
+    #
+    # as one of the probe's FAILED arms -- a skipped section manufacturing what
+    # reads as a gate finding. Same class as every other comment on this
+    # platform that described behaviour its code did not have.
+    #
+    # sc_coded_items is appended BY THE ARM THAT WRITES IT now, beside the
+    # override-driven rows, which were already appended for the same reason:
+    # a row this probe did not create is not a row it cleans up.
+    made = [('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW)]
 
     # ── 4. DENY BY ROLE ──────────────────────────────────────────────────────
     # A no-session refusal proves the SESSION half only. The role half needs a
@@ -400,7 +449,7 @@ def main():
             for res in deny:
                 st, body = post(DATA, {'action': 'write', 'resource': res,
                                        'app_id': 'sairncode',
-                                       'payload': {'id': 'ZZ-GATE-CODER'}},
+                                       'payload': {'id': 'ZZ-GATE-CODER-' + RUN_ID}},
                                 key=LICENSE, token=tokens[CODER_ID])
                 c = (body or {}).get('error', {}).get('code', '') if isinstance(body, dict) else ''
                 check('coder write %-22s -> %s %s' % (res, st, c),
@@ -412,7 +461,7 @@ def main():
             # gated resource the override keeps open to the role named for it,
             # which is a stronger claim and the one worth driving.
             for res in coder_allowed:
-                row = CODED_ROW if res == 'sc_coded_items' else 'ZZ-GATE-CODER-OK'
+                row = CODED_ROW if res == 'sc_coded_items' else 'ZZ-GATE-CODER-OK-' + RUN_ID
                 st, body = post(DATA, {'action': 'write', 'resource': res,
                                        'app_id': 'sairncode',
                                        'payload': {'id': row}},
@@ -421,6 +470,10 @@ def main():
                       'override admits coder: %s)'
                       % (res, st, '|'.join(overrides.get(res) or [])),
                       st == 200, json.dumps(body)[:200])
+                # RECORDED ONLY WHEN THE WRITE LANDED. A row this probe did not
+                # create is not a row it cleans up -- see the `made` block.
+                if st == 200 and (res, row) not in made:
+                    made.append((res, row))
                 # A ROW THIS PROBE CREATED IS A ROW IT CLEANS UP. The three
                 # fixed rows are named at the top; an override-driven ALLOW arm
                 # is the one write site whose resource is not known until the
@@ -521,10 +574,11 @@ def main():
     # A failure to clean up is a FINDING. A probe that leaves live credentials
     # active is worse than one that never ran.
     print('\n6. cleanup')
-    # sc_coded_items is here because the section-4 control arm WRITES it and
-    # succeeds. The other two rows are deleted unconditionally even when the
-    # section that writes them was skipped -- a delete of an absent id answers
-    # 200 -- so this one follows the same shape rather than adding a branch.
+    # WHAT IS IN `made` IS WHAT WAS WRITTEN, NOT WHAT MIGHT HAVE BEEN. The two
+    # fixed rows are written unconditionally by sections 3 and 5; everything
+    # else is appended by the arm that wrote it. The previous version listed
+    # sc_coded_items up front on the strength of "a delete of an absent id
+    # answers 200", which is not what the endpoint does -- see the `made` block.
     #
     # IT IS `made` NOW RATHER THAN THOSE THREE NAMES RETYPED (2026-09-25). The
     # override-driven ALLOW arms write a resource that is not known until
