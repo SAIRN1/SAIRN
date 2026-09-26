@@ -189,6 +189,83 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
       + 'citation, so the work of finding the source is invisible.');
   });
 
+  // ── THE CROSS-SPECIES COPY, MEASURED ON EVERY RUN ───────────────────────
+  // FOUND 2026-09-26 while sourcing the controlled substances. The formulary
+  // was largely built by propagating ONE dose across a drug's species rows,
+  // and that is item 43 (Ariane 5) in clinical form: the copy is faithful and
+  // the species is not. It is REPORTED rather than gated, because a shared
+  // dose is sometimes correct -- chlorhexidine really is 0.05% in every
+  // species -- so a threshold here would refuse legitimate rows. What IS
+  // pinned is the instance that was measured WRONG.
+  section('CROSS-SPECIES DOSE COPYING -- reported, not gated');
+  const byName = {};
+  DRUGS.forEach(function (d) { (byName[d.name] = byName[d.name] || []).push(d); });
+  const numRe = /^\s*([0-9.]+\s*-\s*[0-9.]+\s*[a-z/%]+|[0-9.]+\s*[a-z/%]+)/i;
+  let copiedNames = 0, copiedRows = 0;
+  Object.keys(byName).forEach(function (n) {
+    const rows = byName[n];
+    if (rows.length < 2) return;
+    const seen = {};
+    rows.forEach(function (d) {
+      const m = numRe.exec(String(d.dose == null ? '' : d.dose));
+      if (m) {
+        const k = m[1].replace(/\s+/g, '').toLowerCase();
+        (seen[k] = seen[k] || []).push(d.species);
+      }
+    });
+    const keys = Object.keys(seen);
+    if (keys.length === 1 && seen[keys[0]].length > 1) {
+      copiedNames++; copiedRows += seen[keys[0]].length;
+    }
+  });
+  console.log('  ' + copiedNames + ' drug name(s) carry ONE numeric dose across every '
+    + 'species row -- ' + copiedRows + ' of ' + DRUGS.length + ' rows.');
+  console.log('  Reported, not gated: a shared dose is sometimes correct. It is also '
+    + 'how butorphanol/horse came to read 2-4x the FDA-approved equine dose.');
+
+  test('the butorphanol HORSE row no longer carries the dog/cat figure', function () {
+    const bh = DRUGS.filter(function (d) {
+      return d.name === 'Butorphanol' && d.species === 'horse';
+    })[0];
+    const bd = DRUGS.filter(function (d) {
+      return d.name === 'Butorphanol' && d.species === 'dog';
+    })[0];
+    assert.ok(bh && bd, 'the butorphanol horse or dog row is gone');
+    assert.ok(!/0\.2-0\.4/.test(String(bh.dose)),
+      'butorphanol/horse reads ' + JSON.stringify(bh.dose) + ' again. The FDA '
+      + 'label (Torbugesic, NADA 135-780) is 0.1 mg/kg IV; 0.2-0.4 is the '
+      + 'dog/cat figure copied across all five species rows and is 2-4x the '
+      + 'approved equine dose.');
+    assert.notStrictEqual(String(bh.dose), String(bd.dose),
+      'the horse and dog rows carry the same dose string again');
+    assert.ok(bh.reference && /Torbugesic/.test(bh.reference),
+      'the horse row lost its FDA label citation');
+  });
+
+  test('the buprenorphine CAT row names the formulation trap', function () {
+    const bc = DRUGS.filter(function (d) {
+      return d.name === 'Buprenorphine' && d.species === 'cat';
+    })[0];
+    assert.ok(bc, 'the buprenorphine cat row is gone');
+    // THE FIGURES, NOT THE BRAND NAME. The first version of this arm asserted
+    // only /SIMBADOL/i, and the ablation walked straight through it: the flag
+    // mentions Simbadol twice, so deleting the sentence that carries the
+    // CONCENTRATION left the arm green while the trap stopped being described.
+    // A brand name is not a warning; 1.8mg/mL against 0.3mg/mL is.
+    assert.ok(/SIMBADOL/i.test(String(bc.flag)) && /1\.8\s*mg\/mL/i.test(String(bc.flag))
+              && /0\.24\s*mg\/kg/i.test(String(bc.flag)),
+      'the cat row no longer states the Simbadol CONCENTRATION and DOSE. Two '
+      + 'FDA-approved feline products differ about tenfold in mg/kg (0.3mg/mL '
+      + 'conventional vs 1.8mg/mL Simbadol at 0.24mg/kg SC); naming the brand '
+      + 'without the figures does not tell a vet which vial they are holding. '
+      + 'flag was: ' + String(bc.flag).slice(0, 200));
+    assert.ok(!bc.reference,
+      'the buprenorphine cat row has acquired a citation. It must NOT be cited '
+      + 'to the Simbadol label, which CONTRADICTS the 0.01-0.03 figure -- a '
+      + 'green tick beside a number its own source disagrees with is worse '
+      + 'than no tick.');
+  });
+
   section('CONTROL -- these arms must be able to fail');
   test('the file really contains the strings the arms search for', function () {
     // Without this, every `indexOf(...) === -1` assertion above passes on an
