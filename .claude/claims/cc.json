@@ -2738,6 +2738,22 @@
         "tools/gh_push.py",
         "tools/sairn_push_gate_hook.py"
       ]
+    },
+    {
+      "id": "cc-1790443990",
+      "session": "cc",
+      "subject": "cc-queue11",
+      "task": "apply 2 pending review fixes to CRITICALITY-TIERS (alf_compliance_rules 4th shape, dnt_cred_rules 2 drifted cites); scope/build the SAIRNcare compliance-rules records join or document its absence; verify gh_push second hole closed; fix GUARD_TESTS duplicate registration of sairncode_gates.js; item 43 sweep of past same-file copy commits. DELIBERATELY NOT TOUCHING api/sd-data.js -- fourth's 132-gate pre-gate is staged for it. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md tools/sairn_push_gate_hook.py api/_lib/compliance-rules.js docs/2026-09-26-sairncare-compliance-join-scoping.md",
+      "claimed_at": "2026-09-26T17:33:10Z",
+      "claimed_at_epoch": 1790443990.4752505,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/compliance-rules.js",
+        "docs/2026-09-26-sairncare-compliance-join-scoping.md",
+        "docs/CRITICALITY-TIERS.md",
+        "tools/sairn_push_gate_hook.py"
+      ]
     }
   ],
   "refusals": [
