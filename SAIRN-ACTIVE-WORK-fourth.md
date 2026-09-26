@@ -720,3 +720,89 @@ designs with the defect one layer away from where the item pointed, and one
 named a figure (four transports, 51 sites, 294→339) that was wrong in the
 direction of under-counting (seven, 58, 294→346). Re-deriving the item's own
 premise before starting it is still earning more than the work.
+
+---
+
+## 2026-09-26 (queue 7, six items) — the render half finally completed, and two more items were already done
+
+**LANDED:**
+
+1. **cody's 52h `sv_boarding` obligation discharged.** cody asked to be pressed on
+   four points and was RIGHT on three. Driven by lifting the shipping fold out and
+   exercising it against the DATES — the half cody's own twelve arms never reach,
+   because every one of them varies `rate`. `days` is a `number` in all eleven date
+   shapes tried, because `Math.max()` returns a Number by specification, so the
+   multiplication rescue cannot be defeated through a string date and the dispatch
+   framing really was wrong. **But the fix guards ONE of TWO NaN sources in the
+   same line:** a garbage / empty / object `checkout` makes `days` NaN and the
+   whole reduce NaN — the exact "$NaN and every other booking vanishes" outcome
+   cody changed the line to prevent. **And a non-string `checkin` THROWS**, on
+   `b.checkin.slice(0,7)` in the fold's own filter: `escHtml` is `String(s||'')` so
+   the table renders, then the throw skips `kpis.innerHTML` and the tiles keep the
+   PREVIOUS render's figures. `renderBoarding()` is call #20 of 43 in
+   `svEnterApp()` with **no try/catch anywhere**, so 23 later renders never run —
+   Invoicing, Billing, Financials, Compliance and Reports among them. Reported, not
+   fixed: cc holds sairnvet.html.
+2. **THE CLICK-THROUGH RENDER HALF IS COMPLETE FOR THE FIRST TIME.**
+   `docs/2026-09-26-clickthrough-render-half-completed.md`. StoneDesk 74/74
+   (67 `sbNav` + 7 `showPanel`), SAIRNbiz 20/20, **94 controls, 87 distinct
+   targets, ZERO findings** on all four classes, zero errors, zero
+   COULD_NOT_SETTLE. `settle()` agrees — no panel has zero controls on either app.
+   **The run was NOT throttled (clampMs 55 and 58 against a requested 50), so it
+   does not re-test the hidden-tab path `0fe57998` fixed** — that is stated in the
+   doc before the result can be read as more than it is. **No credential was
+   typed:** both apps came up past their gate in a fresh tab because the licences
+   live in localStorage, which a same-origin tab inherits. SAIRNvet skipped and
+   recorded UNVERIFIED, not clean.
+
+**ALREADY DONE BEFORE THE QUEUE WAS WRITTEN — verified artefact by artefact:**
+
+* **The SAIRNlaw Maine seed.** The item said "gate already passed, seed never
+  built." It was built **2026-09-21**, §7 of
+  `docs/sairnlaw-maine-deadline-seed-gate.md`. Checked, not read: all 14 seed
+  rules present; calendars 2026 = 11 dated entries and 2027 = 10, exactly as §7.2
+  claims; `me_mr_civ_p_6` and `me_mr_civ_p_6_c` declared in the engine;
+  `JURISDICTION_COVERAGE.me` with `direction: 'early'`; `me: 'Maine'` in
+  `api/legal-deadlines.js`; **`deadline-maine.test.js` 102 passed / 0 failed** and
+  the `deadline-jurisdiction-labels` seam **18 passed / 0 failed**. The open-work
+  index already says "Maine SEEDED".
+  **AND THE 51-YEAR CITATION ERROR NEEDS NOTHING "USED IN BUILDING" — it is
+  already carried the only way it safely can be.** Rule 6(a) names the Chief
+  Justice of the *Superior* Court and the Chief Judge of the *District* Court;
+  Rule 77(c) gives that power to the Chief Justice of the **Supreme Judicial**
+  Court, and Rule 6's own 1974 Advisory Note says so, so the operative text has
+  named the wrong officers for fifty-one years. **Both readings are covered by the
+  deliberately under-inclusive calendar** — statutory twelve only — so the
+  correction is a DISCLOSURE in `JURISDICTION_COVERAGE.me` (it appears six times
+  in the engine), not a data change. Substituting the corrected officer would
+  widen the holiday set, and a wider set rolls deadlines LATER, which is how a
+  filing is missed.
+  **CROSS-CHECKED FOR THE ACTIONABLE VERSION OF THE ITEM:** 31 gate docs against
+  47 seed files. The only four gates with no seed file are colorado, iowa,
+  louisiana and tennessee — exactly the four the Maine gate itself records as
+  blocked or failed (an "I Agree" wall, a split rollover, per-parish Saturdays, a
+  Lexis terms gate). **No passed gate lacks a seed.**
+
+**BLOCKED, RE-CHECKED THIS SESSION AND STILL HELD:**
+
+* **The four StoneDesk write-result fixes** (branch `fourth/stonedesk-write-results`,
+  `53cc408e`) — cc's `cc-sqlout-blob-fence` still names stonedesk.html, 1.5h old.
+  Held rather than collided, as instructed.
+* **SAIRNdental CDT code catalogue versioning** — cody's `platform` claim names
+  "sairndental doc corrections; sairndental patient portal scoping"; the matcher
+  blocks on `same app: sairndental`.
+* **SAIRNroofing's dedicated gap audit** — cody holds `sairnroofing` (patent
+  freshness / Xactware / EagleView).
+* **Methodology item 97, the tier-assignment-basis audit** — blocks on `same
+  subject: platform` and shares `tier`, and that overlap is REAL rather than
+  lexical: cody's claim is itself tier work (item 99 irreversible-class gate,
+  `leg_plots` promotion, the `alf_staff` register cell). An audit of tier
+  assignments run while the register owner is changing them would be wrong on
+  arrival — the same reason the 09-17 senior/mechanical pass gave for not
+  starting SAIRNdental under a live claim.
+
+**THE PATTERN, THIRD QUEUE RUNNING.** Six items: two were already finished, one
+named a premise that was false ("seed never built" — built five days earlier, with
+102 green arms), and four of the six were blocked by another session's claim. The
+two that were mine to do produced a real multi-panel finding and the first
+complete render sweep this platform has had.
