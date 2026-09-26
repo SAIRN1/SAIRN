@@ -2393,6 +2393,20 @@
         "tests/run_sync_write_result_probe.py",
         "tools/sync_write_result_check.py"
       ]
+    },
+    {
+      "id": "fourth-1790386924",
+      "session": "fourth",
+      "subject": "sairnlaw",
+      "task": "Maine jurisdiction deadline seed -- gate passed, seed never built; use the corrected citation for the 51-year-old wrong-citation error in the state's own rule FILES: api/_lib/deadline-engine.js sql/law_jurisdiction_seed.sql",
+      "claimed_at": "2026-09-26T01:42:04Z",
+      "claimed_at_epoch": 1790386924.4497836,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/deadline-engine.js",
+        "sql/law_jurisdiction_seed.sql"
+      ]
     }
   ],
   "refusals": [
