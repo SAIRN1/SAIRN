@@ -14857,6 +14857,63 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
+      "commit": "0a4b2f765941",
+      "date": "2026-09-26",
+      "subject": "fix(sairncare): the dormant per-staff training branch answered \"meets: TRUE\" for an untrained staff member in a state that mandates hours",
+      "files": [
+        "api/_lib/compliance-rules-staff-join.test.js",
+        "api/_lib/compliance-rules.js",
+        "docs/2026-09-26-sairncare-compliance-join-scoping.md"
+      ],
+      "lines_added": 463,
+      "lines_removed": 6,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/_lib/compliance-rules.js evaluateTraining()'s optional per-staff branch answered meets:TRUE for a staff member with ZERO recorded training hours, in a state that mandates them. Driven 2026-09-26 against the real committed seed: West Virginia, staff member with annual_hours_recorded 0, returned { required_annual_hours: 0, recorded_annual_hours: 0, shortfall_hours: 0, meets: TRUE, applicable_requirements: [null, null] }. WV mandates 8 hours a year for an administrator and 2 hours a year of dementia training for ALL staff under 64 CSR 14. Its requirement rows are shaped {audience, hours_per_year, topic}; this branch reads r.who and r.annual_hours, so every requirement contributed Number(undefined) || 0 and the applicable_requirements array came back as [null, null]. A DIFFERENT VOCABULARY WAS READ AS AN EMPTY ONE, and once summed an empty requirement set is indistinguishable from a satisfied one. A SECOND FABRICATION SURVIVES A CORRECT VOCABULARY AND IS WRONG IN BOTH DIRECTIONS: Pennsylvania rows carry additive:true, a secured-dementia-unit requirement ON TOP OF the general annual hours, so collapsing 12 general and 6 dementia into one target of 18 and comparing one recorded total meant a staff member with 18 hours of general training and no dementia training read as compliant -- UNDER-requires, a false PASS; and Ohio rows carry counts_toward_general_annual:true, 4 and 8 hours that count TOWARD the general 8 rather than adding to it, so summing all four rows produced a required total of 29 where the code requires less -- OVER-requires, a false FAIL, which is the merciful direction and is still a wrong number on a compliance board. Both fields are machine-readable and present on the real seeded rows; nothing was reading either. THE BRANCH HAS NEVER FIRED: sairncare.html's cqShowTraining() sends {state, facility_class, requirement_type} and no staff array, so the whole branch is dormant and none of this has reached a screen -- which is the only reason this is a latent defect rather than an incident, and is not a reason to leave it, because the open request that surfaced it was to BUILD the caller. FIXED BY REFUSING RATHER THAN GUESSING, matching this module's own stated standard that nothing is ever silently substituted: a requirement row carrying neither `who` nor `annual_hours` now returns REQUIREMENTS_NOT_JOINABLE naming the state, the rule and the unreadable rows' key sets; and any applicable requirement carrying stacking semantics (additive, counts_toward_general_annual, or an explicit stacking field) now yields meets:null with a meets_unknown_reason rather than a boolean in either direction, while still reporting the recorded and required figures. Measured across all six seeded training rules after the fix: OH null, IN false, MI not applicable, PA/alr null, PA/pch null, WV refused -- one of six states can currently be answered at all.",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable. The per-staff branch has read r.who and r.annual_hours since it was written, and was correct for the states seeded at that time. It became wrong when West Virginia was seeded in a different vocabulary and when Pennsylvania and Ohio gained their stacking fields -- data edits in sql/sairncare_compliance_seed.json, not code edits, and each correct on its own."
+      },
+      "citation_note": "PR 1.1, and the fit is the THIRD of its four shapes almost exactly: the check asserted an end state it never created. A sweep arm that asserts zero findings passes on an empty input set just as happily as on a genuinely clean one -- here, a requirement set read as empty passed just as happily as one that was met. 1.1's subject is checks and their probes and this is a product evaluator rather than a checker, which is the only reason it is not a perfect fit; the mechanism is identical and the section's closing sentence names it outright -- an assertion of PRESENCE that goes green off the wrong thing is silent and nothing is looking for it.",
+      "phase_note": "Design: the code did what it says and every seed row is correct. The defect is that the requirement vocabulary and the credential-record vocabulary were designed independently with no shared category or role, so there was never a join to write -- and the branch that half-implements one was built before the states that break it were seeded.",
+      "contributing_factors": [
+        {
+          "factor": "The branch read two field names and summed whatever it found, so a requirement row written in a different vocabulary contributed zero instead of raising. Number(undefined) || 0 turns an unread requirement into a satisfied one, and a total of zero required hours is indistinguishable from a total that was met.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "A row carrying neither `who` nor `annual_hours` now returns REQUIREMENTS_NOT_JOINABLE, naming the state, the rule and the key sets of the rows it could not read. An initial-only row that legitimately carries no annual hours stays readable, so the refusal is selective rather than a blanket."
+        },
+        {
+          "factor": "Stacking semantics were on the rows as machine-readable fields and nothing read them. `additive` means a separate pool on top; `counts_toward_general_annual` means already inside. Plain summation is wrong under both and in OPPOSITE directions, so no single arithmetic fix exists.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Any applicable requirement carrying stacking semantics now yields meets:null with a reason rather than a boolean, while still reporting the recorded and required figures. A null verdict with no numbers would be less useful than the wrong answer it replaces."
+        },
+        {
+          "factor": "The branch was DORMANT -- no caller anywhere passes opts.staff -- so nothing exercised it and nothing could have noticed. Dormant code that produces a verdict is worse than dormant code that produces nothing: it looks ready, and the natural next step is to wire it up.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "api/_lib/compliance-rules-staff-join.test.js, 23 arms driven against the REAL seed rather than a fixture, including one that asserts the branch is still dormant -- when that arm goes red the caller has been built, and the scoping doc must be re-read before anybody trusts a verdict."
+        },
+        {
+          "factor": "The requirement seed and the credential record were designed independently: a record carries a category (dementia/general/orientation) and a requirement carries a `who` sentence, with no shared vocabulary between them. The join was never buildable, and nothing recorded that, so the half that existed looked like the start of one.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "docs/2026-09-26-sairncare-compliance-join-scoping.md enumerates the five blockers read out of the real data and the four steps that would unblock them, the first of which is a human decision (what the annual window is). The seed edits are a re-read of the administrative code the rows already cite, not a re-derivation."
+        }
+      ],
+      "recurrence_open": "FIVE BLOCKERS REMAIN AND THE JOIN IS STILL NOT BUILDABLE, enumerated in docs/2026-09-26-sairncare-compliance-join-scoping.md: the requirement audience is prose while the roster carries a role code; recorded hours carry a category that requirements do not; stacking comes in at least three kinds including prose conditional on a staff member's tenure; an initial-hours-with-deadline requirement is a gate on whether somebody may work at all and needs a hire date the engine never receives; and the annual window is undefined. ONE OF SIX SEEDED STATES CAN CURRENTLY BE ANSWERED AT ALL, which is a disclosed gap rather than coverage -- a WV facility now gets no per-staff answer, which is worse for the user than a correct one and better than a false pass. Separately, opts.staff is CALLER-SUPPLIED, so whenever the wiring is built the aggregation must happen server-side against alf_staff_credentials: a client sending its own annual_hours_recorded while the authoritative append-only record sits unread on the server is the same shape as the attribution defect recorded against f0c0cb7a."
+    },
+    {
       "commit": "1f9936429432",
       "date": "2026-09-26",
       "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
@@ -14906,67 +14963,6 @@
           "action": "a static check over api/*.js asserting every validateLicenseKey caller also reads .active would have caught this the day it shipped; named in recurrence_open and NOT built here"
         }
       ]
-    },
-    {
-      "commit": "f764f90eb99e",
-      "date": "2026-09-26",
-      "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
-      "files": [
-        "docs/2026-09-26-fire-and-forget-write-audit.md",
-        "stonedesk.html",
-        "tests/customer_delete_does_not_resurrect.js",
-        "tests/faults/sd_write_faults.js",
-        "tests/stonedesk_write_result_consumption.js"
-      ],
-      "lines_added": 712,
-      "lines_removed": 27,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "stonedesk.html sdData() returned j.data for the write_batch action, and the endpoint's write_batch response has NO data key -- its answer IS the envelope {ok, written, refused, skipped_without_id}. So the client saw undefined on every SUCCESSFUL batch and three things broke silently at once: saveSD3Data warned 'the customer list did not reach the server' on every save that DID reach it; its refused branch was unreachable, so a customer deleted on another device was never dropped locally (the resurrection tests/customer_delete_does_not_resurrect.js exists to prevent, arriving by a second route); and sdMarkSynced is scoped to action==='write', so sd_customers ids stopped entering the synced map -- the server-wins carve-out's only input -- which failed in the SAFE direction and therefore showed nothing. Injected by be352a7d the same day, which correctly replaced a per-customer write storm and read the wrong half of the answer. Also in this commit: slabSyncOne() and sdLineageSyncOne() discarded their write result entirely (fire-and-forget audit findings 4 and 5), and pcToggleSlab had tested 'ok === false' since the public catalog shipped to warn 'the catalog on the web has NOT changed' -- slabSyncOne returned undefined on every path, so that warning could never fire and a failed publish said 'Slab published to the catalog'.",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "arguable",
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "commit": "be352a7d021a",
-        "date": "2026-09-26",
-        "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
-        "lag_days": 0
-      },
-      "citation_note": "the third state, running the other way. A write_batch response carries no data key, so sdData's j.data answered undefined on SUCCESS and the caller's 'if (!r || r.ok !== true)' folded could-not-tell into failed -- the same shape as a check reporting a pass it never performed.",
-      "contributing_factors": [
-        {
-          "factor": "the transport returns j.data for every action, and one action answers with the envelope itself -- an asymmetry between endpoint and client that nothing compared",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "sdData returns the envelope for that one named action, narrow on purpose rather than a general fall-back-when-data-is-missing rule"
-        },
-        {
-          "factor": "the endpoint has a thorough suite (api/sd-data-customers-batch.test.js, 15 arms) and nothing drove the CLIENT consuming that response -- the seam between the two halves had no test on either side",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "tests/stonedesk_write_result_consumption.js, 18 arms, drives the client against the endpoint envelope read OUT OF api/sd-data.js so the two cannot drift apart"
-        },
-        {
-          "factor": "the batching change was verified by the trip count it was written to fix, and its own result-handling was never driven at all",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "a change whose POINT is that a result is now readable has to be driven reading that result. Not turned into a standing check here: no mechanism distinguishes that class of change from any other, and a gate on every commit touching a transport would refuse most of them."
-        },
-        {
-          "factor": "two suites were RED ON MAIN with nothing saying so -- sd_write_faults pinned the old write call and short-circuited before its own live assertion, and customer_delete_does_not_resurrect had a stale sandbox dependency list plus a write-only st() stub that DISARMED its mutant",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "both re-pinned; the phrase pin now matches unwrapped prose so a reflow cannot disarm it, and the vacuous negative assertion is guarded by asserting the list is non-empty first"
-        }
-      ],
-      "recurrence_open": "nothing checks that a client transport's return contract matches what each endpoint action actually sends. This fix is one action in one app; the other sixteen transports have the same shape and were not swept."
     },
     {
       "commit": "9d6358d19160",
@@ -15140,6 +15136,58 @@
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
     },
     {
+      "commit": "be352a7d021a",
+      "date": "2026-09-26",
+      "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
+      "files": [
+        "api/_resources/stonedesk.js",
+        "api/sd-data-customers-batch.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 450,
+      "lines_removed": 18,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the per-record loop predates the git history this register indexes; what is datable is the 2026-09-24 guard that doubled its cost, and that is a contributing factor rather than the injection"
+      },
+      "contributing_factors": [
+        {
+          "factor": "saveSD3Data() pushed a LIST by looping it and calling a single-record write, from 16 call sites -- the per-record shape was chosen when the write was one round trip and was never revisited",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a write_batch action on sd_customers: one pre-read with customer_id=in.(...) and one upsert, so the trip count is fixed rather than 2N"
+        },
+        {
+          "factor": "the resurrection guard (2026-09-24) added a pre-read to every sd_customers write and DOUBLED an already per-record cost -- the guard was reviewed as a correctness change and nobody asked what it did to a caller that wrote in a loop",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the batch branch carries the same guard once for the whole list; an arm asserts 5 and 200 records cost the same two trips, so a future change that reintroduces a loop fails"
+        },
+        {
+          "factor": "nothing measured round trips. The write-result checker found the DISCARDED result at this site and said nothing about the call count, and no tool on this platform counts requests per user action",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Not built here. The arm added with this fix counts trips for THIS endpoint only. A general per-user-action request-count check is a real tool with its own criteria questions -- what counts as one action, what a reasonable ceiling is per screen -- and folding it into a batching fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
+        }
+      ],
+      "recurrence_open": "Fixed for sd_customers. Nothing checks whether any OTHER client path writes a list by looping a single-record endpoint -- sync_write_result_check.py finds discarded RESULTS, not per-record call counts, and the two are different questions."
+    },
+    {
       "commit": "c0b7249ccd01",
       "date": "2026-09-26",
       "subject": "fix(sairncare): WV rules are LIVE -- and the loader's verification had never run",
@@ -15197,58 +15245,6 @@
         }
       ],
       "recurrence_open": "the loader's docstring also documented a --verify flag that does not exist (verification is unconditional); nothing checks a tool's own header against its own argparse. And the four dead opened_at_sha stamps in the review ledger are the same class of dead pointer and are repaired by nothing yet."
-    },
-    {
-      "commit": "be352a7d021a",
-      "date": "2026-09-26",
-      "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
-      "files": [
-        "api/_resources/stonedesk.js",
-        "api/sd-data-customers-batch.test.js",
-        "api/sd-data.js",
-        "docs/MASTER-PLAN.md",
-        "docs/traceability-matrix.md",
-        "stonedesk.html"
-      ],
-      "lines_added": 450,
-      "lines_removed": 18,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "summary": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
-      "rules": [
-        "1.10"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": null,
-      "found_by_session": null,
-      "injection": {
-        "unknown_reason": "the per-record loop predates the git history this register indexes; what is datable is the 2026-09-24 guard that doubled its cost, and that is a contributing factor rather than the injection"
-      },
-      "contributing_factors": [
-        {
-          "factor": "saveSD3Data() pushed a LIST by looping it and calling a single-record write, from 16 call sites -- the per-record shape was chosen when the write was one round trip and was never revisited",
-          "kind": "technical",
-          "action_status": "done",
-          "action": "a write_batch action on sd_customers: one pre-read with customer_id=in.(...) and one upsert, so the trip count is fixed rather than 2N"
-        },
-        {
-          "factor": "the resurrection guard (2026-09-24) added a pre-read to every sd_customers write and DOUBLED an already per-record cost -- the guard was reviewed as a correctness change and nobody asked what it did to a caller that wrote in a loop",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "the batch branch carries the same guard once for the whole list; an arm asserts 5 and 200 records cost the same two trips, so a future change that reintroduces a loop fails"
-        },
-        {
-          "factor": "nothing measured round trips. The write-result checker found the DISCARDED result at this site and said nothing about the call count, and no tool on this platform counts requests per user action",
-          "kind": "detection",
-          "action_status": "declined",
-          "note": "Not built here. The arm added with this fix counts trips for THIS endpoint only. A general per-user-action request-count check is a real tool with its own criteria questions -- what counts as one action, what a reasonable ceiling is per screen -- and folding it into a batching fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
-        }
-      ],
-      "recurrence_open": "Fixed for sd_customers. Nothing checks whether any OTHER client path writes a list by looping a single-record endpoint -- sync_write_result_check.py finds discarded RESULTS, not per-record call counts, and the two are different questions."
     },
     {
       "commit": "ead626ae90af",
@@ -15416,6 +15412,67 @@
         }
       ],
       "recurrence_open": "482 OF 485 ROWS REMAIN UNSOURCED and that is now disclosed rather than fixed. Re-sourcing them is a veterinary review against a current formulary -- Carpenter's Exotic Animal Formulary for the exotic rows, which is a book nothing in this pass had access to and which the app's own Amoxicillin/exotic flag already names as the right pointer. Separately, the human-readable \"dose\" string still carries a numeric range on roughly fifty exotic rows whose doseMin/doseMax are null: the machine fields are honest and the clinician reads the string, so 'no numeric dose' in the data model is not 'no number on the screen'. No check asserts those two agree. And the new arms are STATIC -- they assert the app's wording, not the model's output, so a model that starts describing an unsourced figure as verified despite the prompt would not be caught by anything here."
+    },
+    {
+      "commit": "f764f90eb99e",
+      "date": "2026-09-26",
+      "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
+      "files": [
+        "docs/2026-09-26-fire-and-forget-write-audit.md",
+        "stonedesk.html",
+        "tests/customer_delete_does_not_resurrect.js",
+        "tests/faults/sd_write_faults.js",
+        "tests/stonedesk_write_result_consumption.js"
+      ],
+      "lines_added": 712,
+      "lines_removed": 27,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdData() returned j.data for the write_batch action, and the endpoint's write_batch response has NO data key -- its answer IS the envelope {ok, written, refused, skipped_without_id}. So the client saw undefined on every SUCCESSFUL batch and three things broke silently at once: saveSD3Data warned 'the customer list did not reach the server' on every save that DID reach it; its refused branch was unreachable, so a customer deleted on another device was never dropped locally (the resurrection tests/customer_delete_does_not_resurrect.js exists to prevent, arriving by a second route); and sdMarkSynced is scoped to action==='write', so sd_customers ids stopped entering the synced map -- the server-wins carve-out's only input -- which failed in the SAFE direction and therefore showed nothing. Injected by be352a7d the same day, which correctly replaced a per-customer write storm and read the wrong half of the answer. Also in this commit: slabSyncOne() and sdLineageSyncOne() discarded their write result entirely (fire-and-forget audit findings 4 and 5), and pcToggleSlab had tested 'ok === false' since the public catalog shipped to warn 'the catalog on the web has NOT changed' -- slabSyncOne returned undefined on every path, so that warning could never fire and a failed publish said 'Slab published to the catalog'.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "be352a7d021a",
+        "date": "2026-09-26",
+        "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
+        "lag_days": 0
+      },
+      "citation_note": "the third state, running the other way. A write_batch response carries no data key, so sdData's j.data answered undefined on SUCCESS and the caller's 'if (!r || r.ok !== true)' folded could-not-tell into failed -- the same shape as a check reporting a pass it never performed.",
+      "contributing_factors": [
+        {
+          "factor": "the transport returns j.data for every action, and one action answers with the envelope itself -- an asymmetry between endpoint and client that nothing compared",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sdData returns the envelope for that one named action, narrow on purpose rather than a general fall-back-when-data-is-missing rule"
+        },
+        {
+          "factor": "the endpoint has a thorough suite (api/sd-data-customers-batch.test.js, 15 arms) and nothing drove the CLIENT consuming that response -- the seam between the two halves had no test on either side",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/stonedesk_write_result_consumption.js, 18 arms, drives the client against the endpoint envelope read OUT OF api/sd-data.js so the two cannot drift apart"
+        },
+        {
+          "factor": "the batching change was verified by the trip count it was written to fix, and its own result-handling was never driven at all",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "a change whose POINT is that a result is now readable has to be driven reading that result. Not turned into a standing check here: no mechanism distinguishes that class of change from any other, and a gate on every commit touching a transport would refuse most of them."
+        },
+        {
+          "factor": "two suites were RED ON MAIN with nothing saying so -- sd_write_faults pinned the old write call and short-circuited before its own live assertion, and customer_delete_does_not_resurrect had a stale sandbox dependency list plus a write-only st() stub that DISARMED its mutant",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "both re-pinned; the phrase pin now matches unwrapped prose so a reflow cannot disarm it, and the vacuous negative assertion is guarded by asserting the list is non-empty first"
+        }
+      ],
+      "recurrence_open": "nothing checks that a client transport's return contract matches what each endpoint action actually sends. This fix is one action in one app; the other sixteen transports have the same shape and were not swept."
     },
     {
       "commit": "fa0f2b90d3b8",
