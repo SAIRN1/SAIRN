@@ -4,6 +4,8 @@
 new file only, under `docs/cloud-research/`, on its own branch, same lane as
 the SAIRNlaw/SAIRNvet external audits already in this directory.**
 
+> **Companion document, same date:** `docs/cloud-research/sairnvet-external-competitive-gap-audit-2026-09-26.md` (Fourth, SAIRN1/SAIRN#28) covers the same three axes (dosing CDS, exotics, telemedicine) from directly opened vendor pages, a higher evidence grade than this snippet-only pass. Where the two disagree, prefer that one. This file was renamed from that same path on 2026-09-26 so both can land; its distinct contribution is the PIMS pricing-model survey in §1.
+
 ---
 
 ## 0. Scope, and a correction to the task brief before anything else

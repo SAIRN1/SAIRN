@@ -112,19 +112,15 @@ were still running. There were three.
 
 ## 4. Open items, prioritized
 
-**1. DECISION NEEDED: the same SAIRNvet file path is added by two open PRs.**
+**1. RESOLVED 2026-09-26: the SAIRNvet path collision with SAIRN1/SAIRN#28.**
 - SAIRN1/SAIRN#28 (Fourth, branch
-  `fourth/sairnvet-external-gap-audit-2026-09-26`, opened 2026-09-26 12:11 UTC)
-  adds `docs/cloud-research/sairnvet-external-competitive-gap-audit-2026-09-26.md`.
-  That is **the exact path** that commit `eddec416` adds on SAIRN1/SAIRN#18.
-  Whichever PR merges second will hit an add/add conflict.
-- The subject is duplicated too (dosing CDS, exotic species, telemedicine). Two
-  sessions produced it in parallel.
-- Fourth's pass opened 8 vendor pages directly, a higher evidence grade than
-  this session's snippet-only doc. This session's doc also covers pricing
-  models.
-- Options: keep one; keep both with one renamed; or merge the content. This is
-  Michael's call, and **nothing was changed.**
+  `fourth/sairnvet-external-gap-audit-2026-09-26`) adds
+  `docs/cloud-research/sairnvet-external-competitive-gap-audit-2026-09-26.md`,
+  the path commit `eddec416` originally added on SAIRN1/SAIRN#18.
+- Michael chose to rename this session's copy. It now lives at
+  `docs/cloud-research/sairnvet-external-competitive-gap-audit-pricing-cds-2026-09-26.md`
+  and carries a cross-link to Fourth's doc, which has the higher evidence grade
+  (8 vendor pages opened directly). SAIRN1/SAIRN#28 was not touched.
 
 **2. Review and merge SAIRN1/SAIRN#18.**
 - It is docs-only, and its red check is GitHub-side (§1).
