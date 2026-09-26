@@ -27,8 +27,8 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 64 | runs automatically on every push, never blocks |
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 69 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 37 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 47 | nothing runs these at all |
+| **SUITE-ONLY** | 38 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 46 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -313,7 +313,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (37)
+## SUITE-ONLY (38)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -328,6 +328,7 @@ fixtures. Nothing points them at the real codebase.
 | `coding_rule_discovery.py` | CHECKER | a coding or billing RULE that nobody has registered for independent review. docs/coding-rule-registry.json is hand-written -- no property of a function tells you it encodes a federal billing rule -- and that is true of the JUDGEMENT but was never true of the CANDIDATE SET. This derives candidates from the codebase's OWN conventions: a function that calls a `*Finding(sev, rule, detail, sourceKey)` builder, or a PURE function called from a markup-wired handler that cites a `*_SOURCES` map. On the day it was written: 41 candidates in sairncode.html against 8 registered. It registers nothing -- what a rule DECIDES, what the HARM is and which source says so is the judgement the registry holds, and a tool that auto-registered would fill it with guesses. Third instance of the split sairn_app_map_check and this file already make: judgement human, enumeration derived. WHAT IT CANNOT SEE, printed on every run: a rule written in NEITHER convention | `run_coding_rule_discovery_probe.py` |
 | `confidentiality_candidate_flagger.py` | ADVISORY | the B/C rows of docs/CRITICALITY-TIERS.md that a person must read before the two-axis migration scores them for confidentiality -- 288 rows narrowed to a list short enough to read by hand. IT FLAGS AND DOES NOT SCORE, which is not a limitation to be closed later: the register's own header says a tier asserted with no evidence is a label, so a script cannot assign one. It does not edit the register, writes no tier anywhere, and exits 0 at any count. THE THING IT ACTUALLY CATCHES IS A SIGNAL THAT MEASURED PROXIMITY INSTEAD OF OWNERSHIP, because both of its own signals did. Asking only "is there a server-side check" flagged 173 of 288 rows, since whole apps have no session gate by a RECORDED decision (SD_LOCAL_RESOURCES says so in its own header) -- the signal is the DISAGREEMENT between client and server, not the absence. And the payload signal scanned 400 characters after the resource name for a PII/PHI word, which in a single-file app runs straight into the declaration next door: all 17 rows it flagged were wrong, ten sen_* rows for `pay_rate` off a cache array containing the DIFFERENT resource 'sen_pay_rates', four leg_* rows for `decedent` off one shared helper reading a CASE. It now reads the resource's own record literal, balance-parsed and string-blanked. WHERE THE APP HANDS IT NO READABLE LITERAL THE PAYLOAD SIGNAL CANNOT BE ASKED AT ALL, returned as a separate boolean rather than an empty field list so a could-not-tell is never read as a clean payload, and printed on its own lines in the report. --self-test carries six locked fixtures in BOTH directions, because a count that fell is indistinguishable from a signal that stopped working. | `confidentiality_flagger_asymmetry_review_probe.py` |
 | `cross_tenant_isolation_scope.py` | CHECKER | a Tier A resource whose license_hash filter is asserted by NOTHING, and -- separately graded, because conflating them would overstate coverage on exactly the control where that is worst -- one asserted only by a string check wearing a behaviour check. Reports a THIRD state for a resource whose serving code it cannot locate, never folded into either column. Also sizes the remaining work in TEST UNITS rather than resources: a generic dispatcher builds one query for its whole map, so 84 resources are 48 units. Its grader is controlled by tests/run_cross_tenant_scope_probe.py and stamped with CRITERIA_VERSION, because it has already inverted once -- scoring the more general test WEAK because the criteria encoded one file spelling | `cross_tenant_dispatchers_review_probe.py`, `cross_tenant_grader_declaration_review_probe.py`, `cross_tenant_scope_grader_review_probe.py`, `grader_declaration_reconstruction_review_probe.py`, `grader_exclusion_parser_review_probe.py`, `run_cross_tenant_scope_probe.py`, `run_cross_tenant_untabled_declaration_probe.py`, `run_self_exclusion_guard_sabotage_probe.py` |
+| `gh_push.py` | LIBRARY | a push that reaches origin/main having passed NO gate, and content that existed in no commit. It pushes through the GitHub REST API, so git is never invoked and .githooks/pre-push never fires -- the seed gate, the Tier A review gate, the generated-document check and every other check in sairn_push_gate_hook.py had no effect on this path at all. Audited 2026-09-26: nothing ran before the REST call, so the git hook was never decorative and removing it would have disabled the gate for the main path. It now INVOKES the hook rather than copying its fourteen checks, because a second copy of the enumeration is item 94 on the largest gate on the platform. AND IT CATCHES THE HOLE UNDERNEATH: a REST push sends WORKING-TREE bytes, so it could publish content in no local commit -- nothing to gate even if the gate had run. Files must now be committed and clean and HEAD must descend from the remote tip, which makes `remote..HEAD` a real range. Held by tests/run_gh_push_gate_probe.py | `run_gh_push_gate_probe.py` |
 | `hover_eqa_escalation.py` | CHECKER | an independence checkpoint that only the audited role can see, which therefore escalates to nobody. The hover auditor own EQA checkpoint reported OVERDUE for sixteen process passes against a cadence of three, and the tool saying so runs ONLY inside the hover clone -- hover_self_health_shim.py is a deliberate silent no-op in a build clone, which is right for a self-check and wrong for an escalation. A role cannot satisfy its own independence checkpoint by definition, so the report has to reach somewhere that is not that role. Asked from OUTSIDE: it READS the self-log and computes the answer independently rather than running the auditor own grader, so the two can DISAGREE and that disagreement is itself a finding. Writes nothing anywhere, asserted by an arm rather than by the docstring. Caught on its first run that the SECOND auditor instance carries no eqa_checkpoint field at all, so it has never recorded an independent validation and nothing was reporting that. An absent, empty, unparseable or field-less log is COULD NOT TELL and exit 2, never clean -- an escalation that reports current because it could not look has escalated nothing | `run_hover_eqa_escalation_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
@@ -360,7 +361,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (47)
+## UNWIRED (46)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -390,7 +391,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_ut_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_va_calendar.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
-| `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_token.py` | LIBRARY | a credential lookup that has been dead for weeks while saying nothing. gh_push.py and gh_verify.py each carried their OWN copy of "read GITHUB_TOKEN out of Documents\SAIRN\.env.local", and that file has been 0 bytes since 2026-08-08 -- so both raised on every invocation for seven weeks, unnoticed, because neither tool is wired into any hook, gate or suite and the failure surfaces only when somebody reaches for one. The catch is the DUPLICATION as much as the path: one decision in two copies goes stale in both at once and neither can be fixed without finding the other. It also catches the error message that made this seven weeks rather than five minutes -- "GITHUB_TOKEN not found in .env.local" named the one source that could not have had it, so TokenUnavailable now names EVERY source tried with why each declined. Never prints the token, not even a prefix: a prefix is enough to confirm a guess | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
@@ -448,7 +448,7 @@ number, and only one of them is a document.
   hook entries                        10   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY
-  tools invoked by tests/            166   tests/**/*.py, *.js
+  tools invoked by tests/            167   tests/**/*.py, *.js
   recorded NOT-promoted decisions     74   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
