@@ -195,6 +195,41 @@ UNTRUSTED_PREFIXES = (
 # already calls the real fix, and it is still not written.
 UNTRUSTED_WORDS = ('complaint', 'notes', 'note', 'transcript', 'desc')
 
+# -- THE PER-APP FIELD LIST, WRITTEN DOWN AT LAST (2026-09-26) --------------
+# This file's header calls for this twice: *"the fix for that is a per-app field
+# list somebody writes down, not a looser word"* (the `description` removal) and
+# *"`code1` and `code2` are free-text inputs reaching a system prompt and NO
+# generic word list can name them ... and it is still not written"*. Written now.
+#
+# WHY A LOOSER WORD CANNOT WORK, restated because it is the whole argument.
+# `description` was removed by the blind lock BEFORE this tool saw real code: it
+# is a genuine untrusted field AND a common word in app-owned prose, so it fired
+# on prompts carrying nothing external. `message` was removed for the same reason
+# one step worse -- it matched `messages:`, the API's own envelope field, at every
+# call site. A generic list can only hold words that are untrusted EVERYWHERE,
+# and `code1` is untrusted in SAIRNcode and meaningless anywhere else. Per app is
+# the only shape that fits -- and an attempt to re-add `description` instead was
+# REFUSED BY THE BLIND LOCK on its first run, which is what the near-miss fixture
+# at the foot of this file exists to do.
+#
+# WHAT IT CHANGES AT sairncode.html, and it is the reason to bother: that site is
+# ALREADY FENCED -- sfRule() + sfFence('CODE 1 (user-typed)', code1) -- and this
+# tool could not see it as carrying untrusted text AT ALL, so it appeared in
+# neither column. The fields move it into FENCED, which is the honest report: a
+# site that carries user text and mitigates it. A checker blind to a fenced site
+# cannot notice the fence being removed.
+#
+# HAND-WRITTEN AND INCOMPLETE BY CONSTRUCTION, stated rather than discovered:
+# every entry was read out of the app, and a free-text field nobody has read is
+# still invisible. An app with AI features and no entry here means NOBODY HAS
+# LOOKED, not that it is clean.
+UNTRUSTED_FIELDS_BY_APP = {
+    # sairncode.html -- `#scrub-code1` / `#scrub-code2` are <input type="text">,
+    # and the app's own comment says so: "THE CODE FIELDS ARE FREE-TEXT INPUTS".
+    # Already fenced at the prompt; this makes the site visible.
+    'sairncode.html': ('code1', 'code2'),
+}
+
 # A DELIMITER is any of the conventional forms for fencing untrusted text.
 # Presence is NOT proof of safety (the delimiter-escape family above exists for
 # exactly that reason) -- it is proof that somebody thought about it, which is
@@ -237,7 +272,7 @@ def _code_only(expr):
     return _STRINGS.sub(' ', expr)
 
 
-def _hints_in(expr):
+def _hints_in(expr, extra=()):
     """Untrusted-field hints in ONE expression. Word-bounded for whole words,
     prefix-matched for identifier prefixes -- see the two tuples above.
 
@@ -245,7 +280,7 @@ def _hints_in(expr):
     low = _code_only(expr).lower()
     return ({h for h in UNTRUSTED_PREFIXES
              if re.search(r'(?<![a-z0-9_])' + re.escape(h), low)}
-            | {h for h in UNTRUSTED_WORDS
+            | {h for h in tuple(UNTRUSTED_WORDS) + tuple(extra)
                if re.search(r'(?<![a-z0-9_])' + re.escape(h) + r'(?![a-z0-9])', low)})
 
 
@@ -288,7 +323,11 @@ def _assignments(window, var):
 MAX_HOPS = 3
 
 
-def _trace(window, var):
+def _trace(window, var, extra=()):
+    # `extra` is the per-app field list for the file being scanned -- see
+    # UNTRUSTED_FIELDS_BY_APP. Threaded rather than global, because the same
+    # identifier is untrusted in one app and meaningless in another, which is
+    # the entire reason a generic word could not carry it.
     """(untrusted hints, fence hints) reachable from `var` within MAX_HOPS."""
     seen, frontier = set(), [var]
     unt, fence = set(), set()
@@ -299,7 +338,7 @@ def _trace(window, var):
                 continue
             seen.add(v)
             for expr in _assignments(window, v):
-                unt |= _hints_in(expr)
+                unt |= _hints_in(expr, extra)
                 low = expr.lower()
                 fence |= {d for d in DELIMITER_HINTS if d.lower() in low}
                 nxt += [x for x in _IDENT.findall(expr)
@@ -310,6 +349,10 @@ def _trace(window, var):
 
 def scan(path):
     src = io.open(path, encoding='utf-8', errors='replace').read()
+    # KEYED ON THE BASENAME, so a fixture can opt in by naming itself after
+    # the app it models -- see run_fixtures. A path with no entry gets an
+    # empty tuple and behaves exactly as it did before.
+    extra = UNTRUSTED_FIELDS_BY_APP.get(os.path.basename(path), ())
     lines = src.split('\n')
     out = {'interp': 0, 'literal': 0, 'at_risk': [], 'delimited': []}
     for m in re.finditer(r'system\s*:\s*([^,\n]{0,200})', src):
@@ -329,12 +372,12 @@ def scan(path):
         lineno = src[:m.start()].count('\n') + 1
         window = '\n'.join(lines[max(0, lineno - 141):lineno])
         if var:
-            untrusted_s, fence_s = _trace(window, var)
+            untrusted_s, fence_s = _trace(window, var, extra)
         else:
             # An INLINE expression has no variable to follow. Asked of the
             # expression itself rather than skipped: a site this cannot trace
             # is not a site this may assume is clean.
-            untrusted_s, fence_s = _hints_in(arg), {
+            untrusted_s, fence_s = _hints_in(arg, extra), {
                 d for d in DELIMITER_HINTS if d.lower() in arg.lower()}
         if not untrusted_s:
             continue
@@ -407,15 +450,43 @@ FIXTURES = [
      "var sys='Summarise. '+notebookTitle+descriptor+description;\n"
      "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
      {'interp': 1, 'at_risk': 0, 'delimited': 0}),
+
+    # -- THE PER-APP FIELD LIST, DRIVEN BOTH WAYS (2026-09-26) -----------
+    # A field no generic word can name IS a finding in the app declaring it.
+    ('a per-app field (`code1`) un-fenced IS a finding in its own app',
+     "var sys='Check the pair. '+code1+code2;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 1, 'delimited': 0}, 'sairncode.html'),
+
+    # CONTROL, AND IT IS THE WHOLE POINT OF PER-APP: the SAME identifier in
+    # an app with no entry is NOT a hint. Without this arm the list would be
+    # a generic word wearing a dictionary -- the shape `description` was
+    # removed for.
+    ('CONTROL: the same `code1` in an app with no entry is NOT a finding',
+     "var sys='Check the pair. '+code1+code2;\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 0, 'delimited': 0}),
+
+    # And a declared field that IS fenced belongs in the fenced column --
+    # the real sairncode shape this change exists to make visible at all.
+    ('a per-app field FENCED is reported apart, not clean and not a finding',
+     "var sys='Check the pair.'+sfRule()+sfFence('CODE 1 (user-typed)',code1);\n"
+     "fetch(P,{body:JSON.stringify({system:sys,messages:m})})",
+     {'interp': 1, 'at_risk': 0, 'delimited': 1}, 'sairncode.html'),
 ]
 
 
 def run_fixtures(verbose=True):
     bad = []
-    for label, body, want in FIXTURES:
+    for fx in FIXTURES:
+        label, body, want = fx[0], fx[1], fx[2]
+        fname = fx[3] if len(fx) > 3 else 'fx.html'
         import tempfile
         with tempfile.TemporaryDirectory() as td:
-            p = os.path.join(td, 'fx.html')
+            # A FIXTURE MAY NAME ITSELF AFTER AN APP so the per-app list can
+            # be driven. Default `fx.html` has no entry, which is what every
+            # pre-existing fixture relies on.
+            p = os.path.join(td, fname)
             io.open(p, 'w', encoding='utf-8', newline='').write(
                 '<html><script>' + body + '</script></html>')
             got = scan(p)
