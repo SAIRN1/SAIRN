@@ -270,6 +270,70 @@ function evaluateStaffing(rules, opts) {
     });
   }
 
+  // ── WEST VIRGINIA: A FIFTH METHOD, AND IT IS NOT A RATIO (2026-09-25) ────
+  // 64 CSR 14 § 4.4.1 sets a FLOOR of one direct care staff person 24 hours a
+  // day, and 4.4.1.a/b/c then add staff ON TOP of that one, per shift.
+  //
+  // THE DENOMINATOR IS THE TRAP, and the widely-circulated summary of this
+  // rule gets it wrong. Every secondary source renders it "Day 1:10, Evening
+  // 1:15, Night 1:18" as if it were a census ratio. The code text is not that:
+  // each additional staff member is required "for each 10 residents IDENTIFIED
+  // ON THEIR NEEDS ASSESSMENTS TO HAVE TWO OR MORE" of the listed care needs.
+  // A 30-bed residence where four residents meet that test needs the baseline
+  // one plus one on days -- not three. Driving this off `census` would have
+  // over-stated the requirement for almost every real facility, and the
+  // over-statement would have looked conservative and therefore safe.
+  //
+  // SO THE SPECIAL-NEEDS COUNT IS ASKED FOR AND NEVER SUBSTITUTED. A caller
+  // who supplies only a census gets `missing`, not an answer computed off the
+  // wrong number. That is the same refusal `shift` already gets above.
+  if (d.method === 'baseline_plus_special_needs_by_shift') {
+    const shift = opts.shift;
+    const missing = [];
+    if (!shift) missing.push('shift');
+    const special = opts.special_care_needs_residents;
+    if (special === null || special === undefined || special === '') {
+      missing.push('special_care_needs_residents');
+    }
+    const describe = function () {
+      return String(d.baseline_staff) + ' direct care staff on duty at all times, PLUS 1 more '
+        + 'per shift for each N residents assessed with two or more special care needs ('
+        + (d.shifts || []).map(function (s) {
+            return s.shift + ': 1 per ' + s.per_special_needs_residents;
+          }).join('; ') + ')';
+    };
+    if (missing.length) {
+      return Object.assign({}, base, {
+        evaluated: false, missing: missing, requirement: describe(),
+        note: 'This state counts the ADDITIONAL staff against residents assessed with two '
+          + 'or more special care needs, not against the census. A census cannot stand in '
+          + 'for that count -- it would over-state the requirement for most facilities, and '
+          + 'an over-statement is still a wrong number.'
+      });
+    }
+    const spec = (d.shifts || []).find(function (s) { return s.shift === shift; });
+    if (!spec) {
+      return refuse('UNKNOWN_SHIFT',
+        'Shift "' + shift + '" is not one this rule defines. Defined: '
+        + (d.shifts || []).map(function (s) { return s.shift; }).join(', '));
+    }
+    const extra = Math.ceil(Number(special) / spec.per_special_needs_residents);
+    const req = Number(d.baseline_staff) + extra;
+    return Object.assign({}, base, {
+      evaluated: true, shift: shift, requirement: describe(),
+      baseline_staff: Number(d.baseline_staff),
+      additional_for_special_needs: extra,
+      special_care_needs_residents: Number(special),
+      required_staff: req, actual_staff: numOrNull(opts.direct_care_staff),
+      meets: opts.direct_care_staff == null ? null : Number(opts.direct_care_staff) >= req,
+      exclusion: d.exclusion || null,
+      // The list is part of the rule: which needs count is not this app's to
+      // decide, and a facility applying a different list gets a different
+      // answer for reasons nothing here would show.
+      special_care_needs: d.special_care_needs || null
+    });
+  }
+
   return refuse('UNKNOWN_METHOD',
     'Staffing method "' + d.method + '" is not one this engine implements. It will not fall back to another state’s method.');
 }

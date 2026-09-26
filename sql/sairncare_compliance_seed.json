@@ -1,6 +1,6 @@
 {
   "_readme": [
-    "SAIRNcare Phase 2 compliance-rule seed. OH, IN, MI, PA.",
+    "SAIRNcare Phase 2 compliance-rule seed. OH, IN, MI, PA, WV -- and those five are the whole intended coverage, see coverage_cap.",
     "",
     "EVERY FIGURE HERE WAS READ FROM THE ACTUAL ADMINISTRATIVE CODE, not from a",
     "research summary. Two verification passes so far, both recorded in",
@@ -13,6 +13,11 @@
     "               pass had honestly parked as unverified rather than guessed —",
     "               see unverified_notes for what turned out to be wrong.",
     "Each correction is recorded in the rule's own _corrected field so nobody",
+    "  2026-09-25 — WV, read from 64 CSR 14 §§ 3 and 4. The staffing rule",
+    "               CORRECTED the working summary again: every secondary source",
+    "               renders it as a census ratio (1:10 / 1:15 / 1:18) and the code",
+    "               conditions it on residents assessed with TWO OR MORE special",
+    "               care needs, on top of a one-staff-at-all-times floor.",
     "re-introduces the wrong number later from the older notes.",
     "",
     "PA CARRIES TWO FACILITY CLASSES WITH DIFFERENT NUMBERS AND THE SAME METHOD,",
@@ -31,7 +36,6 @@
     "and four different training structures. A shared numeric 'ratio' field would",
     "be null or wrong for three of the four."
   ],
-
   "rules": [
     {
       "rule_id": "OH-LICENSURE-MEMCARE-2024",
@@ -45,7 +49,10 @@
         "label": "Ohio — memory care is an ODA certification layered on the RCF licence, not a separate licence",
         "model": "certification_layered_on_license",
         "base_license": "Residential Care Facility (RCF) licence",
-        "certification_types": ["basic service", "basic service and memory care"],
+        "certification_types": [
+          "basic service",
+          "basic service and memory care"
+        ],
         "memory_care_definition": "A service provided to an individual whom a practitioner assessed and then issued a documented diagnosis of any form of dementia.",
         "notes": [
           "ODA certifies a provider for either the basic service, or the basic service AND memory care. There is no standalone memory-care licence.",
@@ -156,7 +163,6 @@
         }
       }
     },
-
     {
       "rule_id": "IN-LICENSURE-2026",
       "state": "IN",
@@ -207,7 +213,10 @@
             "requirement": "a minimum of one awake staff person on site",
             "staff_count": 1,
             "must_be_awake": true,
-            "must_hold": ["current CPR certificate", "current first aid certificate"]
+            "must_hold": [
+              "current CPR certificate",
+              "current first aid certificate"
+            ]
           },
           {
             "applies_when": "50 or more residents regularly receive residential nursing services or administration of medication, or both",
@@ -268,7 +277,6 @@
         }
       }
     },
-
     {
       "rule_id": "MI-LICENSURE-2026",
       "state": "MI",
@@ -281,9 +289,19 @@
         "label": "Michigan — no 'assisted living' licence exists; Home for the Aged or Adult Foster Care",
         "model": "no_assisted_living_license",
         "license_classes": [
-          { "class": "home_for_the_aged", "capacity": "21 or more unrelated nontransient individuals aged 55+", "note": "supervised personal care; no numeric staffing ratio in rule" },
-          { "class": "afc_small_group", "capacity": "12 or fewer residents" },
-          { "class": "afc_large_group", "capacity": "13 to 20 residents" }
+          {
+            "class": "home_for_the_aged",
+            "capacity": "21 or more unrelated nontransient individuals aged 55+",
+            "note": "supervised personal care; no numeric staffing ratio in rule"
+          },
+          {
+            "class": "afc_small_group",
+            "capacity": "12 or fewer residents"
+          },
+          {
+            "class": "afc_large_group",
+            "capacity": "13 to 20 residents"
+          }
         ],
         "memory_care_license": null,
         "notes": [
@@ -334,8 +352,17 @@
         "method": "fixed_ratio_by_shift",
         "_corrected": "The working summary gave a single statewide AFC floor of 1 direct-care worker per 12 residents. That figure is the SMALL group home rule only. Large group homes are 1:15 during waking hours and 1:20 during normal sleeping hours — a different number AND shift-dependent, which the flat figure hides entirely. Applying 1:12 to a large home would over-state the requirement; applying it without the shift split would mis-state it in both directions.",
         "shifts": [
-          { "shift": "waking", "staff": 1, "per_residents": 15 },
-          { "shift": "sleeping", "staff": 1, "per_residents": 20, "note": "normal sleeping hours" }
+          {
+            "shift": "waking",
+            "staff": 1,
+            "per_residents": 15
+          },
+          {
+            "shift": "sleeping",
+            "staff": 1,
+            "per_residents": 20,
+            "note": "normal sleeping hours"
+          }
         ],
         "exclusion": "Any individual, including a volunteer, is not counted toward the ratio unless the individual meets the qualifications of a direct care staff member.",
         "authority": {
@@ -371,7 +398,6 @@
         }
       }
     },
-
     {
       "rule_id": "PA-LICENSURE-2026",
       "state": "PA",
@@ -384,13 +410,23 @@
         "label": "Pennsylvania — two parallel licences under different chapters",
         "model": "two_parallel_licenses",
         "license_classes": [
-          { "class": "pch", "name": "Personal Care Home", "chapter": "55 Pa. Code Ch. 2600" },
-          { "class": "alr", "name": "Assisted Living Residence", "chapter": "55 Pa. Code Ch. 2800" }
+          {
+            "class": "pch",
+            "name": "Personal Care Home",
+            "chapter": "55 Pa. Code Ch. 2600"
+          },
+          {
+            "class": "alr",
+            "name": "Assisted Living Residence",
+            "chapter": "55 Pa. Code Ch. 2800"
+          }
         ],
         "_corrected": "Corrected 2026-08-23. The special_care_unit block below originally declared available_under: ['pch','alr'] while every figure, phrase and citation in it is Chapter 2800 (ALR). Chapter 2600 does have an analogous unit, but it is a differently-named, differently-scoped, differently-routed thing (see PA-LICENSURE-PCH-2600), so this block is now scoped to ALR only. It was never a wrong FACT — it was a correct fact with too wide a claimed reach, which is the harder kind to spot.",
         "special_care_unit": {
           "name": "Special care unit",
-          "available_under": ["alr"],
+          "available_under": [
+            "alr"
+          ],
           "pch_equivalent": "Chapter 2600 homes have a SECURED DEMENTIA CARE UNIT instead — dementia only, requested through the personal care home regional office. Its rules are in PA-LICENSURE-PCH-2600 and are not interchangeable with these.",
           "definition": "A residence or portion of a residence providing specialized care and services for residents with Alzheimer's disease or dementia, and/or intense neurobehavioral rehabilitation for residents with severely disruptive and potentially dangerous behaviors as a result of brain injury.",
           "application_lead_days": 60,
@@ -423,8 +459,14 @@
         "method": "service_hours_per_resident_per_day",
         "_corrected": "The working summary said '>=75% of hours from direct-care staff'. The rule says something different and materially so: at least 75% of the required service hours must be available DURING WAKING HOURS. It is a scheduling constraint on when the hours land, not a constraint on who provides them. Encoding it as a staffing-mix rule would check the wrong thing entirely and would pass a residence that concentrated its care hours overnight.",
         "hours_per_resident_per_day": [
-          { "resident_type": "mobile", "hours": 1 },
-          { "resident_type": "mobility_needs", "hours": 2 }
+          {
+            "resident_type": "mobile",
+            "hours": 1
+          },
+          {
+            "resident_type": "mobility_needs",
+            "hours": 2
+          }
         ],
         "waking_hours_minimum_percent": 75,
         "always_present": "At all times one or more residents are present in the residence, a direct care staff person who is 21 years of age or older shall be present. The direct care staff person may be the administrator if the administrator provides direct care services.",
@@ -461,8 +503,14 @@
               "successful completion and passing of the Department-approved direct care training course and competency test"
             ]
           },
-          { "who": "direct care staff — general annual", "annual_hours": 16 },
-          { "who": "administrator — general annual", "annual_hours": 24 },
+          {
+            "who": "direct care staff — general annual",
+            "annual_hours": 16
+          },
+          {
+            "who": "administrator — general annual",
+            "annual_hours": 24
+          },
           {
             "who": "all staff (administrative, direct care, ancillary, substitute personnel, volunteers) — dementia baseline",
             "initial_hours": 4,
@@ -491,7 +539,6 @@
         }
       }
     },
-
     {
       "rule_id": "PA-LICENSURE-PCH-2600",
       "state": "PA",
@@ -508,7 +555,9 @@
         "_corrected": "Until this rule existed, a PCH facility asking about licensure fell through to the class-agnostic PA-LICENSURE-2026 rule, whose special_care_unit block is quoted verbatim from Chapter 2800 (ALR) while asserting available_under: ['pch','alr']. The two chapters are NOT interchangeable here. Chapter 2800 calls it a SPECIAL CARE UNIT and its definition covers both dementia AND intense neurobehavioral rehabilitation after brain injury; Chapter 2600 calls it a SECURED DEMENTIA CARE UNIT and covers dementia only. The 2800 route is an application to the Department; the 2600 route is a written request to the Department's personal care home REGIONAL OFFICE. Both carry the same 60-day lead time and the same four triggering events, which is precisely what made the substitution look harmless.",
         "special_care_unit": {
           "name": "Secured dementia care unit",
-          "available_under": ["pch"],
+          "available_under": [
+            "pch"
+          ],
           "definition": "A home or portion of a home that provides specialized care and services for residents with Alzheimer's disease or other dementia.",
           "scope_note": "Dementia only. Unlike the Chapter 2800 special care unit, this does not extend to intense neurobehavioral rehabilitation after brain injury.",
           "application_lead_days": 60,
@@ -544,7 +593,6 @@
         }
       }
     },
-
     {
       "rule_id": "PA-STAFFING-PCH-2600",
       "state": "PA",
@@ -558,8 +606,14 @@
         "method": "service_hours_per_resident_per_day",
         "_corrected": "The working summary recorded in unverified_notes said PCH has 'no numeric ratio' and '1 awake staff for 16+ residents'. BOTH ARE WRONG, and in opposite directions. (1) § 2600.57 is not ratio-free: it carries the same service-hours figures as the ALR chapter — 1 hour per day per mobile resident, 2 hours per day per resident with mobility needs, 75% of those hours during waking hours. Treating PCH as having no measurable requirement would have let a home under-staff with the app reporting nothing to check. (2) The awake rule is stricter than '1 awake staff', not looser: at 16 or more residents § 2600.58(a) requires that ALL direct care staff on duty be awake, not one of them. The 'one awake staff person' figure belongs to § 2600.58(b), which applies to a home serving one or more but FEWER THAN 16 residents WITH MOBILITY NEEDS — a different trigger (mobility-needs count, not total census) as well as a different number. Encoding the summary would have produced a confident wrong answer for every home of 16 or more.",
         "hours_per_resident_per_day": [
-          { "resident_type": "mobile", "hours": 1 },
-          { "resident_type": "mobility_needs", "hours": 2 }
+          {
+            "resident_type": "mobile",
+            "hours": 1
+          },
+          {
+            "resident_type": "mobility_needs",
+            "hours": 2
+          }
         ],
         "waking_hours_minimum_percent": 75,
         "always_present": "At all times one or more residents are present in the home, a direct care staff person who is 21 years of age or older and who serves as the designee shall be present in the home. The direct care staff person may be the administrator if the administrator provides direct care services.",
@@ -578,7 +632,6 @@
         }
       }
     },
-
     {
       "rule_id": "PA-TRAINING-PCH-2600",
       "state": "PA",
@@ -651,16 +704,159 @@
           "read_on": "2026-08-23"
         }
       }
+    },
+    {
+      "rule_id": "WV-LICENSURE-ALR-2026",
+      "state": "WV",
+      "requirement_type": "licensure",
+      "facility_class": "assisted_living_residence",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "West Virginia — assisted living residence licence: one year maximum, not transferable, renewal 90 days ahead",
+        "model": "annual_license_with_advance_renewal",
+        "max_term_months": 12,
+        "renewal_application_days_before_expiry": 90,
+        "transferable": false,
+        "notes": [
+          "The term is a CEILING, not a fixed year: the Secretary may issue for a period NOT TO EXCEED one year, so a licence in hand may be shorter and this app does not compute an expiry from an issue date.",
+          "The licence is valid only for the person AND the location named on it. A second location is a second licence, not an amendment.",
+          "A timely renewal keeps the licence in effect while the application is pending. This app does NOT model that continuation as compliance -- it is a legal status, not evidence the residence met the renewal deadline.",
+          "NOT ENCODED: what happens to a renewal filed after the 90-day deadline. § 64-14-3 does not say, and the engine will not invent a grace period."
+        ],
+        "authority": {
+          "citation": "W. Va. Code R. § 64-14-3.1.6, § 64-14-3.1.2 and § 64-14-3.3.1 (Assisted Living Residences, State Administrative Procedures)",
+          "url": "https://www.law.cornell.edu/regulations/west-virginia/W-Va-C-S-R-SS-64-14-3",
+          "quote": "The Secretary may issue an initial or a renewal license for a period not to exceed one year. ... A license is valid only for the person and for the location named in the application and on the license, and is not transferable. ... The licensee shall submit an application for renewal of a license to the Secretary at least 90 days before the expiration date of the current license.",
+          "read_on": "2026-09-25"
+        }
+      }
+    },
+    {
+      "rule_id": "WV-STAFFING-ALR-2026",
+      "state": "WV",
+      "requirement_type": "staffing",
+      "facility_class": "assisted_living_residence",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "West Virginia — one direct care staff at all times, PLUS per-shift staff counted against SPECIAL-CARE-NEEDS residents, not census",
+        "method": "baseline_plus_special_needs_by_shift",
+        "baseline_staff": 1,
+        "shifts": [
+          {
+            "shift": "day",
+            "per_special_needs_residents": 10
+          },
+          {
+            "shift": "evening",
+            "per_special_needs_residents": 15
+          },
+          {
+            "shift": "night",
+            "per_special_needs_residents": 18
+          }
+        ],
+        "special_care_needs": [
+          "Dependence on staff for eating",
+          "Dependence on staff for toileting",
+          "Ambulating residents from one location to another",
+          "Bathing",
+          "Dressing",
+          "Repositioning",
+          "Oral hygiene",
+          "Personal grooming",
+          "One or more inappropriate behaviors that reasonably require additional staff to control"
+        ],
+        "_corrected": "EVERY SECONDARY SUMMARY OF THIS RULE IS WRONG IN THE SAME WAY, and the working summary that reached this repo was too. It renders the rule as a census ratio -- 'Day 1:10, Evening 1:15, Night 1:18'. The code text conditions each ADDITIONAL staff member on residents 'identified on their needs assessments to have two or more' of the care needs listed above, and the additional staff sit ON TOP of the one-at-all-times floor. A 30-bed residence with four such residents needs two on days, not three. Read from § 64-14-4.4.1 on 2026-09-25.",
+        "notes": [
+          "The 24-hour floor is a separate requirement, not the day-shift number: § 4.4.1 requires one direct care staff person 24 hours per day who can read and write, and 4.4.1.a/b/c add staff in addition to that one.",
+          "The rule also requires 'a sufficient number of qualified employees on duty to provide the residents with all of the care and services they require', which is a judgement no engine can evaluate. A facility meeting the arithmetic above may still be short-staffed under that clause, and this app does not report the arithmetic as compliance.",
+          "NOT ENCODED: which residents meet the two-or-more test. That is an assessment finding, so the count is supplied by the caller and is never substituted with a census -- see the method's note in api/_lib/compliance-rules.js."
+        ],
+        "authority": {
+          "citation": "W. Va. Code R. § 64-14-4.4.1 and § 64-14-4.4.1.a-c (Assisted Living Residences, Administrative Requirements)",
+          "url": "https://www.law.cornell.edu/regulations/west-virginia/W-Va-C-S-R-SS-64-14-4",
+          "quote": "Each assisted living residence shall have a minimum of one direct care staff person 24 hours per day ... one direct care staff on the day shift for each 10 residents identified on their needs assessments to have two or more of the following care needs ... at least one additional direct care staff on the evening shift for each 15 residents ... at least one additional direct care staff on the night shift for each 18 residents ...",
+          "read_on": "2026-09-25"
+        }
+      }
+    },
+    {
+      "rule_id": "WV-TRAINING-ALR-2026",
+      "state": "WV",
+      "requirement_type": "training",
+      "facility_class": "assisted_living_residence",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "status": "active",
+      "data": {
+        "label": "West Virginia — 8 hours annual for the administrator, 2 hours dementia for all staff, and NO stated hour figure for general staff training",
+        "requirements": [
+          {
+            "audience": "administrator",
+            "hours_per_year": 8,
+            "topic": "operation of a residence",
+            "citation": "§ 64-14-4.3.3"
+          },
+          {
+            "audience": "all_staff",
+            "hours_per_year": 2,
+            "topic": "Alzheimer's disease and related dementias",
+            "applies_to": "new and existing staff",
+            "citation": "§ 64-14-4.5.3"
+          }
+        ],
+        "orientation": {
+          "hours": null,
+          "deadline": "before being scheduled to work unsupervised, and no later than within the first 15 days of employment",
+          "citation": "§ 64-14-4.5.1"
+        },
+        "notes": [
+          "TWO OF THE THREE TRAINING OBLIGATIONS CARRY NO NUMBER, and that is a fact about the rule rather than a gap in this seed. § 4.5.1 (orientation) and § 4.5.2 (annual in-service) state TOPICS and a DEADLINE and no hour figure at all. This app reports the deadline and reports hours_per_year as null -- it does NOT invent a figure, and a staff member with orientation recorded cannot be scored against an hour total that the code does not set.",
+          "NOT ENCODED AND NOT ASSERTED: whether the 2-hour dementia training counts toward any general annual requirement. § 4.5 does not say, and answering either way would be this app deciding a compliance question."
+        ],
+        "authority": {
+          "citation": "W. Va. Code R. § 64-14-4.3.3, § 64-14-4.5.1 and § 64-14-4.5.3 (Assisted Living Residences, Administrative Requirements)",
+          "url": "https://www.law.cornell.edu/regulations/west-virginia/W-Va-C-S-R-SS-64-14-4",
+          "quote": "eight hours of training related to the operation of a residence annually ... [orientation] prior to scheduling them to work unsupervised, and no later than within the first 15 days of employment ... [dementia training] minimum of two hours in duration",
+          "read_on": "2026-09-25"
+        }
+      }
     }
   ],
-
-  "claimed_states": ["OH", "IN", "MI", "PA"],
-
-  "verification_passes": ["2026-08-22", "2026-08-23"],
-
+  "claimed_states": [
+    "OH",
+    "IN",
+    "MI",
+    "PA",
+    "WV"
+  ],
+  "verification_passes": [
+    "2026-08-22",
+    "2026-08-23",
+    "2026-09-25"
+  ],
   "unverified_notes": [
     "RESOLVED 2026-08-23 — PCH (55 Pa. Code Ch. 2600) is now seeded across all three requirement types, read directly from the Chapter 2600 text on pacodeandbulletin.gov. Three of the four working-summary figures this note previously listed as unverified turned out to be WRONG, not merely unconfirmed: 'no numeric ratio' (§ 2600.57 carries the same 1-hour/2-hour service-hours figures as the ALR chapter), '1 awake staff for 16+ residents' (§ 2600.58(a) requires ALL on-duty direct care staff awake at 16+ residents; the one-awake-staff figure is § 2600.58(b) and triggers on the MOBILITY-NEEDS count below 16, not total census), and '12 hrs/yr general + 6 hrs/yr dementia' (the 6 is secured-unit staff only, § 2600.236, and Chapter 2600 has no all-staff dementia mandate at all). Each correction is recorded in the relevant rule's _corrected field.",
     "STILL UNVERIFIED — 'no RN or dietitian required' for PCH. Chapter 2600's staffing subchapter (§§ 2600.51—2600.68) contains no RN or dietitian requirement, but this app does not encode a negative from an absence in one chapter. Asserting 'not required' would be a compliance claim, and the only honest basis for one is a positive source saying so.",
-    "STILL UNVERIFIED — PA ALR (Ch. 2800) special care unit 'max 2 residents per living unit' was not confirmed and is not encoded. The related ALR cognitive pre-admission screening window is also still unconfirmed; the PCH equivalent IS now confirmed and encoded (medical evaluation within 60 days prior, cognitive screening within 72 hours prior, § 2600.231(b)—(c)) — do not carry the PCH windows across to ALR, which is the same substitution error this seed exists to prevent."
-  ]
+    "STILL UNVERIFIED — PA ALR (Ch. 2800) special care unit 'max 2 residents per living unit' was not confirmed and is not encoded. The related ALR cognitive pre-admission screening window is also still unconfirmed; the PCH equivalent IS now confirmed and encoded (medical evaluation within 60 days prior, cognitive screening within 72 hours prior, § 2600.231(b)—(c)) — do not carry the PCH windows across to ALR, which is the same substitution error this seed exists to prevent.",
+    "STILL UNVERIFIED — WV facility classes. 64 CSR 14 is the Assisted Living Residence series and the three WV rules are seeded under assisted_living_residence. Whether West Virginia licenses a separate memory-care or residential-board-and-care class under another series was NOT checked on 2026-09-25, so a caller asking for a WV class other than assisted_living_residence correctly gets NO_RULE_FOR_CLASS rather than this class's numbers.",
+    "SOURCE NOTE, WV — the WV text was read through Cornell LII's reproduction of 64 CSR 14 rather than through the WV Secretary of State's own code site, which the other four states were read from directly. LII reproduces the series verbatim and the section numbering was checked against the series index, but it is a SECOND-HAND reproduction of a primary source and is recorded as such rather than as equivalent."
+  ],
+  "coverage_cap": {
+    "states": [
+      "OH",
+      "IN",
+      "MI",
+      "PA",
+      "WV"
+    ],
+    "decided_on": "2026-09-25",
+    "decided_by": "Michael",
+    "what_it_means": "These five states are the WHOLE intended coverage of this engine. A state outside this list is not a backlog item -- it is out of scope by decision, and no further state is to be seeded without Michael saying so.",
+    "why_it_is_recorded_here": "Before this, NO_RULE_FOR_STATE could not tell 'we decided not to cover this' apart from 'we have not got to it yet'. Both read as a gap, so an unseeded state looked like unfinished work for ever. The list lives beside the rules it bounds rather than in a handoff, because a decision kept somewhere else is a decision the next session re-opens."
+  }
 }
