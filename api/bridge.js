@@ -385,6 +385,31 @@ async function handlePush(body, res, req) {
     res.status(403).json({ error: { code: 'BAD_LICENCE', message: 'That licence is not valid' } });
     return;
   }
+  // ── A LICENCE THAT EXISTS IS NOT A LICENCE THAT STILL WORKS (2026-09-26) ──
+  // This checked `valid` -- the key is IN license_keys -- and never `active`,
+  // which is `status === 'active'`. Those are different facts and only the
+  // second one can be withdrawn. `status` is the platform's ONLY licence
+  // revocation control: there is no expiry column on license_keys (the one
+  // dated check that exists, trial_ends_at, is read from a column that does
+  // not exist, so it can never fire), so flipping status is the entire
+  // mechanism for cutting off a cancelled, refunded or charged-back account.
+  //
+  // It did not reach here. Forty of the forty-one handlers that call
+  // validateLicenseKey read `active`; this was the one that did not, and it is
+  // a WRITE path carrying expense invoices -- payee, amount, memo, GL account.
+  // So revoking a licence stopped that customer reading their data everywhere
+  // and still let them post financial records through the bridge. The raw key
+  // sits in localStorage as `sdShopId()` and is never re-issued or rotated, so
+  // "once issued, indefinitely" was literally true for this endpoint.
+  //
+  // ORDER MATTERS AND IT IS DELIBERATE: this sits ABOVE the session check
+  // below. A revoked licence must not be able to reach the session gate at
+  // all, because a session minted before the revocation is still
+  // cryptographically valid for up to its TTL.
+  if (!lic.active) {
+    res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } });
+    return;
+  }
   // ── AND A SESSION, NOT JUST A LICENCE (2026-09-24) ───────────────────
   // The licence proves the SHOP; it proves nothing about WHO at the shop is
   // writing. This push carries expense invoices -- payee, amount, memo, a GL

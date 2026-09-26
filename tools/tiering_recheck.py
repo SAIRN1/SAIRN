@@ -262,9 +262,27 @@ def main(argv=None):
         print('')
 
     cand = buckets.get('RECHECK', [])
-    print('RECHECK CANDIDATES: %d%s' % (len(cand),
-          '   (structurally reachable only once a B/C row has been reviewed -- '
-          'see above)' if not cand else ''))
+    # ── THE METRIC CARRIES ITS OWN DENOMINATOR, AND IT HAS TO ───────────────
+    # `RECHECK CANDIDATES: 0` shipped as a bare number and READ AS ALL-CLEAR.
+    # It never meant that. This criterion can only evaluate a B/C row that has
+    # been reviewed, and 0 of 125 have been, so the 0 was the metric's REACH
+    # being zero -- not an absence of findings. A count whose denominator is
+    # invisible is the fabricated-metric shape with the numerator left honest,
+    # and it fooled the person who wrote it first.
+    #
+    # The three numbers below cannot be conflated because none of them is ever
+    # printed alone: ELIGIBLE is what the criterion can see at all, CANDIDATES
+    # is what it found inside that, OUT OF REACH is what it structurally
+    # cannot answer about. 0 of 0 and 0 of 125 are different sentences.
+    eligible = [r for r in bc_rows if reviewed.get(r)]
+    out_of_reach = len(bc_rows) - len(eligible)
+    print('RECHECK CANDIDATES: %d of %d ELIGIBLE  (%d B/C row(s) OUT OF REACH '
+          'of this criterion)' % (len(cand), len(eligible), out_of_reach))
+    if not eligible:
+        print('ELIGIBLE IS ZERO, SO THIS CRITERION ANSWERED NOTHING. The 0 above')
+        print('is its REACH, not a finding -- read it as "could not tell", never')
+        print('as "no candidates". It needs a B/C row that has been reviewed and')
+        print('%d of %d have been.' % (len(eligible), len(bc_rows)))
     print('A B-or-C row in an app where independent review has found a HIGH or')
     print('CRITICAL defect. The reviews found something the tier did not expect.')
     for res, app, seen, found in sorted(cand, key=lambda x: (-x[3]['severe'], x[0])):
@@ -278,6 +296,17 @@ def main(argv=None):
                 print('     %-14s %s' % (app, ex))
 
     if args.candidates:
+        # THE SAME CONFLATION AT THE MACHINE BOUNDARY, WHERE IT IS WORSE. This
+        # returned `1 if cand else 0`, so a caller branching on the exit code
+        # read "reach is zero" as a clean pass -- the shape a CI gate would
+        # bless forever. Exit 0 now requires a REAL denominator: 2 means the
+        # criterion could not answer, which is this tool's existing third state.
+        if not eligible:
+            sys.stderr.write('COULD NOT TELL -- 0 of %d B/C row(s) have been '
+                             'reviewed, so this criterion had nothing to '
+                             'evaluate. Exit 0 would have claimed a clean pass '
+                             'over an empty denominator.\n' % len(bc_rows))
+            return 2
         return 1 if cand else 0
 
     unrev = buckets.get('UNREVIEWED-IN-SURPRISING-APP', [])

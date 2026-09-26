@@ -85,7 +85,8 @@ d = sandbox([('x_money', 'B', 'B'), ('x_audit', 'A', 'A')],
 rc, out = run(d)
 check('a B row that HAS been reviewed, in an app with a severe '
       'independent-review find, is a RECHECK candidate',
-      'RECHECK CANDIDATES: 1' in out and 'x_money' in out, out[-400:])
+      'RECHECK CANDIDATES: 1 of 1 ELIGIBLE' in out and 'x_money' in out,
+      out[-400:])
 check('...and --candidates exits 1 so a caller can branch on it',
       run(d, '--candidates')[0] == 1, 'exit=%s' % run(d, '--candidates')[0])
 shutil.rmtree(d, ignore_errors=True)
@@ -99,10 +100,42 @@ print('\n2. CONTROL -- the SAME row unreviewed is NOT a candidate')
 d = sandbox([('x_money', 'B', 'B'), ('x_audit', 'A', 'A')], [], [SEVERE], OWNER)
 rc, out = run(d)
 check('an UNREVIEWED B row in the same app is NOT a recheck candidate',
-      'RECHECK CANDIDATES: 0' in out, out[-300:])
+      'RECHECK CANDIDATES: 0 of 0 ELIGIBLE' in out, out[-300:])
 check('...it lands in the review-SCHEDULING bucket instead, which is a different '
       'finding and says so',
       'UNREVIEWED IN A SURPRISING APP: 1' in out, out[-400:])
+shutil.rmtree(d, ignore_errors=True)
+
+# ---------------------------------------------------------------------------
+print('\n2b. A ZERO WITH NO DENOMINATOR IS NOT A PASS, AND THE EXIT CODE AGREES')
+# `RECHECK CANDIDATES: 0` shipped as a bare number and read as all-clear. It
+# meant the criterion's REACH was zero: it can only evaluate a B/C row that has
+# been reviewed and none had been. Worse at the machine boundary, where
+# `--candidates` returned 0 and a CI gate would have blessed it forever.
+d = sandbox([('x_money', 'B', 'B'), ('x_notes', 'B', 'B')], [], [SEVERE], OWNER)
+rc, out = run(d)
+check('with NO eligible row the count carries its empty denominator, so 0 cannot '
+      'be read alone', 'RECHECK CANDIDATES: 0 of 0 ELIGIBLE' in out
+      and '2 B/C row(s) OUT OF REACH' in out, out[:600])
+check('...and it says in words that this is reach, not a finding',
+      'ANSWERED NOTHING' in out and 'could not tell' in out, out[:900])
+check('...and --candidates exits 2 COULD NOT TELL, never 0 -- the exit code a '
+      'gate would otherwise treat as clean', run(d, '--candidates')[0] == 2,
+      'exit=%s' % run(d, '--candidates')[0])
+shutil.rmtree(d, ignore_errors=True)
+# THE OTHER DIRECTION, which is what stops this becoming "always exit 2": a real
+# denominator with nothing in it IS a genuine all-clear and must still exit 0.
+d = sandbox([('x_money', 'B', 'B')],
+            [{'resources': ['x_money'], 'verdict': 'reviewed'}], [MINOR], OWNER)
+rc, out = run(d)
+check('a REVIEWED B row with no severe find is 0 of 1 ELIGIBLE -- a real pass '
+      'over a real denominator', 'RECHECK CANDIDATES: 0 of 1 ELIGIBLE' in out,
+      out[:600])
+check('...and --candidates exits 0 there, so exit 2 means could-not-tell and not '
+      'merely "no candidates"', run(d, '--candidates')[0] == 0,
+      'exit=%s' % run(d, '--candidates')[0])
+check('...and the ANSWERED NOTHING paragraph is absent when the denominator is '
+      'real', 'ANSWERED NOTHING' not in out, out[:600])
 shutil.rmtree(d, ignore_errors=True)
 
 # ---------------------------------------------------------------------------

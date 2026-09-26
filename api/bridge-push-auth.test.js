@@ -168,6 +168,59 @@ const PAYLOAD = { shopId: 'SD-SOMEBODY-ELSES-LICENCE', invoices: [{ id: 'i1', am
     } finally { licenceAnswer = prev; }
   });
 
+  // == REVOCATION (2026-09-26): `valid` and `active` are different facts =====
+  // This endpoint checked `valid` -- the key EXISTS in license_keys -- and
+  // never `active` (status === 'active'). Only the second can be withdrawn,
+  // and it is the platform's ONLY licence revocation control: there is no
+  // expiry column on license_keys, and the one dated check that exists reads
+  // trial_ends_at from a column that does not exist, so it can never fire.
+  // Forty of the forty-one handlers calling validateLicenseKey read `active`;
+  // this write path was the one that did not. Revoking a licence cut the
+  // customer off everywhere and still let them post expense invoices here.
+  await t('REVOCATION -- a licence that is VALID but NOT ACTIVE is refused, and '
+    + 'nothing is written', async () => {
+      const prev = licenceAnswer;
+      // valid TRUE on purpose: the key is real and in the table. This is the
+      // state an INVALID-licence arm cannot reach and never did.
+      licenceAnswer = { valid: true, active: false, license_hash: 'hash-of-shop-a' };
+      try {
+        const r = await push(PAYLOAD, 'Bearer SD-REVOKED-LICENCE');
+        assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'LICENSE_INACTIVE',
+          'refused for the wrong reason: ' + JSON.stringify(r.body));
+        assert.strictEqual(r.upserts.length, 0, 'a revoked licence still wrote');
+      } finally { licenceAnswer = prev; }
+    });
+
+  await t('REVOCATION -- it is refused even carrying a CRYPTOGRAPHICALLY VALID '
+    + 'session minted before the revocation', async () => {
+      // WHY THE ORDER OF THE TWO GATES MATTERS. A session token signed before
+      // the licence was revoked stays valid for its whole TTL -- there is no
+      // server-side session store. If the licence check sat below the session
+      // check, or were absent, that token would keep this write open for hours
+      // after the account was cut off. The token here is genuine and signed
+      // against the same hash, so only the licence gate can refuse it.
+      const prev = licenceAnswer;
+      licenceAnswer = { valid: true, active: false, license_hash: 'hash-of-shop-a' };
+      try {
+        const good = signSessionToken({ app: 'stonedesk', employee_id: 'emp-1',
+          role: 'owner', license_hash: 'hash-of-shop-a' });
+        const r = await push(PAYLOAD, 'Bearer SD-REVOKED-LICENCE', good);
+        assert.strictEqual(r.status, 403, JSON.stringify(r.body));
+        assert.strictEqual(r.body.error.code, 'LICENSE_INACTIVE',
+          'the session gate answered first, so revocation does not bind: '
+          + JSON.stringify(r.body));
+        assert.strictEqual(r.upserts.length, 0);
+      } finally { licenceAnswer = prev; }
+    });
+
+  await t('REVOCATION -- CONTROL: the same push with active TRUE still writes, '
+    + 'so the arms above are not refusing everything', async () => {
+      const r = await push(PAYLOAD, 'Bearer SD-MY-OWN-LICENCE');
+      assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+      assert.strictEqual(r.upserts.length, 1, 'the happy path stopped writing');
+    });
+
   await t('A WRITE PATH FAILS CLOSED when the licence store is unreachable',
     async () => {
       // Deliberately the opposite of the read-side convention elsewhere on this

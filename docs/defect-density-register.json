@@ -7302,7 +7302,7 @@
       "injection": {
         "commit": "286f945f661f",
         "date": "2026-07-23",
-        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) \u2014 tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
+        "subject": "Add StoneDesk Agent SDK (sd-store.js + sd-agent.js) — tool-calling agent for profile/slabs/memory, write_slab confirm-first, verified end-to-end on preview.",
         "lag_days": 55
       },
       "citation_note": "The process rules are about checks, documents and coordination. None of them covers a cost control that was never wired, and inventing a citation to fill the field is the exact thing `not-citable` exists to prevent.",
@@ -13978,7 +13978,7 @@
       "injection": {
         "unknown_reason": "The tool was authored in a commit the rebase has since rewritten more than once; naming a sha that may not be reachable would be worse than saying so. It was injected when the tool was first written, 2026-09-24, in the same session."
       },
-      "citation_note": "PR \u00a71.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
+      "citation_note": "PR §1.11 is the closest standing rule and it is about a check that depends on an ABSENT TOOL, which is not this. This is a check whose subject is PRESENT and unmeasurable, reporting a pass. The family is the same -- \"could not run\" is a third state and is never folded into \"passed\" -- so it is cited rather than recorded as uncitable.",
       "phase_note": "The third state was implemented for the absent-plan shape and for a zero-item plan, and the items-present-none-checkable shape was simply not considered. The probe's arm for the neighbouring case shows the author was thinking about it and stopped one shape short.",
       "contributing_factors": [
         {
@@ -15242,6 +15242,57 @@
         }
       ],
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
+    },
+    {
+      "commit": "b5352d43",
+      "date": "2026-09-26",
+      "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
+      "files": [
+        "api/bridge.js",
+        "api/bridge-push-auth.test.js"
+      ],
+      "lines_added": 76,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js's push gate checked lic.valid (the key EXISTS in license_keys) and never lic.active (status === 'active'), so a REVOKED licence still wrote expense invoices -- payee, amount, memo, GL account -- to bridge_data. `status` is the platform's only licence revocation control: license_keys carries no expiry column at all, so a manual status flip is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and this write path did not honour it. All 40 other handlers calling validateLicenseKey read `active`; this was the only one that did not",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "requirements",
+      "phase_confidence": "clean",
+      "recurrence_open": "The gate is closed for bridge.js and all 41 handlers were enumerated, so no second instance of THIS omission exists today. Nothing mechanically prevents the 42nd handler from repeating it -- there is no check that a validateLicenseKey caller reads `active`, and the omission is invisible to node --check and to every existing suite except one written for that endpoint. A static check over api/*.js is the obvious control and is NOT built here.",
+      "found_by_tool": null,
+      "found_by_session": "fourth",
+      "injection": {
+        "commit": "af92c8f3",
+        "date": "2026-09-17",
+        "subject": "fix(bridge): push had the read side's exact defect -- unauthenticated, keyed on a raw licence key",
+        "lag_days": 9
+      },
+      "contributing_factors": [
+        {
+          "factor": "the gate was written as part of closing a DIFFERENT hole -- the unauthenticated, body-keyed write -- and 'require a licence' was treated as the requirement, so `valid` satisfied it. `active` is a second question the requirement never asked",
+          "kind": "requirements",
+          "action_status": "done",
+          "action": "the check is added above the session gate, and its comment states that valid and active are different facts and only the second can be withdrawn"
+        },
+        {
+          "factor": "the endpoint's own suite was thorough about the hole it was written for -- body-shopId, raw-key storage, fail-closed store, four session arms, the removed read side -- and had no arm anywhere in the valid-but-inactive state, so 24 green arms coexisted with the gap",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three arms added: valid+inactive refused, refused even carrying a cryptographically valid pre-revocation session (which pins the gate ORDER, not just its presence), and an active-TRUE control that still writes so the arms are not refusing everything"
+        },
+        {
+          "factor": "there is no mechanical check that a validateLicenseKey caller reads `active` -- the omission is one absent line, invisible to node --check and to every suite not written for that specific endpoint, and it was found only by enumerating all 41 callers by hand while answering an unrelated question about licence expiry",
+          "kind": "detection",
+          "action_status": "open",
+          "action": "a static check over api/*.js asserting every validateLicenseKey caller also reads .active would have caught this the day it shipped; named in recurrence_open and NOT built here"
+        }
+      ]
     }
   ],
   "started": "2026-09-09",
