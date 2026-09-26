@@ -4,6 +4,72 @@ Research pass, 2026-08-27. **Findings only.** No code written, no architecture d
 build-order recommendation. Three trades (plumbing, HVAC, electrical) researched in one pass, not
 sequenced.
 
+> ## CORRECTED 2026-09-26 (Cody) — the market findings stand; SAIRNmechanical's own state against them has moved, and the headline finding of the last re-derivation is now CLOSED
+>
+> **Read the market half of this document as current.** It is not a gap-state
+> table and it was never structured as one: §9a is a 21-row list of what the
+> **market** lacks across three trades, not a list of what this app is missing.
+> So "is this row closed" is only a meaningful question for the subset that is
+> SAIRNmechanical-buildable at all, and that subset is what this block corrects.
+>
+> **The status chain, most recent last:**
+>
+> 1. [`docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md`](../../2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md) — §5 Row 1 closed
+> 2. [`docs/2026-09-17-senior-mechanical-competitive-gap-rederived.md`](../../2026-09-17-senior-mechanical-competitive-gap-rederived.md) — the §9a rows reconciled against `sairnmechanical.html`
+> 3. [`docs/2026-09-26-gap-triage-four-verticals.md`](../../2026-09-26-gap-triage-four-verticals.md) §3 — G12 confirmed still a disclosed refusal
+>
+> **THE CORRECTION THAT MATTERS: G3 IS CLOSED, AND IT WAS CLOSED IN OUR OWN
+> PRODUCT RATHER THAN IN THE MARKET.** §2 names G3 as a market-wide gap —
+> *"credential-expiry → dispatch-eligibility enforcement **claimed, not
+> documented**"* — and the 2026-09-17 re-derivation's headline was that
+> **SAIRNmechanical had reproduced that exact gap in itself**: the engine
+> (`api/_lib/mech-credentials.js` `evaluateEligibility()`), the endpoint, the
+> registry entry and ten test arms all existed, no client ever sent the action,
+> and the credentials panel subtitle told a dispatcher *"the record dispatch
+> eligibility is computed from"* while nothing computed it.
+>
+> **Re-measured at `c10befa2`, 2026-09-26: the caller exists.**
+> `mechData('eligibility', 'mech_credentials', …)` is sent from
+> `sairnmechanical.html:2474`; the string `eligibility` has gone from **1
+> occurrence to 15**; and `:829`–`:845` carries a comment recording the fix,
+> naming G3, and stating what it deliberately is **not** — *"WHAT THIS IS NOT: a
+> gate. Nothing here refuses a dispatch."* The overclaim is gone and the
+> capability is reachable. **Nothing in the market half changes: the vendors that
+> claim this and do not document it still do.**
+>
+> **Row-level state against §9a, re-measured at `c10befa2` rather than copied:**
+>
+> | Row | 2026-09-26 |
+> |---|---|
+> | **G3** credential-expiry → dispatch eligibility | **CLOSED in our product — see above.** Was the 09-17 headline defect |
+> | **G11** refrigerant / F-gas ledger | **Substantially built.** `refrigerant` × 33, `EPA` × 84, `608` × 25; EPA-608 section is a first-class field with the Type I/II/III/Universal equipment rule |
+> | **G13** manufacturer warranty registration | **PARTIAL — data captured, registration clock absent.** `warrant*` × 25, but hand-read they are the doc-scanner's document-type list plus a `warranty` field on a site asset. No registration deadline, no certification gate — which is exactly what SAIRNroofing's A1 *did* build |
+> | **G12** lock-in / data portability | **NOT BUILT, and DISCLOSED rather than faked.** `mechNotLive('CSV export','exported')` × 3, still present, still toasting *"nothing was exported"*. It is the third instance of this platform's disclosure pattern, after roofing's *"This is not an EDI connection"* and *"This is not a QuickBooks connection"* — and it is **still an unbuilt feature**, on the gap this research rates as dominating real-world pain in all three trades and every region |
+> | **G2** subcontractor compliance in dispatch · **G5** mid-market financial layer · **G8** permit filing · **G15** outbound compliance submission · **G17** risk-computed inspection intervals · **G19** apprenticeship OJT/RTI · **G20** instrument calibration | **All still absent.** `subcontractor` × 0, `WIP` × 0, `retainage` × 0, `apprentice` × 0, `calibrat*` × 0, `submission` × 0. G2 and G5 are the notable ones: **both shared libraries already exist platform-side** (`api/_lib/subcontractor-compliance.js`, `api/_lib/wip-accounting.js`, both used by SAIRNroofing) and neither is wired here |
+> | G1, G4, G6, G9, G10, G14, G16, G18, G21 | market-structure, content-licensing or other-vendor findings — **not app-state rows**, and no status column applies |
+>
+> **§5 Row 1 is CLOSED.** *"StoneDesk Subcontractor Portal: no compliance layer at
+> all"* was answered by `c6dcb69f`, *"subcontractor compliance layer — COI,
+> licence, W-9, and a real assignment gate."* Verified at this commit:
+> `api/_lib/subcontractor-compliance.js` exists, and `subcontractor` × 47 in
+> `stonedesk.html`.
+>
+> **A COUNTING TRAP FOUND WHILE WRITING THIS BLOCK, recorded because it would have
+> produced two false closures.** Since 09-17, `COI` in `sairnmechanical.html`
+> moved **0 → 4** and `permit` moved **0 → 4**. **Neither is its gap row moving.**
+> The `COI` hits are a new *company* insurance panel whose own subtitle is *"What
+> the COMPANY carries — **not** what a technician holds"* — the opposite object
+> from G2's subcontractor compliance. The `permit` hits are the doc-scanner's
+> document-type list plus a disclaimer that output must not be represented *"as a
+> Manual J, as code-compliant, or as **permit-ready**"* — the opposite of G8's
+> permit filing. **A marker count that moves is a triage signal, not a verdict —
+> read the hit before moving the row.** This is the code-side twin of this
+> document's own `[PRIMARY]`/`[SNIPPET]` rule in §0: a count is directional, and a
+> hand-read is what promotes it.
+>
+> **The body below is not edited.** Rewriting it would lose the record of what was
+> believed on 2026-08-27, and the market analysis is the part still being used.
+
 ---
 
 ## 0. Read this first — relationship to the existing research doc, and what changed

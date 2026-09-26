@@ -28,6 +28,63 @@
 > column has gone stale. It is deliberately **not** being edited in place —
 > rewriting it would lose the record of what was believed on 2026-08-26.
 
+> ## CORRECTED 2026-09-26 (Cody) — the banner above is itself out of date, and it is wrong in both directions at once
+>
+> **The banner's sharpest sentence — *"Exactly one — SAIRNdental B2,
+> cross-location roll-up — is genuinely still open"* — is no longer true.**
+> B2 is **closed**, and the banner's framing also never covered the rows that
+> *are* open, because they are open for a reason that is not staleness: they need
+> a commercial relationship, not a build. Both halves matter, and the first is the
+> dangerous one — **a status row that understates what has been built sends a
+> session to build something that already exists**, which this platform has
+> recorded happening at least twice.
+>
+> **The status chain continues past the 09-15 file the banner points at.** In
+> order, most recent last:
+>
+> 1. [`docs/2026-09-17-sairnroofing-competitive-gap-rederived.md`](../../2026-09-17-sairnroofing-competitive-gap-rederived.md) — all twelve roofing rows
+> 2. [`docs/2026-09-17-sairndental-competitive-gap-rederived.md`](../../2026-09-17-sairndental-competitive-gap-rederived.md) — all thirteen dental rows
+> 3. [`docs/2026-09-17-senior-mechanical-competitive-gap-rederived.md`](../../2026-09-17-senior-mechanical-competitive-gap-rederived.md) — all twelve senior rows
+> 4. [`docs/2026-09-26-gap-triage-four-verticals.md`](../../2026-09-26-gap-triage-four-verticals.md) — the triage that found (1) and (2) had each gone stale in nine days
+>
+> **Row-level corrections. Every count below was re-measured against the app
+> files at `c10befa2`, 2026-09-26 — not copied from the documents above, because
+> §2.1 of the roofing file is a nine-day-old measurement that had already
+> moved:**
+>
+> | Row | This audit said | 2026-09-26 |
+> |---|---|---|
+> | **SAIRNroofing A5** accounting integration (§3.2) | *"Not present"* | **CLOSED — built half shipped, vendor half refused on screen.** `QuickBooks` × 4, `chart of accounts` × 4, `Xero` × 1 in `sairnroofing.html`; `rfGlExport()` at `:1652` behind a **"Build journal"** button at `:874`; a chart-of-accounts panel at `:841`/`:850`; `gl_export` × 3 in `api/sd-data.js`, so the write path is server-side too. The disclosure is at `:846`: *"**This is not a QuickBooks connection.** … It produces a journal file you import."* This is the same shape roofing B6 already had |
+> | **SAIRNdental B2** cross-location roll-up (§4.2) | *"Absent"* → 09-15 called it the last open row → 09-17 found it **server-built with no caller** | **CLOSED.** `panel-rollup` at `sairndental.html:1136` with `rRollup()`, owner-only, and a comment recording that the server is the real gate: *"api/sd-data.js refuses dnt_rollup from any role outside DNT_MANAGEMENT_ROLES regardless of what this div does"* |
+> | **SAIRNdental A5** imaging / CBCT (§4.1) | vendor-gated, *"only NexHealth"* has a documented API | **The "only NexHealth" claim is withdrawn.** DEXIS publishes public API documentation (2026-09-25, external research PR #17). Recorded as *no longer safe to repeat* rather than as a verified new fact, because it was not independently fetched from this clone. **The app is still zero either way** — `imaging`, `radiograph`, `cbct`, `intraoral` all × 0 — so the row moves from *vendor-gated* to *buildable in principle*, not to built |
+> | **SAIRNsenior A1** EVV transmission (§5.1, this audit's *"defect, not a gap"*) | aggregator in a dropdown, nothing behind it | **HALF-CLOSED, and the missing half is named in code.** `api/_lib/sen-evv-readiness.js` reports per visit whether a submission would have the data it needs, and its own header states it does not transmit. `EVV` × 154, `aggregator` × 18, **`transmit` × 0** |
+> | **SAIRNsenior A2** telephony EVV + offline capture | *"Zero occurrences of telephony or offline"* | **OFFLINE CLOSED, TELEPHONY OPEN.** `offline` × 24 with a real offline-EVV path and a test suite; `telephony` × 2, and **both are comments** explaining why a phone system is still needed for rural/no-signal visits |
+>
+> **WHAT IS GENUINELY STILL OPEN ACROSS THESE THREE APPS, 2026-09-26: nothing
+> that is buildable in-house and un-gated.** That is a finding, not an omission.
+> Everything remaining needs a relationship, a certification, or a decision
+> nobody has made:
+>
+> * **gated on a relationship somebody could go and get** — SAIRNsenior A4
+>   (`837` × 0, `clearinghouse` × 0) and A2's telephony half; SAIRNdental A1
+>   (`eligibilit` × 4, all four No Surprises Act, none payer eligibility), A2/A3
+>   (`837` × 0, `x12` × 0, `clearinghouse` × 0) and A5; SAIRNroofing B6's EDI
+>   transport, which needs trading-partner agreements with ABC Supply, Beacon and
+>   SRS *individually*.
+> * **refused for a recorded reason, and should not be reopened as engineering** —
+>   SAIRNroofing B3 certified payroll (a fabricated prevailing-wage rate goes into
+>   a **federal filing**); SAIRNdental A6 EPCS (21 CFR 1311 identity-proofing and
+>   DEA registration); SAIRNdental B4 central call centre, which **this audit
+>   itself declined to recommend**.
+>
+> **ONE ENGAGEMENT REACHES FOUR ROWS.** A single clearinghouse relationship
+> serves SAIRNsenior A4 and SAIRNdental A1/A2/A3. If anything in this file is
+> worth a business conversation rather than a build, it is that one.
+>
+> **The same rule as the banner above applies to this block: the body of the
+> audit is not edited.** A document that rewrites its own history is worse than
+> one that is late.
+
 Research pass, 2026-08-26. **No code written, no app file touched.** Findings only.
 Nothing here is a build decision; §7 lists what a build pass would need to settle
 first.
