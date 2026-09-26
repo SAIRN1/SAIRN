@@ -14857,6 +14857,58 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
+      "commit": "6e65b85fb408",
+      "date": "2026-09-26",
+      "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
+      "files": [
+        "api/_resources/stonedesk.js",
+        "api/sd-data-customers-batch.test.js",
+        "api/sd-data.js",
+        "docs/MASTER-PLAN.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html"
+      ],
+      "lines_added": 450,
+      "lines_removed": 18,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "stonedesk.html saveSD3Data() wrote the customer list one record at a time from 16 call sites including render paths, and the 2026-09-24 sd_customers resurrection guard made every one of those two PostgREST round trips -- 200 customers cost 400 trips on a single render, on a function whose own comment said it must not wait on a round trip",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "the per-record loop predates the git history this register indexes; what is datable is the 2026-09-24 guard that doubled its cost, and that is a contributing factor rather than the injection"
+      },
+      "contributing_factors": [
+        {
+          "factor": "saveSD3Data() pushed a LIST by looping it and calling a single-record write, from 16 call sites -- the per-record shape was chosen when the write was one round trip and was never revisited",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "a write_batch action on sd_customers: one pre-read with customer_id=in.(...) and one upsert, so the trip count is fixed rather than 2N"
+        },
+        {
+          "factor": "the resurrection guard (2026-09-24) added a pre-read to every sd_customers write and DOUBLED an already per-record cost -- the guard was reviewed as a correctness change and nobody asked what it did to a caller that wrote in a loop",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "the batch branch carries the same guard once for the whole list; an arm asserts 5 and 200 records cost the same two trips, so a future change that reintroduces a loop fails"
+        },
+        {
+          "factor": "nothing measured round trips. The write-result checker found the DISCARDED result at this site and said nothing about the call count, and no tool on this platform counts requests per user action",
+          "kind": "detection",
+          "action_status": "declined",
+          "note": "Not built here. The arm added with this fix counts trips for THIS endpoint only. A general per-user-action request-count check is a real tool with its own criteria questions -- what counts as one action, what a reasonable ceiling is per screen -- and folding it into a batching fix would be the scope growth this platform's guardrails name. Recorded in the recurrence-open so it is visible rather than implied."
+        }
+      ],
+      "recurrence_open": "Fixed for sd_customers. Nothing checks whether any OTHER client path writes a list by looping a single-record endpoint -- sync_write_result_check.py finds discarded RESULTS, not per-record call counts, and the two are different questions."
+    },
+    {
       "commit": "b015ea783653",
       "date": "2026-09-26",
       "subject": "fix(prompt-fence): three real unfenced sites the scanner reported CLEAN, and the mirror test two apps have been citing for a day never existed",
