@@ -3534,6 +3534,26 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "hank",
+      "opened_at": "2026-09-26T11:24:45Z",
+      "opened_at_sha": "b92c1e754e656ef84983aac4260b35f83308ff11",
+      "resources": [
+        "alf_compliance_rules"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "tools/load_compliance_seed.py"
+      ],
+      "what": "tools/load_compliance_seed.py -- the SAIRNcare compliance-rule loader, the half that made WV inert. It WRITES alf_compliance_rules on a live licence through the management-only endpoint, which is why this obligation exists even though it is a tools/ file: it is the only thing on the platform that can change that table outside the app.\n\nIT HAS NOT BEEN RUN. No SAIRNCARE_LICENSE_KEY / SAIRNCARE_EMP / SAIRNCARE_PIN in this clone, so it exits 2 COULD NOT RUN and every arm below is verified against its PURE half plus a subprocess refusal -- never against the real endpoint. Treat the live behaviour as unverified in both directions.\n\nATTACK, HARDEST FIRST.\n\n(1) THE VERIFICATION CONTRACT IS THE WHOLE VALUE AND IT IS UNPROVEN AGAINST THE REAL ENDPOINT. The design claim is that a loader's exit code is not evidence, so it drives `evaluate` on identical inputs before and after and requires the answer to have CHANGED. `answer_changed` is a JSON comparison with sorted keys. That is sound if the endpoint's reply is deterministic for identical input -- and I have not checked that it is. If the reply carries a timestamp, a request id, a `today` echo or anything else that moves between two calls, EVERY run reports ANSWER CHANGED including one that loaded nothing. That would invert the tool: it would certify exactly the failure it exists to catch. Drive two identical `evaluate` calls back to back against the live endpoint and diff them before trusting a single verification this tool prints.\n\n(2) THE BEFORE-PROBE RUNS ONCE PER STATE AND THE AFTER-PROBE RUNS ONCE PER STATE, BUT THE WRITES ARE PER RULE. A state whose staffing rule loaded and whose training and licensure rules failed will still show ANSWER CHANGED, because the probe only asks about staffing. I chose staffing because it is the one requirement type every seeded state carries, and the failure list is printed separately -- but the headline verification is narrower than the load, and a reader could take one ANSWER CHANGED as three rules landing. Decide whether the probe should cover every requirement_type the run touched.\n\n(3) `_probe_date` TAKES max(effective_from) FOR THE STATE. That is right today because every WV rule shares 2026-01-01, and it is wrong the day a state carries a rule that takes effect LATER than the others -- the probe would then ask about a date on which the newest rule is in force and an older one may have been superseded by an effective_to. Check whether max() is the right choice or whether it should be a date every selected rule is simultaneously in force on, and what it should do when no such date exists.\n\n(4) THE CAP REFUSAL READS `coverage_cap.states` OUT OF THE SEED. If that key is ever missing or renamed the refusal becomes a no-op and every state in the file loads -- `if cap and ...` treats absent as unrestricted. I chose that so a seed predating the cap still loads, which is a real case, but it means the guard's failure mode is SILENT WIDENING. Decide whether an absent cap should refuse instead.\n\n(5) IT PRE-VALIDATES THE AUTHORITY CITATION CLIENT-SIDE, duplicating a rule the endpoint already enforces. I did it so a run stops before a partial load rather than halfway through one. That is a SECOND COPY of a validation rule, which is the drift shape this platform has recorded repeatedly -- if the endpoint tightens its URL check and this does not, the loader will happily send rows the server refuses, and the failure will look like a network problem. Confirm the duplication is worth it or that it should simply send and report.\n\n(6) NOT A MIGRATION, AND THE ASYMMETRY IS DELIBERATE: the endpoint upserts, so a rule REMOVED from the seed is NOT removed from the licence. That means the seed and the live table can diverge in one direction for ever and `sairn_load_state_check.py` reports EXTRA rather than MISSING. I did not build a removal path because deletion on a compliance table is a decision with an owner. Confirm that is the right call.\n\n21 probe arms in tests/run_compliance_loader_probe.py. The two that matter are the cap refusal and the verification contract -- specifically that two identical replies must NOT read as a change, which is arm 4's subject and is exactly what press-on 1 says may be untrue against the real endpoint.",
+      "status": "open",
+      "reviewer_owner": "cc",
+      "owner_assigned_at": "2026-09-26T11:24:45Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
