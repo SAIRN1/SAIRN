@@ -3622,6 +3622,31 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-26T13:13:44Z",
+      "opened_at_sha": "26eabb0543641d0e238554c1652a7dc3a74ba23e",
+      "resources": [
+        "alf_claim_routes",
+        "alf_incidents",
+        "alf_mar",
+        "alf_op_audits",
+        "alf_staff_credentials"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/sd-data-stored-blob-scope-keys.test.js",
+        "api/sd-data.js"
+      ],
+      "what": "THE LAST TWELVE BLOB BUILDERS ONTO storedBlob (item 94 migration COMPLETE: 16 -> 28 call sites, 12 -> 0 hand-rolled), AND TWO OF THEM WERE A LIVE ATTRIBUTION FORGERY RATHER THAN A CONVERSION. Review the second half as a security fix, not as a refactor.\n\nTHE DEFECT, so a reviewer knows what to re-derive. alf_claim_routes and alf_staff_credentials both spread the stored blob LAST over FIVE mapped columns and both write paths stripped THREE:\n\n    read  Object.assign({ id, resident_id, service_month, decided_by, created_at }, x.data)   :10555\n    read  Object.assign({ id, staff_id, record_type, recorded_by, created_at }, x.data)       :10922\n    write delete id; delete resident_id; delete service_month;   (and the staff_id/record_type twin)\n\nSo a payload carrying decided_by or recorded_by landed in `data` and overrode, on read, the column the server set from session.employee_id. Both tables are APPEND-ONLY by design. Defect register record filed against the fix commit.\n\nWHAT A REVIEWER SHOULD ATTACK, hardest first.\n\n(1) THE FIVE-KEY LISTS ARE MINE AND AN OVER-BROAD LIST DELETES CUSTOMER DATA SILENTLY ON EVERY SAVE. Re-derive both against the reads rather than against my comments. The specific thing to check: I added `created_at` to both strip lists. `created_at` is a DB default column on these tables -- confirm no caller legitimately sends a client-authored created_at that the panel then displays, because if one does, I have just started deleting it on every write and nothing will report that. This is the opposite failure to the one being fixed and it is the one nobody gets an error about. The same question applies to `decided_by` and `recorded_by`: I am asserting no caller has a legitimate reason to set them.\n\n(2) THE OTHER TEN CONVERSIONS RESTED ON ME READING THE SPREAD ORDER CORRECTLY, AND THE ORDER IS THE WHOLE ARGUMENT. Six of the twelve reads spread COLUMNS LAST (rf_invoices :8642, rf_company_programs :8919, rf_locations :9194, rf_schedule :9252, rf_claim_agreements :9527, alf_op_audits :11009) and therefore cannot be shadowed at all, so I left their lists unchanged. If I have the order backwards on ANY of those six, that branch has an unfixed shadow and my comment on it says the opposite. rf_claim_agreements is the one most likely to be wrong: its read builds the blob FIRST, mutates it (deleting signature_data), and then Object.assign(blob, {columns}) -- two steps rather than one expression.\n\n(3) THE THREE-WAY SPLIT OF KEYS IS A JUDGEMENT AND IT IS REPEATED TWELVE TIMES. I kept COLUMN keys in the storedBlob list, left TRUST DISCARDS as hand deletes (rf_invoices' tax_rate/tax and recomputed totals, alf_op_audits' `reviewed` and `passed`), and deliberately EXCLUDED columns a read maps under a different name (alf_staff's staff_id -> id, rf_schedule's created_by). Attack the exclusions: if any of those is actually returned under its own name somewhere I did not look, it can shadow and is missing from a list.\n\n(4) alf_op_audits: I cut its hand-rolled FOUR deletes to a TWO-key list plus two hand deletes. Confirm `reviewed` and `passed` are still removed on every path through that branch, including the review branch above it that builds its body from `existing` rather than from payload -- a client-supplied `passed` reaching the blob is a food-safety record grading itself.\n\n(5) THE ARMS. Two units added to api/sd-data-stored-blob-scope-keys.test.js (41 arms total), each driving decided_by/recorded_by 'FORGED-BY-CALLER' and created_at '1999-01-01'. ABLATION RUN: each column list reverted to its old three-key form in turn, and each turned exactly one [columns] arm red (40 passed 1 failed, twice). Re-run that rather than trusting it. And note the coverage limit stated in the defect record: the other ten converted branches have NO arm in that suite, so their lists rest on the reading in (2) and not on a check.\n\nMEASURED: node --check clean; stored-blob 41, alf-isolation 22, roofing-projected 30, ownbranch 76, bespoke-branch 38, dispatchers 419, alf-append-only-fail-closed 11, alf-append-only-read-order 9, food-temp-unevaluated 13, unconfirmed-write-sweep 30, sairncare_credential_export 16, sairncare_route_record all arms -- all green.",
+      "status": "open",
+      "reviewer_owner": "cody",
+      "owner_assigned_at": "2026-09-26T13:13:44Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

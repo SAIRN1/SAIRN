@@ -15082,6 +15082,60 @@
       "recurrence_open": "THE ENUMERATION OF WAYS CONTENT CAN REACH ORIGIN IS STILL HAND-MAINTAINED AND NOTHING CHECKS IT. Two paths are known and both are now gated; nothing asserts there is no third. A future tool that talks to the GitHub API, a GitHub Action with write permission, or a web-UI edit would each be ungated and nothing would report it. Separately, .githooks/pre-push is installed PER CLONE by tools/install_git_hooks.py and .git/ is not versioned, so a fresh clone has no hook at all -- gh_push.py now refuses in that state, but an ordinary git push does not, and that gap is older and wider than this fix."
     },
     {
+      "commit": "f0c0cb7ac160",
+      "date": "2026-09-26",
+      "subject": "fix(sd-data): the last twelve blob builders -- and TWO of them were not conversions, they were a live attribution forgery on append-only regulated records",
+      "files": [
+        "api/sd-data-stored-blob-scope-keys.test.js",
+        "api/sd-data.js"
+      ],
+      "lines_added": 133,
+      "lines_removed": 24,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sd-data.js, alf_claim_routes and alf_staff_credentials: a caller could choose who is recorded as having made the decision. Both reads spread the stored blob LAST over FIVE mapped columns -- Object.assign({ id, resident_id, service_month, decided_by, created_at }, x.data) at :10555 and Object.assign({ id, staff_id, record_type, recorded_by, created_at }, x.data) at :10922 -- while both write paths stripped only THREE keys from the payload before storing it. So a payload carrying `decided_by` (or `recorded_by`) was kept inside `data` and OVERRODE on read the column the server had set from session.employee_id. `created_at` shadowed the same way on both, so the displayed timestamp of the record could also be chosen by the caller. Each write's own echo has the identical spread-last shape, so the forged attribution came straight back in the 200 as well, making the response look like confirmation. WHY THIS IS WORSE THAN AN ORDINARY FIELD LEAK: both tables are APPEND-ONLY BY DESIGN and each branch's 409 message states the reason -- \"a completed-training assertion that could be quietly edited later is not evidence of anything\". The record could not be edited after the fact; its ATTRIBUTION could be chosen at the moment of writing. alf_staff_credentials is the staff credential and training-hours trail (a regulated attestation about a named person); alf_claim_routes records how a real claim was billed, so the forged field names who made a money determination. FIXED by routing both through api/_lib/blob.js's storedBlob() with the column list derived from each branch's own read -- five keys each, not three. THE PLATFORM ALREADY KNEW THIS SHAPE: alf_op_audits carries a comment saying its read spreads columns LAST precisely so a client-supplied `passed` cannot override the server's computation, and the 2026-09-24 ALF review fixed the `created_at` half on alf_mar and alf_incidents. These two branches were not swept then. alf_signals -- same read shape, four mapped columns, four stripped -- is the branch that got it right, so four ALF branches produced three different outcomes from one pattern.",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Not pinnable to a single commit. Each branch was correct when written and became wrong when its READ was later extended to map decided_by/recorded_by and created_at without the write's delete list being extended to match. That is two edits in two places over time, and identifying which read edit crossed the line would be a guess presented as a sha."
+      },
+      "citation_note": "not-citable, and the nearest section is named so the next reader does not re-derive the comparison. No numbered section covers 'a stored blob shadows the column the server set', which is a data-shape defect rather than a check or a document failure. The standing statement for it is api/_lib/blob.js's own header and the 2026-09-24 ALF review that found the created_at half. PR 1.3 (an anchor that still matches is not one that still points at the right thing) is the closest in spirit -- the strip list still matched three real columns and had stopped covering the set -- but 1.3's subject is citations in documents, and stretching it would blur a section whose precision is why it works.",
+      "phase_note": "Design rather than coding: every delete did exactly what it said. The defect is that the set of keys a read maps and the set a write strips were two independently-maintained lists with nothing comparing them, and the spread ORDER that makes the comparison matter varies branch to branch with no convention.",
+      "contributing_factors": [
+        {
+          "factor": "The strip list and the read's mapped-column list were maintained independently, in two places, with nothing comparing them. The read added `decided_by` / `recorded_by` / `created_at` to what it maps; the write's delete list was never extended to match.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both branches now call api/_lib/blob.js's storedBlob() with a column list derived from that branch's own read -- five keys each. The universal scope keys are no longer per-branch at all, so only the genuinely per-table half is still written by hand."
+        },
+        {
+          "factor": "The spread ORDER decides whether a column list is load-bearing, and it varies branch to branch with no convention. Columns-last reads (alf_op_audits, rf_invoices, rf_schedule) cannot be shadowed at all; blob-last reads can. A reviewer scanning for this has to open every read to know which kind it is.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Not consolidatable as-is: which fields are real columns is a fact about each table, which is why the module hides only the universal rule. The checkable version is a static arm asserting that every storedBlob call site's column list covers the columns its read spreads the blob over -- not built, and named here rather than implied. Today the coverage is per-branch arms in api/sd-data-stored-blob-scope-keys.test.js."
+        },
+        {
+          "factor": "The 2026-09-24 ALF review found exactly this shape on alf_mar and alf_incidents and fixed those two. The sweep stopped at the branches the review was about; the four ALF branches with the same read shape were never compared with each other, and three different outcomes shipped from one pattern.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "All twelve remaining hand-rolled builders were converted in one pass with each read opened individually, which is what surfaced these two. The migration is now complete -- `grep -c \"Object.assign({}, payload)\" api/sd-data.js` is 0 -- so there is no remaining branch of this class to compare against."
+        },
+        {
+          "factor": "Nothing asserted the attribution column survives a hostile payload. The suite that would have caught it did not cover these branches at all: before this change its units were the six branches converted earlier the same day.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Both branches added to api/sd-data-stored-blob-scope-keys.test.js with payloads carrying decided_by/recorded_by 'FORGED-BY-CALLER' and created_at '1999-01-01'. ABLATED to prove the arms test the fix rather than the shape: each column list reverted to its old three-key form in turn, and each ablation turned exactly one [columns] arm red (40 passed, 1 failed, twice)."
+        }
+      ],
+      "recurrence_open": "NOTHING CHECKS THE INVARIANT ITSELF. The per-branch arms assert the current column lists; no check asserts that a storedBlob call site's list covers the columns its own read spreads the blob over, so the next read extended with a new mapped column reopens this exactly as it opened the first time. That static arm is named in the contributing factors and is NOT built. Separately, this record covers the two branches found; the same read-vs-strip comparison has not been run over the branches that were ALREADY converted before today, so their lists rest on the reading done at conversion time rather than on a check."
+    },
+    {
       "commit": "fa0f2b90d3b8",
       "date": "2026-09-26",
       "subject": "fix(push-gate): the exemption was pinned to a REFSPEC, not a sha -- found by using it",
