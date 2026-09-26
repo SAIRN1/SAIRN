@@ -3122,7 +3122,7 @@ module.exports = async (req, res) => {
     // 'soft_delete' shares this branch's session gate; the management check
     // below is applied to it alongside write, because deleting a customer is
     // at least as consequential as editing one.
-    if (resource === 'sd_customers' && (action === 'read' || action === 'write' || action === 'soft_delete' || action === 'tombstones')) {
+    if (resource === 'sd_customers' && (action === 'read' || action === 'write' || action === 'write_batch' || action === 'soft_delete' || action === 'tombstones')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
 
@@ -3192,7 +3192,12 @@ module.exports = async (req, res) => {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can change a customer record' } });
         return;
       }
-      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_customers payload.id is required' } }); return; }
+      // SCOPED TO THE SINGLE-RECORD VERBS. `write_batch` carries
+      // payload.records and no payload.id, and this guard ran before the batch
+      // branch -- so the batch answered "payload.id is required" and was
+      // unreachable. Same shape as the tombstones action shipping dead behind
+      // the dispatcher's allowlist: an implemented branch nothing can enter.
+      if (action !== 'write_batch' && (!payload || !payload.id)) { res.status(400).json({ error: { message: 'sd_customers payload.id is required' } }); return; }
       // -- SOFT DELETE (2026-09-12) -----------------------------------------
       // THE DEFECT THIS CLOSES WAS A DELETION THAT UNDID ITSELF, and the user
       // watched it succeed. custDelete() filtered the record out of the local
@@ -3258,6 +3263,109 @@ module.exports = async (req, res) => {
           return;
         }
         res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, cmarked) });
+        return;
+      }
+      // ── ONE CALL FOR THE WHOLE LIST (2026-09-26) ───────────────────────
+      // stonedesk.html's saveSD3Data() pushed the customer list by looping the
+      // array and calling `write` once PER RECORD -- and that function has 16
+      // call sites, several of them render paths whose own comment says they
+      // must not wait on a round trip.
+      //
+      // THE RESURRECTION GUARD ABOVE MADE IT TWICE AS EXPENSIVE, and that was
+      // my change: every `write` now does a pre-read AND an upsert, so a shop
+      // with 200 customers spent 400 PostgREST round trips on one render. The
+      // guard is right and stays; what was wrong is doing it per record.
+      //
+      // TWO TRIPS FOR THE WHOLE LIST, not two per record: ONE pre-read with
+      // `customer_id=in.(...)` collecting every tombstoned id, then ONE upsert
+      // of everything that survived.
+      //
+      // AND IT GIVES THE CALLER A RESULT TO READ, which the loop could not.
+      // sync_write_result_check.py scores that loop DISCARDED -- a customer row
+      // that never reached the server left no trace at all. One call has one
+      // outcome, so a failure is reportable without the client waiting on it.
+      //
+      // REFUSED RECORDS ARE NAMED, NOT COUNTED. A batch that silently dropped
+      // the deleted ones would be the same silence one level up: the response
+      // carries `refused: [{id, reason}]` and the client is expected to drop
+      // those ids locally, which is what the tombstone action already asks of
+      // it.
+      if (action === 'write_batch') {
+        const brecs = (payload && Array.isArray(payload.records)) ? payload.records : null;
+        if (!brecs) {
+          res.status(400).json({ error: { code: 'NO_RECORDS', message: 'write_batch needs payload.records as an array. A single record still uses write.' } });
+          return;
+        }
+        // A CAP, AND IT REFUSES RATHER THAN TRUNCATING. A silently truncated
+        // batch is the same defect as the discarded write it replaces -- the
+        // caller is told the list was saved and part of it never left.
+        if (brecs.length > 500) {
+          res.status(413).json({ error: { code: 'BATCH_TOO_LARGE', message: 'write_batch accepts at most 500 records; send them in chunks. It refuses rather than truncating, because a truncated batch reports success for records that were never sent.' } });
+          return;
+        }
+        if (!brecs.length) {
+          res.status(200).json({ ok: true, written: 0, refused: [], note: 'empty batch' });
+          return;
+        }
+        const bwithId = brecs.filter(function (c) { return c && c.id; });
+        const bskipped = brecs.length - bwithId.length;
+        if (!bwithId.length) {
+          res.status(400).json({ error: { code: 'NO_IDS', message: 'no record in this batch carries an id' } });
+          return;
+        }
+        // ONE pre-read for the whole batch. Same guard, same meaning, same
+        // fall-through rules as the single-record path above: a transport
+        // failure propagates to the outer catch and nothing is written; a
+        // completed request that answered with a refusal falls through,
+        // because the store answered and said nothing about a deletion.
+        const bids = bwithId.map(function (c) { return String(c.id); });
+        const bdel = {};
+        const bcur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
+          '&customer_id=in.(' + bids.map(enc).join(',') + ')&select=customer_id,data'),
+          { headers });
+        if (bcur.ok) {
+          const brows = await bcur.json().catch(function () { return null; });
+          (Array.isArray(brows) ? brows : []).forEach(function (row) {
+            if (row && row.data && row.data._deleted_at) bdel[String(row.customer_id)] = true;
+          });
+        }
+        const bkeep = bwithId.filter(function (c) { return !bdel[String(c.id)]; });
+        const brefused = bwithId
+          .filter(function (c) { return bdel[String(c.id)]; })
+          .map(function (c) {
+            return { id: c.id, code: 'DELETED',
+                     reason: 'that customer record was deleted on another device; drop it locally' };
+          });
+        if (!bkeep.length) {
+          res.status(200).json({ ok: true, written: 0, refused: brefused,
+                                 skipped_without_id: bskipped });
+          return;
+        }
+        // SAME BLOB RULE AS THE SINGLE WRITE, and the same column list: the
+        // read spreads {id: customer_id} + data, so `id` is the only real
+        // column. `_deleted_at` is deliberately NOT stripped -- it lives
+        // inside data by design and the guard above reads it there.
+        const bbody = bkeep.map(function (c) {
+          return { license_hash: licHash, app_id: 'stonedesk',
+                   customer_id: String(c.id), data: storedBlob(c, ['id']),
+                   updated_at: nowISO() };
+        });
+        const bw = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
+          body: JSON.stringify(bbody)
+        });
+        if (bw.status === 404 || bw.status === 400) {
+          const berr = await bw.json().catch(function () { return null; });
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The customer table is not set up', detail: berr } });
+          return;
+        }
+        if (!bw.ok) {
+          const berr = await bw.json().catch(function () { return null; });
+          return upstream(res, berr);
+        }
+        res.status(200).json({ ok: true, written: bkeep.length, refused: brefused,
+                               skipped_without_id: bskipped });
         return;
       }
       // ── A WRITE CANNOT RESURRECT A DELETED CUSTOMER (2026-09-24) ────────

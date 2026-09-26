@@ -24948,13 +24948,66 @@ function saveSD3Data() {
   // so the shop's whole customer record set lived in one browser -- and an
   // order-tracking link resolves to the SERVER copy, so a stage changed here
   // and nowhere else would leave a customer reading a status that is no longer
-  // true. Fire-and-forget per record, deliberately: this function is called
-  // from render paths that must not wait on a network round trip, and a failed
-  // push leaves the local copy intact for the next save to retry.
+  // true.
+  //
+  // ── ONE CALL, NOT ONE PER CUSTOMER (2026-09-26) ─────────────────────────
+  // This used to loop the array and call `write` once per record. Two things
+  // made that wrong, and the second arrived after the first:
+  //
+  //   * saveSD3Data() has SIXTEEN call sites, several of them render paths,
+  //     and the comment that used to sit here said this function must not wait
+  //     on a round trip -- while firing N of them.
+  //   * the sd_customers resurrection guard (2026-09-24) added a pre-read to
+  //     every `write`, so each record became TWO PostgREST trips. A shop with
+  //     200 customers spent 400 on one render. The guard is right; doing it
+  //     per record was not.
+  //
+  // `write_batch` sends the list once: one pre-read for every id, one upsert.
+  //
+  // STILL NOT AWAITED -- that requirement has not changed -- but it is no
+  // longer FIRE AND FORGET, and that distinction is the point.
+  // tools/sync_write_result_check.py scored the old loop DISCARDED: a customer
+  // row that never reached the server left no trace anywhere. One call has one
+  // outcome, so the failure path can be recorded without the caller waiting.
+  //
+  // A REFUSED RECORD IS DROPPED LOCALLY. The server answers `refused` for ids
+  // it holds as deleted, which is the same instruction the `tombstones` action
+  // gives -- a deletion on another device is a fact this browser has to act
+  // on, not an error to log.
   if (typeof sdData === 'function' && Array.isArray(sdCustomers)) {
-    sdCustomers.forEach(function (c) {
-      if (c && c.id) { try { sdData('write', 'sd_customers', c); } catch (e) {} }
-    });
+    var sdBatch = sdCustomers.filter(function (c) { return c && c.id; });
+    if (sdBatch.length) {
+      try {
+        Promise.resolve(sdData('write_batch', 'sd_customers', { records: sdBatch }))
+          .then(function (r) {
+            if (!r || r.ok !== true) {
+              console.warn('saveSD3Data: the customer list did not reach the server',
+                           r && r.error);
+              return;
+            }
+            if (Array.isArray(r.refused) && r.refused.length) {
+              var gone = {};
+              r.refused.forEach(function (x) { if (x && x.id) gone[x.id] = true; });
+              var before = sdCustomers.length;
+              sdCustomers = sdCustomers.filter(function (c) { return !(c && gone[c.id]); });
+              if (sdCustomers.length !== before) {
+                st('sd_customers', sdCustomers);
+                // renderCustomers, not a name invented here: three functions
+                // of that name exist in this file and the LAST definition wins
+                // at runtime, so calling it by name is calling whichever one
+                // the page actually uses. Guarded because saveSD3Data runs on
+                // paths where the customers panel may not be mounted.
+                if (typeof renderCustomers === 'function') { try { renderCustomers(); } catch (e) {} }
+              }
+            }
+          })
+          .catch(function (e) {
+            console.warn('saveSD3Data: the customer list did not reach the server', e);
+          });
+      } catch (e) {
+        console.warn('saveSD3Data: the customer push could not be started', e);
+      }
+    }
   }
   return a && b;
 }

@@ -306,7 +306,14 @@ module.exports = {
   // resolves a live ORDER TRACKING LINK against this table by customer_id, so
   // in the window between the local delete and the resurrection a customer
   // could still read their job status from a record the shop believed gone.
-    'sd_customers': ['soft_delete', 'tombstones'],
+    // 'write_batch' is the whole-list form of 'write'. It exists because
+    // saveSD3Data() called 'write' once per customer from 16 sites, several
+    // of them render paths, and the resurrection guard made each of those
+    // two PostgREST trips instead of one. Declared here because the
+    // dispatcher's allowlist runs BEFORE the resource branch -- an
+    // undeclared action answers 400 and the handler is unreachable, which
+    // is exactly how 'tombstones' shipped dead and a live probe caught it.
+    'sd_customers': ['soft_delete', 'tombstones', 'write_batch'],
   },
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker
