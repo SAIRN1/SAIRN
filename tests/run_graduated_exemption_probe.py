@@ -77,7 +77,14 @@ tmp = tempfile.mkdtemp(prefix='gate-exempt-probe-')
 real_dir, real_ttl = g.EXEMPT_DIR, g.EXEMPT_TTL_SECONDS
 try:
     g.EXEMPT_DIR = tmp
-    TIP = 'a' * 40
+    # REAL COMMITS, not 'a'*40. The pin is resolved through `git rev-parse
+    # <tip>^{commit}` -- added after the feature's first real use showed it was
+    # pinning to the literal string 'main' -- so a fabricated sha now correctly
+    # resolves to UNRESOLVABLE and grants nothing. Using HEAD and HEAD~1 also
+    # makes the settling arm a real amend rather than a string swap.
+    TIP = g.git(REPO, 'rev-parse', 'HEAD').strip()
+    OTHER = g.git(REPO, 'rev-parse', 'HEAD~1').strip()
+    assert len(TIP) == 40 and len(OTHER) == 40 and TIP != OTHER, (TIP, OTHER)
 
     first = g.graduated_exempt('seed', TIP)
     check('SOFT CAPTURE: the FIRST push is REFUSED -- contact, not commitment',
@@ -100,7 +107,7 @@ try:
     # ── THE ARM THAT DECIDES WHETHER SETTLING MEANS ANYTHING ────────────────
     os.remove(g._exempt_path('seed'))
     g.graduated_exempt('seed', TIP)                       # soft capture on TIP
-    moved = g.graduated_exempt('seed', 'b' * 40)          # ...then amend
+    moved = g.graduated_exempt('seed', OTHER)             # ...then amend
     check('SETTLING IS REAL: an exemption taken on one sha does NOT apply after '
           'an amend or a rebase -- the push must stop moving before it is let '
           'through', moved is False, moved)
@@ -114,6 +121,32 @@ try:
     check('an exemption older than the window is not honoured -- it is a '
           'confirmation, not a standing grant',
           g.graduated_exempt('seed', TIP) is False)
+
+    # ── THE DEFECT THE FEATURE'S FIRST REAL USE FOUND ──────────────────────
+    # In PreToolUse mode pushed_tip() returns the REFSPEC out of the command
+    # text -- the literal 'main' -- and pinning to that is pinning to nothing:
+    # it survives an amend, a rebase and any number of new commits, which is
+    # the entire settling phase. An unresolvable tip must grant NOTHING.
+    for f in os.listdir(tmp):
+        os.remove(os.path.join(tmp, f))
+    check('AN UNRESOLVABLE TIP GRANTS NOTHING',
+          g.graduated_exempt('seed', 'no-such-ref-xyz') is False)
+    check('...and records no pending request either, so a later push cannot '
+          'pick one up', not os.listdir(tmp), os.listdir(tmp))
+    # THE ACTUAL DEFECT: a REFSPEC must be stored as the SHA it resolves to.
+    # PreToolUse mode hands this function the literal 'main', and storing that
+    # string would survive every amend the settling phase exists to catch.
+    check('A REFSPEC IS STORED AS THE SHA IT RESOLVES TO, not as the name -- '
+          'storing "main" would survive every amend and the settling phase '
+          'would be decoration',
+          g.graduated_exempt('seed', 'HEAD') is False
+          and json.load(io.open(g._exempt_path('seed'), encoding='utf-8'))['tip'] == TIP,
+          json.load(io.open(g._exempt_path('seed'), encoding='utf-8')))
+    check('...so a grant taken as "HEAD" is honoured by the SHA and by nothing '
+          'else -- and the same push confirming under either spelling matches',
+          g.graduated_exempt('seed', TIP) is True)
+    for f in os.listdir(tmp):
+        os.remove(os.path.join(tmp, f))
 
     # ── 3. FAIL CLOSED, WHICH IS THE OPPOSITE OF THE REST OF THIS HOOK ──────
     print('\n3. the store fails CLOSED -- more checking, never less')

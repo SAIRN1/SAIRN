@@ -732,12 +732,39 @@ def _exempt_path(check):
     return os.path.join(EXEMPT_DIR, '%s-%s.json' % (who, check))
 
 
+def _pin(tip):
+    """The tip resolved to a SHA, which is what the pin has to be.
+
+    FOUND ON THE FEATURE'S FIRST REAL USE (2026-09-26), by using it. In
+    PreToolUse mode `pushed_tip()` returns the REFSPEC parsed out of the command
+    text -- the literal string 'main' -- and pinning to 'main' is pinning to
+    nothing: it survives an amend, a rebase and any number of new commits, which
+    is exactly the settling phase this design exists for. The soft-capture
+    message printed "pinned to main" and that was the tell.
+
+    Resolved here rather than at the call sites so both modes get it. A tip that
+    cannot be resolved returns UNRESOLVABLE rather than the raw string, and no
+    exemption can ever match that -- fail closed, same as the rest of this block.
+    """
+    try:
+        out = git(os.getcwd(), 'rev-parse', '--verify', '--quiet',
+                  str(tip) + '^{commit}').strip()
+        return out if len(out) == 40 else 'UNRESOLVABLE:%s' % tip
+    except Exception:                                   # noqa: BLE001
+        return 'UNRESOLVABLE:%s' % tip
+
+
 def graduated_exempt(check, tip):
     """-> True to SKIP this check (hard capture), False to deny as normal.
 
     Writing the pending record is the soft-capture half and happens on the
     False path, so the caller denies and the operator sees why.
     """
+    tip = _pin(tip)
+    if tip.startswith('UNRESOLVABLE'):
+        # No pin means no settling phase, and an exemption without one is the
+        # blanket flag with a longer name. Refuse rather than grant.
+        return False
     path = _exempt_path(check)
     now = time.time()
     # HARD CAPTURE: an unconsumed pending exemption for THIS sha, inside the
@@ -768,6 +795,7 @@ def graduated_exempt(check, tip):
 
 
 def soft_capture_notice(check, tip):
+    tip = _pin(tip)
     return "\n".join([
         "",
         "SOFT CAPTURE -- this push asked to skip the %s check, and the request is "
