@@ -3013,6 +3013,23 @@
       "status": "released",
       "released_at": "2026-09-26T18:41:01Z",
       "files": null
+    },
+    {
+      "id": "hank-1790449906",
+      "session": "hank",
+      "subject": "hank",
+      "task": "queue12: tier rows for alf_family_contacts and mech_insurance_policies (criticality_tier_probe 4 arms RED on main); stonedesk_server_backup soft_delete family pin widened by 25 sc_ resources; sd_comms B->A confidentiality; wire the SAIRNmechanical Equipment panel + Add Equipment handler to mech_site_assets; build the Insurance/COI panel from scratch against mech_insurance_policies; live-verify both panels read AND write; methodology sweep for the unreachable-failure-path / wrong-field-always-same-answer class. api/sd-data.js NOT TAKEN -- fourth-q9b holds it and item 92 write_batch stays blocked until they release. stonedesk.html is cody-q11's and is READ ONLY here. SUBJECT NAMED PER PR 4.3 FILES: docs/CRITICALITY-TIERS.md tests/stonedesk_server_backup.js sairnmechanical.html tools/unreachable_failure_path_scan.py docs/2026-09-26-ghost-failure-path-sweep.md",
+      "claimed_at": "2026-09-26T19:11:46Z",
+      "claimed_at_epoch": 1790449906.9864924,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/2026-09-26-ghost-failure-path-sweep.md",
+        "docs/CRITICALITY-TIERS.md",
+        "sairnmechanical.html",
+        "tests/stonedesk_server_backup.js",
+        "tools/unreachable_failure_path_scan.py"
+      ]
     }
   ],
   "refusals": [
