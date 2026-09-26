@@ -181,7 +181,7 @@ found this.
 | **B2 — the roll-up has no reader** | **Needs a decision, not an estimate.** Either a panel (owner-gated, reusing `DNT_MANAGEMENT_ROLES`, ~one screen against an endpoint that already exists and is reviewed) or a written deferral saying the BI feed is the intended surface and the in-app report is not coming. What must not persist is the current state, where `SAIRN-OPEN-WORK-INDEX.md` says BUILT and no user can reach it |
 | A1 real-time eligibility | Needs a vendor or clearinghouse relationship |
 | A2 / A3 837D, 835, clearinghouse | Vendor-gated. Same relationship |
-| A5 imaging / CBCT / scanner | Vendor-gated; the only open documented API found in the whole 08-26 dental survey was NexHealth's |
+| A5 imaging / CBCT / scanner | Vendor-gated. **The "only NexHealth" claim is CORRECTED 2026-09-25 (Cody, external research PR #17): DEXIS publishes public API documentation, so NexHealth is no longer the only open documented API here.** Not independently fetched from this clone, so it is recorded as "no longer safe to repeat" rather than as a verified new fact. SAIRNdental is still zero for imaging either way &mdash; the correction moves this from vendor-gated to buildable-in-principle, not to built |
 | A6 e-prescribing / EPCS / PDMP | Certification-gated — 21 CFR 1311 identity-proofing and DEA registration |
 | B4 central call centre | Not recommended by the audit that raised it |
 
