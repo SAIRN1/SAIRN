@@ -312,27 +312,6 @@ GUARD_TESTS = [
      'is true), and a malformed leak date is refused rather than stored as '
      'null, because a silently dropped date shows the technician who just typed '
      'one a saved asset with no repair clock running.'),
-    ('tests/sairncode_gates.js',
-     'the ONE array that decides which SAIRNcode records need a session to '
-     'write and may never be destroyed still equals the Tier A rows in '
-     'docs/CRITICALITY-TIERS.md, in both directions',
-     'THIS ENTRY EXISTS BECAUSE THE TEST WAS ALREADY RIGHT AND ALREADY RED. '
-     'SC_TIER_A_WRITE_GATED and SC_TIER_A_SOFT_DELETE_ONLY both derive from a '
-     'single array in api/_resources/sairncode.js. Sixteen sc_* resources were '
-     're-tiered A between 2026-09-15 and 2026-09-23 and that array did not '
-     'follow, so for EIGHT DAYS sc_hcc (a named patient joined to a diagnosis '
-     'grouping and its dollar value), sc_eligibility (a named patient joined '
-     'to payer and plan) and sc_providers (the QP status that selects between '
-     'two CMS CY2026 conversion factors) accepted a write carrying the LICENCE '
-     'KEY ALONE and could be hard-deleted. This suite asserted the equality '
-     'the whole time and named all sixteen; nothing invoked it, so nobody was '
-     'required to look. THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT '
-     'DID NOT EXIST -- which is a different failure from an absent check, and '
-     'the only fix for it is this registry. It is also the seam class this '
-     'list is for in the strictest sense: the two sides are a MARKDOWN '
-     'REGISTER and a JS ARRAY in different files, edited by different sessions '
-     'for different reasons, and neither edit looks wrong on its own. '
-     'Michael\'s call, 2026-09-23, after the eight days were measured.'),
     ('api/_lib/deadline-coverage-contract.test.js',
      'every disclosed coverage gap is actually disclosed, in the channel that '
      'was decided on',
@@ -393,7 +372,19 @@ GUARD_TESTS = [
      'moving alone is how this arrived. A second seam rides along: the '
      'WRITE_GATED role table is hand-written from the posture and compared '
      'against the roles parsed out of api/sd-data.js, so a silently widened '
-     'SC_TIER_A_WRITE_ROLES_BY_RESOURCE fails here and nowhere else.'),
+     'SC_TIER_A_WRITE_ROLES_BY_RESOURCE fails here and nowhere else. '
+     'REGISTERED TWICE UNTIL 2026-09-26, and the duplicate is folded in here '
+     'rather than deleted. Two entries for this one file were added two days '
+     'apart -- 2026-09-23 on Michael\'s call after the eight days were '
+     'measured, and 2026-09-25 while discharging the review of the fix -- '
+     'each written without the other in view, so the list ran this suite '
+     'TWICE on every code push and a reader got two accounts of one seam, '
+     'believing whichever they found first. Neither was wrong. The earlier '
+     'one named the thing this one did not: THE MECHANISM WORKED AND THE '
+     'REQUIREMENT TO READ IT DID NOT EXIST, which is a different failure '
+     'from an absent check and is the only reason this registry exists. '
+     'Flagged by hank. The loop below now de-duplicates and SAYS SO, so a '
+     'third entry costs a disclosure rather than a silent second run.'),
 ]
 
 
@@ -1844,7 +1835,36 @@ def main():
                 "can have moved. The seam tests still run on the next push that "
                 "touches code.\n\n")
     elif not _suite_busy:
-        for _t, _guards, _why in GUARD_TESTS:
+        # ── ONE RUN PER FILE, AND A DUPLICATE IS DISCLOSED (2026-09-26) ──
+        # GUARD_TESTS is a LIST, so a file registered twice was executed
+        # twice on every code push and described twice in the registry --
+        # which is how a reader ends up believing whichever account they
+        # found first. tests/sairncode_gates.js was registered twice, two
+        # days apart, by two sessions neither of which could see the other's
+        # entry; flagged by hank.
+        #
+        # DE-DUPLICATED HERE RATHER THAN ONLY IN THE LIST, because fixing
+        # the list fixes today and this fixes the next one. It is NOT an
+        # assert: a module-level raise in this file reaches the shell hook
+        # as a non-zero exit and would block every push, which is the
+        # opposite of this gate's documented fail-open-on-internal-error
+        # standard. A duplicate is a registry hygiene problem, not a seam
+        # failure, so it is REPORTED and costs nothing.
+        _seen_guard, _guard_dupes = set(), []
+        _guard_run = []
+        for _entry in GUARD_TESTS:
+            if _entry[0] in _seen_guard:
+                _guard_dupes.append(_entry[0])
+                continue
+            _seen_guard.add(_entry[0])
+            _guard_run.append(_entry)
+        if _guard_dupes:
+            sys.stderr.write(
+                '\nNOTICE: GUARD_TESTS registers %d file(s) more than once -- %s. '
+                'Each was run ONCE. Two entries for one file means two accounts of '
+                'one seam in the registry a reader consults; merge them.\n'
+                % (len(_guard_dupes), ', '.join(sorted(set(_guard_dupes)))))
+        for _t, _guards, _why in _guard_run:
             _p = os.path.join(repo, _t)
             if not os.path.isfile(_p):
                 # A registry entry naming a file that is gone is a suppression
