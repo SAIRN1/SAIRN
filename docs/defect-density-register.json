@@ -14857,6 +14857,173 @@
       "recurrence_open": "The tool now avoids the sha for PLUGINS. Nothing on this platform checks whether any OTHER audit keys on a field its own subject updates inconsistently -- the class is 'a provenance field refreshed on some writes and not others', and only this instance is closed."
     },
     {
+      "commit": "1f9936429432",
+      "date": "2026-09-26",
+      "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
+      "files": [
+        "api/bridge.js",
+        "api/bridge-push-auth.test.js"
+      ],
+      "lines_added": 76,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/bridge.js's push gate checked lic.valid (the key EXISTS in license_keys) and never lic.active (status === 'active'), so a REVOKED licence still wrote expense invoices -- payee, amount, memo, GL account -- to bridge_data. `status` is the platform's only licence revocation control: license_keys carries no expiry column at all, so a manual status flip is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and this write path did not honour it. All 40 other handlers calling validateLicenseKey read `active`; this was the only one that did not",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "requirements",
+      "phase_confidence": "clean",
+      "recurrence_open": "The gate is closed for bridge.js and all 41 handlers were enumerated, so no second instance of THIS omission exists today. Nothing mechanically prevents the 42nd handler from repeating it -- there is no check that a validateLicenseKey caller reads `active`, and the omission is invisible to node --check and to every existing suite except one written for that endpoint. A static check over api/*.js is the obvious control and is NOT built here.",
+      "found_by_tool": null,
+      "found_by_session": "fourth",
+      "injection": {
+        "commit": "af92c8f3",
+        "date": "2026-09-17",
+        "subject": "fix(bridge): push had the read side's exact defect -- unauthenticated, keyed on a raw licence key",
+        "lag_days": 9
+      },
+      "contributing_factors": [
+        {
+          "factor": "the gate was written as part of closing a DIFFERENT hole -- the unauthenticated, body-keyed write -- and 'require a licence' was treated as the requirement, so `valid` satisfied it. `active` is a second question the requirement never asked",
+          "kind": "requirements",
+          "action_status": "done",
+          "action": "the check is added above the session gate, and its comment states that valid and active are different facts and only the second can be withdrawn"
+        },
+        {
+          "factor": "the endpoint's own suite was thorough about the hole it was written for -- body-shopId, raw-key storage, fail-closed store, four session arms, the removed read side -- and had no arm anywhere in the valid-but-inactive state, so 24 green arms coexisted with the gap",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "three arms added: valid+inactive refused, refused even carrying a cryptographically valid pre-revocation session (which pins the gate ORDER, not just its presence), and an active-TRUE control that still writes so the arms are not refusing everything"
+        },
+        {
+          "factor": "there is no mechanical check that a validateLicenseKey caller reads `active` -- the omission is one absent line, invisible to node --check and to every suite not written for that specific endpoint, and it was found only by enumerating all 41 callers by hand while answering an unrelated question about licence expiry",
+          "kind": "detection",
+          "action_status": "open",
+          "action": "a static check over api/*.js asserting every validateLicenseKey caller also reads .active would have caught this the day it shipped; named in recurrence_open and NOT built here"
+        }
+      ]
+    },
+    {
+      "commit": "343e9e658006",
+      "date": "2026-09-26",
+      "subject": "fix(stonedesk): the two unread-result writes -- and the fix for the third was itself broken in three places",
+      "files": [
+        "docs/2026-09-26-fire-and-forget-write-audit.md",
+        "stonedesk.html",
+        "tests/customer_delete_does_not_resurrect.js",
+        "tests/faults/sd_write_faults.js",
+        "tests/stonedesk_write_result_consumption.js"
+      ],
+      "lines_added": 712,
+      "lines_removed": 27,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "stonedesk.html sdData() returned j.data for the write_batch action, and the endpoint's write_batch response has NO data key -- its answer IS the envelope {ok, written, refused, skipped_without_id}. So the client saw undefined on every SUCCESSFUL batch and three things broke silently at once: saveSD3Data warned 'the customer list did not reach the server' on every save that DID reach it; its refused branch was unreachable, so a customer deleted on another device was never dropped locally (the resurrection tests/customer_delete_does_not_resurrect.js exists to prevent, arriving by a second route); and sdMarkSynced is scoped to action==='write', so sd_customers ids stopped entering the synced map -- the server-wins carve-out's only input -- which failed in the SAFE direction and therefore showed nothing. Injected by be352a7d the same day, which correctly replaced a per-customer write storm and read the wrong half of the answer. Also in this commit: slabSyncOne() and sdLineageSyncOne() discarded their write result entirely (fire-and-forget audit findings 4 and 5), and pcToggleSlab had tested 'ok === false' since the public catalog shipped to warn 'the catalog on the web has NOT changed' -- slabSyncOne returned undefined on every path, so that warning could never fire and a failed publish said 'Slab published to the catalog'.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "be352a7d021a",
+        "date": "2026-09-26",
+        "subject": "fix(stonedesk): the customer list was one write per record, and the guard I added made each one two trips",
+        "lag_days": 0
+      },
+      "citation_note": "the third state, running the other way. A write_batch response carries no data key, so sdData's j.data answered undefined on SUCCESS and the caller's 'if (!r || r.ok !== true)' folded could-not-tell into failed -- the same shape as a check reporting a pass it never performed.",
+      "contributing_factors": [
+        {
+          "factor": "the transport returns j.data for every action, and one action answers with the envelope itself -- an asymmetry between endpoint and client that nothing compared",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "sdData returns the envelope for that one named action, narrow on purpose rather than a general fall-back-when-data-is-missing rule"
+        },
+        {
+          "factor": "the endpoint has a thorough suite (api/sd-data-customers-batch.test.js, 15 arms) and nothing drove the CLIENT consuming that response -- the seam between the two halves had no test on either side",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "tests/stonedesk_write_result_consumption.js, 18 arms, drives the client against the endpoint envelope read OUT OF api/sd-data.js so the two cannot drift apart"
+        },
+        {
+          "factor": "the batching change was verified by the trip count it was written to fix, and its own result-handling was never driven at all",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "a change whose POINT is that a result is now readable has to be driven reading that result. Not turned into a standing check here: no mechanism distinguishes that class of change from any other, and a gate on every commit touching a transport would refuse most of them."
+        },
+        {
+          "factor": "two suites were RED ON MAIN with nothing saying so -- sd_write_faults pinned the old write call and short-circuited before its own live assertion, and customer_delete_does_not_resurrect had a stale sandbox dependency list plus a write-only st() stub that DISARMED its mutant",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "both re-pinned; the phrase pin now matches unwrapped prose so a reflow cannot disarm it, and the vacuous negative assertion is guarded by asserting the list is non-empty first"
+        }
+      ],
+      "recurrence_open": "nothing checks that a client transport's return contract matches what each endpoint action actually sends. This fix is one action in one app; the other sixteen transports have the same shape and were not swept."
+    },
+    {
+      "commit": "9d6358d19160",
+      "date": "2026-09-26",
+      "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
+      "files": [
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 43,
+      "lines_removed": 23,
+      "app": "tooling",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "independent-review",
+      "summary": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "Two commits, not one: the first registration on 2026-09-23 and the second on 2026-09-25. Neither was wrong when written and neither author could see the other's entry, so pinning the defect to either sha would name a correct edit as the injection. The defect is the pair existing."
+      },
+      "citation_note": "PR 2.3 -- a fact with a tense needs a read, and A NUMBER NEEDS A SINGLE SOURCE. That second clause is the fit: one seam had two registrations and therefore two descriptions, and the generated traceability matrix counted it twice (GUARD_TESTS entries 11, not 10). A reader consulting either the registry or the matrix got a number and an account that depended on which copy they reached. Severity low because nothing was mis-gated: the suite ran, it ran twice, and it passed both times.",
+      "phase_note": "None of the four fits and saying so is better than picking one. This is not requirement, design, coding or config -- the list structure is fine and both entries are well-argued prose. What failed is COORDINATION: two sessions edited one shared registry two days apart with nothing comparing their additions. The nearest honest label would be a fifth, process, which this vocabulary deliberately does not carry.",
+      "contributing_factors": [
+        {
+          "factor": "GUARD_TESTS is a list keyed on nothing, so registering the same file twice is legal, silent, and costs a second execution plus a second description. Nothing in the structure makes a duplicate visible to the person adding the second entry.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "The consuming loop now de-duplicates by filename and writes a NOTICE naming the duplicated files. Deliberately not an assert: a module-level raise here reaches the shell hook as a non-zero exit and would block every push, which inverts this gate's documented fail-open-on-internal-error standard."
+        },
+        {
+          "factor": "Two sessions added an entry for the same file two days apart, neither able to see the other's work in progress. The registry is exactly the kind of shared list the claim system exists to serialise, and a registry entry is small enough that nobody claims a file to add one.",
+          "kind": "process",
+          "action_status": "not-actionable",
+          "note": "Claiming tools/sairn_push_gate_hook.py for a three-line registry addition would cost more coordination than the duplicate did, and would not have helped here anyway: the two entries were added on different days, so a claim held during one would have lapsed before the other. The loop-level de-duplication is the durable fix because it does not depend on anybody coordinating."
+        },
+        {
+          "factor": "A duplicated entry is not visibly wrong. Each entry reads as a correct, well-argued registration on its own, and the registry is long enough that a reader scrolling to one never reaches the other -- so the failure is a SPLIT ACCOUNT rather than a contradiction, which nothing flags.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Merged into one entry carrying both accounts, rather than deleting the earlier. The earlier one held the sentence the later did not -- the mechanism worked and the requirement to read it did not exist -- and deleting it would have lost the reason the registry exists."
+        },
+        {
+          "factor": "Nothing measured the registry against itself. The generated traceability matrix reproduces GUARD_TESTS row for row and printed the duplicate as two rows and a count of 11, which is the document an auditor reads -- and it agreed with the defect rather than exposing it.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The de-duplication NOTICE fires on the push path where it will be read. docs/traceability-matrix.md regenerated: the duplicate row is gone and the count reads 10. Found by hank, by reading the file, which is the channel that actually worked."
+        }
+      ],
+      "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
+    },
+    {
       "commit": "b015ea783653",
       "date": "2026-09-26",
       "subject": "fix(prompt-fence): three real unfenced sites the scanner reported CLEAN, and the mirror test two apps have been citing for a day never existed",
@@ -14973,59 +15140,63 @@
       "recurrence_open": "code1/code2 are now fenced in the app and STILL INVISIBLE to tools/adversarial_prompt_corpus.py, because no generic untrusted-field word list can name them. So this app's coverage rests on somebody having read it, not on a check -- and the same is true of every other app's domain-specific field names. The per-app field list the scanner's own header calls the real fix is still unwritten. Separately, whether a fenced prompt actually resists a determined payload is unmeasured: no model call has been driven against the injection corpus (docs/2026-09-13-ai-red-teaming-scoping.md)."
     },
     {
-      "commit": "9d6358d19160",
+      "commit": "bd1b5f781212",
       "date": "2026-09-26",
-      "subject": "fix(push-gate): tests/sairncode_gates.js was registered TWICE in GUARD_TESTS -- run twice per push, and described twice to a reader",
+      "subject": "fix(sairncare): WV rules are LIVE -- and the loader's verification had never run",
       "files": [
-        "tools/sairn_push_gate_hook.py"
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/run_compliance_loader_probe.py",
+        "tools/load_compliance_seed.py"
       ],
-      "lines_added": 43,
-      "lines_removed": 23,
+      "lines_added": 229,
+      "lines_removed": 67,
       "app": "tooling",
       "layer": "tooling",
-      "severity": "low",
-      "detection_method": "independent-review",
-      "summary": "tools/sairn_push_gate_hook.py registered tests/sairncode_gates.js TWICE in GUARD_TESTS, and GUARD_TESTS is a LIST iterated in order -- so the suite was EXECUTED TWICE on every push that touched code, and the registry a reader consults carried TWO DIFFERENT ACCOUNTS of one seam. The doubled run is the cheap half of the cost (measured 0.40s per run, so 0.40s wasted per code push). The expensive half is the split account: two entries describing the same invariant in different words, written two days apart by sessions that could not see each other's work -- 2026-09-23 on Michael's call after the eight days of SAIRNcode exposure were measured, and 2026-09-25 while discharging the independent review of the fix -- so a reader consulting the registry to understand why this suite blocks pushes gets whichever of the two they scroll past first and has no signal that a second, fuller account exists. Neither entry was wrong; each named something the other did not. The earlier one carried the sharpest sentence either had, THE MECHANISM WORKED AND THE REQUIREMENT TO READ IT DID NOT EXIST, which is the whole reason this blocking registry exists; the later one carried the measured wall cost and a second seam (the hand-written WRITE_GATED role table compared against the roles parsed out of api/sd-data.js). Flagged by hank inside cc's active claim on the file. FIXED by merging the two entries into one that carries both accounts rather than deleting either, AND by making the consuming loop de-duplicate by filename and DISCLOSE when it does -- because fixing the list fixes today and fixing the loop fixes the next one. The de-duplication is deliberately NOT an assert: a module-level raise in this file reaches the shell hook as a non-zero exit and would block every push on this platform, which is the opposite of the gate's documented fail-open-on-internal-error standard, so a duplicate is reported as registry hygiene and costs nothing. MEASURED AFTER: 11 entries -> 10, distinct 10, duplicates none.",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "tools/load_compliance_seed.py verification_probe() sent payload.check where api/sd-data.js's alf_compliance_rules evaluate branch requires payload.requirement_type, so every probe answered 400 \"evaluate requires state and requirement_type\" -- BEFORE and AFTER the load. Two identical 400s compare equal, so answer_changed() was False on every run the tool has ever made and it printed \"*** UNCHANGED -- nothing this app can use was loaded ***\" and exited 1 every time, INCLUDING the run in this session where all three West Virginia rules loaded correctly and the engine served them. Two further defects behind it: the probe sent no facility_class, so even a well-formed probe earns NO_RULE_FOR_CLASS because the engine refuses to apply one class's figures to another; and \"the answer must have CHANGED\" conflated nothing-loaded with already-loaded, when the endpoint upserts on (license_hash, rule_id) so an idempotent re-run is identical BY DESIGN. Fixed: the key, a facility_class taken from the rule being verified, one probe per rule with the evidence being ok:true AND a matching rule_id, and three verdicts -- LOADED / ALREADY IN FORCE / NOT IN FORCE -- of which only the third fails. WV is now live on ALF-TEST-2026 and a read-only sweep confirms 19 of 19 seeded rules are in force and reachable.",
       "rules": [
-        "2.3"
+        "1.11"
       ],
       "citation_confidence": "arguable",
-      "injection_phase": "unknown",
-      "phase_confidence": "inferred",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
       "found_by_tool": null,
       "found_by_session": null,
       "injection": {
-        "unknown_reason": "Two commits, not one: the first registration on 2026-09-23 and the second on 2026-09-25. Neither was wrong when written and neither author could see the other's entry, so pinning the defect to either sha would name a correct edit as the injection. The defect is the pair existing."
+        "commit": "94214cf1c5df",
+        "date": "2026-09-26",
+        "subject": "feat(sairncare): the compliance loader -- the half that made WV inert",
+        "lag_days": 0
       },
-      "citation_note": "PR 2.3 -- a fact with a tense needs a read, and A NUMBER NEEDS A SINGLE SOURCE. That second clause is the fit: one seam had two registrations and therefore two descriptions, and the generated traceability matrix counted it twice (GUARD_TESTS entries 11, not 10). A reader consulting either the registry or the matrix got a number and an account that depended on which copy they reached. Severity low because nothing was mis-gated: the suite ran, it ran twice, and it passed both times.",
-      "phase_note": "None of the four fits and saying so is better than picking one. This is not requirement, design, coding or config -- the list structure is fine and both entries are well-argued prose. What failed is COORDINATION: two sessions edited one shared registry two days apart with nothing comparing their additions. The nearest honest label would be a fifth, process, which this vocabulary deliberately does not carry.",
+      "citation_note": "the loader's own header promises \"a loader's exit code is not evidence\" and offers the before/after engine probe as the only evidence that counts. The probe never reached the engine, so the verification was a string comparison between two copies of the same refusal -- a check reporting a verdict it never performed, here in the pessimistic direction.",
       "contributing_factors": [
         {
-          "factor": "GUARD_TESTS is a list keyed on nothing, so registering the same file twice is legal, silent, and costs a second execution plus a second description. Nothing in the structure makes a duplicate visible to the person adding the second entry.",
+          "factor": "the probe payload was never checked against the interface it has to satisfy -- the endpoint names its required fields and the tool re-typed a different one",
           "kind": "technical",
           "action_status": "done",
-          "action": "The consuming loop now de-duplicates by filename and writes a NOTICE naming the duplicated files. Deliberately not an assert: a module-level raise here reaches the shell hook as a non-zero exit and would block every push, which inverts this gate's documented fail-open-on-internal-error standard."
+          "action": "tests/run_compliance_loader_probe.py section 4 now reads the required-field list OUT OF api/sd-data.js with a regex over the evaluate branch, so a hand-typed copy cannot go stale in the same direction as the thing it checks"
         },
         {
-          "factor": "Two sessions added an entry for the same file two days apart, neither able to see the other's work in progress. The registry is exactly the kind of shared list the claim system exists to serialise, and a registry entry is small enough that nobody claims a file to add one.",
-          "kind": "process",
-          "action_status": "not-actionable",
-          "note": "Claiming tools/sairn_push_gate_hook.py for a three-line registry addition would cost more coordination than the duplicate did, and would not have helped here anyway: the two entries were added on different days, so a claim held during one would have lapsed before the other. The loop-level de-duplication is the durable fix because it does not depend on anybody coordinating."
-        },
-        {
-          "factor": "A duplicated entry is not visibly wrong. Each entry reads as a correct, well-argued registration on its own, and the registry is long enough that a reader scrolling to one never reaches the other -- so the failure is a SPLIT ACCOUNT rather than a contradiction, which nothing flags.",
-          "kind": "latent-condition",
-          "action_status": "done",
-          "action": "Merged into one entry carrying both accounts, rather than deleting the earlier. The earlier one held the sentence the later did not -- the mechanism worked and the requirement to read it did not exist -- and deleting it would have lost the reason the registry exists."
-        },
-        {
-          "factor": "Nothing measured the registry against itself. The generated traceability matrix reproduces GUARD_TESTS row for row and printed the duplicate as two rows and a count of 11, which is the document an auditor reads -- and it agreed with the defect rather than exposing it.",
+          "factor": "the existing probe tested the loader's pure helpers against THEMSELVES -- answer_changed, and the probe's action name -- and every arm was green while the verification was dead",
           "kind": "detection",
           "action_status": "done",
-          "action": "The de-duplication NOTICE fires on the push path where it will be read. docs/traceability-matrix.md regenerated: the duplicate row is gone and the count reads 10. Found by hank, by reading the file, which is the channel that actually worked."
+          "action": "section 4 rewritten and 4b added: probe_verdict locked against synthetic fixtures in all three directions before it touched live data"
+        },
+        {
+          "factor": "the loader was written and landed without ever being run against the live licence, because the credentials were not to hand at the time",
+          "kind": "process",
+          "action_status": "done",
+          "action": "run, live, this session -- and the run is what surfaced this, not a read"
+        },
+        {
+          "factor": "a verification criterion of 'the answer must have CHANGED' cannot distinguish nothing-loaded from already-loaded, and an upserting endpoint makes the second case the NORMAL one",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "three states, never two; the idempotent re-run is an explicit PASS and is printed as ALREADY IN FORCE"
         }
       ],
-      "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
+      "recurrence_open": "the loader's docstring also documented a --verify flag that does not exist (verification is unconditional); nothing checks a tool's own header against its own argparse. And the four dead opened_at_sha stamps in the review ledger are the same class of dead pointer and are repaired by nothing yet."
     },
     {
       "commit": "be352a7d021a",
@@ -15297,57 +15468,6 @@
         }
       ],
       "recurrence_open": "The pin is resolved for the seed exemption. Nothing checks that any OTHER consumer of pushed_tip() treats its return as a refspec rather than a sha -- the same value is passed to the seed comparison and to export_sql_at, and whether either of those is refspec-safe was not audited here."
-    },
-    {
-      "commit": "1f9936429432",
-      "date": "2026-09-26",
-      "subject": "fix(bridge): the one endpoint of forty-one that never asked whether the licence was still active -- on the write path that carries expense invoices",
-      "files": [
-        "api/bridge.js",
-        "api/bridge-push-auth.test.js"
-      ],
-      "lines_added": 76,
-      "lines_removed": 0,
-      "app": "stonedesk",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "api/bridge.js's push gate checked lic.valid (the key EXISTS in license_keys) and never lic.active (status === 'active'), so a REVOKED licence still wrote expense invoices -- payee, amount, memo, GL account -- to bridge_data. `status` is the platform's only licence revocation control: license_keys carries no expiry column at all, so a manual status flip is the entire mechanism for cutting off a cancelled, refunded or charged-back account, and this write path did not honour it. All 40 other handlers calling validateLicenseKey read `active`; this was the only one that did not",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "requirements",
-      "phase_confidence": "clean",
-      "recurrence_open": "The gate is closed for bridge.js and all 41 handlers were enumerated, so no second instance of THIS omission exists today. Nothing mechanically prevents the 42nd handler from repeating it -- there is no check that a validateLicenseKey caller reads `active`, and the omission is invisible to node --check and to every existing suite except one written for that endpoint. A static check over api/*.js is the obvious control and is NOT built here.",
-      "found_by_tool": null,
-      "found_by_session": "fourth",
-      "injection": {
-        "commit": "af92c8f3",
-        "date": "2026-09-17",
-        "subject": "fix(bridge): push had the read side's exact defect -- unauthenticated, keyed on a raw licence key",
-        "lag_days": 9
-      },
-      "contributing_factors": [
-        {
-          "factor": "the gate was written as part of closing a DIFFERENT hole -- the unauthenticated, body-keyed write -- and 'require a licence' was treated as the requirement, so `valid` satisfied it. `active` is a second question the requirement never asked",
-          "kind": "requirements",
-          "action_status": "done",
-          "action": "the check is added above the session gate, and its comment states that valid and active are different facts and only the second can be withdrawn"
-        },
-        {
-          "factor": "the endpoint's own suite was thorough about the hole it was written for -- body-shopId, raw-key storage, fail-closed store, four session arms, the removed read side -- and had no arm anywhere in the valid-but-inactive state, so 24 green arms coexisted with the gap",
-          "kind": "detection",
-          "action_status": "done",
-          "action": "three arms added: valid+inactive refused, refused even carrying a cryptographically valid pre-revocation session (which pins the gate ORDER, not just its presence), and an active-TRUE control that still writes so the arms are not refusing everything"
-        },
-        {
-          "factor": "there is no mechanical check that a validateLicenseKey caller reads `active` -- the omission is one absent line, invisible to node --check and to every suite not written for that specific endpoint, and it was found only by enumerating all 41 callers by hand while answering an unrelated question about licence expiry",
-          "kind": "detection",
-          "action_status": "open",
-          "action": "a static check over api/*.js asserting every validateLicenseKey caller also reads .active would have caught this the day it shipped; named in recurrence_open and NOT built here"
-        }
-      ]
     }
   ],
   "started": "2026-09-09",
