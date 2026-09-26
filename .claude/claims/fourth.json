@@ -2387,8 +2387,8 @@
       "task": "sync_write_result_check TRANSPORTS seven missing transports, exit-code third state, statement-position classifier, benign resource-argument anchor, comment-aware lookback, twelve new control arms FILES: tools/sync_write_result_check.py tests/run_sync_write_result_probe.py",
       "claimed_at": "2026-09-26T00:51:24Z",
       "claimed_at_epoch": 1790383884.406592,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-26T01:10:45Z",
       "files": [
         "tests/run_sync_write_result_probe.py",
         "tools/sync_write_result_check.py"
