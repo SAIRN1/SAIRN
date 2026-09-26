@@ -15085,7 +15085,7 @@
       "recurrence_open": "The loop de-duplicates BY FILENAME, so two entries for the same file are caught -- and two entries for DIFFERENT files asserting the same invariant are not, which is the same split-account failure one step out. Nothing compares the registry's entries semantically and nothing reasonably could. Separately, the NOTICE is written to stderr on the push path only; a reader browsing GUARD_TESTS or docs/traceability-matrix.md directly still sees no signal, so this rests on somebody pushing rather than on somebody reading."
     },
     {
-      "commit": "a71f7d692bbd",
+      "commit": "84edca20af14",
       "date": "2026-09-26",
       "subject": "fix(sairncare): every employee could list every family contact's phone number, and a family's MAR silently stopped at 500 rows",
       "files": [
