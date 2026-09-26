@@ -3435,6 +3435,29 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-25T23:51:26Z",
+      "resources": [
+        "sdn_invoices",
+        "sen_clients",
+        "sf_youth_participants"
+      ],
+      "rules": [],
+      "files": [
+        "api/sd-data.js",
+        "sairndesign.html",
+        "tests/gated_resource_direct_fetch_header.js",
+        "tests/run_sf_session_gate_sabotage_probe.py"
+      ],
+      "what": "THREE THINGS IN ONE PUSH, and the first is a LIVE AUTH FIX on a money path -- review it as such.\n\n(A) sairndesign.html invoice-create now attaches X-SD-Auth. Found while reviewing hank's own SAIRNdesign gate (944f6685): that commit gated sdn_invoices for read AND write, and this site is a DELIBERATE direct fetch (it needs the real 409 DUPLICATE_INVOICE that sdnData collapses to null) which built its own headers with no token. Every invoice created after the gate landed got 403 FORBIDDEN while the optimistic local insert stayed and the user was told \"server sync failed, try again with a connection\". Driven against the real handler before and after: 403 without the header, 200 with a signed sairndesign session and an active credential. Held by a new class check, tests/gated_resource_direct_fetch_header.js.\n\nATTACK (A1), HARDEST FIRST: I fixed the HEADER and did not touch the ERROR PATH. A 403 still renders \"Saved on this device only -- server sync failed, try again with a connection\", which is the wrong reason for an auth refusal and is exactly the misleading message that let this hide for two days. Decide whether the catch should distinguish 403 from a transport failure, and whether the optimistic local insert should be rolled back on 403 the way it already is on 409 -- I deliberately changed neither, because both are behaviour changes on a money path and this commit was already a security fix.\n\nATTACK (A2): the fix reads sdnSession.token at call time. Confirm no path reaches this function before sdnEnterApp has set it -- I traced every gated-resource call site into a user-action handler and both boot paths as session-first, but that is a static trace of a page I cannot load.\n\nATTACK (A3): my class check asserts the token appears in the fetch segment OR the 900 characters before it. A header assembled further up than that reads as MISSING and would fail loudly, which is the safe direction -- but confirm the window is not so wide that an UNRELATED X-SD-Auth elsewhere in the same function could make a genuinely tokenless fetch look covered.\n\n(B) api/sd-data.js: sen_caregivers and bld_bids converted to api/_lib/blob.js storedBlob, column lists verified against their own reads. sen_caregivers gets ['id'] alone (no assigned_employee_id column on its select); bld_bids keeps ['id','assigned_employee_id'] because that column is server-resolved AND the read filters on it for non-management callers.\n\nATTACK (B1): bld_bids is the one to press. If assigned_employee_id were NOT stripped, a payload copy would sit inside data and shadow the resolved column on read -- which would hand a PM a bid the visibility filter meant to hide. Confirm the strip is actually what prevents that, rather than the projection order doing it anyway, because if the projection already protects it then my stated reason is wrong even though the code is right.\n\nATTACK (B2): sen_caregivers' list is NARROWER than its neighbour sen_clients'. Verify that is a real difference in the tables and not me missing a column.\n\n(C) tests/run_sf_session_gate_sabotage_probe.py arm 2 re-anchored: sf_youth_participants stopped being SD_GATE_APP's last row and gained a trailing comma, so the arm was ANCHOR-0 -- armed-looking and testing nothing.\n\nATTACK (C1): confirm the re-anchored mutation still plants the defect its NAME claims (gate kept, expectedApp entry lost, so expectedApp resolves to 'stonedesk' and refuses every correctly signed-in SAIRNfreedom caller) rather than merely something the suite refuses. A mutation that parses and is caught for the wrong reason is the next shape along, and the harness's new parse check cannot see it.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-25T23:51:26Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

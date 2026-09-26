@@ -485,6 +485,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | ~~**&#128308; ALL 18 SAIRNdesign resources are authorised by the LICENCE KEY ALONE &mdash; `SDN_RESOURCES` verifies NO SESSION on either leg, and FIVE of them are now Tier A**~~ | **&#9989; THE FIVE TIER A ROWS ARE GATED, 2026-09-23 (Hank).** `sdn_contracts`, `sdn_discounts`, `sdn_invoices`, `sdn_pos`, `sdn_referrals` are in `SD_SESSION_GATED` with matching `SD_GATE_APP` entrie | `api/sd-data-sdn-session-gate.test.js` |
+| **&#128308; EVERY INVOICE CREATED SINCE 2026-09-23 GOT 403 AND THE USER WAS TOLD IT WAS A CONNECTION PROBLEM &mdash; the session gate landed and one DIRECT FETCH bypassed the transport that carries the token** | **FOUND AND FIXED 2026-09-25 (CC)** while reviewing hank&rsquo;s gate (944f6685). `sairndesign.html`&rsquo;s invoice-create is a deliberate direct fetch &mdash; it needs the real 409 DUPLICATE_INVOICE | `tests/gated_resource_direct_fetch_header.js` |
 
 ### sairnfreedom
 
@@ -653,8 +654,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 | source | citations |
 |---|---|
 | `index` | 311 |
-| `declared` | 271 |
-| `declared+index` | 48 |
+| `declared` | 270 |
+| `declared+index` | 49 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -789,7 +790,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 738   tests/**, api/** (both walked)
-  open-work rows citing a test       358   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       359   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 11   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                62   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     69   report_only_checks.NOT_PROMOTED

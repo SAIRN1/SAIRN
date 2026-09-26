@@ -70,8 +70,14 @@ MUTATIONS = [
      "first'. Fails closed and confusingly, which is how a security change "
      "gets reverted instead of fixed",
      SRC,
-     "      'sf_youth_participants': 'sairnfreedom'\n",
-     "\n"),
+     # ANCHOR RE-DERIVED 2026-09-25: sf_youth_participants stopped being the
+     # SD_GATE_APP map's last row when later apps were appended, so it gained a
+     # trailing comma and this anchor matched nothing -- ANCHOR-0, an arm that
+     # looked armed and tested nothing. Same cause as four other arms repaired
+     # the same day; the general fix is to anchor on the ENTRY, never on the
+     # entry-plus-whatever-punctuation-happens-to-follow-it.
+     "      'sf_youth_participants': 'sairnfreedom',\n",
+     ""),
 
     ("3. MINORS LOSE THE GATE while every other resource keeps it, so the "
      "batch still looks armed and the one row of children's names does not",

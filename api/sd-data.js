@@ -4995,9 +4995,14 @@ module.exports = async (req, res) => {
           return;
         }
       }
-      const bidData = Object.assign({}, payload);
-      delete bidData.id;
-      delete bidData.assigned_employee_id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // COLUMN LIST VERIFIED AGAINST THE READ (:4936): it selects
+      // bid_id,assigned_employee_id,data and spreads {id, assigned_employee_id}
+      // + data. assigned_employee_id MUST stay in the strip list: it is
+      // resolved server-side into requestedAssignee, the read FILTERS on the
+      // column for non-management callers, and a blob copy would both shadow
+      // the resolved value and hand a PM a bid the filter meant to hide.
+      const bidData = storedBlob(payload, ['id', 'assigned_employee_id']);
       const r = await fetch(rest('bld_bids?on_conflict=license_hash,bid_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
@@ -5299,8 +5304,14 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_caregivers payload.id is required' } }); return; }
-      const caregiverData = Object.assign({}, payload);
-      delete caregiverData.id;
+      // storedBlob: column keys per branch, scope keys never stored.
+      // COLUMN LIST VERIFIED AGAINST THE READ (:5269): it selects
+      // caregiver_id,data and spreads {id: caregiver_id} + data, so `id` is
+      // the only real column. NOTE it is NARROWER than sen_clients next door,
+      // which also strips assigned_employee_id -- this table's select carries
+      // no such column, and copying the neighbour's list would have stripped a
+      // payload field the app really stores.
+      const caregiverData = storedBlob(payload, ['id']);
       const r = await fetch(rest('sen_caregivers?on_conflict=license_hash,caregiver_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),

@@ -154,7 +154,20 @@ def main():
     # because this probe must never write to the real ledger.
     print('\nTHE WIRING -- main() must actually CALL it, on both commands')
     seen = {}
-    tg.cmd_open = lambda why, rng=None: (seen.update(why=why, rng=rng), 0)[1]
+    # THE STUB MUST TRACK THE REAL SIGNATURE, and this one stopped: cmd_open
+    # gained a third parameter (`named`, the explicit --resources list) on
+    # 2026-09-25, so main() called it with three arguments and the two-argument
+    # lambda raised TypeError. The probe then reported "the suite is GREEN in
+    # the worktree" as FAILED -- red about a stub, not about the subject, and it
+    # took the run_body_file_wiring sabotage probe down with it because a red
+    # baseline stops every mutation.
+    #
+    # *args/**kwargs rather than a third named parameter, deliberately: a stub
+    # that mirrors an evolving signature by hand goes stale again the next time
+    # it changes, and this one is asserting about WHETHER main() calls it, not
+    # about what it is called with beyond `why`.
+    tg.cmd_open = lambda why, *a, **k: (
+        seen.update(why=why, rng=(a[0] if a else k.get('rng'))), 0)[1]
     tg.cmd_discharge = (lambda author, verdict, opened_at=None, takeover=False:
                         (seen.update(author=author, verdict=verdict,
                                      opened_at=opened_at, takeover=takeover), 0)[1])
