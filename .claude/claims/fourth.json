@@ -2454,6 +2454,21 @@
         "tests/run_tiering_recheck_probe.py",
         "tools/tiering_recheck.py"
       ]
+    },
+    {
+      "id": "fourth-1790444682",
+      "session": "fourth",
+      "subject": "fourth-q9b",
+      "task": "queue9 items 1,5,6 in api/sd-data.js, NOW UNBLOCKED (cc-queue10 released; cc-queue11 explicitly leaves this file to fourth): 12 remaining blob builders that cc's grep pattern could not see, MAR read silent limit=500 truncation + family-contact phone exposure to every authenticated employee, and the single-entry-point credential-recheck pre-gate for all 132 verifySessionToken gates. Plus items 3,8,9. SUBJECT NAMED PER PR 4.3 FILES: api/sd-data.js api/_lib/blob.js sairnlaw.html docs/",
+      "claimed_at": "2026-09-26T17:44:42Z",
+      "claimed_at_epoch": 1790444682.2195377,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "api/_lib/blob.js",
+        "api/sd-data.js",
+        "sairnlaw.html"
+      ]
     }
   ],
   "refusals": [
