@@ -3979,6 +3979,36 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-27T02:06:03Z",
+      "opened_at_sha": "0f9d1eb9f1434a95138faff2c963a5c563c74a13",
+      "resources": [
+        "mech_credentials",
+        "mech_site_assets",
+        "sc_claims",
+        "sc_drg",
+        "sc_eligibility",
+        "sc_fraud",
+        "sc_hcc",
+        "sc_pctc",
+        "sc_prebill"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "sairnmechanical.html",
+        "tests/sairnmechanical_site_asset_export.js",
+        "tools/panel_depth.py"
+      ],
+      "what": "SAIRNmechanical site-asset register gains a CSV export (mech_site_assets, Tier A), and tools/panel_depth.py is a new READ-ONLY measurement instrument that names seven sc_ Tier A resources in a PURPOSES string and a fixture list -- it reads files and writes nothing, so review it as a measurement claim rather than as a change to those resources.\n\nREVIEW THE EXPORT'S THREE-RULE SEPARATION FIRST, it is the part a reader would most plausibly simplify. The file carries SIX refrigerant columns -- a scope AND a reason for each of 40 CFR 82.157, 40 CFR 84.106 and 17 CCR 95380 -- and merging them into one 'in scope' column would be this app deciding which rule governs a customer's machine, which api/_lib/mech-assets.js exists to refuse. Arms C1-C5 hold it, including the boundary case: an asset at exactly 50.0 lb is at_or_above under 82.157 (50 OR MORE) and below under 17 CCR 95380 (MORE THAN 50), and an asset with no site state is unknown_jurisdiction rather than out of scope.\n\nALSO WORTH A SECOND READ: the charge column. A recorded charge of 0 is a real measurement and is falsy in JS, so the obvious accessor -- r.refrigerant_charge_lb OR-ELSE empty-string -- turns it into 'never weighed'. Driven both ways (B2/B3). And the cache discipline -- _mechAssetLast is nulled on all three of mechAssetRefresh's non-board paths (401/403, !ok, provisioned===false) so the export cannot write a stale register after the server starts refusing; E2 counts the clears rather than trusting them.\n\nNOT CHANGED: mech_credentials' own export logic. Its two toast strings became per-dataset because they were hardcoded to 'the credential register' and 'including records the board supersedes', both false of the new dataset -- arms D2/D3 assert the credential side still says both, so confirm the refactor did not weaken the register whose export existed first.\n\n20 arms green, five sabotages each caught by the intended arm. Credential export 29/29 and mech-assets 62/62 unchanged.\n\nTEXT REPAIRED IMMEDIATELY AFTER RECORDING, and said here rather than silently: the sentence above named the accessor inside shell backticks, so bash substituted it away and the record went in with a gap exactly where the line to look at should have been. Only that sentence changed; the resources, the assignment and the status are untouched.",
+      "status": "open",
+      "reviewer_owner": "cloud",
+      "owner_assigned_at": "2026-09-27T02:06:03Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
