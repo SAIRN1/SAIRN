@@ -647,6 +647,73 @@ const DRUGS = m ? JSON.parse(m[1]) : null;
       + 'means one was deleted as prose.');
   });
 
+  test('the flunixin CATTLE row says the label route is IV ONLY', function () {
+    // FOOD SAFETY, not just dosing. The row said route "IV/IM"; Banamine's
+    // label (NADA 101-479) is intravenous only in cattle, and extra-label IM or
+    // SC flunixin is a known cause of VIOLATIVE TISSUE RESIDUES -- the 4-day
+    // withdrawal is established for the IV route and does not hold for another.
+    // A wrong route here does not hurt the animal, it puts residue in the food
+    // supply and the withdrawal time beside it says everything is fine.
+    const fc = row('Flunixin Meglumine', 'cattle');
+    assert.ok(fc, 'the flunixin cattle row is gone');
+    assert.ok(/IV ONLY/i.test(String(fc.route)),
+      'the cattle route reads ' + JSON.stringify(fc.route) + '. The label is '
+      + 'slow intravenous only.');
+    assert.ok(/VIOLATIVE TISSUE RESIDUES/i.test(String(fc.flag)),
+      'the flag no longer says WHY the route matters. "IV only" on its own '
+      + 'reads as a preference; the residue consequence is what makes it a '
+      + 'food-safety fact.');
+    assert.ok(/101-479/.test(String(fc.reference || '')),
+      'the cattle row lost its Banamine NADA citation');
+    assert.strictEqual(fc.withdrawalStatus, 'label_sourced',
+      'withdrawalStatus is ' + fc.withdrawalStatus + '. The meat and milk times '
+      + 'are now read from the label, so telling a reader to "Verify Label" '
+      + 'sends them to look up a figure this app is holding with a citation.');
+    assert.ok(/4 days/.test(String(fc.withdrawalMeat))
+              && /36 hours/.test(String(fc.withdrawalMilk)),
+      'the withdrawal times are ' + JSON.stringify([fc.withdrawalMeat, fc.withdrawalMilk])
+      + ', expected 4 days meat and 36 hours milk.');
+  });
+
+  test('a label_sourced row MUST carry a reference -- the badge shows it', function () {
+    // The green withdrawal badge puts the reference in its tooltip. A row
+    // marked label_sourced with no reference renders a green chip whose hover
+    // text is an apology, which is worse than the amber "Verify Label" it
+    // replaced.
+    const bad = DRUGS.filter(function (d) {
+      return d.withdrawalStatus === 'label_sourced' && !d.reference;
+    }).map(function (d) { return d.name + '/' + d.species; });
+    assert.deepStrictEqual(bad, [],
+      'row(s) marked label_sourced with no citation: ' + JSON.stringify(bad));
+  });
+
+  test('the flunixin HORSE row records that the label is ONCE DAILY', function () {
+    const fh = row('Flunixin Meglumine', 'horse');
+    assert.ok(fh, 'the flunixin horse row is gone');
+    assert.ok(/ONCE DAILY/i.test(String(fh.dose)),
+      'the horse dose reads ' + JSON.stringify(fh.dose) + '. The label is once '
+      + 'daily for up to 5 days; the row previously said SID-BID and BID is '
+      + 'extra-label in the horse.');
+    assert.ok(/101-479/.test(String(fh.reference || '')),
+      'the horse row lost its Banamine NADA citation');
+  });
+
+  test('the species-copy marker still fires on flunixin -- and is CORRECT to', function () {
+    // WORTH ASSERTING BECAUSE IT LOOKS LIKE A FALSE POSITIVE AND IS NOT. Horse
+    // and cattle both carry 1.1mg/kg, so the marker flags them as a shared
+    // figure -- and the labels confirm BOTH are genuinely 1.1mg/kg. This is the
+    // case the marker was deliberately built to WARN about rather than refuse:
+    // a shared dose is sometimes correct, and here it is correct for two
+    // species on two separate label indications. If this ever becomes a gate,
+    // this row is what it would wrongly reject.
+    const fh = copied.rows['Flunixin Meglumine|horse'];
+    assert.ok(fh, 'flunixin/horse is no longer flagged as sharing a figure. '
+      + 'That may be right -- but if the doses have been differentiated, the '
+      + 'comment in svSpeciesCopiedDoses about this case needs rewriting too.');
+    assert.ok(/1\.1/.test(String(fh.figure)),
+      'flunixin/horse is flagged on figure ' + fh.figure + ', not 1.1');
+  });
+
   test('the buprenorphine CAT row names the formulation trap', function () {
     const bc = DRUGS.filter(function (d) {
       return d.name === 'Buprenorphine' && d.species === 'cat';
