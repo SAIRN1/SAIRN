@@ -201,6 +201,33 @@ is a yard-floor problem that a screen cannot solve.
 > **This is the 8th gap and it remains OPEN.** Seven are closed: GAP 5 found
 > built 09-15, GAP 7 closed 09-03, GAPs 1/2/3 and the remnant half of 8 closed
 > 09-02, GAP 6 is a standing decision rather than a work item.
+>
+> **STEP 1 LANDED THE SAME DAY (2026-09-26) AND STEP 2 IS THE GATED ONE.**
+> `panel-veinmatch` now accepts up to four real slab photos — declared types
+> only, `media_type` taken from the file rather than hardcoded, the bytes never
+> persisted, and the row records how many were READ so a failed request logs 0
+> rather than crediting photos nobody looked at. The prompt states the photos are
+> hand-held with no scale reference and no colour target, and forbids dimensions,
+> percentages, colour values and any numeric match score. Held by
+> `tests/stonedesk_veinmatch_photos.js`, 22 arms, four sabotages caught, and
+> live-verified on the deployed URL.
+>
+> **So the accounting on this row is now the same shape as SAIRNroofing's B6:
+> the buildable half is built and the vendor half is refused-and-disclosed.**
+> Step 2 — a *calibrated* feed with known scale and a colour reference — needs a
+> scanner interface from Slabsmith, SideShot, Iride or Mapascan, which is a
+> commercial relationship and not a module. `slabsmith` is still **0** in the
+> file. **Do not read "step 1 landed" as GAP 4 closed**; read it as *no un-gated
+> work remains on GAP 4*, which is a different and smaller claim.
+>
+> **AND AN ORPHAN WAS DELETED RATHER THAN WIRED, recorded so it is not
+> rediscovered as a shortcut.** `vmAnalyze()`/`vmPreview()` already did two-photo
+> vein matching and had zero callers and no host panel. It was removed
+> (`@REGISTER module=vein-matching-ai`) because it parsed a 1–10 score out of the
+> model's prose and **defaulted to 5 when the regex missed** — rendered as a
+> coloured circle headed "Vein Match Score" — which would have put a fabricated
+> figure back into the one panel whose three quantitative KPIs were zeroed for
+> exactly that reason.
 
 `slabsmith` appears **zero times** in the file (the AI prompt mentions "Slabsmith
 and Horace integration" as *knowledge*, not as a code path). No SideShot, Iride
