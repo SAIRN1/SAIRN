@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**242 files in `tools/`.** By what actually invokes them:
+**243 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,14 +28,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 3 | session-start or prompt hooks, informational |
 | **DECIDED** | 70 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 43 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 48 | nothing runs these at all |
+| **UNWIRED** | 49 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
 | ADVISORY | 3 |
-| CHECKER | 165 |
+| CHECKER | 166 |
 | GENERATOR | 19 |
 | LIBRARY | 25 |
 | LIVE | 25 |
@@ -48,13 +48,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 30 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 11 wired nowhere at all, and 19
+**The number to act on: 31 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 12 wired nowhere at all, and 19
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 30, by name, so this is actionable rather than a statistic:
+The 31, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -71,6 +71,7 @@ The 30, by name, so this is actionable rather than a statistic:
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `known_red_check.py` | SUITE-ONLY | a test suite that has gone red and is NOT already recorded as known-red -- the one failure a reader cannot otherwise find. 33 of 390 files were red on origin/main with nothing recording which 33, so a genuinely new regression was indistinguishable from the existing set and "some suites are just red" became the reading. Reports four answers rather than two: NEW, KNOWN, CHANGED (recorded as red but now failing on a DIFFERENT arm, so a second defect is hiding inside an entry that says the file is expected to fail) and RECOVERED (recorded and now green -- reported as loudly as NEW, because a stale entry SWALLOWS the next real failure of that file). Refuses a truncated run log rather than reading it as a clean platform |
 | `negated_status_assertion_scan.py` | UNWIRED | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything |
+| `panel_depth.py` | UNWIRED | a panel that looks built because its vocabulary is present. Nine signals per panel, four SHALLOW (a panel div, a nav route, a registered resource, a client write) and five DEEP (a real SQL table, the resource NAMED in executable endpoint code, a verb beyond generic CRUD, that verb actually SENT, a test file naming it). Built because two documents recorded the same debt and neither paid it: the 2026-09-23 internal SAIRNcode audit says "breadth of panel is not depth of function ... a direct depth check on those eight panels is owed before pitching a large hospital system", and the 2026-09-26 cloud audit deferred it again in its own words. FIRST RESULT: of SAIRNcode's eight enterprise RCM panels, claims scores 9/9 and the other seven score 6/9 missing the SAME three deep signals -- and every mention of sc_denial/sc_ar/sc_revenue in api/sd-data.js is inside a COMMENT, so all seven ride the generic handler with no per-resource rule. Reports PRESENT and COULD-NOT-TELL as TWO numbers that are never added, carries NO threshold on purpose because a threshold would manufacture a pass/fail out of a design question, and names what it cannot see: sufficiency at scale, whether a test that mentions a resource asserts anything about it, and a capability served by its own endpoint rather than by sd-data (sc_eligibility is the live example). Criteria are stamped and locked against 12 synthetic fixtures that run BEFORE any real judgement -- the lock refused version .1 for matching a commented-out panel id, and the first real run exposed a domain_verb that credited five sibling resource names as verbs off one list line. |
 | `primitive_obsession_check.py` | SUITE-ONLY | a NEW occurrence of three shapes where a raw primitive crosses a boundary unparsed, each already paid for here: a measured value defended into a default (Number(x)||0 -- empty, unreadable and a legitimate zero collapse into one number, the sairndental silent-$0 shape), a config read where Number('') is 0 (a cleared env var becomes a switched-off feature that looks configured), and a locale date string stored or compared as data (toLocaleDateString does not sort and differs per viewer). 233 existing keys grandfathered; refuses (exit 2) when its own fixture lock fails OR when a whole baselined shape finds zero matches, because a detector that went blind must never look like progress. Disjoint from truthy_sum_check by construction: that one requires coercion ABSENT, these require it present or absent-but-locale |
 | `rate_limit_race_model.js` | SUITE-ONLY | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla |
 | `reservation_lock_invariants.js` | UNWIRED | a reservation compare-and-swap that has stopped being one -- item 78's second target. It enumerates EVERY interleaving of 2, 3 and 4 concurrent reservers against one leg_merch_units unit (6, 90 and 2520 orderings, no sampling) and asserts that at most one is ever told it succeeded, with the blind-upsert semantics every OTHER transition on that resource uses as the CONTROL -- if the control ever stops violating, the clean result is vacuous and the run says so. It also reads the real branch out of api/sd-data.js and exits 2 COULD NOT RUN, never 0, if the &data->>status=eq.Available precondition is no longer inside the guarded PATCH: a checker that keeps passing after the lock it models is replaced by an upsert is the defect, not the check. It does NOT prove Postgres atomicity -- that assumption is printed on every run rather than hidden |
@@ -373,7 +374,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (48)
+## UNWIRED (49)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -412,6 +413,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `mech_panels_live_check.py` | LIVE | a SAIRNmechanical panel that looks wired and does not reach its table, and -- with --static, needing no licence -- a dropdown offering a value the endpoint REFUSES. That second one is the reason it exists rather than being a one-off run: nothing else compares the Equipment panel's asset-type `<option>` list to api/_lib/mech-assets.js ASSET_TYPES, and a disagreement hands every user a 400 UNKNOWN_ASSET_TYPE from a form that offered the value. It asserts the ROUND TRIP rather than the columns: column metadata proves the DDL, and only a write-then-read proves the app preserves the three-state NULLs both tables are designed around (an unweighed charge must not come back 0, an unstated gwp_over_150 must not come back false, an unrecorded expiry must not read as current). Neither table grants DELETE by design, so the verification row is RETIRED or SUPERSEDED rather than removed and the run says so -- and the ids carry a per-run timestamp so a re-run cannot collide with the last one. --static is a COULD-NOT-TELL about the panels and prints that rather than a pass | &mdash; |
 | `negated_status_assertion_scan.py` | CHECKER | a READ-LIST of assertions that express "the caller got through" as the NEGATION of one status code. `!== 401` is satisfied by a 403, by a 500 and by the harness throwing -- and on 2026-09-16 exactly that arm, in tests/app_session_isolation.js, printed "law_trusttx is reachable with the LICENCE ALONE -- no session -- and answers 403" IN GREEN, over a gate that had just been put in front of attorney IOLTA trust money. DELIBERATELY NOT A VERDICT: `!== <code>` is CORRECT when the claim is "some OTHER lock answered first", and nothing mechanical can tell that from "it got through" -- so every row is printed with its assertion and its message for a human, and the tool says so in its own output. It does NOT classify by message text, because keyword-matching "reaches" would be wrong in both directions, which this platform has paid for twice. Reads comment-stripped source, since the repo now contains several comments DISCUSSING the defect. FOUND A SECOND INSTANCE ON ITS FIRST REAL RUN: api/sairndental/public-book.test.js asserted a three-way disjunction for "reaches the network stage" and was green while the request 502ed before reaching anything | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
+| `panel_depth.py` | CHECKER | a panel that looks built because its vocabulary is present. Nine signals per panel, four SHALLOW (a panel div, a nav route, a registered resource, a client write) and five DEEP (a real SQL table, the resource NAMED in executable endpoint code, a verb beyond generic CRUD, that verb actually SENT, a test file naming it). Built because two documents recorded the same debt and neither paid it: the 2026-09-23 internal SAIRNcode audit says "breadth of panel is not depth of function ... a direct depth check on those eight panels is owed before pitching a large hospital system", and the 2026-09-26 cloud audit deferred it again in its own words. FIRST RESULT: of SAIRNcode's eight enterprise RCM panels, claims scores 9/9 and the other seven score 6/9 missing the SAME three deep signals -- and every mention of sc_denial/sc_ar/sc_revenue in api/sd-data.js is inside a COMMENT, so all seven ride the generic handler with no per-resource rule. Reports PRESENT and COULD-NOT-TELL as TWO numbers that are never added, carries NO threshold on purpose because a threshold would manufacture a pass/fail out of a design question, and names what it cannot see: sufficiency at scale, whether a test that mentions a resource asserts anything about it, and a capability served by its own endpoint rather than by sd-data (sc_eligibility is the live example). Criteria are stamped and locked against 12 synthetic fixtures that run BEFORE any real judgement -- the lock refused version .1 for matching a commented-out panel id, and the first real run exposed a domain_verb that credited five sibling resource names as verbs off one list line. | &mdash; |
 | `plugin_upgrade_check.py` | LIVE | a plugin reported as BEHIND when it was just upgraded, and one reported CURRENT that never was -- it compares VERSIONS read off the installed plugin.json and the marketplace pin, and never reads gitCommitSha, which `claude plugin update` leaves pointing at the old commit | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
 | `probe_selector.py` | REPORTER | which of the 64 sabotage probes a given push actually needs -- the scoped alternative to a 30.6-minute pre-push wall measured on 2026-09-25. The subject is DERIVED from each probe's own MUTATIONS file slots and stage= tuple, read with ast because importing a probe RUNS it, so no new declaration exists to go stale. A probe whose subject cannot be read is REPORTED and exits 1 -- never silently skipped (the silent-pass shape the corpus exists to catch) and never silently included (which makes undeterminable cost the whole 30 minutes). Its acceptance test is executable, --self-check, and the arm that matters is that a docs-only push selects NOTHING: running the corpus to be safe is how the wall gets in through the back door | &mdash; |
@@ -458,7 +460,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      242   git ls-files tools/
+  tools on disk                      243   git ls-files tools/
   hook entries                        11   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                62   report_only_checks.REGISTRY

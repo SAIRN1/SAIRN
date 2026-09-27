@@ -73,6 +73,32 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'panel_depth.py': ('CHECKER',
+        'a panel that looks built because its vocabulary is present. Nine '
+        'signals per panel, four SHALLOW (a panel div, a nav route, a '
+        'registered resource, a client write) and five DEEP (a real SQL table, '
+        'the resource NAMED in executable endpoint code, a verb beyond generic '
+        'CRUD, that verb actually SENT, a test file naming it). Built because '
+        'two documents recorded the same debt and neither paid it: the '
+        '2026-09-23 internal SAIRNcode audit says "breadth of panel is not '
+        'depth of function ... a direct depth check on those eight panels is '
+        'owed before pitching a large hospital system", and the 2026-09-26 '
+        'cloud audit deferred it again in its own words. FIRST RESULT: of '
+        'SAIRNcode\'s eight enterprise RCM panels, claims scores 9/9 and the '
+        'other seven score 6/9 missing the SAME three deep signals -- and '
+        'every mention of sc_denial/sc_ar/sc_revenue in api/sd-data.js is '
+        'inside a COMMENT, so all seven ride the generic handler with no '
+        'per-resource rule. Reports PRESENT and COULD-NOT-TELL as TWO numbers '
+        'that are never added, carries NO threshold on purpose because a '
+        'threshold would manufacture a pass/fail out of a design question, and '
+        'names what it cannot see: sufficiency at scale, whether a test that '
+        'mentions a resource asserts anything about it, and a capability '
+        'served by its own endpoint rather than by sd-data (sc_eligibility is '
+        'the live example). Criteria are stamped and locked against 12 '
+        'synthetic fixtures that run BEFORE any real judgement -- the lock '
+        'refused version .1 for matching a commented-out panel id, and the '
+        'first real run exposed a domain_verb that credited five sibling '
+        'resource names as verbs off one list line.'),
     'purpose_expired_measure.py': ('GENERATOR',
         'nothing. It is a recorded REFUSAL with a reproducible measurement '
         'behind it. Three "purpose expired" detectors were designed as the '
