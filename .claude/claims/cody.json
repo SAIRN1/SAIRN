@@ -2493,6 +2493,24 @@
         "tests/sairnbiz_benefits_fabrication.js",
         "tests/sairnsenior_cert_gate.js"
       ]
+    },
+    {
+      "id": "cody-1790507145",
+      "session": "cody",
+      "subject": "cody",
+      "task": "cody-q15: land the crashed session's tier_a_review_gate scope-divergence fix (planned action closed), plus a SECOND clone-dependent defect in its own probe section 8 -- hardcoded fixture owner 'cody' and author 'hank' made the three takeover arms FAIL on the cody clone and SelfSigned on hank; derived and asserted instead. Then register-only planned-action closures, SAIRNfreedom PR#18 audit fixes (profit-chain stale claim, two-person approval, trustee packet, bingo-transfer flag, statute corrections, HB 96), and the strip_comments.js migration sweep. SUBJECT NAMED PER PR 4.3 FILES: tools/tier_a_review_gate.py tests/run_tier_a_review_gate_probe.py docs/defect-density-register.json docs/SAIRN-OPEN-WORK-INDEX.md sairnfreedom.html tests/lib/strip_comments.js",
+      "claimed_at": "2026-09-27T11:05:45Z",
+      "claimed_at_epoch": 1790507145.0313747,
+      "status": "active",
+      "released_at": null,
+      "files": [
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/defect-density-register.json",
+        "sairnfreedom.html",
+        "tests/lib/strip_comments.js",
+        "tests/run_tier_a_review_gate_probe.py",
+        "tools/tier_a_review_gate.py"
+      ]
     }
   ],
   "refusals": [
