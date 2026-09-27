@@ -4120,6 +4120,33 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cody",
+      "opened_at": "2026-09-27T03:53:49Z",
+      "opened_at_sha": "bdb899d92235aa8bee3ebce80974c802d2021d17",
+      "resources": [
+        "alf_compliance_rules",
+        "law_trust_reconcile",
+        "sc_ar",
+        "sc_claims",
+        "sc_denial",
+        "sc_denial_events",
+        "sc_revenue"
+      ],
+      "rules": [],
+      "irreversible": [],
+      "files": [
+        "api/_lib/sc-denial-reconcile.js",
+        "api/_lib/sc-denial-reconcile.test.js"
+      ],
+      "what": "SAIRNcode denial reconciliation: new api/_lib/sc-denial-reconcile.js reconciles the hand-typed sc_denial aggregate against the logged sc_denial_events, in cents, and refuses to pick a side. Module is UNWIRED -- no caller, asserted by arms F1-F3. Tests: api/_lib/sc-denial-reconcile.test.js, 23 arms, all green. The other Tier A names in range (alf_compliance_rules, law_trust_reconcile, sc_ar, sc_revenue) appear only in explanatory COMMENTS, not code -- the reviewer should confirm that rather than take my word for it. What most needs an outside eye: the missing-aggregate-count third state (no_aggregate_count vs a real zero), the cents arithmetic, and whether 'agrees' counting only compared codes flatters the total.",
+      "status": "open",
+      "reviewer_owner": "hank",
+      "owner_assigned_at": "2026-09-27T03:53:49Z",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
