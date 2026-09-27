@@ -417,6 +417,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **&#9989; The prompt-fence comment-strip went into ONE of the TWO places that derive the DRIVEN set &mdash; and the shared grader was still crediting a comment two days later** | **FIXED 2026-09-26 (cc)**, `e683f59b`. `tools/cross_tenant_isolation_scope.py` gains `strip_comments()`; `tests/run_cross_tenant_scope_probe.py`'s inline arm calls it instead of keeping its own copy;  | `api/sd-data-cross-tenant-dispatchers.test.js`, `api/sd-data-sf-session-gate.test.js`, `tests/run_cross_tenant_scope_probe.py` |
 | **&#128993; Item 94's blob migration: SIX more branches converted individually, and the &ldquo;16 remaining&rdquo; figure is now 12 &mdash; re-measure, do not quote** | **SIX CONVERTED 2026-09-26 (cc)**, `9ff4b87f`, each column list derived from THAT BRANCH'S OWN READ. New `api/sd-data-stored-blob-scope-keys.test.js`, 31 arms, driven red four ways | `api/sd-data-stored-blob-scope-keys.test.js` |
 | **&#128993; The prompt-injection scanner's untrusted-field list is GENERIC and misses app-specific field names &mdash; three real unfenced sites were found BY HAND in two apps it reported clean** | **THREE SITES FENCED 2026-09-26 (cc)**, `a42a18d2`; two defect-register records; `note` and `desc` added to the criteria behind a literal-strip; `tests/prompt_fence_mirror.js` BUILT (it had been cited | `tests/prompt_fence_mirror.js`, `tests/sairnvet_dose_audit_reader.js` |
+| **&#128993; NINE test arms label an EXHAUSTIVE claim and compare ONE-SIDEDLY &mdash; the label says &ldquo;every&rdquo; and the comparison can only see a minimum** | **FOUND 2026-09-27 (Cody) by the new `tools/assertion_label_shape_check.py`; NOT fixed here, deliberately &mdash; each is a one-line judgement in somebody else&rsquo;s suite about what the arm was FOR | `tests/push_gate/check9_probe.py`, `tests/push_gate/refspec_and_override_probe.py`, `tests/reachability/resource_demand_probe.py`, `tests/run_assurance_case_probe.py`, `tests/run_checker_confidence_probe.py`, `tests/run_register_feed_gate_probe.py`, `tests/run_rotation_blast_radius_probe.py`, `tests/run_testability_gate_probe.py` |
+| **&#128993; `assertion_label_shape_check.py` is NOT in the report-only registry, so `checker_control_check.py` cannot see its control and it is invisible to `checker_confidence.py`** | **BLOCKED, NOT FORGOTTEN, 2026-09-27 (Cody).** The one remaining line is an entry in `report_only_checks.REGISTRY`, and `tools/report_only_checks.py` is held by an ACTIVE cc claim (*&ldquo;report_only | `tests/run_assertion_label_shape_probe.py` |
 | The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
 ### sairnbiz
@@ -655,17 +657,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 **That absolute count is the headline, deliberately, and the ratio is below it.** For five days this section led with the RATIO, which improved from 29.4% to 52.5% while this count rose from 185 to 212 -- measured over 221 readings of this document recovered from its own git history. Same document, same readings, opposite directions. A ratio improves when traced work is added; only this number falls when the gap actually closes.
 
-For context and not as the headline: 655 of 776 traced, 84.4%.
+For context and not as the headline: 656 of 777 traced, 84.4%.
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
-### Where the 656 citations come from
+### Where the 657 citations come from
 
 | source | citations |
 |---|---|
-| `index` | 316 |
-| `declared` | 274 |
-| `declared+index` | 56 |
+| `index` | 317 |
+| `declared` | 272 |
+| `declared+index` | 58 |
 | `GUARD_TESTS+index` | 6 |
 | `GUARD_TESTS` | 2 |
 | `GUARD_TESTS+declared` | 1 |
@@ -824,8 +826,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 776   tests/**, api/** (both walked)
-  open-work rows citing a test       369   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 777   tests/**, api/** (both walked)
+  open-work rows citing a test       371   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                 10   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                61   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     71   report_only_checks.NOT_PROMOTED
