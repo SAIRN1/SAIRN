@@ -14964,6 +14964,65 @@
       ]
     },
     {
+      "commit": "2cec9c094b0b",
+      "date": "2026-09-26",
+      "subject": "fix(sairnvet): four more unearned \"verified\" claims -- in the panel this morning's sweep never looked at",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_formulary_source_honesty.js"
+      ],
+      "lines_added": 218,
+      "lines_removed": 8,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "live-verification",
+      "summary": "sairnvet.html's Treatment Protocol and Ask-AI panels told the model, and through it the treating veterinarian, that the app's tables are verified -- four strings, none of them touched by the formulary badge fix that landed hours earlier as f52330d3 with sixteen green arms: the protocol miss-branch (\"not in our verified database\"), the protocol grounding context (\"Verified database record(s) for this diagnosis: \" + JSON.stringify(matches)), the protocol system prompt (\"cite which part of your answer comes from the verified database record\"), and the Ask-AI system prompt (\"use the AI Dosing Calculator (for verified, bounds-checked doses)\") -- which re-asserts from a second panel the exact claim just removed from the calculator itself. The protocol panel reads VET_DIAGNOSES: 465 rows whose keys are name, signs, species, system, with NO SOURCE FIELD AT ALL, so not one entry could cite anything even if somebody looked it up. Found by the PR 3.2 post-push live check against the deployed URL, not by the passing test.",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "commit": "8416c50d60da",
+        "date": "2026-07-07",
+        "subject": "Session 58 checkpoint 2: Safety architecture wired into dosing calculator + diagnosis protocol generator - deterministic contraindication gate (RED_FLAG_MATRIX), deterministic dose bounds-check using VET_DRUGS doseMin/doseMax (AI never computes the number), grounded AI prompts with explicit not-in-database/needs-review disclosure, ranked-differential requirement for diagnosis protocols, vet sign-off checkbox before dose is considered confirmed, audit log to sv_audit_log.",
+        "lag_days": 81
+      },
+      "citation_note": "ARGUABLE, and the analogy is stated rather than assumed. PR 1.3 is written about a CHECK's anchor -- an anchor that still matches is not an anchor that still points at the right thing -- and this is a TEST's scope rather than an anchor. The mechanism is nonetheless identical and is the whole finding: sixteen arms each named a site (`You are a veterinary pharmacology assistant`, `groundingContext = 'Stored formulary record:`, the `dose-verified-calc` box, two prose strings), every one still matched what it was written against, and all sixteen were green while the same claim shipped in a panel none of them named. A named-site arm still matching is not an arm still covering the property. The class this belongs to -- a check that has stopped testing the thing it was written for -- is item 8 in docs/2026-09-13-cross-domain-disciplines.md, which is not the vocabulary --rule validates against.",
+      "contributing_factors": [
+        {
+          "factor": "Every arm of the test that was supposed to hold this property was scoped to a NAMED site, so it could only ever pin sites somebody already knew about. The property is 'this app must not claim its tables are verified', which reappears in every new panel; the arms asserted 'these five strings read as follows'.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The sweep is inverted: `verified` is refused anywhere in the file unless its 280-character window matches one of fifteen ADMITTED shapes, each carrying a sentence saying why that context is honest. A new panel fails the arm rather than shipping."
+        },
+        {
+          "factor": "The claim was made to the MODEL rather than rendered on screen, so no visual review, screenshot pass or badge check could see it. The model then restates it to the clinician in its own voice, where it reads as the assistant's own assessment rather than as app copy.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "All three protocol strings and the Ask-AI prompt now say 'stored diagnosis-library record', and the grounding context tells the model explicitly that the library records no source for any entry and to say so."
+        },
+        {
+          "factor": "VET_DIAGNOSES has no source field in its schema, so the claim was not an overstatement of partial sourcing -- it described a property the table cannot hold. Nothing in the app or the repo flagged that a table being GROUNDING for clinical AI output has no provenance column.",
+          "kind": "latent-condition",
+          "action_status": "planned",
+          "action": "Sourcing the diagnosis library needs a schema slot that does not exist; an arm now pins that if a source field ever appears, both it and the prompt's 'records no source for ANY entry' disclosure must be rewritten -- because a false disclosure is its own defect."
+        },
+        {
+          "factor": "The fix that preceded this one swept two panels and its commit message said the word had been in 'nine other places'. Nobody counted the remaining hits in the file afterwards; the sweep's completeness was inferred from the arms going green, which is the same inference the arms could not support.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The post-push live check required by PR 3.2 searched the whole deployed file and found all four. That step is what caught this, and it is why it is not optional -- recorded here with method live-verification rather than code-review so the register says which checkpoint actually worked."
+        }
+      ],
+      "recurrence_open": "The sweep now refuses `verified` anywhere in sairnvet.html outside VET_DRUGS unless the context is one of fifteen ADMITTED shapes -- so a new panel in THIS FILE cannot ship the claim. Nothing extends that to the other 21 app files. StoneDesk, SAIRNcare, SAIRNcode and the rest have their own AI prompts and their own stored tables, and no check anywhere asks whether any of them calls an unsourced table verified; this record covers one file. Nor does the sweep judge SOURCING: 480 of 485 formulary rows and 465 of 465 diagnosis rows still cite nothing, and the app is now honest about that rather than fixed. VET_DIAGNOSES has no schema slot for a citation at all, so sourcing it is a table change nobody has scoped. And the arm is a WORD sweep: a prompt that claims verification without using the word -- \"checked against the current literature\", \"confirmed dosing\" -- passes it untouched.",
+      "single_factor_note": "n/a -- four factors"
+    },
+    {
       "commit": "7bc26782e533",
       "date": "2026-09-26",
       "subject": "fix(sairnvet): the butorphanol HORSE row was 2-4x the FDA-approved equine dose -- the dog/cat figure copied across all five species rows",
