@@ -16441,6 +16441,114 @@
       "recurrence_open": "No check exists for the general shape: a probe fixture carrying a LITERAL session name while the code under test resolves that same name from the clone. A grep for quoted clone names inside tests/ is cheap and has not been run, and the four build-agent names plus the hover instances are a small closed vocabulary that a checker could read from .claude/claims/ rather than hardcode -- which is the same mistake one shelf over."
     },
     {
+      "commit": "4f67d1a01156",
+      "date": "2026-09-27",
+      "subject": "feat(sairnfreedom): the three controls every Ohio post theft went around -- and a stale threshold that printed a shortfall nobody owed",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_segregation_of_duties.js"
+      ],
+      "lines_added": 1187,
+      "lines_removed": 37,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "sairnfreedom.html getP4Config() defaulted the ORC 2915.101 tiered-distribution threshold to 250000 -- the STATUTORY BASE, which has not been the operative figure since 2023-11-01. OAC 109:1-4-21 replaces \"two hundred fifty thousand dollars\" with \"three hundred thirty thousand dollars\". THE DIRECTION OF THE ERROR IS THE OPPOSITE OF WHAT IT LOOKS LIKE AND THE AUDIT THAT FOUND IT GOT IT BACKWARDS: a LOWER threshold shrinks the 25% tier and pushes money into the 50% tier, so the app computed a required distribution that was TOO HIGH -- on 300000 of tiered-regime net profit it demanded 87500 where the law requires 75000. That is conservative on the duty, so it is NOT an exposure in the direction the Ohio AG actually enforces (underpaying the contracted charity, its lead issue: American Legion No. 243 drew a notice of intent to deny over a 23945.70 shortfall). The harm is the other one: the Distribution panel printed \"Short by 12500\" for a post that was not short, and a treasurer who moves money to close a fabricated gap has been harmed by a number nothing supports. Compounding it, sf_phase4_config is excluded from the server backup by design, so no default change reaches a device that already saved the old figure.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The threshold default has been 250000 since Phase 4 was built; which commit introduced the constant was not traced, and guessing one would put a wrong sha in the lag figure."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The code did the RIGHT structural thing and the default undid it. The author read \"or a greater amount prescribed by the attorney general\", made the threshold configuration rather than a constant, and wrote a flagbox explaining why hardcoding would go stale -- then defaulted it to the base figure, which had already been superseded for 22 months. The correct architecture with the stale value reads MORE trustworthy than a hardcoded constant, because the surrounding prose demonstrates the author understood the problem.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Default is now the AG-adjusted 330000 with OAC 109:1-4-21 and its 2023-11-01 effective date cited at the constant, and the flagbox now says the figure HAD already moved."
+        },
+        {
+          "factor": "The adjusted amount lives in an ADMINISTRATIVE RULE, not the statute. Reading ORC 2915.101 -- which the author did, correctly -- yields 250000 and a sentence saying the AG may adjust it. Nothing in the statute names OAC 109:1-4-21, so a careful primary-source read of the right section still lands on the wrong number.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both figures are now named constants, P4_STATUTORY_BASE_THRESHOLD and P4_AG_ADJUSTED_THRESHOLD, so the difference between the base and the operative amount is visible in the source rather than collapsed into one literal."
+        },
+        {
+          "factor": "THE DIRECTION WAS MISREAD BY THE AUDIT THAT FOUND IT, which is why it nearly got fixed the wrong way round. The audit said the stale default overstates the 25% tier reach; it UNDERstates it. A lower threshold shrinks tier 1 and pushes money into the 50% tier, so the requirement computed was TOO HIGH -- conservative on the duty, and wrong in the one direction nobody checks for, because a compliance tool demanding more than the law is assumed safe.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "Arm B5 of tests/sairnfreedom_segregation_of_duties.js asserts the direction numerically on $300,000 -- 87500 at the base against 75000 at the adjusted amount -- rather than leaving it to a comment. B6 bounds who it touched: below both thresholds the two figures are identical."
+        },
+        {
+          "factor": "sf_phase4_config is deliberately EXCLUDED from the server backup as \"configuration\", so no default change and no fix can reach a device that already saved 250000, and a second device or a cleared browser silently falls back to whatever the default is.",
+          "kind": "technical",
+          "action_status": "planned",
+          "action": "Moving the compliance-critical half of sf_phase4_config to the server is the real fix and is NOT made here -- it needs a synced resource, which needs api/sd-data.js, held by another session. p4ThresholdStale() flags the stale device with the shortfall and the citation and deliberately does NOT correct it: a tool that rewrites a configured compliance figure unasked is the auto-remediation shape this platform refuses."
+        }
+      ],
+      "recurrence_open": "NO CHECK EXISTS for the general shape: a configurable compliance figure whose DEFAULT is a statutory base that a regulator is empowered to move. sairnfreedom's sf_fees.perCapita and sf_post.liquor are the same class in the same file, and no tool asks whether any app's default is still the operative figure."
+    },
+    {
+      "commit": "4f67d1a01156",
+      "date": "2026-09-27",
+      "subject": "feat(sairnfreedom): the three controls every Ohio post theft went around -- and a stale threshold that printed a shortfall nobody owed",
+      "files": [
+        "sairnfreedom.html",
+        "tests/sairnfreedom_segregation_of_duties.js"
+      ],
+      "lines_added": 1187,
+      "lines_removed": 37,
+      "app": "sairnfreedom",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "sairnfreedom.html told the user two of its own built features were NOT BUILT. sfRenderProfitChain() ended \"Those rules are Phase 4 and are not built\" while TIER1_MIN_DISTRIBUTION, tieredRequirement() and the shortfall computation had all been in the same file for weeks; the Bingo Accounts panel said \"Disbursement is Phase 4 and is not built\" while the whole Disbursements panel existed. THE COST IS NOT COSMETIC: underpaying the contracted charity is the Ohio Attorney General lead charitable-bingo enforcement issue, so the one paragraph a treasurer reads before thinking about distribution told them the test the regulator applies most often did not exist here. A third instance in the same commit is a statutory wording error rather than a staleness one: the beer vendor tile said a wholesale purchase \"must be for cash\", which an officer reads as currency, where OAC 4301-9-01(B) permits cash, check, debit card, credit card, money order and EFT and only CREDIT is barred.",
+      "rules": [
+        "1.8"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "found_by_session": null,
+      "injection": {
+        "unknown_reason": "The two sentences date from whenever Phase 3 and Phase 4 were written; which commit is not traced, and the point of the record is that nothing re-checked them afterwards rather than who typed them."
+      },
+      "contributing_factors": [
+        {
+          "factor": "The sentences were true when written and nothing re-reads a sentence. The distribution calculation, the tier constants and the shortfall computation all landed weeks before 2026-09-27; neither paragraph is near them in the file and no test asserted either way.",
+          "kind": "latent-condition",
+          "action_status": "done",
+          "action": "Both are corrected, and arm D1 of tests/sairnfreedom_segregation_of_duties.js asserts the literal strings are absent from the file with COMMENTS STRIPPED, so the arm cannot be satisfied by a comment recording the fix."
+        },
+        {
+          "factor": "IT POINTED THE READER AWAY FROM THE ONE TEST THE REGULATOR ENFORCES MOST. Underpaying the contracted charity is the lead issue in the Ohio AG 2024-2026 charitable-bingo enforcement record. A treasurer reading the profit-chain panel was told the distribution test did not exist, so the reasonable response was to compute it by hand or not at all.",
+          "kind": "process",
+          "action_status": "done",
+          "action": "The corrected copy names the Distribution panel and tieredRequirement() explicitly, and the correction is recorded in the panel rather than quietly overwritten, so a reader can tell a decision from an oversight."
+        },
+        {
+          "factor": "THE FIRST ATTEMPT AT THE CORRECTION BROKE ITS OWN TEST, in the direction that matters. The replacement prose QUOTED the old sentence to record the history, and arm D1 asserts that literal is absent from the rendered copy -- so the fix made the arm red against a file that was correct.",
+          "kind": "detection",
+          "action_status": "done",
+          "action": "The arm was kept STRICT and the prose reworded, rather than teaching the arm to tell an assertion from a citation of one: an absence arm that has to make that distinction is the arm that eventually gets it wrong in the PASSING direction. A comment at the site records the decision."
+        },
+        {
+          "factor": "The advisory beer tile said the purchase \"must be for cash\", which an officer reads as currency only, when \"cash\" in ORC 4301.24(D) is a term of art meaning not-on-credit.",
+          "kind": "technical",
+          "action_status": "done",
+          "action": "Both sites now say credit is barred and name OAC 4301-9-01(B), which lists cash, check, debit card, credit card, money order and EFT as permitted instruments. Arm D3 asserts the wrong wording is gone and the correcting rule is cited."
+        }
+      ],
+      "recurrence_open": "NO CHECK sweeps any SAIRN app for rendered copy asserting a feature is NOT BUILT against whether the named function now exists. The shape is mechanical -- a sentence naming a phase or a feature as absent, plus a symbol in the same file -- and it is the cheapest staleness class on the platform because the code that falsifies it is in the same file as the claim."
+    },
+    {
       "commit": "607f227f2125",
       "date": "2026-09-27",
       "subject": "fix(sairncash): three more places a min/max against an unknown answered anyway -- one of them with a confident $0 of income tax",
